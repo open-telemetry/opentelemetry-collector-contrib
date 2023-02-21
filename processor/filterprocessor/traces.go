@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filterprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
+package filterprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/filterprocessor"
 
 import (
 	"context"
@@ -23,11 +23,11 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterspan"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 type filterSpanProcessor struct {

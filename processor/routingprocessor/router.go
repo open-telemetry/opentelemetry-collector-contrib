@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
+package routingprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/routingprocessor"
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 var errExporterNotFound = errors.New("exporter not found")

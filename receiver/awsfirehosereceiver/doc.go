@@ -21,4 +21,4 @@
 //
 // More details can be found at:
 // https://docs.aws.amazon.com/firehose/latest/dev/httpdeliveryrequestresponse.html
-package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
+package awsfirehosereceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"

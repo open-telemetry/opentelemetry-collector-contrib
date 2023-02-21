@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
+package splunkhecreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
 import (
 	"go.opentelemetry.io/collector/config/confighttp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // Config defines configuration for the Splunk HEC receiver.

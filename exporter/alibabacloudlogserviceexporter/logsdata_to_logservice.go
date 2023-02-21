@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package alibabacloudlogserviceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
+package alibabacloudlogserviceexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 
 import (
 	"encoding/json"
@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (

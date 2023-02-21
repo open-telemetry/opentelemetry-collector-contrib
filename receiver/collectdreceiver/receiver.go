@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package collectdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
+package collectdreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/collectdreceiver"
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	internaldata "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 var _ receiver.Metrics = (*collectdReceiver)(nil)

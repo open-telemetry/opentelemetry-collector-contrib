@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schemaprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor"
+package schemaprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/schemaprocessor"
 
 import (
 	"errors"
@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 )
 
 var (

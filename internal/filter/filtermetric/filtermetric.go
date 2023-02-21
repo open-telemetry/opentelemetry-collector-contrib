@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filtermetric // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+package filtermetric // import "github.com/asserts/opentelemetry-collector-contrib/internal/filter/filtermetric"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
 // NewSkipExpr creates a BoolExpr that on evaluation returns true if a metric should NOT be processed or kept.

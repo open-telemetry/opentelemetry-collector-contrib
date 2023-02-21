@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
+package rabbitmqreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 
 import (
 	"errors"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
 )
 
 // Predefined error responses for configuration validation failures

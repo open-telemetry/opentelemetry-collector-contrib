@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
+package sshcheckreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 
 //go:generate mdatagen metadata.yaml

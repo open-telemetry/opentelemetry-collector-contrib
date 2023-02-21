@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package batch // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+package batch // import "github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 
 import (
 	"errors"
@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
 var (

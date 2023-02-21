@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
+package flinkmetricsreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 
 import (
 	"context"
@@ -28,10 +28,10 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/mocks"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/models"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/mocks"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/models"
 )
 
 var (

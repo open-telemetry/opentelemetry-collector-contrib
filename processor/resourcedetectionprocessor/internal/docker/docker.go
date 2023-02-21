@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
+package docker // import "github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 
 import (
 	"context"
@@ -23,8 +23,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/metadataproviders/docker"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 const (

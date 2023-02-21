@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
+package spanmetricsconnector // import "github.com/asserts/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 
 import (
 	"context"

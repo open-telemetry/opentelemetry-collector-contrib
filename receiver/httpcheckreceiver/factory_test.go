@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
+package httpcheckreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/httpcheckreceiver/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {

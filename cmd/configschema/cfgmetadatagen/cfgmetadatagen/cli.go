@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 	"gopkg.in/yaml.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+	"github.com/asserts/opentelemetry-collector-contrib/cmd/configschema"
 )
 
 // GenerateFiles is the entry point for cfgmetadatagen. Component factories are

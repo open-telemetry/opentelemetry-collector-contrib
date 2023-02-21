@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ptracetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
+package ptracetest // import "github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/internal"
 )
 
 // CompareTraces compares each part of two given Traces and returns

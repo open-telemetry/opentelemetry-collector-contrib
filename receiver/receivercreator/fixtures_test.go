@@ -15,7 +15,7 @@
 package receivercreator
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/observer"
 )
 
 var pod = observer.Pod{

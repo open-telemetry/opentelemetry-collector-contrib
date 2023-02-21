@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
+package awsemfexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
 	"encoding/json"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
 const (

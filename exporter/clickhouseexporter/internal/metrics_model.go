@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+package internal // import "github.com/asserts/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"

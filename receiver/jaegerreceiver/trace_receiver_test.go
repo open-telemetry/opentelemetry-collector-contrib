@@ -48,8 +48,8 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 var jaegerReceiver = component.NewIDWithName("jaeger", "receiver_test")

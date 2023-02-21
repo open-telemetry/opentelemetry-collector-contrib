@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filtermatcher // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermatcher"
+package filtermatcher // import "github.com/asserts/opentelemetry-collector-contrib/internal/filter/filtermatcher"
 
 import (
 	"errors"
@@ -21,9 +21,9 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type AttributesMatcher []AttributeMatcher

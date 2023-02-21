@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsmsk // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/awsmsk"
+package awsmsk // import "github.com/asserts/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/awsmsk"
 
 import (
 	"encoding/json"

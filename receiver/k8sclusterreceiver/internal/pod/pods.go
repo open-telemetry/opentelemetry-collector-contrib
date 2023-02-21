@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pod // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
+package pod // import "github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 
 import (
 	"fmt"
@@ -32,12 +32,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/container"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/maps"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/container"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
 const (

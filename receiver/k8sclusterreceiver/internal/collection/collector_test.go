@@ -25,10 +25,10 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/maps"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 var commonPodMetadata = map[string]string{

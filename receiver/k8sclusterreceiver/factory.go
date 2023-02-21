@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
+package k8sclusterreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 
 import (
 	"time"
@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 const (

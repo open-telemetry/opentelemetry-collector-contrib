@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
+package traces // import "github.com/asserts/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func SpanFunctions() map[string]interface{} {

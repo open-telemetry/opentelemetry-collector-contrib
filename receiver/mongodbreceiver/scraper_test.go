@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -34,8 +33,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestNewMongodbScraper(t *testing.T) {

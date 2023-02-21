@@ -36,7 +36,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"go.uber.org/atomic"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestNew(t *testing.T) {
@@ -47,7 +47,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetricsData(t *testing.T) {
-	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/396")
+	t.Skip("skipping flaky test, see https://github.com/asserts/opentelemetry-collector-contrib/issues/396")
 	smallBatch := pmetric.NewMetrics()
 	m := smallBatch.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetName("test_gauge")
@@ -169,7 +169,7 @@ func TestConsumeMetricsData(t *testing.T) {
 // is designed to force that.
 func Test_connPool_Concurrency(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10147")
+		t.Skip("skipping test on windows, see https://github.com/asserts/opentelemetry-collector-contrib/issues/10147")
 	}
 	addr := testutil.GetAvailableLocalAddress(t)
 	laddr, err := net.ResolveTCPAddr("tcp", addr)

@@ -283,7 +283,7 @@ func TestCompaction(t *testing.T) {
 	i := 0
 
 	// magic numbers giving enough data to force bbolt to allocate a new page
-	// see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/9004 for some discussion
+	// see https://github.com/asserts/opentelemetry-collector-contrib/pull/9004 for some discussion
 	numEntries := 50
 	entrySize := 512
 	entry := make([]byte, entrySize)

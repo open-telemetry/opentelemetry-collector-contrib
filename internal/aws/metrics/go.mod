@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics
+module github.com/asserts/opentelemetry-collector-contrib/internal/aws/metrics
 
 go 1.19
 

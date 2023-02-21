@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+package common // import "github.com/asserts/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
 func Test_HasAttrKeyOnDatapoint(t *testing.T) {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package saphanareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
+package saphanareceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/saphanareceiver"
 
 import (
 	"errors"
@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
 )
 
 // Errors for missing required config parameters.

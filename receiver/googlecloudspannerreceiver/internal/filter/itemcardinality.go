@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filter // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
+package filter // import "github.com/asserts/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
 
 import (
 	"errors"
@@ -20,7 +20,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/ReneKroon/ttlcache/v2"
 	"go.uber.org/zap"
 )
 

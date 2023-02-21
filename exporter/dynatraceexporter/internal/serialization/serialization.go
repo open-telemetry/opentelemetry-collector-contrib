@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serialization // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/serialization"
+package serialization // import "github.com/asserts/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/serialization"
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap) ([]string, error) {

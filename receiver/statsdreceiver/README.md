@@ -32,7 +32,7 @@ The Following settings are optional:
 
 `"observer_type"` specifies OTLP data type to convert to. We support `"gauge"`, `"summary"`, and `"histogram"`. For `"gauge"`, it does not perform any aggregation.
 For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description (the same metric name with the same tags). It will send percentile 0, 10, 50, 90, 95, 100 to the downstream.  The `"histogram"` setting selects an [auto-scaling exponential histogram configured with only a maximum size](https://github.com/lightstep/go-expohisto#readme), as shown in the example below.
-TODO: Add a new option to use a smoothed summary like Prometheus: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3261 
+TODO: Add a new option to use a smoothed summary like Prometheus: https://github.com/asserts/opentelemetry-collector-contrib/pull/3261 
 
 Example:
 

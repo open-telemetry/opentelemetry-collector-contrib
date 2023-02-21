@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
+package kafkametricsreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 
 import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 // Config represents user settings for kafkametrics receiver

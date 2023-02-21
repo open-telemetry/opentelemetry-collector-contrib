@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package consul // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
+package consul // import "github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 
 import "go.opentelemetry.io/collector/config/configopaque"
 

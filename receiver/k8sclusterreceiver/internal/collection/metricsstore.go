@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
+package collection // import "github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
 	"sync"
@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
 // metricsStore keeps track of the metrics being pushed along the pipeline

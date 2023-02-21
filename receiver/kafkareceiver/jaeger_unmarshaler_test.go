@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 func TestUnmarshalJaeger(t *testing.T) {

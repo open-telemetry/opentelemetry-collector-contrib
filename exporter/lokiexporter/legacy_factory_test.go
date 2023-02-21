@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
@@ -48,7 +48,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 }
 
 func TestFactory_CreateLogsExporter(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/15365")
+	skip(t, "Flaky Test - See https://github.com/asserts/opentelemetry-collector-contrib/issues/15365")
 	tests := []struct {
 		name         string
 		config       Config

@@ -1,10 +1,10 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/datadogreceiver
 
 go 1.19
 
 require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230201114415-fae4332beb98
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/sharedcomponent v0.71.0
 	github.com/stretchr/testify v1.8.1
 	github.com/vmihailenco/msgpack/v4 v4.3.12
 	go.opentelemetry.io/collector v0.71.0
@@ -57,4 +57,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
+replace github.com/asserts/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent

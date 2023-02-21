@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
+package coralogixexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
 import (
 	"fmt"

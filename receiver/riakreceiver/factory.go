@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package riakreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver"
+package riakreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/riakreceiver"
 
 import (
 	"context"
@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/riakreceiver/internal/metadata"
 )
 
 const (

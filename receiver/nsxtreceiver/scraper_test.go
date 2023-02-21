@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
+package nsxtreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 
 import (
 	"context"
@@ -29,10 +29,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/metadata"
-	dm "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/model"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/metadata"
+	dm "github.com/asserts/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/model"
 )
 
 func TestScrape(t *testing.T) {

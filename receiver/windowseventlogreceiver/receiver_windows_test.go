@@ -32,9 +32,9 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"golang.org/x/sys/windows/svc/eventlog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 )
 
 func TestDefaultConfig(t *testing.T) {

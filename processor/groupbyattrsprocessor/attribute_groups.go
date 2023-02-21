@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package groupbyattrsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
+package groupbyattrsprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type tracesGroup struct {

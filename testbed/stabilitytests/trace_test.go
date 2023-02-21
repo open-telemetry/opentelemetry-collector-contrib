@@ -25,10 +25,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
-	scenarios "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/tests"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/testbed"
+	scenarios "github.com/asserts/opentelemetry-collector-contrib/testbed/tests"
 )
 
 var (

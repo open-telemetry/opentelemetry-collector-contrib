@@ -6,12 +6,12 @@ OTEL_VERSION=main
 OTEL_RC_VERSION=main
 OTEL_STABLE_VERSION=main
 
-BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version
+BUILD_INFO_IMPORT_PATH=github.com/asserts/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 COMP_REL_PATH=internal/components/components.go
-MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
+MOD_NAME=github.com/asserts/opentelemetry-collector-contrib
 
 GROUP ?= all
 FOR_GROUP_TARGET=for-$(GROUP)-target
@@ -71,7 +71,7 @@ e2e-test: otelcontribcol oteltestbedcol
 .PHONY: unit-tests-with-cover
 unit-tests-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
-	@internal/buildscripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
+	@internal/buildscripts/check-test-files.sh $(subst github.com/asserts/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="do-unit-tests-with-cover"
 
 TARGET="do-integration-tests-with-cover"
@@ -120,7 +120,7 @@ for-all:
 
 COMMIT?=HEAD
 MODSET?=contrib-core
-REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
+REMOTE?=git@github.com:asserts/opentelemetry-collector-contrib.git
 .PHONY: push-tags
 push-tags: $(MULITMOD) 
 	$(MULITMOD) verify

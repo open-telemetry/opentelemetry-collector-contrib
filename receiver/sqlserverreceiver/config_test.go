@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
 func TestValidate(t *testing.T) {

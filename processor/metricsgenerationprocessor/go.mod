@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
+module github.com/asserts/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
 
 go 1.19
 

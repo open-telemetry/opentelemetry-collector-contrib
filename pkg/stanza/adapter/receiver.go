@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+package adapter // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
 import (
 	"context"
@@ -27,7 +27,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 type receiver struct {

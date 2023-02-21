@@ -90,7 +90,7 @@ You need to set `application_name_attributes` and `subsystem_name_attributes` fi
 
 ### Kubernetes attributes
 
-When using OpenTelemetry Collector with [k8sattribute](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/k8sattributesprocessor) processor, you can use attributes coming from Kubernetes, such as `k8s.namespace.name` or `k8s.deployment.name`. The following example shows recommended list of attributes:
+When using OpenTelemetry Collector with [k8sattribute](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/processor/k8sattributesprocessor) processor, you can use attributes coming from Kubernetes, such as `k8s.namespace.name` or `k8s.deployment.name`. The following example shows recommended list of attributes:
 
 ```yaml
 exporters:
@@ -116,7 +116,7 @@ exporters:
 ```
 ### Host Attributes
 
-OpenTelemetry Collector [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover Host Resource attributes, such as `host.name` and provide Resource attributes using environment variables, which can be used for setting AppName and SubSystem fields in Coralogix.
+OpenTelemetry Collector [resourcedetection](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover Host Resource attributes, such as `host.name` and provide Resource attributes using environment variables, which can be used for setting AppName and SubSystem fields in Coralogix.
 
 Example: 
 ```
@@ -151,7 +151,7 @@ exporters:
 ```
 ### EC2 Attributes
 
-OpenTelemetry Collector [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover EC2 Resource attributes, such as EC2 tags as resource attributes.
+OpenTelemetry Collector [resourcedetection](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover EC2 Resource attributes, such as EC2 tags as resource attributes.
 
 Example: 
 ```
@@ -201,7 +201,7 @@ exporters:
 
 ### Custom Attributes
 
-You can combine and create custom Resource attributes using [transform](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) processor. For example:
+You can combine and create custom Resource attributes using [transform](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) processor. For example:
 ```
     transform:
      logs:

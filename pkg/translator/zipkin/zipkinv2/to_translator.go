@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkinv2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
+package zipkinv2 // import "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 
 import (
 	"encoding/hex"
@@ -30,10 +30,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
 // ToTranslator converts from Zipkin data model to pdata.

@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/storage/storagetest"
 )
 
 func TestStorage(t *testing.T) {

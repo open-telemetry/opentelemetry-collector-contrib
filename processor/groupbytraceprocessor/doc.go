@@ -12,4 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
+package groupbytraceprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/groupbytraceprocessor"

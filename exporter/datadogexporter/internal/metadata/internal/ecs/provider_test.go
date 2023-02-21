@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ecs"
+package ecs // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ecs"
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
 var _ ecsutil.MetadataProvider = (*mockProvider)(nil)

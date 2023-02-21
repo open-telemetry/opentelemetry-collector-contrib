@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
+package internal // import "github.com/asserts/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 
 import (
 	"context"

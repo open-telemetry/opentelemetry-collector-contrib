@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkinexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
+package zipkinexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/zipkinexporter"
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
 var translator zipkinv2.FromTranslator

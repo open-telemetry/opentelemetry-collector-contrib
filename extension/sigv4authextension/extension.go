@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sigv4authextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
+package sigv4authextension // import "github.com/asserts/opentelemetry-collector-contrib/extension/sigv4authextension"
 
 import (
 	"context"

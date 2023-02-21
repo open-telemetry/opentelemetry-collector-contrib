@@ -36,7 +36,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	internaldata "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func readFromFile(filename string) string {

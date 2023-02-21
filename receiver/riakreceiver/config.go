@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package riakreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver"
+package riakreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/riakreceiver"
 
 import (
 	"errors"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/riakreceiver/internal/metadata"
 )
 
 // Predefined error responses for configuration validation failures

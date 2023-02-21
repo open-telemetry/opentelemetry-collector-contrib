@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dpfilters // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
+package dpfilters // import "github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 
 // PropertyFilter is a collection of *StringFilter items used in determining if a given property (name and value)
 // should be included with a dimension update request. The default values for all fields is equivalent to the regex

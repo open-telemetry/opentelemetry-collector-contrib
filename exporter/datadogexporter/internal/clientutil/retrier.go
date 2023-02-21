@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package clientutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
+package clientutil // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
 type Retrier struct {

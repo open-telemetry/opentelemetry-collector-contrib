@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
+package awscloudwatchlogsexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 
 import (
 	"context"
@@ -32,8 +32,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
 type exporter struct {

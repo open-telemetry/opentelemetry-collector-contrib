@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 type testSumMetric struct {

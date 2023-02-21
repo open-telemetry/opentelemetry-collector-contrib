@@ -92,7 +92,7 @@ It is also possible to mix both the conventional routing configuration and the r
 #### Limitations:
 
 - [OTTL] statements can be applied only to resource attributes.
-- Currently, it is not possible to specify the boolean statements without function invocation as the routing condition. It is required to provide the NOOP `route()` or any other supported function as part of the routing statement, see [#13545](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545) for more information.
+- Currently, it is not possible to specify the boolean statements without function invocation as the routing condition. It is required to provide the NOOP `route()` or any other supported function as part of the routing statement, see [#13545](https://github.com/asserts/opentelemetry-collector-contrib/issues/13545) for more information.
 - Supported [OTTL] functions:
   - [IsMatch](../../pkg/ottl/ottlfuncs/README.md#IsMatch)
   - [delete_key](../../pkg/ottl/ottlfuncs/README.md#delete_key)

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datareceivers // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
+package datareceivers // import "github.com/asserts/opentelemetry-collector-contrib/testbed/datareceivers"
 
 import (
 	"context"
@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/datadogreceiver"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // datadogDataReceiver implements Datadog v3/v4/v5 format receiver.

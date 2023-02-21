@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsecscontainermetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
+package awsecscontainermetricsreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 
 import (
 	"context"
@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/ecsutil"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 )
 
 var _ receiver.Metrics = (*awsEcsContainerMetricsReceiver)(nil)

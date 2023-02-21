@@ -42,7 +42,7 @@ import (
 // output will be quite noisy.
 func TestEnsureRecordedMetrics(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17574")
+		t.Skip("skipping test on Windows, see https://github.com/asserts/opentelemetry-collector-contrib/issues/17574")
 	}
 	tt, err := obsreporttest.SetupTelemetry(component.NewID("opencensus"))
 	require.NoError(t, err)

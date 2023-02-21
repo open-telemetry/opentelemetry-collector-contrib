@@ -1,9 +1,9 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/tcplogreceiver
 
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/pkg/stanza v0.71.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.71.0
 	go.opentelemetry.io/collector/component v0.71.0
@@ -49,8 +49,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+replace github.com/asserts/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
 retract v0.65.0

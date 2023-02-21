@@ -26,7 +26,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	internaldata "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func TestReplacePatternValidTaskId(t *testing.T) {

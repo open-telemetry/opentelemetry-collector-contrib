@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/haproxyreceiver
 
 go 1.19
 

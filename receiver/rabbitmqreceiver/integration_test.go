@@ -29,14 +29,13 @@ import (
 	"unicode"
 
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 var (
@@ -52,7 +51,7 @@ var (
 )
 
 func TestRabbitmqIntegration(t *testing.T) {
-	t.Skip("See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17201")
+	t.Skip("See https://github.com/asserts/opentelemetry-collector-contrib/issues/17201")
 	t.Run("Running rabbitmq 3.9", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest3_9)

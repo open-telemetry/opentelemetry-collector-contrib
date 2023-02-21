@@ -26,9 +26,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport/client"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/statsdreceiver/transport/client"
 )
 
 func Test_Server_ListenAndServe(t *testing.T) {

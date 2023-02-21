@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/ecsutiltest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/ecsutil/ecsutiltest"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 )
 
 type fakeRestClient struct{ *testing.T }

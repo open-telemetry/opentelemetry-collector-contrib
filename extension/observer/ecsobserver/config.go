@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
+package ecsobserver // import "github.com/asserts/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
 	"fmt"
@@ -54,7 +54,7 @@ type Config struct {
 // our own validation logic.
 func (c *Config) Validate() error {
 	if c.ClusterName == "" {
-		// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3188
+		// TODO: https://github.com/asserts/opentelemetry-collector-contrib/issues/3188
 		// would allow auto detect cluster name in extension
 		return fmt.Errorf("must specify ECS cluster name directly")
 	}

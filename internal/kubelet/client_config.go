@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
+package kubelet // import "github.com/asserts/opentelemetry-collector-contrib/internal/kubelet"
 
 import (
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 // ClientConfig for a kubelet client for talking to a kubelet HTTP endpoint.

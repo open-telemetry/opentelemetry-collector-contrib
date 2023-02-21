@@ -25,8 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
-	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/proxy"
+	awsxray "github.com/asserts/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 func TestLoadConfig(t *testing.T) {

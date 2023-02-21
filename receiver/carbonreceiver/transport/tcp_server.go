@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
+package transport // import "github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
 
 import (
 	"bufio"
@@ -29,8 +29,8 @@ import (
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/consumer"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
+	internaldata "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
 const (

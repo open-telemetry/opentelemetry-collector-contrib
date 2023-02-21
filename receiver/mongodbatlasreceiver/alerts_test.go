@@ -41,9 +41,9 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
 func TestPayloadToLogRecord(t *testing.T) {

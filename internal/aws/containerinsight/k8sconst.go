@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package containerinsight // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+package containerinsight // import "github.com/asserts/opentelemetry-collector-contrib/internal/aws/containerinsight"
 
 // define constants that are used for EKS Container Insights only
 const (

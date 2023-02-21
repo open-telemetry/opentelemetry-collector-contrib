@@ -1264,9 +1264,9 @@ github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1y
 github.com/onsi/gomega v1.10.4/go.mod h1:g/HbgYopi++010VEqkFgJHKC09uJiW9UkXvMUuKHUCQ=
 github.com/onsi/gomega v1.13.0/go.mod h1:lRk9szgn8TxENtWd0Tp4c3wjlRfMTMH27I+3Je41yGY=
 github.com/op/go-logging v0.0.0-20160315200505-970db520ece7/go.mod h1:HzydrMdWErDVzsI23lYNej1Htcns9BCg93Dk0bBINWk=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.52.0/go.mod h1:tU7s/ki/QePSIZ7ExYGWLMb9erCAt66brQHBEHxr8HU=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.54.0/go.mod h1:uWFgO68sLEqWrQxL8rws1CkB8EUNQaedP3FWI1gMJOU=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.57.2/go.mod h1:4rFuWKMbzM9H39RbDvPtJfAp/fxsHydhJhKns6skmK0=
+github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger v0.52.0/go.mod h1:tU7s/ki/QePSIZ7ExYGWLMb9erCAt66brQHBEHxr8HU=
+github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger v0.54.0/go.mod h1:uWFgO68sLEqWrQxL8rws1CkB8EUNQaedP3FWI1gMJOU=
+github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger v0.57.2/go.mod h1:4rFuWKMbzM9H39RbDvPtJfAp/fxsHydhJhKns6skmK0=
 github.com/opentracing-contrib/go-grpc v0.0.0-20191001143057-db30781987df/go.mod h1:DYR5Eij8rJl8h7gblRrOZ8g0kW1umSpKqYIBTgeDtLo=
 github.com/opentracing-contrib/go-observer v0.0.0-20170622124052-a52f23424492/go.mod h1:Ngi6UdF0k5OKD5t5wlmGhe/EDKPoUM3BXZSSfIuJbis=
 github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9/go.mod h1:PLldrQSroqzH70Xl+1DQcGnefIbqsKR7UDaiux3zV+w=

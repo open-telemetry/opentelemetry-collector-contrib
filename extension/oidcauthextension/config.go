@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oidcauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
+package oidcauthextension // import "github.com/asserts/opentelemetry-collector-contrib/extension/oidcauthextension"
 
 // Config has the configuration for the OIDC Authenticator extension.
 type Config struct {

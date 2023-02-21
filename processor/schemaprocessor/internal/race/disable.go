@@ -15,6 +15,6 @@
 //go:build !race
 // +build !race
 
-package race // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/race"
+package race // import "github.com/asserts/opentelemetry-collector-contrib/processor/schemaprocessor/internal/race"
 
 const Enabled = false

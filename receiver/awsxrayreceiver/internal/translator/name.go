@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
+package translator // import "github.com/asserts/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 
 import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	awsxray "github.com/asserts/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 const (
@@ -28,7 +28,7 @@ const (
 )
 
 func addNameAndNamespace(seg *awsxray.Segment, span ptrace.Span) error {
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L160
+	// https://github.com/asserts/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L160
 	span.SetName(*seg.Name)
 
 	if seg.HTTP != nil && seg.HTTP.Request != nil && seg.HTTP.Request.ClientIP != nil {
@@ -50,12 +50,12 @@ func addNameAndNamespace(seg *awsxray.Segment, span ptrace.Span) error {
 	// seg is a subsegment
 
 	attrs := span.Attributes()
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L163
+	// https://github.com/asserts/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L163
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#spankind
 	span.SetKind(ptrace.SpanKindClient)
 	switch *seg.Namespace {
 	case validAWSNamespace:
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L116
+		// https://github.com/asserts/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L116
 		attrs.PutStr(awsxray.AWSServiceAttribute, *seg.Name)
 
 	case validRemoteNamespace:

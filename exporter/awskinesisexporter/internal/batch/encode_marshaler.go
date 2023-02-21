@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package batch // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+package batch // import "github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 
 import (
 	"errors"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
 )
 
 type batchMarshaller struct {

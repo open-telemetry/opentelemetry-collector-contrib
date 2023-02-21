@@ -23,7 +23,7 @@ if [[ -z "${ISSUE:-}" || -z "${TITLE:-}" || -z "${BODY:-}" || -z "${OPENER:-}" ]
   exit 0
 fi
 
-LABELS_COMMENT='See [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself.'
+LABELS_COMMENT='See [Adding Labels via Comments](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself.'
 CUR_DIRECTORY=$(dirname "$0")
 LABELS=""
 PING_LINES=""

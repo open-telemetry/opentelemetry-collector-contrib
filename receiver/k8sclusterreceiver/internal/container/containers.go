@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package container // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/container"
+package container // import "github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/container"
 
 import (
 	"fmt"
@@ -23,12 +23,12 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
-	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/docker"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/maps"
+	metadataPkg "github.com/asserts/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
 const (

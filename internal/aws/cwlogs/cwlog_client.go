@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
+package cwlogs // import "github.com/asserts/opentelemetry-collector-contrib/internal/aws/cwlogs"
 
 import (
 	"errors"
@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs/handler"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/cwlogs/handler"
 )
 
 const (

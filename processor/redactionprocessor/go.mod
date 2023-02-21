@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor
+module github.com/asserts/opentelemetry-collector-contrib/processor/redactionprocessor
 
 go 1.19
 

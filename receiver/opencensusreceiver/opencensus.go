@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
+package opencensusreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 
 import (
 	"context"
@@ -34,8 +34,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/ocmetrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/octrace"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/ocmetrics"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/octrace"
 )
 
 // ocReceiver is the type that exposes Trace and Metrics reception.

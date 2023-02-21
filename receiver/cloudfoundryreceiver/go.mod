@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver
 
 go 1.19
 

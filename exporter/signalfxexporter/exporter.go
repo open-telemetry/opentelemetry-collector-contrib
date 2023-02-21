@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
+package signalfxexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter"
 
 import (
 	"compress/gzip"
@@ -30,11 +30,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
-	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/splunk"
+	metadata "github.com/asserts/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 var (
@@ -225,7 +225,7 @@ func (se *signalfxExporter) createClient(host component.Host) (*http.Client, err
 	se.config.HTTPClientSettings.TLSSetting = se.config.IngestTLSSettings
 
 	if se.config.MaxConnections != 0 && (se.config.MaxIdleConns == nil || se.config.HTTPClientSettings.MaxIdleConnsPerHost == nil) {
-		se.logger.Warn("You are using the deprecated `max_connections` option that will be removed soon; use `max_idle_conns` and/or `max_idle_conns_per_host` instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/signalfxexporter#advanced-configuration")
+		se.logger.Warn("You are using the deprecated `max_connections` option that will be removed soon; use `max_idle_conns` and/or `max_idle_conns_per_host` instead: https://github.com/asserts/opentelemetry-collector-contrib/tree/main/exporter/signalfxexporter#advanced-configuration")
 		if se.config.HTTPClientSettings.MaxIdleConns == nil {
 			se.config.HTTPClientSettings.MaxIdleConns = &se.config.MaxConnections
 		}

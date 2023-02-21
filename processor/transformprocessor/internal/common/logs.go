@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+package common // import "github.com/asserts/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
 	"context"
@@ -21,10 +21,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
 var _ consumer.Logs = &logStatements{}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
+package sshcheckreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
 )
 
 // check that OTel Collector patterns are implemented

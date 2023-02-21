@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package batch // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+package batch // import "github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 
 import (
 	"go.opentelemetry.io/collector/pdata/plog"

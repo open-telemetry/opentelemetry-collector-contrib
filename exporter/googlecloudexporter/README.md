@@ -23,7 +23,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
     <details>
     <summary>Alternatives</summary>
 
-    *   Download a [binary or package of the OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases) that is appropriate for your platform, and includes the Google Cloud exporter.
+    *   Download a [binary or package of the OpenTelemetry Collector](https://github.com/asserts/opentelemetry-collector-contrib/releases) that is appropriate for your platform, and includes the Google Cloud exporter.
     *   Create your own main package in Go, that pulls in just the plugins you need.
     *   Use the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder) to generate the Go main package and `go.mod`.
 
@@ -201,7 +201,7 @@ will or will not proxy traffic as defined by these environment variables.
 ### Logging Example
 
 The logging exporter processes OpenTelemetry log entries and exports them to GCP Cloud Logging. Logs can be collected using one 
-of the opentelemetry-collector-contrib log receivers, such as the [filelogreceiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver).
+of the opentelemetry-collector-contrib log receivers, such as the [filelogreceiver](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver).
 
 Log entries must contain any Cloud Logging-specific fields as a matching OpenTelemetry attribute (as shown in examples from the
 [logs data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#google-cloud-logging)).

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ottltest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
+package ottltest // import "github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 
 func Strp(s string) *string {
 	return &s

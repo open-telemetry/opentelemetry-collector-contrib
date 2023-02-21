@@ -24,8 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 var (

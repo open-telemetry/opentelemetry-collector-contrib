@@ -1,14 +1,14 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/opencensusreceiver
 
 go 1.19
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/common v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/sharedcomponent v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/pkg/translator/opencensus v0.71.0
 	github.com/rs/cors v1.8.3
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.8.1
@@ -71,16 +71,16 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+replace github.com/asserts/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+replace github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
+replace github.com/asserts/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
 
 retract v0.65.0
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil

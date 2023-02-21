@@ -24,7 +24,7 @@ spec:
         - --rate=1
         - --otlp-attributes=k8s.container.name="telemetrygen"
         - --otlp-attributes=k8s.container.restart_count="0"
-        image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+        image: ghcr.io/asserts/opentelemetry-collector-contrib/telemetrygen:latest
         imagePullPolicy: IfNotPresent
         name: telemetrygen
         resources: {}

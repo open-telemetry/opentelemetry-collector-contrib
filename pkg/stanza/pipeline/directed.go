@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
+package pipeline // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 
 import (
 	"errors"
@@ -26,8 +26,8 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 
-	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	stanzaerrors "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 var _ Pipeline = (*DirectedPipeline)(nil)

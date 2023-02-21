@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filterspan // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
+package filterspan // import "github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterspan"
 
 import (
 	"context"
@@ -21,12 +21,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermatcher"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filtermatcher"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 // NewSkipExpr creates a BoolExpr that on evaluation returns true if a span should NOT be processed or kept.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
+package otlpjsonfilereceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 
 import (
 	"context"
@@ -32,9 +32,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 func TestDefaultConfig(t *testing.T) {

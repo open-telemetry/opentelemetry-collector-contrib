@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package lokiexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
+package lokiexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/lokiexporter"
 
 import (
 	"bufio"
@@ -39,9 +39,9 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/loki"
 )
 
 const (
@@ -359,7 +359,7 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 		if _, found := l.config.Labels.Attributes[k]; !found {
 			b.WriteString(k)
 			b.WriteString("=")
-			// encapsulate with double quotes. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11827
+			// encapsulate with double quotes. See https://github.com/asserts/opentelemetry-collector-contrib/issues/11827
 			b.WriteString(strconv.Quote(v.AsString()))
 			b.WriteRune(' ')
 		}

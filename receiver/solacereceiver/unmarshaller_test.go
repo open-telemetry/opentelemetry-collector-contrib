@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/go-amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -27,7 +26,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	model_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/model/v1"
+	model_v1 "github.com/asserts/opentelemetry-collector-contrib/receiver/solacereceiver/model/v1"
 )
 
 // Validate entire unmarshal flow

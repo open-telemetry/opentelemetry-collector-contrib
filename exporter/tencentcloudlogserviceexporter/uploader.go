@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tencentcloudlogserviceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
+package tencentcloudlogserviceexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 
 import (
 	"github.com/pierrec/lz4"
@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap"
 	pb "google.golang.org/protobuf/proto"
 
-	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/proto"
+	cls "github.com/asserts/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/proto"
 )
 
 // logServiceClient log Service's client wrapper

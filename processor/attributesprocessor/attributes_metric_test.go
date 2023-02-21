@@ -25,11 +25,11 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 // Common structure for all the Tests
@@ -112,7 +112,7 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 }
 
 func TestAttributes_FilterMetrics(t *testing.T) {
-	t.Skip("Will be fixed by https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/17017")
+	t.Skip("Will be fixed by https://github.com/asserts/opentelemetry-collector-contrib/pull/17017")
 	testCases := []metricTestCase{
 		{
 			name:            "apply processor",
@@ -173,7 +173,7 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 }
 
 func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
-	t.Skip("Will be fixed by https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/17017")
+	t.Skip("Will be fixed by https://github.com/asserts/opentelemetry-collector-contrib/pull/17017")
 	testCases := []metricTestCase{
 		{
 			name:            "apply",
@@ -237,7 +237,7 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 }
 
 func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
-	t.Skip("Will be fixed by https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/17017")
+	t.Skip("Will be fixed by https://github.com/asserts/opentelemetry-collector-contrib/pull/17017")
 	testCases := []metricTestCase{
 		{
 			name:            "apply_to_metric_with_no_attrs",

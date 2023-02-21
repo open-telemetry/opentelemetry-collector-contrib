@@ -31,8 +31,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestCleanStop(t *testing.T) {
@@ -469,7 +469,7 @@ func TestStartAtEnd(t *testing.T) {
 // beginning
 func TestStartAtEndNewFile(t *testing.T) {
 	if runtime.GOOS == windowsOS {
-		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/asserts/opentelemetry-collector-contrib/issues/16331")
 	}
 	t.Parallel()
 

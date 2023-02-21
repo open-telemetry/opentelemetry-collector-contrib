@@ -38,7 +38,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
@@ -660,7 +660,7 @@ func Test_PushMetrics(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			if useWAL {
-				t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9124")
+				t.Skip("Flaky test, see https://github.com/asserts/opentelemetry-collector-contrib/issues/9124")
 			}
 			for _, ttt := range tests {
 				tt := ttt
@@ -839,7 +839,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 // and that we can retrieve those exact requests back from the WAL, when the
 // exporter starts up once again, that it picks up where it left off.
 func TestWALOnExporterRoundTrip(t *testing.T) {
-	t.Skip("skipping test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10142")
+	t.Skip("skipping test, see https://github.com/asserts/opentelemetry-collector-contrib/issues/10142")
 	if testing.Short() {
 		t.Skip("This test could run for long")
 	}

@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestBasicConfigID(t *testing.T) {

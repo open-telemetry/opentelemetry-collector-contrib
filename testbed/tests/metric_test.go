@@ -25,9 +25,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 func TestMetric10kDPS(t *testing.T) {
@@ -46,7 +46,7 @@ func TestMetric10kDPS(t *testing.T) {
 				ExpectedMaxCPU: 237,
 				ExpectedMaxRAM: 100,
 			},
-			skipMessage: "Flaky test, https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9729",
+			skipMessage: "Flaky test, https://github.com/asserts/opentelemetry-collector-contrib/issues/9729",
 		},
 		{
 			name:     "OpenCensus",

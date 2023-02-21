@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
+package azure // import "github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 
 import (
 	"context"
@@ -22,8 +22,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/metadataproviders/azure"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 const (

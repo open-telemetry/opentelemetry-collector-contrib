@@ -1,11 +1,11 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
+module github.com/asserts/opentelemetry-collector-contrib/pkg/translator/loki
 
 go 1.19
 
 require (
 	github.com/go-logfmt/logfmt v0.5.1
 	github.com/grafana/loki/pkg/push v0.0.0-20230127072203-4e8cc8d71928
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
 	github.com/prometheus/common v0.39.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector/pdata v1.0.0-rc5
@@ -32,6 +32,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
+replace github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
 
 retract v0.65.0

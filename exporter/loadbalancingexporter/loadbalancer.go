@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
+package loadbalancingexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
 	"context"
@@ -186,7 +186,7 @@ func (lb *loadBalancerImp) Endpoint(identifier []byte) string {
 func (lb *loadBalancerImp) Exporter(endpoint string) (component.Component, error) {
 	// NOTE: make rolling updates of next tier of collectors work. currently, this may cause
 	// data loss because the latest batches sent to outdated backend will never find their way out.
-	// for details: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
+	// for details: https://github.com/asserts/opentelemetry-collector-contrib/issues/1690
 	lb.updateLock.RLock()
 	exp, found := lb.exporters[endpointWithPort(endpoint)]
 	lb.updateLock.RUnlock()

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+package kube // import "github.com/asserts/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
 	"fmt"
@@ -30,8 +30,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/observability"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/observability"
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.

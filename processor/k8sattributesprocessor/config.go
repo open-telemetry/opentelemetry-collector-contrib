@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
+package k8sattributesprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
 // Config defines configuration for k8s attributes processor.

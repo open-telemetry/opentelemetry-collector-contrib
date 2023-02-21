@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
 func getTestSummaryMetric() pmetric.Metric {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver/internal"
+package internal // import "github.com/asserts/opentelemetry-collector-contrib/receiver/purefbreceiver/internal"
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 )
 
 func TestBearerToken(t *testing.T) {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package carbonreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
+package carbonreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver"
 
 import (
 	"context"
@@ -24,8 +24,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
 )
 
 var (

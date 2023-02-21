@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
+package azureblobreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 type Config struct {
 	// Azure Blob Storage connection key,

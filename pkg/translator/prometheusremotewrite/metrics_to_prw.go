@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
+package prometheusremotewrite // import "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
 	"errors"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	prometheustranslator "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type Settings struct {

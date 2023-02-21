@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
+package windows // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
 	"syscall"

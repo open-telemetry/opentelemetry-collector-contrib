@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+package helper // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
 import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
 // NewTraceParser creates a new trace parser with default values

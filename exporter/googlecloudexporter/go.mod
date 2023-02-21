@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter
+module github.com/asserts/opentelemetry-collector-contrib/exporter/googlecloudexporter
 
 go 1.19
 

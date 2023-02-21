@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package attributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
+package attributesprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/attributesprocessor"
 
 import (
 	"context"
@@ -22,10 +22,10 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterlog"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterspan"
 )
 
 const (

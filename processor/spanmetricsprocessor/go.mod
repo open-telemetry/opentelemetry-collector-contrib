@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/hashicorp/golang-lru v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
 	github.com/stretchr/testify v1.8.1
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector v0.71.0
@@ -70,6 +70,6 @@ replace cloud.google.com/go => cloud.google.com/go v0.100.2
 // Force cloud.google.com/go/compute to be at least v1.12.1.
 replace cloud.google.com/go/compute => cloud.google.com/go/compute v1.12.1
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+replace github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 retract v0.65.0

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httpforwarder // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
+package httpforwarder // import "github.com/asserts/opentelemetry-collector-contrib/extension/httpforwarder"
 
 import (
 	"go.opentelemetry.io/collector/config/confighttp"

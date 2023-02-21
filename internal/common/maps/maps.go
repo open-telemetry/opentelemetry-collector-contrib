@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package maps // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
+package maps // import "github.com/asserts/opentelemetry-collector-contrib/internal/common/maps"
 
 // MergeRawMaps merges n maps with a later map's keys overriding earlier maps.
 func MergeRawMaps(maps ...map[string]interface{}) map[string]interface{} {

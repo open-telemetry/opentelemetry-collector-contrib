@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracking // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
+package tracking // import "github.com/asserts/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 
 import (
 	"bytes"
@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type MetricIdentity struct {

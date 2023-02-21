@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package datadogreceiver ingests traces in the Datadog APM format and translates them OpenTelemetry for collector usage
-package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
+package datadogreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/datadogreceiver"

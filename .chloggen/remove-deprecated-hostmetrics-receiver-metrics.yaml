@@ -16,4 +16,4 @@ issues: [14327]
 subtext: |
   The metrics `process.memory.physical_usage` and `process.memory.virtual_usage` have been deprecated since v0.64.0.
   They are now being removed. You should use the following metrics instead: `process.memory.usage`, `process.memory.virtual`.
-  For details, see the [docs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.71.0/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification).
+  For details, see the [docs](https://github.com/asserts/opentelemetry-collector-contrib/tree/v0.71.0/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification).

@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
+package iisreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/iisreceiver"
 
 import (
 	"context"
@@ -30,8 +30,8 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/winperfcounters"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
 )
 
 type iisReceiver struct {

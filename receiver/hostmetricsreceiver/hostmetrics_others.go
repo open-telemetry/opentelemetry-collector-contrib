@@ -14,7 +14,7 @@
 
 //go:build !linux
 
-package hostmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+package hostmetricsreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 
 import "fmt"
 

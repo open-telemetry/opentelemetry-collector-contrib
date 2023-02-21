@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package docsgen // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
+package docsgen // import "github.com/asserts/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/otelcol"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+	"github.com/asserts/opentelemetry-collector-contrib/cmd/configschema"
 )
 
 const mdFileName = "config.md"

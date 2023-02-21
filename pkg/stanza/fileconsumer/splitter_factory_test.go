@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+package fileconsumer // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
 	"bufio"
@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 func Test_multilineSplitterFactory_Build(t *testing.T) {

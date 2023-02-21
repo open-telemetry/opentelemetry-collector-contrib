@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ocmetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/ocmetrics"
+package ocmetrics // import "github.com/asserts/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/ocmetrics"
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	internaldata "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 // Receiver is the type used to handle metrics from OpenCensus exporters.

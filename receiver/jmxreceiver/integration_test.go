@@ -28,7 +28,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -143,7 +142,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 		t := suite.T()
 		// Run one test per JMX receiver version we're integrating with.
 		t.Run(version, func(t *testing.T) {
-			skip(t, "https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/5874")
+			skip(t, "https://github.com/asserts/opentelemetry-collector-contrib/issues/5874")
 
 			cassandra := cassandraContainer(t)
 			defer func() {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+package adapter // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
 import (
 	"context"
@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	rcvr "go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 // LogReceiverType is the interface used by stanza-based log receivers

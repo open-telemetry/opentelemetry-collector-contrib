@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
+package awsecscontainermetrics // import "github.com/asserts/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import (
 	"encoding/json"
@@ -20,7 +20,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
 // StatsProvider wraps a RestClient, returning an unmarshaled metadata and docker stats

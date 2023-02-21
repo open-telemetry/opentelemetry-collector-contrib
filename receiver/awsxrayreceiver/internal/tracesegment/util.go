@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracesegment // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+package tracesegment // import "github.com/asserts/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	recvErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
+	recvErr "github.com/asserts/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
 )
 
 // ProtocolSeparator is the character used to split the header and body in an

@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+package resourcedetectionprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
 	"go.opentelemetry.io/collector/config/confighttp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
 // Config defines configuration for Resource processor.

@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
 )
 
 const (
@@ -44,7 +44,7 @@ var skip = func(t *testing.T, why string) {
 }
 
 func TestScrape(t *testing.T) {
-	skip(t, "Flaky test. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10030")
+	skip(t, "Flaky test. See https://github.com/asserts/opentelemetry-collector-contrib/issues/10030")
 	type testCase struct {
 		name         string
 		bootTimeFunc func() (uint64, error)

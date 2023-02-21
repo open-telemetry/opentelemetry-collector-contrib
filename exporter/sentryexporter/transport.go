@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sentryexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
+package sentryexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/sentryexporter"
 
 import (
 	"context"
 	"time"
-
-	"github.com/getsentry/sentry-go"
 )
 
 // transport is used by exporter to send events to Sentry

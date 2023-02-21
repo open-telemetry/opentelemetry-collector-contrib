@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
+package kafkareceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
 
 type AutoCommit struct {

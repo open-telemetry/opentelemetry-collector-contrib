@@ -42,7 +42,7 @@ import (
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 )
 
 type mockPrometheusResponse struct {

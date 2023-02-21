@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 // valueFor is a test helper to eliminate a lot of tedium in writing tests of Comparisons.

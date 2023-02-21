@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
 )
 
 type testResultWrapper struct {

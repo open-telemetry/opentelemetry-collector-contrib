@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package haproxyreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver"
+package haproxyreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/haproxyreceiver"
 
 import (
 	"errors"
@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
 )
 
 type Config struct {

@@ -34,7 +34,7 @@ if [[ -z ${DAYS_BEFORE_STALE:-} || -z ${DAYS_BEFORE_CLOSE:-} || -z ${STALE_LABEL
 fi
 
 CUR_DIRECTORY=$(dirname "$0")
-STALE_MESSAGE="This issue has been inactive for ${DAYS_BEFORE_STALE} days. It will be closed in ${DAYS_BEFORE_CLOSE} days if there is no activity. To ping code owners by adding a component label, see [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments), or if you are unsure of which component this issue relates to, please ping \`@open-telemetry/collector-contrib-triagers\`. If this issue is still relevant, please ping the code owners or leave a comment explaining why it is still relevant. Otherwise, please close it."
+STALE_MESSAGE="This issue has been inactive for ${DAYS_BEFORE_STALE} days. It will be closed in ${DAYS_BEFORE_CLOSE} days if there is no activity. To ping code owners by adding a component label, see [Adding Labels via Comments](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments), or if you are unsure of which component this issue relates to, please ping \`@open-telemetry/collector-contrib-triagers\`. If this issue is still relevant, please ping the code owners or leave a comment explaining why it is still relevant. Otherwise, please close it."
 
 # Check for the least recently-updated issues that aren't currently stale.
 # If no issues in this list are stale, the repo has no stale issues.
@@ -74,7 +74,7 @@ for ISSUE in ${ISSUES}; do
         printf "Pinging code owners for issue #${ISSUE}:\n${OWNER_MENTIONS}"
 
         # The GitHub CLI only offers multiline strings through file input.
-        printf "${STALE_MESSAGE}\n\nPinging code owners:\n${OWNER_MENTIONS}\nSee [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself." \
+        printf "${STALE_MESSAGE}\n\nPinging code owners:\n${OWNER_MENTIONS}\nSee [Adding Labels via Comments](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself." \
           | gh issue comment "${ISSUE}" -F -
     fi
 

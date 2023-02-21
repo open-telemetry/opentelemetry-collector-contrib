@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter
+module github.com/asserts/opentelemetry-collector-contrib/exporter/mezmoexporter
 
 go 1.19
 

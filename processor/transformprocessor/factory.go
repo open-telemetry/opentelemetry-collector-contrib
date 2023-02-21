@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package transformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+package transformprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/transformprocessor"
 
 import (
 	"context"
@@ -23,10 +23,10 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
 const (

@@ -33,7 +33,7 @@ import (
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/asserts/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 func Start(cfg *Config) error {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package wavefrontreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
+package wavefrontreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
 
 import (
 	"context"
@@ -22,9 +22,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
 )
 
 // This file implements factory for the Wavefront receiver.

@@ -42,9 +42,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/splunkhecexporter"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkinv1 // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
+package zipkinv1 // import "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 type status struct {

@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ecsutiltest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/ecsutiltest"
+package ecsutiltest // import "github.com/asserts/opentelemetry-collector-contrib/internal/aws/ecsutil/ecsutiltest"
 
 import (
 	_ "embed"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 )
 
 //go:embed testdata/container_metadata.json

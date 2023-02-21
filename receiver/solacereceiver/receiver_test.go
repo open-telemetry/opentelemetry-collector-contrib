@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package solacereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
+package solacereceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/solacereceiver"
 
 import (
 	"context"
@@ -354,7 +354,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 			receiver, messagingService, unmarshaller := newReceiver(t)
 			delay := 5 * time.Millisecond
 			// Increase delay on windows due to tick granularity
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17197
+			// https://github.com/asserts/opentelemetry-collector-contrib/issues/17197
 			if runtime.GOOS == "windows" {
 				delay = 500 * time.Millisecond
 			}

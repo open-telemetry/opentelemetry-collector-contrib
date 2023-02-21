@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensus // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+package opencensus // import "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/opencensus"
 
 import (
 	"time"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
 var ocLangCodeToLangMap = getOCLangCodeToLangMap()

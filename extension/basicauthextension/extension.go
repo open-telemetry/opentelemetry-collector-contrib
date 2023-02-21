@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
+package basicauthextension // import "github.com/asserts/opentelemetry-collector-contrib/extension/basicauthextension"
 
 import (
 	"context"
@@ -24,7 +24,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/tg123/go-htpasswd"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/auth"

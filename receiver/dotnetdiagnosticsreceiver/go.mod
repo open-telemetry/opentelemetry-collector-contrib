@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver
 
 go 1.19
 

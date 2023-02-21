@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package signalfxexporter implements an exporter that sends data to SignalFx.
-package signalfxexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
+package signalfxexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter"

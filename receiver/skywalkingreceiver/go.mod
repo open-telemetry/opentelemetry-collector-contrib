@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/skywalkingreceiver
 
 go 1.19
 

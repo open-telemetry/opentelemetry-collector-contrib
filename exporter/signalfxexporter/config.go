@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
+package signalfxexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter"
 
 import (
 	"errors"
@@ -27,10 +27,10 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (

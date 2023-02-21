@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
+package transport // import "github.com/asserts/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 var (

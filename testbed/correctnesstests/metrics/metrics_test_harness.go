@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests/metrics"
+package metrics // import "github.com/asserts/opentelemetry-collector-contrib/testbed/correctnesstests/metrics"
 
 import (
 	"context"
@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // testHarness listens for datapoints from the receiver to which it is attached

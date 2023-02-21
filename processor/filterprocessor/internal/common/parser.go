@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+package common // import "github.com/asserts/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 
 import (
 	"context"
@@ -21,14 +21,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
 func ParseSpan(conditions []string, set component.TelemetrySettings) (expr.BoolExpr[ottlspan.TransformContext], error) {

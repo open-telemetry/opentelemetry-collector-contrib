@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filelogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+package filelogreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/filelogreceiver"
 
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 )
 
 const (

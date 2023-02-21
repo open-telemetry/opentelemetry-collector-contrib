@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkinv1 // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
+package zipkinv1 // import "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 
 import (
 	"bytes"
@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 )
 
 type thriftUnmarshaler struct{}

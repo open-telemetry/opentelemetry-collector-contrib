@@ -1,6 +1,6 @@
 # Contributing
 
-This guide is specific to the OpenTelemetry Transformation Language.  All guidelines in [Collector Contrib's CONTRIBUTING.MD](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md) must also be followed.
+This guide is specific to the OpenTelemetry Transformation Language.  All guidelines in [Collector Contrib's CONTRIBUTING.MD](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md) must also be followed.
 
 ## General Guidelines
 

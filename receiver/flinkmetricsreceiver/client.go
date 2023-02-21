@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
+package flinkmetricsreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/models"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/models"
 )
 
 // The API endpoints required to collect metrics.

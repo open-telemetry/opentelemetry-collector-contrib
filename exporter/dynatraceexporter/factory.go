@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dynatraceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter"
+package dynatraceexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/dynatraceexporter"
 
 import (
 	"context"
@@ -22,8 +22,8 @@ import (
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	dtconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
+	dtconfig "github.com/asserts/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
+package receivercreator // import "github.com/asserts/opentelemetry-collector-contrib/receiver/receivercreator"
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/observer"
 )
 
 // This file implements factory for receiver_creator. A receiver_creator can create other receivers at runtime.

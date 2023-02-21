@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package haproxyreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver"
+package haproxyreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/haproxyreceiver"
 
 import (
 	"bytes"
@@ -30,7 +30,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
 )
 
 var (

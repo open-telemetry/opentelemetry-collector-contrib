@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
+module github.com/asserts/opentelemetry-collector-contrib/extension/storage
 
 go 1.19
 

@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
+package iisreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/iisreceiver"
 
 import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
 )
 
 // Config defines configuration for simple prometheus receiver.

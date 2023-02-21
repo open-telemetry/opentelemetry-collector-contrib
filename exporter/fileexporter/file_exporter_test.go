@@ -23,6 +23,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,9 +31,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"gopkg.in/natefinch/lumberjack.v2"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func buildUnCompressor(compressor string) func([]byte) ([]byte, error) {

@@ -178,7 +178,7 @@ var skip = func(t *testing.T, why string) {
 }
 
 func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
-	skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11078")
+	skip(t, "Flaky test - See https://github.com/asserts/opentelemetry-collector-contrib/issues/11078")
 	setOption := podSyncCheckerOption(&mockReflectorSyncChecker{})
 
 	fakeClientSet := fake.NewSimpleClientset()

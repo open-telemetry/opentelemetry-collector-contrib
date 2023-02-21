@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 func TestSubmitLogs(t *testing.T) {

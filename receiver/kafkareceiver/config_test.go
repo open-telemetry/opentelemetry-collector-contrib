@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
 
 func TestLoadConfig(t *testing.T) {

@@ -29,9 +29,9 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filtermetric"
 )
 
 type metricNameTest struct {

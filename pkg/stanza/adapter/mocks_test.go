@@ -23,10 +23,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/noop"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/noop"
 )
 
 // This file implements some useful testing components

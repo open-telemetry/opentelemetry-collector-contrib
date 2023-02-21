@@ -1,10 +1,10 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
 
 go 1.19
 
 require (
 	github.com/Shopify/sarama v1.38.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/exporter/kafkaexporter v0.71.0
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.18.0
 	go.opentelemetry.io/collector v0.71.0
@@ -58,8 +58,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger v0.71.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/opencontainers/runc v1.1.3 // indirect
@@ -93,11 +93,11 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter => ../../exporter/kafkaexporter
+replace github.com/asserts/opentelemetry-collector-contrib/exporter/kafkaexporter => ../../exporter/kafkaexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+replace github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ./../../pkg/translator/jaeger
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger => ./../../pkg/translator/jaeger
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible

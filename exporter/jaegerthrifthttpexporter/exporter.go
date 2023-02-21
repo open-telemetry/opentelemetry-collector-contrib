@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegerthrifthttpexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
+package jaegerthrifthttpexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 
 import (
 	"bytes"
@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+	jaegertranslator "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 func newTracesExporter(config *Config, params exporter.CreateSettings) (exporter.Traces, error) {

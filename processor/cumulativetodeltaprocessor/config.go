@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
+package cumulativetodeltaprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 // Config defines the configuration for the processor.

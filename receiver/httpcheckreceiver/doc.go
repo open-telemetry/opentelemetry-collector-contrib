@@ -14,4 +14,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
+package httpcheckreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/httpcheckreceiver"

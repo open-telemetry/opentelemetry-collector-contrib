@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package action // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/action"
+package action // import "github.com/asserts/opentelemetry-collector-contrib/extension/headerssetterextension/internal/action"
 
 import "net/http"
 

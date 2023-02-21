@@ -14,7 +14,7 @@
 //go:build linux || darwin
 // +build linux darwin
 
-package gohai // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gohai"
+package gohai // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gohai"
 
 import (
 	"github.com/DataDog/gohai/processes"

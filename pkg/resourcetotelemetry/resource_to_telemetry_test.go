@@ -18,7 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestConvertResourceToAttributes(t *testing.T) {

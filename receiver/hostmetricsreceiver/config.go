@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hostmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+package hostmetricsreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 
 import (
 	"errors"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 )
 
 const (

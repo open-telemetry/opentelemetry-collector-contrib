@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
+package metrics // import "github.com/asserts/opentelemetry-collector-contrib/internal/aws/metrics"
 
 import (
 	"sync"
@@ -62,7 +62,7 @@ func NewMetricCalculator(calculateFunc CalculateFunc) MetricCalculator {
 }
 
 // Calculate accepts a new metric value identified by metric key (consists of metric metadata and labels),
-// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/eacfde3fcbd46ba60a6db0e9a41977390c4883bd/internal/aws/metrics/metric_calculator.go#L88-L91
+// https://github.com/asserts/opentelemetry-collector-contrib/blob/eacfde3fcbd46ba60a6db0e9a41977390c4883bd/internal/aws/metrics/metric_calculator.go#L88-L91
 // and delegates the calculation with value and timestamp back to CalculateFunc for the result. Returns
 // true if the calculation is executed successfully.
 func (rm *MetricCalculator) Calculate(mKey Key, value interface{}, timestamp time.Time) (interface{}, bool) {

@@ -20,7 +20,7 @@ Invocations represent a function call that transform the underlying telemetry pa
 **The OTTL does not define any function implementations.**
 Users must supply a map between string identifiers and the actual function implementation.
 The OTTL will use this map and reflection to generate Invocations, that can then be invoked by the user.
-See [ottlfuncs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs) for pre-made, usable functions.
+See [ottlfuncs](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs) for pre-made, usable functions.
 
 Example Invocations
 - `route()`
@@ -124,7 +124,7 @@ Like Invocations, Converters are made up of 2 parts:
 **The OTTL does not define any converter implementations.**
 Users must include converters in the same map that invocations are supplied.
 The OTTL will use this map and reflection to generate Converters that can then be invoked by the user.
-See [ottlfuncs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#converters) for pre-made, usable Converters.
+See [ottlfuncs](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#converters) for pre-made, usable Converters.
 
 Example Converters
 - `Int()`

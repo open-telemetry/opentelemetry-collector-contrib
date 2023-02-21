@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
+package jmxreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/jmxreceiver"
 
 import (
 	"crypto/sha256"

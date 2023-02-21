@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+package configschema // import "github.com/asserts/opentelemetry-collector-contrib/cmd/configschema"
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ const DefaultSrcRoot = "."
 
 // DefaultModule is the module prefix of contrib. Can be used to create a
 // DirResolver.
-const DefaultModule = "github.com/open-telemetry/opentelemetry-collector-contrib"
+const DefaultModule = "github.com/asserts/opentelemetry-collector-contrib"
 
 type DirResolverIntf interface {
 	TypeToPackagePath(t reflect.Type) (string, error)

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/metrics"
+package metrics // import "github.com/asserts/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/metrics"
 
 import (
 	"time"
@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
 )
 
 func rawMetricsToPdata(rawMetrics []dotnet.Metric, startTime, now time.Time) pmetric.Metrics {

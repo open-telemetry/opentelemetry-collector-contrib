@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 func TestIdleMode(t *testing.T) {
@@ -126,7 +126,7 @@ func TestBallastMemory(t *testing.T) {
 			// we give some room here instead of failing when the memory usage isn't that much higher than the max
 			lenientMax := 1.1 * float32(test.maxRSS)
 
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6927#issuecomment-1138624098
+			// https://github.com/asserts/opentelemetry-collector-contrib/issues/6927#issuecomment-1138624098
 			// During garbage collection, we may observe the ballast in rss.
 			// If this happens, adjust the baseline expectation for RSS size and validate that additional memory is
 			// still within the expected limit.

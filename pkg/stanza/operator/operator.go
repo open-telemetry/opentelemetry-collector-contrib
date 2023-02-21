@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operator // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+package operator // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator"
 
 import (
 	"context"
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
 // Operator is a log monitoring component.

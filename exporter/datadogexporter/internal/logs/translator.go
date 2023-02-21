@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
+package logs // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 
 import (
 	"encoding/binary"

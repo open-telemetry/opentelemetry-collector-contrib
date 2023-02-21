@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
+package clickhouseexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
 
 type metricsExporter struct {

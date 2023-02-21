@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package elasticsearchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
+package elasticsearchreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 
 import (
 	"context"
@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/go-version"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -28,8 +27,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
 
 var (
@@ -44,7 +43,7 @@ var (
 )
 
 const (
-	readmeURL = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md"
+	readmeURL = "https://github.com/asserts/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md"
 )
 
 var (
@@ -52,7 +51,7 @@ var (
 		"receiver.elasticsearch.emitNodeVersionAttr",
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, all node metrics will be enriched with the node version resource attribute."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16847"),
+		featuregate.WithRegisterReferenceURL("https://github.com/asserts/opentelemetry-collector-contrib/issues/16847"),
 	)
 )
 

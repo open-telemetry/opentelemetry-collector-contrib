@@ -14,4 +14,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
+package flinkmetricsreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"

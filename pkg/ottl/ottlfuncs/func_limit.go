@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+package ottlfuncs // import "github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func Limit[K any](target ottl.GetSetter[K], limit int64, priorityKeys []string) (ottl.ExprFunc[K], error) {
@@ -74,7 +74,7 @@ func Limit[K any](target ottl.GetSetter[K], limit int64, priorityKeys []string) 
 			return true
 		})
 		// TODO: Write log when limiting is performed
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
+		// https://github.com/asserts/opentelemetry-collector-contrib/issues/9730
 		return nil, nil
 	}, nil
 }

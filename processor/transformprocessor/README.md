@@ -7,7 +7,7 @@
 | Distributions            | [contrib]                                                                          |
 | Warnings                 | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 
-The transform processor modifies telemetry based on configuration using the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl).
+The transform processor modifies telemetry based on configuration using the [OpenTelemetry Transformation Language](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl).
 
 For each signal type, the processor takes a list of statements associated to a [Context type](#contexts) and executes the statements against the incoming telemetry in the order specified in the config.
 Each statement can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
@@ -96,20 +96,20 @@ transform:
 
 ## Grammar
 
-You can learn more in-depth details on the capabilities and limitations of the OpenTelemetry Transformation Language used by the transform processor by reading about its [grammar](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl#grammar).
+You can learn more in-depth details on the capabilities and limitations of the OpenTelemetry Transformation Language used by the transform processor by reading about its [grammar](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl#grammar).
 
 ## Contexts
 
 The transform processor utilizes the OTTL's contexts to transform Resource, Scope, Span, SpanEvent, Metric, DataPoint, and Log telemetry.
 The contexts allow the OTTL to interact with the underlying telemetry data in its pdata form.
 
-- [Resource Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlresource)
-- [Scope Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlscope)
-- [Span Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) <!-- markdown-link-check-disable-line -->
-- [SpanEvent Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent)
-- [Metric Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric)
-- [DataPoint Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint) <!-- markdown-link-check-disable-line -->
-- [Log Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog) <!-- markdown-link-check-disable-line -->
+- [Resource Context](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlresource)
+- [Scope Context](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlscope)
+- [Span Context](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) <!-- markdown-link-check-disable-line -->
+- [SpanEvent Context](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent)
+- [Metric Context](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric)
+- [DataPoint Context](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint) <!-- markdown-link-check-disable-line -->
+- [Log Context](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog) <!-- markdown-link-check-disable-line -->
 
 Each context allows transformation of its type of telemetry.  
 For example, statements associated to a `resource` context will be able to transform the resource's `attributes` and `dropped_attributes_count`.
@@ -153,7 +153,7 @@ This is because contexts are nested: the efficiency comes because higher-level c
 
 Since the transform processor utilizes the OTTL's contexts for Traces, Metrics, and Logs, it is able to utilize functions that expect pdata in addition to any common functions. These common functions can be used for any signal.
 <!-- markdown-link-check-disable-next-line -->
-- [OTTL Functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs)
+- [OTTL Functions](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs)
 
 In addition to OTTL functions, the processor defines its own functions to help with transformations specific to this processor:
 
@@ -232,7 +232,7 @@ Examples:
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/CONTRIBUTING.md).
 
 
 ## Warnings

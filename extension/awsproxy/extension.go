@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsproxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
+package awsproxy // import "github.com/asserts/opentelemetry-collector-contrib/extension/awsproxy"
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/proxy"
 )
 
 type xrayProxy struct {

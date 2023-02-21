@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 )
 
 func TestMarshalEncoder_Metrics(t *testing.T) {

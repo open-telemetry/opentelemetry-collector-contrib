@@ -48,7 +48,7 @@ receivers:
   #       static_configs:
   #       - targets: ['0.0.0.0:8888']
 
-  # Read more about the filelog receiver here https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver.
+  # Read more about the filelog receiver here https://github.com/asserts/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver.
   filelog:
     include_file_path: true
     poll_interval: 500ms
@@ -233,7 +233,7 @@ exporters:
       ## @param span_name_as_resource_name - use OpenTelemetry semantic convention for span naming - optional
       ## Option created to maintain similarity with the OpenTelemetry semantic conventions as discussed in the issue below.
       ## https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/trace/semantic_conventions
-      ## https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1909
+      ## https://github.com/asserts/opentelemetry-collector-contrib/issues/1909
       #
       # span_name_as_resource_name: true
 
@@ -278,7 +278,7 @@ exporters:
       ## @param dump_payloads - bool - optional
       ## If set to true, payloads will be dumped when logging level is set to debug. Please note that
       ## This may result in an escaping loop if a filelog receiver is watching the collector log output.
-      ## See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16380
+      ## See: https://github.com/asserts/opentelemetry-collector-contrib/issues/16380
       #
       # dump_payloads: false
 

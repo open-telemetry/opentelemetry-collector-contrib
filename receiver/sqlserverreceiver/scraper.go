@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
+package sqlserverreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
 	"context"
@@ -28,8 +28,8 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/winperfcounters"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
 type sqlServerScraper struct {

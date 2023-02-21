@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tencentcloudlogserviceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
+package tencentcloudlogserviceexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 
 import (
 	"encoding/json"
@@ -24,8 +24,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/protobuf/proto"
 
-	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/proto"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	cls "github.com/asserts/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/proto"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (

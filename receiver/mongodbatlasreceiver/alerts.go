@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
+package mongodbatlasreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
 import (
 	"bytes"
@@ -43,9 +43,9 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
 // maxContentLength is the maximum payload size we will accept from incoming requests.

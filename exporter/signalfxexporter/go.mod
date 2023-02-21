@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
+module github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter
 
 go 1.19
 
@@ -6,12 +6,12 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/common v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/splunk v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/pkg/translator/signalfx v0.71.0
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20230214151822-6a6813cf5bf1
@@ -76,20 +76,20 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+replace github.com/asserts/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+replace github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
+replace github.com/asserts/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../../pkg/batchperresourceattr
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../../pkg/batchperresourceattr
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../pkg/translator/signalfx
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../pkg/translator/signalfx
 
 retract v0.65.0
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil

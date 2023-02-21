@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
+package kubelet // import "github.com/asserts/opentelemetry-collector-contrib/internal/kubelet"
 
 import (
 	"crypto/tls"
@@ -25,8 +25,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/sanitize"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 const (

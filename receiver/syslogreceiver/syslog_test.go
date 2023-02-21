@@ -31,11 +31,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 )
 
 func TestSyslogWithTcp(t *testing.T) {

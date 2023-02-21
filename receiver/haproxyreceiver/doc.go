@@ -15,4 +15,4 @@
 //go:generate mdatagen metadata.yaml
 
 // Package haproxyreceiver implements a receiver collecting metrics from HAProxy.
-package haproxyreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver"
+package haproxyreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/haproxyreceiver"

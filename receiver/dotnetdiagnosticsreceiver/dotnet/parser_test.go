@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
 )
 
 func TestParser(t *testing.T) {

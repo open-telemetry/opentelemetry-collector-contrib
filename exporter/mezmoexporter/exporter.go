@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
+package mezmoexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/mezmoexporter"
 
 import (
 	"context"

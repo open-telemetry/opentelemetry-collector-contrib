@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+package helper // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
 import (
 	"fmt"
@@ -23,8 +23,8 @@ import (
 	strptime "github.com/observiq/ctimefmt"
 	"go.opentelemetry.io/collector/confmap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
 // StrptimeKey is literally "strptime", and is the default layout type

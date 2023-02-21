@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
 )
 
 func TestRedisRunnable(t *testing.T) {

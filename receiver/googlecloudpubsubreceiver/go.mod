@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
 
 go 1.19
 

@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package activedirectorydsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
+package activedirectorydsreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
 )
 
 type activeDirectoryDSScraper struct {

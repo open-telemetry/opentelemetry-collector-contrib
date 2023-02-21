@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+package translation // import "github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
 import (
 	"github.com/gogo/protobuf/proto"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 type deltaTranslator struct {

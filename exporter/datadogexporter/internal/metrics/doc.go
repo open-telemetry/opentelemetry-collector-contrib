@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package metrics contains helper functions for Datadog metric export
-package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+package metrics // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"

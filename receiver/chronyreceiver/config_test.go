@@ -27,8 +27,8 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {

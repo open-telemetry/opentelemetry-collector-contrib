@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
+package signalfxexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter"
 
 import (
 	"bytes"
@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/splunk"
 )
 
 type sfxClientBase struct {

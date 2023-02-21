@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package logzioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
+package logzioexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/logzioexporter"
 
 import (
 	"fmt"
 	"io"
 	"log"
 
-	"github.com/hashicorp/go-hclog"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

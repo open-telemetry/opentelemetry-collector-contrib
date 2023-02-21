@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
+package spanmetricsconnector // import "github.com/asserts/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 
 import (
 	"bytes"
@@ -33,8 +33,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/asserts/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (

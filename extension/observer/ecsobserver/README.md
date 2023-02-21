@@ -252,7 +252,7 @@ work properly occasionally and delay the update.
 
 This is a generic approach that creates a new receiver at runtime based on discovered endpoints. The main problem is
 performance issue as described
-in [this issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1395).
+in [this issue](https://github.com/asserts/opentelemetry-collector-contrib/issues/1395).
 
 #### Register as prometheus discovery plugin
 
@@ -453,4 +453,4 @@ against actual ECS service on both EC2 and Fargate.
   reviewing (all the PRs ...)
 - 2021-02-24 Updated doc by @pingleig
 - 2020-12-29 Initial implementation by [Raphael](https://github.com/theRoughCode)
-  in [#1920](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/1920)
+  in [#1920](https://github.com/asserts/opentelemetry-collector-contrib/pull/1920)

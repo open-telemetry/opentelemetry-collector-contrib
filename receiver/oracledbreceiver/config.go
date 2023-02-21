@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oracledbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
+package oracledbreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/oracledbreceiver"
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
 type Config struct {

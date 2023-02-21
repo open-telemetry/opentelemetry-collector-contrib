@@ -26,8 +26,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func generateOCTestDataNoMetrics() *agentmetricspb.ExportMetricsServiceRequest {

@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+package ottl // import "github.com/asserts/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
 	"context"
 	"fmt"
 	"strings"
 
-	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )

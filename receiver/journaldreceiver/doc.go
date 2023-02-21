@@ -12,4 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package journaldreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
+package journaldreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/journaldreceiver"

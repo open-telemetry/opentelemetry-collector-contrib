@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package udppoller // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
+package udppoller // import "github.com/asserts/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 
 import (
 	"context"
@@ -25,10 +25,10 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
-	recvErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/socketconn"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+	awsxray "github.com/asserts/opentelemetry-collector-contrib/internal/aws/xray"
+	recvErr "github.com/asserts/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/socketconn"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 )
 
 const (

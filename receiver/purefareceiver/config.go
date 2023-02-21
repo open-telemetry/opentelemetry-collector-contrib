@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package purefareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
+package purefareceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/purefareceiver"
 
 import (
 	"time"
@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
 
 var _ component.Config = (*Config)(nil)

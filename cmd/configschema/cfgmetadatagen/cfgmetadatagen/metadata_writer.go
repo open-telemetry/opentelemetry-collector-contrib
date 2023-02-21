@@ -19,7 +19,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+	"github.com/asserts/opentelemetry-collector-contrib/cmd/configschema"
 )
 
 type metadataWriter interface {

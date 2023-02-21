@@ -1,13 +1,13 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver
+module github.com/asserts/opentelemetry-collector-contrib/extension/observer/dockerobserver
 
 go 1.19
 
 require (
 	github.com/docker/docker v23.0.1+incompatible
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/extension/observer v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/common v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/docker v0.71.0
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.18.0
 	go.opentelemetry.io/collector v0.71.0
@@ -59,11 +59,11 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../
+replace github.com/asserts/opentelemetry-collector-contrib/extension/observer => ../
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ../../../internal/docker
+replace github.com/asserts/opentelemetry-collector-contrib/internal/docker => ../../../internal/docker
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../internal/common
+replace github.com/asserts/opentelemetry-collector-contrib/internal/common => ../../../internal/common
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package openshift // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
+package openshift // import "github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 
 import (
 	"context"
@@ -23,8 +23,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
 	"go.uber.org/zap"
 
-	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	ocp "github.com/asserts/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 const (

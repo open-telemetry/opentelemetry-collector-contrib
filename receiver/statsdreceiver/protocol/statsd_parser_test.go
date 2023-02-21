@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 )
 
 func Test_ParseMessageToMetric(t *testing.T) {

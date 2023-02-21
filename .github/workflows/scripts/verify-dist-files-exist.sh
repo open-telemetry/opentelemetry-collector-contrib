@@ -11,7 +11,7 @@ files=(
     dist/otel-contrib-collector_*_arm64.deb
     dist/otel-contrib-collector-*.ppc64le.rpm
     dist/otel-contrib-collector_*_ppc64le.deb
-    # skip. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10113
+    # skip. See https://github.com/asserts/opentelemetry-collector-contrib/issues/10113
     # dist/otel-contrib-collector-*amd64.msi
 
 );

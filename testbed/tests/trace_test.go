@@ -30,10 +30,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // TestMain is used to initiate setup, execution and tear down of testbed.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
+package aerospikereceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 
 import (
 	"context"
@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
 )
 
 // aerospikeReceiver is a metrics receiver using the Aerospike interface to collect

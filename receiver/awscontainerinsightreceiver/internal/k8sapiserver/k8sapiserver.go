@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sapiserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
+package k8sapiserver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
 
 import (
 	"context"
@@ -37,8 +37,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog"
 
-	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
+	ci "github.com/asserts/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 )
 
 const (

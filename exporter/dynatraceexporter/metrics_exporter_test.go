@@ -37,8 +37,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 var testTimestamp = pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano())

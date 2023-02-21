@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pmetrictest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+package pmetrictest // import "github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 
 import (
 	"bytes"
@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // CompareMetricsOption can be used to mutate expected and/or actual metrics before comparing.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package correctnesstests // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests"
+package correctnesstests // import "github.com/asserts/opentelemetry-collector-contrib/testbed/correctnesstests"
 
 import (
 	"bufio"
@@ -22,9 +22,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // CreateConfigYaml creates a yaml config for an otel collector given a testbed sender, testbed receiver, any

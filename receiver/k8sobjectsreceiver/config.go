@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
+package k8sobjectsreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 type mode string

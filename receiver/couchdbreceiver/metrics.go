@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
+package couchdbreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
 
 func (c *couchdbScraper) recordCouchdbAverageRequestTimeDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errs *scrapererror.ScrapeErrors) {

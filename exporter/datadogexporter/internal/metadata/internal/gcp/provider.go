@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package gcp contains the GCP hostname provider
-package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gcp"
+package gcp // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gcp"
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 )
 
 var _ source.Provider = (*Provider)(nil)

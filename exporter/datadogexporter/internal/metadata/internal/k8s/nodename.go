@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8s // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/k8s"
+package k8s // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/k8s"
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s "k8s.io/client-go/kubernetes"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 type nodeNameProvider interface {
@@ -53,7 +53,7 @@ func (p *nodeNameProviderImpl) NodeName(ctx context.Context) (string, error) {
 	// NOTE: The pod name may not match the OS hostname, e.g. if it has been modified
 	// via the 'setHostnameAsFQDN' and 'hostname' fields in the pod spec.
 	// The query below will error out in that case. See:
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11033
+	// https://github.com/asserts/opentelemetry-collector-contrib/issues/11033
 	podName, err := os.Hostname()
 	if err != nil {
 		return "", fmt.Errorf("could not fetch pod hostname: %w", err)

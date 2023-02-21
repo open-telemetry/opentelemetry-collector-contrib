@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mockawsxrayreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver"
+package mockawsxrayreceiver // import "github.com/asserts/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver"
 
 import (
 	"go.opentelemetry.io/collector/config/configtls"

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver
+module github.com/asserts/opentelemetry-collector-contrib/extension/observer/ecsobserver
 
 go 1.19
 

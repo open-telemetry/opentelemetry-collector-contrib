@@ -13,15 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main // import "github.com/open-telemetry/opentelemetry-collector-contrib/telemetrygen/internal/telemetrygen"
+package main // import "github.com/asserts/opentelemetry-collector-contrib/telemetrygen/internal/telemetrygen"
 
 import (
 	"os"
 
 	"github.com/spf13/cobra"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/traces"
+	"github.com/asserts/opentelemetry-collector-contrib/cmd/telemetrygen/internal/metrics"
+	"github.com/asserts/opentelemetry-collector-contrib/cmd/telemetrygen/internal/traces"
 )
 
 var (

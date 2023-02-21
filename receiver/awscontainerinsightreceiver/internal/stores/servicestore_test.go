@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	ci "github.com/asserts/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
 type mockEndpoint struct {

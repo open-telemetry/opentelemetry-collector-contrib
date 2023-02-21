@@ -14,4 +14,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package riakreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver"
+package riakreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/riakreceiver"

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package simpleprometheusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
+package simpleprometheusreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"k8s.io/client-go/rest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 type prometheusReceiverWrapper struct {

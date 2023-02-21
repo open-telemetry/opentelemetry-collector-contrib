@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
+package ottlcommon // import "github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type MetricContext interface {
@@ -126,7 +126,7 @@ func accessType[K MetricContext]() ottl.StandardGetSetter[K] {
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			// TODO Implement methods so correctly convert data types.
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10130
+			// https://github.com/asserts/opentelemetry-collector-contrib/issues/10130
 			return nil
 		},
 	}

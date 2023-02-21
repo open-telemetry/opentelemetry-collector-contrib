@@ -30,11 +30,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/testutil"
+	internaldata "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
 )
 
 func Test_carbonreceiver_New(t *testing.T) {

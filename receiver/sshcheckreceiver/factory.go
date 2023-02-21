@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
+package sshcheckreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 
 import (
 	"context"
@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/metadata"
 )
 
 const (

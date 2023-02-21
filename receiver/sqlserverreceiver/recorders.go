@@ -15,12 +15,12 @@
 //go:build windows
 // +build windows
 
-package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
+package sqlserverreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
 type recordFunc = func(*metadata.MetricsBuilder, pcommon.Timestamp, float64)

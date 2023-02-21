@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
+package translator // import "github.com/asserts/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 
 import (
 	"strconv"
@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	awsxray "github.com/asserts/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 // ExceptionEventName the name of the exception event.
@@ -51,7 +51,7 @@ func addCause(seg *awsxray.Segment, span ptrace.Span) {
 		// Right now the X-Ray exporter does not support the case where
 		// 1) CauseData is just a 16-char exception ID,
 		// 2) `WorkingDirectory` and `Paths`
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/cause.go#L107
+		// https://github.com/asserts/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/cause.go#L107
 
 		// so we can only pass the cause exceptionID as the status message as a fallback mechanism
 		span.Status().SetMessage(*seg.Cause.ExceptionID)

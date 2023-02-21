@@ -32,7 +32,7 @@ jobs:
         working-directory: opentelemetry-collector-contrib
         env:
           GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-          REPO: open-telemetry/opentelemetry-collector-contrib
+          REPO: asserts/opentelemetry-collector-contrib
           CANDIDATE_BETA: ${{ inputs.candidate-beta }}
           CURRENT_BETA: ${{ inputs.current-beta }}
         run: ./.github/workflows/scripts/release-prepare-release.sh

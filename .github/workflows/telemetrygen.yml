@@ -22,11 +22,11 @@ jobs:
         with:
           context: cmd/telemetrygen
           push: false
-          tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:dev
+          tags: ghcr.io/asserts/opentelemetry-collector-contrib/telemetrygen:dev
 
   publish-latest:
     runs-on: ubuntu-latest
-    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'asserts/opentelemetry-collector-contrib'
     permissions:
       packages: write
     steps:
@@ -43,11 +43,11 @@ jobs:
         with:
           context: cmd/telemetrygen
           push: true
-          tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+          tags: ghcr.io/asserts/opentelemetry-collector-contrib/telemetrygen:latest
 
   publish-stable:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+    if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'asserts/opentelemetry-collector-contrib'
     permissions:
       packages: write
     steps:
@@ -64,7 +64,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push telemetrygen to Github packages
         run: |
-          docker build cmd/telemetrygen -t ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:$RELEASE_TAG
-          docker push ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:$RELEASE_TAG
+          docker build cmd/telemetrygen -t ghcr.io/asserts/opentelemetry-collector-contrib/telemetrygen:$RELEASE_TAG
+          docker push ghcr.io/asserts/opentelemetry-collector-contrib/telemetrygen:$RELEASE_TAG
         env:
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
+package loki // import "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/loki"
 
 import (
 	"encoding/hex"
@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 // JSON representation of the LogRecord as described by https://developers.google.com/protocol-buffers/docs/proto3#json

@@ -134,7 +134,7 @@ func TestTracesExporter_New(t *testing.T) {
 
 func TestExporter_PushTraceRecord(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14759")
+		t.Skip("skipping test on Windows, see https://github.com/asserts/opentelemetry-collector-contrib/issues/14759")
 	}
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()

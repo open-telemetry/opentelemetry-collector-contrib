@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
+package prometheusexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
 import (
 	"encoding/hex"
@@ -26,7 +26,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	prometheustranslator "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (

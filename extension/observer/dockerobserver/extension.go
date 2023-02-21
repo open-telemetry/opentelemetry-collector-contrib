@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dockerobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
+package dockerobserver // import "github.com/asserts/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 
 import (
 	"context"
@@ -27,9 +27,9 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
-	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/observer"
+	dcommon "github.com/asserts/opentelemetry-collector-contrib/internal/common/docker"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/docker"
 )
 
 const (

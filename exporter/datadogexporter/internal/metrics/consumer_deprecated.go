@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+package metrics // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 )
 
 var _ translator.Consumer = (*ZorkianConsumer)(nil)

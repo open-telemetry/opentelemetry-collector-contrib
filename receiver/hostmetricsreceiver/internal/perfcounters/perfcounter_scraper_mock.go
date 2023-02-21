@@ -15,12 +15,12 @@
 //go:build windows
 // +build windows
 
-package perfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
+package perfcounters // import "github.com/asserts/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 // MockPerfCounterScraperError is an implementation of PerfCounterScraper that returns

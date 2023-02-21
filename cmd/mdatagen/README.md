@@ -4,7 +4,7 @@ Receivers can contain a `metadata.yaml` file that documents the metrics that may
 
 Current examples:
 
-* hostmetricsreceiver scrapers like the [cpuscraper](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/metadata.yaml)
+* hostmetricsreceiver scrapers like the [cpuscraper](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/metadata.yaml)
 
 See [metric-metadata.yaml](metric-metadata.yaml) for file format documentation.
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracking // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
+package tracking // import "github.com/asserts/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 
 import "go.opentelemetry.io/collector/pdata/pcommon"
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
+package k8sattributesprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
 // extractPodIds returns pod identifier for first association matching all sources

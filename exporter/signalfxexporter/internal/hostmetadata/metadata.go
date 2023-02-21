@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
+package hostmetadata // import "github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
 
 import (
 	"sync"
@@ -21,9 +21,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
-	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/splunk"
+	metadata "github.com/asserts/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 // Syncer is a config structure for host metadata syncer.

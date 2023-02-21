@@ -293,7 +293,7 @@ processors:
 ```
 
 ## OTTL
-The [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) is a language for interacting with telemetry within the collector in generic ways.
+The [OpenTelemetry Transformation Language](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) is a language for interacting with telemetry within the collector in generic ways.
 The filterprocessor can be configured to use OTTL conditions to determine when to drop telemetry.
 If any condition is met, the telemetry is dropped (each condition is ORed together).
 Each configuration option corresponds with a different type of telemetry and OTTL Context.
@@ -301,14 +301,14 @@ See the table below for details on each context and the fields it exposes.
 
 | Config              | OTTL Context                                                                                                                       |
 |---------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| `traces.span`       | [Span](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md)           |
-| `traces.spanevent`  | [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspanevent/README.md) |
-| `metrics.metric`    | [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlmetric/README.md)       |
-| `metrics.datapoint` | [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottldatapoint/README.md) |
-| `logs.log_record`   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md)             |
+| `traces.span`       | [Span](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md)           |
+| `traces.spanevent`  | [SpanEvent](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspanevent/README.md) |
+| `metrics.metric`    | [Metric](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlmetric/README.md)       |
+| `metrics.datapoint` | [DataPoint](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottldatapoint/README.md) |
+| `logs.log_record`   | [Log](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md)             |
 
 The OTTL allows the use of `and`, `or`, and `()` in conditions.
-See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md#boolean-expressions) for more details.
+See [OTTL Boolean Expressions](https://github.com/asserts/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md#boolean-expressions) for more details.
 
 For conditions that apply to the same signal, such as spans and span events, if the "higher" level telemetry matches a condition and is dropped, the "lower" level condition will not be checked.
 This means that if a span is dropped but a span event condition was defined, the span event condition will not be checked.
@@ -319,7 +319,7 @@ If all datapoints for a metric are dropped, the metric will also be dropped.
 
 ### OTTL Functions
 
-The filter processor has access to all the [factory functions of the OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions)
+The filter processor has access to all the [factory functions of the OTTL](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions)
 
 In addition, the processor defines a few of its own functions:
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package skywalkingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
+package skywalkingexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 
 import (
 	"errors"

@@ -14,7 +14,7 @@
 
 // Package awscloudwatchlogsexporter provides a logging exporter for the OpenTelemetry collector.
 // This package is subject to change and may break configuration settings and behavior.
-package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
+package awscloudwatchlogsexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const (

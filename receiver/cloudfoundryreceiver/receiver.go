@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cloudfoundryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
+package cloudfoundryreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 
 import (
 	"context"
@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"code.cloudfoundry.org/go-loggregator"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"

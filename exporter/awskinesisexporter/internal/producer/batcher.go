@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package producer // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
+package producer // import "github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 )
 
 type batcher struct {

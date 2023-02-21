@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
+package translator // import "github.com/asserts/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 
 import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	awsxray "github.com/asserts/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 func addHTTP(seg *awsxray.Segment, span ptrace.Span) {

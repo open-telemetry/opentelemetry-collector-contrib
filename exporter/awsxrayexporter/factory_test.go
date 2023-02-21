@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {

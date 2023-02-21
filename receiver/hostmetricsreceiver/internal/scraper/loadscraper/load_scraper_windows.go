@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package loadscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
+package loadscraper // import "github.com/asserts/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 	"github.com/shirou/gopsutil/v3/load"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 )
 
 // Sample processor queue length at a 5s frequency, and calculate exponentially weighted moving averages

@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func Test_LogFunctions(t *testing.T) {

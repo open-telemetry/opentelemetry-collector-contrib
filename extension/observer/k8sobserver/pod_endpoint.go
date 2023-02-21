@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
+package k8sobserver // import "github.com/asserts/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 
 import (
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/observer"
 )
 
 // convertPodToEndpoints converts a pod instance into a slice of endpoints. The endpoints

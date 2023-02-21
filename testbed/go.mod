@@ -1,30 +1,30 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/testbed
+module github.com/asserts/opentelemetry-collector-contrib/testbed
 
 go 1.19
 
 require (
 	github.com/fluent/fluent-logger-golang v1.9.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.0.0-00010101000000-000000000000
+	github.com/asserts/opentelemetry-collector-contrib/exporter/carbonexporter v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/exporter/jaegerexporter v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/exporter/opencensusexporter v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/exporter/prometheusexporter v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/exporter/sapmexporter v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/exporter/zipkinexporter v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/common v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/splunk v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/receiver/datadogreceiver v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/receiver/sapmreceiver v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
+	github.com/asserts/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.0.0-00010101000000-000000000000
+	github.com/asserts/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.0.0-00010101000000-000000000000
 	github.com/prometheus/common v0.39.0
 	github.com/prometheus/prometheus v0.42.1-0.20230210113933-af1d9e01c7e4
 	github.com/shirou/gopsutil/v3 v3.23.1
@@ -158,16 +158,16 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.17 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/internal/sharedcomponent v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/pkg/translator/opencensus v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/pkg/translator/prometheus v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/pkg/translator/signalfx v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin v0.71.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
@@ -242,74 +242,74 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../exporter/carbonexporter
+replace github.com/asserts/opentelemetry-collector-contrib/exporter/carbonexporter => ../exporter/carbonexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter => ../exporter/jaegerexporter
+replace github.com/asserts/opentelemetry-collector-contrib/exporter/jaegerexporter => ../exporter/jaegerexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ../exporter/opencensusexporter
+replace github.com/asserts/opentelemetry-collector-contrib/exporter/opencensusexporter => ../exporter/opencensusexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter => ../exporter/prometheusexporter
+replace github.com/asserts/opentelemetry-collector-contrib/exporter/prometheusexporter => ../exporter/prometheusexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ../exporter/prometheusremotewriteexporter
+replace github.com/asserts/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ../exporter/prometheusremotewriteexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter => ../exporter/sapmexporter
+replace github.com/asserts/opentelemetry-collector-contrib/exporter/sapmexporter => ../exporter/sapmexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../exporter/signalfxexporter
+replace github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter => ../exporter/signalfxexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../exporter/splunkhecexporter
+replace github.com/asserts/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../exporter/splunkhecexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter => ../exporter/zipkinexporter
+replace github.com/asserts/opentelemetry-collector-contrib/exporter/zipkinexporter => ../exporter/zipkinexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../internal/common
+replace github.com/asserts/opentelemetry-collector-contrib/internal/common => ../internal/common
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../internal/sharedcomponent
+replace github.com/asserts/opentelemetry-collector-contrib/internal/sharedcomponent => ../internal/sharedcomponent
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../internal/splunk
+replace github.com/asserts/opentelemetry-collector-contrib/internal/splunk => ../internal/splunk
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../pkg/batchperresourceattr
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../pkg/batchperresourceattr
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../pkg/experimentalmetricmetadata
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../pkg/experimentalmetricmetadata
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../pkg/translator/opencensus
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/translator/opencensus => ../pkg/translator/opencensus
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../pkg/translator/prometheus
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/translator/prometheus => ../pkg/translator/prometheus
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../pkg/translator/prometheusremotewrite
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../pkg/translator/prometheusremotewrite
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../pkg/translator/signalfx
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/translator/signalfx => ../pkg/translator/signalfx
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../pkg/translator/zipkin
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin => ../pkg/translator/zipkin
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../receiver/carbonreceiver
+replace github.com/asserts/opentelemetry-collector-contrib/receiver/carbonreceiver => ../receiver/carbonreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../receiver/datadogreceiver
+replace github.com/asserts/opentelemetry-collector-contrib/receiver/datadogreceiver => ../receiver/datadogreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver => ../receiver/jaegerreceiver
+replace github.com/asserts/opentelemetry-collector-contrib/receiver/jaegerreceiver => ../receiver/jaegerreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../receiver/opencensusreceiver
+replace github.com/asserts/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../receiver/opencensusreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../receiver/prometheusreceiver
+replace github.com/asserts/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../receiver/prometheusreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver => ../receiver/sapmreceiver
+replace github.com/asserts/opentelemetry-collector-contrib/receiver/sapmreceiver => ../receiver/sapmreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver => ../receiver/signalfxreceiver
+replace github.com/asserts/opentelemetry-collector-contrib/receiver/signalfxreceiver => ../receiver/signalfxreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../receiver/splunkhecreceiver
+replace github.com/asserts/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../receiver/splunkhecreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver => ../receiver/zipkinreceiver
+replace github.com/asserts/opentelemetry-collector-contrib/receiver/zipkinreceiver => ../receiver/zipkinreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver => ../testbed/mockdatareceivers/mockawsxrayreceiver
+replace github.com/asserts/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver => ../testbed/mockdatareceivers/mockawsxrayreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter => ../testbed/mockdatasenders/mockdatadogagentexporter
+replace github.com/asserts/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter => ../testbed/mockdatasenders/mockdatadogagentexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../pkg/translator/jaeger
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger => ../pkg/translator/jaeger
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../internal/coreinternal
+replace github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal => ../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../pkg/resourcetotelemetry
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../pkg/resourcetotelemetry
 
 retract v0.65.0
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../pkg/pdatatest
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest => ../pkg/pdatatest
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../pkg/pdatautil
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil => ../pkg/pdatautil

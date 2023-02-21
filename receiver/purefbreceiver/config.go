@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package purefbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver"
+package purefbreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/purefbreceiver"
 
 import (
 	"errors"
@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/purefbreceiver/internal"
 )
 
 var _ component.Config = (*Config)(nil)

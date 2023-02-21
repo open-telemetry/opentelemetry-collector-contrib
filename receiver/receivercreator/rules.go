@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
+package receivercreator // import "github.com/asserts/opentelemetry-collector-contrib/receiver/receivercreator"
 
 import (
 	"errors"
@@ -22,7 +22,7 @@ import (
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/observer"
 )
 
 // rule wraps expr rule for later evaluation.

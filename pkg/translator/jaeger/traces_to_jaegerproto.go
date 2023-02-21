@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaeger // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+package jaeger // import "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger"
 
 import (
 	"encoding/base64"
@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 // ProtoFromTraces translates internal trace data into the Jaeger Proto for GRPC.

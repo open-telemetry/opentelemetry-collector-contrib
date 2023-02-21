@@ -6,13 +6,13 @@ body:
   - type: textarea
     attributes:
       label: The purpose and use-cases of the new component
-      description: This information can be used later on to populate the README for the component. See an example overview [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver#overview).
+      description: This information can be used later on to populate the README for the component. See an example overview [here](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver#overview).
     validations:
       required: true
   - type: textarea
     attributes:
       label: Example configuration for the component
-      description: This will be used later on when creating `config.go` and added to README as well. See this receiver as an [example](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/jaegerreceiver#getting-started).
+      description: This will be used later on when creating `config.go` and added to README as well. See this receiver as an [example](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/receiver/jaegerreceiver#getting-started).
     validations:
       required: true
   - type: textarea

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package influxdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver"
+package influxdbreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/influxdbreceiver"
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 type metricsReceiver struct {

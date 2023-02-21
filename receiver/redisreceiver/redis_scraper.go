@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package redisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+package redisreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/redisreceiver"
 
 import (
 	"context"
@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v7"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -28,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
 )
 
 // Runs intermittently, fetching info from Redis, creating metrics/datapoints,

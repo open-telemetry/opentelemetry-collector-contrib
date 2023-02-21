@@ -14,4 +14,4 @@
 
 // package resourcedetectionprocessor implements a processor for specifying resource
 // labels to be added to OpenCensus trace data and metrics data.
-package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+package resourcedetectionprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"

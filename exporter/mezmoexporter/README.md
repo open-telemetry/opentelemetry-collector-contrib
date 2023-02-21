@@ -13,7 +13,7 @@ Note: Mezmo logs ingestion [requires a `hostname`](https://docs.mezmo.com/docs/l
 field to be present. When logs are sent via this exporter, and `hostname`
 metadata is not added, the Mezmo ingestion API will set `hostname=otel`. To
 provide the `hostname` information, we recommend adding a
-[Resource Detection Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor)
+[Resource Detection Processor](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor)
 to the collector configuration. Doing so will cause this exporter to
 automatically add the `hostname` metadata to the outgoing log data whenever
 it is available. See the below example configuration for a basic configuration

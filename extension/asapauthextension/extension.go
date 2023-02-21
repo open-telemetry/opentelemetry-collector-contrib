@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package asapauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
+package asapauthextension // import "github.com/asserts/opentelemetry-collector-contrib/extension/asapauthextension"
 
 import (
 	"context"
 	"fmt"
 	"net/http"
 
-	"bitbucket.org/atlassian/go-asap/v2"
 	"github.com/SermoDigital/jose/crypto"
 	"go.opentelemetry.io/collector/extension/auth"
 	"google.golang.org/grpc/credentials"

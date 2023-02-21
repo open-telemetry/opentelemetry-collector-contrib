@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/asserts/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 type mockExporter struct {

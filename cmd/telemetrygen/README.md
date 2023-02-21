@@ -13,7 +13,7 @@ This utility simulates a client generating **traces** and **metrics**, useful fo
 To install the latest version run the following command:
 
 ```console
-$ go install github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen@latest
+$ go install github.com/asserts/opentelemetry-collector-contrib/cmd/telemetrygen@latest
 ```
 
 Check the [`go install` reference](https://go.dev/ref/mod#go-install) to install specific versions.

@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
 )
 
 func TestEnsureDifferentKeys(t *testing.T) {

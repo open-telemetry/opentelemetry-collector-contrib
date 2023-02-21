@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+package datadogexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
 	"context"
@@ -33,8 +33,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (

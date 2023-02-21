@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dimensions // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
+package dimensions // import "github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 
 import (
 	"fmt"
@@ -20,8 +20,8 @@ import (
 
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
-	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	metadata "github.com/asserts/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 // MetadataUpdateClient is an interface for pushing metadata updates

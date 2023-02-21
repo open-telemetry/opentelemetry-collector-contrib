@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/ecsutiltest"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/ecsutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/ecsutil/ecsutiltest"
 )
 
 type testRestClient struct {

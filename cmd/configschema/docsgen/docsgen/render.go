@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package docsgen // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
+package docsgen // import "github.com/asserts/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
 
 import (
 	"bytes"
@@ -22,7 +22,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+	"github.com/asserts/opentelemetry-collector-contrib/cmd/configschema"
 )
 
 func renderHeader(typ, group, doc string) []byte {

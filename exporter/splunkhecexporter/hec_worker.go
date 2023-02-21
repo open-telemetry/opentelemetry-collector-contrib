@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
+package splunkhecexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/splunk"
 )
 
 type hecWorker interface {
@@ -70,7 +70,7 @@ func (hec *defaultHecWorker) send(ctx context.Context, bufferState *bufferState,
 
 	// Do not drain the response when 429 or 502 status code is returned.
 	// HTTP client will not reuse the same connection unless it is drained.
-	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18281 for more details.
+	// See https://github.com/asserts/opentelemetry-collector-contrib/issues/18281 for more details.
 	if resp.StatusCode != http.StatusTooManyRequests && resp.StatusCode != http.StatusBadGateway {
 		_, errCopy := io.Copy(io.Discard, resp.Body)
 		err = multierr.Combine(err, errCopy)

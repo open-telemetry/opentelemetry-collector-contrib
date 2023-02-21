@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package lokiexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
+package lokiexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/lokiexporter"
 
 import (
 	"bufio"
@@ -29,7 +29,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/loki"
 )
 
 type nextLokiExporter struct {

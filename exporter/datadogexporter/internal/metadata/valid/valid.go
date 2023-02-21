@@ -16,7 +16,7 @@
 // for the Datadog Agent (https://github.com/DataDog/datadog-agent)
 
 // Package valid contains functions that validate hostnames
-package valid // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
+package valid // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 
 import (
 	"fmt"

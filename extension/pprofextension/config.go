@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pprofextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+package pprofextension // import "github.com/asserts/opentelemetry-collector-contrib/extension/pprofextension"
 
 import (
 	"go.opentelemetry.io/collector/component"

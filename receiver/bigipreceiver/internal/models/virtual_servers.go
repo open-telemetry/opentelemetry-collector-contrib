@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package models // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver/internal/models"
+package models // import "github.com/asserts/opentelemetry-collector-contrib/receiver/bigipreceiver/internal/models"
 
 // VirtualServersDetails represents the top level json returned by the /virtual endpoint
 type VirtualServersDetails struct {

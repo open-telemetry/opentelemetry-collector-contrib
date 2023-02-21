@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bigipreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver"
+package bigipreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/bigipreceiver"
 
 import (
 	"errors"

@@ -35,7 +35,7 @@ import (
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestSwExporter(t *testing.T) {

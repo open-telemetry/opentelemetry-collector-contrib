@@ -17,7 +17,7 @@ if [[ -z "$VERSION" ]]; then
 fi
 
 # remap arm64 to aarch64, which is the arch used by Linux distributions
-# see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6508
+# see https://github.com/asserts/opentelemetry-collector-contrib/issues/6508
 if [[ "$ARCH" == "arm64" ]]; then
     ARCH="aarch64"
 fi

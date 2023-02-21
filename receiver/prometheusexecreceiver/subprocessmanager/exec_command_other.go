@@ -15,12 +15,10 @@
 //go:build !windows
 // +build !windows
 
-package subprocessmanager // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
+package subprocessmanager // import "github.com/asserts/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 
 import (
 	"os/exec"
-
-	"github.com/kballard/go-shellquote"
 )
 
 // Non-Windows version of exec.Command(...)

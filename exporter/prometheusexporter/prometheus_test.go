@@ -33,8 +33,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestPrometheusExporter(t *testing.T) {
@@ -185,7 +185,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	}
 }
 
-// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4986
+// See: https://github.com/asserts/opentelemetry-collector-contrib/issues/4986
 func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	cfg := &Config{
 		Namespace: "test",

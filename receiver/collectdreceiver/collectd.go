@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package collectdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
+package collectdreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/collectdreceiver"
 
 import (
 	"encoding/json"
@@ -23,7 +23,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 const (

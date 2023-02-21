@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package correlation performs span to metric correlation for SignalFx.
-package correlation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
+package correlation // import "github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"

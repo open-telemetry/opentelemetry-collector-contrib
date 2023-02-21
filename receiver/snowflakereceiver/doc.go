@@ -14,4 +14,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package snowflakereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver"
+package snowflakereceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/snowflakereceiver"

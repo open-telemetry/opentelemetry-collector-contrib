@@ -1,13 +1,13 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
+module github.com/asserts/opentelemetry-collector-contrib/internal/filter
 
 go 1.19
 
 require (
 	github.com/antonmedv/expr v1.12.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.0.0-00010101000000-000000000000
+	github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/pkg/ottl v0.0.0-00010101000000-000000000000
+	github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector/confmap v0.71.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc5
@@ -49,10 +49,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../coreinternal
+replace github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal => ../coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 retract v0.65.0

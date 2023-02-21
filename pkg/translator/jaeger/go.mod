@@ -1,10 +1,10 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
+module github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger
 
 go 1.19
 
 require (
 	github.com/jaegertracing/jaeger v1.41.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector/pdata v1.0.0-rc5
 	go.opentelemetry.io/collector/semconv v0.71.0
@@ -34,6 +34,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
+replace github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
 
 retract v0.65.0

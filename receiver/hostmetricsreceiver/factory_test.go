@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 )
 
 var creationSet = receivertest.NewNopCreateSettings()

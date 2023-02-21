@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+package fileconsumer // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
 	"bytes"
@@ -25,7 +25,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)

@@ -88,4 +88,4 @@ JSON numbers are encoded as doubles.
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
-[storage extension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage
+[storage extension]: https://github.com/asserts/opentelemetry-collector-contrib/tree/main/extension/storage

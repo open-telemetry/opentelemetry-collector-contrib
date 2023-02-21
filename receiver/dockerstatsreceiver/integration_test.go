@@ -37,7 +37,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/docker"
 )
 
 type testHost struct {

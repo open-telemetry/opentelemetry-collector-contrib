@@ -13,4 +13,4 @@
 // limitations under the License.
 
 //go:generate mdatagen metadata.yaml
-package chronyreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
+package chronyreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/chronyreceiver"

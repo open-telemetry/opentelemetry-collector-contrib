@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dotnet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
+package dotnet // import "github.com/asserts/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
 )
 
 // RequestWriter submits the initial request to the dotnet diagnostics backend,

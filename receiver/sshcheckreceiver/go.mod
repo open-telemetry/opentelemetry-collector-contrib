@@ -1,9 +1,9 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/sshcheckreceiver
 
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest v0.71.0
 	github.com/pkg/sftp v1.13.5
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.18.0
@@ -20,13 +20,13 @@ require (
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/moby/patternmatcher v0.5.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil v0.71.0 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
 )
 
 require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
 )
 
 require (
@@ -76,8 +76,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+replace github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil

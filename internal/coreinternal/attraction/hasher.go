@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package attraction // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+package attraction // import "github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 
 import (
 	"crypto/sha1" // #nosec

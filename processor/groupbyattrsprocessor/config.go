@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package groupbyattrsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
+package groupbyattrsprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
 
 // Config is the configuration for the processor.
 type Config struct {

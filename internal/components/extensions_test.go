@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+// Skip tests on Windows temporarily, see https://github.com/asserts/opentelemetry-collector-contrib/issues/11451
 //go:build !windows
 // +build !windows
 
@@ -35,20 +35,20 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/asapauthextension"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/basicauthextension"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/headerssetterextension"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/httpforwarder"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/observer/hostobserver"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/sigv4authextension"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/storage/dbstorage"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/storage/filestorage"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestDefaultExtensions(t *testing.T) {

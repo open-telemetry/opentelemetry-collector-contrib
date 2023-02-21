@@ -17,4 +17,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package diskscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
+package diskscraper // import "github.com/asserts/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"

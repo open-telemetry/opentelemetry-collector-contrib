@@ -74,7 +74,7 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 *Note: These changes are now in effect and ScraperV1 have been removed as of v0.71.*
 
-There are some breaking changes from ScraperV1 to ScraperV2. The work done for these changes is tracked in [#9794](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794).
+There are some breaking changes from ScraperV1 to ScraperV2. The work done for these changes is tracked in [#9794](https://github.com/asserts/opentelemetry-collector-contrib/issues/9794).
 
 | Breaking Change                     | Action                                                                  |
 |-------------------------------------|-------------------------------------------------------------------------|

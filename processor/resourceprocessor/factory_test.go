@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {

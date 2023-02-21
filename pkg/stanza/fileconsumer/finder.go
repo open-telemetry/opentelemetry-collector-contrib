@@ -12,11 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
-
-import (
-	"github.com/bmatcuk/doublestar/v4"
-)
+package fileconsumer // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 type Finder struct {
 	Include []string `mapstructure:"include,omitempty"`

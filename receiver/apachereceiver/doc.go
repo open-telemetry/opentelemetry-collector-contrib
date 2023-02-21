@@ -14,4 +14,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package apachereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
+package apachereceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/apachereceiver"

@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"gopkg.in/yaml.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 func TestEndToEndSummarySupport(t *testing.T) {

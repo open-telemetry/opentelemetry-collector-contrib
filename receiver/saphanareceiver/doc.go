@@ -17,4 +17,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package saphanareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
+package saphanareceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/saphanareceiver"

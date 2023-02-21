@@ -15,7 +15,7 @@
 //go:build !linux
 // +build !linux
 
-package networkscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+package networkscraper // import "github.com/asserts/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 
 var allTCPStates = []string{
 	"CLOSE_WAIT",

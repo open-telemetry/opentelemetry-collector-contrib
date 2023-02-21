@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bigipreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver"
+package bigipreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/bigipreceiver"
 
 import (
 	"context"
@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver/internal/models"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/bigipreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/bigipreceiver/internal/models"
 )
 
 // custom errors

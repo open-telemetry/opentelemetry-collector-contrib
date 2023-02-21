@@ -18,4 +18,4 @@
 // representations.
 //
 // This receiver is only compatible with Windows.
-package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
+package windowsperfcountersreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"

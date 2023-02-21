@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package parquetexporter implements an exporter that writes data to Parquet files.
-package parquetexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
+package parquetexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/parquetexporter"

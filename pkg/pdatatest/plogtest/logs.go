@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package plogtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+package plogtest // import "github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/internal"
 )
 
 // CompareLogs compares each part of two given Logs and returns

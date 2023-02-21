@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+package translation // import "github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 )
 
 // Action is the enum to capture actions to perform on metrics.

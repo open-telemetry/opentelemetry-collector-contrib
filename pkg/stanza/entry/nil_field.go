@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+package entry // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/entry"
 
 // NilField is a struct that implements Field, but
 // does nothing for all its operations. It is useful

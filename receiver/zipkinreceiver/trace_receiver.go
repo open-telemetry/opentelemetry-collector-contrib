@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkinreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
+package zipkinreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 
 import (
 	"compress/gzip"
@@ -31,8 +31,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
 const (

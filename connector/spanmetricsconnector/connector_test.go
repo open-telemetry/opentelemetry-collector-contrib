@@ -40,8 +40,8 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/mocks"
+	"github.com/asserts/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
+	"github.com/asserts/opentelemetry-collector-contrib/connector/spanmetricsconnector/mocks"
 )
 
 const (

@@ -12,19 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
+package mongodbreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 
 import (
 	"errors"
 	"fmt"
 	"reflect"
 
-	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
 var errKeyNotFound = errors.New("could not find key for metric")

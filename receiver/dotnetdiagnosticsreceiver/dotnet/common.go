@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dotnet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
+package dotnet // import "github.com/asserts/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
+import "github.com/asserts/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
 
 func beginPrivateObject(r network.MultiReader) error {
 	const tagBeginPrivateObject = 5

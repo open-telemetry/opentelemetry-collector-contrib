@@ -31,9 +31,9 @@ import (
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
 // policy combines a sampling policy evaluator with the destinations to be

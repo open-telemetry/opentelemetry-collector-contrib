@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 // This is not in ottltest because it depends on a type that's a member of OTTL.

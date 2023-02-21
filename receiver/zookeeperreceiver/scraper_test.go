@@ -33,10 +33,10 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
 type logMsg struct {
@@ -46,7 +46,7 @@ type logMsg struct {
 
 func TestZookeeperMetricsScraperScrape(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("skipping flaky test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10171")
+		t.Skip("skipping flaky test on windows, see https://github.com/asserts/opentelemetry-collector-contrib/issues/10171")
 	}
 
 	tests := []struct {

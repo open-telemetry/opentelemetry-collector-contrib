@@ -29,8 +29,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
 func TestErrorSpanToTraces(t *testing.T) {

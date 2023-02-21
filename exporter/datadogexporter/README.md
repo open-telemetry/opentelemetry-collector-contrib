@@ -16,7 +16,7 @@ Visit the [official documentation](https://docs.datadoghq.com/tracing/trace_coll
 
 ### Why am I getting errors 413 - Request Entity Too Large, how do I fix it?
 
-This error indicates the payload size sent by the Datadog exporter exceeds the size limit (see previous examples https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16834, https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17566).
+This error indicates the payload size sent by the Datadog exporter exceeds the size limit (see previous examples https://github.com/asserts/opentelemetry-collector-contrib/issues/16834, https://github.com/asserts/opentelemetry-collector-contrib/issues/17566).
 
 This is usually caused by the pipeline batching too many telemetry data before sending to the Datadog exporter. To fix that, try lowering `send_batch_size` and `send_batch_max_size` in your batchprocessor config. You might want to have a separate batch processor dedicated for datadog exporter if other exporters expect a larger batch size, e.g.
 ```

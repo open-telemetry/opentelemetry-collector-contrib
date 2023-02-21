@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	ci "github.com/asserts/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
 func TestCAdvisorMetric_Merge(t *testing.T) {

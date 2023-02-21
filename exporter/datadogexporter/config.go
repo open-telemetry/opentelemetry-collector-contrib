@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+package datadogexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
 	"encoding"
@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 )
 
 var (
@@ -459,7 +459,7 @@ var removedSettings = []renameError{
 // Error implements the error interface.
 func (e renameError) Error() string {
 	return fmt.Sprintf(
-		"%q was removed in favor of %q. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d",
+		"%q was removed in favor of %q. See https://github.com/asserts/opentelemetry-collector-contrib/issues/%d",
 		e.oldName,
 		e.newName,
 		e.issueNumber,

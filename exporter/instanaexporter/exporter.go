@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package instanaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
+package instanaexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/instanaexporter"
 
 import (
 	"bytes"
@@ -28,9 +28,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/backend"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/converter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/converter/model"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/instanaexporter/internal/backend"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/instanaexporter/internal/converter"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/instanaexporter/internal/converter/model"
 )
 
 type instanaExporter struct {

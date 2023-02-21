@@ -15,4 +15,4 @@
 // Package sigv4authextension implements the `auth.Client` interface.
 // This extension provides the Sigv4 process of adding authentication information to AWS API requests sent by HTTP.
 // As such, the extension can be used for HTTP based exporters that export to AWS services.
-package sigv4authextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
+package sigv4authextension // import "github.com/asserts/opentelemetry-collector-contrib/extension/sigv4authextension"

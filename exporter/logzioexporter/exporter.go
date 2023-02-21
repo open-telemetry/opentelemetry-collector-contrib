@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package logzioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
+package logzioexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/logzioexporter"
 
 import (
 	"bytes"
@@ -25,7 +25,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/pkg/cache"
 	"go.opentelemetry.io/collector/component"
@@ -37,7 +36,7 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 const (

@@ -39,7 +39,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
 )
 
 const (

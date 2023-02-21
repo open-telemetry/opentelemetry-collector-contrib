@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+package internal // import "github.com/asserts/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // Notes on garbage collection (gc):

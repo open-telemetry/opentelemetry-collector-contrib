@@ -14,4 +14,4 @@
 
 // Package spanprocessor contains logic to modify top level settings of a span, such
 // as its name.
-package spanprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
+package spanprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/spanprocessor"

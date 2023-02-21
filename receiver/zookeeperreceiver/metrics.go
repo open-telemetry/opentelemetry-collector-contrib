@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zookeeperreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
+package zookeeperreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
 // Constants to define entries in the output of "mntr" command.

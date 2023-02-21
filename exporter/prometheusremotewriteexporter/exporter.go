@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
+package prometheusremotewriteexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 
 import (
 	"bytes"
@@ -36,8 +36,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
+	prometheustranslator "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
 const maxBatchByteSize = 3000000

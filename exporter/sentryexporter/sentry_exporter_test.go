@@ -21,7 +21,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 /*
@@ -747,7 +746,7 @@ type TransactionFromSpanMarshalEventTestCase struct {
 	wantContains string
 }
 
-// This is a regression test for https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13415
+// This is a regression test for https://github.com/asserts/opentelemetry-collector-contrib/issues/13415
 // to make sure that `parent_span_id` is not included in the serialized context if it is not defined
 func TestTransactionContextFromSpanMarshalEvent(t *testing.T) {
 	testCases := []TransactionFromSpanMarshalEventTestCase{

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+// Skip tests on Windows temporarily, see https://github.com/asserts/opentelemetry-collector-contrib/issues/11451
 //go:build !windows
 // +build !windows
 
@@ -32,10 +32,10 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/processor/processortest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/attributesprocessor"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/resourceprocessor"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/spanprocessor"
 )
 
 func TestDefaultProcessors(t *testing.T) {

@@ -1,7 +1,7 @@
 # **Sigv4 Authenticator Extension Design Document**
 
 
-This document outlines a proposed implementation of a Sigv4 authenticator extension for the OpenTelemetry (OTEL) Collector. The design is based on the OpenTelemetry Collector [configauth](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configauth) module and also existing authenticator extensions like the [oauth2](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/oauth2clientauthextension) authenticator.
+This document outlines a proposed implementation of a Sigv4 authenticator extension for the OpenTelemetry (OTEL) Collector. The design is based on the OpenTelemetry Collector [configauth](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configauth) module and also existing authenticator extensions like the [oauth2](https://github.com/asserts/opentelemetry-collector-contrib/tree/main/extension/oauth2clientauthextension) authenticator.
 
 
 ## **Use Cases**

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+package opencensusexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/opencensusexporter"
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 // See https://godoc.org/google.golang.org/grpc#ClientConn.NewStream

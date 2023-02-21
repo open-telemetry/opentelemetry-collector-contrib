@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
 )
 
 func benchXEmptyMessages(b *testing.B, msgCount int) {

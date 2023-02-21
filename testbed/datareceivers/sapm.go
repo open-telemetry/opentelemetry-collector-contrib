@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datareceivers // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
+package datareceivers // import "github.com/asserts/opentelemetry-collector-contrib/testbed/datareceivers"
 
 import (
 	"context"
@@ -24,9 +24,9 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/sapmreceiver"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // SapmDataReceiver implements Sapm format receiver.

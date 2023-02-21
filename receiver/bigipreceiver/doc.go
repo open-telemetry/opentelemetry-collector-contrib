@@ -14,4 +14,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package bigipreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver"
+package bigipreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/bigipreceiver"

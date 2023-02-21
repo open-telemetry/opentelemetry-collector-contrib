@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+package testbed // import "github.com/asserts/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
 	"go.opentelemetry.io/collector/exporter"
@@ -30,12 +30,12 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/jaegerexporter"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/zipkinexporter"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/jaegerreceiver"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/opencensusreceiver"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 )
 
 // Components returns the set of components for tests

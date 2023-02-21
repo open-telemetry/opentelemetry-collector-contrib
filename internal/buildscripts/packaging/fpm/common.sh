@@ -7,7 +7,7 @@ PKG_VENDOR="OpenTelemetry Community"
 PKG_MAINTAINER="OpenTelemetry Community <cncf-opentelemetry-community@lists.cncf.io>"
 PKG_DESCRIPTION="OpenTelemetry Contrib Collector"
 PKG_LICENSE="Apache 2.0"
-PKG_URL="https://github.com/open-telemetry/opentelemetry-collector-contrib"
+PKG_URL="https://github.com/asserts/opentelemetry-collector-contrib"
 PKG_USER="otel"
 PKG_GROUP="otel"
 

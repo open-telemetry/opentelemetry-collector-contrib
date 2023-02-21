@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
+package common // import "github.com/asserts/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
 func Functions[K any]() map[string]interface{} {
@@ -27,7 +27,7 @@ func Functions[K any]() map[string]interface{} {
 		"delete_key":           ottlfuncs.DeleteKey[K],
 		"delete_matching_keys": ottlfuncs.DeleteMatchingKeys[K],
 		// noop function, it is required since the parsing of conditions is not implemented yet,
-		// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545
+		// see https://github.com/asserts/opentelemetry-collector-contrib/issues/13545
 		"route": func() (ottl.ExprFunc[K], error) {
 			return func(context.Context, K) (interface{}, error) {
 				return true, nil

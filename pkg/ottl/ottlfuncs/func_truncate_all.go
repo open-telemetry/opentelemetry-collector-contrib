@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+package ottlfuncs // import "github.com/asserts/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TruncateAll[K any](target ottl.GetSetter[K], limit int64) (ottl.ExprFunc[K], error) {
@@ -59,7 +59,7 @@ func TruncateAll[K any](target ottl.GetSetter[K], limit int64) (ottl.ExprFunc[K]
 			return nil, err
 		}
 		// TODO: Write log when truncation is performed
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
+		// https://github.com/asserts/opentelemetry-collector-contrib/issues/9730
 		return nil, nil
 	}, nil
 }

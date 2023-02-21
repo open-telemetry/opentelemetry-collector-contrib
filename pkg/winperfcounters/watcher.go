@@ -15,13 +15,13 @@
 //go:build windows
 // +build windows
 
-package winperfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
+package winperfcounters // import "github.com/asserts/opentelemetry-collector-contrib/pkg/winperfcounters"
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters/internal/third_party/telegraf/win_perf_counters"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/winperfcounters/internal/third_party/telegraf/win_perf_counters"
 )
 
 const totalInstanceName = "_Total"

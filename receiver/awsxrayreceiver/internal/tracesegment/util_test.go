@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	recvErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
+	recvErr "github.com/asserts/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
 )
 
 func TestSplitHeaderBodyWithSeparatorExists(t *testing.T) {

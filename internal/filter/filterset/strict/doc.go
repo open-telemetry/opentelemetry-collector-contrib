@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package strict provides an implementation to match strings against a set of exact match string filters.
-package strict // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/strict"
+package strict // import "github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterset/strict"

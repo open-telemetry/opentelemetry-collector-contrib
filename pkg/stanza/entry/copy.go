@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+package entry // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/entry"
 
 import "encoding/json"
 

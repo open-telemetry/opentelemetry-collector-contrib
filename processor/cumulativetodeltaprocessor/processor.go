@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
+package cumulativetodeltaprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 
 import (
 	"context"
@@ -22,15 +22,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
 var enableHistogramSupportGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.cumulativetodeltaprocessor.EnableHistogramSupport",
 	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Enables histogram conversion support"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/15658"),
+	featuregate.WithRegisterReferenceURL("https://github.com/asserts/opentelemetry-collector-contrib/issues/15658"),
 	featuregate.WithRegisterRemovalVersion("v0.68.0"),
 )
 

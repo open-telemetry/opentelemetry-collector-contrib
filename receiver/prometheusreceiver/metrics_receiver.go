@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+package prometheusreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 
 import (
 	"bytes"
@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/go-kit/log"
-	"github.com/mitchellh/hashstructure/v2"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
@@ -40,7 +39,7 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 )
 
 const (

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+package datadogexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
 	"context"
@@ -25,10 +25,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
 type logsExporter struct {

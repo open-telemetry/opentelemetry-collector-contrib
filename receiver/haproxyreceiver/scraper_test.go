@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
 )
 
 func Test_scraper_readStats(t *testing.T) {

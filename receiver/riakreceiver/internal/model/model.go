@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver/internal/model"
+package model // import "github.com/asserts/opentelemetry-collector-contrib/receiver/riakreceiver/internal/model"
 
 // Stat represents a stat in the API response
 type Stats struct {

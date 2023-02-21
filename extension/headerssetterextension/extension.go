@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package headerssetterextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
+package headerssetterextension // import "github.com/asserts/opentelemetry-collector-contrib/extension/headerssetterextension"
 
 import (
 	"context"
@@ -24,8 +24,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/action"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/source"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/headerssetterextension/internal/action"
+	"github.com/asserts/opentelemetry-collector-contrib/extension/headerssetterextension/internal/source"
 )
 
 type Header struct {

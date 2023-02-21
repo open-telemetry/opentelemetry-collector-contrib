@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package chronyreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
+package chronyreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/chronyreceiver"
 
 import (
 	"context"
@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
 )
 
 type chronyScraper struct {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
+package system // import "github.com/asserts/opentelemetry-collector-contrib/internal/metadataproviders/system"
 
 import (
 	"fmt"
@@ -21,10 +21,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/Showmax/go-fqdn"
 	"github.com/panta/machineid"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/metadataproviders/internal"
 )
 
 // nameInfoProvider abstracts domain name resolution so it can be swapped for

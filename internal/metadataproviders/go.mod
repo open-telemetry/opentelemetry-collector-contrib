@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
+module github.com/asserts/opentelemetry-collector-contrib/internal/metadataproviders
 
 go 1.19
 

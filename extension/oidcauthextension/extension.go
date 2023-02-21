@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oidcauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
+package oidcauthextension // import "github.com/asserts/opentelemetry-collector-contrib/extension/oidcauthextension"
 
 import (
 	"context"
@@ -28,7 +28,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/go-oidc"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/auth"

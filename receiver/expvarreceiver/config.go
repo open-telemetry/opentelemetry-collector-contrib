@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package expvarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver"
+package expvarreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/expvarreceiver"
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
 
 type Config struct {

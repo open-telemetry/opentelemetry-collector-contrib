@@ -16,4 +16,4 @@
 // race detector has been added into the build to allow for tests
 // that provide no unit test value but perform concurrent actions
 // where the race detector can identify issues.
-package race // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/race"
+package race // import "github.com/asserts/opentelemetry-collector-contrib/processor/schemaprocessor/internal/race"

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+package fileconsumer // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
 	"bufio"
@@ -20,11 +20,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bmatcuk/doublestar/v4"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 const (
@@ -36,7 +35,7 @@ var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
 	"filelog.allowFileDeletion",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
+	featuregate.WithRegisterReferenceURL("https://github.com/asserts/opentelemetry-collector-contrib/issues/16314"),
 )
 
 // NewConfig creates a new input config with default values

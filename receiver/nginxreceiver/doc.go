@@ -17,4 +17,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package nginxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
+package nginxreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/nginxreceiver"

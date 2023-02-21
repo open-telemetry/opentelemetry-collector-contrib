@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
+package docker // import "github.com/asserts/opentelemetry-collector-contrib/internal/docker"
 
 import (
 	"fmt"

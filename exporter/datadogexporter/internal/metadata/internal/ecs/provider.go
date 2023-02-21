@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package ecs contains the ECS Fargate hostname provider
-package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ecs"
+package ecs // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ecs"
 
 import (
 	"context"
@@ -24,8 +24,8 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/ecsutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 )
 
 var ErrNotOnECSFargate = fmt.Errorf("not running on ECS Fargate")

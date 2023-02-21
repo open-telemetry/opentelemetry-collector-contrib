@@ -15,14 +15,14 @@
 //go:build windows
 // +build windows
 
-package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
+package windows // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
 	"encoding/xml"
 	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
 // EventXML is the rendered xml of an event.

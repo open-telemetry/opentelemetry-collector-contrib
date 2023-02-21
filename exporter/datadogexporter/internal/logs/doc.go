@@ -15,4 +15,4 @@
 // Package logs provides utils for transforming OTLP LogRecord to Datadog format
 // it also provides sender for submitting transformed logs to datadog backend
 // This uses datadog-api-client-go for submitting logs
-package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
+package logs // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"

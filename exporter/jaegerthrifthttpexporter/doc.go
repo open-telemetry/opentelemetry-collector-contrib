@@ -14,4 +14,4 @@
 
 // Package jaegerthrifthttpexporter implements an exporter that sends trace data
 // to a Jaeger collector Thrift over HTTP endpoint.
-package jaegerthrifthttpexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
+package jaegerthrifthttpexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"

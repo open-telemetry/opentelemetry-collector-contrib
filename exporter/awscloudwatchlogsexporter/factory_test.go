@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func TestDefaultConfig_exporterSettings(t *testing.T) {

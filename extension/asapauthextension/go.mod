@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension
+module github.com/asserts/opentelemetry-collector-contrib/extension/asapauthextension
 
 go 1.19
 

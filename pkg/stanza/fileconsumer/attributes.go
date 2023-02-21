@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+package fileconsumer // import "github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
 	"path/filepath"

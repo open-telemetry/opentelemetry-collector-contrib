@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
+module github.com/asserts/opentelemetry-collector-contrib/pkg/winperfcounters
 
 go 1.19
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
+package googlecloudexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 
 import (
 	"context"
@@ -37,7 +37,7 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	"exporter.googlecloud.OTLPDirect",
 	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7132"),
+	featuregate.WithRegisterReferenceURL("https://github.com/asserts/opentelemetry-collector-contrib/issues/7132"),
 	featuregate.WithRegisterRemovalVersion("v0.69.0"),
 )
 

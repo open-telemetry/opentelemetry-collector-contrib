@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxray // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+package awsxray // import "github.com/asserts/opentelemetry-collector-contrib/internal/aws/xray"
 
 // AWS-specific OpenTelemetry attribute names
 const (

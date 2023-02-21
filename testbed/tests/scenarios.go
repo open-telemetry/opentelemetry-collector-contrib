@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tests // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/tests"
+package tests // import "github.com/asserts/opentelemetry-collector-contrib/testbed/tests"
 
 // This file defines parametrized test scenarios and makes them public so that they can be
 // also used by tests in custom builds of Collector (e.g. Collector Contrib).
@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"github.com/asserts/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 var (

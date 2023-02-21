@@ -12,11 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package redisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
-
-import (
-	"github.com/go-redis/redis/v7"
-)
+package redisreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/redisreceiver"
 
 // Interface for a Redis client. Implementation can be faked for testing.
 type client interface {

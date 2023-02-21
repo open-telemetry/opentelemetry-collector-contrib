@@ -22,12 +22,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/pipeline"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestInput(t *testing.T) {

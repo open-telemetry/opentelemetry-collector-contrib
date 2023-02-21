@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
+package couchdbreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
 	"errors"
@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
 
 const defaultEndpoint = "http://localhost:5984"

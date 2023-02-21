@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
+package extractors // import "github.com/asserts/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
 import (
 	"regexp"
@@ -20,7 +20,7 @@ import (
 	cinfo "github.com/google/cadvisor/info/v1"
 	"go.uber.org/zap"
 
-	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	ci "github.com/asserts/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
 var allowedPaths = regexp.MustCompile(`^(tmpfs|\/dev\/.*|overlay)$`)

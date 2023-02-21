@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package producer // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
+package producer // import "github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
 
 import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 )
 
 // Batcher abstracts the raw kinesis client to reduce complexity with delivering dynamic encoded data.

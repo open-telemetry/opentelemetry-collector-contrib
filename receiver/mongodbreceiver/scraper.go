@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
+package mongodbreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 
 import (
 	"context"
@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -29,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
 type mongodbScraper struct {

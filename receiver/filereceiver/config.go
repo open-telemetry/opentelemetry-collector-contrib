@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver"
+package filereceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/filereceiver"
 
 import (
 	"errors"

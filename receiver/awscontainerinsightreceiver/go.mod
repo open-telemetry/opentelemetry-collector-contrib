@@ -1,16 +1,16 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
 
 go 1.19
 
 require (
 	github.com/aws/aws-sdk-go v1.44.201
 	github.com/google/cadvisor v0.47.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/aws/awsutil v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/aws/containerinsight v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/aws/k8s v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/aws/metrics v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/k8sconfig v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/kubelet v0.71.0
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.71.0
@@ -78,7 +78,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.71.0 // indirect
+	github.com/asserts/opentelemetry-collector-contrib/internal/common v0.71.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.4 // indirect
@@ -132,19 +132,19 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ./../../internal/aws/awsutil
+replace github.com/asserts/opentelemetry-collector-contrib/internal/aws/awsutil => ./../../internal/aws/awsutil
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s => ./../../internal/aws/k8s
+replace github.com/asserts/opentelemetry-collector-contrib/internal/aws/k8s => ./../../internal/aws/k8s
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics => ./../../internal/aws/metrics
+replace github.com/asserts/opentelemetry-collector-contrib/internal/aws/metrics => ./../../internal/aws/metrics
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight => ./../../internal/aws/containerinsight
+replace github.com/asserts/opentelemetry-collector-contrib/internal/aws/containerinsight => ./../../internal/aws/containerinsight
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+replace github.com/asserts/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
+replace github.com/asserts/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ../../internal/kubelet
+replace github.com/asserts/opentelemetry-collector-contrib/internal/kubelet => ../../internal/kubelet
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible

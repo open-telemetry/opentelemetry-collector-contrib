@@ -400,10 +400,10 @@ func TestNoTracesInBatch(t *testing.T) {
 }
 
 func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
-	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13331")
+	t.Skip("Flaky Test - See https://github.com/asserts/opentelemetry-collector-contrib/issues/13331")
 
 	// this test is based on the discussion in the following issue for this exporter:
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
+	// https://github.com/asserts/opentelemetry-collector-contrib/issues/1690
 	// prepare
 
 	// simulate rolling updates, the dns resolver should resolve in the following order

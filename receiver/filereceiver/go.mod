@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/filereceiver
 
 go 1.19
 

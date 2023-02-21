@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package kafkaexporter exports trace data to Kafka.
-package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+package kafkaexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/kafkaexporter"

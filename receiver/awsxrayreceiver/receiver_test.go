@@ -39,9 +39,9 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/proxy"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
 const (
@@ -116,7 +116,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		t.Skip("skipping test on darwin")
 	}
-	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10596")
+	t.Skip("Flaky Test - See https://github.com/asserts/opentelemetry-collector-contrib/issues/10596")
 
 	receiverID := component.NewID("TestSegmentsPassedToConsumer")
 	tt, err := obsreporttest.SetupTelemetry(receiverID)

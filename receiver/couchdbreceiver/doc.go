@@ -17,4 +17,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
+package couchdbreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/couchdbreceiver"

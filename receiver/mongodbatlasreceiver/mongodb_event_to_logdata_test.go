@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
 func TestMongoeventToLogData4_4(t *testing.T) {

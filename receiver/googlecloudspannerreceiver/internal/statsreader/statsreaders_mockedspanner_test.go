@@ -31,8 +31,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
 const (
@@ -131,7 +131,7 @@ func createIntervalStatsReaderWithMaxRowsLimit(client *spanner.Client, backfillE
 }
 
 func TestStatsReaders_Read(t *testing.T) {
-	t.Skip("Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6318")
+	t.Skip("Flaky test - See https://github.com/asserts/opentelemetry-collector-contrib/issues/6318")
 	timestamp := shiftToStartOfMinute(time.Now().UTC())
 	ctx := context.Background()
 	server, err := spannertest.NewServer(":0")

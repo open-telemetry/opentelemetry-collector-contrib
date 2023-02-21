@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfx // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
+package signalfx // import "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/signalfx"
 
 import (
 	"fmt"

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zookeeperreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
+package zookeeperreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 
 import (
 	"bufio"
@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
 var zookeeperFormatRE = regexp.MustCompile(`(^zk_\w+)\s+([\w\.\-]+)`)

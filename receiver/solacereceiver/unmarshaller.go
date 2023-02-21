@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package solacereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
+package solacereceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/solacereceiver"
 
 import (
 	"encoding/hex"
@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	model_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/model/v1"
+	model_v1 "github.com/asserts/opentelemetry-collector-contrib/receiver/solacereceiver/model/v1"
 )
 
 // tracesUnmarshaller deserializes the message body.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package plogtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+package plogtest // import "github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 
 import (
 	"bytes"
@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/internal"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // CompareLogsOption can be used to mutate expected and/or actual logs before comparing.

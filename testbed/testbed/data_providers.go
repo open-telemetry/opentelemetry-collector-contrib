@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+package testbed // import "github.com/asserts/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
 	"log"
@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/atomic"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 )
 
 // DataProvider defines the interface for generators of test data used to drive various end-to-end tests.

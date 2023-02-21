@@ -27,7 +27,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 func TestZorkianRunningMetrics(t *testing.T) {

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package system contains the system hostname provider
-package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
+package system // import "github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 )
 
 type HostInfo struct {

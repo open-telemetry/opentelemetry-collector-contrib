@@ -31,7 +31,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func TestTraceExport(t *testing.T) {
@@ -67,7 +67,7 @@ func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
 }
 
 func TestW3CSpanTraceResourceExtraction(t *testing.T) {
-	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9255")
+	t.Skip("Flaky test, see https://github.com/asserts/opentelemetry-collector-contrib/issues/9255")
 	td := constructW3CSpanData()
 	logger, _ := zap.NewProduction()
 	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 0, "0 spans have xray trace id")

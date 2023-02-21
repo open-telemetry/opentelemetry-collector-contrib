@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/traces"
+package traces // import "github.com/asserts/opentelemetry-collector-contrib/cmd/telemetrygen/internal/traces"
 
 import (
 	"context"

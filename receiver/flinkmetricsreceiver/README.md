@@ -39,5 +39,5 @@ The full list of settings exposed for this receiver are documented [here](./conf
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
-[alpha]: https://github.com/open-telemetry/opentelemetry-collector-contrib#alpha
+[alpha]: https://github.com/asserts/opentelemetry-collector-contrib#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

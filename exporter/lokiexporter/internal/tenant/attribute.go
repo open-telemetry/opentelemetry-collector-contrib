@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tenant // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
+package tenant // import "github.com/asserts/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
 
 import (
 	"context"

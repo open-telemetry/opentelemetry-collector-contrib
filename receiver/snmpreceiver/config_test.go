@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
+package snmpreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/snmpreceiver"
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor
+module github.com/asserts/opentelemetry-collector-contrib/processor/servicegraphprocessor
 
 go 1.19
 

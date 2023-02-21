@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cluster // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
+package cluster // import "github.com/asserts/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ import (
 	as "github.com/aerospike/aerospike-client-go/v6"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster/mocks"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster/mocks"
 )
 
 func TestSubsetCluster_New(t *testing.T) {

@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package cluster // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
+package cluster // import "github.com/asserts/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
 
 import (
 	as "github.com/aerospike/aerospike-client-go/v6"

@@ -52,7 +52,7 @@ If a non-released version is required, you can specify a custom version by provi
 custom version of the jar during collector build time using the `ldflags` option. 
 
 ```bash
-go build -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=<sha256hash>" ...
+go build -ldflags "-X github.com/asserts/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=<sha256hash>" ...
 ```
 
 ### endpoint
@@ -74,8 +74,8 @@ If additional target systems must be supported (because of a custom JMX metrics 
 `MetricsGathererHash` build time config), they can be added with another build time flag.
 
 ```bash
-go build -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=<sha256hash>
-       -X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.AdditionalTargetSystems=newtarget,othernewtarget" ...
+go build -ldflags "-X github.com/asserts/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=<sha256hash>
+       -X github.com/asserts/opentelemetry-collector-contrib/receiver/jmxreceiver.AdditionalTargetSystems=newtarget,othernewtarget" ...
 ```
 
 Corresponds to the `otel.jmx.target.system` property.

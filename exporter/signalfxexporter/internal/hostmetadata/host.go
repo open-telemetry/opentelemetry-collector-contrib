@@ -15,7 +15,7 @@
 // Taken from https://github.com/signalfx/golib/blob/master/metadata/hostmetadata/host.go
 // with minor modifications.
 
-package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
+package hostmetadata // import "github.com/asserts/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
 
 import (
 	"context"

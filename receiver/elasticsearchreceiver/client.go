@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package elasticsearchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
+package elasticsearchreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
 
 var (

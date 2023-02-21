@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
+package internal // import "github.com/asserts/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 func processMeasurements(

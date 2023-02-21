@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxrayreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
+package awsxrayreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 
 import (
 	"go.opentelemetry.io/collector/config/confignet"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/aws/proxy"
 )
 
 // Config defines the configurations for an AWS X-Ray receiver.

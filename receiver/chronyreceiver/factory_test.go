@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
 )
 
 func TestType(t *testing.T) {

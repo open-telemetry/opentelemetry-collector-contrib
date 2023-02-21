@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package converter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/converter"
+package converter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/instanaexporter/internal/converter"
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/converter/model"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/instanaexporter/internal/converter/model"
 )
 
 var _ Converter = (*ConvertAllConverter)(nil)

@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
+package pulsarreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
 // copy from kafka receiver

@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
+package sqlserverreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
 // Config defines configuration for a sqlserver receiver.

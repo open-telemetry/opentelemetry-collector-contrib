@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
+module github.com/asserts/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
 
 go 1.19
 

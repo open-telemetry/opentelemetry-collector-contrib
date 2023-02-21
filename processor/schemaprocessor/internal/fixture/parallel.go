@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fixture // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/fixture"
+package fixture // import "github.com/asserts/opentelemetry-collector-contrib/processor/schemaprocessor/internal/fixture"
 
 import (
 	"sync"
@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/race"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/schemaprocessor/internal/race"
 )
 
 // ParallelRaceCompute starts `count` number of go routines that calls the provided function `fn`

@@ -1,8 +1,8 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector
+module github.com/asserts/opentelemetry-collector-contrib/connector/servicegraphconnector
 
 go 1.18
 
-require github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.0.0-00010101000000-000000000000
+require github.com/asserts/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.0.0-00010101000000-000000000000
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -38,4 +38,4 @@ require (
 
 retract v0.65.0
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor => ../../processor/servicegraphprocessor/
+replace github.com/asserts/opentelemetry-collector-contrib/processor/servicegraphprocessor => ../../processor/servicegraphprocessor/

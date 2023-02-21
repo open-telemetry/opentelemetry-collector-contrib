@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 func TestTraceIsDispatchedAfterDuration(t *testing.T) {

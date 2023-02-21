@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package servicegraphconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
+package servicegraphconnector // import "github.com/asserts/opentelemetry-collector-contrib/connector/servicegraphconnector"
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
+import "github.com/asserts/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 
 var NewFactory = servicegraphprocessor.NewConnectorFactory

@@ -14,4 +14,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
+package nsxtreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/nsxtreceiver"

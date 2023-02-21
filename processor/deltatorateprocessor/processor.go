@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package deltatorateprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
+package deltatorateprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 
 import (
 	"context"

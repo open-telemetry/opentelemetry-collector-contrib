@@ -15,4 +15,4 @@
 //go:build !windows
 // +build !windows
 
-package winperfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
+package winperfcounters // import "github.com/asserts/opentelemetry-collector-contrib/pkg/winperfcounters"

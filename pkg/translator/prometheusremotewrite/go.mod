@@ -1,10 +1,10 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
+module github.com/asserts/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
 
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
+	github.com/asserts/opentelemetry-collector-contrib/pkg/translator/prometheus v0.71.0
 	github.com/prometheus/common v0.39.0
 	github.com/prometheus/prometheus v0.42.1-0.20230210113933-af1d9e01c7e4
 	github.com/stretchr/testify v1.8.1
@@ -34,10 +34,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
+replace github.com/asserts/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../prometheus
+replace github.com/asserts/opentelemetry-collector-contrib/pkg/translator/prometheus => ../prometheus
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../internal/common
+replace github.com/asserts/opentelemetry-collector-contrib/internal/common => ../../../internal/common
 
 retract v0.65.0

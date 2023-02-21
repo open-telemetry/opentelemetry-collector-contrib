@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+package kafkaexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
 	"crypto/sha256"
@@ -22,7 +22,7 @@ import (
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/awsmsk"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/awsmsk"
 )
 
 // Authentication defines authentication.

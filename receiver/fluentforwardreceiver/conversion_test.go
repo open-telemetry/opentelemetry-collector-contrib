@@ -23,7 +23,7 @@ import (
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/asserts/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestMessageEventConversion(t *testing.T) {

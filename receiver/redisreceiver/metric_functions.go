@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package redisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+package redisreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/redisreceiver"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
 )
 
 // dataPointRecorders is called once at startup. Returns recorders for all metrics (except keyspace)

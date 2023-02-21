@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awskinesisexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
+package awskinesisexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 
 import (
 	"context"
@@ -29,9 +29,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
+	"github.com/asserts/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
 )
 
 // Exporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
+package postgresqlreceiver // import "github.com/asserts/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
+	"github.com/asserts/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
 var (
@@ -38,8 +38,8 @@ var (
 		featuregate.WithRegisterDescription("Postgresql metrics are transitioning from being reported with identifying metric attributes "+
 			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature "+
 			"gate controls emitting the old metrics without resource attributes. For more details, see: "+
-			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12960"),
+			"https://github.com/asserts/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"),
+		featuregate.WithRegisterReferenceURL("https://github.com/asserts/opentelemetry-collector-contrib/issues/12960"),
 	)
 	emitMetricsWithResourceAttributesFeatureGate = featuregate.GlobalRegistry().MustRegister(
 		"receiver.postgresql.emitMetricsWithResourceAttributes",
@@ -47,8 +47,8 @@ var (
 		featuregate.WithRegisterDescription("Postgresql metrics are transitioning from being reported with identifying metric attributes "+
 			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature "+
 			"gate controls emitting the new metrics with resource attributes. For more details, see: "+
-			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12960"),
+			"https://github.com/asserts/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"),
+		featuregate.WithRegisterReferenceURL("https://github.com/asserts/opentelemetry-collector-contrib/issues/12960"),
 	)
 )
 

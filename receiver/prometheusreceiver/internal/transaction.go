@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+package internal // import "github.com/asserts/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
 	"context"
@@ -36,7 +36,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	prometheustranslator "github.com/asserts/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (

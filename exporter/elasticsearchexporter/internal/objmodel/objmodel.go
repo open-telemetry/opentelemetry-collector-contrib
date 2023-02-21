@@ -40,7 +40,7 @@
 // Ingest Node is used. But either way, we try to present only well formed
 // document to Elasticsearch.
 
-package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
+package objmodel // import "github.com/asserts/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 
 import (
 	"encoding/hex"
@@ -50,7 +50,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/elastic/go-structform"
 	"github.com/elastic/go-structform/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )

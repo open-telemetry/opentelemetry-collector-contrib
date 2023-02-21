@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
+package splunkhecexporter // import "github.com/asserts/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
 	"bytes"
@@ -31,7 +31,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/asserts/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // client sends the data to the splunk backend.
@@ -670,7 +670,7 @@ func buildHTTPClient(config *Config, host component.Host, telemetrySettings comp
 	// we handle compression explicitly.
 	config.HTTPClientSettings.Compression = ""
 	if config.MaxConnections != 0 && (config.MaxIdleConns == nil || config.HTTPClientSettings.MaxIdleConnsPerHost == nil) {
-		telemetrySettings.Logger.Warn("You are using the deprecated `max_connections` option that will be removed soon; use `max_idle_conns` and/or `max_idle_conns_per_host` instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/splunkhecexporter#advanced-configuration")
+		telemetrySettings.Logger.Warn("You are using the deprecated `max_connections` option that will be removed soon; use `max_idle_conns` and/or `max_idle_conns_per_host` instead: https://github.com/asserts/opentelemetry-collector-contrib/tree/main/exporter/splunkhecexporter#advanced-configuration")
 		intMaxConns := int(config.MaxConnections)
 		if config.HTTPClientSettings.MaxIdleConns == nil {
 			config.HTTPClientSettings.MaxIdleConns = &intMaxConns
