@@ -5,7 +5,7 @@ change_type: bug_fix
 component: googlecloudexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Bug fixes for GCP exporters.
+note: Fix infinite loop/memory leak in GCP logging exporter. Also updates credentials config options.
 
 # One or more tracking issues related to the change
 issues: [18755]
@@ -13,4 +13,4 @@ issues: [18755]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Fixes infinite loop/memory leak in GCP logging exporter. Also updates credentials config options.
+subtext: 
