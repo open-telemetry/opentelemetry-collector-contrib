@@ -193,7 +193,7 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 
 func assertMemoryUsageMetricValid(t *testing.T, metric pmetric.Metric, expectedName string) {
 	assert.Equal(t, expectedName, metric.Name())
-	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
+	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 3)
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueStr(metadata.AttributeStateUsed.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state",
@@ -202,7 +202,7 @@ func assertMemoryUsageMetricValid(t *testing.T, metric pmetric.Metric, expectedN
 
 func assertMemoryUtilizationMetricValid(t *testing.T, metric pmetric.Metric, expectedName string) {
 	assert.Equal(t, expectedName, metric.Name())
-	assert.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), 2)
+	assert.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), 3)
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueStr(metadata.AttributeStateUsed.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, "state",
@@ -218,6 +218,8 @@ func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pme
 		pcommon.NewValueStr(metadata.AttributeStateSlabReclaimable.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 5, "state",
 		pcommon.NewValueStr(metadata.AttributeStateSlabUnreclaimable.String()))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 6, "state",
+		pcommon.NewValueStr(metadata.AttributeStateAvailable.String()))
 }
 
 func assertMemoryUtilizationMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
@@ -229,4 +231,6 @@ func assertMemoryUtilizationMetricHasLinuxSpecificStateLabels(t *testing.T, metr
 		pcommon.NewValueStr(metadata.AttributeStateSlabReclaimable.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 5, "state",
 		pcommon.NewValueStr(metadata.AttributeStateSlabUnreclaimable.String()))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 6, "state",
+		pcommon.NewValueStr(metadata.AttributeStateAvailable.String()))
 }

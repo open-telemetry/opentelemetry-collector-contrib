@@ -88,6 +88,7 @@ const (
 	AttributeStateSlabReclaimable
 	AttributeStateSlabUnreclaimable
 	AttributeStateUsed
+	AttributeStateAvailable
 )
 
 // String returns the string representation of the AttributeState.
@@ -107,6 +108,8 @@ func (av AttributeState) String() string {
 		return "slab_unreclaimable"
 	case AttributeStateUsed:
 		return "used"
+	case AttributeStateAvailable:
+		return "available"
 	}
 	return ""
 }
@@ -120,6 +123,7 @@ var MapAttributeState = map[string]AttributeState{
 	"slab_reclaimable":   AttributeStateSlabReclaimable,
 	"slab_unreclaimable": AttributeStateSlabUnreclaimable,
 	"used":               AttributeStateUsed,
+	"available":          AttributeStateAvailable,
 }
 
 type metricSystemMemoryUsage struct {

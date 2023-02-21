@@ -6,7 +6,7 @@ attributes:
   state:
     description: Breakdown of memory usage by type.
     type: string
-    enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
+    enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used, available]
 
 metrics:
   system.memory.usage:
