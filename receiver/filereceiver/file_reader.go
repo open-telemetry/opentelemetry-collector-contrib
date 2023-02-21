@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filereceiver
+package filereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver"
 
 import (
 	"bufio"
@@ -58,10 +58,10 @@ func (fr fileReader) readAll(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			err := fr.readLine()
+			err := fr.readLine(ctx)
 			if err != nil {
 				if errors.Is(err, io.EOF) {
-					fr.logger.Info("EOF reached")
+					fr.logger.Debug("EOF reached")
 					return
 				}
 				fr.logger.Error("error reading line", zap.Error(err))
@@ -73,7 +73,7 @@ func (fr fileReader) readAll(ctx context.Context) {
 
 // readLine reads the next line in the file, converting it into metrics and
 // passing it to the the consumer member.
-func (fr fileReader) readLine() error {
+func (fr fileReader) readLine(ctx context.Context) error {
 	line, err := fr.stringReader.ReadString('\n')
 	if err != nil {
 		return fmt.Errorf("failed to read line from input file: %w", err)
@@ -82,5 +82,5 @@ func (fr fileReader) readLine() error {
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal metrics: %w", err)
 	}
-	return fr.consumer.ConsumeMetrics(context.Background(), metrics)
+	return fr.consumer.ConsumeMetrics(ctx, metrics)
 }

@@ -39,12 +39,12 @@ func createMetricsReceiver(
 	_ context.Context,
 	settings receiver.CreateSettings,
 	cc component.Config,
-	next consumer.Metrics,
+	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := cc.(*Config)
 	return &fileReceiver{
-		next:   next,
-		path:   cfg.Path,
-		logger: settings.Logger,
+		consumer: consumer,
+		path:     cfg.Path,
+		logger:   settings.Logger,
 	}, nil
 }

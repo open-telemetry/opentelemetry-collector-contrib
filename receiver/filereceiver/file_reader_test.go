@@ -30,8 +30,9 @@ import (
 func TestFileReader_Readline(t *testing.T) {
 	tc := testConsumer{}
 	f, err := os.Open(filepath.Join("testdata", "metrics.json"))
+	require.NoError(t, err)
 	fr := newFileReader(zap.NewNop(), &tc, f)
-	err = fr.readLine()
+	err = fr.readLine(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(tc.consumed))
 	metrics := tc.consumed[0]

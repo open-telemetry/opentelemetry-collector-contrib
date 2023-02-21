@@ -16,6 +16,7 @@ package filereceiver
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -30,21 +31,22 @@ import (
 func TestReceiver(t *testing.T) {
 	tc := &testConsumer{}
 	r := &fileReceiver{
-		path:   "testdata/metrics.json",
-		next:   tc,
-		logger: zap.NewNop(),
+		path:     "testdata/metrics.json",
+		consumer: tc,
+		logger:   zap.NewNop(),
 	}
 	err := r.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	const numExpectedMetrics = 10
 	assert.Eventually(t, func() bool {
-		return assert.Equal(t, numExpectedMetrics, len(tc.consumed))
+		return assert.Equal(t, numExpectedMetrics, tc.numConsumed())
 	}, time.Second, 10*time.Millisecond)
 	err = r.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
 
 type testConsumer struct {
+	mu       sync.Mutex
 	consumed []pmetric.Metrics
 }
 
@@ -53,6 +55,16 @@ func (c *testConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (c *testConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	c.consumed = append(c.consumed, md)
 	return nil
+}
+
+func (c *testConsumer) numConsumed() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return len(c.consumed)
 }
