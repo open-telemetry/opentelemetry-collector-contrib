@@ -57,7 +57,7 @@ func Start(cfg *Config) error {
 	}
 
 	if cfg.UseHTTP {
-		return fmt.Errorf("http is now not supported in log mode of telemetrygen")
+		return fmt.Errorf("http is not supported by 'telemetrygen logs'")
 	}
 
 	if !cfg.Insecure {
