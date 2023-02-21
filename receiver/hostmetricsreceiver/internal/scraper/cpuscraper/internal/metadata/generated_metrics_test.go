@@ -85,6 +85,9 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
 			if test.configSet == testSetNone {
+				assert.Equal(t, 0, ms.Len())
+			}
+			if test.configSet == testSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
