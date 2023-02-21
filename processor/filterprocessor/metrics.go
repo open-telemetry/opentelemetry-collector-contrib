@@ -39,11 +39,14 @@ type filterMetricProcessor struct {
 	skipResourceExpr  expr.BoolExpr[ottlresource.TransformContext]
 	skipMetricExpr    expr.BoolExpr[ottlmetric.TransformContext]
 	skipDataPointExpr expr.BoolExpr[ottldatapoint.TransformContext]
+	logger            *zap.Logger
 }
 
 func newFilterMetricProcessor(set component.TelemetrySettings, cfg *Config) (*filterMetricProcessor, error) {
 	var err error
-	fsp := &filterMetricProcessor{}
+	fsp := &filterMetricProcessor{
+		logger: set.Logger,
+	}
 	if cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil {
 		if cfg.Metrics.MetricConditions != nil {
 			fsp.skipMetricExpr, err = common.ParseMetric(cfg.Metrics.MetricConditions, set)
@@ -169,6 +172,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 	})
 
 	if errors != nil {
+		fmp.logger.Error("failed processing metrics", zap.Error(errors))
 		return md, errors
 	}
 	if md.ResourceMetrics().Len() == 0 {
