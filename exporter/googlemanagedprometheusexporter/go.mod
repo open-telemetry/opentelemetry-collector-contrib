@@ -93,3 +93,7 @@ require (
 )
 
 retract v0.65.0
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../pkg/translator/prometheus
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
