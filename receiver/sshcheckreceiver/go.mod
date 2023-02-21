@@ -21,7 +21,7 @@ require (
 	github.com/moby/patternmatcher v0.5.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.71.0 // indirect
-	go.uber.org/goleak v1.1.12 // indirect
+	go.uber.org/goleak v1.2.1 // indirect
 )
 
 require (
