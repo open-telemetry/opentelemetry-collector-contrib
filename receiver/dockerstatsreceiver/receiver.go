@@ -55,10 +55,6 @@ type receiver struct {
 }
 
 func newReceiver(set rcvr.CreateSettings, config *Config) *receiver {
-    // TODO hughesjj no idea if this should be nixed from or rebase not .. prolly should be nixed
-	//if config.ProvidePerCoreCPUMetrics {
-	//	config.MetricsBuilderConfig.Metrics.ContainerCPUUsagePercpu.Enabled = config.ProvidePerCoreCPUMetrics
-	//}
 	return &receiver{
 		config:   config,
 		settings: set,

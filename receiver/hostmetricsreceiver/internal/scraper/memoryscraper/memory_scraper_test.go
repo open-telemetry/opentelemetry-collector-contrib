@@ -153,7 +153,6 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			// TODO hughesjj check here
 			mbc := metadata.DefaultMetricsBuilderConfig()
 			mbc.Metrics.SystemMemoryUtilization.Enabled = true
 			mbc.Metrics.SystemMemoryUsage.Enabled = false

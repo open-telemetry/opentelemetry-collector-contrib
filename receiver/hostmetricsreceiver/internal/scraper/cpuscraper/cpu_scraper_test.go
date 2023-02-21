@@ -179,7 +179,6 @@ func TestScrape_CpuUtilization(t *testing.T) {
 			t.Parallel()
 			settings := test.metricsConfig
 			if test.metricsConfig.Metrics == (metadata.MetricsSettings{}) {
-				// TODO hughesjj see if this is safe or not, maybe just add else?  dude i don't even know how the original worked
 				settings = metadata.DefaultMetricsBuilderConfig()
 				settings.Metrics.SystemCPUTime.Enabled = test.times
 				settings.Metrics.SystemCPUUtilization.Enabled = test.utilization
@@ -245,7 +244,6 @@ func TestScrape_CpuUtilizationError(t *testing.T) {
 
 func TestScrape_CpuUtilizationStandard(t *testing.T) {
 	overriddenMetricsSettings := metadata.DefaultMetricsBuilderConfig()
-	// TODO hughesjj checking here too
 	overriddenMetricsSettings.Metrics.SystemCPUUtilization.Enabled = true
 	overriddenMetricsSettings.Metrics.SystemCPUTime.Enabled = false
 

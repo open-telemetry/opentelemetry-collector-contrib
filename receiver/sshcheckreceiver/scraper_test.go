@@ -239,8 +239,8 @@ func TestWithoutStartErrsNotPanics(t *testing.T) {
 	cfg.Password = "otelp"
 	cfg.Endpoint = "localhost:22"
 	cfg.IgnoreHostKey = true
-	cfg.Metrics.SshcheckSftpStatus.Enabled = true
-	cfg.Metrics.SshcheckSftpDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SshcheckSftpStatus.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
 
 	// create the scraper without starting it, so Client is nil
 	scrpr := newScraper(cfg, receivertest.NewNopCreateSettings())

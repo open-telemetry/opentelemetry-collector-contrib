@@ -244,7 +244,7 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle pro
 }
 
 func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handle processHandle) error {
-	if !(s.config.MetricsBuilderConfig.Metrics.ProcessMemoryUsage.Enabled || s.config.MetricsBuilderConfig.Metrics.ProcessMemoryVirtualUsage.Enabled) {
+	if !(s.config.MetricsBuilderConfig.Metrics.ProcessMemoryUsage.Enabled || s.config.MetricsBuilderConfig.Metrics.ProcessMemoryVirtual.Enabled) {
 		return nil
 	}
 
