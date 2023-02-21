@@ -61,7 +61,7 @@ func Start(cfg *Config) error {
 	}
 
 	if !cfg.Insecure {
-		return fmt.Errorf("the log mode of telemetrygen only supports insecure grpc")
+		return fmt.Errorf("'telemetrygen logs' only supports insecure gRPC")
 	}
 
 	// only support grpc in insecure mode
