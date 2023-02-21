@@ -489,8 +489,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/ClickHouse/ch-go v0.52.1 h1:nucdgfD1BDSHjbNaG3VNebonxJzD8fX8jbuBpfo5VY0=
 github.com/ClickHouse/ch-go v0.52.1/go.mod h1:B9htMJ0hii/zrC2hljUKdnagRBuLqtRG/GrU3jqCwRk=
-github.com/ClickHouse/clickhouse-go/v2 v2.6.2 h1:Gw6hUHDgwtDqLOjRZFFxqkwdWdYp/Vw1F+F4eAiaMtI=
-github.com/ClickHouse/clickhouse-go/v2 v2.6.2/go.mod h1:GcNAg9SniIu+BqzOxRsTmXAGvhlSaUm/Y9GFdWUCbX8=
+github.com/ClickHouse/clickhouse-go/v2 v2.6.1 h1:82UzCrD8cYEb/Bs/LOO3dlBZZyL+SlvvH/xwZF25BIU=
+github.com/ClickHouse/clickhouse-go/v2 v2.6.1/go.mod h1:SvXuWqDsiHJE3VAn2+3+nz9W9exOSigyskcs4DAcxJQ=
 github.com/DataDog/agent-payload/v5 v5.0.73 h1:fnCnAR+nWY+q//fBZSab4cDFFng0scPEfmLdl9ngmQY=
 github.com/DataDog/agent-payload/v5 v5.0.73/go.mod h1:oQZi1VZp1e3QvlSUX4iphZCpJaFepUxWq0hNXxihKBM=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230206114529-17c7dfde736c h1:vilzDJudtBAAgCjFsOnq4PZDBsVG8YbJCfmNJ8XTIvw=
