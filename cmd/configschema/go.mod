@@ -16,6 +16,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
+require github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.0 // indirect
+
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0 // indirect
 	cloud.google.com/go v0.107.0 // indirect
@@ -61,10 +63,10 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.67 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230221135433-65e01983bba4 // indirect
 	github.com/DataDog/datadog-agent/pkg/quantile v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230221135433-65e01983bba4 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.3 // indirect
@@ -635,10 +637,10 @@ require (
 	go.opentelemetry.io/collector/extension/ballastextension v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
 	go.opentelemetry.io/collector/extension/zpagesextension v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
 	go.opentelemetry.io/collector/featuregate v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230130215412-26bd7b2bf678 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc5 // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
-	go.opentelemetry.io/collector/semconv v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
+	go.opentelemetry.io/collector/semconv v0.71.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.38.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.38.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.12.0 // indirect
