@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
+package tailsamplingprocessor // import "github.com/asserts/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+	"github.com/asserts/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
 func getNewCompositePolicy(logger *zap.Logger, config *CompositeCfg) (sampling.PolicyEvaluator, error) {

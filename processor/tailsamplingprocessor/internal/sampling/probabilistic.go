@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+package sampling // import "github.com/asserts/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
 	"hash/fnv"
