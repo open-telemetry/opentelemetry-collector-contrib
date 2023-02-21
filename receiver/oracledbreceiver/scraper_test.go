@@ -127,9 +127,9 @@ func TestScraper_Scrape(t *testing.T) {
 				dbProviderFunc: func() (*sql.DB, error) {
 					return nil, nil
 				},
-				clientProviderFunc: test.dbclientFn,
-				id:                 component.ID{},
-				metricsSettings:    metadata.DefaultMetricsBuilderConfig(),
+				clientProviderFunc:   test.dbclientFn,
+				id:                   component.ID{},
+				metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			}
 			err := scrpr.start(context.Background(), componenttest.NewNopHost())
 			defer func() {
