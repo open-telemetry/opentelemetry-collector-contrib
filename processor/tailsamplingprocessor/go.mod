@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
+module github.com/asserts/opentelemetry-collector-contrib/processor/tailsamplingprocessor
 
 go 1.19
 
