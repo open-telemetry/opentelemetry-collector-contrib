@@ -16,6 +16,7 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -26,6 +27,7 @@ import (
 
 type Processor struct {
 	contexts []consumer.Logs
+	logger   *zap.Logger
 }
 
 func NewProcessor(contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
@@ -45,6 +47,7 @@ func NewProcessor(contextStatements []common.ContextStatements, settings compone
 
 	return &Processor{
 		contexts: contexts,
+		logger:   settings.Logger,
 	}, nil
 }
 
@@ -52,6 +55,7 @@ func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, e
 	for _, c := range p.contexts {
 		err := c.ConsumeLogs(ctx, ld)
 		if err != nil {
+			p.logger.Error("failed processing logs", zap.Error(err))
 			return ld, err
 		}
 	}
