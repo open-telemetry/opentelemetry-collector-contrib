@@ -30,106 +30,325 @@ import (
 )
 
 func TestTracesToMetrics(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	sink := &consumertest.MetricsSink{}
-	conn, err := factory.CreateTracesToMetrics(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, sink)
-	require.NoError(t, err)
-	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	testCases := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "zero_conditions",
+			cfg: &Config{
+				Spans:      defaultSpansConfig(),
+				SpanEvents: defaultSpanEventsConfig(),
+			},
+		},
+		{
+			name: "one_condition",
+			cfg: &Config{
+				Spans: map[string]MetricInfo{
+					"span.count.if": {
+						Description: "Span count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr"] != "resource-attr-val-1"`,
+						},
+					},
+				},
+				SpanEvents: map[string]MetricInfo{
+					"spanevent.count.if": {
+						Description: "Span event count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr"] == "resource-attr-val-1"`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_conditions",
+			cfg: &Config{
+				Spans: map[string]MetricInfo{
+					"span.count.if": {
+						Description: "Span count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr"] != "resource-attr-val-1"`,
+							`name == "operationB"`,
+						},
+					},
+				},
+				SpanEvents: map[string]MetricInfo{
+					"spanevent.count.if": {
+						Description: "Span event count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr"] != "resource-attr-val-1"`,
+							`name == "event-with-attr"`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_metrics",
+			cfg: &Config{
+				Spans: map[string]MetricInfo{
+					"span.count.all": {
+						Description: "All spans count",
+					},
+					"span.count.if": {
+						Description: "Span count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr"] != "resource-attr-val-1"`,
+							`name == "operationB"`,
+						},
+					},
+				},
+				SpanEvents: map[string]MetricInfo{
+					"spanevent.count.all": {
+						Description: "All span events count",
+					},
+					"spanevent.count.if": {
+						Description: "Span event count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr"] != "resource-attr-val-1"`,
+							`name == "event-with-attr"`,
+						},
+					},
+				},
+			},
+		},
+	}
 
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
-	}()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, tc.cfg.Validate())
+			factory := NewFactory()
+			sink := &consumertest.MetricsSink{}
+			conn, err := factory.CreateTracesToMetrics(context.Background(),
+				connectortest.NewNopCreateSettings(), tc.cfg, sink)
+			require.NoError(t, err)
+			require.NotNil(t, conn)
+			assert.False(t, conn.Capabilities().MutatesData)
 
-	testTraces0, err := golden.ReadTraces(filepath.Join("testdata", "traces_to_metrics", "traces_0.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, conn.ConsumeTraces(context.Background(), testTraces0))
+			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, conn.Shutdown(context.Background()))
+			}()
 
-	testTraces1, err := golden.ReadTraces(filepath.Join("testdata", "traces_to_metrics", "traces_1.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, conn.ConsumeTraces(context.Background(), testTraces1))
+			testSpans, err := golden.ReadTraces(filepath.Join("testdata", "traces", "input.json"))
+			assert.NoError(t, err)
+			assert.NoError(t, conn.ConsumeTraces(context.Background(), testSpans))
 
-	allMetrics := sink.AllMetrics()
-	assert.Equal(t, 2, len(allMetrics))
+			allMetrics := sink.AllMetrics()
+			assert.Equal(t, 1, len(allMetrics))
 
-	expectedMetrics0, err := golden.ReadMetrics(filepath.Join("testdata", "traces_to_metrics", "expected_0.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics0, allMetrics[0], pmetrictest.IgnoreTimestamp()))
-
-	expectedMetrics1, err := golden.ReadMetrics(filepath.Join("testdata", "traces_to_metrics", "expected_1.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, allMetrics[1], pmetrictest.IgnoreTimestamp()))
+			// golden.WriteMetrics(t, filepath.Join("testdata", "traces", tc.name+".json"), allMetrics[0])
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "traces", tc.name+".json"))
+			assert.NoError(t, err)
+			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
+				pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricsOrder()))
+		})
+	}
 }
 
 func TestMetricsToMetrics(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	sink := &consumertest.MetricsSink{}
-	conn, err := factory.CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, sink)
-	require.NoError(t, err)
-	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	testCases := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "zero_conditions",
+			cfg: &Config{
+				Metrics:    defaultMetricsConfig(),
+				DataPoints: defaultDataPointsConfig(),
+			},
+		},
+		{
+			name: "one_condition",
+			cfg: &Config{
+				Metrics: map[string]MetricInfo{
+					"metric.count.if": {
+						Description: "Metric count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr-2"] != nil`,
+						},
+					},
+				},
+				DataPoints: map[string]MetricInfo{
+					"datapoint.count.if": {
+						Description: "Data point count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr-2"] == nil`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_conditions",
+			cfg: &Config{
+				Metrics: map[string]MetricInfo{
+					"metric.count.if": {
+						Description: "Metric count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr-2"] != nil`,
+							`type == METRIC_DATA_TYPE_HISTOGRAM`,
+						},
+					},
+				},
+				DataPoints: map[string]MetricInfo{
+					"datapoint.count.if": {
+						Description: "Data point count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr-2"] == nil`,
+							`value_int == 123`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_metrics",
+			cfg: &Config{
+				Metrics: map[string]MetricInfo{
+					"metric.count.all": {
+						Description: "All metrics count",
+					},
+					"metric.count.if": {
+						Description: "Metric count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr-2"] != nil`,
+							`type == METRIC_DATA_TYPE_HISTOGRAM`,
+						},
+					},
+				},
+				DataPoints: map[string]MetricInfo{
+					"datapoint.count.all": {
+						Description: "All data points count",
+					},
+					"datapoint.count.if": {
+						Description: "Data point count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr-2"] == nil`,
+							`value_int == 123`,
+						},
+					},
+				},
+			},
+		},
+	}
 
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
-	}()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, tc.cfg.Validate())
+			factory := NewFactory()
+			sink := &consumertest.MetricsSink{}
+			conn, err := factory.CreateMetricsToMetrics(context.Background(),
+				connectortest.NewNopCreateSettings(), tc.cfg, sink)
+			require.NoError(t, err)
+			require.NotNil(t, conn)
+			assert.False(t, conn.Capabilities().MutatesData)
 
-	testMetrics0, err := golden.ReadMetrics(filepath.Join("testdata", "metrics_to_metrics", "metrics_0.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, conn.ConsumeMetrics(context.Background(), testMetrics0))
+			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, conn.Shutdown(context.Background()))
+			}()
 
-	testMetrics1, err := golden.ReadMetrics(filepath.Join("testdata", "metrics_to_metrics", "metrics_1.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, conn.ConsumeMetrics(context.Background(), testMetrics1))
+			testMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "input.json"))
+			assert.NoError(t, err)
+			assert.NoError(t, conn.ConsumeMetrics(context.Background(), testMetrics))
 
-	allMetrics := sink.AllMetrics()
-	assert.Equal(t, 2, len(allMetrics))
+			allMetrics := sink.AllMetrics()
+			assert.Equal(t, 1, len(allMetrics))
 
-	expectedMetrics0, err := golden.ReadMetrics(filepath.Join("testdata", "metrics_to_metrics", "expected_0.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics0, allMetrics[0], pmetrictest.IgnoreTimestamp()))
-
-	expectedMetrics1, err := golden.ReadMetrics(filepath.Join("testdata", "metrics_to_metrics", "expected_1.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, allMetrics[1], pmetrictest.IgnoreTimestamp()))
+			// golden.WriteMetrics(t, filepath.Join("testdata", "metrics", tc.name+".json"), allMetrics[0])
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", tc.name+".json"))
+			assert.NoError(t, err)
+			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
+				pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricsOrder()))
+		})
+	}
 }
 
 func TestLogsToMetrics(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	sink := &consumertest.MetricsSink{}
-	conn, err := factory.CreateLogsToMetrics(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, sink)
-	require.NoError(t, err)
-	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	testCases := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "zero_conditions",
+			cfg:  &Config{Logs: defaultLogsConfig()},
+		},
+		{
+			name: "one_condition",
+			cfg: &Config{
+				Logs: map[string]MetricInfo{
+					"count.if": {
+						Description: "Count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr-2"] != nil`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_conditions",
+			cfg: &Config{
+				Logs: map[string]MetricInfo{
+					"count.if": {
+						Description: "Count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr-2"] != nil`,
+							`attributes["customer"] == "acme"`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_metrics",
+			cfg: &Config{
+				Logs: map[string]MetricInfo{
+					"count.all": {
+						Description: "All logs count",
+					},
+					"count.if": {
+						Description: "Count if ...",
+						Conditions: []string{
+							`resource.attributes["resource-attr-2"] != nil`,
+						},
+					},
+				},
+			},
+		},
+	}
 
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
-	}()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, tc.cfg.Validate())
+			factory := NewFactory()
+			sink := &consumertest.MetricsSink{}
+			conn, err := factory.CreateLogsToMetrics(context.Background(),
+				connectortest.NewNopCreateSettings(), tc.cfg, sink)
+			require.NoError(t, err)
+			require.NotNil(t, conn)
+			assert.False(t, conn.Capabilities().MutatesData)
 
-	testLogs0, err := golden.ReadLogs(filepath.Join("testdata", "logs_to_metrics", "logs_0.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs0))
+			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, conn.Shutdown(context.Background()))
+			}()
 
-	testLogs1, err := golden.ReadLogs(filepath.Join("testdata", "logs_to_metrics", "logs_1.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs1))
+			testLogs, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.json"))
+			assert.NoError(t, err)
+			assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs))
 
-	allMetrics := sink.AllMetrics()
-	assert.Equal(t, 2, len(allMetrics))
+			allMetrics := sink.AllMetrics()
+			assert.Equal(t, 1, len(allMetrics))
 
-	expectedMetrics0, err := golden.ReadMetrics(filepath.Join("testdata", "logs_to_metrics", "expected_0.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics0, allMetrics[0], pmetrictest.IgnoreTimestamp()))
-
-	expectedMetrics1, err := golden.ReadMetrics(filepath.Join("testdata", "logs_to_metrics", "expected_1.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, allMetrics[1], pmetrictest.IgnoreTimestamp()))
+			// golden.WriteMetrics(t, filepath.Join("testdata", "logs", tc.name+".json"), allMetrics[0])
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "logs", tc.name+".json"))
+			assert.NoError(t, err)
+			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
+				pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricsOrder()))
+		})
+	}
 }

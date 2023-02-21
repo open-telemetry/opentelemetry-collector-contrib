@@ -70,12 +70,19 @@ func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 	if err != nil {
 		return res, "", fmt.Errorf("failed getting OS type: %w", err)
 	}
+
+	hostID, err := d.provider.HostID()
+	if err != nil {
+		return res, "", fmt.Errorf("failed getting host ID: %w", err)
+	}
+
 	for _, source := range d.hostnameSources {
 		getHostFromSource := hostnameSourcesMap[source]
 		hostname, err = getHostFromSource(d)
 		if err == nil {
 			attrs.PutStr(conventions.AttributeHostName, hostname)
 			attrs.PutStr(conventions.AttributeOSType, osType)
+			attrs.PutStr(conventions.AttributeHostID, hostID)
 
 			return res, conventions.SchemaURL, nil
 		}

@@ -33,11 +33,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
+var (
+	zeroFlag    = pmetric.DefaultDataPointFlags
+	noValueFlag = pmetric.DefaultDataPointFlags.WithNoRecordedValue(true)
+)
+
 type testSumMetric struct {
 	metricNames  []string
 	metricValues [][]float64
 	isCumulative []bool
 	isMonotonic  []bool
+	flags        [][]pmetric.DataPointFlags
 }
 
 type testHistogramMetric struct {
@@ -48,6 +54,7 @@ type testHistogramMetric struct {
 	metricMaxes   [][]float64
 	metricBuckets [][][]uint64
 	isCumulative  []bool
+	flags         [][]pmetric.DataPointFlags
 }
 
 type cumulativeToDeltaTest struct {
@@ -124,6 +131,29 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				metricValues: [][]float64{{100, 100, math.NaN()}, {4}},
 				isCumulative: []bool{false, true},
 				isMonotonic:  []bool{true, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_nodata",
+			inMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{0, 100, 0, 200, 400}, {0, 100, 0, 0, 400}},
+				isCumulative: []bool{true, true},
+				isMonotonic:  []bool{true, true},
+				flags: [][]pmetric.DataPointFlags{
+					{zeroFlag, zeroFlag, noValueFlag, zeroFlag, zeroFlag},
+					{zeroFlag, zeroFlag, noValueFlag, noValueFlag, zeroFlag},
+				},
+			}),
+			outMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 100, 200}, {100, 300}},
+				isCumulative: []bool{false, false},
+				isMonotonic:  []bool{true, true},
+				flags: [][]pmetric.DataPointFlags{
+					{zeroFlag, zeroFlag, zeroFlag},
+					{zeroFlag, zeroFlag},
+				},
 			}),
 		},
 		{
@@ -259,6 +289,37 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					{{4, 4, 4}},
 				},
 				isCumulative: []bool{false, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_histogram_novalue",
+			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{0, 100, 0, 500}, {0, 2, 0, 0, 16}},
+				metricSums:   [][]float64{{0, 100, 0, 500}, {0, 3, 0, 0, 81}},
+				metricBuckets: [][][]uint64{
+					{{0, 0, 0}, {50, 25, 25}, {0, 0, 0}, {250, 125, 125}},
+					{{0, 0, 0}, {1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {21, 40, 20}},
+				},
+				isCumulative: []bool{true, true},
+				flags: [][]pmetric.DataPointFlags{
+					{zeroFlag, zeroFlag, noValueFlag, zeroFlag},
+					{zeroFlag, zeroFlag, noValueFlag, noValueFlag, zeroFlag},
+				},
+			}),
+			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 400}, {2, 14}},
+				metricSums:   [][]float64{{100, 400}, {3, 78}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {200, 100, 100}},
+					{{1, 1, 1}, {20, 39, 19}},
+				},
+				isCumulative: []bool{false, false},
+				flags: [][]pmetric.DataPointFlags{
+					{zeroFlag, zeroFlag},
+					{zeroFlag, zeroFlag},
+				},
 			}),
 		},
 		{
@@ -430,6 +491,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						} else {
 							require.Equal(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue())
 						}
+						require.Equal(t, eDataPoints.At(j).Flags(), aDataPoints.At(j).Flags())
 					}
 				}
 
@@ -451,6 +513,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 							require.Equal(t, eDataPoints.At(j).Sum(), aDataPoints.At(j).Sum())
 						}
 						require.Equal(t, eDataPoints.At(j).BucketCounts(), aDataPoints.At(j).BucketCounts())
+						require.Equal(t, eDataPoints.At(j).Flags(), aDataPoints.At(j).Flags())
 					}
 				}
 			}
@@ -478,10 +541,13 @@ func generateTestSumMetrics(tm testSumMetric) pmetric.Metrics {
 			sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		}
 
-		for _, value := range tm.metricValues[i] {
+		for index, value := range tm.metricValues[i] {
 			dp := m.Sum().DataPoints().AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleValue(value)
+			if len(tm.flags) > i && len(tm.flags[i]) > index {
+				dp.SetFlags(tm.flags[i][index])
+			}
 		}
 	}
 
@@ -527,6 +593,9 @@ func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
 				}
 			}
 			dp.BucketCounts().FromRaw(tm.metricBuckets[i][index])
+			if len(tm.flags) > i && len(tm.flags[i]) > index {
+				dp.SetFlags(tm.flags[i][index])
+			}
 		}
 	}
 

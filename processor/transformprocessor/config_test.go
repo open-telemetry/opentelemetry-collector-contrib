@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -36,6 +37,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Context: "span",
@@ -81,6 +83,22 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "ignore_errors"),
+			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+						},
+					},
+				},
+				MetricStatements: []common.ContextStatements{},
+				LogStatements:    []common.ContextStatements{},
 			},
 		},
 		{
@@ -132,6 +150,20 @@ func TestLoadConfig(t *testing.T) {
 
 func Test_UnknownContextID(t *testing.T) {
 	id := component.NewIDWithName(typeStr, "unknown_context")
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(id.String())
+	assert.NoError(t, err)
+	assert.Error(t, component.UnmarshalConfig(sub, cfg))
+}
+
+func Test_UnknownErrorMode(t *testing.T) {
+	id := component.NewIDWithName(typeStr, "unknown_error_mode")
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	assert.NoError(t, err)

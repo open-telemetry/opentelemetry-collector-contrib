@@ -1,13 +1,15 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: test-telemetrygen
+  name: test-telemetrygen-job
   namespace: default
 spec:
   template:
     metadata:
+      annotations:
+        workload: job
       labels:
-        component: test-telemetrygen
+        app: test-telemetrygen
     spec:
       containers:
       - command:
@@ -15,7 +17,11 @@ spec:
         - traces
         - --otlp-insecure
         - --otlp-endpoint=test-opentelemetry-collector:4317
-        - --duration=5s
+        - --service=test-job
+        - --traces=5
+        - --rate=1
+        - --otlp-attributes=k8s.container.name="telemetrygen"
+        - --otlp-attributes=k8s.container.restart_count="0"
         image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
         imagePullPolicy: IfNotPresent
         name: telemetrygen

@@ -41,7 +41,7 @@ var activeJobs = &metricspb.MetricDescriptor{
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
-// TODO: All the CronJob related functions below can be de-duplicated using generics from go 1.18
+// TODO: All the CronJob related functions below can be de-duplicated using generics from go 1.19
 
 func GetMetrics(cj *batchv1.CronJob) []*agentmetricspb.ExportMetricsServiceRequest {
 	metrics := []*metricspb.Metric{

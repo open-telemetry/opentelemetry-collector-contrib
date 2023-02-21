@@ -220,6 +220,10 @@ endif
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
 
+.PHONY: docker-telemetrygen
+docker-telemetrygen:
+	COMPONENT=telemetrygen $(MAKE) docker-component
+
 .PHONY: generate
 generate:
 	cd cmd/mdatagen && $(GOCMD) install .
@@ -268,6 +272,12 @@ genoteltestbedcol: $(BUILDER)
 .PHONY: oteltestbedcol
 oteltestbedcol:
 	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
+
+# Build the telemetrygen executable.
+.PHONY: telemetrygen
+telemetrygen:
+	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
 
 .PHONY: update-dep
@@ -355,7 +365,7 @@ multimod-sync: $(MULITMOD)
 .PHONY: crosslink
 crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
-	$(CROSSLINK) --root=$(shell pwd)
+	$(CROSSLINK) --root=$(shell pwd) --prune
 
 .PHONY: clean
 clean:

@@ -83,13 +83,23 @@ func ValueHash(v pcommon.Value) [16]byte {
 }
 
 func (hw *hashWriter) writeMapHash(m pcommon.Map) {
-	hw.keysBuf = hw.keysBuf[:0]
+	// For each recursive call into this function we want to preserve the previous buffer state
+	// while also adding new keys to the buffer. nextIndex is the index of the first new key
+	// added to the buffer for this call of the function.
+	// This also works for the first non-recursive call of this function because the buffer is always empty
+	// on the first call due to it being cleared of any added keys at then end of the function.
+	nextIndex := len(hw.keysBuf)
+
 	m.Range(func(k string, v pcommon.Value) bool {
 		hw.keysBuf = append(hw.keysBuf, k)
 		return true
 	})
-	sort.Strings(hw.keysBuf)
-	for _, k := range hw.keysBuf {
+
+	// Get only the newly added keys from the buffer by slicing the buffer from nextIndex to the end
+	workingKeySet := hw.keysBuf[nextIndex:]
+
+	sort.Strings(workingKeySet)
+	for _, k := range workingKeySet {
 		v, _ := m.Get(k)
 		hw.strBuf = hw.strBuf[:0]
 		hw.strBuf = append(hw.strBuf, keyPrefix...)
@@ -97,6 +107,9 @@ func (hw *hashWriter) writeMapHash(m pcommon.Map) {
 		hw.h.Write(hw.strBuf)
 		hw.writeValueHash(v)
 	}
+
+	// Remove all keys that were added to the buffer during this call of the function
+	hw.keysBuf = hw.keysBuf[:nextIndex]
 }
 
 func (hw *hashWriter) writeSliceHash(sl pcommon.Slice) {
