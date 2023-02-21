@@ -117,10 +117,10 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 		builtMetric := metricSlice.AppendEmpty()
 
 		builtMetric.SetName(name)
-		builtMetric.SetDescription(metricCfg.Metrics.Description)
-		builtMetric.SetUnit(metricCfg.Metrics.Unit)
+		builtMetric.SetDescription(metricCfg.Description)
+		builtMetric.SetUnit(metricCfg.Unit)
 
-		if (metricCfg.Metrics.Sum != SumMetric{}) {
+		if (metricCfg.Sum != SumMetric{}) {
 			builtMetric.SetEmptySum().SetIsMonotonic(metricCfg.Sum.Monotonic)
 
 			switch metricCfg.Sum.Aggregation {
