@@ -91,7 +91,7 @@ jobs:
       - name: copy trace output
         run: |
           kubectl cp -c filecp default/test-opentelemetry-collector-0:tmp/trace.json processor/k8sattributesprocessor/testdata/trace.json
-          cat trace.json | grep -E "(test-statefulset|test-job)"
+          cat processor/k8sattributesprocessor/testdata/trace.json | grep -E "(test-statefulset|test-job)"
       - name: run e2e test to check output
         run: |    
           cd processor/k8sattributesprocessor
