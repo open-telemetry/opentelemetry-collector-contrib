@@ -33,14 +33,14 @@ require (
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.72.0
 	go.opentelemetry.io/collector/component v0.72.0
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.71.0
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.71.0
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.71.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.71.0
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.72.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.72.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.72.0
+	go.opentelemetry.io/collector/extension/ballastextension v0.72.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.72.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.72.0
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.71.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.71.0
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.72.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.0
 	golang.org/x/sys v0.5.0
 )
 
