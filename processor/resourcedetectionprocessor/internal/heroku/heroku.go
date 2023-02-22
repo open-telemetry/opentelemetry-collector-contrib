@@ -31,9 +31,9 @@ const (
 	TypeStr = "heroku"
 
 	// The time and date the release was created.
-	herokuReleaseCreationTimestamp = "heroku.creation_timestamp"
+	herokuReleaseCreationTimestamp = "heroku.release.creation_timestamp"
 	// The commit hash for the current release
-	herokuReleaseCommit = "heroku.commit"
+	herokuReleaseCommit = "heroku.release.commit"
 	// The unique identifier for the application
 	herokuAppID = "heroku.app.id"
 )
@@ -59,6 +59,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	attrs := res.Attributes()
+	attrs.PutStr(conventions.AttributeCloudProvider, "heroku")
 
 	attrs.PutStr(conventions.AttributeServiceInstanceID, dynoID)
 	if v, ok := os.LookupEnv("HEROKU_APP_ID"); ok {

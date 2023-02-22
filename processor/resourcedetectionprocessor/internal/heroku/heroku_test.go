@@ -46,12 +46,13 @@ func TestDetectTrue(t *testing.T) {
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
-		"heroku.app.id":             "appid",
-		"service.name":              "appname",
-		"service.instance.id":       "foo",
-		"heroku.commit":             "23456",
-		"heroku.creation_timestamp": "createdat",
-		"service.version":           "v1",
+		"heroku.app.id":                     "appid",
+		"service.name":                      "appname",
+		"service.instance.id":               "foo",
+		"heroku.release.commit":             "23456",
+		"heroku.release.creation_timestamp": "createdat",
+		"service.version":                   "v1",
+		"cloud.provider":                    "heroku",
 	},
 		res.Attributes().AsRaw())
 }
@@ -71,6 +72,7 @@ func TestDetectTruePartial(t *testing.T) {
 		"service.name":        "appname",
 		"service.instance.id": "foo",
 		"service.version":     "v1",
+		"cloud.provider":      "heroku",
 	},
 		res.Attributes().AsRaw())
 }
