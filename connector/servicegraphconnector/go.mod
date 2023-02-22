@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/servi
 
 go 1.18
 
-require github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.0.0-00010101000000-000000000000
+require github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.72.0
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
