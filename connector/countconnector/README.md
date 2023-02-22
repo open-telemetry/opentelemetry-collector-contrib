@@ -6,21 +6,33 @@
 | Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types) |
 | Distributions            | []                                                        |
 
-The `count` connector can be used to count spans, data points, or log records.
+The `count` connector can be used to count spans, span events, metrics, data points, and log records.
 
 ## Supported Pipeline Types
 
-| [Exporter Pipeline Type] | [Receiver Pipeline Type] | Description                        | Default Metric Name       |
-| ------------------------ | ------------------------ | ---------------------------------- | ------------------------- |
-| traces                   | metrics                  | Counts the number of spans.        | `trace.span.count`        |
-| metrics                  | metrics                  | Counts the number of log records.  | `metric.data_point.count` |
-| logs                     | metrics                  | Counts the number of data points.  | `log.record.count`        |
+| [Exporter Pipeline Type] | [Receiver Pipeline Type] |
+| ------------------------ | ------------------------ |
+| traces                   | metrics                  |
+| metrics                  | metrics                  |
+| logs                     | metrics                  |
 
 ## Configuration
 
 If you are not already familiar with connectors, you may find it helpful to first visit the [Connectors README].
 
-The count connector may be used with default settings. Optionally, the names of the emitted metrics may be customized.
+### Default Configuration
+
+The `count` connector may be used without any configuration settings. The following table describes the
+default behavior of the connector.
+
+| [Exporter Pipeline Type] | Description                         | Default Metric Names                         |
+| ------------------------ | ------------------------------------| -------------------------------------------- |
+| traces                   | Counts all spans and span events.   | `trace.span.count`, `trace.span.event.count` |
+| metrics                  | Counts all metrics and data points. | `metric.count`, `metric.data_point.count`    |
+| logs                     | Counts all log records.             | `log.record.count`                           |
+
+For example, in the following configuration the connector will count spans and span events from the `traces/in`
+pipeline and emit metrics called `trace.span.count` and `trace.span.event.count` onto the `metrics/out` pipeline.
 
 ```yaml
 receivers:
@@ -29,20 +41,52 @@ exporters:
   bar:
 connectors:
   count:
-    traces:
-      name: my.span.count
-      description: My span count.
-    metrics:
-      name: my.data_point.count
-      description: My data point count.
-    logs:
-      name: my.log_record.count
-      description: My log record count.
+
+service:
+  pipelines:
+    traces/in:
+      receivers: [foo]
+      exporters: [count]
+    metrics/out:
+      receivers: [count]
+      exporters: [bar]
 ```
+
+### Custom Counts
+
+Optionally, emit custom counts by defining metrics under one or more of the following sections:
+
+- `spans`
+- `spanevents`
+- `metrics`
+- `datapoints`
+- `logs`
+
+Under each custom metric name, specify one or more conditions using [OTTL Syntax].
+Data that matches any one of the conditions will be counted. i.e. Conditions are ORed together.
+
+Optionally, specify a description for the metric.
+
+```yaml
+receivers:
+  foo:
+exporters:
+  bar:
+connectors:
+  count:
+    spanevents:
+      my.prod.event.count:
+        description: The number of span events from my prod environment.
+        conditions:
+          - 'attributes["env"] == "prod"'
+          - 'name == "prodevent"'
+```
+
+Note: If any custom metrics are defined for a data type, the default metric will not be emitted.
 
 ### Example Usage
 
-Count spans, only exporting the count metrics.
+Count spans and span events, only exporting the count metrics.
 
 ```yaml
 receivers:
@@ -61,7 +105,7 @@ service:
       exporters: [bar]
 ```
 
-Count spans, exporting both the original traces and the count metrics.
+Count spans and span events, exporting both the original traces and the count metrics.
 
 ```yaml
 receivers:
@@ -81,7 +125,7 @@ service:
       exporters: [bar/metrics_backend]
 ```
 
-Count spans, data points, and log records, exporting count metrics to a separate backend.
+Count spans, span events, metrics, data points, and log records, exporting count metrics to a separate backend.
 
 ```yaml
 receivers:
@@ -109,7 +153,71 @@ service:
       exporters: [bar/counts_only]
 ```
 
+Count logs with a severity of ERROR or higher.
+
+```yaml
+receivers:
+  foo:
+exporters:
+  bar:
+connectors:
+  count:
+    logs:
+      my.error.log.count:
+        description: Error+ logs.
+        conditions:
+          - `severity_number >= SEVERITY_NUMBER_ERROR`
+service:
+  pipelines:
+    logs:
+      receivers: [foo]
+      exporters: [count]
+    metrics:
+      receivers: [count]
+      exporters: [bar]
+```
+
+Count all spans and span events (default behavior). Count metrics and data points based on the `env` attribute.
+
+```yaml
+receivers:
+  foo/traces:
+  foo/metrics:
+  foo/logs:
+exporters:
+  bar/all_types:
+  bar/counts_only:
+connectors:
+  count:
+    metrics:
+      my.prod.metric.count:
+        conditions:
+         - `attributes["env"] == "prod"
+      my.test.metric.count:
+        conditions:
+         - `attributes["env"] == "test"
+    datapoints:
+      my.prod.datapoint.count:
+        conditions:
+         - `attributes["env"] == "prod"
+      my.test.datapoint.count:
+        conditions:
+         - `attributes["env"] == "test"
+service:
+  pipelines:
+    traces:
+      receivers: [foo/traces]
+      exporters: [bar/all_types, count]
+    metrics:
+      receivers: [foo/metrics]
+      exporters: [bar/all_types, count]
+    metrics/counts:
+      receivers: [count]
+      exporters: [bar/counts_only]
+```
+
 [in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
 [Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
 [Exporter Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
+[OTTL Syntax]:https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md

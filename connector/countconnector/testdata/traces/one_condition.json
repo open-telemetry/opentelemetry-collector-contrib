@@ -1,32 +1,6 @@
 {
    "resourceMetrics": [
       {
-         "resource": {},
-         "scopeMetrics": [
-            {
-               "metrics": [
-                  {
-                     "description": "The number of log records observed.",
-                     "name": "log.record.count",
-                     "sum": {
-                        "aggregationTemporality": 1,
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "timeUnixNano": "1675456932176927000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     }
-                  }
-               ],
-               "scope": {
-                  "name": "otelcol/countconnector"
-               }
-            }
-         ]
-      },
-      {
          "resource": {
             "attributes": [
                {
@@ -41,14 +15,28 @@
             {
                "metrics": [
                   {
-                     "description": "The number of log records observed.",
-                     "name": "log.record.count",
+                     "description": "Span count if ...",
+                     "name": "span.count.if",
+                     "sum": {
+                        "aggregationTemporality": 1,
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "timeUnixNano": "1676490033222958000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     }
+                  },
+                  {
+                     "description": "Span event count if ...",
+                     "name": "spanevent.count.if",
                      "sum": {
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
                               "asInt": "2",
-                              "timeUnixNano": "1675456932176927000"
+                              "timeUnixNano": "1676490033222959000"
                            }
                         ],
                         "isMonotonic": true
@@ -66,12 +54,6 @@
             "attributes": [
                {
                   "key": "resource-attr",
-                  "value": {
-                     "stringValue": "resource-attr-val-1"
-                  }
-               },
-               {
-                  "key": "resource-attr-2",
                   "value": {
                      "stringValue": "resource-attr-val-2"
                   }
@@ -82,14 +64,28 @@
             {
                "metrics": [
                   {
-                     "description": "The number of log records observed.",
-                     "name": "log.record.count",
+                     "description": "Span count if ...",
+                     "name": "span.count.if",
                      "sum": {
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
-                              "asInt": "3",
-                              "timeUnixNano": "1675456932176927000"
+                              "asInt": "1",
+                              "timeUnixNano": "1676490033222979000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     }
+                  },
+                  {
+                     "description": "Span event count if ...",
+                     "name": "spanevent.count.if",
+                     "sum": {
+                        "aggregationTemporality": 1,
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "timeUnixNano": "1676490033222979000"
                            }
                         ],
                         "isMonotonic": true

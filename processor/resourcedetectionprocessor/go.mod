@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.1
-	github.com/aws/aws-sdk-go v1.44.201
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.2
+	github.com/aws/aws-sdk-go v1.44.205
 	github.com/hashicorp/consul/api v1.18.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.71.0
@@ -86,7 +86,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.13.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/oauth2 v0.4.0 // indirect
+	golang.org/x/oauth2 v0.5.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
