@@ -355,7 +355,7 @@ multimod-sync: $(MULITMOD)
 .PHONY: crosslink
 crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
-	$(CROSSLINK) --root=$(shell pwd)
+	$(CROSSLINK) --root=$(shell pwd) --prune
 
 .PHONY: clean
 clean:

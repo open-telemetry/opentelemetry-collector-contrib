@@ -26,7 +26,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "logicmonitor"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a LogicMonitor exporter factory

@@ -1,10 +1,12 @@
-# Jaeger Thrift Exporter
+# Deprecated Jaeger Thrift Exporter
 
 | Status                   |           |
 | ------------------------ |-----------|
-| Stability                | [beta]    |
+| Stability                | [deprecated]    |
 | Supported pipeline types | traces    |
 | Distributions            | [contrib] |
+
+This exporter is being deprecated and will be removed in July 2023 as Jaeger support OTLP directly.
 
 This exporter supports sending trace data to [Jaeger](https://www.jaegertracing.io) over Thrift HTTP.
 
@@ -40,5 +42,5 @@ with detailed sample configurations [here](testdata/config.yaml).
 This exporter also offers proxy support as documented
 [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[deprecated]:https://github.com/open-telemetry/opentelemetry-collector#deprecated
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -30,6 +30,7 @@ func (e BoolExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return e.boolExpressionEvaluator(ctx, tCtx)
 }
 
+//nolint:unparam
 func not[K any](original BoolExpr[K]) (BoolExpr[K], error) {
 	return BoolExpr[K]{func(ctx context.Context, tCtx K) (bool, error) {
 		result, err := original.Eval(ctx, tCtx)

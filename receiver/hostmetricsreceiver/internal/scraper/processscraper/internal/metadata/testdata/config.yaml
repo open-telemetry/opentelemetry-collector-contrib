@@ -10,15 +10,11 @@ all_metrics:
     enabled: true
   process.disk.operations:
     enabled: true
-  process.memory.physical_usage:
-    enabled: true
   process.memory.usage:
     enabled: true
   process.memory.utilization:
     enabled: true
   process.memory.virtual:
-    enabled: true
-  process.memory.virtual_usage:
     enabled: true
   process.open_file_descriptors:
     enabled: true
@@ -39,15 +35,11 @@ no_metrics:
     enabled: false
   process.disk.operations:
     enabled: false
-  process.memory.physical_usage:
-    enabled: false
   process.memory.usage:
     enabled: false
   process.memory.utilization:
     enabled: false
   process.memory.virtual:
-    enabled: false
-  process.memory.virtual_usage:
     enabled: false
   process.open_file_descriptors:
     enabled: false

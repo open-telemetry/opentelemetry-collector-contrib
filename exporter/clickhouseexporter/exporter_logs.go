@@ -21,6 +21,7 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -38,17 +39,8 @@ type logsExporter struct {
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-
-	if err := createDatabase(cfg); err != nil {
-		return nil, err
-	}
-
 	client, err := newClickhouseClient(cfg)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = createLogsTable(cfg, client); err != nil {
 		return nil, err
 	}
 
@@ -60,8 +52,19 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	}, nil
 }
 
-// Shutdown will shutdown the exporter.
-func (e *logsExporter) Shutdown(_ context.Context) error {
+func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
+	if err := createDatabase(ctx, e.cfg); err != nil {
+		return err
+	}
+
+	if err := createLogsTable(ctx, e.cfg, e.client); err != nil {
+		return err
+	}
+	return nil
+}
+
+// shutdown will shut down the exporter.
+func (e *logsExporter) shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -193,7 +196,7 @@ func newClickhouseClient(cfg *Config) (*sql.DB, error) {
 	return db, nil
 }
 
-func createDatabase(cfg *Config) error {
+func createDatabase(ctx context.Context, cfg *Config) error {
 	if cfg.Database == defaultDatabase {
 		return nil
 	}
@@ -210,15 +213,15 @@ func createDatabase(cfg *Config) error {
 		_ = db.Close()
 	}()
 	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database)
-	_, err = db.Exec(query)
+	_, err = db.ExecContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)
 	}
 	return nil
 }
 
-func createLogsTable(cfg *Config, db *sql.DB) error {
-	if _, err := db.Exec(renderCreateLogsTableSQL(cfg)); err != nil {
+func createLogsTable(ctx context.Context, cfg *Config, db *sql.DB) error {
+	if _, err := db.ExecContext(ctx, renderCreateLogsTableSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create logs table sql: %w", err)
 	}
 	return nil

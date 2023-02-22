@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -83,6 +84,23 @@ func TestProcessorStart(t *testing.T) {
 	}
 }
 
+func TestConnectorStart(t *testing.T) {
+	// Create servicegraph processor
+	factory := NewConnectorFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	procCreationParams := connectortest.NewNopCreateSettings()
+	traceProcessor, err := factory.CreateTracesToMetrics(context.Background(), procCreationParams, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// Test
+	smp := traceProcessor.(*serviceGraphProcessor)
+	err = smp.Start(context.Background(), componenttest.NewNopHost())
+
+	// Verify
+	assert.NoError(t, err)
+}
+
 func TestProcessorShutdown(t *testing.T) {
 	// Prepare
 	factory := NewFactory()
@@ -90,7 +108,23 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p := newProcessor(zaptest.NewLogger(t), cfg, next)
+	p := newProcessor(zaptest.NewLogger(t), cfg)
+	p.tracesConsumer = next
+	err := p.Shutdown(context.Background())
+
+	// Verify
+	assert.NoError(t, err)
+}
+
+func TestConnectorShutdown(t *testing.T) {
+	// Prepare
+	factory := NewConnectorFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	// Test
+	next := new(consumertest.MetricsSink)
+	p := newProcessor(zaptest.NewLogger(t), cfg)
+	p.metricsConsumer = next
 	err := p.Shutdown(context.Background())
 
 	// Verify
@@ -108,7 +142,8 @@ func TestProcessorConsume(t *testing.T) {
 		return verifyMetrics(t, md)
 	})
 
-	processor := newProcessor(zaptest.NewLogger(t), cfg, consumertest.NewNop())
+	processor := newProcessor(zaptest.NewLogger(t), cfg)
+	processor.tracesConsumer = consumertest.NewNop()
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
@@ -125,6 +160,28 @@ func TestProcessorConsume(t *testing.T) {
 
 	// Shutdown the processor
 	assert.NoError(t, processor.Shutdown(context.Background()))
+}
+
+func TestConnectorConsume(t *testing.T) {
+	// Prepare
+	cfg := &Config{
+		Dimensions: []string{"some-attribute", "non-existing-attribute"},
+	}
+
+	conn := newProcessor(zaptest.NewLogger(t), cfg)
+	conn.metricsConsumer = newMockMetricsExporter(func(md pmetric.Metrics) error {
+		return verifyMetrics(t, md)
+	})
+
+	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Test & verify
+	td := buildSampleTrace("val")
+	// The assertion is part of verifyMetrics func.
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+
+	// Shutdown the conn
+	assert.NoError(t, conn.Shutdown(context.Background()))
 }
 
 func verifyMetrics(t *testing.T, md pmetric.Metrics) error {
@@ -337,7 +394,8 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 	mockMetricsExporter := newMockMetricsExporter(func(md pmetric.Metrics) error { return nil })
 
-	p := newProcessor(zaptest.NewLogger(t), cfg, consumertest.NewNop())
+	p := newProcessor(zaptest.NewLogger(t), cfg)
+	p.tracesConsumer = consumertest.NewNop()
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {

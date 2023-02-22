@@ -108,14 +108,6 @@ Number of disk operations performed by the process.
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
 
-### process.memory.physical_usage
-
-[DEPRECATED] Use `process.memory.usage` metric instead. The amount of physical memory in use.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
 ### process.memory.utilization
 
 Percentage of total physical memory that is used by the process.
@@ -123,14 +115,6 @@ Percentage of total physical memory that is used by the process.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
-
-### process.memory.virtual_usage
-
-[DEPRECATED] Use `process.memory.virtual` metric instead. Virtual memory size.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
 
 ### process.open_file_descriptors
 
