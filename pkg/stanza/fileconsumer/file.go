@@ -40,8 +40,10 @@ type Manager struct {
 	roller        roller
 	persister     operator.Persister
 
-	pollInterval  time.Duration
-	maxBatchFiles int
+	pollInterval    time.Duration
+	maxBatches      int
+	maxBatchFiles   int
+	deleteAfterRead bool
 
 	knownFiles []*Reader
 	seenPaths  map[string]struct{}
@@ -111,10 +113,22 @@ func (m *Manager) poll(ctx context.Context) {
 		m.knownFiles[i].generation++
 	}
 
+	// Used to keep track of the number of batches processed in this poll cycle
+	batchesProcessed := 0
+
 	// Get the list of paths on disk
 	matches := m.finder.FindFiles()
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])
+
+		// If a maxBatches is set, check if we have hit the limit
+		if m.maxBatches != 0 {
+			batchesProcessed++
+			if batchesProcessed >= m.maxBatches {
+				return
+			}
+		}
+
 		matches = matches[m.maxBatchFiles:]
 	}
 	m.consume(ctx, matches)
@@ -135,9 +149,20 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		go func(r *Reader) {
 			defer wg.Done()
 			r.ReadToEnd(ctx)
+			if m.deleteAfterRead {
+				r.Close()
+				if err := os.Remove(r.file.Name()); err != nil {
+					m.Errorf("could not delete %s", r.file.Name())
+				}
+			}
 		}(reader)
 	}
 	wg.Wait()
+
+	if m.deleteAfterRead {
+		// no need to track files since they were deleted
+		return
+	}
 
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.fromBeginning = true

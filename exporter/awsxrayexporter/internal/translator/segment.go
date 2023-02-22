@@ -67,8 +67,8 @@ var (
 )
 
 // MakeSegmentDocumentString converts an OpenTelemetry Span to an X-Ray Segment and then serialzies to JSON
-func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool) (string, error) {
-	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs)
+func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (string, error) {
+	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames)
 	if err != nil {
 		return "", err
 	}
@@ -82,7 +82,7 @@ func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, inde
 }
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
-func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool) (*awsxray.Segment, error) {
+func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (*awsxray.Segment, error) {
 	var segmentType string
 
 	storeResource := true
@@ -105,7 +105,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		httpfiltered, http                                 = makeHTTP(span)
 		isError, isFault, isThrottle, causefiltered, cause = makeCause(span, httpfiltered, resource)
 		origin                                             = determineAwsOrigin(resource)
-		awsfiltered, aws                                   = makeAws(causefiltered, resource)
+		awsfiltered, aws                                   = makeAws(causefiltered, resource, logGroupNames)
 		service                                            = makeService(resource)
 		sqlfiltered, sql                                   = makeSQL(span, awsfiltered)
 		user, annotations, metadata                        = makeXRayAttributes(sqlfiltered, resource, storeResource, indexedAttrs, indexAllAttrs)
@@ -346,6 +346,20 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		}
 	}
 
+	annotationKeys, ok := attributes[awsxray.AWSXraySegmentAnnotationsAttribute]
+	if ok && annotationKeys.Type() == pcommon.ValueTypeSlice {
+		slice := annotationKeys.Slice()
+		for i := 0; i < slice.Len(); i++ {
+			value := slice.At(i)
+			if value.Type() != pcommon.ValueTypeStr {
+				continue
+			}
+			key := value.AsString()
+			indexedKeys[key] = true
+		}
+		delete(attributes, awsxray.AWSXraySegmentAnnotationsAttribute)
+	}
+
 	if storeResource {
 		resource.Attributes().Range(func(key string, value pcommon.Value) bool {
 			key = "otel.resource." + key
@@ -355,7 +369,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 				key = fixAnnotationKey(key)
 				annotations[key] = annoVal
 			} else {
-				metaVal := metadataValue(value)
+				metaVal := value.AsRaw()
 				if metaVal != nil {
 					defaultMetadata[key] = metaVal
 				}
@@ -381,7 +395,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 					annotations[key] = annoVal
 				}
 			} else {
-				metaVal := metadataValue(value)
+				metaVal := value.AsRaw()
 				if metaVal != nil {
 					defaultMetadata[key] = metaVal
 				}
@@ -406,34 +420,6 @@ func annotationValue(value pcommon.Value) interface{} {
 		return value.Double()
 	case pcommon.ValueTypeBool:
 		return value.Bool()
-	}
-	return nil
-}
-
-func metadataValue(value pcommon.Value) interface{} {
-	switch value.Type() {
-	case pcommon.ValueTypeStr:
-		return value.Str()
-	case pcommon.ValueTypeInt:
-		return value.Int()
-	case pcommon.ValueTypeDouble:
-		return value.Double()
-	case pcommon.ValueTypeBool:
-		return value.Bool()
-	case pcommon.ValueTypeMap:
-		converted := map[string]interface{}{}
-		value.Map().Range(func(key string, value pcommon.Value) bool {
-			converted[key] = metadataValue(value)
-			return true
-		})
-		return converted
-	case pcommon.ValueTypeSlice:
-		arrVal := value.Slice()
-		converted := make([]interface{}, arrVal.Len())
-		for i := 0; i < arrVal.Len(); i++ {
-			converted[i] = metadataValue(arrVal.At(i))
-		}
-		return converted
 	}
 	return nil
 }

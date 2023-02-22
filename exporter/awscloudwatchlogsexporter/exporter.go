@@ -26,6 +26,7 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -44,7 +45,7 @@ type exporter struct {
 	pusher           cwlogs.Pusher
 }
 
-func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings) (component.LogsExporter, error) {
+func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*exporter, error) {
 	if expConfig == nil {
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
@@ -78,9 +79,9 @@ func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings)
 	return logsExporter, nil
 }
 
-func newCwLogsExporter(config component.Config, params component.ExporterCreateSettings) (component.LogsExporter, error) {
+func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.Logs, error) {
 	expConfig := config.(*Config)
-	logsExporter, err := newCwLogsPusher(expConfig, params)
+	logsPusher, err := newCwLogsPusher(expConfig, params)
 	if err != nil {
 		return nil, err
 	}
@@ -88,14 +89,15 @@ func newCwLogsExporter(config component.Config, params component.ExporterCreateS
 		context.TODO(),
 		params,
 		config,
-		logsExporter.ConsumeLogs,
+		logsPusher.consumeLogs,
 		exporterhelper.WithQueue(expConfig.enforcedQueueSettings()),
 		exporterhelper.WithRetry(expConfig.RetrySettings),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithShutdown(logsPusher.shutdown),
 	)
-
 }
 
-func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (e *exporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	cwLogsPusher := e.pusher
 	logEvents, _ := logsToCWLogs(e.logger, ld)
 	if len(logEvents) == 0 {
@@ -122,18 +124,10 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (e *exporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (e *exporter) Shutdown(ctx context.Context) error {
+func (e *exporter) shutdown(_ context.Context) error {
 	if e.pusher != nil {
 		e.pusher.ForceFlush()
 	}
-	return nil
-}
-
-func (e *exporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
@@ -186,7 +180,7 @@ func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord) (*clou
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
 	body := cwLogBody{
-		Body:                   attrValue(log.Body()),
+		Body:                   log.Body().AsRaw(),
 		SeverityNumber:         int32(log.SeverityNumber()),
 		SeverityText:           log.SeverityText(),
 		DroppedAttributesCount: log.DroppedAttributesCount(),
@@ -217,39 +211,8 @@ func attrsValue(attrs pcommon.Map) map[string]interface{} {
 	}
 	out := make(map[string]interface{}, attrs.Len())
 	attrs.Range(func(k string, v pcommon.Value) bool {
-		out[k] = attrValue(v)
+		out[k] = v.AsRaw()
 		return true
 	})
 	return out
-}
-
-func attrValue(value pcommon.Value) interface{} {
-	switch value.Type() {
-	case pcommon.ValueTypeInt:
-		return value.Int()
-	case pcommon.ValueTypeBool:
-		return value.Bool()
-	case pcommon.ValueTypeDouble:
-		return value.Double()
-	case pcommon.ValueTypeStr:
-		return value.Str()
-	case pcommon.ValueTypeMap:
-		values := map[string]interface{}{}
-		value.Map().Range(func(k string, v pcommon.Value) bool {
-			values[k] = attrValue(v)
-			return true
-		})
-		return values
-	case pcommon.ValueTypeSlice:
-		arrayVal := value.Slice()
-		values := make([]interface{}, arrayVal.Len())
-		for i := 0; i < arrayVal.Len(); i++ {
-			values[i] = attrValue(arrayVal.At(i))
-		}
-		return values
-	case pcommon.ValueTypeEmpty:
-		return nil
-	default:
-		return nil
-	}
 }

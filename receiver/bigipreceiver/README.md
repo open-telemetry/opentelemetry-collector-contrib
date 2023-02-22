@@ -32,7 +32,7 @@ receivers:
     collection_interval: 10s
     endpoint: https://localhost:443
     username: otelu
-    password: $BIGIP_PASSWORD
+    password: ${env:BIGIP_PASSWORD}
     tls:
       insecure_skip_verify: true
 ```

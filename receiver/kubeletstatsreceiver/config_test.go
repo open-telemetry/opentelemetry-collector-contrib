@@ -16,14 +16,12 @@ package kubeletstatsreceiver
 
 import (
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -52,7 +50,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "default"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: duration,
 				},
 				ClientConfig: kube.ClientConfig{
@@ -72,7 +69,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "tls"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: duration,
 				},
 				TCPAddr: confignet.TCPAddr{
@@ -101,7 +97,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "sa"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: duration,
 				},
 				ClientConfig: kube.ClientConfig{
@@ -122,7 +117,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "metadata"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: duration,
 				},
 				ClientConfig: kube.ClientConfig{
@@ -146,7 +140,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "metric_groups"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 20 * time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
@@ -166,7 +159,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "metadata_with_k8s_api"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: duration,
 				},
 				ClientConfig: kube.ClientConfig{
@@ -270,7 +262,6 @@ func TestGetReceiverOptions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 10 * time.Second,
 				},
 				ExtraMetadataLabels:   tt.fields.extraMetadataLabels,
@@ -278,13 +269,12 @@ func TestGetReceiverOptions(t *testing.T) {
 				K8sAPIConfig:          tt.fields.k8sAPIConfig,
 			}
 			got, err := cfg.getReceiverOptions()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getReceiverOptions() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getReceiverOptions() got = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

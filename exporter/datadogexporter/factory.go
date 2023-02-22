@@ -21,10 +21,11 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -41,12 +42,35 @@ const (
 	typeStr = "datadog"
 )
 
+var mertricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.metricexportnativeclient",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
+)
+
+// isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
+func isMetricExportV2Enabled() bool {
+	return mertricExportNativeClientFeatureGate.IsEnabled()
+}
+
+// enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
+func enableNativeMetricExport() error {
+	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), true)
+}
+
+// enableZorkianMetricExport switches metric export to call Zorkian APIs instead of native Datadog APIs.
+func enableZorkianMetricExport() error {
+	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), false)
+}
+
 type factory struct {
 	onceMetadata sync.Once
 
 	onceProvider   sync.Once
 	sourceProvider source.Provider
 	providerErr    error
+
+	wg sync.WaitGroup // waits for agent to exit
 
 	registry *featuregate.Registry
 }
@@ -58,20 +82,33 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 	return f.sourceProvider, f.providerErr
 }
 
-func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFactory {
+func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
+	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider)
+	if err != nil {
+		return nil, err
+	}
+	f.wg.Add(1)
+	go func() {
+		defer f.wg.Done()
+		agnt.Run()
+	}()
+	return agnt, nil
+}
+
+func newFactoryWithRegistry(registry *featuregate.Registry) exporter.Factory {
 	f := &factory{registry: registry}
-	return component.NewExporterFactory(
+	return exporter.NewFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithMetricsExporter(f.createMetricsExporter, component.StabilityLevelBeta),
-		component.WithTracesExporter(f.createTracesExporter, component.StabilityLevelBeta),
-		component.WithLogsExporter(f.createLogsExporter, component.StabilityLevelAlpha),
+		exporter.WithMetrics(f.createMetricsExporter, component.StabilityLevelBeta),
+		exporter.WithTraces(f.createTracesExporter, component.StabilityLevelBeta),
+		exporter.WithLogs(f.createLogsExporter, component.StabilityLevelAlpha),
 	)
 }
 
 // NewFactory creates a Datadog exporter factory
-func NewFactory() component.ExporterFactory {
-	return newFactoryWithRegistry(featuregate.GetRegistry())
+func NewFactory() exporter.Factory {
+	return newFactoryWithRegistry(featuregate.GlobalRegistry())
 }
 
 func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
@@ -83,15 +120,14 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
 	hostnameSource := HostnameSourceFirstResource
-	if f.registry.IsEnabled(metadata.HostnamePreviewFeatureGate) {
+	if metadata.HostnamePreviewFeatureGate.IsEnabled() {
 		hostnameSource = HostnameSourceConfigOrSystem
 	}
 
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings: defaulttimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -151,9 +187,9 @@ func checkAndCastConfig(c component.Config) *Config {
 // createMetricsExporter creates a metrics exporter based on this config.
 func (f *factory) createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	c component.Config,
-) (component.MetricsExporter, error) {
+) (exporter.Metrics, error) {
 	cfg := checkAndCastConfig(c)
 
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
@@ -162,8 +198,13 @@ func (f *factory) createMetricsExporter(
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
+	// cancel() runs on shutdown
 	var pushMetricsFn consumer.ConsumeMetricsFunc
-
+	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
+	}
 	if cfg.OnlyMetadata {
 		pushMetricsFn = func(_ context.Context, md pmetric.Metrics) error {
 			// only sending metadata use only metrics
@@ -178,9 +219,10 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	} else {
-		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
+		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent)
 		if metricsErr != nil {
-			cancel()
+			cancel()    // first cancel context
+			f.wg.Wait() // then wait for shutdown
 			return nil, metricsErr
 		}
 		pushMetricsFn = exp.PushMetricsDataScrubbed
@@ -211,9 +253,9 @@ func (f *factory) createMetricsExporter(
 // createTracesExporter creates a trace exporter based on this config.
 func (f *factory) createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	c component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	cfg := checkAndCastConfig(c)
 
 	var (
@@ -225,8 +267,13 @@ func (f *factory) createTracesExporter(
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
-	ctx, cancel := context.WithCancel(ctx) // nolint:govet
+	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
+	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
+	}
 	if cfg.OnlyMetadata {
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td ptrace.Traces) error {
@@ -244,15 +291,15 @@ func (f *factory) createTracesExporter(
 			return nil
 		}
 	} else {
-		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
+		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent)
 		if err2 != nil {
 			cancel()
 			return nil, err2
 		}
 		pusher = tracex.consumeTraces
 		stop = func(context.Context) error {
-			cancel()              // first cancel context
-			tracex.waitShutdown() // then wait for shutdown
+			cancel()    // first cancel context
+			f.wg.Wait() // then wait for shutdown
 			return nil
 		}
 	}
@@ -274,9 +321,9 @@ func (f *factory) createTracesExporter(
 // createLogsExporter creates a logs exporter based on the config.
 func (f *factory) createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	c component.Config,
-) (component.LogsExporter, error) {
+) (exporter.Logs, error) {
 	cfg := checkAndCastConfig(c)
 
 	var pusher consumer.ConsumeLogsFunc

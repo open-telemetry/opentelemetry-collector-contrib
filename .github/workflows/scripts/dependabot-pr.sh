@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 
-git config user.name $GITHUB_ACTOR
-git config user.email $GITHUB_ACTOR@users.noreply.github.com
+git config user.name opentelemetrybot
+git config user.email 107717825+opentelemetrybot@users.noreply.github.com
 
 PR_NAME=dependabot-prs/`date +'%Y-%m-%dT%H%M%S'`
 git checkout -b $PR_NAME
@@ -32,6 +32,8 @@ for line in $requests; do
 done
 
 make gotidy
+make genotelcontribcol
+make genoteltestbedcol
 make otelcontribcol
 
 git add go.sum go.mod
@@ -40,4 +42,4 @@ git commit -m "dependabot updates `date`
 $message"
 git push origin $PR_NAME
 
-gh pr create --title "[chore] dependabot updates `date`" --body "$message" -l "Skip Changelog"
+gh pr create --title "[chore] dependabot updates `date`" --body "$message"

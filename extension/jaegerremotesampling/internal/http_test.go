@@ -57,10 +57,6 @@ func TestEndpointsAreWired(t *testing.T) {
 		endpoint string
 	}{
 		{
-			desc:     "legacy",
-			endpoint: "/",
-		},
-		{
 			desc:     "new",
 			endpoint: "/sampling",
 		},

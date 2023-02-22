@@ -104,6 +104,14 @@ func TestConfig(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "pair_delimiter_multiline",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.PairDelimiter = "^\n"
+					return cfg
+				}(),
+			},
+			{
 				Name: "parse_to_attributes",
 				Expect: func() *Config {
 					p := NewConfig()

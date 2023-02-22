@@ -6,7 +6,7 @@ on:
 jobs:
   ping-owners:
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'open-telemetry' }}
+    if: ${{ github.actor != 'dependabot[bot]' && github.repository_owner == 'open-telemetry' }}
     steps:
       - uses: actions/checkout@v3
     

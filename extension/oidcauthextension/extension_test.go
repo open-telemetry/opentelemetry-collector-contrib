@@ -71,6 +71,13 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
 
+	// test, upper-case header
+	ctx, err = p.Authenticate(context.Background(), map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+	// verify
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+
 	// TODO(jpkroehling): assert that the authentication routine set the subject/membership to the resource
 }
 

@@ -33,9 +33,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 var (
@@ -51,6 +52,7 @@ var (
 )
 
 func TestRabbitmqIntegration(t *testing.T) {
+	t.Skip("See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17201")
 	t.Run("Running rabbitmq 3.9", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest3_9)
@@ -69,7 +71,7 @@ func TestRabbitmqIntegration(t *testing.T) {
 		cfg.Password = "otelp"
 
 		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
+		settings := receivertest.NewNopCreateSettings()
 		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 		require.NoError(t, err, "failed creating metrics receiver")
 
@@ -85,7 +87,7 @@ func TestRabbitmqIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues()))
 	})
 }
 

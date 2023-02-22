@@ -24,16 +24,16 @@ List of available Functions:
 - [set](#set)
 - [truncate_all](#truncate_all)
 
-## Factory Functions
+## Converters
 
-Factory Functions are functions that help translate between the OTTL grammar and the underlying pdata structure.
+Converters are functions that help translate between the OTTL grammar and the underlying pdata structure.
 They manipulate the OTTL grammar value into a form that will make working with the telemetry easier or more efficient.
 
-Factory Functions:
+Converters:
 - Are pure functions.  They should never change the underlying telemetry and the same inputs should always result in the same output.
 - Always return something.  
 
-List of available Factory Functions:
+List of available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [Int](#int)
@@ -42,6 +42,7 @@ List of available Factory Functions:
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
+- [Substring](#substring)
 
 ### Concat
 
@@ -197,6 +198,20 @@ The `TraceID` factory function returns a `pdata.TraceID` struct from the given b
 Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
+
+### Substring
+
+`Substring(target, start, length)`
+
+The `Substring` Converter returns a substring from the given start index to the specified length.
+
+`target` is a string. `start` and `length` are `int64`.
+
+The `Substring` Converter will return `nil` if the given parameters are invalid, e.x. `target` is not a string, or the start/length exceed the length of the `target` string.
+
+Examples:
+
+- `Substring("123456789", 0, 3)`
 
 ### delete_key
 

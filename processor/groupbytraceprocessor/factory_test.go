@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestDefaultConfiguration(t *testing.T) {
@@ -40,7 +40,7 @@ func TestCreateTestProcessor(t *testing.T) {
 	next := &mockProcessor{}
 
 	// test
-	p, err := createTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), c, next)
+	p, err := createTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), c, next)
 
 	// verify
 	assert.NoError(t, err)
@@ -70,7 +70,7 @@ func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 			errDiskStorageNotSupported,
 		},
 	} {
-		p, err := f.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, next)
+		p, err := f.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.config, next)
 
 		// verify
 		assert.Error(t, tt.expectedErr, err)

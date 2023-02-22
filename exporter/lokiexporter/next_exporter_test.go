@@ -24,11 +24,12 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/grafana/loki/pkg/logproto"
+	"github.com/grafana/loki/pkg/push"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -68,7 +69,7 @@ func TestPushLogData(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			actualPushRequest := &logproto.PushRequest{}
+			actualPushRequest := &push.PushRequest{}
 
 			// prepare
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +91,7 @@ func TestPushLogData(t *testing.T) {
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -244,7 +245,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 	}
 	for _, tC := range tests {
 		t.Run(tC.desc, func(t *testing.T) {
-			actualPushRequestPerTenant := map[string]*logproto.PushRequest{}
+			actualPushRequestPerTenant := map[string]*push.PushRequest{}
 
 			// prepare
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -254,7 +255,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 				decPayload, err := snappy.Decode(nil, encPayload)
 				require.NoError(t, err)
 
-				pr := &logproto.PushRequest{}
+				pr := &push.PushRequest{}
 				err = proto.Unmarshal(decPayload, pr)
 				require.NoError(t, err)
 
@@ -269,7 +270,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())

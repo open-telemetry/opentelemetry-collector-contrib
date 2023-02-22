@@ -27,8 +27,8 @@ import (
 var errExporterNotFound = errors.New("exporter not found")
 
 // router registers exporters and default exporters for an exporter. router can
-// be instantiated with component.TracesExporter, component.MetricsExporter, and
-// component.LogsExporter type arguments.
+// be instantiated with exporter.Traces, exporter.Metrics, and
+// exporter.Logs type arguments.
 type router[E component.Component, K any] struct {
 	logger *zap.Logger
 	parser ottl.Parser[K]
@@ -132,14 +132,11 @@ func (r *router[E, K]) registerRouteExporters(available map[component.ID]compone
 func (r *router[E, K]) getStatementFrom(item RoutingTableItem) (*ottl.Statement[K], error) {
 	var statement *ottl.Statement[K]
 	if item.Statement != "" {
-		statements, err := r.parser.ParseStatements([]string{item.Statement})
+		var err error
+		statement, err = r.parser.ParseStatement(item.Statement)
 		if err != nil {
 			return statement, err
 		}
-		if len(statements) != 1 {
-			return statement, errors.New("more than one statement specified")
-		}
-		statement = statements[0]
 	}
 	return statement, nil
 }

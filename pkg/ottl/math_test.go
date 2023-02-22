@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func mathParsePath(val *Path) (GetSetter[interface{}], error) {
@@ -67,6 +67,7 @@ func threePointOne[K any]() (ExprFunc[K], error) {
 	}, nil
 }
 
+//nolint:unparam
 func sum[K any](ints []int64) (ExprFunc[K], error) {
 	return func(context.Context, K) (interface{}, error) {
 		result := int64(0)
@@ -135,17 +136,17 @@ func Test_evaluateMathExpression(t *testing.T) {
 		},
 		{
 			name:     "int functions",
-			input:    "one() + two()",
+			input:    "One() + Two()",
 			expected: 3,
 		},
 		{
 			name:     "functions",
-			input:    "threePointOne() + threePointOne()",
+			input:    "ThreePointOne() + ThreePointOne()",
 			expected: 6.2,
 		},
 		{
 			name:     "functions",
-			input:    "sum([1, 2, 3, 4]) / (1 * 10)",
+			input:    "Sum([1, 2, 3, 4]) / (1 * 10)",
 			expected: 1,
 		},
 		{
@@ -206,17 +207,17 @@ func Test_evaluateMathExpression(t *testing.T) {
 	}
 
 	functions := map[string]interface{}{
-		"one":           one[any],
-		"two":           two[any],
-		"threePointOne": threePointOne[any],
-		"sum":           sum[any],
+		"One":           one[any],
+		"Two":           two[any],
+		"ThreePointOne": threePointOne[any],
+		"Sum":           sum[any],
 	}
 
-	p := NewParser[any](
+	p, _ := NewParser[any](
 		functions,
 		mathParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	mathParser := newParser[value]()
@@ -255,11 +256,11 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 		"sum":           sum[any],
 	}
 
-	p := NewParser[any](
+	p, _ := NewParser[any](
 		functions,
 		mathParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	mathParser := newParser[value]()

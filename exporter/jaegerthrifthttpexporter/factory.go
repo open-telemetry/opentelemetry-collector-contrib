@@ -16,44 +16,50 @@ package jaegerthrifthttpexporter // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "jaeger_thrift"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
 )
 
+var once sync.Once
+
 // NewFactory creates a factory for Jaeger Thrift over HTTP exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability))
+		exporter.WithTraces(createTracesExporter, component.StabilityLevelDeprecated))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: exporterhelper.NewDefaultTimeoutSettings().Timeout,
 		},
 	}
 }
 
+func logDeprecation(logger *zap.Logger) {
+	once.Do(func() {
+		logger.Warn("jaeger_thrift exporter is deprecated and will be removed in July 2023. See https://github.com/open-telemetry/opentelemetry-specification/pull/2858 for more details.")
+	})
+}
+
 func createTracesExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	config component.Config,
-) (component.TracesExporter, error) {
-
+) (exporter.Traces, error) {
+	logDeprecation(set.Logger)
 	expCfg := config.(*Config)
-
 	return newTracesExporter(expCfg, set)
 }

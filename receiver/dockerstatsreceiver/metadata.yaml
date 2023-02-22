@@ -7,18 +7,23 @@ resource_attributes:
   container.runtime:
     description: "The runtime of the container. For this receiver, it will always be 'docker'."
     type: string
+    enabled: true
   container.id:
     description: "The ID of the container."
     type: string
+    enabled: true
   container.image.name:
     description: "The name of the docker image in use by the container."
     type: string
+    enabled: true
   container.name:
     description: "The name of the container."
     type: string
+    enabled: true
   container.hostname:
     description: "The hostname of the container."
     type: string
+    enabled: true
 
 attributes:
   core:

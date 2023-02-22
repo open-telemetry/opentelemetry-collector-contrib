@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -41,8 +40,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(componentType, "primary"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(componentType)),
-				Broker:           []string{"myHost:5671"},
+				Broker: []string{"myHost:5671"},
 				Auth: Authentication{
 					PlainText: &SaslPlainTextConfig{
 						Username: "otel",

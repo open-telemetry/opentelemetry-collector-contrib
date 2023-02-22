@@ -18,13 +18,14 @@ import (
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 type azureLogFormatConverter struct {
 	buildInfo component.BuildInfo
 }
 
-func newAzureLogFormatConverter(settings component.ReceiverCreateSettings) *azureLogFormatConverter {
+func newAzureLogFormatConverter(settings receiver.CreateSettings) *azureLogFormatConverter {
 	return &azureLogFormatConverter{buildInfo: settings.BuildInfo}
 }
 

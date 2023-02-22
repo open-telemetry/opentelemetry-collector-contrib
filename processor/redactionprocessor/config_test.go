@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -35,11 +34,11 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				AllowAllKeys:      false,
-				AllowedKeys:       []string{"description", "group", "id", "name"},
-				BlockedValues:     []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
-				Summary:           debug,
+				AllowAllKeys:  false,
+				AllowedKeys:   []string{"description", "group", "id", "name"},
+				IgnoredKeys:   []string{"safe_attribute"},
+				BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
+				Summary:       debug,
 			},
 		},
 		{

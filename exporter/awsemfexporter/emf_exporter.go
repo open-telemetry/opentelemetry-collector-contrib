@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -60,8 +61,8 @@ type emfExporter struct {
 // newEmfPusher func creates an EMF Exporter instance with data push callback func
 func newEmfPusher(
 	config component.Config,
-	params component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
+	params exporter.CreateSettings,
+) (*emfExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
@@ -96,9 +97,9 @@ func newEmfPusher(
 // newEmfExporter creates a new exporter using exporterhelper
 func newEmfExporter(
 	config component.Config,
-	set component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
-	exp, err := newEmfPusher(config, set)
+	set exporter.CreateSettings,
+) (exporter.Metrics, error) {
+	emfPusher, err := newEmfPusher(config, set)
 	if err != nil {
 		return nil, err
 	}
@@ -107,8 +108,9 @@ func newEmfExporter(
 		context.TODO(),
 		set,
 		config,
-		exp.(*emfExporter).pushMetricsData,
-		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),
+		emfPusher.pushMetricsData,
+		exporterhelper.WithShutdown(emfPusher.shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 	if err != nil {
 		return nil, err
@@ -217,12 +219,8 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 	return pushers
 }
 
-func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return emf.pushMetricsData(ctx, md)
-}
-
-// Shutdown stops the exporter and is invoked during shutdown.
-func (emf *emfExporter) Shutdown(ctx context.Context) error {
+// shutdown stops the exporter and is invoked during shutdown.
+func (emf *emfExporter) shutdown(ctx context.Context) error {
 	for _, emfPusher := range emf.listPushers() {
 		returnError := emfPusher.ForceFlush()
 		if returnError != nil {
@@ -233,15 +231,6 @@ func (emf *emfExporter) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	return nil
-}
-
-func (emf *emfExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-// Start
-func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 

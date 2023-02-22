@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -33,9 +34,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestFactory_CreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.DSN = defaultDSN
+		cfg.Endpoint = defaultEndpoint
 	})
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
@@ -46,9 +47,9 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 func TestFactory_CreateTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.DSN = defaultDSN
+		cfg.Endpoint = defaultEndpoint
 	})
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
@@ -56,10 +57,15 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 	require.NoError(t, exporter.Shutdown(context.TODO()))
 }
 
-func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
+func TestFactory_CreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	params := componenttest.NewNopExporterCreateSettings()
-	_, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
-	require.Error(t, err, "expected an error when creating a traces exporter")
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = defaultEndpoint
+	})
+	params := exportertest.NewNopCreateSettings()
+	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	require.NoError(t, exporter.Shutdown(context.TODO()))
 }

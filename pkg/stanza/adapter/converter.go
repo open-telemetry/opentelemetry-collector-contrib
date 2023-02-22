@@ -51,18 +51,9 @@ import (
 //	│ │ │ ┌─────────────────────────────────────────────────┴─┐
 //	└─┼─┼─► workerLoop()                                      │
 //	  └─┤ │   consumes sent log entries from workerChan,      │
-//	    │ │   translates received entries to plog.LogRecords,│
-//	    └─┤   hashes them to generate an ID, and sends them   │
-//	      │   onto batchChan                                  │
+//	    │ │   translates received entries to plog.LogRecords, │
+//	    └─┤   and sends them on flushChan                     │
 //	      └─────────────────────────┬─────────────────────────┘
-//	                                │
-//	                                ▼
-//	    ┌─────────────────────────────────────────────────────┐
-//	    │ aggregationLoop()                                   │
-//	    │   consumes from batchChan, aggregates log records   │
-//	    │   by marshaled Resource and sends the               │
-//	    │   aggregated buffer to flushChan                    │
-//	    └───────────────────────────┬─────────────────────────┘
 //	                                │
 //	                                ▼
 //	    ┌─────────────────────────────────────────────────────┐
@@ -83,10 +74,6 @@ type Converter struct {
 	workerChan chan []*entry.Entry
 	// workerCount configures the amount of workers started.
 	workerCount int
-	// aggregationChan obtains log entries converted by the pool of workers,
-	// in a form of logRecords grouped by Resource and then sends aggregated logs
-	// on flushChan.
-	aggregationChan chan []workerItem
 
 	// flushChan is an internal channel used for transporting batched plog.Logs.
 	flushChan chan plog.Logs
@@ -100,26 +87,22 @@ type Converter struct {
 
 func NewConverter(logger *zap.Logger) *Converter {
 	return &Converter{
-		workerChan:      make(chan []*entry.Entry),
-		workerCount:     int(math.Max(1, float64(runtime.NumCPU()/4))),
-		aggregationChan: make(chan []workerItem),
-		pLogsChan:       make(chan plog.Logs),
-		stopChan:        make(chan struct{}),
-		flushChan:       make(chan plog.Logs),
-		logger:          logger,
+		workerChan:  make(chan []*entry.Entry),
+		workerCount: int(math.Max(1, float64(runtime.NumCPU()/4))),
+		pLogsChan:   make(chan plog.Logs),
+		stopChan:    make(chan struct{}),
+		flushChan:   make(chan plog.Logs),
+		logger:      logger,
 	}
 }
 
 func (c *Converter) Start() {
 	c.logger.Debug("Starting log converter", zap.Int("worker_count", c.workerCount))
 
+	c.wg.Add(c.workerCount)
 	for i := 0; i < c.workerCount; i++ {
-		c.wg.Add(1)
 		go c.workerLoop()
 	}
-
-	c.wg.Add(1)
-	go c.aggregationLoop()
 
 	c.wg.Add(1)
 	go c.flushLoop()
@@ -138,15 +121,9 @@ func (c *Converter) OutChannel() <-chan plog.Logs {
 	return c.pLogsChan
 }
 
-type workerItem struct {
-	Resource   map[string]interface{}
-	LogRecord  plog.LogRecord
-	ResourceID uint64
-}
-
 // workerLoop is responsible for obtaining log entries from Batch() calls,
-// converting them to plog.LogRecords and sending them together with the
-// associated Resource through the aggregationChan for aggregation.
+// converting them to plog.LogRecords batched by Resource, and sending them
+// on flushChan.
 func (c *Converter) workerLoop() {
 	defer c.wg.Done()
 
@@ -161,71 +138,48 @@ func (c *Converter) workerLoop() {
 				return
 			}
 
-			workerItems := make([]workerItem, 0, len(entries))
+			// Maps to keep track of resource information to allow rebuilding in plog structures
+			resourceEntriesLookup := make(map[uint64][]*entry.Entry)
+			resourceAttrsLookup := make(map[uint64]map[string]interface{})
 
+			// Iterate over the entries and populate the resource lookup maps
 			for _, e := range entries {
-				lr := convert(e)
 				resourceID := HashResource(e.Resource)
-				workerItems = append(workerItems, workerItem{
-					Resource:   e.Resource,
-					ResourceID: resourceID,
-					LogRecord:  lr,
-				})
-			}
-
-			select {
-			case c.aggregationChan <- workerItems:
-			case <-c.stopChan:
-			}
-		}
-	}
-}
-
-// aggregationLoop is responsible for receiving the converted log entries and aggregating
-// them by Resource.
-func (c *Converter) aggregationLoop() {
-	defer c.wg.Done()
-
-	resourceIDToLogs := make(map[uint64]plog.Logs)
-
-	for {
-		select {
-		case workerItems, ok := <-c.aggregationChan:
-			if !ok {
-				return
-			}
-
-			for _, wi := range workerItems {
-				pLogs, ok := resourceIDToLogs[wi.ResourceID]
-				if ok {
-					lr := pLogs.ResourceLogs().
-						At(0).ScopeLogs().
-						At(0).LogRecords().AppendEmpty()
-					wi.LogRecord.CopyTo(lr)
-					continue
+				resourceEntries, ok := resourceEntriesLookup[resourceID]
+				if !ok {
+					resourceEntries = make([]*entry.Entry, 0)
+					resourceAttrsLookup[resourceID] = e.Resource
 				}
 
-				pLogs = plog.NewLogs()
+				resourceEntriesLookup[resourceID] = append(resourceEntries, e)
+			}
+
+			// Using the resource lookup maps, build the plog.Logs structure and convert entries into plogs
+			pLogs := plog.NewLogs()
+			for resourceID, resourceEntries := range resourceEntriesLookup {
 				logs := pLogs.ResourceLogs()
 				rls := logs.AppendEmpty()
-
 				resource := rls.Resource()
-				upsertToMap(wi.Resource, resource.Attributes())
+
+				// Create the resource from the attributes
+				resourceAttrs := resourceAttrsLookup[resourceID]
+				upsertToMap(resourceAttrs, resource.Attributes())
 
 				ills := rls.ScopeLogs()
-				lr := ills.AppendEmpty().LogRecords().AppendEmpty()
-				wi.LogRecord.CopyTo(lr)
+				sls := ills.AppendEmpty()
 
-				resourceIDToLogs[wi.ResourceID] = pLogs
+				// Convert standard entries into plogs for the resource
+				for _, e := range resourceEntries {
+					lr := sls.LogRecords().AppendEmpty()
+					convertInto(e, lr)
+				}
 			}
 
-			for r, pLogs := range resourceIDToLogs {
-				c.flushChan <- pLogs
-				delete(resourceIDToLogs, r)
+			// Send plogs directly to flushChan
+			select {
+			case c.flushChan <- pLogs:
+			case <-c.stopChan:
 			}
-
-		case <-c.stopChan:
-			return
 		}
 	}
 }
@@ -283,24 +237,6 @@ func convert(ent *entry.Entry) plog.LogRecord {
 	dest := plog.NewLogRecord()
 	convertInto(ent, dest)
 	return dest
-}
-
-// Convert converts one entry.Entry into plog.Logs.
-// To be used in a stateless setting like tests where ease of use is more
-// important than performance or throughput.
-func Convert(ent *entry.Entry) plog.Logs {
-	pLogs := plog.NewLogs()
-	logs := pLogs.ResourceLogs()
-
-	rls := logs.AppendEmpty()
-
-	resource := rls.Resource()
-	upsertToMap(ent.Resource, resource.Attributes())
-
-	ills := rls.ScopeLogs().AppendEmpty()
-	lr := ills.LogRecords().AppendEmpty()
-	convertInto(ent, lr)
-	return pLogs
 }
 
 // convertInto converts entry.Entry into provided plog.LogRecord.

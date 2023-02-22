@@ -96,6 +96,10 @@ Configuration:
 }
 ```
 
+</td>
+</tr>
+</table>
+
 #### Parse the field `message` into key value pairs, using a non default pair delimiter
 
 Configuration:

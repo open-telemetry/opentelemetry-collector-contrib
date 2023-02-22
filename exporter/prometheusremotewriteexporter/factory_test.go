@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 // Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
@@ -50,31 +52,31 @@ func Test_createMetricsExporter(t *testing.T) {
 	tests := []struct {
 		name                string
 		cfg                 component.Config
-		set                 component.ExporterCreateSettings
+		set                 exporter.CreateSettings
 		returnErrorOnCreate bool
 		returnErrorOnStart  bool
 	}{
 		{"success_case",
 			createDefaultConfig(),
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			false,
 			false,
 		},
 		{"fail_case",
 			nil,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			true,
 			false,
 		},
 		{"invalid_config_case",
 			invalidConfig,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			true,
 			false,
 		},
 		{"invalid_tls_config_case",
 			invalidTLSConfig,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			false,
 			true,
 		},

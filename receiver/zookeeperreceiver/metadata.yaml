@@ -3,9 +3,11 @@ name: zookeeperreceiver
 resource_attributes:
   server.state:
     description: State of the Zookeeper server (leader, standalone or follower).
+    enabled: true
     type: string
   zk.version:
     description: Zookeeper version of the instance.
+    enabled: true
     type: string
 
 attributes:

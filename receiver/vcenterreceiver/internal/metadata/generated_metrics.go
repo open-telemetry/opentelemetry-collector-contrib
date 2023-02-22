@@ -9,18 +9,14 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -31,7 +27,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -67,6 +63,8 @@ type MetricsSettings struct {
 	VcenterVMDiskUsage              MetricSettings `mapstructure:"vcenter.vm.disk.usage"`
 	VcenterVMDiskUtilization        MetricSettings `mapstructure:"vcenter.vm.disk.utilization"`
 	VcenterVMMemoryBallooned        MetricSettings `mapstructure:"vcenter.vm.memory.ballooned"`
+	VcenterVMMemorySwapped          MetricSettings `mapstructure:"vcenter.vm.memory.swapped"`
+	VcenterVMMemorySwappedSsd       MetricSettings `mapstructure:"vcenter.vm.memory.swapped_ssd"`
 	VcenterVMMemoryUsage            MetricSettings `mapstructure:"vcenter.vm.memory.usage"`
 	VcenterVMNetworkPacketCount     MetricSettings `mapstructure:"vcenter.vm.network.packet.count"`
 	VcenterVMNetworkThroughput      MetricSettings `mapstructure:"vcenter.vm.network.throughput"`
@@ -165,6 +163,12 @@ func DefaultMetricsSettings() MetricsSettings {
 		VcenterVMMemoryBallooned: MetricSettings{
 			Enabled: true,
 		},
+		VcenterVMMemorySwapped: MetricSettings{
+			Enabled: true,
+		},
+		VcenterVMMemorySwappedSsd: MetricSettings{
+			Enabled: true,
+		},
 		VcenterVMMemoryUsage: MetricSettings{
 			Enabled: true,
 		},
@@ -175,6 +179,58 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		VcenterVMNetworkUsage: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for vcenterreceiver metrics.
+type ResourceAttributesSettings struct {
+	VcenterClusterName      ResourceAttributeSettings `mapstructure:"vcenter.cluster.name"`
+	VcenterDatastoreName    ResourceAttributeSettings `mapstructure:"vcenter.datastore.name"`
+	VcenterHostName         ResourceAttributeSettings `mapstructure:"vcenter.host.name"`
+	VcenterResourcePoolName ResourceAttributeSettings `mapstructure:"vcenter.resource_pool.name"`
+	VcenterVMID             ResourceAttributeSettings `mapstructure:"vcenter.vm.id"`
+	VcenterVMName           ResourceAttributeSettings `mapstructure:"vcenter.vm.name"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		VcenterClusterName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		VcenterDatastoreName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		VcenterHostName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		VcenterResourcePoolName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		VcenterVMID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		VcenterVMName: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -256,32 +312,6 @@ func (av AttributeDiskType) String() string {
 var MapAttributeDiskType = map[string]AttributeDiskType{
 	"virtual":  AttributeDiskTypeVirtual,
 	"physical": AttributeDiskTypePhysical,
-}
-
-// AttributeLatencyType specifies the a value latency_type attribute.
-type AttributeLatencyType int
-
-const (
-	_ AttributeLatencyType = iota
-	AttributeLatencyTypeKernel
-	AttributeLatencyTypeDevice
-)
-
-// String returns the string representation of the AttributeLatencyType.
-func (av AttributeLatencyType) String() string {
-	switch av {
-	case AttributeLatencyTypeKernel:
-		return "kernel"
-	case AttributeLatencyTypeDevice:
-		return "device"
-	}
-	return ""
-}
-
-// MapAttributeLatencyType is a helper map of string to AttributeLatencyType attribute value.
-var MapAttributeLatencyType = map[string]AttributeLatencyType{
-	"kernel": AttributeLatencyTypeKernel,
-	"device": AttributeLatencyTypeDevice,
 }
 
 // AttributeThroughputDirection specifies the a value throughput_direction attribute.
@@ -1871,6 +1901,108 @@ func newMetricVcenterVMMemoryBallooned(settings MetricSettings) metricVcenterVMM
 	return m
 }
 
+type metricVcenterVMMemorySwapped struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.vm.memory.swapped metric with initial data.
+func (m *metricVcenterVMMemorySwapped) init() {
+	m.data.SetName("vcenter.vm.memory.swapped")
+	m.data.SetDescription("The portion of memory that is granted to this VM from the host's swap space.")
+	m.data.SetUnit("MiBy")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterVMMemorySwapped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMMemorySwapped) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMMemorySwapped) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMMemorySwapped(settings MetricSettings) metricVcenterVMMemorySwapped {
+	m := metricVcenterVMMemorySwapped{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterVMMemorySwappedSsd struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.vm.memory.swapped_ssd metric with initial data.
+func (m *metricVcenterVMMemorySwappedSsd) init() {
+	m.data.SetName("vcenter.vm.memory.swapped_ssd")
+	m.data.SetDescription("The amount of memory swapped to fast disk device such as SSD.")
+	m.data.SetUnit("KiBy")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterVMMemorySwappedSsd) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMMemorySwappedSsd) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMMemorySwappedSsd) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMMemorySwappedSsd(settings MetricSettings) metricVcenterVMMemorySwappedSsd {
+	m := metricVcenterVMMemorySwappedSsd{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterVMMemoryUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -2087,6 +2219,7 @@ type MetricsBuilder struct {
 	resourceCapacity                      int                 // maximum observed number of resource attributes.
 	metricsBuffer                         pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                             component.BuildInfo // contains version information
+	resourceAttributesSettings            ResourceAttributesSettings
 	metricVcenterClusterCPUEffective      metricVcenterClusterCPUEffective
 	metricVcenterClusterCPULimit          metricVcenterClusterCPULimit
 	metricVcenterClusterHostCount         metricVcenterClusterHostCount
@@ -2117,6 +2250,8 @@ type MetricsBuilder struct {
 	metricVcenterVMDiskUsage              metricVcenterVMDiskUsage
 	metricVcenterVMDiskUtilization        metricVcenterVMDiskUtilization
 	metricVcenterVMMemoryBallooned        metricVcenterVMMemoryBallooned
+	metricVcenterVMMemorySwapped          metricVcenterVMMemorySwapped
+	metricVcenterVMMemorySwappedSsd       metricVcenterVMMemorySwappedSsd
 	metricVcenterVMMemoryUsage            metricVcenterVMMemoryUsage
 	metricVcenterVMNetworkPacketCount     metricVcenterVMNetworkPacketCount
 	metricVcenterVMNetworkThroughput      metricVcenterVMNetworkThroughput
@@ -2133,11 +2268,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                         pmetric.NewMetrics(),
 		buildInfo:                             settings.BuildInfo,
+		resourceAttributesSettings:            DefaultResourceAttributesSettings(),
 		metricVcenterClusterCPUEffective:      newMetricVcenterClusterCPUEffective(ms.VcenterClusterCPUEffective),
 		metricVcenterClusterCPULimit:          newMetricVcenterClusterCPULimit(ms.VcenterClusterCPULimit),
 		metricVcenterClusterHostCount:         newMetricVcenterClusterHostCount(ms.VcenterClusterHostCount),
@@ -2168,6 +2311,8 @@ func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSett
 		metricVcenterVMDiskUsage:              newMetricVcenterVMDiskUsage(ms.VcenterVMDiskUsage),
 		metricVcenterVMDiskUtilization:        newMetricVcenterVMDiskUtilization(ms.VcenterVMDiskUtilization),
 		metricVcenterVMMemoryBallooned:        newMetricVcenterVMMemoryBallooned(ms.VcenterVMMemoryBallooned),
+		metricVcenterVMMemorySwapped:          newMetricVcenterVMMemorySwapped(ms.VcenterVMMemorySwapped),
+		metricVcenterVMMemorySwappedSsd:       newMetricVcenterVMMemorySwappedSsd(ms.VcenterVMMemorySwappedSsd),
 		metricVcenterVMMemoryUsage:            newMetricVcenterVMMemoryUsage(ms.VcenterVMMemoryUsage),
 		metricVcenterVMNetworkPacketCount:     newMetricVcenterVMNetworkPacketCount(ms.VcenterVMNetworkPacketCount),
 		metricVcenterVMNetworkThroughput:      newMetricVcenterVMNetworkThroughput(ms.VcenterVMNetworkThroughput),
@@ -2190,54 +2335,66 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithVcenterClusterName sets provided value as "vcenter.cluster.name" attribute for current resource.
 func WithVcenterClusterName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("vcenter.cluster.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.VcenterClusterName.Enabled {
+			rm.Resource().Attributes().PutStr("vcenter.cluster.name", val)
+		}
 	}
 }
 
 // WithVcenterDatastoreName sets provided value as "vcenter.datastore.name" attribute for current resource.
 func WithVcenterDatastoreName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("vcenter.datastore.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.VcenterDatastoreName.Enabled {
+			rm.Resource().Attributes().PutStr("vcenter.datastore.name", val)
+		}
 	}
 }
 
 // WithVcenterHostName sets provided value as "vcenter.host.name" attribute for current resource.
 func WithVcenterHostName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("vcenter.host.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.VcenterHostName.Enabled {
+			rm.Resource().Attributes().PutStr("vcenter.host.name", val)
+		}
 	}
 }
 
 // WithVcenterResourcePoolName sets provided value as "vcenter.resource_pool.name" attribute for current resource.
 func WithVcenterResourcePoolName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("vcenter.resource_pool.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.VcenterResourcePoolName.Enabled {
+			rm.Resource().Attributes().PutStr("vcenter.resource_pool.name", val)
+		}
 	}
 }
 
 // WithVcenterVMID sets provided value as "vcenter.vm.id" attribute for current resource.
 func WithVcenterVMID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("vcenter.vm.id", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.VcenterVMID.Enabled {
+			rm.Resource().Attributes().PutStr("vcenter.vm.id", val)
+		}
 	}
 }
 
 // WithVcenterVMName sets provided value as "vcenter.vm.name" attribute for current resource.
 func WithVcenterVMName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("vcenter.vm.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.VcenterVMName.Enabled {
+			rm.Resource().Attributes().PutStr("vcenter.vm.name", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -2296,12 +2453,15 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterVMDiskUsage.emit(ils.Metrics())
 	mb.metricVcenterVMDiskUtilization.emit(ils.Metrics())
 	mb.metricVcenterVMMemoryBallooned.emit(ils.Metrics())
+	mb.metricVcenterVMMemorySwapped.emit(ils.Metrics())
+	mb.metricVcenterVMMemorySwappedSsd.emit(ils.Metrics())
 	mb.metricVcenterVMMemoryUsage.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkPacketCount.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkUsage.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -2314,8 +2474,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 
@@ -2467,6 +2627,16 @@ func (mb *MetricsBuilder) RecordVcenterVMDiskUtilizationDataPoint(ts pcommon.Tim
 // RecordVcenterVMMemoryBalloonedDataPoint adds a data point to vcenter.vm.memory.ballooned metric.
 func (mb *MetricsBuilder) RecordVcenterVMMemoryBalloonedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterVMMemoryBallooned.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterVMMemorySwappedDataPoint adds a data point to vcenter.vm.memory.swapped metric.
+func (mb *MetricsBuilder) RecordVcenterVMMemorySwappedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterVMMemorySwapped.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterVMMemorySwappedSsdDataPoint adds a data point to vcenter.vm.memory.swapped_ssd metric.
+func (mb *MetricsBuilder) RecordVcenterVMMemorySwappedSsdDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterVMMemorySwappedSsd.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterVMMemoryUsageDataPoint adds a data point to vcenter.vm.memory.usage metric.

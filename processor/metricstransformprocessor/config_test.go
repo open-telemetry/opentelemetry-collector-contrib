@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -35,7 +34,6 @@ func TestLoadConfig(t *testing.T) {
 			configFile: "config_full.yaml",
 			id:         component.NewID(typeStr),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{
@@ -52,7 +50,6 @@ func TestLoadConfig(t *testing.T) {
 			configFile: "config_full.yaml",
 			id:         component.NewIDWithName(typeStr, "multiple"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{

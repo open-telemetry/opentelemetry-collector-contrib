@@ -5,3 +5,8 @@ awsemf/1:
 awsemf/resource_attr_to_label:
   resource_to_telemetry_conversion:
     enabled: true
+awsemf/metric_descriptors:
+  metric_descriptors:
+    - metric_name: memcached_current_items
+      unit: Count
+      overwrite: true

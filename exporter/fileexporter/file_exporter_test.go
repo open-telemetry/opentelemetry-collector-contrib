@@ -131,8 +131,8 @@ func TestFileTracesExporter(t *testing.T) {
 
 			td := testdata.GenerateTracesTwoSpansSameResource()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
-			assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
-			assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
+			assert.NoError(t, fe.consumeTraces(context.Background(), td))
+			assert.NoError(t, fe.consumeTraces(context.Background(), td))
 			assert.NoError(t, fe.Shutdown(context.Background()))
 
 			fi, err := os.Open(fe.path)
@@ -174,7 +174,7 @@ func TestFileTracesExporterError(t *testing.T) {
 
 	td := testdata.GenerateTracesTwoSpansSameResource()
 	// Cannot call Start since we inject directly the WriterCloser.
-	assert.Error(t, fe.ConsumeTraces(context.Background(), td))
+	assert.Error(t, fe.consumeTraces(context.Background(), td))
 	assert.NoError(t, fe.Shutdown(context.Background()))
 }
 
@@ -265,8 +265,8 @@ func TestFileMetricsExporter(t *testing.T) {
 
 			md := testdata.GenerateMetricsTwoMetrics()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
-			assert.NoError(t, fe.ConsumeMetrics(context.Background(), md))
-			assert.NoError(t, fe.ConsumeMetrics(context.Background(), md))
+			assert.NoError(t, fe.consumeMetrics(context.Background(), md))
+			assert.NoError(t, fe.consumeMetrics(context.Background(), md))
 			assert.NoError(t, fe.Shutdown(context.Background()))
 
 			fi, err := os.Open(fe.path)
@@ -310,7 +310,7 @@ func TestFileMetricsExporterError(t *testing.T) {
 
 	md := testdata.GenerateMetricsTwoMetrics()
 	// Cannot call Start since we inject directly the WriterCloser.
-	assert.Error(t, fe.ConsumeMetrics(context.Background(), md))
+	assert.Error(t, fe.consumeMetrics(context.Background(), md))
 	assert.NoError(t, fe.Shutdown(context.Background()))
 }
 
@@ -401,8 +401,8 @@ func TestFileLogsExporter(t *testing.T) {
 
 			ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
-			assert.NoError(t, fe.ConsumeLogs(context.Background(), ld))
-			assert.NoError(t, fe.ConsumeLogs(context.Background(), ld))
+			assert.NoError(t, fe.consumeLogs(context.Background(), ld))
+			assert.NoError(t, fe.consumeLogs(context.Background(), ld))
 			assert.NoError(t, fe.Shutdown(context.Background()))
 
 			fi, err := os.Open(fe.path)
@@ -444,23 +444,8 @@ func TestFileLogsExporterErrors(t *testing.T) {
 
 	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 	// Cannot call Start since we inject directly the WriterCloser.
-	assert.Error(t, fe.ConsumeLogs(context.Background(), ld))
+	assert.Error(t, fe.consumeLogs(context.Background(), ld))
 	assert.NoError(t, fe.Shutdown(context.Background()))
-}
-
-func Test_fileExporter_Capabilities(t *testing.T) {
-	path := tempFileName(t)
-	fe := &fileExporter{
-		path:       path,
-		formatType: formatTypeJSON,
-		file: &lumberjack.Logger{
-			Filename: path,
-		},
-		metricsMarshaler: metricsMarshalers[formatTypeJSON],
-		exporter:         exportMessageAsLine,
-	}
-	require.NotNil(t, fe)
-	require.NotNil(t, fe.Capabilities())
 }
 
 func TestExportMessageAsBuffer(t *testing.T) {

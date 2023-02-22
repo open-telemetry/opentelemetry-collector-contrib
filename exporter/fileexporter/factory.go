@@ -20,7 +20,8 @@ import (
 	"os"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -45,28 +46,27 @@ const (
 )
 
 // NewFactory creates a factory for OTLP exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
-		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, stability))
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		FormatType:       formatTypeJSON,
-		Rotation:         &Rotation{MaxBackups: defaultMaxBackups},
+		FormatType: formatTypeJSON,
+		Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
 	}
 }
 
 func createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	conf := cfg.(*Config)
 	writer, err := buildFileWriter(conf)
 	if err != nil {
@@ -79,17 +79,18 @@ func createTracesExporter(
 		ctx,
 		set,
 		cfg,
-		fe.Unwrap().(*fileExporter).ConsumeTraces,
+		fe.Unwrap().(*fileExporter).consumeTraces,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 }
 
 func createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.MetricsExporter, error) {
+) (exporter.Metrics, error) {
 	conf := cfg.(*Config)
 	writer, err := buildFileWriter(conf)
 	if err != nil {
@@ -102,17 +103,18 @@ func createMetricsExporter(
 		ctx,
 		set,
 		cfg,
-		fe.Unwrap().(*fileExporter).ConsumeMetrics,
+		fe.Unwrap().(*fileExporter).consumeMetrics,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 }
 
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.LogsExporter, error) {
+) (exporter.Logs, error) {
 	conf := cfg.(*Config)
 	writer, err := buildFileWriter(conf)
 	if err != nil {
@@ -125,9 +127,10 @@ func createLogsExporter(
 		ctx,
 		set,
 		cfg,
-		fe.Unwrap().(*fileExporter).ConsumeLogs,
+		fe.Unwrap().(*fileExporter).consumeLogs,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 }
 
@@ -147,7 +150,11 @@ func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
 
 func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
 	if cfg.Rotation == nil {
-		return os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		f, err := os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		if err != nil {
+			return nil, err
+		}
+		return newBufferedWriteCloser(f), nil
 	}
 	return &lumberjack.Logger{
 		Filename:   cfg.Path,

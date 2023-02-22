@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -31,18 +31,18 @@ const (
 )
 
 // NewFactory creates a factory for the Azure Event Hub receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver, stability))
+		receiver.WithLogs(createLogsReceiver, stability))
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))}
+	return &Config{}
 }
 
-func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, cfg component.Config, logs consumer.Logs) (component.LogsReceiver, error) {
+func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, cfg component.Config, logs consumer.Logs) (receiver.Logs, error) {
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             settings.ID,
@@ -60,7 +60,7 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 	case rawLogFormat:
 		converter = newRawConverter(settings)
 	default:
-		converter = newRawConverter(settings)
+		converter = newAzureLogFormatConverter(settings)
 	}
 
 	return &client{
