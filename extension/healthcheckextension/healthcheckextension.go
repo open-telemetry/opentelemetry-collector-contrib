@@ -56,7 +56,7 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 	if !hc.config.CheckCollectorPipeline.Enabled {
 		// Mount HC handler
 		mux := http.NewServeMux()
-		mux.Handle(hc.config.Path, hc.state.Handler())
+		mux.Handle(hc.config.Path, hc.baseHandler())
 		hc.server.Handler = mux
 		hc.stopCh = make(chan struct{})
 		go func() {
@@ -81,7 +81,7 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 		ticker := time.NewTicker(time.Second)
 
 		mux := http.NewServeMux()
-		mux.Handle(hc.config.Path, hc.handler())
+		mux.Handle(hc.config.Path, hc.checkCollectorPipelineHandler())
 		hc.server.Handler = mux
 		hc.stopCh = make(chan struct{})
 		go func() {
@@ -109,13 +109,34 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 	return nil
 }
 
+// base handler function
+func (hc *healthCheckExtension) baseHandler() http.Handler {
+	if hc.config.StaticResponseBody != "" {
+		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			if hc.state.Get() == healthcheck.Ready {
+				w.WriteHeader(http.StatusOK)
+				if hc.config.StaticResponseBody != "" {
+					w.Write([]byte(hc.config.StaticResponseBody))
+				}
+			} else {
+				w.WriteHeader(http.StatusServiceUnavailable)
+			}
+		})
+	} else {
+		return hc.state.Handler()
+	}
+}
+
 // new handler function used for check collector pipeline
-func (hc *healthCheckExtension) handler() http.Handler {
+func (hc *healthCheckExtension) checkCollectorPipelineHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		if hc.check() && hc.state.Get() == healthcheck.Ready {
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
+			if hc.config.StaticResponseBody != "" {
+				w.Write([]byte(hc.config.StaticResponseBody))
+			}
 		} else {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusServiceUnavailable)
 		}
 	})
 }

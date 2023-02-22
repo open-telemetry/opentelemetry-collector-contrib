@@ -16,6 +16,7 @@ package healthcheckextension
 
 import (
 	"context"
+	"io"
 	"net"
 	"net/http"
 	"runtime"
@@ -32,6 +33,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
+const (
+	expectedBodyNotReady = "{\"status\":\"Server not available\",\"upSince\":"
+	expectedBodyReady    = "{\"status\":\"Server available\",\"upSince\":"
+)
+
 func ensureServerRunning(url string) func() bool {
 	return func() bool {
 		_, err := net.DialTimeout("tcp", url, 30*time.Second)
@@ -46,6 +52,7 @@ func TestHealthCheckExtensionUsageWithoutCheckCollectorPipeline(t *testing.T) {
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
 		Path:                   "/",
+		StaticResponseBody:     "",
 	}
 
 	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
@@ -59,23 +66,34 @@ func TestHealthCheckExtensionUsageWithoutCheckCollectorPipeline(t *testing.T) {
 
 	client := &http.Client{}
 	url := "http://" + config.Endpoint
+
 	resp0, err := client.Get(url)
 	require.NoError(t, err)
 	defer resp0.Body.Close()
-
 	require.Equal(t, http.StatusServiceUnavailable, resp0.StatusCode)
+	body0, err := io.ReadAll(resp0.Body)
+	require.NoError(t, err)
+	require.Contains(t, string(body0), expectedBodyNotReady)
 
 	require.NoError(t, hcExt.Ready())
+
 	resp1, err := client.Get(url)
 	require.NoError(t, err)
 	defer resp1.Body.Close()
 	require.Equal(t, http.StatusOK, resp1.StatusCode)
+	body1, err := io.ReadAll(resp1.Body)
+	require.NoError(t, err)
+	require.Contains(t, string(body1), expectedBodyReady)
 
 	require.NoError(t, hcExt.NotReady())
+
 	resp2, err := client.Get(url)
 	require.NoError(t, err)
 	defer resp2.Body.Close()
 	require.Equal(t, http.StatusServiceUnavailable, resp2.StatusCode)
+	body2, err := io.ReadAll(resp2.Body)
+	require.NoError(t, err)
+	require.Contains(t, string(body2), expectedBodyNotReady)
 }
 
 func TestHealthCheckExtensionUsageWithCustomizedPathWithoutCheckCollectorPipeline(t *testing.T) {
@@ -111,6 +129,54 @@ func TestHealthCheckExtensionUsageWithCustomizedPathWithoutCheckCollectorPipelin
 	require.NoError(t, hcExt.NotReady())
 	resp2, err := client.Get(url)
 	require.NoError(t, err)
+	require.Equal(t, http.StatusServiceUnavailable, resp2.StatusCode)
+	require.NoError(t, resp2.Body.Close(), "Must be able to close the response")
+}
+
+func TestHealthCheckExtensionUsageWithCustomStaticResponseBodyWithoutCheckCollectorPipeline(t *testing.T) {
+	config := Config{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+		Path:                   "/",
+		StaticResponseBody:     "OK",
+	}
+
+	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
+	require.NotNil(t, hcExt)
+
+	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
+	require.Eventuallyf(t, ensureServerRunning(config.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
+
+	client := &http.Client{}
+	url := "http://" + config.Endpoint + config.Path
+	resp0, err := client.Get(url)
+	require.NoError(t, err)
+	body0, err := io.ReadAll(resp0.Body)
+	require.NoError(t, err)
+	require.Empty(t, body0)
+	require.NoError(t, resp0.Body.Close(), "Must be able to close the response")
+	require.Equal(t, http.StatusServiceUnavailable, resp0.StatusCode)
+
+	require.NoError(t, hcExt.Ready())
+
+	resp1, err := client.Get(url)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp1.StatusCode)
+	body1, err := io.ReadAll(resp1.Body)
+	require.NoError(t, err)
+	require.Equal(t, body1, []byte("OK"))
+	require.NoError(t, resp1.Body.Close(), "Must be able to close the response")
+
+	require.NoError(t, hcExt.NotReady())
+
+	resp2, err := client.Get(url)
+	require.NoError(t, err)
+	body2, err := io.ReadAll(resp2.Body)
+	require.NoError(t, err)
+	require.Empty(t, body2)
 	require.Equal(t, http.StatusServiceUnavailable, resp2.StatusCode)
 	require.NoError(t, resp2.Body.Close(), "Must be able to close the response")
 }
@@ -170,14 +236,14 @@ func TestHealthCheckExtensionUsageWithCheckCollectorPipeline(t *testing.T) {
 	resp2, err := client.Get(url)
 	require.NoError(t, err)
 	defer resp2.Body.Close()
-	require.Equal(t, http.StatusInternalServerError, resp2.StatusCode)
+	require.Equal(t, http.StatusServiceUnavailable, resp2.StatusCode)
 
 	hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, vd2)
 	require.NoError(t, hcExt.Ready())
 	resp3, err := client.Get(url)
 	require.NoError(t, err)
 	defer resp3.Body.Close()
-	require.Equal(t, http.StatusInternalServerError, resp3.StatusCode)
+	require.Equal(t, http.StatusServiceUnavailable, resp3.StatusCode)
 }
 
 func TestHealthCheckExtensionUsageWithCustomPathWithCheckCollectorPipeline(t *testing.T) {
@@ -235,14 +301,90 @@ func TestHealthCheckExtensionUsageWithCustomPathWithCheckCollectorPipeline(t *te
 	require.NoError(t, hcExt.NotReady())
 	resp2, err := client.Get(url)
 	require.NoError(t, err)
-	require.Equal(t, http.StatusInternalServerError, resp2.StatusCode)
+	require.Equal(t, http.StatusServiceUnavailable, resp2.StatusCode)
 	require.NoError(t, resp2.Body.Close(), "Must be able to close the response")
 
 	hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, vd2)
 	require.NoError(t, hcExt.Ready())
 	resp3, err := client.Get(url)
 	require.NoError(t, err)
-	require.Equal(t, http.StatusInternalServerError, resp3.StatusCode)
+	require.Equal(t, http.StatusServiceUnavailable, resp3.StatusCode)
+	require.NoError(t, resp3.Body.Close(), "Must be able to close the response")
+}
+
+func TestHealthCheckExtensionUsageWithCustomStaticResponseBodyWithCheckCollectorPipeline(t *testing.T) {
+	config := Config{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		CheckCollectorPipeline: checkCollectorPipelineSettings{
+			Enabled:                  true,
+			Interval:                 "5m",
+			ExporterFailureThreshold: 1,
+		},
+		Path:               "/",
+		StaticResponseBody: "OK",
+	}
+
+	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
+	require.NotNil(t, hcExt)
+
+	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
+
+	// Give a chance for the server goroutine to run.
+	runtime.Gosched()
+	require.Eventuallyf(t, ensureServerRunning(config.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
+
+	newView := view.View{Name: exporterFailureView}
+
+	currentTime := time.Now()
+	vd1 := &view.Data{
+		View:  &newView,
+		Start: currentTime.Add(-2 * time.Minute),
+		End:   currentTime,
+		Rows:  nil,
+	}
+	vd2 := &view.Data{
+		View:  &newView,
+		Start: currentTime.Add(-1 * time.Minute),
+		End:   currentTime,
+		Rows:  nil,
+	}
+
+	client := &http.Client{}
+	url := "http://" + config.Endpoint + config.Path
+	resp0, err := client.Get(url)
+	require.NoError(t, err)
+	body0, err := io.ReadAll(resp0.Body)
+	require.NoError(t, err)
+	require.Empty(t, body0)
+	require.NoError(t, resp0.Body.Close(), "Must be able to close the response")
+
+	hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, vd1)
+	require.NoError(t, hcExt.Ready())
+	resp1, err := client.Get(url)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp1.StatusCode)
+	body1, err := io.ReadAll(resp1.Body)
+	require.NoError(t, err)
+	require.Equal(t, body1, []byte("OK"))
+	require.NoError(t, resp1.Body.Close(), "Must be able to close the response")
+
+	require.NoError(t, hcExt.NotReady())
+	resp2, err := client.Get(url)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusServiceUnavailable, resp2.StatusCode)
+	body2, err := io.ReadAll(resp2.Body)
+	require.NoError(t, err)
+	require.Empty(t, body2)
+	require.NoError(t, resp2.Body.Close(), "Must be able to close the response")
+
+	hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, vd2)
+	require.NoError(t, hcExt.Ready())
+	resp3, err := client.Get(url)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusServiceUnavailable, resp3.StatusCode)
 	require.NoError(t, resp3.Body.Close(), "Must be able to close the response")
 }
 
