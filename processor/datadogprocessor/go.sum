@@ -3,12 +3,12 @@ cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230206114529-17c7dfde736c h1:vilzDJudtBAAgCjFsOnq4PZDBsVG8YbJCfmNJ8XTIvw=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230206114529-17c7dfde736c/go.mod h1:o+rJy3B2o+Zb+wCgLSkMlkD7EiUEA5Q63cid53fZkQY=
-github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230206114529-17c7dfde736c h1:oZBOhjzFOhAQ4J+v+3OZYt5V2btaBuMUbhJ5l628TOI=
-github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230206114529-17c7dfde736c/go.mod h1:UlflhZfqZFDQKiIZYBQAC4kawTkMn5s27OYviNHJEf4=
+github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230221135433-65e01983bba4 h1:ZrKp3lGN73CucXaqGV89/a1kduMqOgCRuLfZpqxSngo=
+github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230221135433-65e01983bba4/go.mod h1:jH+R74p8Kqpu8PPr8H7YbeXNb9jfqOGRnTjngUYofMQ=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230206114529-17c7dfde736c h1:WX9D8cWfWbt1hDvh1t9DuY2rEq1apIkCAFn29O+91MU=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230206114529-17c7dfde736c/go.mod h1:VVMDDibJxYEkwcLdZBT2g8EHKpbMT4JdOhRbQ9GdjbM=
-github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230206114529-17c7dfde736c h1:wJQSexgYk50q2pmiS/Dadx3cN8Ze35To7awXw5JtILE=
-github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230206114529-17c7dfde736c/go.mod h1:s9UB8GJn92OWJrnDYTw8pYjx7VmfQVgrexq21EpHEnQ=
+github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230221135433-65e01983bba4 h1:8w10VdqwZBMX1GMm1JHARipjXew+VVbdaNUaTE27n98=
+github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230221135433-65e01983bba4/go.mod h1:FoLytWtX6e1s4X7C1P0F/OUAd9ibclwNYiy86B/aEW8=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230206114529-17c7dfde736c h1:dCU5wtokXCUXcJVIL6ZAGFWhx6G8aQ5P20vZ5N2ECV4=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230206114529-17c7dfde736c/go.mod h1:Yy59y4UyxYL8h4rxZzh8QGgxUFm+kCFMvs8WUXqF/go=
 github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.3.0.20230206114529-17c7dfde736c h1:eqOCvamJLxvQvF6vp25xmFByyoxjSh0hEQtCiGBY88A=
