@@ -3,15 +3,15 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumul
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.71.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.72.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.72.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.71.0
-	go.opentelemetry.io/collector/component v0.71.0
-	go.opentelemetry.io/collector/confmap v0.71.0
-	go.opentelemetry.io/collector/consumer v0.71.0
-	go.opentelemetry.io/collector/featuregate v0.71.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc5
+	go.opentelemetry.io/collector v0.72.0
+	go.opentelemetry.io/collector/component v0.72.0
+	go.opentelemetry.io/collector/confmap v0.72.0
+	go.opentelemetry.io/collector/consumer v0.72.0
+	go.opentelemetry.io/collector/featuregate v0.72.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc6
 	go.uber.org/atomic v1.10.0
 	go.uber.org/zap v1.24.0
 )
