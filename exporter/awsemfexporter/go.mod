@@ -13,12 +13,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.71.0
-	go.opentelemetry.io/collector/component v0.71.0
-	go.opentelemetry.io/collector/confmap v0.71.0
-	go.opentelemetry.io/collector/consumer v0.71.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc5
-	go.opentelemetry.io/collector/semconv v0.71.0
+	go.opentelemetry.io/collector v0.71.1-0.20230220220521-105e5aede58f
+	go.opentelemetry.io/collector/component v0.71.1-0.20230220220521-105e5aede58f
+	go.opentelemetry.io/collector/confmap v0.71.1-0.20230220220521-105e5aede58f
+	go.opentelemetry.io/collector/consumer v0.71.1-0.20230220220521-105e5aede58f
+	go.opentelemetry.io/collector/pdata v1.0.0-rc5.0.20230220220521-105e5aede58f
+	go.opentelemetry.io/collector/semconv v0.71.1-0.20230220220521-105e5aede58f
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.28.1
 )
@@ -42,7 +42,7 @@ require (
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.71.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.71.1-0.20230220220521-105e5aede58f // indirect
 	go.opentelemetry.io/otel v1.13.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.13.0 // indirect
