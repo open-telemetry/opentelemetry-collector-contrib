@@ -87,12 +87,54 @@ func (e *traceExporterImp) Shutdown(context.Context) error {
 	return nil
 }
 
+// If we are sending to only one endpoint, returns that endpoint.
+// Otherwise returns empty string.
+func (e *traceExporterImp) HasMultipleEndpoints(ctx context.Context, td ptrace.Traces, batches []ptrace.Traces) (string, error) {
+	var errs error
+
+	// First check if we're sending to multiple exporters.
+	endpoint := ""
+	hasMultipleEndpoints := false
+
+	for batch := range batches {
+		routingIDs, err := routingIdentifiersFromTraces(batches[batch], e.routingKey)
+		errs = multierr.Append(errs, err)
+		if len(routingIDs) > 2 {
+			hasMultipleEndpoints = true
+			break
+		} else {
+			for rid := range routingIDs {
+				if endpoint != "" && endpoint != rid {
+					hasMultipleEndpoints = true
+					break
+				} else {
+					endpoint = rid
+				}
+			}
+		}
+	}
+
+	if hasMultipleEndpoints {
+		return "", errs
+	}
+	return endpoint, errs
+}
+
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	var errs error
 	batches := batchpersignal.SplitTraces(td)
-	endpointToTraceData := make(map[string]ptrace.Traces)
+	end, err := e.HasMultipleEndpoints(ctx, td, batches)
+	errs = multierr.Append(errs, err)
+
+	if end != "" {
+		// We don't need to batch; we only send to one backend.
+		endpoint := e.loadBalancer.Endpoint([]byte(end))
+		errs = multierr.Append(errs, e.consumeTrace(ctx, td, endpoint))
+		return errs
+	}
 
 	// Map the trace data to their respective endpoints.
+	endpointToTraceData := make(map[string]ptrace.Traces)
 	for batch := range batches {
 		routingIDs, err := routingIdentifiersFromTraces(batches[batch], e.routingKey)
 		errs = multierr.Append(errs, err)
