@@ -253,6 +253,13 @@ genotelcontribcol: $(BUILDER)
 	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
 	$(MAKE) -C cmd/otelcontribcol fmt
 
+.PHONY: otelcontribcolbuilder
+otelcontribcolbuilder: $(BUILDER)
+	file $(BUILDER)
+	mkdir -p ./dist
+	$(BUILDER) --skip-compilation --config ./builder/lumigo-builder-config.yaml
+	cd ./dist/ && GOOS=$(go_os) GOARCH=$(go_arch) $(GOCMD) build -ldflags="-s -w" -trimpath -o "./otelcontribcol_$(go_os)_$(go_arch)"
+
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
