@@ -176,7 +176,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["kafka.brokers"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of brokers in the cluster (Deprecated).", ms.At(i).Description())
+					assert.Equal(t, "[DEPRECATED] Number of brokers in the cluster.", ms.At(i).Description())
 					assert.Equal(t, "{brokers}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
