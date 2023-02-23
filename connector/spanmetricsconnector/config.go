@@ -23,8 +23,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-var _ component.ConfigValidator = (*Config)(nil)
-
 const (
 	delta      = "AGGREGATION_TEMPORALITY_DELTA"
 	cumulative = "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -73,6 +71,8 @@ type Config struct {
 	// Namespace is the namespace of the metrics emitted by the connector.
 	Namespace string `mapstructure:"namespace"`
 }
+
+var _ component.ConfigValidator = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (c Config) Validate() error {
