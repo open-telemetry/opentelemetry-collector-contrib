@@ -4,6 +4,86 @@
 
 <!-- next version -->
 
+## v0.72.0
+
+### 🛑 Breaking changes 🛑
+
+- `fluentbitextension`: remove deprecated extension (#18505)
+- `all`: Remove go 1.18 support, bump minimum to go 1.19 and add testing for 1.20 (#18436)
+- `pkg/ottl`: switch ErrorMode to be a string instead of an int (#18692)
+- `hostmetricsreceiver`: Remove deprecated process memory metrics (#14327)
+  The metrics `process.memory.physical_usage` and `process.memory.virtual_usage` have been deprecated since v0.64.0.
+  They are now being removed. You should use the following metrics instead: `process.memory.usage`, `process.memory.virtual`.
+  For details, see the [docs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.71.0/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification).
+  
+- `promtailreceiver`: Promtail recevier is completely removed from the repository (#18474, #18493)
+  Promtail receiver in its current implementation has a dependency on Loki that leads to a huge amount of |
+  dependencies. It is getting difficult to maintain those dependencies. That's why the decision to |
+  remove promtail receiver was made
+  
+
+### 🚩 Deprecations 🚩
+
+- `jaegerexporter, jaegerthrifthttpexporter`: marking jaeger exporters as deprecated (#18503)
+- `promtailreceiver`: Deprecate promtail receiver (#18474, #18493)
+  Promtail receiver in its current implementation has a dependency on Loki that leads to a huge amount of |
+  dependencies. It is getting difficult to maintain those dependencies. That's why the decision to |
+  deprecate and remove promtail receiver was made
+  
+
+### 🚀 New components 🚀
+
+- `countconnector`: Add count connector to build (#18501)
+- `forwardconnector`: Add forward connector to build (#18501)
+- `servicegraphconnector`: Add preliminary implementation as a connector. (#18389)
+- `spanmetricsconnector`: Add preliminary implementation as a connector. (#18535)
+
+### 💡 Enhancements 💡
+
+- `clickhouseexporter`: Add indexes for attributes on metric tables (#18221)
+  Attributes are used for filtering. Adding indexes for them will speed up queries.
+- `sentry/sentryexporter`: Add `environment` configuration option that allows specifying env for transaction. (#18694)
+- `countconnector`: Add ability to count spans, span events, metrics, data points, and logs, based on ottl conditions. (#18687)
+- `exporter/awscloudwatch`: Flush logs on the exporter shutdown (#18518)
+- `resourcedetectionprocessor`: add host.id to system detector (#18533)
+- `k8sattributesprocessor`: run tests on 4 latest k8s version (#18767)
+- `filelogreceiver`: Added `max_batches` configuration parameter to limit the number of batches processed in a polling interval. (#18476)
+- `filterprocessor`: Add new functions `HasAttrKeyOnDatapoint` and `HasAttrOnDatapoint` to allow existing expr matching logic with OTTL. (#16798)
+- `processor/k8sattribute`: add more test cases for k8sattribute e2e (#18512)
+- `k8sobjectsreceiver`: Ensure that the observed timestamp is set. (#18700)
+- `k8sobjectsreceiver`: Improving watch mode reliability to handle recoverable issue such as API timeouts. (#18078)
+- `k8sattributeprocessor`: Allow using k8s.pod.hostname to refer to pod.spec.hostname (#18494)
+- `translator/loki`: Added default labels `job=service.namespace/service.name` and `instance=service.instance.id` to log record to send to Loki (#18500)
+- `pkg/ottl`: Change typed getters to error on nil (#18735)
+- `pkg/ottl`: Introduce the concept of type-specific Getters that help simplify type assertions in functions. (#18042)
+- `pkg/ottl`: Add `NewStatements` func to enable creation of Statements structs. (#18385)
+- `redactionprocessor`: Add IgnoreList to redaction processor (#18680)
+- `translator/prometheusremotewrite`: Add metric name to error message when invalid (#18292)
+  Exporter prometheusremotewrite doesn't support non-cumulative monotonic, histogram, and summary OTLP metrics.
+  Added metric name to error message when the unsupported metrics get dropped.
+  
+- `spanmetricsprocessor`: Support set namespace for generated metric. (#18679)
+- `awsxrayreceiver`: set `service.name` attribute (#18480)
+- `signalfxexporter`: Add `exclude_properties` config option to filter dimension update property content (#18464)
+- `snowflakereceiver`: updated README.md to include more detailed documentation. (#14754)
+- `splunkhecexporter`: Reconnect when server returns 502/429 errors. (#18281)
+- `pkg/stanza`: Reduced `Converter` memory footprint by condensing the `aggregationLoop` logic into `workerLoop`. (#18411)
+- `telemetrygen`: Implement a simple metric generation command for telemetrygen (#17986)
+
+### 🧰 Bug fixes 🧰
+
+- `coralogixexporter`: fix authentication issue when using coralogixexporter with only metrics or traces (#18096)
+- `cumulativetodeltaprocessor`: Data points with the NoValueRecorded flag set are no longer considered in calculating deltas. (#18766)
+- `awsecscontainermetricsreceiver`: Fix possible sig sev that could happen during component shutdown. (#18736)
+- `clickhouseexporter`: Fix metric inserts results in empty entries (#18226)
+- `exporter/awskinesis`: Restore Kinesis stream validation on the start (#18522)
+- `datadogexporter`: Stop reporting the first cumulative monotonic sum value if the start timestamp of the timeseries matches its timestamp. (#18484)
+- `oidcauthextension`: Fix case-sensitivity of authorization header (#18405)
+- `oracledbreceiver`: record a value of -1 for `oracledb.tablespace_size.limit` if the max tablespace size is not set (#18670)
+- `pkg/ottl`: Fix bug where an empty TelemetrySettings struct could result in a panic during condition checking (#18669)
+- `spanmetrics`: Do not drop metric data points on attributes cache misses. (#18725)
+- `statsdreceiver`: Ensure that the start timestamp and timestamp of successive data points for counters align. (#18470)
+
 ## v0.71.0
 
 ### 🛑 Breaking changes 🛑
