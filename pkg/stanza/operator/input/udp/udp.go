@@ -55,6 +55,8 @@ func NewConfigWithID(operatorID string) *Config {
 				LineStartPattern: "",
 				LineEndPattern:   ".^", // Use never matching regex to not split data by default
 			},
+			TrimLeadingWhitespaces:  true,
+			TrimTrailingWhitespaces: true,
 		},
 	}
 }
@@ -67,11 +69,12 @@ type Config struct {
 
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
-	ListenAddress      string                 `mapstructure:"listen_address,omitempty"`
-	AddAttributes      bool                   `mapstructure:"add_attributes,omitempty"`
-	Encoding           helper.EncodingConfig  `mapstructure:",squash,omitempty"`
-	Multiline          helper.MultilineConfig `mapstructure:"multiline,omitempty"`
-	PreserveWhitespace bool                   `mapstructure:"preserve_whitespace,omitempty"`
+	ListenAddress           string                 `mapstructure:"listen_address,omitempty"`
+	AddAttributes           bool                   `mapstructure:"add_attributes,omitempty"`
+	Encoding                helper.EncodingConfig  `mapstructure:",squash,omitempty"`
+	Multiline               helper.MultilineConfig `mapstructure:"multiline,omitempty"`
+	TrimLeadingWhitespaces  bool                   `mapstructure:"trim_leading_whitespaces,omitempty"`
+	TrimTrailingWhitespaces bool                   `mapstructure:"trim_trailing_whitespaces,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -96,7 +99,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveWhitespace, nil, MaxUDPSize)
+	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.TrimLeadingWhitespaces, c.TrimTrailingWhitespaces, nil, MaxUDPSize)
 	if err != nil {
 		return nil, err
 	}

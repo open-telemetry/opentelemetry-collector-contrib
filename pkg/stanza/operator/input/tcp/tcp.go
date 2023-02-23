@@ -59,8 +59,10 @@ func NewConfigWithID(operatorID string) *Config {
 	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
-			Multiline: helper.NewMultilineConfig(),
-			Encoding:  helper.NewEncodingConfig(),
+			Multiline:               helper.NewMultilineConfig(),
+			Encoding:                helper.NewEncodingConfig(),
+			TrimLeadingWhitespaces:  true,
+			TrimTrailingWhitespaces: true,
 		},
 	}
 }
@@ -73,13 +75,14 @@ type Config struct {
 
 // BaseConfig is the detailed configuration of a tcp input operator.
 type BaseConfig struct {
-	MaxLogSize         helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
-	ListenAddress      string                      `mapstructure:"listen_address,omitempty"`
-	TLS                *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
-	AddAttributes      bool                        `mapstructure:"add_attributes,omitempty"`
-	Encoding           helper.EncodingConfig       `mapstructure:",squash,omitempty"`
-	Multiline          helper.MultilineConfig      `mapstructure:"multiline,omitempty"`
-	PreserveWhitespace bool                        `mapstructure:"preserve_whitespace,omitempty"`
+	MaxLogSize              helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
+	ListenAddress           string                      `mapstructure:"listen_address,omitempty"`
+	TLS                     *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
+	AddAttributes           bool                        `mapstructure:"add_attributes,omitempty"`
+	Encoding                helper.EncodingConfig       `mapstructure:",squash,omitempty"`
+	Multiline               helper.MultilineConfig      `mapstructure:"multiline,omitempty"`
+	TrimLeadingWhitespaces  bool                        `mapstructure:"trim_leading_whitespaces,omitempty"`
+	TrimTrailingWhitespaces bool                        `mapstructure:"trim_trailing_whitespaces,omitempty"`
 }
 
 // Build will build a tcp input operator.
@@ -113,7 +116,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveWhitespace, nil, int(c.MaxLogSize))
+	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.TrimLeadingWhitespaces, c.TrimTrailingWhitespaces, nil, int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
 	}
