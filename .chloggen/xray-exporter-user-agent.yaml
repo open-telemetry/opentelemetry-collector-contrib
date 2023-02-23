@@ -5,7 +5,7 @@ change_type: 'enhancement'
 component: 'awsxrayexporter'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Reformatted and imporoved accuracy of data captured in user agent string in the AWS X-Ray exporter"
+note: "Reformatted and improved accuracy of data captured in user agent string in the AWS X-Ray exporter"
 
 # One or more tracking issues related to the change
 issues: []
