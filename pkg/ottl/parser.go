@@ -54,6 +54,7 @@ type Parser[K any] struct {
 type Statement[K any] struct {
 	function  Expr[K]
 	condition BoolExpr[K]
+	origText  string
 }
 
 // Execute is a function that will execute the statement's function if the statement's condition is met.
@@ -80,7 +81,10 @@ func NewParser[K any](
 	pathParser PathExpressionParser[K],
 	settings component.TelemetrySettings,
 	options ...Option[K],
-) Parser[K] {
+) (Parser[K], error) {
+	if settings.Logger == nil {
+		return Parser[K]{}, fmt.Errorf("logger cannot be nil")
+	}
 	p := Parser[K]{
 		functions:  functions,
 		pathParser: pathParser,
@@ -92,7 +96,7 @@ func NewParser[K any](
 	for _, opt := range options {
 		opt(&p)
 	}
-	return p
+	return p, nil
 }
 
 type Option[K any] func(*Parser[K])
@@ -131,6 +135,7 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	return &Statement[K]{
 		function:  function,
 		condition: expression,
+		origText:  statement,
 	}, nil
 }
 
@@ -198,10 +203,10 @@ func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
 		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
 			if s.errorMode == PropagateError {
-				err = fmt.Errorf("failed to execute statement: %w", err)
+				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
 				return err
 			}
-			s.telemetrySettings.Logger.Error("failed to execute statement", zap.Error(err))
+			s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
 		}
 	}
 	return nil

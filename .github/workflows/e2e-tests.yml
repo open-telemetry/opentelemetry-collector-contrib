@@ -10,6 +10,9 @@ on:
 
 jobs:
   kubernetes-test:
+    strategy: 
+      matrix:
+        k8s-version: ["v1.26.0", "v1.25.3", "v1.24.7", "v1.23.13"]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -43,6 +46,9 @@ jobs:
         uses: helm/chart-testing-action@v2.3.0
       - name: Create kind cluster
         uses: helm/kind-action@v1.5.0
+        with:
+          node_image: kindest/node:${{ matrix.k8s-version }}
+          kubectl_version: ${{ matrix.k8s-version }}
       - name: Check kind
         run: |
           kubectl cluster-info --context kind-chart-testing

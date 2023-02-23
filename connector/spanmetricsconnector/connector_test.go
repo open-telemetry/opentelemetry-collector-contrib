@@ -65,7 +65,7 @@ const (
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
 type metricID struct {
 	service    string
-	operation  string
+	name       string
 	kind       string
 	statusCode string
 }
@@ -80,7 +80,7 @@ type serviceSpans struct {
 }
 
 type span struct {
-	operation  string
+	name       string
 	kind       ptrace.SpanKind
 	statusCode ptrace.StatusCode
 }
@@ -129,14 +129,14 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 
 	seenMetricIDs := make(map[metricID]bool)
 	// The first 3 data points are for call counts.
-	assert.Equal(t, "calls_total", m.At(0).Name())
+	assert.Equal(t, metricNameCalls, m.At(0).Name())
 	assert.Equal(t, expectedTemporality, m.At(0).Sum().AggregationTemporality())
 	assert.True(t, m.At(0).Sum().IsMonotonic())
 	callsDps := m.At(0).Sum().DataPoints()
 	require.Equal(t, 3, callsDps.Len())
 	for dpi := 0; dpi < 3; dpi++ {
 		dp := callsDps.At(dpi)
-		assert.Equal(t, int64(numCumulativeConsumptions), dp.IntValue(), "There should only be one metric per Service/operation/kind combination")
+		assert.Equal(t, int64(numCumulativeConsumptions), dp.IntValue(), "There should only be one metric per Service/name/kind combination")
 		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 		verifyMetricLabels(dp, t, seenMetricIDs)
@@ -199,8 +199,8 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 		switch k {
 		case serviceNameKey:
 			mID.service = v.Str()
-		case operationKey:
-			mID.operation = v.Str()
+		case spanNameKey:
+			mID.name = v.Str()
 		case spanKindKey:
 			mID.kind = v.Str()
 		case statusCodeKey:
@@ -215,7 +215,7 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 	})
 	assert.Empty(t, wantDimensions, "Did not see all expected dimensions in metric. Missing: ", wantDimensions)
 
-	// Service/operation/kind should be a unique metric.
+	// Service/name/kind should be a unique metric.
 	assert.False(t, seenMetricIDs[mID])
 	seenMetricIDs[mID] = true
 }
@@ -243,12 +243,12 @@ func buildSampleTrace() ptrace.Traces {
 			serviceName: "service-a",
 			spans: []span{
 				{
-					operation:  "/ping",
+					name:       "/ping",
 					kind:       ptrace.SpanKindServer,
 					statusCode: ptrace.StatusCodeOk,
 				},
 				{
-					operation:  "/ping",
+					name:       "/ping",
 					kind:       ptrace.SpanKindClient,
 					statusCode: ptrace.StatusCodeOk,
 				},
@@ -259,7 +259,7 @@ func buildSampleTrace() ptrace.Traces {
 			serviceName: "service-b",
 			spans: []span{
 				{
-					operation:  "/ping",
+					name:       "/ping",
 					kind:       ptrace.SpanKindServer,
 					statusCode: ptrace.StatusCodeError,
 				},
@@ -283,7 +283,7 @@ func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 }
 
 func initSpan(span span, s ptrace.Span) {
-	s.SetName(span.operation)
+	s.SetName(span.name)
 	s.SetKind(span.kind)
 	s.Status().SetCode(span.statusCode)
 	now := time.Now()
@@ -301,7 +301,7 @@ func initSpan(span span, s ptrace.Span) {
 	s.SetSpanID(pcommon.SpanID([8]byte{byte(42)}))
 }
 
-func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
+func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
 	buf := &bytes.Buffer{}
@@ -500,7 +500,7 @@ func TestSetExemplars(t *testing.T) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	value := float64(42)
 
-	ed := []exemplarData{{traceID: traceID, spanID: spanID, value: value}}
+	ed := []exemplar{{traceID: traceID, spanID: spanID, value: value}}
 
 	// ----- call -------------------------------------------------------------
 	setExemplars(ed, timestamp, exemplarSlice)
@@ -530,19 +530,20 @@ func TestConnectorUpdateExemplars(t *testing.T) {
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------
-	c.updateHistogram(key, value, traceID, spanID)
+	h := c.getOrCreateHistogram(key, pcommon.NewMap())
+	h.observe(value, traceID, spanID)
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.NotEmpty(t, c.histograms[key].exemplarsData)
-	assert.Equal(t, c.histograms[key].exemplarsData[0], exemplarData{traceID: traceID, spanID: spanID, value: value})
+	assert.NotEmpty(t, c.histograms[key].exemplars)
+	assert.Equal(t, c.histograms[key].exemplars[0], exemplar{traceID: traceID, spanID: spanID, value: value})
 
 	// ----- call -------------------------------------------------------------
-	c.resetExemplarData()
+	c.resetExemplars()
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.Empty(t, c.histograms[key].exemplarsData)
+	assert.Empty(t, c.histograms[key].exemplars)
 }
 
 func TestStart(t *testing.T) {
@@ -836,7 +837,7 @@ func newConnectorImp(mcon consumer.Metrics, defaultNullValue *pcommon.Value, tem
 		metricsConsumer: mcon,
 
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
-		histograms:     make(map[metricKey]*histogramData),
+		histograms:     make(map[metricKey]*histogram),
 		latencyBounds:  defaultLatencyHistogramBucketsMs,
 		dimensions: []dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
@@ -889,19 +890,20 @@ func TestUpdateExemplars(t *testing.T) {
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------
-	c.updateHistogram(key, value, traceID, spanID)
+	h := c.getOrCreateHistogram(key, pcommon.NewMap())
+	h.observe(value, traceID, spanID)
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.NotEmpty(t, c.histograms[key].exemplarsData)
-	assert.Equal(t, c.histograms[key].exemplarsData[0], exemplarData{traceID: traceID, spanID: spanID, value: value})
+	assert.NotEmpty(t, c.histograms[key].exemplars)
+	assert.Equal(t, c.histograms[key].exemplars[0], exemplar{traceID: traceID, spanID: spanID, value: value})
 
 	// ----- call -------------------------------------------------------------
-	c.resetExemplarData()
+	c.resetExemplars()
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.Empty(t, c.histograms[key].exemplarsData)
+	assert.Empty(t, c.histograms[key].exemplars)
 }
 
 func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
@@ -915,7 +917,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 			serviceName: "service-a",
 			spans: []span{
 				{
-					operation:  "/ping",
+					name:       "/ping",
 					kind:       ptrace.SpanKindServer,
 					statusCode: ptrace.StatusCodeOk,
 				},
@@ -926,7 +928,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 			serviceName: "service-b",
 			spans: []span{
 				{
-					operation:  "/ping",
+					name:       "/ping",
 					kind:       ptrace.SpanKindServer,
 					statusCode: ptrace.StatusCodeError,
 				},
@@ -937,7 +939,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 			serviceName: "service-c",
 			spans: []span{
 				{
-					operation:  "/ping",
+					name:       "/ping",
 					kind:       ptrace.SpanKindServer,
 					statusCode: ptrace.StatusCodeError,
 				},
@@ -953,7 +955,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 			serviceName: "service-b",
 			spans: []span{
 				{
-					operation:  "/ping",
+					name:       "/ping",
 					kind:       ptrace.SpanKindServer,
 					statusCode: ptrace.StatusCodeError,
 				},
@@ -964,7 +966,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 			serviceName: "service-c",
 			spans: []span{
 				{
-					operation:  "/ping",
+					name:       "/ping",
 					kind:       ptrace.SpanKindServer,
 					statusCode: ptrace.StatusCodeError,
 				},
