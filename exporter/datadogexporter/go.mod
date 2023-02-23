@@ -13,26 +13,26 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.2
 	github.com/aws/aws-sdk-go v1.44.205
 	github.com/cenkalti/backoff/v4 v4.2.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.72.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.72.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.72.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.72.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.72.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.72.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.72.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.72.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.72.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.71.0
-	go.opentelemetry.io/collector/component v0.71.0
-	go.opentelemetry.io/collector/confmap v0.71.0
-	go.opentelemetry.io/collector/consumer v0.71.0
-	go.opentelemetry.io/collector/featuregate v0.71.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc5
-	go.opentelemetry.io/collector/processor/batchprocessor v0.71.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.71.0
-	go.opentelemetry.io/collector/semconv v0.71.0
+	go.opentelemetry.io/collector v0.72.0
+	go.opentelemetry.io/collector/component v0.72.0
+	go.opentelemetry.io/collector/confmap v0.72.0
+	go.opentelemetry.io/collector/consumer v0.72.0
+	go.opentelemetry.io/collector/featuregate v0.72.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc6
+	go.opentelemetry.io/collector/processor/batchprocessor v0.72.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.0
+	go.opentelemetry.io/collector/semconv v0.72.0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.28.1
@@ -127,9 +127,9 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.17 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/observiq/ctimefmt v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.71.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.72.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.72.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.72.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417 // indirect
