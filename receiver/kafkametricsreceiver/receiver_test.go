@@ -11,8 +11,6 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -93,12 +91,12 @@ func TestNewReceiver_deprecation_warning(t *testing.T) {
 	observedZapCore, observedLogs := observer.New(zap.InfoLevel)
 	observedLogger := zap.New(observedZapCore)
 
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 	params.Logger = observedLogger
 
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(context.Context, Config, *sarama.Config, component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
+	mockScraper := func(context.Context, Config, *sarama.Config, receiver.CreateSettings) (scraperhelper.Scraper, error) {
 		return scraperhelper.NewScraper("brokers", func(ctx context.Context) (pmetric.Metrics, error) {
 			return pmetric.Metrics{}, nil
 		})
