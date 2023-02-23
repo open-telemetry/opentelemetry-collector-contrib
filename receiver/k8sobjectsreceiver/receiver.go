@@ -25,7 +25,10 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/watch"
 )
 
 type k8sobjectsreceiver struct {
@@ -145,10 +148,14 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
 
-	watch, err := resource.Watch(ctx, metav1.ListOptions{
-		FieldSelector: config.FieldSelector,
-		LabelSelector: config.LabelSelector,
-	})
+	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
+		return resource.Watch(ctx, metav1.ListOptions{
+			FieldSelector: config.FieldSelector,
+			LabelSelector: config.LabelSelector,
+		})
+	}
+
+	watch, err := watch.NewRetryWatcher(config.ResourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
 		kr.setting.Logger.Error("error in watching object", zap.String("resource", config.gvr.String()), zap.Error(err))
 		return

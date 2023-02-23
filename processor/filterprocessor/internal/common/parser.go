@@ -33,7 +33,10 @@ import (
 
 func ParseSpan(conditions []string, set component.TelemetrySettings) (expr.BoolExpr[ottlspan.TransformContext], error) {
 	statmentsStr := conditionsToStatements(conditions)
-	parser := ottlspan.NewParser(functions[ottlspan.TransformContext](), set)
+	parser, err := ottlspan.NewParser(functions[ottlspan.TransformContext](), set)
+	if err != nil {
+		return nil, err
+	}
 	statements, err := parser.ParseStatements(statmentsStr)
 	if err != nil {
 		return nil, err
@@ -43,7 +46,10 @@ func ParseSpan(conditions []string, set component.TelemetrySettings) (expr.BoolE
 
 func ParseSpanEvent(conditions []string, set component.TelemetrySettings) (expr.BoolExpr[ottlspanevent.TransformContext], error) {
 	statmentsStr := conditionsToStatements(conditions)
-	parser := ottlspanevent.NewParser(functions[ottlspanevent.TransformContext](), set)
+	parser, err := ottlspanevent.NewParser(functions[ottlspanevent.TransformContext](), set)
+	if err != nil {
+		return nil, err
+	}
 	statements, err := parser.ParseStatements(statmentsStr)
 	if err != nil {
 		return nil, err
@@ -53,7 +59,10 @@ func ParseSpanEvent(conditions []string, set component.TelemetrySettings) (expr.
 
 func ParseLog(conditions []string, set component.TelemetrySettings) (expr.BoolExpr[ottllog.TransformContext], error) {
 	statmentsStr := conditionsToStatements(conditions)
-	parser := ottllog.NewParser(functions[ottllog.TransformContext](), set)
+	parser, err := ottllog.NewParser(functions[ottllog.TransformContext](), set)
+	if err != nil {
+		return nil, err
+	}
 	statements, err := parser.ParseStatements(statmentsStr)
 	if err != nil {
 		return nil, err
@@ -63,7 +72,10 @@ func ParseLog(conditions []string, set component.TelemetrySettings) (expr.BoolEx
 
 func ParseMetric(conditions []string, set component.TelemetrySettings) (expr.BoolExpr[ottlmetric.TransformContext], error) {
 	statmentsStr := conditionsToStatements(conditions)
-	parser := ottlmetric.NewParser(metricFunctions(), set)
+	parser, err := ottlmetric.NewParser(metricFunctions(), set)
+	if err != nil {
+		return nil, err
+	}
 	statements, err := parser.ParseStatements(statmentsStr)
 	if err != nil {
 		return nil, err
@@ -73,7 +85,10 @@ func ParseMetric(conditions []string, set component.TelemetrySettings) (expr.Boo
 
 func ParseDataPoint(conditions []string, set component.TelemetrySettings) (expr.BoolExpr[ottldatapoint.TransformContext], error) {
 	statmentsStr := conditionsToStatements(conditions)
-	parser := ottldatapoint.NewParser(functions[ottldatapoint.TransformContext](), set)
+	parser, err := ottldatapoint.NewParser(functions[ottldatapoint.TransformContext](), set)
+	if err != nil {
+		return nil, err
+	}
 	statements, err := parser.ParseStatements(statmentsStr)
 	if err != nil {
 		return nil, err
