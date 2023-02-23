@@ -2,10 +2,6 @@
 
 package metadata
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 8a963eaf0d (update to latest collector api changes)
 import (
 	"testing"
 
@@ -52,6 +48,63 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordKafkaBrokersDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "attr-val", "attr-val", 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "attr-val", "attr-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "attr-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "attr-val", "attr-val", 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "attr-val", "attr-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "attr-val", 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "attr-val", 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "attr-val", 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "attr-val", 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "attr-val")
+
+			metrics := mb.Emit()
+
+			if test.configSet == testSetNone {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
@@ -78,11 +131,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Number of brokers in the cluster.", ms.At(i).Description())
 					assert.Equal(t, "{brokers}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-<<<<<<< HEAD
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-=======
-					assert.Equal(t, pmetric.AggregationTemporalityDelta, ms.At(i).Sum().AggregationTemporality())
->>>>>>> 8a963eaf0d (update to latest collector api changes)
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -130,7 +179,6 @@ func TestMetricsBuilder(t *testing.T) {
 				case "kafka.consumer_group.members":
 					assert.False(t, validatedMetrics["kafka.consumer_group.members"], "Found a duplicate in the metrics slice: kafka.consumer_group.members")
 					validatedMetrics["kafka.consumer_group.members"] = true
-<<<<<<< HEAD
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Count of members in the consumer group", ms.At(i).Description())
@@ -138,13 +186,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
-=======
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Count of members in the consumer group", ms.At(i).Description())
-					assert.Equal(t, "{members}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
->>>>>>> 8a963eaf0d (update to latest collector api changes)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -230,7 +271,6 @@ func TestMetricsBuilder(t *testing.T) {
 				case "kafka.partition.replicas":
 					assert.False(t, validatedMetrics["kafka.partition.replicas"], "Found a duplicate in the metrics slice: kafka.partition.replicas")
 					validatedMetrics["kafka.partition.replicas"] = true
-<<<<<<< HEAD
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of replicas for partition of topic", ms.At(i).Description())
@@ -238,13 +278,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
-=======
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of replicas for partition of topic", ms.At(i).Description())
-					assert.Equal(t, "{replicas}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
->>>>>>> 8a963eaf0d (update to latest collector api changes)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -258,7 +291,6 @@ func TestMetricsBuilder(t *testing.T) {
 				case "kafka.partition.replicas_in_sync":
 					assert.False(t, validatedMetrics["kafka.partition.replicas_in_sync"], "Found a duplicate in the metrics slice: kafka.partition.replicas_in_sync")
 					validatedMetrics["kafka.partition.replicas_in_sync"] = true
-<<<<<<< HEAD
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of synchronized replicas of partition", ms.At(i).Description())
@@ -266,13 +298,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
-=======
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of synchronized replicas of partition", ms.At(i).Description())
-					assert.Equal(t, "{replicas}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
->>>>>>> 8a963eaf0d (update to latest collector api changes)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -286,7 +311,6 @@ func TestMetricsBuilder(t *testing.T) {
 				case "kafka.topic.partitions":
 					assert.False(t, validatedMetrics["kafka.topic.partitions"], "Found a duplicate in the metrics slice: kafka.topic.partitions")
 					validatedMetrics["kafka.topic.partitions"] = true
-<<<<<<< HEAD
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of partitions in topic.", ms.At(i).Description())
@@ -294,13 +318,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
-=======
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of partitions in topic.", ms.At(i).Description())
-					assert.Equal(t, "{partitions}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
->>>>>>> 8a963eaf0d (update to latest collector api changes)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -313,877 +330,3 @@ func TestMetricsBuilder(t *testing.T) {
 		})
 	}
 }
-<<<<<<< HEAD
-=======
-=======
-// <<<<<<< HEAD
-
-// // import (
-// // 	"path/filepath"
-// // 	"testing"
-
-// // 	"github.com/stretchr/testify/assert"
-// // 	"github.com/stretchr/testify/require"
-// // 	"go.opentelemetry.io/collector/component"
-// // 	"go.opentelemetry.io/collector/confmap/confmaptest"
-// // 	"go.opentelemetry.io/collector/pdata/pcommon"
-// // 	"go.opentelemetry.io/collector/pdata/pmetric"
-// // 	"go.opentelemetry.io/collector/receiver/receivertest"
-// // 	"go.uber.org/zap"
-// // 	"go.uber.org/zap/zaptest/observer"
-// // )
-
-// // type testMetricsSet int
-
-// // const (
-// // 	testMetricsSetDefault testMetricsSet = iota
-// // 	testMetricsSetAll
-// // 	testMetricsSetNo
-// // )
-
-// // <<<<<<< HEAD
-// // func TestMetricsBuilder(t *testing.T) {
-// // 	tests := []struct {
-// // 		name       string
-// // 		metricsSet testMetricsSet
-// // 	}{
-// // 		{
-// // 			name:       "default",
-// // 			metricsSet: testMetricsSetDefault,
-// // 		},
-// // 		{
-// // 			name:       "all_metrics",
-// // 			metricsSet: testMetricsSetAll,
-// // 		},
-// // 		{
-// // 			name:       "no_metrics",
-// // 			metricsSet: testMetricsSetNo,
-// // 		},
-// // 	}
-// // 	for _, test := range tests {
-// // 		t.Run(test.name, func(t *testing.T) {
-// // 			start := pcommon.Timestamp(1_000_000_000)
-// // 			ts := pcommon.Timestamp(1_000_001_000)
-// // 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-// // 			settings := receivertest.NewNopCreateSettings()
-// // 			settings.Logger = zap.New(observedZapCore)
-// // 			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
-
-// // 			expectedWarnings := 0
-// // 			assert.Equal(t, expectedWarnings, observedLogs.Len())
-
-// // 			defaultMetricsCount := 0
-// // 			allMetricsCount := 0
-
-// // 			defaultMetricsCount++
-// // 			allMetricsCount++
-// // 			mb.RecordKafkaBrokersDataPoint(ts, 1)
-
-// // 			defaultMetricsCount++
-// // 			allMetricsCount++
-// // 			mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "attr-val", "attr-val", 1)
-
-// // 			defaultMetricsCount++
-// // 			allMetricsCount++
-// // 			mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "attr-val", "attr-val")
-
-// // 			defaultMetricsCount++
-// // 			allMetricsCount++
-// // 			mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "attr-val")
-
-// // 			defaultMetricsCount++
-// // 			allMetricsCount++
-// // 			mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "attr-val", "attr-val", 1)
-
-// // 			defaultMetricsCount++
-// // 			allMetricsCount++
-// // 			mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "attr-val", "attr-val")
-
-// // 			defaultMetricsCount++
-// // 			allMetricsCount++
-// // 			mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "attr-val", 1)
-
-// // 			defaultMetricsCount++
-// // 			allMetricsCount++
-// // 			mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "attr-val", 1)
-
-// // 			defaultMetricsCount++
-// // 			allMetricsCount++
-// // 			mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "attr-val", 1)
-
-// // 			defaultMetricsCount++
-// // 			allMetricsCount++
-// // 			mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "attr-val", 1)
-
-// // 			defaultMetricsCount++
-// // 			allMetricsCount++
-// // 			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "attr-val")
-
-// // 			metrics := mb.Emit()
-
-// // 			if test.metricsSet == testMetricsSetNo {
-// // 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
-// // 				return
-// // 			}
-
-// <<<<<<< HEAD
-// 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-// 			rm := metrics.ResourceMetrics().At(0)
-// 			attrCount := 0
-// 			enabledAttrCount := 0
-// 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-// 			assert.Equal(t, attrCount, 0)
-// =======
-// // 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-// // 			rm := metrics.ResourceMetrics().At(0)
-// // 			attrCount := 0
-// // 			assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
-// >>>>>>> e4d418b2d1 (Expand broker metrics)
-
-// // 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
-// // 			ms := rm.ScopeMetrics().At(0).Metrics()
-// // 			if test.metricsSet == testMetricsSetDefault {
-// // 				assert.Equal(t, defaultMetricsCount, ms.Len())
-// // 			}
-// // 			if test.metricsSet == testMetricsSetAll {
-// // 				assert.Equal(t, allMetricsCount, ms.Len())
-// // 			}
-// // 			validatedMetrics := make(map[string]bool)
-// // 			for i := 0; i < ms.Len(); i++ {
-// // 				switch ms.At(i).Name() {
-// // 				case "kafka.brokers":
-// // 					assert.False(t, validatedMetrics["kafka.brokers"], "Found a duplicate in the metrics slice: kafka.brokers")
-// // 					validatedMetrics["kafka.brokers"] = true
-// // 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 					assert.Equal(t, "Number of brokers in the cluster.", ms.At(i).Description())
-// // 					assert.Equal(t, "{brokers}", ms.At(i).Unit())
-// // 					dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 					assert.Equal(t, start, dp.StartTimestamp())
-// // 					assert.Equal(t, ts, dp.Timestamp())
-// // 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 					assert.Equal(t, int64(1), dp.IntValue())
-// // 				case "kafka.consumer_group.lag":
-// // 					assert.False(t, validatedMetrics["kafka.consumer_group.lag"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag")
-// // 					validatedMetrics["kafka.consumer_group.lag"] = true
-// // 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 					assert.Equal(t, "Current approximate lag of consumer group at partition of topic", ms.At(i).Description())
-// // 					assert.Equal(t, "1", ms.At(i).Unit())
-// // 					dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 					assert.Equal(t, start, dp.StartTimestamp())
-// // 					assert.Equal(t, ts, dp.Timestamp())
-// // 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 					assert.Equal(t, int64(1), dp.IntValue())
-// // 					attrVal, ok := dp.Attributes().Get("group")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 					attrVal, ok = dp.Attributes().Get("topic")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 					attrVal, ok = dp.Attributes().Get("partition")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, 1, attrVal.Int())
-// // 				case "kafka.consumer_group.lag_sum":
-// // 					assert.False(t, validatedMetrics["kafka.consumer_group.lag_sum"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag_sum")
-// // 					validatedMetrics["kafka.consumer_group.lag_sum"] = true
-// // 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 					assert.Equal(t, "Current approximate sum of consumer group lag across all partitions of topic", ms.At(i).Description())
-// // 					assert.Equal(t, "1", ms.At(i).Unit())
-// // 					dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 					assert.Equal(t, start, dp.StartTimestamp())
-// // 					assert.Equal(t, ts, dp.Timestamp())
-// // 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 					assert.Equal(t, int64(1), dp.IntValue())
-// // 					attrVal, ok := dp.Attributes().Get("group")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 					attrVal, ok = dp.Attributes().Get("topic")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 				case "kafka.consumer_group.members":
-// // 					assert.False(t, validatedMetrics["kafka.consumer_group.members"], "Found a duplicate in the metrics slice: kafka.consumer_group.members")
-// // 					validatedMetrics["kafka.consumer_group.members"] = true
-// // 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 					assert.Equal(t, "Count of members in the consumer group", ms.At(i).Description())
-// // 					assert.Equal(t, "{members}", ms.At(i).Unit())
-// // 					dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 					assert.Equal(t, start, dp.StartTimestamp())
-// // 					assert.Equal(t, ts, dp.Timestamp())
-// // 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 					assert.Equal(t, int64(1), dp.IntValue())
-// // 					attrVal, ok := dp.Attributes().Get("group")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 				case "kafka.consumer_group.offset":
-// // 					assert.False(t, validatedMetrics["kafka.consumer_group.offset"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset")
-// // 					validatedMetrics["kafka.consumer_group.offset"] = true
-// // 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 					assert.Equal(t, "Current offset of the consumer group at partition of topic", ms.At(i).Description())
-// // 					assert.Equal(t, "1", ms.At(i).Unit())
-// // 					dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 					assert.Equal(t, start, dp.StartTimestamp())
-// // 					assert.Equal(t, ts, dp.Timestamp())
-// // 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 					assert.Equal(t, int64(1), dp.IntValue())
-// // 					attrVal, ok := dp.Attributes().Get("group")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 					attrVal, ok = dp.Attributes().Get("topic")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 					attrVal, ok = dp.Attributes().Get("partition")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, 1, attrVal.Int())
-// // 				case "kafka.consumer_group.offset_sum":
-// // 					assert.False(t, validatedMetrics["kafka.consumer_group.offset_sum"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset_sum")
-// // 					validatedMetrics["kafka.consumer_group.offset_sum"] = true
-// // 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 					assert.Equal(t, "Sum of consumer group offset across partitions of topic", ms.At(i).Description())
-// // 					assert.Equal(t, "1", ms.At(i).Unit())
-// // 					dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 					assert.Equal(t, start, dp.StartTimestamp())
-// // 					assert.Equal(t, ts, dp.Timestamp())
-// // 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 					assert.Equal(t, int64(1), dp.IntValue())
-// // 					attrVal, ok := dp.Attributes().Get("group")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 					attrVal, ok = dp.Attributes().Get("topic")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 				case "kafka.partition.current_offset":
-// // 					assert.False(t, validatedMetrics["kafka.partition.current_offset"], "Found a duplicate in the metrics slice: kafka.partition.current_offset")
-// // 					validatedMetrics["kafka.partition.current_offset"] = true
-// // 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 					assert.Equal(t, "Current offset of partition of topic.", ms.At(i).Description())
-// // 					assert.Equal(t, "1", ms.At(i).Unit())
-// // 					dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 					assert.Equal(t, start, dp.StartTimestamp())
-// // 					assert.Equal(t, ts, dp.Timestamp())
-// // 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 					assert.Equal(t, int64(1), dp.IntValue())
-// // 					attrVal, ok := dp.Attributes().Get("topic")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 					attrVal, ok = dp.Attributes().Get("partition")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, 1, attrVal.Int())
-// // 				case "kafka.partition.oldest_offset":
-// // 					assert.False(t, validatedMetrics["kafka.partition.oldest_offset"], "Found a duplicate in the metrics slice: kafka.partition.oldest_offset")
-// // 					validatedMetrics["kafka.partition.oldest_offset"] = true
-// // 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 					assert.Equal(t, "Oldest offset of partition of topic", ms.At(i).Description())
-// // 					assert.Equal(t, "1", ms.At(i).Unit())
-// // 					dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 					assert.Equal(t, start, dp.StartTimestamp())
-// // 					assert.Equal(t, ts, dp.Timestamp())
-// // 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 					assert.Equal(t, int64(1), dp.IntValue())
-// // 					attrVal, ok := dp.Attributes().Get("topic")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 					attrVal, ok = dp.Attributes().Get("partition")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, 1, attrVal.Int())
-// // 				case "kafka.partition.replicas":
-// // 					assert.False(t, validatedMetrics["kafka.partition.replicas"], "Found a duplicate in the metrics slice: kafka.partition.replicas")
-// // 					validatedMetrics["kafka.partition.replicas"] = true
-// // 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 					assert.Equal(t, "Number of replicas for partition of topic", ms.At(i).Description())
-// // 					assert.Equal(t, "{replicas}", ms.At(i).Unit())
-// // 					dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 					assert.Equal(t, start, dp.StartTimestamp())
-// // 					assert.Equal(t, ts, dp.Timestamp())
-// // 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 					assert.Equal(t, int64(1), dp.IntValue())
-// // 					attrVal, ok := dp.Attributes().Get("topic")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 					attrVal, ok = dp.Attributes().Get("partition")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, 1, attrVal.Int())
-// // 				case "kafka.partition.replicas_in_sync":
-// // 					assert.False(t, validatedMetrics["kafka.partition.replicas_in_sync"], "Found a duplicate in the metrics slice: kafka.partition.replicas_in_sync")
-// // 					validatedMetrics["kafka.partition.replicas_in_sync"] = true
-// // 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 					assert.Equal(t, "Number of synchronized replicas of partition", ms.At(i).Description())
-// // 					assert.Equal(t, "{replicas}", ms.At(i).Unit())
-// // 					dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 					assert.Equal(t, start, dp.StartTimestamp())
-// // 					assert.Equal(t, ts, dp.Timestamp())
-// // 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 					assert.Equal(t, int64(1), dp.IntValue())
-// // 					attrVal, ok := dp.Attributes().Get("topic")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 					attrVal, ok = dp.Attributes().Get("partition")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, 1, attrVal.Int())
-// // 				case "kafka.topic.partitions":
-// // 					assert.False(t, validatedMetrics["kafka.topic.partitions"], "Found a duplicate in the metrics slice: kafka.topic.partitions")
-// // 					validatedMetrics["kafka.topic.partitions"] = true
-// // 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 					assert.Equal(t, "Number of partitions in topic.", ms.At(i).Description())
-// // 					assert.Equal(t, "{partitions}", ms.At(i).Unit())
-// // 					dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 					assert.Equal(t, start, dp.StartTimestamp())
-// // 					assert.Equal(t, ts, dp.Timestamp())
-// // 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 					assert.Equal(t, int64(1), dp.IntValue())
-// // 					attrVal, ok := dp.Attributes().Get("topic")
-// // 					assert.True(t, ok)
-// // 					assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 				}
-// // 			}
-// // 		})
-// // =======
-// // 	enabledMetrics["kafka.brokers.consumer_fetch_rate"] = true
-// // 	mb.RecordKafkaBrokersConsumerFetchRateDataPoint(ts, 1, 1)
-
-// // 	enabledMetrics["kafka.brokers.count"] = true
-// // 	mb.RecordKafkaBrokersCountDataPoint(ts, 1)
-
-// // 	enabledMetrics["kafka.brokers.incoming_byte_rate"] = true
-// // 	mb.RecordKafkaBrokersIncomingByteRateDataPoint(ts, 1, 1)
-
-// // 	enabledMetrics["kafka.brokers.outgoing_byte_rate"] = true
-// // 	mb.RecordKafkaBrokersOutgoingByteRateDataPoint(ts, 1, 1)
-
-// // 	enabledMetrics["kafka.brokers.request_latency"] = true
-// // 	mb.RecordKafkaBrokersRequestLatencyDataPoint(ts, 1, 1)
-
-// // 	enabledMetrics["kafka.brokers.request_rate"] = true
-// // 	mb.RecordKafkaBrokersRequestRateDataPoint(ts, 1, 1)
-
-// // 	enabledMetrics["kafka.brokers.request_size"] = true
-// // 	mb.RecordKafkaBrokersRequestSizeDataPoint(ts, 1, 1)
-
-// // 	enabledMetrics["kafka.brokers.requests_in_flight"] = true
-// // 	mb.RecordKafkaBrokersRequestsInFlightDataPoint(ts, 1, 1)
-
-// // 	enabledMetrics["kafka.brokers.response_rate"] = true
-// // 	mb.RecordKafkaBrokersResponseRateDataPoint(ts, 1, 1)
-
-// // 	enabledMetrics["kafka.brokers.response_size"] = true
-// // 	mb.RecordKafkaBrokersResponseSizeDataPoint(ts, 1, 1)
-
-// // 	enabledMetrics["kafka.consumer_group.lag"] = true
-// // 	mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "attr-val", "attr-val", 1)
-
-// // 	enabledMetrics["kafka.consumer_group.lag_sum"] = true
-// // 	mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "attr-val", "attr-val")
-
-// // 	enabledMetrics["kafka.consumer_group.members"] = true
-// // 	mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "attr-val")
-
-// // 	enabledMetrics["kafka.consumer_group.offset"] = true
-// // 	mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "attr-val", "attr-val", 1)
-
-// // 	enabledMetrics["kafka.consumer_group.offset_sum"] = true
-// // 	mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "attr-val", "attr-val")
-
-// // 	enabledMetrics["kafka.partition.current_offset"] = true
-// // 	mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "attr-val", 1)
-
-// // 	enabledMetrics["kafka.partition.oldest_offset"] = true
-// // 	mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "attr-val", 1)
-
-// // 	enabledMetrics["kafka.partition.replicas"] = true
-// // 	mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "attr-val", 1)
-
-// // 	enabledMetrics["kafka.partition.replicas_in_sync"] = true
-// // 	mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "attr-val", 1)
-
-// // 	enabledMetrics["kafka.topic.partitions"] = true
-// // 	mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "attr-val")
-
-// // 	metrics := mb.Emit()
-
-// // 	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-// // 	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-// // 	assert.Equal(t, 1, sm.Len())
-// // 	ms := sm.At(0).Metrics()
-// // 	assert.Equal(t, len(enabledMetrics), ms.Len())
-// // 	seenMetrics := make(map[string]bool)
-// // 	for i := 0; i < ms.Len(); i++ {
-// // 		assert.True(t, enabledMetrics[ms.At(i).Name()])
-// // 		seenMetrics[ms.At(i).Name()] = true
-// // >>>>>>> 36f2ea0313 (Expand broker metrics)
-// // 	}
-// // }
-
-// // <<<<<<< HEAD
-// // func loadConfig(t *testing.T, name string) MetricsSettings {
-// // 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-// // 	require.NoError(t, err)
-// // 	sub, err := cm.Sub(name)
-// // 	require.NoError(t, err)
-// // 	cfg := DefaultMetricsSettings()
-// // 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-// // 	return cfg
-// // =======
-// // func TestAllMetrics(t *testing.T) {
-// // 	start := pcommon.Timestamp(1_000_000_000)
-// // 	ts := pcommon.Timestamp(1_000_001_000)
-// // 	metricsSettings := MetricsSettings{
-// // 		KafkaBrokers:                  MetricSettings{Enabled: true},
-// // 		KafkaBrokersConsumerFetchRate: MetricSettings{Enabled: true},
-// // 		KafkaBrokersCount:             MetricSettings{Enabled: true},
-// // 		KafkaBrokersIncomingByteRate:  MetricSettings{Enabled: true},
-// // 		KafkaBrokersOutgoingByteRate:  MetricSettings{Enabled: true},
-// // 		KafkaBrokersRequestLatency:    MetricSettings{Enabled: true},
-// // 		KafkaBrokersRequestRate:       MetricSettings{Enabled: true},
-// // 		KafkaBrokersRequestSize:       MetricSettings{Enabled: true},
-// // 		KafkaBrokersRequestsInFlight:  MetricSettings{Enabled: true},
-// // 		KafkaBrokersResponseRate:      MetricSettings{Enabled: true},
-// // 		KafkaBrokersResponseSize:      MetricSettings{Enabled: true},
-// // 		KafkaConsumerGroupLag:         MetricSettings{Enabled: true},
-// // 		KafkaConsumerGroupLagSum:      MetricSettings{Enabled: true},
-// // 		KafkaConsumerGroupMembers:     MetricSettings{Enabled: true},
-// // 		KafkaConsumerGroupOffset:      MetricSettings{Enabled: true},
-// // 		KafkaConsumerGroupOffsetSum:   MetricSettings{Enabled: true},
-// // 		KafkaPartitionCurrentOffset:   MetricSettings{Enabled: true},
-// // 		KafkaPartitionOldestOffset:    MetricSettings{Enabled: true},
-// // 		KafkaPartitionReplicas:        MetricSettings{Enabled: true},
-// // 		KafkaPartitionReplicasInSync:  MetricSettings{Enabled: true},
-// // 		KafkaTopicPartitions:          MetricSettings{Enabled: true},
-// // 	}
-// // 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-// // 	settings := componenttest.NewNopReceiverCreateSettings()
-// // 	settings.Logger = zap.New(observedZapCore)
-// // 	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
-
-// // 	assert.Equal(t, 0, observedLogs.Len())
-
-// // 	mb.RecordKafkaBrokersDataPoint(ts, 1)
-// // 	mb.RecordKafkaBrokersConsumerFetchRateDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersCountDataPoint(ts, 1)
-// // 	mb.RecordKafkaBrokersIncomingByteRateDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersOutgoingByteRateDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersRequestLatencyDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersRequestRateDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersRequestSizeDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersRequestsInFlightDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersResponseRateDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersResponseSizeDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "attr-val", "attr-val", 1)
-// // 	mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "attr-val", "attr-val")
-// // 	mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "attr-val")
-// // 	mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "attr-val", "attr-val", 1)
-// // 	mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "attr-val", "attr-val")
-// // 	mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "attr-val", 1)
-// // 	mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "attr-val", 1)
-// // 	mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "attr-val", 1)
-// // 	mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "attr-val", 1)
-// // 	mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "attr-val")
-
-// // 	metrics := mb.Emit()
-
-// // 	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-// // 	rm := metrics.ResourceMetrics().At(0)
-// // 	attrCount := 0
-// // 	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
-
-// // 	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-// // 	ms := rm.ScopeMetrics().At(0).Metrics()
-// // 	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-// // 	assert.Equal(t, allMetricsCount, ms.Len())
-// // 	validatedMetrics := make(map[string]struct{})
-// // 	for i := 0; i < ms.Len(); i++ {
-// // 		switch ms.At(i).Name() {
-// // 		case "kafka.brokers":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Number of brokers in the cluster (Deprecated).", ms.At(i).Description())
-// // 			assert.Equal(t, "{brokers}", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			validatedMetrics["kafka.brokers"] = struct{}{}
-// // 		case "kafka.brokers.consumer_fetch_rate":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Average consumer fetch Rate", ms.At(i).Description())
-// // 			assert.Equal(t, "{fetches}/s", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-// // 			assert.Equal(t, float64(1), dp.DoubleValue())
-// // 			attrVal, ok := dp.Attributes().Get("broker")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.brokers.consumer_fetch_rate"] = struct{}{}
-// // 		case "kafka.brokers.count":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Number of brokers in the cluster.", ms.At(i).Description())
-// // 			assert.Equal(t, "{brokers}", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			validatedMetrics["kafka.brokers.count"] = struct{}{}
-// // 		case "kafka.brokers.incoming_byte_rate":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Average tncoming Byte Rate in bytes/second", ms.At(i).Description())
-// // 			assert.Equal(t, "1", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-// // 			assert.Equal(t, float64(1), dp.DoubleValue())
-// // 			attrVal, ok := dp.Attributes().Get("broker")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.brokers.incoming_byte_rate"] = struct{}{}
-// // 		case "kafka.brokers.outgoing_byte_rate":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Average outgoing Byte Rate in bytes/second.", ms.At(i).Description())
-// // 			assert.Equal(t, "1", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-// // 			assert.Equal(t, float64(1), dp.DoubleValue())
-// // 			attrVal, ok := dp.Attributes().Get("broker")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.brokers.outgoing_byte_rate"] = struct{}{}
-// // 		case "kafka.brokers.request_latency":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Request latency Average in ms", ms.At(i).Description())
-// // 			assert.Equal(t, "ms", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-// // 			assert.Equal(t, float64(1), dp.DoubleValue())
-// // 			attrVal, ok := dp.Attributes().Get("broker")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.brokers.request_latency"] = struct{}{}
-// // 		case "kafka.brokers.request_rate":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Average request rate per second.", ms.At(i).Description())
-// // 			assert.Equal(t, "{requests}/s", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-// // 			assert.Equal(t, float64(1), dp.DoubleValue())
-// // 			attrVal, ok := dp.Attributes().Get("broker")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.brokers.request_rate"] = struct{}{}
-// // 		case "kafka.brokers.request_size":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Average request size in bytes", ms.At(i).Description())
-// // 			assert.Equal(t, "By", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-// // 			assert.Equal(t, float64(1), dp.DoubleValue())
-// // 			attrVal, ok := dp.Attributes().Get("broker")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.brokers.request_size"] = struct{}{}
-// // 		case "kafka.brokers.requests_in_flight":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Requests in flight", ms.At(i).Description())
-// // 			assert.Equal(t, "{requests}", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			attrVal, ok := dp.Attributes().Get("broker")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.brokers.requests_in_flight"] = struct{}{}
-// // 		case "kafka.brokers.response_rate":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Average response rate per second", ms.At(i).Description())
-// // 			assert.Equal(t, "{response}/s", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-// // 			assert.Equal(t, float64(1), dp.DoubleValue())
-// // 			attrVal, ok := dp.Attributes().Get("broker")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.brokers.response_rate"] = struct{}{}
-// // 		case "kafka.brokers.response_size":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Average response size in bytes", ms.At(i).Description())
-// // 			assert.Equal(t, "By", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-// // 			assert.Equal(t, float64(1), dp.DoubleValue())
-// // 			attrVal, ok := dp.Attributes().Get("broker")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.brokers.response_size"] = struct{}{}
-// // 		case "kafka.consumer_group.lag":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Current approximate lag of consumer group at partition of topic", ms.At(i).Description())
-// // 			assert.Equal(t, "1", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			attrVal, ok := dp.Attributes().Get("group")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			attrVal, ok = dp.Attributes().Get("topic")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			attrVal, ok = dp.Attributes().Get("partition")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.consumer_group.lag"] = struct{}{}
-// // 		case "kafka.consumer_group.lag_sum":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Current approximate sum of consumer group lag across all partitions of topic", ms.At(i).Description())
-// // 			assert.Equal(t, "1", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			attrVal, ok := dp.Attributes().Get("group")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			attrVal, ok = dp.Attributes().Get("topic")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			validatedMetrics["kafka.consumer_group.lag_sum"] = struct{}{}
-// // 		case "kafka.consumer_group.members":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Count of members in the consumer group", ms.At(i).Description())
-// // 			assert.Equal(t, "{members}", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			attrVal, ok := dp.Attributes().Get("group")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			validatedMetrics["kafka.consumer_group.members"] = struct{}{}
-// // 		case "kafka.consumer_group.offset":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Current offset of the consumer group at partition of topic", ms.At(i).Description())
-// // 			assert.Equal(t, "1", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			attrVal, ok := dp.Attributes().Get("group")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			attrVal, ok = dp.Attributes().Get("topic")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			attrVal, ok = dp.Attributes().Get("partition")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.consumer_group.offset"] = struct{}{}
-// // 		case "kafka.consumer_group.offset_sum":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Sum of consumer group offset across partitions of topic", ms.At(i).Description())
-// // 			assert.Equal(t, "1", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			attrVal, ok := dp.Attributes().Get("group")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			attrVal, ok = dp.Attributes().Get("topic")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			validatedMetrics["kafka.consumer_group.offset_sum"] = struct{}{}
-// // 		case "kafka.partition.current_offset":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Current offset of partition of topic.", ms.At(i).Description())
-// // 			assert.Equal(t, "1", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			attrVal, ok := dp.Attributes().Get("topic")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			attrVal, ok = dp.Attributes().Get("partition")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.partition.current_offset"] = struct{}{}
-// // 		case "kafka.partition.oldest_offset":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Oldest offset of partition of topic", ms.At(i).Description())
-// // 			assert.Equal(t, "1", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			attrVal, ok := dp.Attributes().Get("topic")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			attrVal, ok = dp.Attributes().Get("partition")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.partition.oldest_offset"] = struct{}{}
-// // 		case "kafka.partition.replicas":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Number of replicas for partition of topic", ms.At(i).Description())
-// // 			assert.Equal(t, "{replicas}", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			attrVal, ok := dp.Attributes().Get("topic")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			attrVal, ok = dp.Attributes().Get("partition")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.partition.replicas"] = struct{}{}
-// // 		case "kafka.partition.replicas_in_sync":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Number of synchronized replicas of partition", ms.At(i).Description())
-// // 			assert.Equal(t, "{replicas}", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			attrVal, ok := dp.Attributes().Get("topic")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			attrVal, ok = dp.Attributes().Get("partition")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, 1, attrVal.Int())
-// // 			validatedMetrics["kafka.partition.replicas_in_sync"] = struct{}{}
-// // 		case "kafka.topic.partitions":
-// // 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-// // 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-// // 			assert.Equal(t, "Number of partitions in topic.", ms.At(i).Description())
-// // 			assert.Equal(t, "{partitions}", ms.At(i).Unit())
-// // 			dp := ms.At(i).Gauge().DataPoints().At(0)
-// // 			assert.Equal(t, start, dp.StartTimestamp())
-// // 			assert.Equal(t, ts, dp.Timestamp())
-// // 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-// // 			assert.Equal(t, int64(1), dp.IntValue())
-// // 			attrVal, ok := dp.Attributes().Get("topic")
-// // 			assert.True(t, ok)
-// // 			assert.EqualValues(t, "attr-val", attrVal.Str())
-// // 			validatedMetrics["kafka.topic.partitions"] = struct{}{}
-// // 		}
-// // 	}
-// // 	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-// // }
-
-// // func TestNoMetrics(t *testing.T) {
-// // 	start := pcommon.Timestamp(1_000_000_000)
-// // 	ts := pcommon.Timestamp(1_000_001_000)
-// // 	metricsSettings := MetricsSettings{
-// // 		KafkaBrokers:                  MetricSettings{Enabled: false},
-// // 		KafkaBrokersConsumerFetchRate: MetricSettings{Enabled: false},
-// // 		KafkaBrokersCount:             MetricSettings{Enabled: false},
-// // 		KafkaBrokersIncomingByteRate:  MetricSettings{Enabled: false},
-// // 		KafkaBrokersOutgoingByteRate:  MetricSettings{Enabled: false},
-// // 		KafkaBrokersRequestLatency:    MetricSettings{Enabled: false},
-// // 		KafkaBrokersRequestRate:       MetricSettings{Enabled: false},
-// // 		KafkaBrokersRequestSize:       MetricSettings{Enabled: false},
-// // 		KafkaBrokersRequestsInFlight:  MetricSettings{Enabled: false},
-// // 		KafkaBrokersResponseRate:      MetricSettings{Enabled: false},
-// // 		KafkaBrokersResponseSize:      MetricSettings{Enabled: false},
-// // 		KafkaConsumerGroupLag:         MetricSettings{Enabled: false},
-// // 		KafkaConsumerGroupLagSum:      MetricSettings{Enabled: false},
-// // 		KafkaConsumerGroupMembers:     MetricSettings{Enabled: false},
-// // 		KafkaConsumerGroupOffset:      MetricSettings{Enabled: false},
-// // 		KafkaConsumerGroupOffsetSum:   MetricSettings{Enabled: false},
-// // 		KafkaPartitionCurrentOffset:   MetricSettings{Enabled: false},
-// // 		KafkaPartitionOldestOffset:    MetricSettings{Enabled: false},
-// // 		KafkaPartitionReplicas:        MetricSettings{Enabled: false},
-// // 		KafkaPartitionReplicasInSync:  MetricSettings{Enabled: false},
-// // 		KafkaTopicPartitions:          MetricSettings{Enabled: false},
-// // 	}
-// // 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-// // 	settings := componenttest.NewNopReceiverCreateSettings()
-// // 	settings.Logger = zap.New(observedZapCore)
-// // 	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
-
-// // 	assert.Equal(t, 0, observedLogs.Len())
-// // 	mb.RecordKafkaBrokersDataPoint(ts, 1)
-// // 	mb.RecordKafkaBrokersConsumerFetchRateDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersCountDataPoint(ts, 1)
-// // 	mb.RecordKafkaBrokersIncomingByteRateDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersOutgoingByteRateDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersRequestLatencyDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersRequestRateDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersRequestSizeDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersRequestsInFlightDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersResponseRateDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaBrokersResponseSizeDataPoint(ts, 1, 1)
-// // 	mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "attr-val", "attr-val", 1)
-// // 	mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "attr-val", "attr-val")
-// // 	mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "attr-val")
-// // 	mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "attr-val", "attr-val", 1)
-// // 	mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "attr-val", "attr-val")
-// // 	mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "attr-val", 1)
-// // 	mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "attr-val", 1)
-// // 	mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "attr-val", 1)
-// // 	mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "attr-val", 1)
-// // 	mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "attr-val")
-
-// // 	metrics := mb.Emit()
-
-// // 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
-// // >>>>>>> 36f2ea0313 (Expand broker metrics)
-// // }
-// =======
-// >>>>>>> b91759f0fa (pr comments)
->>>>>>> 6c6437d8c8 (pr comments)
->>>>>>> 8a963eaf0d (update to latest collector api changes)

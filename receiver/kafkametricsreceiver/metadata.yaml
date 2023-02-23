@@ -24,7 +24,7 @@ metrics:
   #  brokers scraper
   kafka.brokers:
     enabled: true
-    description: Number of brokers in the cluster (Deprecated).
+    description: [DEPRECATED] Number of brokers in the cluster."
     unit: "{brokers}"
     gauge:
       value_type: int
