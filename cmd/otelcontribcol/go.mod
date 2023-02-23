@@ -2,7 +2,7 @@
 
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
 
-go 1.19
+go 1.18
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.77.0
@@ -70,6 +70,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/websocketviewerextension v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.77.0
@@ -93,6 +94,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.77.0
@@ -836,6 +838,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8scl
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ../../processor/transformprocessor
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor => ../../processor/websocketprocessor
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor => ../../processor/filterprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver => ../../extension/observer/hostobserver
@@ -899,6 +903,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsco
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ../../processor/metricstransformprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension => ../../extension/sigv4authextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/websocketviewerextension => ../../extension/websocketviewerextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
 
