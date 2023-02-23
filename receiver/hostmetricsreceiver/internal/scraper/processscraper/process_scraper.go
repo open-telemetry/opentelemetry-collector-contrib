@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
@@ -273,7 +274,7 @@ func (s *scraper) scrapeAndAppendMemoryUtilizationMetric(now pcommon.Timestamp, 
 }
 
 func (s *scraper) scrapeAndAppendDiskMetrics(now pcommon.Timestamp, handle processHandle) error {
-	if !(s.config.Metrics.ProcessDiskIo.Enabled || s.config.Metrics.ProcessDiskOperations.Enabled) {
+	if !(s.config.Metrics.ProcessDiskIo.Enabled || s.config.Metrics.ProcessDiskOperations.Enabled) || runtime.GOOS == "darwin" {
 		return nil
 	}
 
