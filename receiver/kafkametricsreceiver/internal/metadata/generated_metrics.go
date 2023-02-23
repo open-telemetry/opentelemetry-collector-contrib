@@ -167,7 +167,7 @@ type metricKafkaBrokers struct {
 // init fills kafka.brokers metric with initial data.
 func (m *metricKafkaBrokers) init() {
 	m.data.SetName("kafka.brokers")
-	m.data.SetDescription("Number of brokers in the cluster (Deprecated).")
+	m.data.SetDescription("[DEPRECATED] Number of brokers in the cluster.")
 	m.data.SetUnit("{brokers}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
