@@ -28,7 +28,6 @@ import (
 )
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
-var kafkaAddressError = errors.New("kafka address is error")
 
 const (
 	Sync  = "sync"
@@ -36,58 +35,77 @@ const (
 )
 
 type KafkaProducer interface {
-	NewKafkaProducer(config Config, logger *zap.Logger) error
 	SendMessages(value []*sarama.ProducerMessage) error
 	Close() error
 }
 
-type KafkaConfig struct {
-	addressList []string
-	topic       string
-	config      *sarama.Config
-	logger      *zap.Logger
-}
-
-func NewProducer(config Config, logger *zap.Logger) (KafkaProducer, error) {
-	var producer KafkaProducer
+func KafkaProducerFactory(config Config, logger *zap.Logger) (KafkaProducer, error) {
 	if config.SendType == "" {
 		config.SendType = Sync
 	}
 	switch config.SendType {
 	case Sync:
-		producer = &SyncKafkaProducer{}
+		producer, err := NewSyncKafkaProducer(config, logger)
+		if err != nil {
+			return nil, err
+		}
+		return producer, nil
 	case Async:
-		producer = &AsyncKafkaProducer{}
+		producer, err := NewAsyncKafkaProducer(config, logger)
+		if err != nil {
+			return nil, err
+		}
+		return producer, nil
 	default:
-		fmt.Println("kafka SendType error please choose sync or async")
-		return nil, errors.New("kafka SendType error please choose sync or async")
+		logger.Error("kafka SendType error, please choose sync or async")
+		return nil, errors.New("kafka SendType error, please choose sync or async")
 	}
-	err := producer.NewKafkaProducer(config, logger)
-	if err != nil {
-		fmt.Println("new kafka producer error")
-		return nil, err
-	}
-	return producer, nil
 }
 
 type SyncKafkaProducer struct {
-	KafkaConfig *KafkaConfig
-	producer    sarama.SyncProducer
-	logger      *zap.Logger
+	producer sarama.SyncProducer
+	logger   *zap.Logger
 }
 
-func (k *SyncKafkaProducer) NewKafkaProducer(config Config, logger *zap.Logger) error {
-	conf, err := NewProducerByMessage(config, logger)
+func NewSyncKafkaProducer(config Config, logger *zap.Logger) (KafkaProducer, error) {
+	saramaConf, err := NewSaramaConfig(config)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	k.KafkaConfig = conf
-	k.producer, err = sarama.NewSyncProducer(conf.addressList, k.KafkaConfig.config)
+	syncProducer, err := sarama.NewSyncProducer(config.Brokers, saramaConf)
 	if err != nil {
-		fmt.Println("sarama.NewSyncProducer err", err)
-		return err
+		return nil, err
 	}
-	return nil
+
+	kafkaProducer := &SyncKafkaProducer{syncProducer, logger}
+	return kafkaProducer, nil
+}
+
+func NewAsyncKafkaProducer(config Config, logger *zap.Logger) (KafkaProducer, error) {
+	saramaConf, err := NewSaramaConfig(config)
+	producer, err := sarama.NewAsyncProducer(config.Brokers, saramaConf)
+	if err != nil {
+		logger.Error("sarama.NewAsyncProducer err", zap.Error(err))
+		return nil, err
+	}
+	go func(p sarama.AsyncProducer) {
+		err := p.Errors()
+		success := p.Successes()
+		for {
+			select {
+			case rc := <-err:
+				if rc != nil {
+					logger.Warn("SendMessages kafka data error", zap.Error(rc.Unwrap()))
+				}
+			case res := <-success:
+				if res != nil {
+					logger.Debug("SendMessages kafka data success")
+				}
+			}
+		}
+	}(producer)
+	kafkaProducer := &AsyncKafkaProducer{producer, logger}
+	return kafkaProducer, nil
 }
 
 func (k *SyncKafkaProducer) SendMessages(msg []*sarama.ProducerMessage) error {
@@ -99,37 +117,19 @@ func (k *SyncKafkaProducer) SendMessages(msg []*sarama.ProducerMessage) error {
 }
 
 func (k *SyncKafkaProducer) Close() error {
-	err := k.producer.Close()
-	if err != nil {
-		fmt.Println("sarama.NewSyncProducer close err")
-		return err
-	}
-	return nil
+	return k.producer.Close()
 }
 
 type AsyncKafkaProducer struct {
-	KafkaConfig *KafkaConfig
-	producer    sarama.AsyncProducer
-	logger      *zap.Logger
+	producer sarama.AsyncProducer
+	logger   *zap.Logger
 }
 
 func (k *AsyncKafkaProducer) Close() error {
-	k.producer.AsyncClose()
-	return nil
+	return k.producer.Close()
 }
 
-func (k *AsyncKafkaProducer) NewKafkaProducer(config Config, logger *zap.Logger) error {
-	conf, err := NewProducerByMessage(config, logger)
-	if err != nil {
-		return err
-	}
-	k.KafkaConfig = conf
-	k.Run()
-	k.logger = logger
-	return nil
-}
-
-func NewProducerByMessage(config Config, logger *zap.Logger) (*KafkaConfig, error) {
+func NewSaramaConfig(config Config) (*sarama.Config, error) {
 	c := sarama.NewConfig()
 	// These setting are required by the sarama implementation.
 	c.Producer.Return.Successes = true
@@ -164,52 +164,12 @@ func NewProducerByMessage(config Config, logger *zap.Logger) (*KafkaConfig, erro
 	if err := ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
-	return &KafkaConfig{
-		addressList: config.Brokers,
-		topic:       config.Topic,
-		config:      c,
-		logger:      logger,
-	}, nil
+	return c, nil
 }
 
 func (k *AsyncKafkaProducer) SendMessages(value []*sarama.ProducerMessage) error {
-	if k.producer == nil {
-		k.Run()
-	}
 	k.producer.Input() <- value[0]
 	return nil
-
-}
-func (k *AsyncKafkaProducer) Run() {
-	if k == nil || k.KafkaConfig == nil {
-		return
-	}
-	producer, err := sarama.NewAsyncProducer(k.KafkaConfig.addressList, k.KafkaConfig.config)
-	if err != nil {
-		k.logger.Warn("sarama.NewAsyncProducer err")
-		return
-	}
-	if producer == nil {
-		k.logger.Warn("sarama.NewSyncProducer is null")
-		return
-	}
-	k.producer = producer
-	go func(p sarama.AsyncProducer) {
-		err := p.Errors()
-		success := p.Successes()
-		for {
-			select {
-			case rc := <-err:
-				if rc != nil {
-					k.logger.Warn("SendMessages kafka data error", zap.Error(rc.Unwrap()))
-				}
-			case res := <-success:
-				if res != nil {
-					k.logger.Debug("SendMessages kafka data success")
-				}
-			}
-		}
-	}(producer)
 }
 
 // kafkaTracesProducer uses sarama to produce trace messages to Kafka.
@@ -311,51 +271,12 @@ func (e *kafkaLogsProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
-//func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
-//	c := sarama.NewConfig()
-//	// These setting are required by the sarama.SyncProducer implementation.
-//	c.Producer.Return.Successes = true
-//	c.Producer.Return.Errors = true
-//	c.Producer.RequiredAcks = config.Producer.RequiredAcks
-//	// Because sarama does not accept a Context for every message, set the Timeout here.
-//	c.Producer.Timeout = config.Timeout
-//	c.Metadata.Full = config.Metadata.Full
-//	c.Metadata.Retry.Max = config.Metadata.Retry.Max
-//	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
-//	c.Producer.MaxMessageBytes = config.Producer.MaxMessageBytes
-//	c.Producer.Flush.MaxMessages = config.Producer.FlushMaxMessages
-//
-//	if config.ProtocolVersion != "" {
-//		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
-//		if err != nil {
-//			return nil, err
-//		}
-//		c.Version = version
-//	}
-//
-//	if err := ConfigureAuthentication(config.Authentication, c); err != nil {
-//		return nil, err
-//	}
-//
-//	compression, err := saramaProducerCompressionCodec(config.Producer.Compression)
-//	if err != nil {
-//		return nil, err
-//	}
-//	c.Producer.Compression = compression
-//
-//	producer, err := sarama.NewSyncProducer(config.Brokers, c)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return producer, nil
-//}
-
 func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers map[string]MetricsMarshaler) (*kafkaMetricsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
-	producer, err := NewProducer(config, set.Logger)
+	producer, err := KafkaProducerFactory(config, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +296,7 @@ func newTracesExporter(config Config, set exporter.CreateSettings, marshalers ma
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
-	producer, err := NewProducer(config, set.Logger)
+	producer, err := KafkaProducerFactory(config, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -392,7 +313,7 @@ func newLogsExporter(config Config, set exporter.CreateSettings, marshalers map[
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
-	producer, err := NewProducer(config, set.Logger)
+	producer, err := KafkaProducerFactory(config, set.Logger)
 	if err != nil {
 		return nil, err
 	}
