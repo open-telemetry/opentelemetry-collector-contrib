@@ -60,6 +60,7 @@ func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 type LogParserCollection struct {
 	parserCollection
 	logParser ottl.Parser[ottllog.TransformContext]
+	errorMode ottl.ErrorMode
 }
 
 type LogParserCollectionOption func(*LogParserCollection) error
@@ -71,6 +72,13 @@ func WithLogParser(functions map[string]interface{}) LogParserCollectionOption {
 			return err
 		}
 		lp.logParser = logParser
+		return nil
+	}
+}
+
+func WithLogErrorMode(errorMode ottl.ErrorMode) LogParserCollectionOption {
+	return func(lp *LogParserCollection) error {
+		lp.errorMode = errorMode
 		return nil
 	}
 }
@@ -109,10 +117,10 @@ func (pc LogParserCollection) ParseContextStatements(contextStatements ContextSt
 		if err != nil {
 			return nil, err
 		}
-		lStatements := ottllog.NewStatements(parsedStatements, pc.settings, ottllog.WithErrorMode(ottl.PropagateError))
+		lStatements := ottllog.NewStatements(parsedStatements, pc.settings, ottllog.WithErrorMode(pc.errorMode))
 		return logStatements{lStatements}, nil
 	default:
-		statements, err := pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)
+		statements, err := pc.parseCommonContextStatements(contextStatements)
 		if err != nil {
 			return nil, err
 		}

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !linux && !windows
-// +build !linux,!windows
+//go:build !linux && !windows && !darwin
+// +build !linux,!windows,!darwin
 
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 

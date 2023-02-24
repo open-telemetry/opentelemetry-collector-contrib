@@ -96,6 +96,7 @@ type TraceParserCollection struct {
 	parserCollection
 	spanParser      ottl.Parser[ottlspan.TransformContext]
 	spanEventParser ottl.Parser[ottlspanevent.TransformContext]
+	errorMode       ottl.ErrorMode
 }
 
 type TraceParserCollectionOption func(*TraceParserCollection) error
@@ -118,6 +119,13 @@ func WithSpanEventParser(functions map[string]interface{}) TraceParserCollection
 			return err
 		}
 		tp.spanEventParser = spanEventParser
+		return nil
+	}
+}
+
+func WithTraceErrorMode(errorMode ottl.ErrorMode) TraceParserCollectionOption {
+	return func(tp *TraceParserCollection) error {
+		tp.errorMode = errorMode
 		return nil
 	}
 }
@@ -156,16 +164,16 @@ func (pc TraceParserCollection) ParseContextStatements(contextStatements Context
 		if err != nil {
 			return nil, err
 		}
-		sStatements := ottlspan.NewStatements(parsedStatements, pc.settings, ottlspan.WithErrorMode(ottl.PropagateError))
+		sStatements := ottlspan.NewStatements(parsedStatements, pc.settings, ottlspan.WithErrorMode(pc.errorMode))
 		return traceStatements{sStatements}, nil
 	case SpanEvent:
 		parsedStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		seStatements := ottlspanevent.NewStatements(parsedStatements, pc.settings, ottlspanevent.WithErrorMode(ottl.PropagateError))
+		seStatements := ottlspanevent.NewStatements(parsedStatements, pc.settings, ottlspanevent.WithErrorMode(pc.errorMode))
 		return spanEventStatements{seStatements}, nil
 	default:
-		return pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)
+		return pc.parseCommonContextStatements(contextStatements)
 	}
 }

@@ -175,6 +175,13 @@ func WithDataPointParser(functions map[string]interface{}) MetricParserCollectio
 	}
 }
 
+func WithMetricErrorMode(errorMode ottl.ErrorMode) MetricParserCollectionOption {
+	return func(mp *MetricParserCollection) error {
+		mp.errorMode = errorMode
+		return nil
+	}
+}
+
 func NewMetricParserCollection(settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {
 	rp, err := ottlresource.NewParser(ResourceFunctions(), settings)
 	if err != nil {
@@ -209,17 +216,17 @@ func (pc MetricParserCollection) ParseContextStatements(contextStatements Contex
 		if err != nil {
 			return nil, err
 		}
-		mStatements := ottlmetric.NewStatements(parseStatements, pc.settings, ottlmetric.WithErrorMode(ottl.PropagateError))
+		mStatements := ottlmetric.NewStatements(parseStatements, pc.settings, ottlmetric.WithErrorMode(pc.errorMode))
 		return metricStatements{mStatements}, nil
 	case DataPoint:
 		parsedStatements, err := pc.dataPointParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		dpStatements := ottldatapoint.NewStatements(parsedStatements, pc.settings, ottldatapoint.WithErrorMode(ottl.PropagateError))
+		dpStatements := ottldatapoint.NewStatements(parsedStatements, pc.settings, ottldatapoint.WithErrorMode(pc.errorMode))
 		return dataPointStatements{dpStatements}, nil
 	default:
-		statements, err := pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)
+		statements, err := pc.parseCommonContextStatements(contextStatements)
 		if err != nil {
 			return nil, err
 		}

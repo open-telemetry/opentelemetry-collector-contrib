@@ -159,6 +159,7 @@ func scanSpanForAttributes(t *testing.T, expectedService string, kvs map[string]
 	scanner.Buffer(buf, maxCapacity)
 
 	unmarshaler := ptrace.JSONUnmarshaler{}
+	var err error
 	for scanner.Scan() {
 		traces, serr := unmarshaler.UnmarshalTraces(scanner.Bytes())
 		if serr != nil {
@@ -175,10 +176,10 @@ func scanSpanForAttributes(t *testing.T, expectedService string, kvs map[string]
 			if service.AsString() != expectedService {
 				continue
 			}
-
-			assert.NoError(t, resourceHasAttributes(resourceSpans.Resource(), kvs))
+			err = resourceHasAttributes(resourceSpans.Resource(), kvs)
 		}
 	}
+	assert.NoError(t, err)
 
 }
 
