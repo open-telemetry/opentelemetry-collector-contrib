@@ -727,7 +727,7 @@ type metricProcessPagingFaults struct {
 // init fills process.paging.faults metric with initial data.
 func (m *metricProcessPagingFaults) init() {
 	m.data.SetName("process.paging.faults")
-	m.data.SetDescription("Number of page faults the process has made. This metric is only available on Linux.")
+	m.data.SetDescription("Number of page faults the process has made.")
 	m.data.SetUnit("{faults}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -780,7 +780,7 @@ type metricProcessSignalsPending struct {
 // init fills process.signals_pending metric with initial data.
 func (m *metricProcessSignalsPending) init() {
 	m.data.SetName("process.signals_pending")
-	m.data.SetDescription("Number of pending signals for the process. This metric is only available on Linux.")
+	m.data.SetDescription("Number of pending signals for the process.")
 	m.data.SetUnit("{signals}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
