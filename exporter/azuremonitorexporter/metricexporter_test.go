@@ -41,8 +41,8 @@ func TestExporterMetricDataCallback(t *testing.T) {
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 5)
 }
 
-func TestGaugeEnvelopes(t *testing.T) {
-	gaugeMetric := getTestGaugeMetric()
+func TestDoubleGaugeEnvelopes(t *testing.T) {
+	gaugeMetric := getDoubleTestGaugeMetric()
 	dataPoint := getDataPoint(t, gaugeMetric)
 
 	assert.Equal(t, dataPoint.Name, "Gauge")
@@ -51,8 +51,28 @@ func TestGaugeEnvelopes(t *testing.T) {
 	assert.Equal(t, dataPoint.Kind, contracts.Measurement)
 }
 
-func TestSumEnvelopes(t *testing.T) {
-	sumMetric := getTestSumMetric()
+func TestIntGaugeEnvelopes(t *testing.T) {
+	gaugeMetric := getIntTestGaugeMetric()
+	dataPoint := getDataPoint(t, gaugeMetric)
+
+	assert.Equal(t, dataPoint.Name, "Gauge")
+	assert.Equal(t, dataPoint.Value, float64(1))
+	assert.Equal(t, dataPoint.Count, 1)
+	assert.Equal(t, dataPoint.Kind, contracts.Measurement)
+}
+
+func TestDoubleSumEnvelopes(t *testing.T) {
+	sumMetric := getDoubleTestSumMetric()
+	dataPoint := getDataPoint(t, sumMetric)
+
+	assert.Equal(t, dataPoint.Name, "Sum")
+	assert.Equal(t, dataPoint.Value, float64(2))
+	assert.Equal(t, dataPoint.Count, 1)
+	assert.Equal(t, dataPoint.Kind, contracts.Measurement)
+}
+
+func TestIntSumEnvelopes(t *testing.T) {
+	sumMetric := getIntTestSumMetric()
 	dataPoint := getDataPoint(t, sumMetric)
 
 	assert.Equal(t, dataPoint.Name, "Sum")
@@ -142,11 +162,11 @@ func getTestMetrics() pmetric.Metrics {
 	metricSlice := scopeMetrics.Metrics()
 
 	metric := metricSlice.AppendEmpty()
-	gaugeMetric := getTestGaugeMetric()
+	gaugeMetric := getDoubleTestGaugeMetric()
 	gaugeMetric.CopyTo(metric)
 
 	metric = metricSlice.AppendEmpty()
-	sumMetric := getTestSumMetric()
+	sumMetric := getIntTestSumMetric()
 	sumMetric.CopyTo(metric)
 
 	metric = metricSlice.AppendEmpty()
@@ -164,23 +184,47 @@ func getTestMetrics() pmetric.Metrics {
 	return metrics
 }
 
-func getTestGaugeMetric() pmetric.Metric {
+func getDoubleTestGaugeMetric() pmetric.Metric {
+	return getTestGaugeMetric(func(datapoint pmetric.NumberDataPoint) {
+		datapoint.SetDoubleValue(1)
+	})
+}
+
+func getIntTestGaugeMetric() pmetric.Metric {
+	return getTestGaugeMetric(func(datapoint pmetric.NumberDataPoint) {
+		datapoint.SetIntValue(1)
+	})
+}
+
+func getTestGaugeMetric(modify func(pmetric.NumberDataPoint)) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName("Gauge")
 	metric.SetEmptyGauge()
 	datapoints := metric.Gauge().DataPoints()
 	datapoint := datapoints.AppendEmpty()
-	datapoint.SetDoubleValue(1)
+	modify(datapoint)
 	return metric
 }
 
-func getTestSumMetric() pmetric.Metric {
+func getDoubleTestSumMetric() pmetric.Metric {
+	return getTestSumMetric(func(datapoint pmetric.NumberDataPoint) {
+		datapoint.SetDoubleValue(2)
+	})
+}
+
+func getIntTestSumMetric() pmetric.Metric {
+	return getTestSumMetric(func(datapoint pmetric.NumberDataPoint) {
+		datapoint.SetIntValue(2)
+	})
+}
+
+func getTestSumMetric(modify func(pmetric.NumberDataPoint)) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName("Sum")
 	metric.SetEmptySum()
 	datapoints := metric.Sum().DataPoints()
 	datapoint := datapoints.AppendEmpty()
-	datapoint.SetDoubleValue(2)
+	modify(datapoint)
 	return metric
 }
 
