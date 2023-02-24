@@ -35,10 +35,12 @@ func (exporter *logExporter) onLogData(context context.Context, logData plog.Log
 
 	for i := 0; i < resourceLogs.Len(); i++ {
 		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		resource := resourceLogs.At(i).Resource()
 		for j := 0; j < scopeLogs.Len(); j++ {
 			logs := scopeLogs.At(j).LogRecords()
+			scope := scopeLogs.At(j).Scope()
 			for k := 0; k < logs.Len(); k++ {
-				envelope := logPacker.LogRecordToEnvelope(logs.At(k))
+				envelope := logPacker.LogRecordToEnvelope(logs.At(k), resource, scope)
 				envelope.IKey = string(exporter.config.InstrumentationKey)
 				exporter.transportChannel.Send(envelope)
 			}

@@ -83,7 +83,7 @@ func TestLogRecordToEnvelope(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			logRecord := tt.logRecord
 			logPacker := getLogPacker()
-			envelope := logPacker.LogRecordToEnvelope(logRecord)
+			envelope := logPacker.LogRecordToEnvelope(logRecord, getResource(), getScope())
 
 			require.NotNil(t, envelope)
 			assert.Equal(t, defaultEnvelopeName, envelope.Name)
