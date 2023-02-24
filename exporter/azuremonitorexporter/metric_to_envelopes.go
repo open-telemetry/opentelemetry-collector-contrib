@@ -130,9 +130,9 @@ func (m scalarMetric) getTimedDataPoints() []*timedMetricDataPoint {
 		numberDataPoint := m.dataPointSlice.At(i)
 		dataPoint := contracts.NewDataPoint()
 		dataPoint.Name = m.name
-		// IntValue() can be 0 if:
-		// - it is the value of the metric, in which case DoubleValue() must be (unset).
-		// - it was unset, in which case DoubleValue() is the value of the metric.
+		// numberDataPoint.IntValue() can be zero if:
+		// - it is the actual value of the metric, in which case DoubleValue() must be zero as well (unset).
+		// - it is not set, in which case DoubleValue() is the actual value of the metric.
 		if numberDataPoint.IntValue() == 0 {
 			dataPoint.Value = numberDataPoint.DoubleValue()
 		} else {
