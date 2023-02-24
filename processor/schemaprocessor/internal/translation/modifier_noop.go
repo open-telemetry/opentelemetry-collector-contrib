@@ -20,14 +20,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
 )
 
-// noModify is used when there is no definition present for a given change
-type noModify struct{}
+// NopModifier is used when there is no definition present for a given change
+type NopModifier struct{}
 
-var _ Modifier = (*noModify)(nil)
+var _ Modifier = (*NopModifier)(nil)
 
-func (noModify) UpdateAttrs(attrs pcommon.Map)                 {}
-func (noModify) RevertAttrs(attrs pcommon.Map)                 {}
-func (noModify) UpdateAttrsIf(match string, attrs pcommon.Map) {}
-func (noModify) RevertAttrsIf(match string, attrs pcommon.Map) {}
-func (noModify) UpdateSignal(signal alias.Signal)              {}
-func (noModify) RevertSignal(signal alias.Signal)              {}
+func (NopModifier) UpdateAttrs(attrs pcommon.Map)                 {}
+func (NopModifier) RevertAttrs(attrs pcommon.Map)                 {}
+func (NopModifier) UpdateAttrsIf(match string, attrs pcommon.Map) {}
+func (NopModifier) RevertAttrsIf(match string, attrs pcommon.Map) {}
+func (NopModifier) UpdateSignal(signal alias.Signal)              {}
+func (NopModifier) RevertSignal(signal alias.Signal)              {}

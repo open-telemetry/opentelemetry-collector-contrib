@@ -35,12 +35,12 @@ func TestNewRevision(t *testing.T) {
 			in:       ast.VersionDef{},
 			expect: &revision{
 				ver:      &Version{1, 0, 0},
-				all:      noModify{},
-				resource: noModify{},
-				logs:     noModify{},
-				spans:    noModify{},
-				events:   noModify{},
-				metrics:  noModify{},
+				all:      NopModifier{},
+				resource: NopModifier{},
+				logs:     NopModifier{},
+				spans:    NopModifier{},
+				events:   NopModifier{},
+				metrics:  NopModifier{},
 			},
 		},
 		{
@@ -87,10 +87,10 @@ func TestNewRevision(t *testing.T) {
 						"opentelemetry": "otel",
 					},
 				},
-				logs:    noModify{},
-				spans:   noModify{},
-				events:  noModify{},
-				metrics: noModify{},
+				logs:    NopModifier{},
+				spans:   NopModifier{},
+				events:  NopModifier{},
+				metrics: NopModifier{},
 			},
 		},
 		{
@@ -110,8 +110,8 @@ func TestNewRevision(t *testing.T) {
 			},
 			expect: &revision{
 				ver:      &Version{1, 0, 0},
-				all:      noModify{},
-				resource: noModify{},
+				all:      NopModifier{},
+				resource: NopModifier{},
 				logs: &modify{
 					names:     make(map[string]string),
 					appliesTo: make(map[string]struct{}),
@@ -119,9 +119,9 @@ func TestNewRevision(t *testing.T) {
 						"logger.implementation": "logger.package",
 					},
 				},
-				spans:   noModify{},
-				events:  noModify{},
-				metrics: noModify{},
+				spans:   NopModifier{},
+				events:  NopModifier{},
+				metrics: NopModifier{},
 			},
 		},
 		{
@@ -157,11 +157,11 @@ func TestNewRevision(t *testing.T) {
 			},
 			expect: &revision{
 				ver:      &Version{1, 0, 0},
-				all:      noModify{},
-				resource: noModify{},
-				logs:     noModify{},
-				spans:    noModify{},
-				events:   noModify{},
+				all:      NopModifier{},
+				resource: NopModifier{},
+				logs:     NopModifier{},
+				spans:    NopModifier{},
+				events:   NopModifier{},
 				metrics: modifications{
 					{
 						names: map[string]string{
@@ -207,11 +207,11 @@ func TestNewRevision(t *testing.T) {
 			},
 			expect: &revision{
 				ver:      &Version{1, 0, 0},
-				all:      noModify{},
-				resource: noModify{},
-				logs:     noModify{},
-				events:   noModify{},
-				metrics:  noModify{},
+				all:      NopModifier{},
+				resource: NopModifier{},
+				logs:     NopModifier{},
+				events:   NopModifier{},
+				metrics:  NopModifier{},
 				spans: modifications{
 					{
 						names: make(map[string]string),
@@ -256,11 +256,11 @@ func TestNewRevision(t *testing.T) {
 			},
 			expect: &revision{
 				ver:      &Version{1, 0, 0},
-				all:      noModify{},
-				resource: noModify{},
-				logs:     noModify{},
-				spans:    noModify{},
-				metrics:  noModify{},
+				all:      NopModifier{},
+				resource: NopModifier{},
+				logs:     NopModifier{},
+				spans:    NopModifier{},
+				metrics:  NopModifier{},
 				events: modifications{
 					{
 						names: map[string]string{

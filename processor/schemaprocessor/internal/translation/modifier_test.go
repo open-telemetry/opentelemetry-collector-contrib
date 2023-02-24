@@ -43,7 +43,7 @@ func TestModifyingAttributes(t *testing.T) {
 	}{
 		{
 			scenario: "No update",
-			mod:      noModify{},
+			mod:      NopModifier{},
 			in: newMapFromRaw(t, map[string]interface{}{
 				"define": "robot",
 				"update": "none",
@@ -132,7 +132,7 @@ func TestModiyingAttributesIf(t *testing.T) {
 		{
 			scenario: "no update",
 			name:     "operation.name",
-			mod:      noModify{},
+			mod:      NopModifier{},
 			in: newMapFromRaw(t, map[string]interface{}{
 				"define": "robot",
 				"update": "none",
@@ -259,7 +259,7 @@ func TestModifyingSignals(t *testing.T) {
 	}{
 		{
 			scenario: "no changes",
-			mod:      noModify{},
+			mod:      NopModifier{},
 			sig: func() alias.Signal {
 				sig := ptrace.NewScopeSpans().Scope()
 				sig.SetName("GET /ingress")
@@ -269,7 +269,7 @@ func TestModifyingSignals(t *testing.T) {
 		},
 		{
 			scenario: "no changes",
-			mod:      noModify{},
+			mod:      NopModifier{},
 			sig: func() alias.Signal {
 				sig := ptrace.NewScopeSpans().Scope()
 				sig.SetName("GET /ingress")

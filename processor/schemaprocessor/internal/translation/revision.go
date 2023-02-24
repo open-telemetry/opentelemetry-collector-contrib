@@ -70,12 +70,12 @@ var (
 func newRevision(ver *Version, def ast.VersionDef) Revision {
 	r := &revision{
 		ver:      ver,
-		all:      noModify{},
-		resource: noModify{},
-		logs:     noModify{},
-		spans:    noModify{},
-		events:   noModify{},
-		metrics:  noModify{},
+		all:      NopModifier{},
+		resource: NopModifier{},
+		logs:     NopModifier{},
+		spans:    NopModifier{},
+		events:   NopModifier{},
+		metrics:  NopModifier{},
 	}
 
 	if len(def.All.Changes) > 0 {
