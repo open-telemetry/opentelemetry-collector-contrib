@@ -88,10 +88,6 @@ func SplitTracesByResourceAttr(batches ptrace.Traces, attrKeys []string) (map[st
 	rss := batches.ResourceSpans()
 	lenRss := rss.Len()
 
-	if lenRss <= 1 {
-		return map[string][]ptrace.Traces{attrKeys[0]: {batches}}, nil
-	}
-
 	indicesByAttr := make(map[string]map[string][]int)
 	var fallbackIndices []int
 	var attrFound bool
@@ -118,7 +114,7 @@ func SplitTracesByResourceAttr(batches ptrace.Traces, attrKeys []string) (map[st
 
 	for j := 0; j < len(fallbackIndices); j++ {
 		t := ptrace.NewTraces()
-		rs := rss.At(j)
+		rs := rss.At(fallbackIndices[j])
 		rs.CopyTo(t.ResourceSpans().AppendEmpty())
 		nt := batchpersignal.SplitTraces(t)
 		result["traceId"] = append(result["traceId"], nt...)
