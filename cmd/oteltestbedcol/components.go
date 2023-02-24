@@ -26,7 +26,6 @@ import (
 	signalfxexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	splunkhecexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	zipkinexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
-	fluentbitextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	pprofextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
 	filestorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	attributesprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
@@ -53,7 +52,6 @@ func components() (otelcol.Factories, error) {
 	factories.Extensions, err = extension.MakeFactoryMap(
 		ballastextension.NewFactory(),
 		zpagesextension.NewFactory(),
-		fluentbitextension.NewFactory(),
 		pprofextension.NewFactory(),
 		filestorage.NewFactory(),
 	)

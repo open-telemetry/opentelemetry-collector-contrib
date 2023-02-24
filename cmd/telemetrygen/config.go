@@ -16,15 +16,18 @@
 package main // import "github.com/open-telemetry/opentelemetry-collector-contrib/telemetrygen/internal/telemetrygen"
 
 import (
-	"errors"
 	"os"
 
 	"github.com/spf13/cobra"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/traces"
 )
 
-var tracesCfg *traces.Config
+var (
+	tracesCfg  *traces.Config
+	metricsCfg *metrics.Config
+)
 
 // rootCmd is the root command on which will be run children commands
 var rootCmd = &cobra.Command{
@@ -49,8 +52,7 @@ var metricsCmd = &cobra.Command{
 	Short:   "Simulates a client generating metrics",
 	Example: "telemetrygen metrics",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := errors.New("[WIP] The 'metrics' command is a work in progress, come back later")
-		return err
+		return metrics.Start(metricsCfg)
 	},
 }
 
@@ -59,6 +61,9 @@ func init() {
 
 	tracesCfg = new(traces.Config)
 	tracesCfg.Flags(tracesCmd.Flags())
+
+	metricsCfg = new(metrics.Config)
+	metricsCfg.Flags(metricsCmd.Flags())
 
 	// Disabling completion command for end user
 	// https://github.com/spf13/cobra/blob/master/shell_completions.md

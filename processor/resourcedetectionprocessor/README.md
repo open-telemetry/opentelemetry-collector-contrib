@@ -35,6 +35,7 @@ Note: use the Docker detector (see below) if running the Collector as a Docker c
 Queries the host machine to retrieve the following resource attributes:
 
     * host.name
+    * host.id
     * os.type
 
 By default `host.name` is being set to FQDN if possible, and a hostname provided by OS used as fallback.
