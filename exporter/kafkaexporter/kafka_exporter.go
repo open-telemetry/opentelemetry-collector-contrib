@@ -109,11 +109,7 @@ func NewAsyncKafkaProducer(config Config, logger *zap.Logger) (KafkaProducer, er
 }
 
 func (k *SyncKafkaProducer) SendMessages(msg []*sarama.ProducerMessage) error {
-	err := k.producer.SendMessages(msg)
-	if err != nil {
-		return err
-	}
-	return nil
+	return k.producer.SendMessages(msg)
 }
 
 func (k *SyncKafkaProducer) Close() error {
