@@ -212,7 +212,8 @@ func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
 	return nil
 }
 
-// Eval returns true if any statement is true and returns false otherwise.
+// Eval returns true if any statement's condition is true and returns false otherwise.
+// Does execute the function of the statement if the condition was true.
 // When errorMode is `propagate`, errors cause the evaluation to be false and an error is returned.
 // When errorMode is `ignore`, errors cause evaluation to continue to the next statement.
 func (s *Statements[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
