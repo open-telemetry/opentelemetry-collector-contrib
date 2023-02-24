@@ -100,5 +100,5 @@ attribute is retained. However, if there is a value such as a credit card
 number in the `notes` field that matched a regular expression on the list of
 blocked values, then that value is masked.
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
