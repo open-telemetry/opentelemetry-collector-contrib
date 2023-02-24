@@ -5,7 +5,7 @@ change_type: 'bug_fix'
 component: 'azuremonitorexporter'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Fix a bug that prevented integer scalar metrics to be exported to Azure Monitor."
+note: "Fix a bug that prevented integer NumberDataPoint metrics to be exported to Azure Monitor."
 
 # One or more tracking issues related to the change
 issues: [18905]
