@@ -79,6 +79,10 @@ type Config struct {
 	// If enabled, all the resource attributes will be converted to metric labels by default.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
+	// DetailedMetrics is the options for retaining detailed datapoint values in exported metrics (e.g instead of exporting a quantile as a statistical value,
+	// preserve the quantile's population)
+	DetailedMetrics bool `mapstructure:"detailed_metrics"`
+
 	// logger is the Logger used for writing error/warning logs
 	logger *zap.Logger
 }

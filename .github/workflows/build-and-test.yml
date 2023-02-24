@@ -665,7 +665,7 @@ jobs:
         run: ./.github/workflows/scripts/set_release_tag.sh
       - name: Create Github Release
         run: |
-          gh release create $RELEASE_TAG -F CHANGELOG.md
+          gh release create $RELEASE_TAG -t $RELEASE_TAG -n "The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/$RELEASE_TAG), be sure to check the release notes there as well."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}

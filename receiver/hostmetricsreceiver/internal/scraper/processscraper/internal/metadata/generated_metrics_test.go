@@ -314,7 +314,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["process.paging.faults"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of page faults the process has made. This metric is only available on Linux.", ms.At(i).Description())
+					assert.Equal(t, "Number of page faults the process has made.", ms.At(i).Description())
 					assert.Equal(t, "{faults}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -331,7 +331,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["process.signals_pending"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of pending signals for the process. This metric is only available on Linux.", ms.At(i).Description())
+					assert.Equal(t, "Number of pending signals for the process.", ms.At(i).Description())
 					assert.Equal(t, "{signals}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

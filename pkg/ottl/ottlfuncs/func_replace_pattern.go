@@ -37,7 +37,7 @@ func ReplacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 		}
 		if originalValStr, ok := originalVal.(string); ok {
 			if compiledPattern.MatchString(originalValStr) {
-				updatedStr := compiledPattern.ReplaceAllLiteralString(originalValStr, replacement)
+				updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacement)
 				err = target.Set(ctx, tCtx, updatedStr)
 				if err != nil {
 					return nil, err

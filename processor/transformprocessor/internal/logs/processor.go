@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -30,8 +31,8 @@ type Processor struct {
 	logger   *zap.Logger
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
-	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(LogFunctions()))
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings) (*Processor, error) {
+	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(LogFunctions()), common.WithLogErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
