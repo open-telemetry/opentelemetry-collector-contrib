@@ -136,6 +136,26 @@ func TestMapHash(t *testing.T) {
 	}
 }
 
+// TestMapHashPanic tests a very specific case where a panic can occur with nested maps.
+// Outline in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18910
+func TestMapHashPanic(t *testing.T) {
+	m := pcommon.NewMap()
+	m.PutInt("a", 1)
+	m.PutInt("c", 1)
+	m.PutInt("d", 1)
+	m.PutInt("e", 1)
+
+	// nestedMap is alphabetically second in parent map
+	nestedMap := m.PutEmptyMap("b")
+
+	// nestedMap is index 1 in parent when keys are sorted so we need at least 3 keys in this to ensure the next iteration of parent tries to find a key at "a3"
+	nestedMap.PutInt("a1", 1)
+	nestedMap.PutInt("a2", 1)
+	nestedMap.PutInt("a3", 1)
+
+	assert.NotPanics(t, func() { MapHash(m) })
+}
+
 func TestValueHash(t *testing.T) {
 	tests := []struct {
 		name   string

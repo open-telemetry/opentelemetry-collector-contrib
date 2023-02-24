@@ -44,7 +44,6 @@ var (
 type hashWriter struct {
 	h       hash.Hash
 	strBuf  []byte
-	keysBuf []string
 	sumHash []byte
 	numBuf  []byte
 }
@@ -53,7 +52,6 @@ func newHashWriter() *hashWriter {
 	return &hashWriter{
 		h:       xxhash.New(),
 		strBuf:  make([]byte, 0, 128),
-		keysBuf: make([]string, 0, 16),
 		sumHash: make([]byte, 0, 16),
 		numBuf:  make([]byte, 8),
 	}
@@ -83,13 +81,13 @@ func ValueHash(v pcommon.Value) [16]byte {
 }
 
 func (hw *hashWriter) writeMapHash(m pcommon.Map) {
-	hw.keysBuf = hw.keysBuf[:0]
+	keysBuf := make([]string, 0, m.Len())
 	m.Range(func(k string, v pcommon.Value) bool {
-		hw.keysBuf = append(hw.keysBuf, k)
+		keysBuf = append(keysBuf, k)
 		return true
 	})
-	sort.Strings(hw.keysBuf)
-	for _, k := range hw.keysBuf {
+	sort.Strings(keysBuf)
+	for _, k := range keysBuf {
 		v, _ := m.Get(k)
 		hw.strBuf = hw.strBuf[:0]
 		hw.strBuf = append(hw.strBuf, keyPrefix...)
