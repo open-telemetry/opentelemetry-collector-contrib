@@ -60,7 +60,7 @@ type Config struct {
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
-func (config *Config) Validate() error {
+func (config Config) Validate() error {
 	if config.Endpoint == "" {
 		return errors.New("endpoint must be specified")
 	}
