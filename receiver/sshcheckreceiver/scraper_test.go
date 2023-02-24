@@ -130,7 +130,6 @@ func TestScraper(t *testing.T) {
 
 			actualMetrics, err := scrpr.scrape(context.Background())
 			require.NoError(t, err, "failed scrape")
-			// TODO lol maybe here? getting one more than expected =(
 			require.NoError(
 				t,
 				pmetrictest.CompareMetrics(

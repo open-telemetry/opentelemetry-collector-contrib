@@ -78,7 +78,6 @@ func DefaultResourceAttributesSettings() ResourceAttributesSettings {
 	}
 }
 
-
 {{ range $name, $info := .Attributes }}
 {{- if $info.Enum -}}
 // Attribute{{ $name.Render }} specifies the a value {{ $name }} attribute.
