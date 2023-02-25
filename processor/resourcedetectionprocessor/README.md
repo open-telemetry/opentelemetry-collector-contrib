@@ -300,7 +300,7 @@ Example:
 processors:
   resourcedetection/lambda:
     detectors: [env, lambda]
-    timeout: 2s
+    timeout: 0.2s
     override: false
 ```
 
