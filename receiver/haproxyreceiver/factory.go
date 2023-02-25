@@ -28,7 +28,7 @@ import (
 
 const (
 	typeStr   = "haproxy"
-	stability = component.StabilityLevelDevelopment
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a new HAProxy receiver factory.

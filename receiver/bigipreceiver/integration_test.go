@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
+// +build integration
+
 package bigipreceiver
 
 import (
@@ -64,7 +67,9 @@ func TestBigIpIntegration(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreMetricValues()))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreMetricValues(),
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 const (

@@ -35,6 +35,7 @@ Note: use the Docker detector (see below) if running the Collector as a Docker c
 Queries the host machine to retrieve the following resource attributes:
 
     * host.name
+    * host.id
     * os.type
 
 By default `host.name` is being set to FQDN if possible, and a hostname provided by OS used as fallback.
@@ -377,6 +378,7 @@ processors:
     detectors: [env, heroku]
     timeout: 2s
     override: false
+```
 
 ### Openshift
 
@@ -386,12 +388,10 @@ Queries the OpenShift and Kubernetes API to retrieve the following resource attr
     * cloud.platform
     * cloud.region
     * k8s.cluster.name
-    * k8s.cluster.version
-    * openshift.cluster.version
 
-Your service account needs `read` access to the API endpoints `/apis/config.openshift.io/v1/clusterversions/version/status`, `/apis/config.openshift.io/v1/infrastructures/cluster/status` and `/version`.
 By default, the API address is determined from the environment variables `KUBERNETES_SERVICE_HOST`, `KUBERNETES_SERVICE_PORT` and the service token is read from `/var/run/secrets/kubernetes.io/serviceaccount/token`.
-The determination of the API address and the service token is skipped if they are set in the configuration.
+If TLS is not explicit disabled and no `ca_file` is configured `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` is used.
+The determination of the API address, ca_file and the service token is skipped if they are set in the configuration.
 
 Example:
 
@@ -404,7 +404,12 @@ processors:
     openshift: # optional
       address: "https://api.example.com"
       token: "token"
+      tls:
+        insecure: false
+        ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 ```
+
+See: [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 
 ## Configuration
 

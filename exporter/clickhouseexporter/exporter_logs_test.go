@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -51,7 +52,6 @@ func TestLogsExporter_New(t *testing.T) {
 
 	failWithMsg := func(msg string) validate {
 		return func(t *testing.T, exporter *logsExporter, err error) {
-			require.Nil(t, exporter)
 			require.NotNil(t, err)
 			require.Contains(t, err.Error(), msg)
 		}
@@ -63,17 +63,21 @@ func TestLogsExporter_New(t *testing.T) {
 	}{
 		"no dsn": {
 			config: withDefaultConfig(),
-			want:   failWithMsg("dial tcp: missing address"),
+			want:   failWithMsg("exec create logs table sql: parse dsn address failed"),
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 
+			var err error
 			exporter, err := newLogsExporter(zap.NewNop(), test.config)
+			err = multierr.Append(err, err)
+			err = multierr.Append(err, exporter.start(context.TODO(), nil))
+
 			if exporter != nil {
 				defer func() {
-					require.NoError(t, exporter.Shutdown(context.TODO()))
+					require.NoError(t, exporter.shutdown(context.TODO()))
 				}()
 			}
 
@@ -93,7 +97,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestLogsExporter(t, defaultDSN)
+		exporter := newTestLogsExporter(t, defaultEndpoint)
 		mustPushLogsData(t, exporter, simpleLogs(1))
 		mustPushLogsData(t, exporter, simpleLogs(2))
 
@@ -101,45 +105,20 @@ func TestExporter_pushLogsData(t *testing.T) {
 	})
 }
 
-func TestLogsExporter_getDefaultDns(t *testing.T) {
-	t.Run("database name is a substring of the DSN", func(t *testing.T) {
-		dsn := "tcp://mydatabase-clickhouse-headless:9000/mydatabase"
-		defaultDSN, err := getDefaultDSN(dsn, "mydatabase")
-		require.NoError(t, err)
-		require.Equal(t, defaultDSN, "tcp://mydatabase-clickhouse-headless:9000/default")
-	})
-	t.Run("database name isn't a substring of the DSN", func(t *testing.T) {
-		dsn := "tcp://newdatabase-clickhouse-headless:9000/otel"
-		defaultDSN, err := getDefaultDSN(dsn, "otel")
-		require.NoError(t, err)
-		require.Equal(t, defaultDSN, "tcp://newdatabase-clickhouse-headless:9000/default")
-	})
-	t.Run("error param for database", func(t *testing.T) {
-		dsn := "tcp://mydatabase-clickhouse-headless:9000/mydatabase"
-		_, err := getDefaultDSN(dsn, "otel")
-		require.Error(t, err)
-	})
-	t.Run("database name is same as default database", func(t *testing.T) {
-		dsn := "tcp://mydatabase-clickhouse-headless:9000/default"
-		defaultDSN, err := getDefaultDSN(dsn, "default")
-		require.NoError(t, err)
-		require.Equal(t, defaultDSN, "tcp://mydatabase-clickhouse-headless:9000/default")
-	})
-}
-
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
 	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
+	require.NoError(t, exporter.start(context.TODO(), nil))
 
-	t.Cleanup(func() { _ = exporter.Shutdown(context.TODO()) })
+	t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
 	return exporter
 }
 
 func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
-	return func(dsn string) *Config {
+	return func(endpoint string) *Config {
 		var configMods []func(*Config)
 		configMods = append(configMods, func(cfg *Config) {
-			cfg.DSN = dsn
+			cfg.Endpoint = endpoint
 		})
 		configMods = append(configMods, fns...)
 		return withDefaultConfig(configMods...)

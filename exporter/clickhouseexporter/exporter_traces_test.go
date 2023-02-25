@@ -39,7 +39,7 @@ func TestExporter_pushTracesData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestTracesExporter(t, defaultDSN)
+		exporter := newTestTracesExporter(t, defaultEndpoint)
 		mustPushTracesData(t, exporter, simpleTraces(1))
 		mustPushTracesData(t, exporter, simpleTraces(2))
 
@@ -50,8 +50,9 @@ func TestExporter_pushTracesData(t *testing.T) {
 func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesExporter {
 	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
+	require.NoError(t, exporter.start(context.TODO(), nil))
 
-	t.Cleanup(func() { _ = exporter.Shutdown(context.TODO()) })
+	t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
 	return exporter
 }
 

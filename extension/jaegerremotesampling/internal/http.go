@@ -58,11 +58,8 @@ func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.HTTPServ
 	}
 
 	srv.mux = http.NewServeMux()
-	// the legacy endpoint
-	srv.mux.Handle("/", http.HandlerFunc(srv.samplingStrategyHandler))
 
-	// the new endpoint -- not strictly necessary, as the previous one would match it
-	// already, but good to have it explicit here
+	// SEE: https://www.jaegertracing.io/docs/1.41/apis/#remote-sampling-configuration-stable
 	srv.mux.Handle("/sampling", http.HandlerFunc(srv.samplingStrategyHandler))
 
 	return srv, nil

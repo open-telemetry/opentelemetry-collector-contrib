@@ -49,13 +49,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
@@ -292,7 +292,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "clickhouse",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["clickhouse"].CreateDefaultConfig().(*clickhouseexporter.Config)
-				cfg.DSN = "clickhouse://" + endpoint
+				cfg.Endpoint = "tcp://" + endpoint
 				return cfg
 			},
 		},
@@ -352,14 +352,6 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "googlecloudpubsub",
 		},
 		{
-			exporter: "humio",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["humio"].CreateDefaultConfig().(*humioexporter.Config)
-				cfg.Endpoint = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
 			exporter: "influxdb",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["influxdb"].CreateDefaultConfig().(*influxdbexporter.Config)
@@ -380,6 +372,13 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "loadbalancing",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["loadbalancing"].CreateDefaultConfig().(*loadbalancingexporter.Config)
+				return cfg
+			},
+		},
+		{
+			exporter: "logicmonitor",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["logicmonitor"].CreateDefaultConfig().(*logicmonitorexporter.Config)
 				return cfg
 			},
 		},

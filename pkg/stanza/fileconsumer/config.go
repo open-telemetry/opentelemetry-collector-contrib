@@ -16,6 +16,7 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"time"
 
@@ -29,17 +30,14 @@ import (
 const (
 	defaultMaxLogSize         = 1024 * 1024
 	defaultMaxConcurrentFiles = 1024
-	allowFileDeletion         = "filelog.allowFileDeletion"
 )
 
-func init() {
-	featuregate.GlobalRegistry().MustRegisterID(
-		allowFileDeletion,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
-	)
-}
+var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
+	"filelog.allowFileDeletion",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
+)
 
 // NewConfig creates a new input config with default values
 func NewConfig() *Config {
@@ -54,6 +52,7 @@ func NewConfig() *Config {
 		FingerprintSize:         DefaultFingerprintSize,
 		MaxLogSize:              defaultMaxLogSize,
 		MaxConcurrentFiles:      defaultMaxConcurrentFiles,
+		MaxBatches:              0,
 	}
 }
 
@@ -69,21 +68,22 @@ type Config struct {
 	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"`
 	MaxLogSize              helper.ByteSize       `mapstructure:"max_log_size,omitempty"`
 	MaxConcurrentFiles      int                   `mapstructure:"max_concurrent_files,omitempty"`
+	MaxBatches              int                   `mapstructure:"max_batches,omitempty"`
 	DeleteAfterRead         bool                  `mapstructure:"delete_after_read,omitempty"`
 	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
 }
 
 // Build will build a file input operator from the supplied configuration
 func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
-	if c.DeleteAfterRead && !featuregate.GlobalRegistry().IsEnabled(allowFileDeletion) {
-		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion)
+	if c.DeleteAfterRead && !allowFileDeletion.IsEnabled() {
+		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion.ID())
 	}
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
 
 	// Ensure that splitter is buildable
-	factory := newMultilineSplitterFactory(c.Splitter.EncodingConfig, c.Splitter.Flusher, c.Splitter.Multiline)
+	factory := newMultilineSplitterFactory(c.Splitter)
 	if _, err := factory.Build(int(c.MaxLogSize)); err != nil {
 		return nil, err
 	}
@@ -142,6 +142,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		roller:          newRoller(),
 		pollInterval:    c.PollInterval,
 		maxBatchFiles:   c.MaxConcurrentFiles / 2,
+		maxBatches:      c.MaxBatches,
 		deleteAfterRead: c.DeleteAfterRead,
 		knownFiles:      make([]*Reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
@@ -183,6 +184,10 @@ func (c Config) validate() error {
 
 	if c.DeleteAfterRead && c.StartAt == "end" {
 		return fmt.Errorf("`delete_after_read` cannot be used with `start_at: end`")
+	}
+
+	if c.MaxBatches < 0 {
+		return errors.New("`max_batches` must not be negative")
 	}
 
 	_, err := c.Splitter.EncodingConfig.Build()

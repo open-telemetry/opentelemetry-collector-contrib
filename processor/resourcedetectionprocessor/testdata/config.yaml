@@ -6,6 +6,8 @@ resourcedetection/openshift:
   openshift:
     address: "127.0.0.1:4444"
     token: "some_token"
+    tls:
+      insecure: true
 
 resourcedetection/gcp:
   detectors: [env, gcp]

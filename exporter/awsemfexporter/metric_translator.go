@@ -28,9 +28,8 @@ import (
 
 const (
 	// OTel instrumentation lib name as dimension
-	oTellibDimensionKey          = "OTelLib"
-	defaultNamespace             = "default"
-	noInstrumentationLibraryName = "Undefined"
+	oTellibDimensionKey = "OTelLib"
+	defaultNamespace    = "default"
 
 	// DimensionRollupOptions
 	zeroAndSingleDimensionRollup = "ZeroAndSingleDimensionRollup"
@@ -79,8 +78,8 @@ type groupedMetricMetadata struct {
 // cWMetricMetadata represents the metadata associated with a given CloudWatch metric
 type cWMetricMetadata struct {
 	groupedMetricMetadata
-	instrumentationLibraryName string
-	receiver                   string
+	instrumentationScopeName string
+	receiver                 string
 }
 
 type metricTranslator struct {
@@ -100,7 +99,7 @@ func newMetricTranslator(config Config) metricTranslator {
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
 func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-	var instrumentationLibName string
+	var instrumentationScopeName string
 	cWNamespace := getNamespace(rm, config.Namespace)
 	logGroup, logStream, patternReplaceSucceeded := getLogInfo(rm, cWNamespace, config)
 
@@ -111,10 +110,8 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 	}
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
-		if ilm.Scope().Name() == "" {
-			instrumentationLibName = noInstrumentationLibraryName
-		} else {
-			instrumentationLibName = ilm.Scope().Name()
+		if ilm.Scope().Name() != "" {
+			instrumentationScopeName = ilm.Scope().Name()
 		}
 
 		metrics := ilm.Metrics()
@@ -128,8 +125,8 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 					logStream:      logStream,
 					metricDataType: metric.Type(),
 				},
-				instrumentationLibraryName: instrumentationLibName,
-				receiver:                   metricReceiver,
+				instrumentationScopeName: instrumentationScopeName,
+				receiver:                 metricReceiver,
 			}
 			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
 			if err != nil {

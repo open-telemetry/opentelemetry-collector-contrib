@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -38,9 +39,7 @@ func TestWriterPoolBasic(t *testing.T) {
 	assert.Equal(t, 0, w.buffer.Len())
 	resource := pcommon.NewResource()
 	segment, _ := MakeSegment(span, resource, nil, false, nil)
-	if err := w.Encode(*segment); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(*segment))
 	jsonStr := w.String()
 	assert.Equal(t, len(jsonStr), w.buffer.Len())
 	wp.release(w)

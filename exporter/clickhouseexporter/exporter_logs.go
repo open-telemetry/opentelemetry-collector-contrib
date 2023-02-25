@@ -18,10 +18,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -39,17 +39,8 @@ type logsExporter struct {
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-
-	if err := createDatabase(cfg); err != nil {
-		return nil, err
-	}
-
 	client, err := newClickhouseClient(cfg)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = createLogsTable(cfg, client); err != nil {
 		return nil, err
 	}
 
@@ -61,8 +52,19 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	}, nil
 }
 
-// Shutdown will shutdown the exporter.
-func (e *logsExporter) Shutdown(_ context.Context) error {
+func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
+	if err := createDatabase(ctx, e.cfg); err != nil {
+		return err
+	}
+
+	if err := createLogsTable(ctx, e.cfg, e.client); err != nil {
+		return err
+	}
+	return nil
+}
+
+// shutdown will shut down the exporter.
+func (e *logsExporter) shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -183,16 +185,23 @@ var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
-	return sql.Open(driverName, cfg.DSN)
+	dsn, err := cfg.buildDSN(cfg.Database)
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open(driverName, dsn)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
-func createDatabase(cfg *Config) error {
-	database, _ := parseDSNDatabase(cfg.DSN)
-	if database == defaultDatabase {
+func createDatabase(ctx context.Context, cfg *Config) error {
+	if cfg.Database == defaultDatabase {
 		return nil
 	}
 	// use default database to create new database
-	dsnUseDefaultDatabase, err := getDefaultDSN(cfg.DSN, database)
+	dsnUseDefaultDatabase, err := cfg.buildDSN(defaultDatabase)
 	if err != nil {
 		return err
 	}
@@ -203,26 +212,16 @@ func createDatabase(cfg *Config) error {
 	defer func() {
 		_ = db.Close()
 	}()
-	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", database)
-	_, err = db.Exec(query)
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database)
+	_, err = db.ExecContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)
 	}
 	return nil
 }
 
-func getDefaultDSN(dsn string, database string) (string, error) {
-	if strings.LastIndex(dsn, database) == -1 {
-		return "", fmt.Errorf("database not present in dsn")
-	}
-	if dsn[strings.LastIndex(dsn, database):] == defaultDatabase {
-		return dsn, nil
-	}
-	return fmt.Sprintf("%s%s", dsn[0:strings.LastIndex(dsn, database)], defaultDatabase), nil
-}
-
-func createLogsTable(cfg *Config, db *sql.DB) error {
-	if _, err := db.Exec(renderCreateLogsTableSQL(cfg)); err != nil {
+func createLogsTable(ctx context.Context, cfg *Config, db *sql.DB) error {
+	if _, err := db.ExecContext(ctx, renderCreateLogsTableSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create logs table sql: %w", err)
 	}
 	return nil

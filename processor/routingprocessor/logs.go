@@ -43,6 +43,8 @@ type logProcessor struct {
 func newLogProcessor(settings component.TelemetrySettings, config component.Config) *logProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
+	logParser, _ := ottllog.NewParser(common.Functions[ottllog.TransformContext](), settings)
+
 	return &logProcessor{
 		logger: settings.Logger,
 		config: cfg,
@@ -50,7 +52,7 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Conf
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottllog.NewParser(common.Functions[ottllog.TransformContext](), settings),
+			logParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}

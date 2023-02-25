@@ -17,7 +17,6 @@ package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 	"net/url"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -69,10 +68,6 @@ func (c *Config) Validate() error {
 	parsed, err = url.Parse(c.IngestURL)
 	if c.IngestURL == "" || err != nil {
 		return fmt.Errorf(`"ingest_url" must be a valid URL`)
-	}
-
-	if !strings.HasSuffix(c.IngestURL, "/otel/ingest/rest") {
-		return fmt.Errorf(`"ingest_url" must end with "/otel/ingest/rest"`)
 	}
 
 	if parsed.Host == "" {

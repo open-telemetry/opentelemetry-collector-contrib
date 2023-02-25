@@ -258,47 +258,6 @@ func isValidAggregationTemporality(metric pmetric.Metric) bool {
 	return false
 }
 
-// addSingleNumberDataPoint converts the metric value stored in pt to a Prometheus sample, and add the sample
-// to its corresponding time series in tsMap
-func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings, tsMap map[string]*prompb.TimeSeries) {
-	// create parameters for addSample
-	name := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
-	labels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, name)
-	sample := &prompb.Sample{
-		// convert ns to ms
-		Timestamp: convertTimeStamp(pt.Timestamp()),
-	}
-	switch pt.ValueType() {
-	case pmetric.NumberDataPointValueTypeInt:
-		sample.Value = float64(pt.IntValue())
-	case pmetric.NumberDataPointValueTypeDouble:
-		sample.Value = pt.DoubleValue()
-	}
-	if pt.Flags().NoRecordedValue() {
-		sample.Value = math.Float64frombits(value.StaleNaN)
-	}
-	addSample(tsMap, sample, labels, metric.Type().String())
-
-	// add _created time series if needed
-	if settings.ExportCreatedMetric && isMonotonicSum(metric) {
-		startTimestamp := pt.StartTimestamp()
-		if startTimestamp != 0 {
-			createdLabels := createAttributes(
-				resource,
-				pt.Attributes(),
-				settings.ExternalLabels,
-				nameStr,
-				name+createdSuffix,
-			)
-			addCreatedTimeSeriesIfNeeded(tsMap, createdLabels, startTimestamp, metric.Type().String())
-		}
-	}
-}
-
-func isMonotonicSum(metric pmetric.Metric) bool {
-	return metric.Type() == pmetric.MetricTypeSum && metric.Sum().IsMonotonic()
-}
-
 // addSingleHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
 // ignore extra buckets if len(ExplicitBounds) > len(BucketCounts)
 func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings, tsMap map[string]*prompb.TimeSeries) {
@@ -389,7 +348,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 }
 
 type exemplarType interface {
-	pmetric.ExponentialHistogramDataPoint | pmetric.HistogramDataPoint
+	pmetric.ExponentialHistogramDataPoint | pmetric.HistogramDataPoint | pmetric.NumberDataPoint
 	Exemplars() pmetric.ExemplarSlice
 }
 

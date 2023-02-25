@@ -1,10 +1,10 @@
 # HAProxy Receiver
 
-| Status                   |               |
-| ------------------------ |---------------|
-| Stability                | [development] |
-| Supported pipeline types | metrics       |
-| Distributions            | [contrib]     |
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
 The HAProxy receiver generates metrics by polling periodically the HAProxy process through a dedicated socket or HTTP URL.
 
@@ -51,5 +51,5 @@ receivers:
         enabled: true
 ```
 
-[development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 

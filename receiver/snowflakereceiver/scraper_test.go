@@ -68,7 +68,8 @@ func TestScraper(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err, "error reading expected metrics")
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp()))
 }
 
 func TestStart(t *testing.T) {

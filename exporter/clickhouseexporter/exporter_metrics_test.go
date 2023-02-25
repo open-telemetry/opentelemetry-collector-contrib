@@ -19,31 +19,30 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/atomic"
 	"go.uber.org/zap/zaptest"
 )
 
 func TestExporter_pushMetricsData(t *testing.T) {
 	t.Parallel()
 	t.Run("push success", func(t *testing.T) {
-		mutex := sync.Mutex{}
-		var items int
+		var items atomic.Int32
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
-				mutex.Lock()
-				defer mutex.Unlock()
-				items++
+				items.Inc()
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t, defaultDSN)
+		exporter := newTestMetricsExporter(t)
 		mustPushMetricsData(t, exporter, simpleMetrics(1))
+
+		require.Equal(t, int32(5), items.Load())
 	})
 	t.Run("push failure", func(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
@@ -52,20 +51,15 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t, "tcp://127.0.0.1:9000/db", func(config *Config) {
-			config.DSN = "tcp://127.0.0.1:9000/db"
-		})
+		exporter := newTestMetricsExporter(t)
 		err := exporter.pushMetricsData(context.TODO(), simpleMetrics(2))
 		require.Error(t, err)
 	})
 	t.Run("check Resource metadata and scope metadata", func(t *testing.T) {
-		mutex := sync.Mutex{}
-		var items int
+		var items atomic.Int32
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
-				mutex.Lock()
-				defer mutex.Unlock()
-				items++
+				items.Inc()
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_exponential_histogram") {
 					require.Equal(t, "Resource SchemaUrl 1", values[1])
 					require.Equal(t, "Scope name 1", values[2])
@@ -73,19 +67,47 @@ func TestExporter_pushMetricsData(t *testing.T) {
 					require.Equal(t, "Resource SchemaUrl 2", values[30])
 					require.Equal(t, "Scope name 2", values[31])
 				}
+				if strings.HasPrefix(query, "INSERT INTO otel_metrics_gauge") {
+					require.Equal(t, "Resource SchemaUrl 1", values[1])
+					require.Equal(t, "Scope name 1", values[2])
+
+					require.Equal(t, "Resource SchemaUrl 2", values[21])
+					require.Equal(t, "Scope name 2", values[22])
+				}
+				if strings.HasPrefix(query, "INSERT INTO otel_metrics_histogram") {
+					require.Equal(t, "Resource SchemaUrl 1", values[1])
+					require.Equal(t, "Scope name 1", values[2])
+
+					require.Equal(t, "Resource SchemaUrl 2", values[26])
+					require.Equal(t, "Scope name 2", values[27])
+				}
+				if strings.HasPrefix(query, "INSERT INTO otel_metrics_sum (") {
+					require.Equal(t, "Resource SchemaUrl 1", values[1])
+					require.Equal(t, "Scope name 1", values[2])
+
+					require.Equal(t, "Resource SchemaUrl 2", values[23])
+					require.Equal(t, "Scope name 2", values[24])
+				}
+				if strings.HasPrefix(query, "INSERT INTO otel_metrics_summary") {
+					require.Equal(t, "Resource SchemaUrl 1", values[1])
+					require.Equal(t, "Scope name 1", values[2])
+
+					require.Equal(t, "Resource SchemaUrl 2", values[19])
+					require.Equal(t, "Scope name 2", values[20])
+				}
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t, defaultDSN)
+		exporter := newTestMetricsExporter(t)
 		mustPushMetricsData(t, exporter, simpleMetrics(1))
 
-		require.Equal(t, 5, items)
+		require.Equal(t, int32(5), items.Load())
 	})
 }
 
 func Benchmark_pushMetricsData(b *testing.B) {
 	pm := simpleMetrics(1)
-	exporter := newTestMetricsExporter(&testing.T{}, defaultDSN)
+	exporter := newTestMetricsExporter(&testing.T{})
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -117,6 +139,7 @@ func simpleMetrics(count int) pmetric.Metrics {
 		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		dp.SetIntValue(int64(i))
 		dp.Attributes().PutStr("gauge_label_1", "1")
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		exemplars := dp.Exemplars().AppendEmpty()
 		exemplars.SetIntValue(54)
@@ -133,6 +156,7 @@ func simpleMetrics(count int) pmetric.Metrics {
 		dp = m.SetEmptySum().DataPoints().AppendEmpty()
 		dp.SetDoubleValue(11.234)
 		dp.Attributes().PutStr("sum_label_1", "1")
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		exemplars = dp.Exemplars().AppendEmpty()
 		exemplars.SetIntValue(54)
@@ -326,9 +350,10 @@ func mustPushMetricsData(t *testing.T, exporter *metricsExporter, md pmetric.Met
 	require.NoError(t, err)
 }
 
-func newTestMetricsExporter(t *testing.T, dsn string, fns ...func(*Config)) *metricsExporter {
-	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
+func newTestMetricsExporter(t *testing.T) *metricsExporter {
+	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig()(defaultEndpoint))
 	require.NoError(t, err)
+	require.NoError(t, exporter.start(context.TODO(), nil))
 
 	t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
 	return exporter

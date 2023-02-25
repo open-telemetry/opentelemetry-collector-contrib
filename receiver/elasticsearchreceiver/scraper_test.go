@@ -42,9 +42,7 @@ const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.json"
 
 func TestMain(m *testing.M) {
 	// Enable the feature gates before all tests to avoid flaky tests.
-	_ = featuregate.GlobalRegistry().Apply(map[string]bool{
-		emitNodeVersionAttrID: true,
-	})
+	_ = featuregate.GlobalRegistry().Set(emitNodeVersionAttr.ID(), true)
 	code := m.Run()
 	os.Exit(code)
 }
@@ -103,7 +101,7 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperSkipClusterMetrics(t *testing.T) {
@@ -134,7 +132,7 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperNoNodesMetrics(t *testing.T) {
@@ -165,7 +163,7 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperFailedStart(t *testing.T) {

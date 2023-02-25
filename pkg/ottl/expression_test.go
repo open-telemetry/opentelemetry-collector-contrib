@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -290,11 +290,11 @@ func Test_newGetter(t *testing.T) {
 
 	functions := map[string]interface{}{"Hello": hello[interface{}]}
 
-	p := NewParser(
+	p, _ := NewParser[any](
 		functions,
 		testParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	for _, tt := range tests {
@@ -317,4 +317,57 @@ func Test_newGetter(t *testing.T) {
 		_, err := p.newGetter(value{})
 		assert.Error(t, err)
 	})
+}
+
+func Test_StandardTypeGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardTypeGetter[interface{}, string]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "Correct type",
+			getter: StandardTypeGetter[interface{}, string]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "str", nil
+				},
+			},
+			want:  "str",
+			valid: true,
+		},
+		{
+			name: "Incorrect type",
+			getter: StandardTypeGetter[interface{}, string]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected string but got bool",
+		},
+		{
+			name: "nil",
+			getter: StandardTypeGetter[interface{}, string]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected string but got nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
 }

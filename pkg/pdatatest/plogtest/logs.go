@@ -20,6 +20,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
 )
 
 // CompareLogs compares each part of two given Logs and returns
@@ -35,9 +37,8 @@ func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error
 
 	expectedLogs, actualLogs := exp.ResourceLogs(), act.ResourceLogs()
 	if expectedLogs.Len() != actualLogs.Len() {
-		return fmt.Errorf("amount of ResourceLogs between Logs are not equal expected: %d, actual: %d",
-			expectedLogs.Len(),
-			actualLogs.Len())
+		return fmt.Errorf("number of resources doesn't match expected: %d, actual: %d",
+			expectedLogs.Len(), actualLogs.Len())
 	}
 
 	numResources := expectedLogs.Len()
@@ -60,20 +61,20 @@ func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error
 				matchingResources[ar] = er
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf("ResourceLogs with attributes %v expected at index %d, "+
-							"found a at index %d", er.Resource().Attributes().AsRaw(), e, a))
+						fmt.Errorf(`resources are out of order: resource "%v" expected at index %d, found at index %d`,
+							er.Resource().Attributes().AsRaw(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf("missing expected resource with attributes: %v", er.Resource().Attributes().AsRaw()))
+			errs = multierr.Append(errs, fmt.Errorf("missing expected resource: %v", er.Resource().Attributes().AsRaw()))
 		}
 	}
 
 	for i := 0; i < numResources; i++ {
 		if _, ok := matchingResources[actualLogs.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("extra resource with attributes: %v", actualLogs.At(i).Resource().Attributes().AsRaw()))
+			errs = multierr.Append(errs, fmt.Errorf("unexpected resource: %v", actualLogs.At(i).Resource().Attributes().AsRaw()))
 		}
 	}
 
@@ -85,9 +86,8 @@ func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error
 	}
 
 	for ar, er := range matchingResources {
-		if err := CompareResourceLogs(er, ar); err != nil {
-			return err
-		}
+		errPrefix := fmt.Sprintf(`resource "%v"`, er.Resource().Attributes().AsRaw())
+		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareResourceLogs(er, ar)))
 	}
 
 	return errs
@@ -96,50 +96,96 @@ func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error
 // CompareResourceLogs compares each part of two given ResourceLogs and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
-	eilms := expected.ScopeLogs()
-	ailms := actual.ScopeLogs()
+	errs := multierr.Combine(
+		internal.CompareResource(expected.Resource(), actual.Resource()),
+		internal.CompareSchemaURL(expected.SchemaUrl(), actual.SchemaUrl()),
+	)
 
-	if eilms.Len() != ailms.Len() {
-		return fmt.Errorf("number of instrumentation libraries does not match expected: %d, actual: %d", eilms.Len(),
-			ailms.Len())
+	esls := expected.ScopeLogs()
+	asls := actual.ScopeLogs()
+
+	if esls.Len() != asls.Len() {
+		errs = multierr.Append(errs, fmt.Errorf("number of scopes doesn't match expected: %d, actual: %d", esls.Len(),
+			asls.Len()))
+		return errs
 	}
 
-	for i := 0; i < eilms.Len(); i++ {
-		eilm, ailm := eilms.At(i), ailms.At(i)
-		eil, ail := eilm.Scope(), ailm.Scope()
+	numScopeLogs := esls.Len()
 
-		if eil.Name() != ail.Name() {
-			return fmt.Errorf("instrumentation library Name does not match expected: %s, actual: %s", eil.Name(), ail.Name())
+	// Keep track of matching scope logs so that each record can only be matched once
+	matchingScopeLogs := make(map[plog.ScopeLogs]plog.ScopeLogs, numScopeLogs)
+
+	var outOfOrderErrs error
+	for e := 0; e < numScopeLogs; e++ {
+		esl := expected.ScopeLogs().At(e)
+		var foundMatch bool
+		for a := 0; a < numScopeLogs; a++ {
+			asl := actual.ScopeLogs().At(a)
+			if _, ok := matchingScopeLogs[asl]; ok {
+				continue
+			}
+			if esl.Scope().Name() == asl.Scope().Name() {
+				foundMatch = true
+				matchingScopeLogs[asl] = esl
+				if e != a {
+					outOfOrderErrs = multierr.Append(outOfOrderErrs,
+						fmt.Errorf("scopes are out of order: scope %s expected at index %d, found at index %d",
+							esl.Scope().Name(), e, a))
+				}
+				break
+			}
 		}
-		if eil.Version() != ail.Version() {
-			return fmt.Errorf("instrumentation library Version does not match expected: %s, actual: %s", eil.Version(), ail.Version())
-		}
-		if err := CompareLogRecordSlices(eilm.LogRecords(), ailm.LogRecords()); err != nil {
-			return err
+		if !foundMatch {
+			errs = multierr.Append(errs, fmt.Errorf("missing expected scope: %s", esl.Scope().Name()))
 		}
 	}
-	return nil
+
+	for i := 0; i < numScopeLogs; i++ {
+		if _, ok := matchingScopeLogs[actual.ScopeLogs().At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("unexpected scope: %s", actual.ScopeLogs().At(i).Scope().Name()))
+		}
+	}
+
+	if errs != nil {
+		return errs
+	}
+	if outOfOrderErrs != nil {
+		return outOfOrderErrs
+	}
+
+	for i := 0; i < esls.Len(); i++ {
+		errPrefix := fmt.Sprintf(`scope "%s"`, esls.At(i).Scope().Name())
+		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareScopeLogs(esls.At(i), asls.At(i))))
+	}
+
+	return errs
 }
 
-// CompareLogRecordSlices compares each part of two given LogRecordSlices and returns
+// CompareScopeLogs compares each part of two given LogRecordSlices and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareLogRecordSlices(expected, actual plog.LogRecordSlice) error {
-	if expected.Len() != actual.Len() {
-		return fmt.Errorf("number of log records does not match expected: %d, actual: %d", expected.Len(), actual.Len())
+func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
+	errs := multierr.Combine(
+		internal.CompareInstrumentationScope(expected.Scope(), actual.Scope()),
+		internal.CompareSchemaURL(expected.SchemaUrl(), actual.SchemaUrl()),
+	)
+
+	if expected.LogRecords().Len() != actual.LogRecords().Len() {
+		errs = multierr.Append(errs, fmt.Errorf("number of log records doesn't match expected: %d, actual: %d",
+			expected.LogRecords().Len(), actual.LogRecords().Len()))
+		return errs
 	}
 
-	numLogRecords := expected.Len()
+	numLogRecords := expected.LogRecords().Len()
 
 	// Keep track of matching records so that each record can only be matched once
 	matchingLogRecords := make(map[plog.LogRecord]plog.LogRecord, numLogRecords)
 
-	var errs error
 	var outOfOrderErrs error
 	for e := 0; e < numLogRecords; e++ {
-		elr := expected.At(e)
+		elr := expected.LogRecords().At(e)
 		var foundMatch bool
 		for a := 0; a < numLogRecords; a++ {
-			alr := actual.At(a)
+			alr := actual.LogRecords().At(a)
 			if _, ok := matchingLogRecords[alr]; ok {
 				continue
 			}
@@ -148,21 +194,21 @@ func CompareLogRecordSlices(expected, actual plog.LogRecordSlice) error {
 				matchingLogRecords[alr] = elr
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf("LogRecord with attributes %v expected at index %d, "+
-							"found a at index %d", elr.Attributes().AsRaw(), e, a))
+						fmt.Errorf(`log records are out of order: log record "%v" expected at index %d, found at index %d`,
+							elr.Attributes().AsRaw(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf("log missing expected resource with attributes: %v", elr.Attributes().AsRaw()))
+			errs = multierr.Append(errs, fmt.Errorf("missing expected log record: %v", elr.Attributes().AsRaw()))
 		}
 	}
 
 	for i := 0; i < numLogRecords; i++ {
-		if _, ok := matchingLogRecords[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("log has extra record with attributes: %v",
-				actual.At(i).Attributes().AsRaw()))
+		if _, ok := matchingLogRecords[actual.LogRecords().At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("unexpected log record: %v",
+				actual.LogRecords().At(i).Attributes().AsRaw()))
 		}
 	}
 
@@ -174,69 +220,59 @@ func CompareLogRecordSlices(expected, actual plog.LogRecordSlice) error {
 	}
 
 	for alr, elr := range matchingLogRecords {
-		if err := CompareLogRecords(alr, elr); err != nil {
-			return multierr.Combine(fmt.Errorf("log record with attributes: %v, does not match expected", alr.Attributes().AsRaw()), err)
-		}
+		errPrefix := fmt.Sprintf(`log record "%v"`, elr.Attributes().AsRaw())
+		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareLogRecord(alr, elr)))
 	}
-	return nil
+	return errs
 }
 
-// CompareLogRecords compares each part of two given LogRecord and returns
+// CompareLogRecord compares each part of two given LogRecord and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareLogRecords(expected, actual plog.LogRecord) error {
-	if expected.Flags() != actual.Flags() {
-		return fmt.Errorf("log record Flags doesn't match expected: %d, actual: %d",
-			expected.Flags(),
-			actual.Flags())
-	}
+func CompareLogRecord(expected, actual plog.LogRecord) error {
+	errs := multierr.Combine(
+		internal.CompareAttributes(expected.Attributes(), actual.Attributes()),
+		internal.CompareDroppedAttributesCount(expected.DroppedAttributesCount(), actual.DroppedAttributesCount()),
+	)
 
-	if expected.DroppedAttributesCount() != actual.DroppedAttributesCount() {
-		return fmt.Errorf("log record DroppedAttributesCount doesn't match expected: %d, actual: %d",
-			expected.DroppedAttributesCount(),
-			actual.DroppedAttributesCount())
+	if expected.Flags() != actual.Flags() {
+		errs = multierr.Append(errs, fmt.Errorf("flags doesn't match expected: %d, actual: %d",
+			expected.Flags(), actual.Flags()))
 	}
 
 	if expected.Timestamp() != actual.Timestamp() {
-		return fmt.Errorf("log record Timestamp doesn't match expected: %d, actual: %d",
-			expected.Timestamp(),
-			actual.Timestamp())
+		errs = multierr.Append(errs, fmt.Errorf("timestamp doesn't match expected: %d, actual: %d",
+			expected.Timestamp(), actual.Timestamp()))
 	}
 
 	if expected.ObservedTimestamp() != actual.ObservedTimestamp() {
-		return fmt.Errorf("log record ObservedTimestamp doesn't match expected: %d, actual: %d",
-			expected.ObservedTimestamp(),
-			actual.ObservedTimestamp())
+		errs = multierr.Append(errs, fmt.Errorf("observed timestamp doesn't match expected: %d, actual: %d",
+			expected.ObservedTimestamp(), actual.ObservedTimestamp()))
 	}
 
 	if expected.SeverityNumber() != actual.SeverityNumber() {
-		return fmt.Errorf("log record SeverityNumber doesn't match expected: %d, actual: %d",
-			expected.SeverityNumber(),
-			actual.SeverityNumber())
+		errs = multierr.Append(errs, fmt.Errorf("severity number doesn't match expected: %s, actual: %s",
+			expected.SeverityNumber(), actual.SeverityNumber()))
 	}
 
 	if expected.SeverityText() != actual.SeverityText() {
-		return fmt.Errorf("log record SeverityText doesn't match expected: %s, actual: %s",
-			expected.SeverityText(),
-			actual.SeverityText())
+		errs = multierr.Append(errs, fmt.Errorf("severity text doesn't match expected: %s, actual: %s",
+			expected.SeverityText(), actual.SeverityText()))
 	}
 
 	if expected.TraceID() != actual.TraceID() {
-		return fmt.Errorf("log record TraceID doesn't match expected: %d, actual: %d",
-			expected.TraceID(),
-			actual.TraceID())
+		errs = multierr.Append(errs, fmt.Errorf("trace ID doesn't match expected: %d, actual: %d",
+			expected.TraceID(), actual.TraceID()))
 	}
 
 	if expected.SpanID() != actual.SpanID() {
-		return fmt.Errorf("log record SpanID doesn't match expected: %d, actual: %d",
-			expected.SpanID(),
-			actual.SpanID())
+		errs = multierr.Append(errs, fmt.Errorf("span ID doesn't match expected: %d, actual: %d",
+			expected.SpanID(), actual.SpanID()))
 	}
 
 	if !reflect.DeepEqual(expected.Body().AsRaw(), actual.Body().AsRaw()) {
-		return fmt.Errorf("log record Body doesn't match expected: %s, actual: %s",
-			expected.Body().AsString(),
-			actual.Body().AsString())
+		errs = multierr.Append(errs, fmt.Errorf("body doesn't match expected: %s, actual: %s",
+			expected.Body().AsString(), actual.Body().AsString()))
 	}
 
-	return nil
+	return errs
 }
