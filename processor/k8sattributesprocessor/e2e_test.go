@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build e2e,trace
-// +build e2e
-// +build trace
+//go:build e2e && trace
+// +build e2e,trace
 
 package k8sattributesprocessor
 
