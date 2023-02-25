@@ -13,6 +13,7 @@ jobs:
     strategy: 
       matrix:
         k8s-version: ["v1.26.0", "v1.25.3", "v1.24.7", "v1.23.13"]
+        telemetry: ["trace"]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -66,32 +67,32 @@ jobs:
           repository: 'open-telemetry/opentelemetry-helm-charts'
           path: opentelemetry-helm-charts
       - name: Helm install collector
-        run: helm install test --set image.tag=$GITHUB_SHA -f .github/workflows/e2e/k8s/collector-helm-values.yml opentelemetry-helm-charts/charts/opentelemetry-collector
+        run: helm install test --set image.tag=$GITHUB_SHA -f .github/workflows/e2e/k8s/${{ matrix.telemetry }}/collector-helm-values.yml opentelemetry-helm-charts/charts/opentelemetry-collector
       - name: check collector status
         run: |
           kubectl wait --for=condition=Ready --timeout=60s pod/test-opentelemetry-collector-0
       - name: start telemetrygen job
         run: |
-          kubectl -n default create -f .github/workflows/e2e/k8s/telemetrygen-job.yml
+          kubectl -n default create -f .github/workflows/e2e/k8s/${{ matrix.telemetry }}/telemetrygen-job.yml
       - name: check telemetrygen job status
         run: |
           kubectl wait --for=condition=Complete --timeout=60s job/test-telemetrygen-job
       - name: start telemetrygen statefulset
         run: |
-          kubectl -n default create -f .github/workflows/e2e/k8s/telemetrygen-statefulset.yml
+          kubectl -n default create -f .github/workflows/e2e/k8s/${{ matrix.telemetry }}/telemetrygen-statefulset.yml
       - name: start telemetrygen deployment
         run: |
-          kubectl -n default create -f .github/workflows/e2e/k8s/telemetrygen-deployment.yml
+          kubectl -n default create -f .github/workflows/e2e/k8s/${{ matrix.telemetry }}/telemetrygen-deployment.yml
       - name: start telemetrygen daemonset
         run: |
-          kubectl -n default create -f .github/workflows/e2e/k8s/telemetrygen-daemonset.yml
+          kubectl -n default create -f .github/workflows/e2e/k8s/${{ matrix.telemetry }}/telemetrygen-daemonset.yml
       - name: wait telemetrygen statefulset/deployment/daemonset to generate trace
         run: |
           sleep 30
-      - name: copy trace output
+      - name: copy telemetry data output
         run: |
-          kubectl cp -c filecp default/test-opentelemetry-collector-0:tmp/trace.json processor/k8sattributesprocessor/testdata/trace.json
+          kubectl cp -c filecp default/test-opentelemetry-collector-0:tmp/${{ matrix.telemetry }}.json processor/k8sattributesprocessor/testdata/${{ matrix.telemetry }}.json
       - name: run e2e test to check output
         run: |    
           cd processor/k8sattributesprocessor
-          go test -v --tags=e2e
+          go test -v --tags=e2e,${{ matrix.telemetry }}
