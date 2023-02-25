@@ -52,6 +52,8 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contract
 	data.BaseType = messageData.BaseType()
 	envelope.Data = data
 
+	setAttributesAsProperties(logRecord.Attributes(), messageData.Properties)
+
 	packer.sanitize(func() []string { return messageData.Sanitize() })
 	packer.sanitize(func() []string { return envelope.Sanitize() })
 	packer.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
@@ -99,4 +101,11 @@ func timestampFromLogRecord(lr plog.LogRecord) pcommon.Timestamp {
 	}
 
 	return pcommon.NewTimestampFromTime(timeNow())
+}
+
+func setAttributesAsProperties(attributeMap pcommon.Map, properties map[string]string) {
+	attributeMap.Range(func(k string, v pcommon.Value) bool {
+		properties[k] = v.AsString()
+		return true
+	})
 }
