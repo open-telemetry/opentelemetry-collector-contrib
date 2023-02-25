@@ -1437,7 +1437,11 @@ func Test_Statements_Eval(t *testing.T) {
 			for _, condition := range tt.conditions {
 				rawStatements = append(rawStatements, &Statement[interface{}]{
 					condition: BoolExpr[any]{condition},
-					function:  Expr[any]{exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) { return nil, nil }},
+					function: Expr[any]{
+						exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+							return nil, fmt.Errorf("function should not be called")
+						},
+					},
 				})
 			}
 
@@ -1477,7 +1481,11 @@ func Test_Statements_Eval_Error(t *testing.T) {
 			for _, condition := range tt.conditions {
 				rawStatements = append(rawStatements, &Statement[interface{}]{
 					condition: BoolExpr[any]{condition},
-					function:  Expr[any]{exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) { return nil, nil }},
+					function: Expr[any]{
+						exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+							return nil, fmt.Errorf("function should not be called")
+						},
+					},
 				})
 			}
 
