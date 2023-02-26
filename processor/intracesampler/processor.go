@@ -129,8 +129,8 @@ func spansToTraceTree(td ptrace.Traces) TraceTreeData {
 // this indicates that the processor is run after another processor
 // that emits completed traces after timeout
 // if a single trace id is found, it is returend, otherwise nil is returned
-func getSingleTraceId(td ptrace.Traces) *pcommon.TraceID {
-	var traceId *pcommon.TraceID
+func getSingleTraceID(td ptrace.Traces) *pcommon.TraceID {
+	var traceID *pcommon.TraceID
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -140,10 +140,10 @@ func getSingleTraceId(td ptrace.Traces) *pcommon.TraceID {
 			spans := ss.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				currentTraceId := span.TraceID()
-				if traceId == nil {
-					traceId = &currentTraceId
-				} else if currentTraceId != *traceId {
+				currentTraceID := span.TraceID()
+				if traceID == nil {
+					traceID = &currentTraceID
+				} else if currentTraceID != *traceID {
 					return nil
 				}
 			}
@@ -151,7 +151,7 @@ func getSingleTraceId(td ptrace.Traces) *pcommon.TraceID {
 	}
 
 	// will be nil it the batch is empty
-	return traceId
+	return traceID
 }
 
 func (its *inTraceSamplerProcessor) getScopeBranchesToUnsampleRec(traceTreeData TraceTreeData, currentSpanID pcommon.SpanID, unsampledScopes map[pcommon.SpanID]bool) bool {
@@ -197,14 +197,14 @@ func removeSpansByIds(td ptrace.Traces, idsToRemove map[pcommon.SpanID]bool) {
 func (its *inTraceSamplerProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 
 	// the sampler assumes it receives full "completed" traces
-	singleTraceId := getSingleTraceId(td)
-	if singleTraceId == nil {
+	singleTraceID := getSingleTraceID(td)
+	if singleTraceID == nil {
 		its.logger.Warn("in trace sampler received spans from different traces. it should run after tailsampler or groupby processor")
 		return td, nil
 	}
 
 	// some of the traces will be sampled in trace, but some will still be allowed to pass through as is
-	sampled := hash((*singleTraceId)[:], its.config.HashSeed)&bitMaskHashBuckets < its.scaledSamplingRate
+	sampled := hash((*singleTraceID)[:], its.config.HashSeed)&bitMaskHashBuckets < its.scaledSamplingRate
 	// sampled means we keep all spans (not dropping anything), thus forwarding td as is
 	if sampled {
 		return td, nil

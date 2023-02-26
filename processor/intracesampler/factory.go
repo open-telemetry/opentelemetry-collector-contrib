@@ -27,8 +27,6 @@ const (
 	stability = component.StabilityLevelAlpha
 )
 
-var processorCapabilities = consumer.Capabilities{MutatesData: true}
-
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		typeStr,
