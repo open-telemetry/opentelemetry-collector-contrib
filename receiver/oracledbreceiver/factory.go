@@ -63,12 +63,10 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 	) (receiver.Metrics, error) {
 		sqlCfg := cfg.(*Config)
 		metricsBuilder := metadata.NewMetricsBuilder(sqlCfg.MetricsSettings, settings)
-		datasourceURL, _ := url.Parse(sqlCfg.DataSource)
-		instanceName := datasourceURL.Host
 
 		mp, err := newScraper(settings.ID, metricsBuilder, sqlCfg.MetricsSettings, sqlCfg.ScraperControllerSettings, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
 			return sqlOpenerFunc(sqlCfg.DataSource)
-		}, clientProviderFunc, instanceName)
+		}, clientProviderFunc, getInstanceName(sqlCfg.DataSource))
 		if err != nil {
 			return nil, err
 		}
@@ -81,4 +79,10 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 			opt,
 		)
 	}
+}
+
+func getInstanceName(datasource string) string {
+	datasourceURL, _ := url.Parse(datasource)
+	instanceName := datasourceURL.Host + datasourceURL.Path
+	return instanceName
 }

@@ -50,8 +50,8 @@ func (f *Factory) CreateMetricsScraper(
 	settings receiver.CreateSettings,
 	cfg internal.Config,
 ) (scraperhelper.Scraper, error) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
-		return nil, errors.New("process scraper only available on Linux or Windows")
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
+		return nil, errors.New("process scraper only available on Linux, Windows, or MacOS")
 	}
 
 	s, err := newProcessScraper(settings, cfg.(*Config))

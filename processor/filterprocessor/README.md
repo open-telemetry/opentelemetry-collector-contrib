@@ -90,34 +90,39 @@ processors:
         resource_attributes:
           - Key: host.name
             Value: just_this_one_hostname
-    logs/regexp:
+  filter/regexp:
+    logs:
       include:
         match_type: regexp
         resource_attributes:
           - Key: host.name
             Value: prefix.*
-    logs/regexp_record:
+  filter/regexp_record:
+    logs:
       include:
         match_type: regexp
         record_attributes:
           - Key: record_attr
             Value: prefix_.*
-    # Filter on severity text field
-    logs/severity_text:
+  # Filter on severity text field
+  filter/severity_text:
+    logs:
       include:
         match_type: regexp
         severity_texts:
         - INFO[2-4]?
         - WARN[2-4]?
         - ERROR[2-4]?
-    # Filter out logs below INFO (no DEBUG or TRACE level logs),
-    # retaining logs with undefined severity
-    logs/severity_number:
+  # Filter out logs below INFO (no DEBUG or TRACE level logs),
+  # retaining logs with undefined severity
+  filter/severity_number:
+    logs:
       include:
         severity_number:
           min: "INFO"
           match_undefined: true
-    logs/bodies:
+  filter/bodies:
+    logs:
       include:
         match_type: regexp
         bodies:
@@ -305,14 +310,44 @@ See the table below for details on each context and the fields it exposes.
 The OTTL allows the use of `and`, `or`, and `()` in conditions.
 See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md#boolean-expressions) for more details.
 
-The filter processor has access to all the [factory functions of the OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions) 
-
 For conditions that apply to the same signal, such as spans and span events, if the "higher" level telemetry matches a condition and is dropped, the "lower" level condition will not be checked.
 This means that if a span is dropped but a span event condition was defined, the span event condition will not be checked.
 The same relationship applies to metrics and datapoints.
 
 If all span events for a span are dropped, the span will be left intact.
 If all datapoints for a metric are dropped, the metric will also be dropped.
+
+### OTTL Functions
+
+The filter processor has access to all the [factory functions of the OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions)
+
+In addition, the processor defines a few of its own functions:
+
+**Metrics only functions**
+- [HasAttrKeyOnDatapoint](#HasAttrKeyOnDatapoint)
+- [HasAttrOnDatapoint](#HasAttrOnDatapoint)
+
+#### HasAttrKeyOnDatapoint
+
+`HasAttrKeyOnDatapoint(key)`
+
+Returns `true` if the given key appears in the attribute map of any datapoint on a metric.
+`key` must be a string.
+
+Examples:
+
+- `HasAttrKeyOnDatapoint("http.method")`
+
+#### HasAttrOnDatapoint
+
+`HasAttrOnDatapoint(key, value)`
+
+Returns `true` if the given key and value appears in the attribute map of any datapoint on a metric.
+`key` and `value` must both be strings.
+
+Examples:
+
+- `HasAttrOnDatapoint("http.method", "GET")`
 
 ### OTTL Examples
 

@@ -59,8 +59,8 @@ var _ processor.Traces = (*serviceGraphProcessor)(nil)
 type serviceGraphProcessor struct {
 	config          *Config
 	logger          *zap.Logger
-	nextConsumer    consumer.Traces
-	metricsExporter consumer.Metrics
+	metricsConsumer consumer.Metrics
+	tracesConsumer  consumer.Traces
 
 	store *store.Store
 
@@ -74,12 +74,13 @@ type serviceGraphProcessor struct {
 	reqDurationBounds              []float64
 	reqDurationSecondsBucketCounts map[string][]uint64
 
+	metricMutex sync.RWMutex
 	keyToMetric map[string]metricSeries
 
 	shutdownCh chan interface{}
 }
 
-func newProcessor(logger *zap.Logger, config component.Config, nextConsumer consumer.Traces) *serviceGraphProcessor {
+func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProcessor {
 	pConfig := config.(*Config)
 
 	bounds := defaultLatencyHistogramBucketsMs
@@ -87,10 +88,9 @@ func newProcessor(logger *zap.Logger, config component.Config, nextConsumer cons
 		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
 	}
 
-	p := &serviceGraphProcessor{
+	return &serviceGraphProcessor{
 		config:                         pConfig,
 		logger:                         logger,
-		nextConsumer:                   nextConsumer,
 		startTime:                      time.Now(),
 		reqTotal:                       make(map[string]int64),
 		reqFailedTotal:                 make(map[string]int64),
@@ -101,27 +101,27 @@ func newProcessor(logger *zap.Logger, config component.Config, nextConsumer cons
 		keyToMetric:                    make(map[string]metricSeries),
 		shutdownCh:                     make(chan interface{}),
 	}
-
-	return p
 }
 
 func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
-	exporters := host.GetExporters()
+	if p.metricsConsumer == nil {
+		exporters := host.GetExporters()
 
-	// The available list of exporters come from any configured metrics pipelines' exporters.
-	for k, exp := range exporters[component.DataTypeMetrics] {
-		metricsExp, ok := exp.(exporter.Metrics)
-		if k.String() == p.config.MetricsExporter && ok {
-			p.metricsExporter = metricsExp
-			break
+		// The available list of exporters come from any configured metrics pipelines' exporters.
+		for k, exp := range exporters[component.DataTypeMetrics] {
+			metricsExp, ok := exp.(exporter.Metrics)
+			if k.String() == p.config.MetricsExporter && ok {
+				p.metricsConsumer = metricsExp
+				break
+			}
 		}
-	}
 
-	if p.metricsExporter == nil {
-		return fmt.Errorf("failed to find metrics exporter: %s",
-			p.config.MetricsExporter)
+		if p.metricsConsumer == nil {
+			return fmt.Errorf("failed to find metrics exporter: %s",
+				p.config.MetricsExporter)
+		}
 	}
 
 	// TODO: Consider making this configurable.
@@ -130,12 +130,20 @@ func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) er
 	// TODO: Consider making this configurable.
 	go p.storeExpirationLoop(2 * time.Second)
 
-	p.logger.Info("Started servicegraphprocessor")
+	if p.tracesConsumer == nil {
+		p.logger.Info("Started servicegraphconnector")
+	} else {
+		p.logger.Info("Started servicegraphprocessor")
+	}
 	return nil
 }
 
 func (p *serviceGraphProcessor) Shutdown(_ context.Context) error {
-	p.logger.Info("Shutting down servicegraphprocessor")
+	if p.tracesConsumer == nil {
+		p.logger.Info("Shutting down servicegraphconnector")
+	} else {
+		p.logger.Info("Shutting down servicegraphprocessor")
+	}
 	close(p.shutdownCh)
 	return nil
 }
@@ -159,12 +167,17 @@ func (p *serviceGraphProcessor) ConsumeTraces(ctx context.Context, td ptrace.Tra
 		return nil
 	}
 
+	// true when p is a connector
+	if p.tracesConsumer == nil {
+		return p.metricsConsumer.ConsumeMetrics(ctx, md)
+	}
+
 	// Firstly, export md to avoid being impacted by downstream trace serviceGraphProcessor errors/latency.
-	if err := p.metricsExporter.ConsumeMetrics(ctx, md); err != nil {
+	if err := p.metricsConsumer.ConsumeMetrics(ctx, md); err != nil {
 		return err
 	}
 
-	return p.nextConsumer.ConsumeTraces(ctx, td)
+	return p.tracesConsumer.ConsumeTraces(ctx, td)
 }
 
 func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err error) {
@@ -261,9 +274,6 @@ func (p *serviceGraphProcessor) upsertDimensions(kind string, m map[string]strin
 	for _, dim := range p.config.Dimensions {
 		if v, ok := findAttributeValue(dim, resourceAttr, spanAttr); ok {
 			m[kind+"_"+dim] = v
-
-			// next release will remove those dimensions
-			m[dim] = v
 		}
 	}
 }
@@ -308,6 +318,8 @@ func (p *serviceGraphProcessor) aggregateMetricsForEdge(e *store.Edge) {
 }
 
 func (p *serviceGraphProcessor) updateSeries(key string, dimensions pcommon.Map) {
+	p.metricMutex.Lock()
+	defer p.metricMutex.Unlock()
 	// Overwrite the series if it already exists
 	p.keyToMetric[key] = metricSeries{
 		dimensions:  dimensions,
@@ -316,6 +328,8 @@ func (p *serviceGraphProcessor) updateSeries(key string, dimensions pcommon.Map)
 }
 
 func (p *serviceGraphProcessor) dimensionsForSeries(key string) (pcommon.Map, bool) {
+	p.metricMutex.RLock()
+	defer p.metricMutex.RUnlock()
 	if series, ok := p.keyToMetric[key]; ok {
 		return series.dimensions, true
 	}
@@ -487,15 +501,29 @@ func (p *serviceGraphProcessor) cacheLoop(d time.Duration) {
 // cleanCache removes series that have not been updated in 15 minutes
 func (p *serviceGraphProcessor) cleanCache() {
 	var staleSeries []string
+	p.metricMutex.RLock()
 	for key, series := range p.keyToMetric {
 		if series.lastUpdated+15*time.Minute.Milliseconds() < time.Now().UnixMilli() {
 			staleSeries = append(staleSeries, key)
 		}
 	}
+	p.metricMutex.RUnlock()
 
+	p.metricMutex.Lock()
 	for _, key := range staleSeries {
 		delete(p.keyToMetric, key)
 	}
+	p.metricMutex.Unlock()
+
+	p.seriesMutex.Lock()
+	for _, key := range staleSeries {
+		delete(p.reqTotal, key)
+		delete(p.reqFailedTotal, key)
+		delete(p.reqDurationSecondsCount, key)
+		delete(p.reqDurationSecondsSum, key)
+		delete(p.reqDurationSecondsBucketCounts, key)
+	}
+	p.seriesMutex.Unlock()
 }
 
 // durationToMillis converts the given duration to the number of milliseconds it represents.

@@ -63,8 +63,6 @@ const (
 )
 
 var (
-	errEmptyEndpoint = errors.New("empty endpoint")
-
 	okRespBody               = initJSONResponse(responseOK)
 	invalidMethodRespBody    = initJSONResponse(responseInvalidMethod)
 	invalidContentRespBody   = initJSONResponse(responseInvalidContentType)
@@ -171,6 +169,9 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *sfxReceiver) Shutdown(context.Context) error {
+	if r.server == nil {
+		return nil
+	}
 	err := r.server.Close()
 	r.shutdownWG.Wait()
 	return err

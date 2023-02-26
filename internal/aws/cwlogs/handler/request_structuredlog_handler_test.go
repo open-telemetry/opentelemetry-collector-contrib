@@ -23,7 +23,7 @@ import (
 )
 
 func TestAddUserAgentCWAgent(t *testing.T) {
-	httpReq, _ := http.NewRequest("POST", "", nil)
+	httpReq, _ := http.NewRequest(http.MethodPost, "", nil)
 	r := &request.Request{
 		HTTPRequest: httpReq,
 		Body:        nil,

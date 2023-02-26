@@ -148,5 +148,8 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 // Shutdown stops the underlying Prometheus receiver.
 func (prw *prometheusReceiverWrapper) Shutdown(ctx context.Context) error {
+	if prw.prometheusRecever == nil {
+		return nil
+	}
 	return prw.prometheusRecever.Shutdown(ctx)
 }

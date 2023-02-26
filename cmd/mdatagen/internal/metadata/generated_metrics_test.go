@@ -81,7 +81,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOptionalMetricDataPoint(ts, 1, "attr-val", true)
 
-			metrics := mb.Emit(WithStringEnumResourceAttrOne, WithStringResourceAttr("attr-val"))
+			metrics := mb.Emit(WithOptionalResourceAttr("attr-val"), WithStringEnumResourceAttrOne, WithStringResourceAttr("attr-val"))
 
 			if test.metricsSet == testMetricsSetNo {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -91,15 +91,30 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
+			enabledAttrCount := 0
+			attrVal, ok := rm.Resource().Attributes().Get("optional.resource.attr")
 			attrCount++
-			attrVal, ok := rm.Resource().Attributes().Get("string.enum.resource.attr")
-			assert.True(t, ok)
-			assert.Equal(t, "one", attrVal.Str())
+			assert.Equal(t, mb.resourceAttributesSettings.OptionalResourceAttr.Enabled, ok)
+			if mb.resourceAttributesSettings.OptionalResourceAttr.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			attrVal, ok = rm.Resource().Attributes().Get("string.enum.resource.attr")
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.StringEnumResourceAttr.Enabled, ok)
+			if mb.resourceAttributesSettings.StringEnumResourceAttr.Enabled {
+				enabledAttrCount++
+				assert.Equal(t, "one", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("string.resource.attr")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.StringResourceAttr.Enabled, ok)
+			if mb.resourceAttributesSettings.StringResourceAttr.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
+			assert.Equal(t, attrCount, 3)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()

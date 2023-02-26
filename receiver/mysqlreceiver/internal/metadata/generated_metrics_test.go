@@ -85,9 +85,8 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirection(1))
 
-			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
+			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommand(1))
 
 			allMetricsCount++
 			mb.RecordMysqlConnectionCountDataPoint(ts, "1")
@@ -223,11 +222,16 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
-			attrCount++
+			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("mysql.instance.endpoint")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MysqlInstanceEndpoint.Enabled, ok)
+			if mb.resourceAttributesSettings.MysqlInstanceEndpoint.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
+			assert.Equal(t, attrCount, 1)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
@@ -369,7 +373,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("command")
 					assert.True(t, ok)
-					assert.Equal(t, "execute", attrVal.Str())
+					assert.Equal(t, "delete", attrVal.Str())
 				case "mysql.connection.count":
 					assert.False(t, validatedMetrics["mysql.connection.count"], "Found a duplicate in the metrics slice: mysql.connection.count")
 					validatedMetrics["mysql.connection.count"] = true

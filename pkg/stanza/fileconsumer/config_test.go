@@ -352,6 +352,14 @@ func TestUnmarshal(t *testing.T) {
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
+			{
+				Name: "max_batches_1",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.MaxBatches = 1
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
 		},
 	}.Run(t)
 }
@@ -482,6 +490,33 @@ func TestBuild(t *testing.T) {
 			},
 			require.Error,
 			nil,
+		},
+		{
+			"InvalidStartAtDelete",
+			func(f *Config) {
+				f.StartAt = "end"
+				f.DeleteAfterRead = true
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"InvalidMaxBatches",
+			func(f *Config) {
+				f.MaxBatches = -1
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"ValidMaxBatches",
+			func(f *Config) {
+				f.MaxBatches = 6
+			},
+			require.NoError,
+			func(t *testing.T, m *Manager) {
+				require.Equal(t, 6, m.maxBatches)
+			},
 		},
 	}
 

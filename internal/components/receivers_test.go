@@ -35,10 +35,12 @@ import (
 
 	tcpop "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -95,6 +97,16 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires AWS endpoint to check identity to run
 		},
 		{
+			receiver: "azureblob",
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["azureblob"].CreateDefaultConfig().(*azureblobreceiver.Config)
+				cfg.ConnectionString = "DefaultEndpointsProtocol=http;AccountName=accountName;AccountKey=accountKey==;BlobEndpoint=test"
+				cfg.EventHub.EndPoint = "DefaultEndpointsProtocol=http;SharedAccessKeyName=secret;SharedAccessKey=secret;Endpoint=test.test"
+				return cfg
+			},
+			skipLifecyle: true, // Requires Azure event hub to run
+		},
+		{
 			receiver: "azureeventhub",
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["azureeventhub"].CreateDefaultConfig().(*azureeventhubreceiver.Config)
@@ -134,6 +146,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "couchdb",
 		},
 		{
+			receiver: "datadog",
+		},
+		{
 			receiver:     "docker_stats",
 			skipLifecyle: true,
 		},
@@ -169,6 +184,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires a pubsub subscription
 		},
 		{
+			receiver: "haproxy",
+		},
+		{
 			receiver: "hostmetrics",
 		},
 		{
@@ -187,6 +205,12 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "jmx",
 			skipLifecyle: true, // Requires a running instance with JMX
+			getConfigFn: func() component.Config {
+				cfg := jmxreceiver.NewFactory().CreateDefaultConfig().(*jmxreceiver.Config)
+				cfg.Endpoint = "localhost:1234"
+				cfg.TargetSystem = "jvm"
+				return cfg
+			},
 		},
 		{
 			receiver:     "journald",
@@ -279,35 +303,6 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver:     "prometheus_exec",
 			skipLifecyle: true, // Requires running a subproccess that can not be easily set across platforms
 		},
-		// {
-		// 	receiver: "promtail",
-		// 	getConfigFn: func() component.Config {
-		// 		cfg := rcvrFactories["promtail"].CreateDefaultConfig().(*promtailreceiver.PromtailConfig)
-		// 		cfg.InputConfig = *promtailreceiver.NewConfigWithID("testconfig")
-		// 		cfg.InputConfig.Input = promtailreceiver.PromtailInputConfig{
-		// 			ScrapeConfig: []scrapeconfig.Config{
-		// 				{
-		// 					JobName:        "test",
-		// 					PipelineStages: []interface{}{},
-		// 					ServiceDiscoveryConfig: scrapeconfig.ServiceDiscoveryConfig{
-		// 						StaticConfigs: discovery.StaticConfig{
-		// 							{
-		// 								Labels: model.LabelSet{
-		// 									"job": "varlogs",
-		// 								},
-		// 								Targets: []model.LabelSet{},
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 			TargetConfig: file.Config{
-		// 				SyncPeriod: 10 * time.Second,
-		// 			},
-		// 		}
-		// 		return cfg
-		// 	},
-		// },
 		{
 			receiver:     "pulsar",
 			skipLifecyle: true, // TODO It requires a running pulsar instance to start successfully.
@@ -317,6 +312,9 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "purefa",
+		},
+		{
+			receiver: "purefb",
 		},
 		{
 			receiver: "receiver_creator",
@@ -368,6 +366,10 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver:     "sqlserver",
 			skipLifecyle: true, // Requires a running windows process
 		},
+		{
+			receiver: "sshcheck",
+		},
+
 		{
 			receiver: "statsd",
 		},
@@ -431,12 +433,11 @@ func TestDefaultReceivers(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, tt.receiver, factory.Type())
 
-			if tt.skipLifecyle {
-				t.Skip("Skipping lifecycle test", tt.receiver)
-				return
-			}
+			verifyReceiverShutdown(t, factory, tt.getConfigFn)
 
-			verifyReceiverLifecycle(t, factory, tt.getConfigFn)
+			if !tt.skipLifecyle {
+				verifyReceiverLifecycle(t, factory, tt.getConfigFn)
+			}
 		})
 	}
 }
@@ -477,6 +478,35 @@ func verifyReceiverLifecycle(t *testing.T, factory receiver.Factory, getConfigFn
 		require.NoError(t, err)
 		require.NoError(t, secondRcvr.Start(ctx, host))
 		require.NoError(t, secondRcvr.Shutdown(ctx))
+	}
+}
+
+// verifyReceiverShutdown is used to test if a receiver type can be shutdown without being started first.
+func verifyReceiverShutdown(tb testing.TB, factory receiver.Factory, getConfigFn getReceiverConfigFn) {
+	ctx := context.Background()
+	receiverCreateSet := receivertest.NewNopCreateSettings()
+
+	if getConfigFn == nil {
+		getConfigFn = factory.CreateDefaultConfig
+	}
+
+	createFns := []createReceiverFn{
+		wrapCreateLogsRcvr(factory),
+		wrapCreateTracesRcvr(factory),
+		wrapCreateMetricsRcvr(factory),
+	}
+
+	for _, createFn := range createFns {
+		r, err := createFn(ctx, receiverCreateSet, getConfigFn())
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			continue
+		}
+		if r == nil {
+			continue
+		}
+		assert.NotPanics(tb, func() {
+			assert.NoError(tb, r.Shutdown(ctx))
+		})
 	}
 }
 

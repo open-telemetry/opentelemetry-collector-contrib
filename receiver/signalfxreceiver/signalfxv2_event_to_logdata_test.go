@@ -24,6 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestSignalFxV2EventsToLogData(t *testing.T) {
@@ -49,9 +51,9 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		}
 	}
 
-	buildDefaultLogs := func() plog.LogRecordSlice {
-		logSlice := plog.NewLogRecordSlice()
-		l := logSlice.AppendEmpty()
+	buildDefaultLogs := func() plog.ScopeLogs {
+		sl := plog.NewScopeLogs()
+		l := sl.LogRecords().AppendEmpty()
 		l.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
 		attrs.PutStr("com.splunk.signalfx.event_type", "shutdown")
@@ -66,16 +68,14 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		propMap.PutInt("rack", 5)
 		propMap.PutDouble("temp", 40.5)
 		propMap.PutEmpty("nullProp")
-		propMap.Sort()
 
-		l.Attributes().Sort()
-		return logSlice
+		return sl
 	}
 
 	tests := []struct {
 		name      string
 		sfxEvents []*sfxpb.Event
-		expected  plog.LogRecordSlice
+		expected  plog.ScopeLogs
 	}{
 		{
 			name:      "default",
@@ -89,9 +89,9 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 				e.Category = nil
 				return []*sfxpb.Event{e}
 			}(),
-			expected: func() plog.LogRecordSlice {
+			expected: func() plog.ScopeLogs {
 				lrs := buildDefaultLogs()
-				lrs.At(0).Attributes().PutEmpty("com.splunk.signalfx.event_category")
+				lrs.LogRecords().At(0).Attributes().PutEmpty("com.splunk.signalfx.event_category")
 				return lrs
 			}(),
 		},
@@ -99,12 +99,9 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			lrs := plog.NewLogRecordSlice()
-			signalFxV2EventsToLogRecords(tt.sfxEvents, lrs)
-			for i := 0; i < lrs.Len(); i++ {
-				lrs.At(i).Attributes().Sort()
-			}
-			assert.Equal(t, tt.expected, lrs)
+			sl := plog.NewScopeLogs()
+			signalFxV2EventsToLogRecords(tt.sfxEvents, sl.LogRecords())
+			assert.NoError(t, plogtest.CompareScopeLogs(tt.expected, sl))
 		})
 	}
 }

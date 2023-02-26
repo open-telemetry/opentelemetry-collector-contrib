@@ -56,7 +56,7 @@ func ReplaceAllPatterns[K any](target ottl.GetSetter[K], mode string, regexPatte
 			switch mode {
 			case modeValue:
 				if compiledPattern.MatchString(originalValue.Str()) {
-					updatedString := compiledPattern.ReplaceAllLiteralString(originalValue.Str(), replacement)
+					updatedString := compiledPattern.ReplaceAllString(originalValue.Str(), replacement)
 					updated.PutStr(key, updatedString)
 				} else {
 					updated.PutStr(key, originalValue.Str())

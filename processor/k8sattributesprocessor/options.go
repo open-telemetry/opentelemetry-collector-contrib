@@ -40,6 +40,7 @@ const (
 	metadataNode       = "node"
 	// Will be removed when new fields get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go
 	metadataPodStartTime = "k8s.pod.start_time"
+	specPodHostName      = "k8s.pod.hostname"
 	// This one was deprecated, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9886
 	deprecatedMetadataCluster = "cluster"
 )
@@ -94,6 +95,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.PodName = true
 			case metadataPodUID, conventions.AttributeK8SPodUID:
 				p.rules.PodUID = true
+			case specPodHostName:
+				p.rules.PodHostName = true
 			case metadataStartTime, metadataPodStartTime:
 				p.rules.StartTime = true
 			case metadataDeployment, conventions.AttributeK8SDeploymentName:

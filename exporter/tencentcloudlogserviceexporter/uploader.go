@@ -41,7 +41,7 @@ type logServiceClientImpl struct {
 
 // newLogServiceClient Create Log Service client
 func newLogServiceClient(config *Config, logger *zap.Logger) logServiceClient {
-	credential := common.NewCredential(config.SecretID, config.SecretKey)
+	credential := common.NewCredential(config.SecretID, string(config.SecretKey))
 
 	c := &logServiceClientImpl{
 		clientInstance: common.NewCommonClient(credential, config.Region, profile.NewClientProfile()),

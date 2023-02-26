@@ -27,8 +27,10 @@ import (
 	"time"
 
 	"github.com/influxdata/influxdb-observability/common"
+	"github.com/influxdata/influxdb-observability/otel2influx"
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
@@ -36,51 +38,16 @@ import (
 type influxHTTPWriter struct {
 	encoderPool sync.Pool
 	httpClient  *http.Client
-	writeURL    string
+
+	httpClientSettings confighttp.HTTPClientSettings
+	telemetrySettings  component.TelemetrySettings
+	writeURL           string
 
 	logger common.Logger
 }
 
-func newInfluxHTTPWriter(logger common.Logger, config *Config, host component.Host, settings component.TelemetrySettings) (*influxHTTPWriter, error) {
-	writeURL, err := url.Parse(config.HTTPClientSettings.Endpoint)
-	if err != nil {
-		return nil, err
-	}
-	if writeURL.Path == "" || writeURL.Path == "/" {
-		if config.V1Compatibility.Enabled {
-			writeURL, err = writeURL.Parse("write")
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			writeURL, err = writeURL.Parse("api/v2/write")
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	queryValues := writeURL.Query()
-	queryValues.Set("precision", "ns")
-
-	if config.V1Compatibility.Enabled {
-		queryValues.Set("db", config.V1Compatibility.DB)
-
-		if config.V1Compatibility.Username != "" && config.V1Compatibility.Password != "" {
-			var basicAuth []byte
-			base64.StdEncoding.Encode(basicAuth, []byte(config.V1Compatibility.Username+":"+config.V1Compatibility.Password))
-			config.HTTPClientSettings.Headers["Authorization"] = configopaque.String("Basic " + string(basicAuth))
-		}
-	} else {
-		queryValues.Set("org", config.Org)
-		queryValues.Set("bucket", config.Bucket)
-
-		if config.Token != "" {
-			config.HTTPClientSettings.Headers["Authorization"] = configopaque.String("Token " + config.Token)
-		}
-	}
-
-	writeURL.RawQuery = queryValues.Encode()
-	httpClient, err := config.HTTPClientSettings.ToClient(host, settings)
+func newInfluxHTTPWriter(logger common.Logger, config *Config, telemetrySettings component.TelemetrySettings) (*influxHTTPWriter, error) {
+	writeURL, err := composeWriteURL(config)
 	if err != nil {
 		return nil, err
 	}
@@ -94,24 +61,79 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, host component.Ho
 				return e
 			},
 		},
-		httpClient: httpClient,
-		writeURL:   writeURL.String(),
-		logger:     logger,
+		httpClientSettings: config.HTTPClientSettings,
+		telemetrySettings:  telemetrySettings,
+		writeURL:           writeURL,
+		logger:             logger,
 	}, nil
 }
 
-func (w *influxHTTPWriter) newBatch() *influxHTTPWriterBatch {
-	return &influxHTTPWriterBatch{
-		w:       w,
-		encoder: w.encoderPool.Get().(*lineprotocol.Encoder),
-		logger:  w.logger,
+func composeWriteURL(config *Config) (string, error) {
+	writeURL, err := url.Parse(config.HTTPClientSettings.Endpoint)
+	if err != nil {
+		return "", err
 	}
+	if writeURL.Path == "" || writeURL.Path == "/" {
+		if config.V1Compatibility.Enabled {
+			writeURL, err = writeURL.Parse("write")
+			if err != nil {
+				return "", err
+			}
+		} else {
+			writeURL, err = writeURL.Parse("api/v2/write")
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+	queryValues := writeURL.Query()
+	queryValues.Set("precision", "ns")
+
+	if config.V1Compatibility.Enabled {
+		queryValues.Set("db", config.V1Compatibility.DB)
+
+		if config.V1Compatibility.Username != "" && config.V1Compatibility.Password != "" {
+			var basicAuth []byte
+			base64.StdEncoding.Encode(basicAuth, []byte(config.V1Compatibility.Username+":"+string(config.V1Compatibility.Password)))
+			config.HTTPClientSettings.Headers["Authorization"] = configopaque.String("Basic " + string(basicAuth))
+		}
+	} else {
+		queryValues.Set("org", config.Org)
+		queryValues.Set("bucket", config.Bucket)
+
+		if config.Token != "" {
+			config.HTTPClientSettings.Headers["Authorization"] = "Token " + config.Token
+		}
+	}
+
+	writeURL.RawQuery = queryValues.Encode()
+
+	return writeURL.String(), nil
+}
+
+func (w *influxHTTPWriter) Start(_ context.Context, host component.Host) error {
+	httpClient, err := w.httpClientSettings.ToClient(host, w.telemetrySettings)
+	if err != nil {
+		return err
+	}
+	w.httpClient = httpClient
+	return nil
+}
+
+func (w *influxHTTPWriter) NewBatch() otel2influx.InfluxWriterBatch {
+	return newInfluxHTTPWriterBatch(w)
 }
 
 type influxHTTPWriterBatch struct {
-	w       *influxHTTPWriter
+	*influxHTTPWriter
 	encoder *lineprotocol.Encoder
-	logger  common.Logger
+}
+
+func newInfluxHTTPWriterBatch(w *influxHTTPWriter) *influxHTTPWriterBatch {
+	return &influxHTTPWriterBatch{
+		influxHTTPWriter: w,
+		encoder:          w.encoderPool.Get().(*lineprotocol.Encoder),
+	}
 }
 
 // WritePoint emits a set of line protocol attributes (metrics, tags, fields, timestamp)
@@ -127,20 +149,28 @@ func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string
 	b.encoder.EndLine(ts)
 
 	if err := b.encoder.Err(); err != nil {
-		defer b.encoder.ClearErr()
+		b.encoder.Reset()
+		b.encoder.ClearErr()
 		return consumererror.NewPermanent(fmt.Errorf("failed to encode point: %w", err))
 	}
 
 	return nil
 }
 
-func (b *influxHTTPWriterBatch) flushAndClose(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, b.w.writeURL, bytes.NewReader(b.encoder.Bytes()))
+func (b *influxHTTPWriterBatch) FlushBatch(ctx context.Context) error {
+	defer func() {
+		b.encoder.Reset()
+		b.encoder.ClearErr()
+		b.encoderPool.Put(b.encoder)
+		b.encoder = nil
+	}()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, b.writeURL, bytes.NewReader(b.encoder.Bytes()))
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
 
-	if res, err := b.w.httpClient.Do(req); err != nil {
+	if res, err := b.httpClient.Do(req); err != nil {
 		return err
 	} else if body, err := io.ReadAll(res.Body); err != nil {
 		return err
@@ -157,13 +187,6 @@ func (b *influxHTTPWriterBatch) flushAndClose(ctx context.Context) error {
 		}
 	}
 
-	b.encoder.Reset()
-	b.w.encoderPool.Put(b.encoder)
-
-	// Caller has a reference to this batch; don't let the caller keep references to its members.
-	b.encoder = nil
-	b.logger = nil
-	b.w = nil
 	return nil
 }
 

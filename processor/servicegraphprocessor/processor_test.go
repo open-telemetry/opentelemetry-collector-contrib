@@ -16,6 +16,7 @@ package servicegraphprocessor
 
 import (
 	"context"
+	"math/rand"
 	"testing"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -82,6 +84,23 @@ func TestProcessorStart(t *testing.T) {
 	}
 }
 
+func TestConnectorStart(t *testing.T) {
+	// Create servicegraph processor
+	factory := NewConnectorFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	procCreationParams := connectortest.NewNopCreateSettings()
+	traceProcessor, err := factory.CreateTracesToMetrics(context.Background(), procCreationParams, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// Test
+	smp := traceProcessor.(*serviceGraphProcessor)
+	err = smp.Start(context.Background(), componenttest.NewNopHost())
+
+	// Verify
+	assert.NoError(t, err)
+}
+
 func TestProcessorShutdown(t *testing.T) {
 	// Prepare
 	factory := NewFactory()
@@ -89,7 +108,23 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p := newProcessor(zaptest.NewLogger(t), cfg, next)
+	p := newProcessor(zaptest.NewLogger(t), cfg)
+	p.tracesConsumer = next
+	err := p.Shutdown(context.Background())
+
+	// Verify
+	assert.NoError(t, err)
+}
+
+func TestConnectorShutdown(t *testing.T) {
+	// Prepare
+	factory := NewConnectorFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	// Test
+	next := new(consumertest.MetricsSink)
+	p := newProcessor(zaptest.NewLogger(t), cfg)
+	p.metricsConsumer = next
 	err := p.Shutdown(context.Background())
 
 	// Verify
@@ -107,7 +142,8 @@ func TestProcessorConsume(t *testing.T) {
 		return verifyMetrics(t, md)
 	})
 
-	processor := newProcessor(zaptest.NewLogger(t), cfg, consumertest.NewNop())
+	processor := newProcessor(zaptest.NewLogger(t), cfg)
+	processor.tracesConsumer = consumertest.NewNop()
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
@@ -118,12 +154,34 @@ func TestProcessorConsume(t *testing.T) {
 	assert.NoError(t, processor.Start(context.Background(), mHost))
 
 	// Test & verify
-	td := sampleTraces()
+	td := buildSampleTrace("val")
 	// The assertion is part of verifyMetrics func.
 	assert.NoError(t, processor.ConsumeTraces(context.Background(), td))
 
 	// Shutdown the processor
 	assert.NoError(t, processor.Shutdown(context.Background()))
+}
+
+func TestConnectorConsume(t *testing.T) {
+	// Prepare
+	cfg := &Config{
+		Dimensions: []string{"some-attribute", "non-existing-attribute"},
+	}
+
+	conn := newProcessor(zaptest.NewLogger(t), cfg)
+	conn.metricsConsumer = newMockMetricsExporter(func(md pmetric.Metrics) error {
+		return verifyMetrics(t, md)
+	})
+
+	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Test & verify
+	td := buildSampleTrace("val")
+	// The assertion is part of verifyMetrics func.
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+
+	// Shutdown the conn
+	assert.NoError(t, conn.Shutdown(context.Background()))
 }
 
 func verifyMetrics(t *testing.T, md pmetric.Metrics) error {
@@ -192,7 +250,7 @@ func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
 	assert.Equal(t, expected, v.AsString())
 }
 
-func sampleTraces() ptrace.Traces {
+func buildSampleTrace(attrValue string) ptrace.Traces {
 	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
 	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
 
@@ -203,8 +261,12 @@ func sampleTraces() ptrace.Traces {
 
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
-	traceID := pcommon.TraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-	clientSpanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	var traceID pcommon.TraceID
+	rand.Read(traceID[:])
+
+	var clientSpanID, serverSpanID pcommon.SpanID
+	rand.Read(clientSpanID[:])
+	rand.Read(serverSpanID[:])
 
 	clientSpan := scopeSpans.Spans().AppendEmpty()
 	clientSpan.SetName("client span")
@@ -213,11 +275,11 @@ func sampleTraces() ptrace.Traces {
 	clientSpan.SetKind(ptrace.SpanKindClient)
 	clientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	clientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	clientSpan.Attributes().PutStr("some-attribute", "val") // Attribute selected as dimension for metrics
+	clientSpan.Attributes().PutStr("some-attribute", attrValue) // Attribute selected as dimension for metrics
 
 	serverSpan := scopeSpans.Spans().AppendEmpty()
 	serverSpan.SetName("server span")
-	serverSpan.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
+	serverSpan.SetSpanID(serverSpanID)
 	serverSpan.SetTraceID(traceID)
 	serverSpan.SetParentSpanID(clientSpanID)
 	serverSpan.SetKind(ptrace.SpanKindServer)
@@ -317,4 +379,48 @@ func TestUpdateDurationMetrics(t *testing.T) {
 			p.updateDurationMetrics(metricKey, tc.duration)
 		})
 	}
+}
+
+func TestStaleSeriesCleanup(t *testing.T) {
+	// Prepare
+	cfg := &Config{
+		MetricsExporter: "mock",
+		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+		Store: StoreConfig{
+			MaxItems: 10,
+			TTL:      time.Second,
+		},
+	}
+
+	mockMetricsExporter := newMockMetricsExporter(func(md pmetric.Metrics) error { return nil })
+
+	p := newProcessor(zaptest.NewLogger(t), cfg)
+	p.tracesConsumer = consumertest.NewNop()
+
+	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("mock"): mockMetricsExporter,
+		},
+	})
+
+	assert.NoError(t, p.Start(context.Background(), mHost))
+
+	// ConsumeTraces
+	td := buildSampleTrace("first")
+	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
+
+	// Make series stale and force a cache cleanup
+	for key, metric := range p.keyToMetric {
+		metric.lastUpdated = 0
+		p.keyToMetric[key] = metric
+	}
+	p.cleanCache()
+	assert.Equal(t, 0, len(p.keyToMetric))
+
+	// ConsumeTraces with a trace with different attribute value
+	td = buildSampleTrace("second")
+	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
+
+	// Shutdown the processor
+	assert.NoError(t, p.Shutdown(context.Background()))
 }

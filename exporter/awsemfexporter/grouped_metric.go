@@ -39,68 +39,70 @@ type metricInfo struct {
 
 // addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
 func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, patternReplaceSucceeded bool, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
-	metricName := pmd.Name()
+
 	dps := getDataPoints(pmd, metadata, logger)
 	if dps == nil || dps.Len() == 0 {
 		return nil
 	}
 
 	for i := 0; i < dps.Len(); i++ {
-		dp, retained := dps.At(i)
+		dps, retained := dps.CalculateDeltaDatapoints(i, metadata.instrumentationScopeName, config.DetailedMetrics)
 		if !retained {
 			continue
 		}
 
-		labels := dp.labels
+		for _, dp := range dps {
+			labels := dp.labels
 
-		if metricType, ok := labels["Type"]; ok {
-			if (metricType == "Pod" || metricType == "Container") && config.EKSFargateContainerInsightsEnabled {
-				addKubernetesWrapper(labels)
+			if metricType, ok := labels["Type"]; ok {
+				if (metricType == "Pod" || metricType == "Container") && config.EKSFargateContainerInsightsEnabled {
+					addKubernetesWrapper(labels)
+				}
 			}
-		}
 
-		// if patterns were found in config file and weren't replaced by resource attributes, replace those patterns with metric labels.
-		// if patterns are provided for a valid key and that key doesn't exist in the resource attributes, it is replaced with `undefined`.
-		if !patternReplaceSucceeded {
-			if strings.Contains(metadata.logGroup, "undefined") {
-				metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, config.logger)
+			// if patterns were found in config file and weren't replaced by resource attributes, replace those patterns with metric labels.
+			// if patterns are provided for a valid key and that key doesn't exist in the resource attributes, it is replaced with `undefined`.
+			if !patternReplaceSucceeded {
+				if strings.Contains(metadata.logGroup, "undefined") {
+					metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, config.logger)
+				}
+				if strings.Contains(metadata.logStream, "undefined") {
+					metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, config.logger)
+				}
 			}
-			if strings.Contains(metadata.logStream, "undefined") {
-				metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, config.logger)
+
+			metric := &metricInfo{
+				value: dp.value,
+				unit:  translateUnit(pmd, descriptor),
 			}
-		}
 
-		metric := &metricInfo{
-			value: dp.value,
-			unit:  translateUnit(pmd, descriptor),
-		}
+			if dp.timestampMs > 0 {
+				metadata.timestampMs = dp.timestampMs
+			}
 
-		if dp.timestampMs > 0 {
-			metadata.timestampMs = dp.timestampMs
-		}
-
-		// Extra params to use when grouping metrics
-		groupKey := groupedMetricKey(metadata.groupedMetricMetadata, labels)
-		if _, ok := groupedMetrics[groupKey]; ok {
-			// if MetricName already exists in metrics map, print warning log
-			if _, ok := groupedMetrics[groupKey].metrics[metricName]; ok {
-				logger.Warn(
-					"Duplicate metric found",
-					zap.String("Name", metricName),
-					zap.Any("Labels", labels),
-				)
+			// Extra params to use when grouping metrics
+			groupKey := aws.NewKey(metadata.groupedMetricMetadata, labels)
+			if _, ok := groupedMetrics[groupKey]; ok {
+				// if MetricName already exists in metrics map, print warning log
+				if _, ok := groupedMetrics[groupKey].metrics[dp.name]; ok {
+					logger.Warn(
+						"Duplicate metric found",
+						zap.String("Name", dp.name),
+						zap.Any("Labels", labels),
+					)
+				} else {
+					groupedMetrics[groupKey].metrics[dp.name] = metric
+				}
 			} else {
-				groupedMetrics[groupKey].metrics[metricName] = metric
-			}
-		} else {
-			groupedMetrics[groupKey] = &groupedMetric{
-				labels:   labels,
-				metrics:  map[string]*metricInfo{(metricName): metric},
-				metadata: metadata,
+				groupedMetrics[groupKey] = &groupedMetric{
+					labels:   labels,
+					metrics:  map[string]*metricInfo{(dp.name): metric},
+					metadata: metadata,
+				}
 			}
 		}
-	}
 
+	}
 	return nil
 }
 
@@ -176,10 +178,6 @@ func mapGetHelper(labels map[string]string, key string) string {
 	}
 
 	return ""
-}
-
-func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) aws.Key {
-	return aws.NewKey(metadata, labels)
 }
 
 func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor) string {

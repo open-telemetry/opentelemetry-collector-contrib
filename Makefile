@@ -3,6 +3,8 @@ include ./Makefile.Common
 RUN_CONFIG?=local/config.yaml
 CMD?=
 OTEL_VERSION=main
+OTEL_RC_VERSION=main
+OTEL_STABLE_VERSION=main
 
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
@@ -102,13 +104,9 @@ gofmt:
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
-.PHONY: goimpi
-goimpi: install-tools
-	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="impi"
-
 .PHONY: goporto
-goporto: install-tools
-	porto -w --include-internal --skip-dirs "^cmd$$" ./
+goporto: $(PORTO)
+	$(PORTO) -w --include-internal --skip-dirs "^cmd$$" ./
 
 .PHONY: for-all
 for-all:
@@ -124,9 +122,9 @@ COMMIT?=HEAD
 MODSET?=contrib-core
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
 .PHONY: push-tags
-push-tags:
-	multimod verify
-	set -e; for tag in `multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+push-tags: $(MULITMOD) 
+	$(MULITMOD) verify
+	set -e; for tag in `$(MULITMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
 		echo "pushing tag $${tag}"; \
 		git push ${REMOTE} $${tag}; \
 	done;
@@ -201,22 +199,6 @@ for-other-target: $(OTHER_MODS)
 all-pwd:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="pwd"
 
-TOOLS_MOD_DIR := ./internal/tools
-.PHONY: install-tools
-install-tools:
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/client9/misspell/cmd/misspell
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/google/addlicense
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jstemmer/go-junit-report
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/pavius/impi/cmd/impi
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/checkdoc
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/issuegenerator
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/tools/cmd/goimports
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/multimod
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jcchavezs/porto/cmd/porto
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/crosslink
-
 .PHONY: run
 run:
 	cd ./cmd/otelcontribcol && GO111MODULE=on $(GOCMD) run --race . --config ../../${RUN_CONFIG} ${RUN_ARGS}
@@ -238,6 +220,10 @@ endif
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
 
+.PHONY: docker-telemetrygen
+docker-telemetrygen:
+	COMPONENT=telemetrygen $(MAKE) docker-component
+
 .PHONY: generate
 generate:
 	cd cmd/mdatagen && $(GOCMD) install .
@@ -247,27 +233,29 @@ generate:
 mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) install .
 	cd cmd/mdatagen && $(GOCMD) generate ./...
-
-.PHONY: chlog-install
-chlog-install:
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/chloggen
+	cd cmd/mdatagen && $(GOCMD) test ./...
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
-chlog-new: chlog-install
-	chloggen new --filename $(FILENAME)
+chlog-new: $(CHLOGGEN)
+	$(CHLOGGEN) new --filename $(FILENAME)
 
 .PHONY: chlog-validate
-chlog-validate: chlog-install
-	chloggen validate
+chlog-validate: $(CHLOGGEN)
+	$(CHLOGGEN) validate
 
 .PHONY: chlog-preview
-chlog-preview: chlog-install
-	chloggen update --dry
+chlog-preview: $(CHLOGGEN)
+	$(CHLOGGEN) update --dry
 
 .PHONY: chlog-update
-chlog-update: chlog-install
-	chloggen update --version $(VERSION)
+chlog-update: $(CHLOGGEN)
+	$(CHLOGGEN) update --version $(VERSION)
+
+.PHONY: genotelcontribcol
+genotelcontribcol: $(BUILDER)
+	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
+	$(MAKE) -C cmd/otelcontribcol fmt
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -275,10 +263,21 @@ otelcontribcol:
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
 
+.PHONY: genoteltestbedcol
+genoteltestbedcol: $(BUILDER)
+	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml --output-path cmd/oteltestbedcol
+	$(MAKE) -C cmd/oteltestbedcol fmt
+
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
 oteltestbedcol:
 	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
+
+# Build the telemetrygen executable.
+.PHONY: telemetrygen
+telemetrygen:
+	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
 
 .PHONY: update-dep
@@ -321,8 +320,8 @@ build-examples:
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
-checkdoc:
-	checkdoc --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
+checkdoc: $(CHECKDOC)
+	$(CHECKDOC) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
 
 .PHONY: all-checklinks
 all-checklinks:
@@ -349,24 +348,24 @@ certs:
 	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
 
 .PHONY: multimod-verify
-multimod-verify: install-tools
+multimod-verify: $(MULITMOD)
 	@echo "Validating versions.yaml"
-	multimod verify
+	$(MULITMOD) verify
 
 .PHONY: multimod-prerelease
-multimod-prerelease: install-tools
-	multimod prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
+multimod-prerelease: $(MULITMOD)
+	$(MULITMOD) prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
 	$(MAKE) gotidy
 
 .PHONY: multimod-sync
-multimod-sync: install-tools
-	multimod sync -a=true -s=true -o ../opentelemetry-collector
+multimod-sync: $(MULITMOD)
+	$(MULITMOD) sync -a=true -s=true -o ../opentelemetry-collector
 	$(MAKE) gotidy
 
 .PHONY: crosslink
-crosslink: install-tools
+crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
-	crosslink --root=$(shell pwd)
+	$(CROSSLINK) --root=$(shell pwd) --prune
 
 .PHONY: clean
 clean:

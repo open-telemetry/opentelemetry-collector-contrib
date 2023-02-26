@@ -1,0 +1,22 @@
+{
+  "resourceMetrics": [
+    {
+      "scopeMetrics": [
+        {
+          "metrics": [
+            {
+              "name": "exponential_histogram.one",
+              "exponentialHistogram": {
+                "dataPoints": [
+                  {
+                    "count": 654
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

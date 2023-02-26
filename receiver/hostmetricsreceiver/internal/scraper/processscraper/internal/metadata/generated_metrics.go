@@ -39,11 +39,9 @@ type MetricsSettings struct {
 	ProcessCPUUtilization      MetricSettings `mapstructure:"process.cpu.utilization"`
 	ProcessDiskIo              MetricSettings `mapstructure:"process.disk.io"`
 	ProcessDiskOperations      MetricSettings `mapstructure:"process.disk.operations"`
-	ProcessMemoryPhysicalUsage MetricSettings `mapstructure:"process.memory.physical_usage"`
 	ProcessMemoryUsage         MetricSettings `mapstructure:"process.memory.usage"`
 	ProcessMemoryUtilization   MetricSettings `mapstructure:"process.memory.utilization"`
 	ProcessMemoryVirtual       MetricSettings `mapstructure:"process.memory.virtual"`
-	ProcessMemoryVirtualUsage  MetricSettings `mapstructure:"process.memory.virtual_usage"`
 	ProcessOpenFileDescriptors MetricSettings `mapstructure:"process.open_file_descriptors"`
 	ProcessPagingFaults        MetricSettings `mapstructure:"process.paging.faults"`
 	ProcessSignalsPending      MetricSettings `mapstructure:"process.signals_pending"`
@@ -67,19 +65,13 @@ func DefaultMetricsSettings() MetricsSettings {
 		ProcessDiskOperations: MetricSettings{
 			Enabled: false,
 		},
-		ProcessMemoryPhysicalUsage: MetricSettings{
-			Enabled: true,
-		},
 		ProcessMemoryUsage: MetricSettings{
-			Enabled: false,
+			Enabled: true,
 		},
 		ProcessMemoryUtilization: MetricSettings{
 			Enabled: false,
 		},
 		ProcessMemoryVirtual: MetricSettings{
-			Enabled: false,
-		},
-		ProcessMemoryVirtualUsage: MetricSettings{
 			Enabled: true,
 		},
 		ProcessOpenFileDescriptors: MetricSettings{
@@ -93,6 +85,62 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		ProcessThreads: MetricSettings{
 			Enabled: false,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for hostmetricsreceiver/process metrics.
+type ResourceAttributesSettings struct {
+	ProcessCommand        ResourceAttributeSettings `mapstructure:"process.command"`
+	ProcessCommandLine    ResourceAttributeSettings `mapstructure:"process.command_line"`
+	ProcessExecutableName ResourceAttributeSettings `mapstructure:"process.executable.name"`
+	ProcessExecutablePath ResourceAttributeSettings `mapstructure:"process.executable.path"`
+	ProcessOwner          ResourceAttributeSettings `mapstructure:"process.owner"`
+	ProcessParentPid      ResourceAttributeSettings `mapstructure:"process.parent_pid"`
+	ProcessPid            ResourceAttributeSettings `mapstructure:"process.pid"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		ProcessCommand: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ProcessCommandLine: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ProcessExecutableName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ProcessExecutablePath: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ProcessOwner: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ProcessParentPid: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ProcessPid: ResourceAttributeSettings{
+			Enabled: true,
 		},
 	}
 }
@@ -468,57 +516,6 @@ func newMetricProcessDiskOperations(settings MetricSettings) metricProcessDiskOp
 	return m
 }
 
-type metricProcessMemoryPhysicalUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills process.memory.physical_usage metric with initial data.
-func (m *metricProcessMemoryPhysicalUsage) init() {
-	m.data.SetName("process.memory.physical_usage")
-	m.data.SetDescription("Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use.")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricProcessMemoryPhysicalUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricProcessMemoryPhysicalUsage) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricProcessMemoryPhysicalUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricProcessMemoryPhysicalUsage(settings MetricSettings) metricProcessMemoryPhysicalUsage {
-	m := metricProcessMemoryPhysicalUsage{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricProcessMemoryUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -670,57 +667,6 @@ func newMetricProcessMemoryVirtual(settings MetricSettings) metricProcessMemoryV
 	return m
 }
 
-type metricProcessMemoryVirtualUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills process.memory.virtual_usage metric with initial data.
-func (m *metricProcessMemoryVirtualUsage) init() {
-	m.data.SetName("process.memory.virtual_usage")
-	m.data.SetDescription("Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size.")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricProcessMemoryVirtualUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricProcessMemoryVirtualUsage) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricProcessMemoryVirtualUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricProcessMemoryVirtualUsage(settings MetricSettings) metricProcessMemoryVirtualUsage {
-	m := metricProcessMemoryVirtualUsage{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricProcessOpenFileDescriptors struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -781,7 +727,7 @@ type metricProcessPagingFaults struct {
 // init fills process.paging.faults metric with initial data.
 func (m *metricProcessPagingFaults) init() {
 	m.data.SetName("process.paging.faults")
-	m.data.SetDescription("Number of page faults the process has made. This metric is only available on Linux.")
+	m.data.SetDescription("Number of page faults the process has made.")
 	m.data.SetUnit("{faults}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -834,7 +780,7 @@ type metricProcessSignalsPending struct {
 // init fills process.signals_pending metric with initial data.
 func (m *metricProcessSignalsPending) init() {
 	m.data.SetName("process.signals_pending")
-	m.data.SetDescription("Number of pending signals for the process. This metric is only available on Linux.")
+	m.data.SetDescription("Number of pending signals for the process.")
 	m.data.SetUnit("{signals}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -935,16 +881,15 @@ type MetricsBuilder struct {
 	resourceCapacity                 int                 // maximum observed number of resource attributes.
 	metricsBuffer                    pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                        component.BuildInfo // contains version information
+	resourceAttributesSettings       ResourceAttributesSettings
 	metricProcessContextSwitches     metricProcessContextSwitches
 	metricProcessCPUTime             metricProcessCPUTime
 	metricProcessCPUUtilization      metricProcessCPUUtilization
 	metricProcessDiskIo              metricProcessDiskIo
 	metricProcessDiskOperations      metricProcessDiskOperations
-	metricProcessMemoryPhysicalUsage metricProcessMemoryPhysicalUsage
 	metricProcessMemoryUsage         metricProcessMemoryUsage
 	metricProcessMemoryUtilization   metricProcessMemoryUtilization
 	metricProcessMemoryVirtual       metricProcessMemoryVirtual
-	metricProcessMemoryVirtualUsage  metricProcessMemoryVirtualUsage
 	metricProcessOpenFileDescriptors metricProcessOpenFileDescriptors
 	metricProcessPagingFaults        metricProcessPagingFaults
 	metricProcessSignalsPending      metricProcessSignalsPending
@@ -961,27 +906,27 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
 func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
-	if ms.ProcessMemoryPhysicalUsage.Enabled {
-		settings.Logger.Warn("[WARNING] `process.memory.physical_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
-	}
-	if ms.ProcessMemoryVirtualUsage.Enabled {
-		settings.Logger.Warn("[WARNING] `process.memory.virtual_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
-	}
 	mb := &MetricsBuilder{
 		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                    pmetric.NewMetrics(),
 		buildInfo:                        settings.BuildInfo,
+		resourceAttributesSettings:       DefaultResourceAttributesSettings(),
 		metricProcessContextSwitches:     newMetricProcessContextSwitches(ms.ProcessContextSwitches),
 		metricProcessCPUTime:             newMetricProcessCPUTime(ms.ProcessCPUTime),
 		metricProcessCPUUtilization:      newMetricProcessCPUUtilization(ms.ProcessCPUUtilization),
 		metricProcessDiskIo:              newMetricProcessDiskIo(ms.ProcessDiskIo),
 		metricProcessDiskOperations:      newMetricProcessDiskOperations(ms.ProcessDiskOperations),
-		metricProcessMemoryPhysicalUsage: newMetricProcessMemoryPhysicalUsage(ms.ProcessMemoryPhysicalUsage),
 		metricProcessMemoryUsage:         newMetricProcessMemoryUsage(ms.ProcessMemoryUsage),
 		metricProcessMemoryUtilization:   newMetricProcessMemoryUtilization(ms.ProcessMemoryUtilization),
 		metricProcessMemoryVirtual:       newMetricProcessMemoryVirtual(ms.ProcessMemoryVirtual),
-		metricProcessMemoryVirtualUsage:  newMetricProcessMemoryVirtualUsage(ms.ProcessMemoryVirtualUsage),
 		metricProcessOpenFileDescriptors: newMetricProcessOpenFileDescriptors(ms.ProcessOpenFileDescriptors),
 		metricProcessPagingFaults:        newMetricProcessPagingFaults(ms.ProcessPagingFaults),
 		metricProcessSignalsPending:      newMetricProcessSignalsPending(ms.ProcessSignalsPending),
@@ -1004,61 +949,75 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithProcessCommand sets provided value as "process.command" attribute for current resource.
 func WithProcessCommand(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("process.command", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessCommand.Enabled {
+			rm.Resource().Attributes().PutStr("process.command", val)
+		}
 	}
 }
 
 // WithProcessCommandLine sets provided value as "process.command_line" attribute for current resource.
 func WithProcessCommandLine(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("process.command_line", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessCommandLine.Enabled {
+			rm.Resource().Attributes().PutStr("process.command_line", val)
+		}
 	}
 }
 
 // WithProcessExecutableName sets provided value as "process.executable.name" attribute for current resource.
 func WithProcessExecutableName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("process.executable.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessExecutableName.Enabled {
+			rm.Resource().Attributes().PutStr("process.executable.name", val)
+		}
 	}
 }
 
 // WithProcessExecutablePath sets provided value as "process.executable.path" attribute for current resource.
 func WithProcessExecutablePath(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("process.executable.path", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessExecutablePath.Enabled {
+			rm.Resource().Attributes().PutStr("process.executable.path", val)
+		}
 	}
 }
 
 // WithProcessOwner sets provided value as "process.owner" attribute for current resource.
 func WithProcessOwner(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("process.owner", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessOwner.Enabled {
+			rm.Resource().Attributes().PutStr("process.owner", val)
+		}
 	}
 }
 
 // WithProcessParentPid sets provided value as "process.parent_pid" attribute for current resource.
 func WithProcessParentPid(val int64) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutInt("process.parent_pid", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessParentPid.Enabled {
+			rm.Resource().Attributes().PutInt("process.parent_pid", val)
+		}
 	}
 }
 
 // WithProcessPid sets provided value as "process.pid" attribute for current resource.
 func WithProcessPid(val int64) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutInt("process.pid", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessPid.Enabled {
+			rm.Resource().Attributes().PutInt("process.pid", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1093,17 +1052,16 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricProcessCPUUtilization.emit(ils.Metrics())
 	mb.metricProcessDiskIo.emit(ils.Metrics())
 	mb.metricProcessDiskOperations.emit(ils.Metrics())
-	mb.metricProcessMemoryPhysicalUsage.emit(ils.Metrics())
 	mb.metricProcessMemoryUsage.emit(ils.Metrics())
 	mb.metricProcessMemoryUtilization.emit(ils.Metrics())
 	mb.metricProcessMemoryVirtual.emit(ils.Metrics())
-	mb.metricProcessMemoryVirtualUsage.emit(ils.Metrics())
 	mb.metricProcessOpenFileDescriptors.emit(ils.Metrics())
 	mb.metricProcessPagingFaults.emit(ils.Metrics())
 	mb.metricProcessSignalsPending.emit(ils.Metrics())
 	mb.metricProcessThreads.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -1116,8 +1074,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 
@@ -1146,11 +1104,6 @@ func (mb *MetricsBuilder) RecordProcessDiskOperationsDataPoint(ts pcommon.Timest
 	mb.metricProcessDiskOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
-// RecordProcessMemoryPhysicalUsageDataPoint adds a data point to process.memory.physical_usage metric.
-func (mb *MetricsBuilder) RecordProcessMemoryPhysicalUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessMemoryPhysicalUsage.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordProcessMemoryUsageDataPoint adds a data point to process.memory.usage metric.
 func (mb *MetricsBuilder) RecordProcessMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricProcessMemoryUsage.recordDataPoint(mb.startTime, ts, val)
@@ -1164,11 +1117,6 @@ func (mb *MetricsBuilder) RecordProcessMemoryUtilizationDataPoint(ts pcommon.Tim
 // RecordProcessMemoryVirtualDataPoint adds a data point to process.memory.virtual metric.
 func (mb *MetricsBuilder) RecordProcessMemoryVirtualDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricProcessMemoryVirtual.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordProcessMemoryVirtualUsageDataPoint adds a data point to process.memory.virtual_usage metric.
-func (mb *MetricsBuilder) RecordProcessMemoryVirtualUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessMemoryVirtualUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordProcessOpenFileDescriptorsDataPoint adds a data point to process.open_file_descriptors metric.

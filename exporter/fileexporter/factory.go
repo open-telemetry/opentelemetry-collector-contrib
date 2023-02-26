@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -78,9 +79,10 @@ func createTracesExporter(
 		ctx,
 		set,
 		cfg,
-		fe.Unwrap().(*fileExporter).ConsumeTraces,
+		fe.Unwrap().(*fileExporter).consumeTraces,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 }
 
@@ -101,9 +103,10 @@ func createMetricsExporter(
 		ctx,
 		set,
 		cfg,
-		fe.Unwrap().(*fileExporter).ConsumeMetrics,
+		fe.Unwrap().(*fileExporter).consumeMetrics,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 }
 
@@ -124,9 +127,10 @@ func createLogsExporter(
 		ctx,
 		set,
 		cfg,
-		fe.Unwrap().(*fileExporter).ConsumeLogs,
+		fe.Unwrap().(*fileExporter).consumeLogs,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 }
 
@@ -146,7 +150,11 @@ func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
 
 func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
 	if cfg.Rotation == nil {
-		return os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		f, err := os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		if err != nil {
+			return nil, err
+		}
+		return newBufferedWriteCloser(f), nil
 	}
 	return &lumberjack.Logger{
 		Filename:   cfg.Path,

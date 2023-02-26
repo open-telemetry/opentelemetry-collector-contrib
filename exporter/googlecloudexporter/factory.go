@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 const (
@@ -30,6 +31,14 @@ const (
 	// The stability level of the exporter.
 	stability      = component.StabilityLevelBeta
 	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
+)
+
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"exporter.googlecloud.OTLPDirect",
+	featuregate.StageStable,
+	featuregate.WithRegisterDescription("When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7132"),
+	featuregate.WithRegisterRemovalVersion("v0.69.0"),
 )
 
 // NewFactory creates a factory for the googlecloud exporter

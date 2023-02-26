@@ -24,8 +24,10 @@ Tails and parses logs from files.
 | `include_file_path_resolved` | `false`          | Whether to add the file path after symlinks resolution as the attribute `log.file.path_resolved`. |
 | `poll_interval`              | 200ms            | The duration between filesystem polls                                                                              |
 | `fingerprint_size`           | `1kb`            | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time) |
-| `max_log_size`               | `1MiB`           | The maximum size of a log entry to read before failing. Protects against reading large amounts of data into memory |
-| `max_concurrent_files`       | 1024             | The maximum number of log files from which logs will be read concurrently. If the number of files matched in the `include` pattern exceeds this number, then files will be processed in batches. One batch will be processed per `poll_interval` |
+| `max_log_size`               | `1MiB`           | The maximum size of a log entry to read. A log entry will be truncated if it is larger than `max_log_size`. Protects against reading large amounts of data into memory |
+| `max_concurrent_files`       | 1024             | The maximum number of log files from which logs will be read concurrently. If the number of files matched in the `include` pattern exceeds this number, then files will be processed in batches. |
+| `max_batches`                | 0                | Only applicable when files must be batched in order to respect `max_concurrent_files`. This value limits the number of batches that will be processed during a single poll interval. A value of 0 indicates no limit. |
+| `delete_after_read`          | `false`          | If `true`, each log file will be read and then immediately deleted. Requires that the `filelog.allowFileDeletion` feature gate is enabled. |
 | `attributes`                 | {}               | A map of `key: value` pairs to add to the entry's attributes                                                       |
 | `resource`                   | {}               | A map of `key: value` pairs to add to the entry's resource                                                    |
 | `operators`                  | []               | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |

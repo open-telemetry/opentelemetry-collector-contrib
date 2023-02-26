@@ -35,13 +35,17 @@ type TransformContext struct {
 	logRecord            plog.LogRecord
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
+	cache                pcommon.Map
 }
+
+type Option func(*ottl.Parser[TransformContext])
 
 func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
 	return TransformContext{
 		logRecord:            logRecord,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
+		cache:                pcommon.NewMap(),
 	}
 }
 
@@ -57,8 +61,40 @@ func (tCtx TransformContext) GetResource() pcommon.Resource {
 	return tCtx.resource
 }
 
-func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings) ottl.Parser[TransformContext] {
-	return ottl.NewParser[TransformContext](functions, parsePath, parseEnum, telemetrySettings)
+func (tCtx TransformContext) getCache() pcommon.Map {
+	return tCtx.cache
+}
+
+func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
+	p, err := ottl.NewParser[TransformContext](
+		functions,
+		parsePath,
+		telemetrySettings,
+		ottl.WithEnumParser[TransformContext](parseEnum),
+	)
+	if err != nil {
+		return ottl.Parser[TransformContext]{}, err
+	}
+	for _, opt := range options {
+		opt(&p)
+	}
+	return p, nil
+}
+
+type StatementsOption func(*ottl.Statements[TransformContext])
+
+func WithErrorMode(errorMode ottl.ErrorMode) StatementsOption {
+	return func(s *ottl.Statements[TransformContext]) {
+		ottl.WithErrorMode[TransformContext](errorMode)(s)
+	}
+}
+
+func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySettings component.TelemetrySettings, options ...StatementsOption) ottl.Statements[TransformContext] {
+	s := ottl.NewStatements(statements, telemetrySettings)
+	for _, op := range options {
+		op(&s)
+	}
+	return s
 }
 
 var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
@@ -108,6 +144,12 @@ func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 
 func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
 	switch path[0].Name {
+	case "cache":
+		mapKey := path[0].MapKey
+		if mapKey == nil {
+			return accessCache(), nil
+		}
+		return accessCacheKey(mapKey), nil
 	case "resource":
 		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
 	case "instrumentation_scope":
@@ -149,6 +191,32 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 	}
 
 	return nil, fmt.Errorf("invalid path expression %v", path)
+}
+
+func accessCache() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			return tCtx.getCache(), nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			if m, ok := val.(pcommon.Map); ok {
+				m.CopyTo(tCtx.getCache())
+			}
+			return nil
+		},
+	}
+}
+
+func accessCacheKey(mapKey *string) ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			return ottlcommon.GetMapValue(tCtx.getCache(), *mapKey), nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			ottlcommon.SetMapValue(tCtx.getCache(), *mapKey, val)
+			return nil
+		},
+	}
 }
 
 func accessTimeUnixNano() ottl.StandardGetSetter[TransformContext] {

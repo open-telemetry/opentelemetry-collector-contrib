@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func mathParsePath(val *Path) (GetSetter[interface{}], error) {
@@ -67,6 +67,7 @@ func threePointOne[K any]() (ExprFunc[K], error) {
 	}, nil
 }
 
+//nolint:unparam
 func sum[K any](ints []int64) (ExprFunc[K], error) {
 	return func(context.Context, K) (interface{}, error) {
 		result := int64(0)
@@ -212,11 +213,11 @@ func Test_evaluateMathExpression(t *testing.T) {
 		"Sum":           sum[any],
 	}
 
-	p := NewParser[any](
+	p, _ := NewParser[any](
 		functions,
 		mathParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	mathParser := newParser[value]()
@@ -255,11 +256,11 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 		"sum":           sum[any],
 	}
 
-	p := NewParser[any](
+	p, _ := NewParser[any](
 		functions,
 		mathParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	mathParser := newParser[value]()

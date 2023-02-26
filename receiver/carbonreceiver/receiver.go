@@ -74,13 +74,6 @@ func New(
 		return nil, err
 	}
 
-	// This should be the last one built, or if any other error is raised after
-	// it, the server should be closed.
-	server, err := buildTransportServer(config)
-	if err != nil {
-		return nil, err
-	}
-
 	rep, err := newReporter(set)
 	if err != nil {
 		return nil, err
@@ -90,7 +83,6 @@ func New(
 		settings:     set,
 		config:       &config,
 		nextConsumer: nextConsumer,
-		server:       server,
 		reporter:     rep,
 		parser:       parser,
 	}
@@ -113,6 +105,11 @@ func buildTransportServer(config Config) (transport.Server, error) {
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
+	server, err := buildTransportServer(*r.config)
+	if err != nil {
+		return err
+	}
+	r.server = server
 	go func() {
 		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil {
 			host.ReportFatalError(err)
@@ -124,5 +121,8 @@ func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *carbonReceiver) Shutdown(context.Context) error {
+	if r.server == nil {
+		return nil
+	}
 	return r.server.Close()
 }

@@ -19,6 +19,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -89,10 +90,12 @@ func createDefaultConfig() component.Config {
 		ExternalLabels:  map[string]string{},
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 50 * time.Millisecond,
-			MaxInterval:     200 * time.Millisecond,
-			MaxElapsedTime:  1 * time.Minute,
+			Enabled:             true,
+			InitialInterval:     50 * time.Millisecond,
+			MaxInterval:         200 * time.Millisecond,
+			MaxElapsedTime:      1 * time.Minute,
+			RandomizationFactor: backoff.DefaultRandomizationFactor,
+			Multiplier:          backoff.DefaultMultiplier,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
@@ -110,6 +113,9 @@ func createDefaultConfig() component.Config {
 		},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
+		},
+		CreatedMetric: &CreatedMetric{
+			Enabled: false,
 		},
 	}
 }

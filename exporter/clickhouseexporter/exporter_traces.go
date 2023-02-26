@@ -22,6 +22,7 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -38,17 +39,8 @@ type tracesExporter struct {
 }
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
-
-	if err := createDatabase(cfg); err != nil {
-		return nil, err
-	}
-
 	client, err := newClickhouseClient(cfg)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = createTracesTable(cfg, client); err != nil {
 		return nil, err
 	}
 
@@ -60,8 +52,19 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error)
 	}, nil
 }
 
-// Shutdown will shutdown the exporter.
-func (e *tracesExporter) Shutdown(_ context.Context) error {
+func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
+	if err := createDatabase(ctx, e.cfg); err != nil {
+		return err
+	}
+
+	if err := createTracesTable(ctx, e.cfg, e.client); err != nil {
+		return err
+	}
+	return nil
+}
+
+// shutdown will shut down the exporter.
+func (e *tracesExporter) shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -274,14 +277,14 @@ GROUP BY TraceId;
 `
 )
 
-func createTracesTable(cfg *Config, db *sql.DB) error {
-	if _, err := db.Exec(renderCreateTracesTableSQL(cfg)); err != nil {
+func createTracesTable(ctx context.Context, cfg *Config, db *sql.DB) error {
+	if _, err := db.ExecContext(ctx, renderCreateTracesTableSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create traces table sql: %w", err)
 	}
-	if _, err := db.Exec(renderCreateTraceIDTsTableSQL(cfg)); err != nil {
+	if _, err := db.ExecContext(ctx, renderCreateTraceIDTsTableSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create traceIDTs table sql: %w", err)
 	}
-	if _, err := db.Exec(renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
+	if _, err := db.ExecContext(ctx, renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create traceIDTs view sql: %w", err)
 	}
 	return nil
@@ -308,7 +311,6 @@ func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 }
 
 func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {
-	database, _ := parseDSNDatabase(cfg.DSN)
 	return fmt.Sprintf(createTraceIDTsMaterializedViewSQL, cfg.TracesTableName,
-		database, cfg.TracesTableName, database, cfg.TracesTableName)
+		cfg.Database, cfg.TracesTableName, cfg.Database, cfg.TracesTableName)
 }

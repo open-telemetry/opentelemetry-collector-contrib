@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -33,8 +32,6 @@ const (
 	// The stability level of the processor.
 	stability = component.StabilityLevelDevelopment
 )
-
-var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Logs Transform processor.
 func NewFactory() processor.Factory {
@@ -67,17 +64,5 @@ func createLogsProcessor(
 		return nil, errors.New("no operators were configured for this logs transform processor")
 	}
 
-	proc := &logsTransformProcessor{
-		logger: set.Logger,
-		config: pCfg,
-	}
-	return processorhelper.NewLogsProcessor(
-		ctx,
-		set,
-		cfg,
-		nextConsumer,
-		proc.processLogs,
-		processorhelper.WithStart(proc.Start),
-		processorhelper.WithShutdown(proc.Shutdown),
-		processorhelper.WithCapabilities(processorCapabilities))
+	return newProcessor(pCfg, nextConsumer, set.Logger)
 }
