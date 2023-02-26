@@ -200,7 +200,7 @@ func (its *inTraceSamplerProcessor) processTraces(ctx context.Context, td ptrace
 		return td, nil
 	}
 
-	// the ssampler assumes it receives full "completed" traces
+	// the sampler assumes it receives full "completed" traces
 	if !isAllSameTraceID(td) {
 		its.logger.Warn("in trace sampler received spans from different traces. it should run after tailsampler or groupby processor")
 		return td, nil
