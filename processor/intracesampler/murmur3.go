@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package intracesampler
+package intracesampler // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/intracesamplerprocessor"
 
 // hash is a murmur3 hash function, see http://en.wikipedia.org/wiki/MurmurHash
 func hash(key []byte, seed uint32) (hash uint32) {
