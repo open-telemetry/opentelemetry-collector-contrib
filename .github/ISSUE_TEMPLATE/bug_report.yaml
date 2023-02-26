@@ -123,6 +123,7 @@ body:
       - processor/filter
       - processor/groupbyattrs
       - processor/groupbytrace
+      - processor/intracesampler
       - processor/k8sattributes
       - processor/logstransform
       - processor/metricsgeneration
