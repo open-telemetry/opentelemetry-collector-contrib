@@ -220,6 +220,26 @@ func Test_intracesampler_MultipleTraces(t *testing.T) {
 	assert.Equal(t, fooSpan1.SpanID(), outputFooSpan.SpanID())
 }
 
+func Test_intracesampler_Empty(t *testing.T) {
+
+	sink := new(consumertest.TracesSink)
+	cfg := &Config{
+		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
+		ScopeLeaves:        []string{"foo"},
+		SamplingPercentage: 0,
+	}
+
+	td := ptrace.NewTraces()
+
+	its, err := newInTraceSamplerSpansProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
+	if err != nil {
+		t.Errorf("error when creating traceSamplerProcessor: %v", err)
+		return
+	}
+
+	assert.NoError(t, its.ConsumeTraces(context.Background(), td))
+}
+
 func Test_intracesampler_ScopeLeaves_MultipleScopes(t *testing.T) {
 	traceID := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
 

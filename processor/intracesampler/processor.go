@@ -129,8 +129,9 @@ func spansToTraceTree(td ptrace.Traces) TraceTreeData {
 // check if all spans in td are from the span trace id.
 // this indicates that the processor is run after another processor
 // that emits completed traces after timeout
-func isAllSameTraceID(td ptrace.Traces) bool {
-	firstTraceID := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
+// if a single trace id is found, it is returend, otherwise nil is returned
+func getSingleTraceId(td ptrace.Traces) *pcommon.TraceID {
+	var traceId *pcommon.TraceID
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -140,14 +141,18 @@ func isAllSameTraceID(td ptrace.Traces) bool {
 			spans := ss.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if span.TraceID() != firstTraceID {
-					return false
+				currentTraceId := span.TraceID()
+				if traceId == nil {
+					traceId = &currentTraceId
+				} else if currentTraceId != *traceId {
+					return nil
 				}
 			}
 		}
 	}
 
-	return true
+	// will be nil it the batch is empty
+	return traceId
 }
 
 func (its *inTraceSamplerProcessor) getScopeBranchesToUnsampleRec(traceTreeData TraceTreeData, currentSpanID pcommon.SpanID, unsampledScopes map[pcommon.SpanID]bool) bool {
@@ -192,17 +197,17 @@ func removeSpansByIds(td ptrace.Traces, idsToRemove map[pcommon.SpanID]bool) {
 
 func (its *inTraceSamplerProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 
-	// some of the traces will be sampled in trace, but some will still be allowed to pass through as is
-	tidBytes := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-	sampled := hash(tidBytes[:], its.config.HashSeed)&bitMaskHashBuckets < its.scaledSamplingRate
-	// sampled means we keep all spans (not dropping anything), thus forwarding td as is
-	if sampled {
+	// the sampler assumes it receives full "completed" traces
+	singleTraceId := getSingleTraceId(td)
+	if singleTraceId == nil {
+		its.logger.Warn("in trace sampler received spans from different traces. it should run after tailsampler or groupby processor")
 		return td, nil
 	}
 
-	// the sampler assumes it receives full "completed" traces
-	if !isAllSameTraceID(td) {
-		its.logger.Warn("in trace sampler received spans from different traces. it should run after tailsampler or groupby processor")
+	// some of the traces will be sampled in trace, but some will still be allowed to pass through as is
+	sampled := hash((*singleTraceId)[:], its.config.HashSeed)&bitMaskHashBuckets < its.scaledSamplingRate
+	// sampled means we keep all spans (not dropping anything), thus forwarding td as is
+	if sampled {
 		return td, nil
 	}
 
