@@ -46,7 +46,7 @@ Currently, only a single option is available: removing spans based on their scop
 and only if they are leaves in the complete trace.
 
 Since those spans are leaves, there is no fear or need to change the trace topology - 
-each span still points to his original parent. If a span has a sampled descendant, 
+each span still points to their original parent. If a span has a sampled descendant, 
 it implies that the span might be interesting to trace this sampled operation, and thus it is kept.
 
 If multiple `scope_leaves` are supplied, the sampler will remove entire leaf branches that 
