@@ -212,7 +212,7 @@ func (its *inTraceSamplerProcessor) processTraces(ctx context.Context, td ptrace
 		return td, nil
 	}
 
-	its.logger.Info("unsampling spans in a trace", zap.Int("num spans", len(unsampledSpanIds)))
+	its.logger.Debug("unsampling spans in a trace", zap.Int("num spans", len(unsampledSpanIds)))
 	removeSpansByIds(td, unsampledSpanIds)
 	return td, nil
 }
