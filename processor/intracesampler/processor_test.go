@@ -19,8 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -38,7 +36,6 @@ func TestNewTracesProcessor(t *testing.T) {
 		{
 			name: "nil_nextConsumer",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 15.5,
 			},
 			wantErr: true,
@@ -47,7 +44,6 @@ func TestNewTracesProcessor(t *testing.T) {
 			name:         "happy_path",
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				ScopeLeaves:        []string{"foo"},
 				SamplingPercentage: 15.5,
 			},
@@ -56,7 +52,6 @@ func TestNewTracesProcessor(t *testing.T) {
 			name:         "happy_path_hash_seed",
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 13.33,
 				ScopeLeaves:        []string{"foo"},
 				HashSeed:           4321,
@@ -80,7 +75,6 @@ func TestNewTracesProcessor(t *testing.T) {
 func Test_intracesampler_ScopeLeaves(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		ScopeLeaves:        []string{"foo"},
 		SamplingPercentage: 0,
 	}
@@ -113,7 +107,6 @@ func Test_intracesampler_ScopeLeaves_NotLeaf(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		ScopeLeaves:        []string{"foo"},
 		SamplingPercentage: 0,
 	}
@@ -149,7 +142,6 @@ func Test_intracesampler_ScopeLeaves_MultipleLeafs(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		ScopeLeaves:        []string{"foo"},
 		SamplingPercentage: 0,
 	}
@@ -188,7 +180,6 @@ func Test_intracesampler_MultipleTraces(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		ScopeLeaves:        []string{"foo"},
 		SamplingPercentage: 0,
 	}
@@ -224,7 +215,6 @@ func Test_intracesampler_Empty(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		ScopeLeaves:        []string{"foo"},
 		SamplingPercentage: 0,
 	}
@@ -245,7 +235,6 @@ func Test_intracesampler_ScopeLeaves_MultipleScopes(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		ScopeLeaves:        []string{"foo", "baz"},
 		SamplingPercentage: 0,
 	}
@@ -281,7 +270,6 @@ func Test_intracesampler_SamplingPercentage(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		ScopeLeaves:        []string{"foo"},
 		SamplingPercentage: 100,
 	}

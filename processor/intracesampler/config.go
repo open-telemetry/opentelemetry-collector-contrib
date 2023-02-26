@@ -16,12 +16,9 @@ package intracesampler
 
 import (
 	"fmt"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// SamplingPercentage is the percentage rate at which spans in a trace are going to be sampled.
 	// Defaults to zero, i.e.: no sample (remove spans from the trace by configuration).

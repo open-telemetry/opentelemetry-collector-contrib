@@ -17,7 +17,6 @@ package intracesampler
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -40,7 +39,7 @@ type inTraceSamplerProcessor struct {
 	scaledSamplingRate uint32
 }
 
-func newInTraceSamplerSpansProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func newInTraceSamplerSpansProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 
 	its := &inTraceSamplerProcessor{
 		logger:             set.Logger,
