@@ -155,7 +155,7 @@ func (its *inTraceSamplerProcessor) getScopeBranchesToUnsampleRec(traceTreeData 
 	currentScopeName := currentFullSpan.scope.Name()
 
 	// currrent span should be unsampled if it's in the unsampledScopes map
-	// and all it's children are also in the unsampled.
+	// and all its children are also unsampled.
 	currentUnsampled := slices.Contains(its.config.ScopeLeaves, currentScopeName)
 	for _, childSpanID := range traceTreeData.children[currentSpanID] {
 		childUnsampled := its.getScopeBranchesToUnsampleRec(traceTreeData, childSpanID, unsampledScopes)
