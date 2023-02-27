@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -37,6 +38,7 @@ type metricReceiver struct {
 	nextStartTime time.Time
 	logger        *zap.Logger
 	client        *cloudwatch.Client
+	namedRequest  []namedRequest
 	mc            *MetricsConfig
 	consumer      consumer.Metrics
 	wg            *sync.WaitGroup
@@ -83,7 +85,7 @@ func (m *metricReceiver) configureAWSClient() error {
 func (m *metricReceiver) Start(ctx context.Context, host component.Host) error {
 	m.logger.Debug("Starting to poll for CloudWatch metrics")
 	m.wg.Add(1)
-	go m.pollForMetrics(ctx)
+	go m.poll(ctx)
 	return nil
 }
 
@@ -94,7 +96,7 @@ func (m *metricReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (m *metricReceiver) pollForMetrics(ctx context.Context) {
+func (m *metricReceiver) startPolling(ctx context.Context) {
 	defer m.wg.Done()
 
 	t := time.NewTicker(m.pollInterval)
@@ -116,8 +118,17 @@ func (m *metricReceiver) pollForMetrics(ctx context.Context) {
 }
 
 func (m *metricReceiver) poll(ctx context.Context) error {
-	//var errs error
-	//startTime := m.nextStartTime
-	//endTime := time.Now()
-	return nil
+	var errs error
+	startTime := m.nextStartTime
+	endTime := time.Now()
+	for _, r := range m.namedRequest {
+		if err := m.pollForMetrics(ctx, r, startTime, endTime); err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+	m.nextStartTime = endTime
+}
+
+func (m *metricReceiver) pollForMetrics(ctx context.Context, r namedRequest, startTime time.Time, endTime time.Time) error {
+
 }
