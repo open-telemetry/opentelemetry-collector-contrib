@@ -39,21 +39,24 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.Iowait, metadata.AttributeStateWait)
 }
 
-func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
+func getProcessName(proc processHandle, _ string) (string, error) {
 	name, err := proc.Name()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
+	return name, nil
+}
+
+func getProcessExecutable(proc processHandle) (string, error) {
 	cmdline, err := proc.Cmdline()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	regex := regexp.MustCompile(`^\S+`)
 	exe := regex.FindString(cmdline)
 
-	executable := &executableMetadata{name: name, path: exe}
-	return executable, nil
+	return exe, nil
 }
 
 func getProcessCommand(proc processHandle) (*commandMetadata, error) {

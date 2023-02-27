@@ -38,15 +38,17 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.System, metadata.AttributeStateSystem)
 }
 
-func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
+func getProcessName(proc processHandle, exePath string) (string, error) {
+	return filepath.Base(exePath), nil
+}
+
+func getProcessExecutable(proc processHandle) (string, error) {
 	exe, err := proc.Exe()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	name := filepath.Base(exe)
-	executable := &executableMetadata{name: name, path: exe}
-	return executable, nil
+	return exe, nil
 }
 
 // matches the first argument before an unquoted space or slash
