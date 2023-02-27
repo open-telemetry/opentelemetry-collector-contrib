@@ -1443,15 +1443,15 @@ func TestReadExistingLogsWithHeaderStartEnd(t *testing.T) {
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
-	writeString(t, temp, "#headerField: headerValue\n")
+	writeString(t, temp, "#headerField: headerValue\nskipped log line\n")
 
 	operator.poll(context.Background())
 
-	writeString(t, temp, "logLine\n")
+	writeString(t, temp, "new log line\n")
 
 	operator.poll(context.Background())
 
-	waitForTokenHeaderAttributes(t, emitCalls, []byte("logLine"), map[string]any{
+	waitForTokenHeaderAttributes(t, emitCalls, []byte("new log line"), map[string]any{
 		"header_key":   "headerField",
 		"header_value": "headerValue",
 	})
