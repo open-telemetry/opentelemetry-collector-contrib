@@ -86,6 +86,8 @@ func (hw *hashWriter) writeMapHash(m pcommon.Map) {
 	// For each recursive call into this function we want to preserve the previous buffer state
 	// while also adding new keys to the buffer. nextIndex is the index of the first new key
 	// added to the buffer for this call of the function.
+	// This also works for the first non-recursive call of this function because the buffer is always empty
+	// on the first call due to it being cleared of any added keys at then end of the function.
 	nextIndex := len(hw.keysBuf)
 
 	m.Range(func(k string, v pcommon.Value) bool {
