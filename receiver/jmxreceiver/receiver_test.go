@@ -185,7 +185,7 @@ func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
 		{
 			"invalid OTLPExporterConfig.Endpoint host with 0 port",
 			Config{OTLPExporterConfig: otlpExporterConfig{Endpoint: ".:0"}},
-			"failed determining desired port from OTLPExporterConfig.Endpoint .:0: listen tcp: lookup .:",
+			"failed determining desired port from OTLPExporterConfig.Endpoint .:0: listen tcp: lookup .",
 		},
 	}
 	for _, test := range tests {

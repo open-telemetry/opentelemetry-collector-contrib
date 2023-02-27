@@ -59,7 +59,7 @@ func (c mockDynamicClient) createPods(objects ...*unstructured.Unstructured) {
 }
 
 func generatePod(name, namespace string, labels map[string]interface{}) *unstructured.Unstructured {
-	return &unstructured.Unstructured{
+	pod := unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "v1",
 			"kind":       "Pods",
@@ -71,4 +71,6 @@ func generatePod(name, namespace string, labels map[string]interface{}) *unstruc
 		},
 	}
 
+	pod.SetResourceVersion("1")
+	return &pod
 }

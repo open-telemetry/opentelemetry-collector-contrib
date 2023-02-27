@@ -49,6 +49,11 @@ tail_sampling:
           trace_state: { key: key3, values: [ value1, value2 ] }
        },
        {
+         name: test-policy-10,
+         type: boolean_attribute,
+         boolean_attribute: { key: key4, value: true }
+       },
+       {
           name: and-policy-1,
           type: and,
           and: {

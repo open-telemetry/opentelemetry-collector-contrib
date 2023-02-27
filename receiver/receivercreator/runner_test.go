@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -36,11 +37,12 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 	require.NoError(t, err)
 
 	loadedConfig, endpoint, err := run.loadRuntimeReceiverConfig(exampleFactory, template.receiverConfig, userConfigMap{
-		endpointConfigKey: "localhost:12345",
+		tmpSetEndpointConfigKey: struct{}{},
+		endpointConfigKey:       "localhost:12345",
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "localhost:12345", endpoint)
-	assert.NotNil(t, loadedConfig)
+	require.NotNil(t, loadedConfig)
 	nopConfig := loadedConfig.(*nopWithEndpointConfig)
 	// Verify that the overridden endpoint is used instead of the one in the config file.
 	assert.Equal(t, "localhost:12345", nopConfig.Endpoint)
@@ -68,4 +70,60 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 			return found
 		}())
 	})
+}
+
+func TestValidateSetEndpointFromConfig(t *testing.T) {
+	type configWithEndpoint struct {
+		Endpoint any `mapstructure:"endpoint"`
+	}
+
+	receiverWithEndpoint := receiver.NewFactory("with.endpoint", func() component.Config {
+		return &configWithEndpoint{}
+	})
+
+	type configWithoutEndpoint struct {
+		NotEndpoint any `mapstructure:"not.endpoint"`
+	}
+
+	receiverWithoutEndpoint := receiver.NewFactory("without.endpoint", func() component.Config {
+		return &configWithoutEndpoint{}
+	})
+
+	setEndpointConfMap, setEndpoint, setErr := mergeTemplatedAndDiscoveredConfigs(
+		receiverWithEndpoint, nil, map[string]any{
+			tmpSetEndpointConfigKey: struct{}{},
+			endpointConfigKey:       "an.endpoint",
+		},
+	)
+	require.Equal(t, map[string]any{endpointConfigKey: "an.endpoint"}, setEndpointConfMap.ToStringMap())
+	require.Equal(t, "an.endpoint", setEndpoint)
+	require.NoError(t, setErr)
+
+	inheritedEndpointConfMap, inheritedEndpoint, inheritedErr := mergeTemplatedAndDiscoveredConfigs(
+		receiverWithEndpoint, map[string]any{
+			endpointConfigKey: "an.endpoint",
+		}, map[string]interface{}{},
+	)
+	require.Equal(t, map[string]any{endpointConfigKey: "an.endpoint"}, inheritedEndpointConfMap.ToStringMap())
+	require.Equal(t, "an.endpoint", inheritedEndpoint)
+	require.NoError(t, inheritedErr)
+
+	setEndpointConfMap, setEndpoint, setErr = mergeTemplatedAndDiscoveredConfigs(
+		receiverWithoutEndpoint, nil, map[string]any{
+			tmpSetEndpointConfigKey: struct{}{},
+			endpointConfigKey:       "an.endpoint",
+		},
+	)
+	require.Equal(t, map[string]any{}, setEndpointConfMap.ToStringMap())
+	require.Equal(t, "an.endpoint", setEndpoint)
+	require.NoError(t, setErr)
+
+	inheritedEndpointConfMap, inheritedEndpoint, inheritedErr = mergeTemplatedAndDiscoveredConfigs(
+		receiverWithoutEndpoint, map[string]any{
+			endpointConfigKey: "an.endpoint",
+		}, map[string]interface{}{},
+	)
+	require.Equal(t, map[string]any{endpointConfigKey: "an.endpoint"}, inheritedEndpointConfMap.ToStringMap())
+	require.Equal(t, "an.endpoint", inheritedEndpoint)
+	require.NoError(t, inheritedErr)
 }
