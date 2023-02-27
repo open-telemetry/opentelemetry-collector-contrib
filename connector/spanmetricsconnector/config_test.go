@@ -55,7 +55,6 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			AggregationTemporality: cumulative,
 			DimensionsCacheSize:    defaultDimensionsCacheSize,
-			skipSanitizeLabel:      dropSanitizationGate.IsEnabled(),
 			MetricsFlushInterval:   15 * time.Second,
 		},
 		simpleCfg.Connectors[component.NewID(typeStr)],
@@ -73,7 +72,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 			AggregationTemporality: delta,
 			DimensionsCacheSize:    1500,
-			skipSanitizeLabel:      dropSanitizationGate.IsEnabled(),
 			MetricsFlushInterval:   30 * time.Second,
 		},
 		fullCfg.Connectors[component.NewID(typeStr)],
@@ -93,10 +91,9 @@ func TestGetAggregationTemporality(t *testing.T) {
 
 func TestValidateDimensions(t *testing.T) {
 	for _, tc := range []struct {
-		name              string
-		dimensions        []Dimension
-		expectedErr       string
-		skipSanitizeLabel bool
+		name        string
+		dimensions  []Dimension
+		expectedErr string
 	}{
 		{
 			name:       "no additional dimensions",
@@ -117,13 +114,6 @@ func TestValidateDimensions(t *testing.T) {
 			expectedErr: "duplicate dimension name service.name",
 		},
 		{
-			name: "duplicate dimension with reserved labels after sanitization",
-			dimensions: []Dimension{
-				{Name: "service_name"},
-			},
-			expectedErr: "duplicate dimension name service_name",
-		},
-		{
 			name: "duplicate additional dimensions",
 			dimensions: []Dimension{
 				{Name: "service_name"},
@@ -131,31 +121,9 @@ func TestValidateDimensions(t *testing.T) {
 			},
 			expectedErr: "duplicate dimension name service_name",
 		},
-		{
-			name: "duplicate additional dimensions after sanitization",
-			dimensions: []Dimension{
-				{Name: "http.status_code"},
-				{Name: "http!status_code"},
-			},
-			expectedErr: "duplicate dimension name http_status_code after sanitization",
-		},
-		{
-			name: "we skip the case if the dimension name is the same after sanitization",
-			dimensions: []Dimension{
-				{Name: "http_status_code"},
-			},
-		},
-		{
-			name: "duplicate dimension",
-			dimensions: []Dimension{
-				{Name: "status_code"},
-			},
-			expectedErr: "duplicate dimension name status_code",
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.skipSanitizeLabel = false
-			err := validateDimensions(tc.dimensions, tc.skipSanitizeLabel)
+			err := validateDimensions(tc.dimensions)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
 			} else {

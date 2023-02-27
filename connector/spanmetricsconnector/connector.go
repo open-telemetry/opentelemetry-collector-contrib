@@ -18,10 +18,8 @@ import (
 	"bytes"
 	"context"
 	"sort"
-	"strings"
 	"sync"
 	"time"
-	"unicode"
 
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component"
@@ -432,41 +430,6 @@ func getDimensionValue(d dimension, spanAttr pcommon.Map, resourceAttr pcommon.M
 		return *d.value, true
 	}
 	return v, ok
-}
-
-// copied from prometheus-go-metric-exporter
-// sanitize replaces non-alphanumeric characters with underscores in s.
-func sanitize(s string, skipSanitizeLabel bool) string {
-	if len(s) == 0 {
-		return s
-	}
-
-	// Note: No length limit for label keys because Prometheus doesn't
-	// define a length limit, thus we should NOT be truncating label keys.
-	// See https://github.com/orijtech/prometheus-go-metrics-exporter/issues/4.
-	s = strings.Map(sanitizeRune, s)
-	if unicode.IsDigit(rune(s[0])) {
-		s = "key_" + s
-	}
-	// replace labels starting with _ only when skipSanitizeLabel is disabled
-	if !skipSanitizeLabel && strings.HasPrefix(s, "_") {
-		s = "key" + s
-	}
-	// labels starting with __ are reserved in prometheus
-	if strings.HasPrefix(s, "__") {
-		s = "key" + s
-	}
-	return s
-}
-
-// copied from prometheus-go-metric-exporter
-// sanitizeRune converts anything that is not a letter or digit to an underscore
-func sanitizeRune(r rune) rune {
-	if unicode.IsLetter(r) || unicode.IsDigit(r) {
-		return r
-	}
-	// Everything else turns into an underscore
-	return '_'
 }
 
 // buildMetricName builds the namespace prefix for the metric name.
