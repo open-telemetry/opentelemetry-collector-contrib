@@ -44,6 +44,7 @@ var (
 type hashWriter struct {
 	h       hash.Hash
 	strBuf  []byte
+	keysBuf []string
 	sumHash []byte
 	numBuf  []byte
 }
@@ -52,6 +53,7 @@ func newHashWriter() *hashWriter {
 	return &hashWriter{
 		h:       xxhash.New(),
 		strBuf:  make([]byte, 0, 128),
+		keysBuf: make([]string, 0, 16),
 		sumHash: make([]byte, 0, 16),
 		numBuf:  make([]byte, 8),
 	}
@@ -81,13 +83,17 @@ func ValueHash(v pcommon.Value) [16]byte {
 }
 
 func (hw *hashWriter) writeMapHash(m pcommon.Map) {
-	keysBuf := make([]string, 0, m.Len())
+	nextIndex := len(hw.keysBuf)
 	m.Range(func(k string, v pcommon.Value) bool {
-		keysBuf = append(keysBuf, k)
+		hw.keysBuf = append(hw.keysBuf, k)
 		return true
 	})
-	sort.Strings(keysBuf)
-	for _, k := range keysBuf {
+
+	// Get only the newly added keys from the buffer
+	workingKeySet := hw.keysBuf[nextIndex:]
+
+	sort.Strings(workingKeySet)
+	for _, k := range workingKeySet {
 		v, _ := m.Get(k)
 		hw.strBuf = hw.strBuf[:0]
 		hw.strBuf = append(hw.strBuf, keyPrefix...)
@@ -95,6 +101,8 @@ func (hw *hashWriter) writeMapHash(m pcommon.Map) {
 		hw.h.Write(hw.strBuf)
 		hw.writeValueHash(v)
 	}
+	// Remove new keys that were added to buffer for this iteration
+	hw.keysBuf = hw.keysBuf[:nextIndex]
 }
 
 func (hw *hashWriter) writeSliceHash(sl pcommon.Slice) {
