@@ -28,6 +28,10 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `delete_after_read`             | `false`          | If `true`, each log file will be read and then immediately deleted. Requires that the `filelog.allowFileDeletion` feature gate is enabled. |
 | `attributes`                    | {}               | A map of `key: value` pairs to add to the entry's attributes. |
 | `resource`                      | {}               | A map of `key: value` pairs to add to the entry's resource. |
+| `header`                        | nil              | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. |
+| `header.multiline_pattern`     | required for header metadata parsing | A regex that matches every header line. |
+| `header.metadata_operators`     | required for header metadata parsing | A list of operators used to parse metadata from the header. |
+| `header.max_size`               | `1MiB`           | The maximum number of bytes to read before failing. Protects against reading large amounts of data into memory. |
 
 Note that by default, no logs will be read unless the monitored file is actively being written to because `start_at` defaults to `end`.
 
@@ -65,6 +69,13 @@ To avoid the data loss, choose move/create rotation method and set `max_concurre
 
 Other less common encodings are supported on a best-effort basis. See [https://www.iana.org/assignments/character-sets/character-sets.xhtml](https://www.iana.org/assignments/character-sets/character-sets.xhtml) for other encodings available.
 
+### Header Metadata Parsing
+
+To enable header metadata parsing, 
+
+If set, the file input operator will attempt to read a header from the start of the file. Each header line must match the `header.line_start_pattern` pattern. After the header is fully read, the full multiline header is set to the `body` of an entry, and emitted into an embedded pipeline specified by `header.metadata_operators`. Any attributes on the resultant entry from the embedded pipeline will be used as initial attributes for any log lines emitted from this file.
+
+Header lines are not emitted to the output operator.
 
 ### Example Configurations
 

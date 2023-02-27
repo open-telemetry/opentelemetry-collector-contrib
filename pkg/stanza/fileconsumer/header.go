@@ -17,9 +17,9 @@ import (
 	"golang.org/x/text/encoding"
 )
 
-const defaultMaxHeaderSize = 8 * 1024 // max size of 8 KiBy by default
+const defaultMaxHeaderSize = 1024 * 1024 // max size of 1 MiB by default
 type HeaderConfig struct {
-	LineStartPattern  string            `mapstructure:"line_start_pattern"`
+	LineStartPattern  string            `mapstructure:"multiline_pattern"`
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
 	MaxHeaderSize     *helper.ByteSize  `mapstructure:"max_size,omitempty"`
 }
