@@ -266,6 +266,36 @@ func TestParserCSV(t *testing.T) {
 			false,
 		},
 		{
+			"dynamic-fields-header-delimiter",
+			func(p *Config) {
+				p.HeaderAttribute = "Fields"
+				p.FieldDelimiter = ","
+				p.HeaderDelimiter = "|"
+			},
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"Fields": "name|age|height|number",
+					},
+					Body: "stanza dev,1,400,555-555-5555",
+				},
+			},
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"Fields": "name|age|height|number",
+						"name":   "stanza dev",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
+					Body: "stanza dev,1,400,555-555-5555",
+				},
+			},
+			false,
+			false,
+		},
+		{
 			"dynamic-fields-multiple-entries",
 			func(p *Config) {
 				p.HeaderAttribute = "Fields"
