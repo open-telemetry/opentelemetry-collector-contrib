@@ -118,6 +118,31 @@ func TestMapHash(t *testing.T) {
 			}(),
 			equal: true,
 		},
+		{
+			// Specific test to ensure panic described in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18910 is fixed.
+			name: "nested_maps_different_order",
+			maps: func() []pcommon.Map {
+				m := []pcommon.Map{pcommon.NewMap(), pcommon.NewMap()}
+				m[0].PutStr("k1", "v1")
+				m0 := m[0].PutEmptyMap("k2")
+				m[0].PutDouble("k3", 1)
+				m[0].PutBool("k4", true)
+				m0.PutInt("k21", 1)
+				m0.PutInt("k22", 1)
+				m0.PutInt("k23", 1)
+
+				m1 := m[1].PutEmptyMap("k2")
+				m1.PutInt("k22", 1)
+				m1.PutInt("k21", 1)
+				m1.PutInt("k23", 1)
+				m[1].PutDouble("k3", 1)
+				m[1].PutStr("k1", "v1")
+				m[1].PutBool("k4", true)
+
+				return m
+			}(),
+			equal: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -134,26 +159,6 @@ func TestMapHash(t *testing.T) {
 			}
 		})
 	}
-}
-
-// TestMapHashPanic tests a very specific case where a panic can occur with nested maps.
-// Outlined in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18910
-func TestMapHashPanic(t *testing.T) {
-	m := pcommon.NewMap()
-	m.PutInt("a", 1)
-	m.PutInt("c", 1)
-	m.PutInt("d", 1)
-	m.PutInt("e", 1)
-
-	// nestedMap is alphabetically second in parent map
-	nestedMap := m.PutEmptyMap("b")
-
-	// nestedMap is at index 1 in parent when keys are sorted so we need at least 3 keys in this to ensure the next iteration of parent tries to find a key at "a3"
-	nestedMap.PutInt("a1", 1)
-	nestedMap.PutInt("a2", 1)
-	nestedMap.PutInt("a3", 1)
-
-	assert.NotPanics(t, func() { MapHash(m) })
 }
 
 func TestValueHash(t *testing.T) {
