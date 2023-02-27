@@ -44,6 +44,7 @@ type Reader struct {
 	file           *os.File
 	fileAttributes *FileAttributes
 	eof            bool
+	header         *header
 }
 
 // offsetToEnd sets the starting offset
@@ -58,6 +59,17 @@ func (r *Reader) offsetToEnd() error {
 
 // ReadToEnd will read until the end of the file
 func (r *Reader) ReadToEnd(ctx context.Context) {
+	if r.header != nil && !r.header.Finalized() {
+		r.header.ReadHeader(ctx, r.file, r.encoding, r.fileAttributes)
+		// Don't read log entries if the header has not yet been finalized
+		// (we are still waiting for the full header to be read).
+		if !r.header.Finalized() {
+			return
+		}
+		// Set r to the end of the headers; we won't emit them as log lines.
+		r.Offset = r.header.Offset()
+	}
+
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
 		r.Errorw("Failed to seek", zap.Error(err))
 		return

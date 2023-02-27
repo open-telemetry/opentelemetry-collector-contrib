@@ -952,7 +952,7 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	fp, err := operator.readerFactory.newFingerprint(temp)
 	require.NoError(t, err)
 
-	reader, err := operator.readerFactory.newReader(tempCopy, fp)
+	reader, err := operator.readerFactory.newReader(tempCopy, fp, nil)
 	require.NoError(t, err)
 	defer reader.Close()
 
@@ -995,7 +995,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, []byte(""), fp.FirstBytes)
 
-			reader, err := operator.readerFactory.newReader(tempCopy, fp)
+			reader, err := operator.readerFactory.newReader(tempCopy, fp, nil)
 			require.NoError(t, err)
 			defer reader.Close()
 
@@ -1058,7 +1058,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, []byte(""), fp.FirstBytes)
 
-			reader, err := operator.readerFactory.newReader(tempCopy, fp)
+			reader, err := operator.readerFactory.newReader(tempCopy, fp, nil)
 			require.NoError(t, err)
 			defer reader.Close()
 
@@ -1323,6 +1323,36 @@ func TestMaxBatching(t *testing.T) {
 	}
 }
 
+// TestReadExistingLogsWithHeader tests that, when starting from beginning, we
+// read all the lines that are already there, and parses the headers
+func TestReadExistingLogsWithHeader(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(allowHeaderMetadataParsing.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(allowHeaderMetadataParsing.ID(), false))
+	})
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)", 8096)
+
+	operator, emitCalls := buildTestManager(t, cfg)
+
+	// Create a file, then start
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "#headerField: headerValue\ntestlog\n")
+
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	waitForTokenHeaderAttributes(t, emitCalls, []byte("testlog"), map[string]any{
+		"header_key":   "headerField",
+		"header_value": "headerValue",
+	})
+}
+
 func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	bytesPerLine := 100
 	shortFileLine := tokenWithLength(bytesPerLine - 1)
@@ -1393,4 +1423,36 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.Equal(t, longFile.Name(), reader.file.Name())
 	require.Greater(t, reader.Offset, int64(0))
 	require.Less(t, reader.Offset, int64(longFileSize))
+}
+
+// TestReadExistingLogsWithHeader tests that, when starting from beginning, we
+// read all the lines that are already there, and parses the headers
+func TestReadExistingLogsWithHeaderStartEnd(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(allowHeaderMetadataParsing.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(allowHeaderMetadataParsing.ID(), false))
+	})
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "end"
+	cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)", 8096)
+
+	operator, emitCalls := buildTestManager(t, cfg)
+	operator.persister = testutil.NewUnscopedMockPersister()
+
+	// Create a file, then start
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "#headerField: headerValue\n")
+
+	operator.poll(context.Background())
+
+	writeString(t, temp, "logLine\n")
+
+	operator.poll(context.Background())
+
+	waitForTokenHeaderAttributes(t, emitCalls, []byte("logLine"), map[string]any{
+		"header_key":   "headerField",
+		"header_value": "headerValue",
+	})
 }

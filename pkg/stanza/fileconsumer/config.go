@@ -39,6 +39,13 @@ var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
 )
 
+var allowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
+	"filelog.allowHeaderMetadataParsing",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows usage of the `header` setting."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198"),
+)
+
 // NewConfig creates a new input config with default values
 func NewConfig() *Config {
 	return &Config{
@@ -71,6 +78,7 @@ type Config struct {
 	MaxBatches              int                   `mapstructure:"max_batches,omitempty"`
 	DeleteAfterRead         bool                  `mapstructure:"delete_after_read,omitempty"`
 	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
+	Header                  *HeaderConfig         `mapstructure:"header,omitempty"`
 }
 
 // Build will build a file input operator from the supplied configuration
@@ -78,6 +86,11 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 	if c.DeleteAfterRead && !allowFileDeletion.IsEnabled() {
 		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion.ID())
 	}
+
+	if c.Header != nil && !allowHeaderMetadataParsing.IsEnabled() {
+		return nil, fmt.Errorf("`header` requires feature gate `%s`", allowHeaderMetadataParsing.ID())
+	}
+
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -146,6 +159,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		deleteAfterRead: c.DeleteAfterRead,
 		knownFiles:      make([]*Reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
+		headerConfig:    c.Header,
 	}, nil
 }
 
@@ -194,5 +208,12 @@ func (c Config) validate() error {
 	if err != nil {
 		return err
 	}
+
+	if c.Header != nil {
+		if err := c.Header.validate(); err != nil {
+			return fmt.Errorf("invalid config for `header`: %w", err)
+		}
+	}
+
 	return nil
 }

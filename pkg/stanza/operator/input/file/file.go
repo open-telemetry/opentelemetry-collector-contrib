@@ -67,6 +67,11 @@ func (f *Input) emit(ctx context.Context, attrs *fileconsumer.FileAttributes, to
 
 type preEmitOption func(*fileconsumer.FileAttributes, *entry.Entry) error
 
+func setHeaderMetadata(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
+	// TODO: Deep copy header metadata
+	return ent.Set(entry.NewAttributeField(), attrs.HeaderAttributes)
+}
+
 func setFileName(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
 	return ent.Set(entry.NewAttributeField("log.file.name"), attrs.Name)
 }

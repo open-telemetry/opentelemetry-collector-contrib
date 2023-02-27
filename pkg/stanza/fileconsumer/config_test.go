@@ -22,8 +22,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -360,6 +362,40 @@ func TestUnmarshal(t *testing.T) {
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
+			{
+				Name: "header_config",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					regexCfg := regex.NewConfig()
+					cfg.Header = &HeaderConfig{
+						MultilinePattern: "^#",
+						MetadataOperators: []operator.Config{
+							{
+								Builder: regexCfg,
+							},
+						},
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
+			{
+				Name: "header_config_max_size",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					regexCfg := regex.NewConfig()
+					maxSize := helper.ByteSize(16 * 1024)
+					cfg.Header = &HeaderConfig{
+						MultilinePattern: "^#",
+						MetadataOperators: []operator.Config{
+							{
+								Builder: regexCfg,
+							},
+						},
+						MaxHeaderSize: &maxSize,
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
 		},
 	}.Run(t)
 }
@@ -517,6 +553,32 @@ func TestBuild(t *testing.T) {
 			func(t *testing.T, m *Manager) {
 				require.Equal(t, 6, m.maxBatches)
 			},
+		},
+		{
+			"InvalidHeaderConfig",
+			func(f *Config) {
+				f.Header = &HeaderConfig{}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"ValidHeaderConfig",
+			func(f *Config) {
+				regexCfg := regex.NewConfig()
+				maxSize := helper.ByteSize(16 * 1024)
+				f.Header = &HeaderConfig{
+					MultilinePattern: "^#",
+					MetadataOperators: []operator.Config{
+						{
+							Builder: regexCfg,
+						},
+					},
+					MaxHeaderSize: &maxSize,
+				}
+			},
+			require.Error,
+			nil,
 		},
 	}
 

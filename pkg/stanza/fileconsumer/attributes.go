@@ -21,10 +21,11 @@ import (
 )
 
 type FileAttributes struct {
-	Name         string
-	Path         string
-	NameResolved string
-	PathResolved string
+	Name             string
+	Path             string
+	NameResolved     string
+	PathResolved     string
+	HeaderAttributes map[string]any
 }
 
 // resolveFileAttributes resolves file attributes

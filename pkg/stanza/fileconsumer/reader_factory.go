@@ -16,6 +16,7 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 
 	"go.uber.org/zap"
@@ -31,11 +32,26 @@ type readerFactory struct {
 	encodingConfig  helper.EncodingConfig
 }
 
-func (f *readerFactory) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
-	return f.newReaderBuilder().
+func (f *readerFactory) newReader(file *os.File, fp *Fingerprint, hc *HeaderConfig) (*Reader, error) {
+	rb := f.newReaderBuilder().
 		withFile(file).
-		withFingerprint(fp).
-		build()
+		withFingerprint(fp)
+
+	if hc != nil {
+		enc, err := f.encodingConfig.Build()
+		if err != nil {
+			return nil, fmt.Errorf("failed to build encoding: %w", err)
+		}
+
+		h, err := hc.buildHeader(enc.Encoding, f.SugaredLogger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build header metadata manager: %w", err)
+		}
+
+		rb.withHeader(h)
+	}
+
+	return rb.build()
 }
 
 // copy creates a deep copy of a Reader
@@ -45,6 +61,7 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 		withFingerprint(old.Fingerprint.Copy()).
 		withOffset(old.Offset).
 		withSplitterFunc(old.splitFunc).
+		withHeader(old.header).
 		build()
 }
 
@@ -62,6 +79,7 @@ type readerBuilder struct {
 	fp        *Fingerprint
 	offset    int64
 	splitFunc bufio.SplitFunc
+	header    *header
 }
 
 func (f *readerFactory) newReaderBuilder() *readerBuilder {
@@ -88,10 +106,16 @@ func (b *readerBuilder) withOffset(offset int64) *readerBuilder {
 	return b
 }
 
+func (b *readerBuilder) withHeader(h *header) *readerBuilder {
+	b.header = h
+	return b
+}
+
 func (b *readerBuilder) build() (r *Reader, err error) {
 	r = &Reader{
 		readerConfig: b.readerConfig,
 		Offset:       b.offset,
+		header:       b.header,
 	}
 
 	if b.splitFunc != nil {
@@ -115,6 +139,11 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		r.fileAttributes, err = resolveFileAttributes(b.file.Name())
 		if err != nil {
 			b.Errorf("resolve attributes: %w", err)
+		}
+
+		// Copy header attributes to new fileAttributes if the header has been finalized
+		if b.header != nil && b.header.finalized {
+			r.fileAttributes.HeaderAttributes = b.header.attributesFromHeader
 		}
 
 		// unsafeReader has the file set to nil, so don't try emending its offset.

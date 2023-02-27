@@ -54,7 +54,12 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	var preEmitOptions []preEmitOption
+	preEmitOptions := []preEmitOption{
+		// setHeaderMetadata must be the first option,
+		// since it sets the full attributes field
+		setHeaderMetadata,
+	}
+
 	if c.IncludeFileName {
 		preEmitOptions = append(preEmitOptions, setFileName)
 	}
