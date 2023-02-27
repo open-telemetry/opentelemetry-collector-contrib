@@ -141,6 +141,31 @@ func TestParserCSV(t *testing.T) {
 			false,
 		},
 		{
+			"basic-different-delimiters",
+			func(p *Config) {
+				p.Header = testHeader
+				p.HeaderDelimiter = ","
+				p.FieldDelimiter = "|"
+			},
+			[]entry.Entry{
+				{
+					Body: "stanza|INFO|started agent",
+				},
+			},
+			[]entry.Entry{
+				{
+					Body: "stanza|INFO|started agent",
+					Attributes: map[string]interface{}{
+						"name": "stanza",
+						"sev":  "INFO",
+						"msg":  "started agent",
+					},
+				},
+			},
+			false,
+			false,
+		},
+		{
 			"basic-multiple-static-bodies",
 			func(p *Config) {
 				p.Header = testHeader
@@ -542,6 +567,32 @@ func TestParserCSV(t *testing.T) {
 				// expect []rune of length 1
 				p.Header = "name,,age,,height,,number"
 				p.FieldDelimiter = ",,"
+			},
+			[]entry.Entry{
+				{
+					Body: "stanza,1,400,555-555-5555",
+				},
+			},
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
+					Body: "stanza,1,400,555-555-5555",
+				},
+			},
+			true,
+			false,
+		},
+		{
+			"invalid-header-delimiter",
+			func(p *Config) {
+				// expect []rune of length 1
+				p.Header = "name,,age,,height,,number"
+				p.HeaderDelimiter = ",,"
 			},
 			[]entry.Entry{
 				{
