@@ -7,8 +7,8 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.72.0
-	github.com/snowflakedb/gosnowflake v1.6.17
-	github.com/stretchr/testify v1.8.1
+	github.com/snowflakedb/gosnowflake v1.6.18
+	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.72.0
 	go.opentelemetry.io/collector/component v0.72.0
 	go.opentelemetry.io/collector/confmap v0.72.0
@@ -26,7 +26,7 @@ require (
 	github.com/apache/arrow/go/arrow v0.0.0-20211112161151-bc219186db40 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.5 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.8 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.14 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.15 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.33 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.29 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.23 // indirect

@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230221135433-65e01983bba4
 	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230221135433-65e01983bba4
 	github.com/DataDog/sketches-go v1.4.1
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.72.0
 	go.opentelemetry.io/collector/component v0.72.0
 	go.opentelemetry.io/collector/consumer v0.72.0

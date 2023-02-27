@@ -3,14 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlque
 go 1.19
 
 require (
-	github.com/SAP/go-hdb v1.0.9
+	github.com/SAP/go-hdb v1.1.0
 	github.com/denisenkom/go-mssqldb v0.12.2
 	github.com/docker/go-connections v0.4.0
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/lib/pq v1.10.7
-	github.com/sijms/go-ora/v2 v2.5.30
-	github.com/snowflakedb/gosnowflake v1.6.17
-	github.com/stretchr/testify v1.8.1
+	github.com/sijms/go-ora/v2 v2.5.33
+	github.com/snowflakedb/gosnowflake v1.6.18
+	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.18.0
 	go.opentelemetry.io/collector v0.72.0
 	go.opentelemetry.io/collector/component v0.72.0
@@ -31,7 +31,7 @@ require (
 	github.com/apache/arrow/go/arrow v0.0.0-20211112161151-bc219186db40 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.5 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.8 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.14 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.15 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.33 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.29 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.23 // indirect
@@ -93,7 +93,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb // indirect
+	golang.org/x/exp v0.0.0-20230223210539-50820d90acfd // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/term v0.5.0 // indirect

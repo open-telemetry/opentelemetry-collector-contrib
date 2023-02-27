@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/Shopify/sarama v1.38.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.72.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.18.0
 	go.opentelemetry.io/collector v0.72.0
 	go.opentelemetry.io/collector/component v0.72.0
@@ -20,7 +20,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/apache/thrift v0.18.0 // indirect
-	github.com/aws/aws-sdk-go v1.44.205 // indirect
+	github.com/aws/aws-sdk-go v1.44.209 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/containerd/containerd v1.6.18 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/go-redis/redis/v7 v7.4.1
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.18.0
 	go.opentelemetry.io/collector v0.72.0
 	go.opentelemetry.io/collector/component v0.72.0
