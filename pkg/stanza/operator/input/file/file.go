@@ -87,7 +87,7 @@ func setFilePathResolved(attrs *fileconsumer.FileAttributes, ent *entry.Entry) e
 	return ent.Set(entry.NewAttributeField("log.file.path_resolved"), attrs.PathResolved)
 }
 
-// mapCopy deep copies the map for the provided attributes map.
+// mapCopy deep copies the provided attributes map.
 func mapCopy(m map[string]any) map[string]any {
 	newMap := make(map[string]any, len(m))
 	for k, v := range m {

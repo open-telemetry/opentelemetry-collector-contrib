@@ -220,7 +220,7 @@ func TestHeaderConfig_buildHeader(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h, err := tc.conf.buildHeader(tc.enc, zaptest.NewLogger(t).Sugar())
+			h, err := tc.conf.buildHeader(zaptest.NewLogger(t).Sugar(), tc.enc, nil)
 			if tc.expectedErr != "" {
 				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
@@ -301,17 +301,15 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h, err := tc.conf.buildHeader(encoding.Nop, zaptest.NewLogger(t).Sugar())
+			encConf := helper.NewEncodingConfig()
+			encConf.Encoding = "utf8"
+			enc, err := encConf.Build()
+			require.NoError(t, err)
+
+			h, err := tc.conf.buildHeader(zaptest.NewLogger(t).Sugar(), enc.Encoding, nil)
 			require.NoError(t, err)
 
 			r := bytes.NewReader([]byte(tc.fileContents))
-
-			encConf := helper.EncodingConfig{
-				Encoding: "nop",
-			}
-
-			enc, err := encConf.Build()
-			require.NoError(t, err)
 
 			fa := &FileAttributes{}
 

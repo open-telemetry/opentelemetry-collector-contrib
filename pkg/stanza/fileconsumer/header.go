@@ -73,7 +73,7 @@ func (hc *HeaderConfig) validate() error {
 }
 
 // buildHeader builds a header struct from the header config.
-func (hc *HeaderConfig) buildHeader(enc encoding.Encoding, logger *zap.SugaredLogger) (*header, error) {
+func (hc *HeaderConfig) buildHeader(logger *zap.SugaredLogger, enc encoding.Encoding, persister operator.Persister) (*header, error) {
 	reg, err := regexp.Compile(hc.LineStartPattern)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile multiline pattern: %w", err)
@@ -111,6 +111,7 @@ func (hc *HeaderConfig) buildHeader(enc encoding.Encoding, logger *zap.SugaredLo
 		logger:         logger,
 		splitFunc:      splitFunc,
 		maxHeaderSize:  maxSize,
+		persister:      operator.NewScopedPersister("header", persister),
 	}, nil
 }
 
@@ -126,6 +127,7 @@ type header struct {
 	headerBytes    *bytes.Buffer
 	outputOperator *headerPipelineOutput
 	headerPipeline pipeline.Pipeline
+	persister      operator.Persister
 	logger         *zap.SugaredLogger
 }
 
@@ -210,8 +212,7 @@ func (h *header) finalizeHeader(ctx context.Context, fileAttributes *FileAttribu
 
 // processHeaderEntry process the header's internal buffer as the body of an entry
 func (h *header) processHeaderEntry(ctx context.Context) (*entry.Entry, error) {
-	// TODO: Persister
-	if err := h.headerPipeline.Start(nil); err != nil {
+	if err := h.headerPipeline.Start(h.persister); err != nil {
 		return nil, fmt.Errorf("failed to start header pipeline: %w", err)
 	}
 

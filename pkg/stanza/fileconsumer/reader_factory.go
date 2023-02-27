@@ -21,6 +21,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -32,7 +33,7 @@ type readerFactory struct {
 	encodingConfig  helper.EncodingConfig
 }
 
-func (f *readerFactory) newReader(file *os.File, fp *Fingerprint, hc *HeaderConfig) (*Reader, error) {
+func (f *readerFactory) newReader(file *os.File, fp *Fingerprint, persister operator.Persister, hc *HeaderConfig) (*Reader, error) {
 	rb := f.newReaderBuilder().
 		withFile(file).
 		withFingerprint(fp)
@@ -43,7 +44,7 @@ func (f *readerFactory) newReader(file *os.File, fp *Fingerprint, hc *HeaderConf
 			return nil, fmt.Errorf("failed to build encoding: %w", err)
 		}
 
-		h, err := hc.buildHeader(enc.Encoding, f.SugaredLogger)
+		h, err := hc.buildHeader(f.SugaredLogger, enc.Encoding, persister)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header metadata manager: %w", err)
 		}

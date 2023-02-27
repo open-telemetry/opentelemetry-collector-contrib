@@ -287,7 +287,7 @@ func (m *Manager) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch
-	return m.readerFactory.newReader(file, fp, m.headerConfig)
+	return m.readerFactory.newReader(file, fp, m.persister, m.headerConfig)
 }
 
 func (m *Manager) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {
