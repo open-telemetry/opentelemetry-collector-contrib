@@ -39,7 +39,7 @@ var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
 )
 
-var allowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
+var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
 	"filelog.allowHeaderMetadataParsing",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, allows usage of the `header` setting."),
@@ -87,8 +87,8 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion.ID())
 	}
 
-	if c.Header != nil && !allowHeaderMetadataParsing.IsEnabled() {
-		return nil, fmt.Errorf("`header` requires feature gate `%s`", allowHeaderMetadataParsing.ID())
+	if c.Header != nil && !AllowHeaderMetadataParsing.IsEnabled() {
+		return nil, fmt.Errorf("`header` requires feature gate `%s`", AllowHeaderMetadataParsing.ID())
 	}
 
 	if err := c.validate(); err != nil {

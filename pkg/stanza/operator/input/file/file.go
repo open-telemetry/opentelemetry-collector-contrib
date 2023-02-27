@@ -68,8 +68,7 @@ func (f *Input) emit(ctx context.Context, attrs *fileconsumer.FileAttributes, to
 type preEmitOption func(*fileconsumer.FileAttributes, *entry.Entry) error
 
 func setHeaderMetadata(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
-	// TODO: Deep copy header metadata
-	return ent.Set(entry.NewAttributeField(), attrs.HeaderAttributes)
+	return ent.Set(entry.NewAttributeField(), mapCopy(attrs.HeaderAttributes))
 }
 
 func setFileName(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
@@ -86,4 +85,20 @@ func setFileNameResolved(attrs *fileconsumer.FileAttributes, ent *entry.Entry) e
 
 func setFilePathResolved(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
 	return ent.Set(entry.NewAttributeField("log.file.path_resolved"), attrs.PathResolved)
+}
+
+// mapCopy deep copies the map for the provided attributes map.
+func mapCopy(m map[string]any) map[string]any {
+	newMap := make(map[string]any, len(m))
+	for k, v := range m {
+		switch typedVal := v.(type) {
+		case map[string]any:
+			newMap[k] = mapCopy(typedVal)
+		default:
+			// Assume any other values are safe to directly copy.
+			// Struct types and slice types shouldn't appear in attribute maps from pipelines
+			newMap[k] = v
+		}
+	}
+	return newMap
 }
