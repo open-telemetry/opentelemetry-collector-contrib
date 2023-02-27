@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.72.0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122
+	golang.org/x/crypto v0.6.0
 )
 
 require (
