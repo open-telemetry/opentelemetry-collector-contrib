@@ -409,31 +409,6 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
 }
 
-func TestSetExemplars(t *testing.T) {
-	// ----- conditions -------------------------------------------------------
-	traces := buildSampleTrace()
-	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
-	exemplarSlice := pmetric.NewExemplarSlice()
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	value := float64(42)
-
-	ed := []exemplar{{traceID: traceID, spanID: spanID, value: value}}
-
-	// ----- call -------------------------------------------------------------
-	setExemplars(ed, timestamp, exemplarSlice)
-
-	// ----- verify -----------------------------------------------------------
-	traceIDValue := exemplarSlice.At(0).TraceID()
-	spanIDValue := exemplarSlice.At(0).SpanID()
-
-	assert.NotEmpty(t, exemplarSlice)
-	assert.Equal(t, traceIDValue, traceID)
-	assert.Equal(t, spanIDValue, spanID)
-	assert.Equal(t, exemplarSlice.At(0).Timestamp(), timestamp)
-	assert.Equal(t, exemplarSlice.At(0).DoubleValue(), value)
-}
-
 func TestConnectorUpdateExemplars(t *testing.T) {
 	// ----- conditions -------------------------------------------------------
 	factory := NewFactory()
@@ -442,9 +417,8 @@ func TestConnectorUpdateExemplars(t *testing.T) {
 	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
 	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
 	key := metricKey("metricKey")
-	next := new(consumertest.MetricsSink)
 	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	c.metricsConsumer = next
+	c.metricsConsumer = new(consumertest.MetricsSink)
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------
@@ -454,14 +428,19 @@ func TestConnectorUpdateExemplars(t *testing.T) {
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
 	assert.NotEmpty(t, c.histograms[key].exemplars)
-	assert.Equal(t, c.histograms[key].exemplars[0], exemplar{traceID: traceID, spanID: spanID, value: value})
+
+	want := pmetric.NewExemplar()
+	want.SetTraceID(traceID)
+	want.SetSpanID(spanID)
+	want.SetDoubleValue(value)
+	assert.Equal(t, want, c.histograms[key].exemplars.At(0))
 
 	// ----- call -------------------------------------------------------------
 	c.resetExemplars()
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.Empty(t, c.histograms[key].exemplars)
+	assert.Equal(t, 0, c.histograms[key].exemplars.Len())
 }
 
 func TestStart(t *testing.T) {
@@ -778,35 +757,6 @@ func newConnectorImp(mcon consumer.Metrics, defaultNullValue *pcommon.Value, tem
 		ticker:                ticker,
 		done:                  make(chan struct{}),
 	}
-}
-
-func TestUpdateExemplars(t *testing.T) {
-	// ----- conditions -------------------------------------------------------
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	traces := buildSampleTrace()
-	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
-	key := metricKey("metricKey")
-	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	c.metricsConsumer = new(consumertest.MetricsSink)
-	value := float64(42)
-
-	// ----- call -------------------------------------------------------------
-	h := c.getOrCreateHistogram(key, pcommon.NewMap())
-	h.observe(value, traceID, spanID)
-
-	// ----- verify -----------------------------------------------------------
-	assert.NoError(t, err)
-	assert.NotEmpty(t, c.histograms[key].exemplars)
-	assert.Equal(t, c.histograms[key].exemplars[0], exemplar{traceID: traceID, spanID: spanID, value: value})
-
-	// ----- call -------------------------------------------------------------
-	c.resetExemplars()
-
-	// ----- verify -----------------------------------------------------------
-	assert.NoError(t, err)
-	assert.Empty(t, c.histograms[key].exemplars)
 }
 
 func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {

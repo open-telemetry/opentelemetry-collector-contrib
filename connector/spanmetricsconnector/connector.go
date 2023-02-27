@@ -53,12 +53,6 @@ var defaultLatencyHistogramBucketsMs = []float64{
 	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 }
 
-type exemplar struct {
-	traceID pcommon.TraceID
-	spanID  pcommon.SpanID
-	value   float64
-}
-
 type metricKey string
 
 type connectorImp struct {
@@ -113,11 +107,11 @@ func newDimensions(cfgDims []Dimension) []dimension {
 
 type histogram struct {
 	attributes pcommon.Map
+	exemplars  pmetric.ExemplarSlice
 
 	count        uint64
 	sum          float64
 	bucketCounts []uint64
-	exemplars    []exemplar
 
 	latencyBounds []float64
 }
@@ -129,7 +123,12 @@ func (h *histogram) observe(latencyMs float64, traceID pcommon.TraceID, spanID p
 	// Binary search to find the latencyMs bucket index.
 	index := sort.SearchFloat64s(h.latencyBounds, latencyMs)
 	h.bucketCounts[index]++
-	h.exemplars = append(h.exemplars, exemplar{traceID: traceID, spanID: spanID, value: latencyMs})
+	if !traceID.IsEmpty() {
+		e := h.exemplars.AppendEmpty()
+		e.SetTraceID(traceID)
+		e.SetSpanID(spanID)
+		e.SetDoubleValue(latencyMs)
+	}
 }
 
 func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Ticker) (*connectorImp, error) {
@@ -279,7 +278,9 @@ func (p *connectorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 		dpLatency.BucketCounts().FromRaw(hist.bucketCounts)
 		dpLatency.SetCount(hist.count)
 		dpLatency.SetSum(hist.sum)
-		setExemplars(hist.exemplars, timestamp, dpLatency.Exemplars())
+		for i := 0; i < dpLatency.Exemplars().Len(); i++ {
+			dpLatency.Exemplars().At(i).SetTimestamp(timestamp)
+		}
 		hist.attributes.CopyTo(dpLatency.Attributes())
 	}
 }
@@ -354,7 +355,7 @@ func (p *connectorImp) getOrCreateHistogram(k metricKey, attr pcommon.Map) *hist
 			attributes:    attr,
 			bucketCounts:  make([]uint64, len(p.latencyBounds)+1),
 			latencyBounds: p.latencyBounds,
-			exemplars:     []exemplar{},
+			exemplars:     pmetric.NewExemplarSlice(),
 		}
 		p.histograms[k] = h
 	}
@@ -367,7 +368,7 @@ func (p *connectorImp) getOrCreateHistogram(k metricKey, attr pcommon.Map) *hist
 // and should be not considered like a metrics that persist over time.
 func (p *connectorImp) resetExemplars() {
 	for _, histo := range p.histograms {
-		histo.exemplars = nil
+		histo.exemplars = pmetric.NewExemplarSlice()
 	}
 }
 
@@ -466,31 +467,6 @@ func sanitizeRune(r rune) rune {
 	}
 	// Everything else turns into an underscore
 	return '_'
-}
-
-// setExemplars sets the histogram exemplars.
-func setExemplars(exemplarsData []exemplar, timestamp pcommon.Timestamp, exemplars pmetric.ExemplarSlice) {
-	es := pmetric.NewExemplarSlice()
-	es.EnsureCapacity(len(exemplarsData))
-
-	for _, ed := range exemplarsData {
-		value := ed.value
-		traceID := ed.traceID
-		spanID := ed.spanID
-
-		exemplar := es.AppendEmpty()
-
-		if traceID.IsEmpty() {
-			continue
-		}
-
-		exemplar.SetDoubleValue(value)
-		exemplar.SetTimestamp(timestamp)
-		exemplar.SetTraceID(traceID)
-		exemplar.SetSpanID(spanID)
-	}
-
-	es.CopyTo(exemplars)
 }
 
 // buildMetricName builds the namespace prefix for the metric name.
