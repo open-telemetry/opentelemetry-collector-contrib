@@ -368,7 +368,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg := NewConfig()
 					regexCfg := regex.NewConfig()
 					cfg.Header = &HeaderConfig{
-						MultilinePattern: "^#",
+						LineStartPattern: "^#",
 						MetadataOperators: []operator.Config{
 							{
 								Builder: regexCfg,
@@ -385,7 +385,7 @@ func TestUnmarshal(t *testing.T) {
 					regexCfg := regex.NewConfig()
 					maxSize := helper.ByteSize(16 * 1024)
 					cfg.Header = &HeaderConfig{
-						MultilinePattern: "^#",
+						LineStartPattern: "^#",
 						MetadataOperators: []operator.Config{
 							{
 								Builder: regexCfg,
@@ -568,7 +568,7 @@ func TestBuild(t *testing.T) {
 				regexCfg := regex.NewConfig()
 				maxSize := helper.ByteSize(16 * 1024)
 				f.Header = &HeaderConfig{
-					MultilinePattern: "^#",
+					LineStartPattern: "^#",
 					MetadataOperators: []operator.Config{
 						{
 							Builder: regexCfg,

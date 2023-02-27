@@ -19,14 +19,14 @@ import (
 
 const defaultMaxHeaderSize = 8 * 1024 // max size of 8 KiBy by default
 type HeaderConfig struct {
-	MultilinePattern  string            `mapstructure:"line_start_pattern"`
+	LineStartPattern  string            `mapstructure:"line_start_pattern"`
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
 	MaxHeaderSize     *helper.ByteSize  `mapstructure:"max_size,omitempty"`
 }
 
 // validate returns an error describing why the configuration is invalid, or nil if the configuration is valid.
 func (hc *HeaderConfig) validate() error {
-	_, err := regexp.Compile(hc.MultilinePattern)
+	_, err := regexp.Compile(hc.LineStartPattern)
 	if err != nil {
 		return fmt.Errorf("failed to compile multiline pattern: %w", err)
 	}
@@ -59,7 +59,7 @@ func (hc *HeaderConfig) validate() error {
 
 // buildHeader builds a header struct from the header config.
 func (hc *HeaderConfig) buildHeader(enc encoding.Encoding, logger *zap.SugaredLogger) (*header, error) {
-	reg, err := regexp.Compile(hc.MultilinePattern)
+	reg, err := regexp.Compile(hc.LineStartPattern)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile multiline pattern: %w", err)
 	}

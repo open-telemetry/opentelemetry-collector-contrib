@@ -36,7 +36,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 		{
 			name: "Valid config",
 			conf: HeaderConfig{
-				MultilinePattern: "^#",
+				LineStartPattern: "^#",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: regexConf,
@@ -48,7 +48,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 		{
 			name: "Valid without specified header size",
 			conf: HeaderConfig{
-				MultilinePattern: "^#",
+				LineStartPattern: "^#",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: regexConf,
@@ -59,7 +59,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 		{
 			name: "Invalid pattern",
 			conf: HeaderConfig{
-				MultilinePattern: "(",
+				LineStartPattern: "(",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: regexConf,
@@ -72,7 +72,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 		{
 			name: "Negative max header size",
 			conf: HeaderConfig{
-				MultilinePattern: "^#",
+				LineStartPattern: "^#",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: regexConf,
@@ -85,7 +85,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 		{
 			name: "No operators specified",
 			conf: HeaderConfig{
-				MultilinePattern:  "^#",
+				LineStartPattern:  "^#",
 				MetadataOperators: []operator.Config{},
 				MaxHeaderSize:     &defaultMaxHeaderByteSize,
 			},
@@ -94,7 +94,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 		{
 			name: "Invalid operator specified",
 			conf: HeaderConfig{
-				MultilinePattern: "^#",
+				LineStartPattern: "^#",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: invalidRegexConf,
@@ -107,7 +107,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 		{
 			name: "first operator cannot process",
 			conf: HeaderConfig{
-				MultilinePattern: "^#",
+				LineStartPattern: "^#",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: generateConf,
@@ -154,7 +154,7 @@ func TestHeaderConfig_buildHeader(t *testing.T) {
 			name: "valid config",
 			enc:  encoding.Nop,
 			conf: HeaderConfig{
-				MultilinePattern: "^#",
+				LineStartPattern: "^#",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: regexConf,
@@ -166,7 +166,7 @@ func TestHeaderConfig_buildHeader(t *testing.T) {
 			name: "invalid regex",
 			enc:  encoding.Nop,
 			conf: HeaderConfig{
-				MultilinePattern: "^(",
+				LineStartPattern: "^(",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: regexConf,
@@ -179,7 +179,7 @@ func TestHeaderConfig_buildHeader(t *testing.T) {
 			name: "invalid operator",
 			enc:  encoding.Nop,
 			conf: HeaderConfig{
-				MultilinePattern: "^#",
+				LineStartPattern: "^#",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: invalidRegexConf,
@@ -192,7 +192,7 @@ func TestHeaderConfig_buildHeader(t *testing.T) {
 			name: "invalid encoding",
 			enc:  badEncoding,
 			conf: HeaderConfig{
-				MultilinePattern: "^#",
+				LineStartPattern: "^#",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: regexConf,
@@ -242,7 +242,7 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 				"value":      "SomeValue",
 			},
 			conf: HeaderConfig{
-				MultilinePattern: "^#",
+				LineStartPattern: "^#",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: basicRegexConfig,
@@ -257,7 +257,7 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 				"header": "#aField: SomeValue\n#aField2:",
 			},
 			conf: HeaderConfig{
-				MultilinePattern: "^#",
+				LineStartPattern: "^#",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: fullCaptureRegexConfig,
@@ -271,7 +271,7 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 			fileContents:       "#aField: SomeValue\nThis is a non-header line\n",
 			expectedAttributes: nil,
 			conf: HeaderConfig{
-				MultilinePattern: "^#",
+				LineStartPattern: "^#",
 				MetadataOperators: []operator.Config{
 					{
 						Builder: generateConf,
