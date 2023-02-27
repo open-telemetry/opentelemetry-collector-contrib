@@ -118,6 +118,31 @@ func TestMapHash(t *testing.T) {
 			}(),
 			equal: true,
 		},
+		{
+			// Specific test to ensure panic described in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18910 is fixed.
+			name: "nested_maps_different_order",
+			maps: func() []pcommon.Map {
+				m := []pcommon.Map{pcommon.NewMap(), pcommon.NewMap()}
+				m[0].PutStr("k1", "v1")
+				m0 := m[0].PutEmptyMap("k2")
+				m[0].PutDouble("k3", 1)
+				m[0].PutBool("k4", true)
+				m0.PutInt("k21", 1)
+				m0.PutInt("k22", 1)
+				m0.PutInt("k23", 1)
+
+				m1 := m[1].PutEmptyMap("k2")
+				m1.PutInt("k22", 1)
+				m1.PutInt("k21", 1)
+				m1.PutInt("k23", 1)
+				m[1].PutDouble("k3", 1)
+				m[1].PutStr("k1", "v1")
+				m[1].PutBool("k4", true)
+
+				return m
+			}(),
+			equal: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
