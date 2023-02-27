@@ -748,7 +748,7 @@ func createTestMetricsWithStats() pmetric.Metrics {
 	})
 	dest := md.ResourceMetrics()
 	logger, _ := zap.NewDevelopment()
-	trans, err := translator.New(logger)
+	trans, err := metrics.NewTranslator(logger)
 	if err != nil {
 		panic(err)
 	}
