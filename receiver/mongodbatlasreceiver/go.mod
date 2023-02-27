@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.72.0
 	github.com/stretchr/testify v1.8.1
-	go.mongodb.org/atlas v0.22.0
+	go.mongodb.org/atlas v0.23.0
 	go.opentelemetry.io/collector v0.72.0
 	go.opentelemetry.io/collector/component v0.72.0
 	go.opentelemetry.io/collector/confmap v0.72.0
