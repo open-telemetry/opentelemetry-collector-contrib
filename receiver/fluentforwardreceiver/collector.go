@@ -68,7 +68,6 @@ func (c *Collector) processEvents(ctx context.Context) {
 			stats.Record(context.Background(), observ.RecordsGenerated.M(int64(out.LogRecordCount())))
 			ctx = c.obsrecv.StartLogsOp(ctx)
 			err := c.nextConsumer.ConsumeLogs(ctx, out)
-			c.logger.Error("failed processing logs", zap.Error(err))
 			c.obsrecv.EndLogsOp(ctx, "fluent", out.LogRecordCount(), err)
 		}
 	}
