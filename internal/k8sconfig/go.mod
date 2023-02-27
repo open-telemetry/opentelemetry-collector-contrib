@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8scon
 go 1.19
 
 require (
-	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
+	github.com/openshift/client-go v3.9.0+incompatible
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v0.26.1
 )
@@ -16,6 +16,7 @@ require (
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
 	github.com/go-openapi/swag v0.19.14 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
