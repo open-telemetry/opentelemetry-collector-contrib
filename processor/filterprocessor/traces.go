@@ -33,11 +33,14 @@ import (
 type filterSpanProcessor struct {
 	skipSpanExpr      expr.BoolExpr[ottlspan.TransformContext]
 	skipSpanEventExpr expr.BoolExpr[ottlspanevent.TransformContext]
+	logger            *zap.Logger
 }
 
 func newFilterSpansProcessor(set component.TelemetrySettings, cfg *Config) (*filterSpanProcessor, error) {
 	var err error
-	fsp := &filterSpanProcessor{}
+	fsp := &filterSpanProcessor{
+		logger: set.Logger,
+	}
 	if cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil {
 		if cfg.Traces.SpanConditions != nil {
 			fsp.skipSpanExpr, err = common.ParseSpan(cfg.Traces.SpanConditions, set)
@@ -117,6 +120,7 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 	})
 
 	if errors != nil {
+		fsp.logger.Error("failed processing traces", zap.Error(errors))
 		return td, errors
 	}
 	if td.ResourceSpans().Len() == 0 {

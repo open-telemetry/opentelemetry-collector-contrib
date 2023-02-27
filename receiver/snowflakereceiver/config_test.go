@@ -15,10 +15,20 @@
 package snowflakereceiver
 
 import (
+	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
 )
 
 func TestValidateConfig(t *testing.T) {
@@ -96,5 +106,45 @@ func TestValidateConfig(t *testing.T) {
 			require.Error(t, err)
 			require.Contains(t, err.Error(), test.expect.Error())
 		})
+	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	// LoadConf includes the TypeStr which NewFactory does not set
+	id := component.NewIDWithName(typeStr, "")
+	cmNoStr, err := cm.Sub(id.String())
+	require.NoError(t, err)
+
+	testMetrics := metadata.DefaultMetricsSettings()
+	testMetrics.SnowflakeDatabaseBytesScannedAvg.Enabled = true
+	testMetrics.SnowflakeQueryBytesDeletedAvg.Enabled = false
+
+	expected := &Config{
+		Username:  "snowflakeuser",
+		Password:  "securepassword",
+		Account:   "bigbusinessaccount",
+		Warehouse: "metricWarehouse",
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			CollectionInterval: 18 * time.Minute,
+		},
+		Role:     "customMonitoringRole",
+		Database: "SNOWFLAKE",
+		Schema:   "ACCOUNT_USAGE",
+		Metrics:  testMetrics,
+	}
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	require.NoError(t, component.UnmarshalConfig(cmNoStr, cfg))
+	assert.NoError(t, component.ValidateConfig(cfg))
+
+	diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if diff != "" {
+		t.Errorf("config mismatch (-expected / +actual)\n%s", diff)
 	}
 }

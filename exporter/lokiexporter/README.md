@@ -98,6 +98,24 @@ processors:
 Currently, Loki does not support labels with dots. 
 That’s why to add Loki label based on `event.domain` OTLP attribute we need to specify two actions. The first one inserts a new attribute `event_domain` from the OTLP attribute `event.domain`. The second one is a hint for Loki, specifying that the `event_domain` attribute should be placed as a Loki label.
 The same approach is applicable to placing Loki labels from resource attribute `service.name`.
+
+Default labels:
+- `job=service.namespace/service.name`
+- `instance=service.instance.id`
+- `exporter=OTLP`
+
+`exporter=OTLP` is always set.
+
+If `service.name` and `service.namespace` are present then `job=service.namespace/service.name` is set
+
+If `service.name` is present and `service.namespace` is not present then `job=service.name` is set
+
+If `service.name` is not present and `service.namespace` is present then `job` label is not set
+
+If `service.instance.id` is present then `instance=service.instance.id` is set
+
+If `service.instance.id` is not present then `instance` label is not set
+
 ## Tenant information
 
 It is recommended to use the [`header_setter`](../../extension/headerssetterextension/README.md) extension to configure the tenant information to send to Loki. In case a static tenant

@@ -1,19 +1,19 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
 
-go 1.18
+go 1.19
 
 require (
 	github.com/jaegertracing/jaeger v1.41.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.71.0
-	go.opentelemetry.io/collector/component v0.71.0
-	go.opentelemetry.io/collector/confmap v0.71.0
+	go.opentelemetry.io/collector v0.72.0
+	go.opentelemetry.io/collector/component v0.72.0
+	go.opentelemetry.io/collector/confmap v0.72.0
 	go.uber.org/zap v1.24.0
-	google.golang.org/grpc v1.52.3
+	google.golang.org/grpc v1.53.0
 )
 
 require (
-	github.com/apache/thrift v0.17.0 // indirect
+	github.com/apache/thrift v0.18.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -44,7 +44,7 @@ require (
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	go.opentelemetry.io/collector/featuregate v0.71.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.72.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.39.0 // indirect
 	go.opentelemetry.io/otel v1.13.0 // indirect
@@ -52,10 +52,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.13.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
-	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6 // indirect
+	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

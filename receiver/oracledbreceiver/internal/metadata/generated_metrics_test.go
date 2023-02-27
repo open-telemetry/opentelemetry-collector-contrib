@@ -136,7 +136,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, "1", "attr-val")
+			mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++

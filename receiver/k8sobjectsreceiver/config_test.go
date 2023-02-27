@@ -62,10 +62,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			Name:       "events",
-			Mode:       WatchMode,
-			Namespaces: []string{"default"},
-			Group:      "events.k8s.io",
+			Name:            "events",
+			Mode:            WatchMode,
+			Namespaces:      []string{"default"},
+			Group:           "events.k8s.io",
+			ResourceVersion: "1",
 			gvr: &schema.GroupVersionResource{
 				Group:    "events.k8s.io",
 				Version:  "v1",
@@ -129,4 +130,80 @@ func TestValidateResourceConflict(t *testing.T) {
 	err = rCfg.Validate()
 	require.NoError(t, err)
 	assert.Equal(t, "group2", rCfg.Objects[0].gvr.Group)
+}
+
+func TestInvalidPullConfig(t *testing.T) {
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid_pull_config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	sub, err := cm.Sub("k8sobjects")
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NotNil(t, cfg)
+
+	err = component.ValidateConfig(cfg)
+	require.Error(t, err)
+
+	cfg.makeDiscoveryClient = getMockDiscoveryClient
+
+	err = component.ValidateConfig(cfg)
+	require.Error(t, err)
+	require.Equal(t, err.Error(), "resource version is invalid for mode: pull")
+}
+
+func TestWatchResourceVersion(t *testing.T) {
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_watch_resource_version.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	sub, err := cm.Sub("k8sobjects")
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NotNil(t, cfg)
+
+	err = component.ValidateConfig(cfg)
+	require.Error(t, err)
+
+	cfg.makeDiscoveryClient = getMockDiscoveryClient
+
+	err = component.ValidateConfig(cfg)
+	require.NoError(t, err)
+
+	expected := []*K8sObjectsConfig{
+		{
+			Name:            "events",
+			Mode:            WatchMode,
+			Namespaces:      []string{"default"},
+			Group:           "events.k8s.io",
+			ResourceVersion: "1",
+			gvr: &schema.GroupVersionResource{
+				Group:    "events.k8s.io",
+				Version:  "v1",
+				Resource: "events",
+			},
+		},
+		{
+			Name:            "events",
+			Mode:            WatchMode,
+			Namespaces:      []string{"default"},
+			Group:           "events.k8s.io",
+			ResourceVersion: "2",
+			gvr: &schema.GroupVersionResource{
+				Group:    "events.k8s.io",
+				Version:  "v1",
+				Resource: "events",
+			},
+		},
+	}
+	assert.EqualValues(t, expected, cfg.Objects)
+
 }

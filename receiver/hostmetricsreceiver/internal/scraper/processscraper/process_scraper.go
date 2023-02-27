@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
@@ -243,7 +244,7 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle pro
 }
 
 func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handle processHandle) error {
-	if !(s.config.Metrics.ProcessMemoryUsage.Enabled || s.config.Metrics.ProcessMemoryVirtual.Enabled || s.config.Metrics.ProcessMemoryPhysicalUsage.Enabled || s.config.Metrics.ProcessMemoryVirtualUsage.Enabled) {
+	if !(s.config.Metrics.ProcessMemoryUsage.Enabled || s.config.Metrics.ProcessMemoryVirtual.Enabled) {
 		return nil
 	}
 
@@ -252,8 +253,6 @@ func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handl
 		return err
 	}
 
-	s.mb.RecordProcessMemoryPhysicalUsageDataPoint(now, int64(mem.RSS))
-	s.mb.RecordProcessMemoryVirtualUsageDataPoint(now, int64(mem.VMS))
 	s.mb.RecordProcessMemoryUsageDataPoint(now, int64(mem.RSS))
 	s.mb.RecordProcessMemoryVirtualDataPoint(now, int64(mem.VMS))
 	return nil
@@ -275,7 +274,7 @@ func (s *scraper) scrapeAndAppendMemoryUtilizationMetric(now pcommon.Timestamp, 
 }
 
 func (s *scraper) scrapeAndAppendDiskMetrics(now pcommon.Timestamp, handle processHandle) error {
-	if !(s.config.Metrics.ProcessDiskIo.Enabled || s.config.Metrics.ProcessDiskOperations.Enabled) {
+	if !(s.config.Metrics.ProcessDiskIo.Enabled || s.config.Metrics.ProcessDiskOperations.Enabled) || runtime.GOOS == "darwin" {
 		return nil
 	}
 
