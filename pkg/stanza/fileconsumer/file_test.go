@@ -1326,9 +1326,9 @@ func TestMaxBatching(t *testing.T) {
 // TestReadExistingLogsWithHeader tests that, when starting from beginning, we
 // read all the lines that are already there, and parses the headers
 func TestReadExistingLogsWithHeader(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(allowHeaderMetadataParsing.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(allowHeaderMetadataParsing.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), false))
 	})
 
 	tempDir := t.TempDir()
@@ -1428,9 +1428,9 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 // TestReadExistingLogsWithHeader tests that, when starting from beginning, we
 // read all the lines that are already there, and parses the headers
 func TestReadExistingLogsWithHeaderStartEnd(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(allowHeaderMetadataParsing.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(allowHeaderMetadataParsing.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), false))
 	})
 
 	tempDir := t.TempDir()
