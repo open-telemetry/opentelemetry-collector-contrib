@@ -394,8 +394,8 @@ github.com/tklauser/go-sysconf v0.3.11 h1:89WgdJhk5SNwJfu+GKyYveZ4IaJ7xAkecBo+Kd
 github.com/tklauser/go-sysconf v0.3.11/go.mod h1:GqXfhXY3kiPa0nAXPDIQIWzJbMCB7AmcWpGR8lSZfqI=
 github.com/tklauser/numcpus v0.6.0 h1:kebhY2Qt+3U6RNK7UqpYNA+tJ23IBEGKkB7JQBfDYms=
 github.com/tklauser/numcpus v0.6.0/go.mod h1:FEZLMke0lhOUG6w2JadTzp0a+Nl8PF/GFkQ5UVIcaL4=
-github.com/wavefronthq/wavefront-sdk-go v0.11.0 h1:U9iJ4KFKebf4FB87z182DGiu1OXsRexv8DYCEj48HTA=
-github.com/wavefronthq/wavefront-sdk-go v0.11.0/go.mod h1:oKJ9Y0y36n+szFm2NiivXI+UubZe3lwfWnN1p+mFNDw=
+github.com/wavefronthq/wavefront-sdk-go v0.12.0 h1:eSdVP6QH9DtlaZQn5atSo19hLpsiIb4rmKCTJwN4KqU=
+github.com/wavefronthq/wavefront-sdk-go v0.12.0/go.mod h1:lgPeRbc4/WtFx2kefX4OdaILy2g7iTXXM3SWaMaCYYs=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
