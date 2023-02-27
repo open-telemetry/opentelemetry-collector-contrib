@@ -74,8 +74,8 @@ github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork h1:yBq5PrAtrM4yVeSzQ+bn050+
 github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork/go.mod h1:yA5JwkZsHTLuqq3zaRgUQf35DfDkpOZqgtBqHKpwrBs=
 github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc h1:gtlKB6B50/UEuFm1LeMn0R5a+tubx69OecPqxfXJDmU=
 github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc/go.mod h1:oyPC4jWHHjVVNjslDAKp8EqfQBaSmODjHt4HCX+C+9Q=
-github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.0 h1:vwDsR+BeruDFa66Bj+Y/aPBa4cweWwsNMKI04e9mPto=
-github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.0/go.mod h1:qW+xU9EdDaoyRmNmEhYFGPgTqXjxIYB1V2B/L4BQ/18=
+github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.1 h1:qpBV1/RYCLgQMZuyqOuo0qcZFF+vKT65z3dSmUUF5Wo=
+github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.1/go.mod h1:qW+xU9EdDaoyRmNmEhYFGPgTqXjxIYB1V2B/L4BQ/18=
 github.com/DataDog/sketches-go v1.4.1 h1:j5G6as+9FASM2qC36lvpvQAj9qsv/jUs3FtO8CwZNAY=
 github.com/DataDog/sketches-go v1.4.1/go.mod h1:xJIXldczJyyjnbDop7ZZcLxJdV3+7Kra7H1KMgpgkLk=
 github.com/DataDog/zstd v1.5.0 h1:+K/VEwIAaPcHiMtQvpLD4lqW7f0Gk3xdYZmI1hD+CXo=
