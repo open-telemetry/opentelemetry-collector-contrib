@@ -124,7 +124,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(memoryUtilizationMetricsLen, fmt.Errorf("error reading memory utilization for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		if err = s.scrapeAndAppendDiskMetrics(now, md.handle); err != nil {
+		if err = s.scrapeAndAppendDiskMetrics(now, md.handle); err != nil && !s.config.MuteProcessIOError {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
