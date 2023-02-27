@@ -1,3 +1,17 @@
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package fileconsumer
 
 import (
@@ -9,12 +23,13 @@ import (
 	"io"
 	"regexp"
 
+	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
-	"go.uber.org/zap"
-	"golang.org/x/text/encoding"
 )
 
 const defaultMaxHeaderSize = 1024 * 1024 // max size of 1 MiB by default
@@ -184,7 +199,6 @@ func (h *header) finalizeHeader(ctx context.Context, fileAttributes *FileAttribu
 	e, err := h.processHeaderEntry(ctx)
 	if err != nil {
 		h.logger.Errorw("Failed to process header", zap.Error(err))
-		return
 	} else {
 		h.attributesFromHeader = e.Attributes
 		fileAttributes.HeaderAttributes = h.attributesFromHeader
