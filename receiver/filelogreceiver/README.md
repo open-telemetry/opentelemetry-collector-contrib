@@ -34,6 +34,10 @@ Tails and parses logs from files.
 | `resource`                      | {}       | A map of `key: value` pairs to add to the entry's resource                                                    |
 | `operators`                     | []       | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
 | `storage`                       | none     | The ID of a storage extension to be used to store file checkpoints. File checkpoints allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage checkpoints in memory only. |
+| `header`                        | nil              | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. |
+| `header.multiline_pattern`      | required for header metadata parsing | A regex that matches every header line. |
+| `header.metadata_operators`     | required for header metadata parsing | A list of operators used to parse metadata from the header. |
+| `header.max_size`               | `1MiB`           | The maximum number of bytes to read before failing. Protects against reading large amounts of data into memory. |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
@@ -65,6 +69,14 @@ match either the beginning of a new log entry, or the end of a log entry.
 | `big5`     | The Big5 Chinese character encoding                              |
 
 Other less common encodings are supported on a best-effort basis. See [https://www.iana.org/assignments/character-sets/character-sets.xhtml](https://www.iana.org/assignments/character-sets/character-sets.xhtml) for other encodings available.
+
+### Header Metadata Parsing
+
+To enable header metadata parsing, the `filelog.allowHeaderMetadataParsing` feature gate must be set.
+
+If set, the file input operator will attempt to read a header from the start of the file. Each header line must match the `header.line_start_pattern` pattern. After the header is fully read, the full multiline header is set to the `body` of an entry, and emitted into an embedded pipeline specified by `header.metadata_operators`. Any attributes on the resultant entry from the embedded pipeline will be used as initial attributes for any log lines emitted from this file.
+
+Header lines are not emitted to the output operator.
 
 ## Additional Terminology and Features
 
