@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"

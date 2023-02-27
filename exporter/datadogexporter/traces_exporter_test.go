@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"

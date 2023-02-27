@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"

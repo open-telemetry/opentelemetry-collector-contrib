@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/sketches-go/ddsketch"
 	"go.opentelemetry.io/collector/pdata/pcommon"

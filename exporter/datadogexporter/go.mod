@@ -4,11 +4,12 @@ go 1.19
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.73
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230221135433-65e01983bba4
-	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230221135433-65e01983bba4
+	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230227093656-ca3af9ce4c3c
 	github.com/DataDog/datadog-api-client-go/v2 v2.9.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.1
 	github.com/DataDog/sketches-go v1.4.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.2
 	github.com/aws/aws-sdk-go v1.44.205
@@ -47,6 +48,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230227093656-ca3af9ce4c3c // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
