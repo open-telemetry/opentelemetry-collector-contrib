@@ -29,7 +29,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `attributes`                    | {}               | A map of `key: value` pairs to add to the entry's attributes. |
 | `resource`                      | {}               | A map of `key: value` pairs to add to the entry's resource. |
 | `header`                        | nil              | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. |
-| `header.multiline_pattern`     | required for header metadata parsing | A regex that matches every header line. |
+| `header.multiline_pattern`      | required for header metadata parsing | A regex that matches every header line. |
 | `header.metadata_operators`     | required for header metadata parsing | A list of operators used to parse metadata from the header. |
 | `header.max_size`               | `1MiB`           | The maximum number of bytes to read before failing. Protects against reading large amounts of data into memory. |
 
@@ -71,7 +71,7 @@ Other less common encodings are supported on a best-effort basis. See [https://w
 
 ### Header Metadata Parsing
 
-To enable header metadata parsing, 
+To enable header metadata parsing, the `filelog.allowHeaderMetadataParsing` feature gate must be set.
 
 If set, the file input operator will attempt to read a header from the start of the file. Each header line must match the `header.line_start_pattern` pattern. After the header is fully read, the full multiline header is set to the `body` of an entry, and emitted into an embedded pipeline specified by `header.metadata_operators`. Any attributes on the resultant entry from the embedded pipeline will be used as initial attributes for any log lines emitted from this file.
 
