@@ -32,20 +32,12 @@ var (
 	}
 )
 
-func logDeprecation(logger *zap.Logger) {
-	logger.Warn("kafka.brokers attribute is deprecated and will be removed in a future release. Use kafka.brokers.count instead.")
-}
-
 var newMetricsReceiver = func(
 	ctx context.Context,
 	config Config,
 	params receiver.CreateSettings,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
-	if config.Metrics.KafkaBrokers.Enabled {
-		logDeprecation(params.Logger)
-	}
 
 	sc := sarama.NewConfig()
 	sc.ClientID = config.ClientID
