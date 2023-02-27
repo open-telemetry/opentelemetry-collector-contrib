@@ -177,6 +177,7 @@ receiver/filelogreceiver/                                @open-telemetry/collect
 receiver/filereceiver/                               @open-telemetry/collector-contrib-approvers @pmcollins @djaglowski
 receiver/flinkmetricsreceiver/                           @open-telemetry/collector-contrib-approvers @jonathanwamsley @djaglowski
 receiver/fluentforwardreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
+receiver/genericwebhookreceiver/                         @open-telemetry/collector-contrib-approvers @atoulme @shalper2
 receiver/googlecloudpubsubreceiver/                      @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/googlecloudspannerreceiver/                     @open-telemetry/collector-contrib-approvers @architjugran @varunraiko @kiranmayib
 receiver/haproxyreceiver/                                @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
