@@ -67,7 +67,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 				},
 				MaxHeaderSize: &defaultMaxHeaderByteSize,
 			},
-			expectedErr: "failed to compile multiline pattern:",
+			expectedErr: "invalid `multiline_pattern`:",
 		},
 		{
 			name: "Negative max header size",
@@ -80,7 +80,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 				},
 				MaxHeaderSize: &negativeMaxHeaderByteSize,
 			},
-			expectedErr: "the maximum size of the header must be greater than 0",
+			expectedErr: "the `max_size` of the header must be greater than 0",
 		},
 		{
 			name: "No operators specified",

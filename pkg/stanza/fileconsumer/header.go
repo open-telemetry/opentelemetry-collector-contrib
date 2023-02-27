@@ -28,11 +28,11 @@ type HeaderConfig struct {
 func (hc *HeaderConfig) validate() error {
 	_, err := regexp.Compile(hc.LineStartPattern)
 	if err != nil {
-		return fmt.Errorf("failed to compile multiline pattern: %w", err)
+		return fmt.Errorf("invalid `multiline_pattern`: %w", err)
 	}
 
 	if hc.MaxHeaderSize != nil && *hc.MaxHeaderSize <= 0 {
-		return errors.New("the maximum size of the header must be greater than 0")
+		return errors.New("the `max_size` of the header must be greater than 0")
 	}
 
 	if len(hc.MetadataOperators) == 0 {
