@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receiv
 go 1.19
 
 require (
-	github.com/antonmedv/expr v1.12.0
+	github.com/antonmedv/expr v1.12.1
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.72.0
