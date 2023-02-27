@@ -40,9 +40,6 @@ type KafkaProducer interface {
 }
 
 func KafkaProducerFactory(config Config, logger *zap.Logger) (KafkaProducer, error) {
-	if config.SendType == "" {
-		config.SendType = Sync
-	}
 	switch config.SendType {
 	case Sync:
 		producer, err := NewSyncKafkaProducer(config, logger)
@@ -95,7 +92,7 @@ func NewAsyncKafkaProducer(config Config, logger *zap.Logger) (KafkaProducer, er
 			select {
 			case rc := <-err:
 				if rc != nil {
-					logger.Warn("SendMessages kafka data error", zap.Error(rc.Unwrap()))
+					logger.Error("SendMessages kafka data error", zap.Error(rc.Unwrap()))
 				}
 			case res := <-success:
 				if res != nil {
@@ -163,8 +160,12 @@ func NewSaramaConfig(config Config) (*sarama.Config, error) {
 	return c, nil
 }
 
-func (k *AsyncKafkaProducer) SendMessages(value []*sarama.ProducerMessage) error {
-	k.producer.Input() <- value[0]
+func (k *AsyncKafkaProducer) SendMessages(values []*sarama.ProducerMessage) error {
+	for _, value := range values {
+		if value.Value.Length() > 0 {
+			k.producer.Input() <- value
+		}
+	}
 	return nil
 }
 
