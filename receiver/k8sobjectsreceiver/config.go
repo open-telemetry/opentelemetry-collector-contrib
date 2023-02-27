@@ -32,8 +32,9 @@ const (
 	PullMode  mode = "pull"
 	WatchMode mode = "watch"
 
-	defaultPullInterval time.Duration = time.Hour
-	defaultMode         mode          = PullMode
+	defaultPullInterval    time.Duration = time.Hour
+	defaultMode            mode          = PullMode
+	defaultResourceVersion               = "1"
 )
 
 var modeMap = map[mode]bool{
@@ -42,14 +43,15 @@ var modeMap = map[mode]bool{
 }
 
 type K8sObjectsConfig struct {
-	Name          string        `mapstructure:"name"`
-	Group         string        `mapstructure:"group"`
-	Namespaces    []string      `mapstructure:"namespaces"`
-	Mode          mode          `mapstructure:"mode"`
-	LabelSelector string        `mapstructure:"label_selector"`
-	FieldSelector string        `mapstructure:"field_selector"`
-	Interval      time.Duration `mapstructure:"interval"`
-	gvr           *schema.GroupVersionResource
+	Name            string        `mapstructure:"name"`
+	Group           string        `mapstructure:"group"`
+	Namespaces      []string      `mapstructure:"namespaces"`
+	Mode            mode          `mapstructure:"mode"`
+	LabelSelector   string        `mapstructure:"label_selector"`
+	FieldSelector   string        `mapstructure:"field_selector"`
+	Interval        time.Duration `mapstructure:"interval"`
+	ResourceVersion string        `mapstructure:"resource_version"`
+	gvr             *schema.GroupVersionResource
 }
 
 type Config struct {
@@ -94,6 +96,14 @@ func (c *Config) Validate() error {
 
 		if object.Mode == PullMode && object.Interval == 0 {
 			object.Interval = defaultPullInterval
+		}
+
+		if object.Mode == PullMode && object.ResourceVersion != "" {
+			return fmt.Errorf("resource version is invalid for mode: %v", object.Mode)
+		}
+
+		if object.Mode == WatchMode && object.ResourceVersion == "" {
+			object.ResourceVersion = defaultResourceVersion
 		}
 
 		object.gvr = gvr

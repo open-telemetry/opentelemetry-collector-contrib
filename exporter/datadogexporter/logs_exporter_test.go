@@ -42,7 +42,7 @@ func TestLogsExporter(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []map[string]interface{}
+		want testutil.JSONLogs
 	}{
 		{
 			name: "message",
@@ -50,7 +50,7 @@ func TestLogsExporter(t *testing.T) {
 				ld: lr,
 			},
 
-			want: []map[string]interface{}{
+			want: testutil.JSONLogs{
 				{
 					"message":              ld.Body().AsString(),
 					"app":                  "server",
@@ -79,7 +79,7 @@ func TestLogsExporter(t *testing.T) {
 				}(),
 			},
 
-			want: []map[string]interface{}{
+			want: testutil.JSONLogs{
 				{
 					"message":              "hello",
 					"app":                  "server",
@@ -108,7 +108,7 @@ func TestLogsExporter(t *testing.T) {
 				}(),
 			},
 
-			want: []map[string]interface{}{
+			want: testutil.JSONLogs{
 				{
 					"message":              ld.Body().AsString(),
 					"app":                  "server",
@@ -139,7 +139,7 @@ func TestLogsExporter(t *testing.T) {
 				}(),
 			},
 
-			want: []map[string]interface{}{
+			want: testutil.JSONLogs{
 				{
 					"message":              ld.Body().AsString(),
 					"app":                  "server",
@@ -181,7 +181,7 @@ func TestLogsExporter(t *testing.T) {
 				}(),
 			},
 
-			want: []map[string]interface{}{
+			want: testutil.JSONLogs{
 				{
 					"message":              ld.Body().AsString(),
 					"app":                  "server",

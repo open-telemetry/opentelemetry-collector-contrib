@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
@@ -47,6 +47,9 @@ var (
 	defaultLatencyHistogramBucketsMs = []float64{
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 	}
+	// PeerAttributes the list of attributes need to match, the higher the front, the higher the priority.
+	// TODO: Consider making this configurable.
+	PeerAttributes = []string{semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget}
 )
 
 type metricSeries struct {
@@ -59,8 +62,8 @@ var _ processor.Traces = (*serviceGraphProcessor)(nil)
 type serviceGraphProcessor struct {
 	config          *Config
 	logger          *zap.Logger
-	nextConsumer    consumer.Traces
-	metricsExporter consumer.Metrics
+	metricsConsumer consumer.Metrics
+	tracesConsumer  consumer.Traces
 
 	store *store.Store
 
@@ -80,7 +83,7 @@ type serviceGraphProcessor struct {
 	shutdownCh chan interface{}
 }
 
-func newProcessor(logger *zap.Logger, config component.Config, nextConsumer consumer.Traces) *serviceGraphProcessor {
+func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProcessor {
 	pConfig := config.(*Config)
 
 	bounds := defaultLatencyHistogramBucketsMs
@@ -88,10 +91,9 @@ func newProcessor(logger *zap.Logger, config component.Config, nextConsumer cons
 		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
 	}
 
-	p := &serviceGraphProcessor{
+	return &serviceGraphProcessor{
 		config:                         pConfig,
 		logger:                         logger,
-		nextConsumer:                   nextConsumer,
 		startTime:                      time.Now(),
 		reqTotal:                       make(map[string]int64),
 		reqFailedTotal:                 make(map[string]int64),
@@ -102,27 +104,27 @@ func newProcessor(logger *zap.Logger, config component.Config, nextConsumer cons
 		keyToMetric:                    make(map[string]metricSeries),
 		shutdownCh:                     make(chan interface{}),
 	}
-
-	return p
 }
 
 func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
-	exporters := host.GetExporters()
+	if p.metricsConsumer == nil {
+		exporters := host.GetExporters()
 
-	// The available list of exporters come from any configured metrics pipelines' exporters.
-	for k, exp := range exporters[component.DataTypeMetrics] {
-		metricsExp, ok := exp.(exporter.Metrics)
-		if k.String() == p.config.MetricsExporter && ok {
-			p.metricsExporter = metricsExp
-			break
+		// The available list of exporters come from any configured metrics pipelines' exporters.
+		for k, exp := range exporters[component.DataTypeMetrics] {
+			metricsExp, ok := exp.(exporter.Metrics)
+			if k.String() == p.config.MetricsExporter && ok {
+				p.metricsConsumer = metricsExp
+				break
+			}
 		}
-	}
 
-	if p.metricsExporter == nil {
-		return fmt.Errorf("failed to find metrics exporter: %s",
-			p.config.MetricsExporter)
+		if p.metricsConsumer == nil {
+			return fmt.Errorf("failed to find metrics exporter: %s",
+				p.config.MetricsExporter)
+		}
 	}
 
 	// TODO: Consider making this configurable.
@@ -131,12 +133,20 @@ func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) er
 	// TODO: Consider making this configurable.
 	go p.storeExpirationLoop(2 * time.Second)
 
-	p.logger.Info("Started servicegraphprocessor")
+	if p.tracesConsumer == nil {
+		p.logger.Info("Started servicegraphconnector")
+	} else {
+		p.logger.Info("Started servicegraphprocessor")
+	}
 	return nil
 }
 
 func (p *serviceGraphProcessor) Shutdown(_ context.Context) error {
-	p.logger.Info("Shutting down servicegraphprocessor")
+	if p.tracesConsumer == nil {
+		p.logger.Info("Shutting down servicegraphconnector")
+	} else {
+		p.logger.Info("Shutting down servicegraphprocessor")
+	}
 	close(p.shutdownCh)
 	return nil
 }
@@ -160,12 +170,17 @@ func (p *serviceGraphProcessor) ConsumeTraces(ctx context.Context, td ptrace.Tra
 		return nil
 	}
 
+	// true when p is a connector
+	if p.tracesConsumer == nil {
+		return p.metricsConsumer.ConsumeMetrics(ctx, md)
+	}
+
 	// Firstly, export md to avoid being impacted by downstream trace serviceGraphProcessor errors/latency.
-	if err := p.metricsExporter.ConsumeMetrics(ctx, md); err != nil {
+	if err := p.metricsConsumer.ConsumeMetrics(ctx, md); err != nil {
 		return err
 	}
 
-	return p.nextConsumer.ConsumeTraces(ctx, td)
+	return p.tracesConsumer.ConsumeTraces(ctx, td)
 }
 
 func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err error) {
@@ -209,6 +224,10 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 						e.ClientLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
+
+						if virtualNodeFeatureGate.IsEnabled() {
+							p.upsertPeerAttributes(PeerAttributes, e.Peer, span.Attributes())
+						}
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
@@ -266,6 +285,15 @@ func (p *serviceGraphProcessor) upsertDimensions(kind string, m map[string]strin
 	}
 }
 
+func (p *serviceGraphProcessor) upsertPeerAttributes(m []string, peers map[string]string, spanAttr pcommon.Map) {
+	for _, s := range m {
+		if v, ok := findAttributeValue(s, spanAttr); ok {
+			peers[s] = v
+			break
+		}
+	}
+}
+
 func (p *serviceGraphProcessor) onComplete(e *store.Edge) {
 	p.logger.Debug(
 		"edge completed",
@@ -285,7 +313,25 @@ func (p *serviceGraphProcessor) onExpire(e *store.Edge) {
 		zap.String("connection_type", string(e.ConnectionType)),
 		zap.Stringer("trace_id", e.TraceID),
 	)
+
 	stats.Record(context.Background(), statExpiredEdges.M(1))
+
+	if virtualNodeFeatureGate.IsEnabled() {
+		// speculate virtual node before edge get expired.
+		// TODO: We could add some logic to check if the server span is an orphan.
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/17350#discussion_r1099949579
+		if len(e.ClientService) == 0 {
+			e.ClientService = "user"
+		}
+
+		if len(e.ServerService) == 0 {
+			e.ServerService = p.getPeerHost(PeerAttributes, e.Peer)
+		}
+
+		e.ConnectionType = store.VirtualNode
+
+		p.onComplete(e)
+	}
 }
 
 func (p *serviceGraphProcessor) aggregateMetricsForEdge(e *store.Edge) {
@@ -470,6 +516,17 @@ func (p *serviceGraphProcessor) storeExpirationLoop(d time.Duration) {
 			return
 		}
 	}
+}
+
+func (p *serviceGraphProcessor) getPeerHost(m []string, peers map[string]string) string {
+	peerStr := "unknown"
+	for _, s := range m {
+		if peer, ok := peers[s]; ok {
+			peerStr = peer
+			break
+		}
+	}
+	return peerStr
 }
 
 // cacheLoop periodically cleans the cache
