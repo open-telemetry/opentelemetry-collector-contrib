@@ -66,8 +66,11 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		if !r.header.Finalized() {
 			return
 		}
-		// Set r to the end of the headers; we won't emit them as log lines.
-		r.Offset = r.header.Offset()
+
+		// Set r to the end of the headers if our current offset is within the header logs
+		if r.Offset < r.header.Offset() {
+			r.Offset = r.header.Offset()
+		}
 	}
 
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
