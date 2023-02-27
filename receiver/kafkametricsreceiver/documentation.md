@@ -14,7 +14,7 @@ metrics:
 
 ### kafka.brokers
 
-[DEPRECATED] Number of brokers in the cluster."
+[DEPRECATED] Number of brokers in the cluster.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
