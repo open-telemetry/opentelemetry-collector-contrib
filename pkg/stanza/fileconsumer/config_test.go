@@ -391,7 +391,7 @@ func TestUnmarshal(t *testing.T) {
 								Builder: regexCfg,
 							},
 						},
-						MaxHeaderSize: &maxSize,
+						MaxHeaderLineSize: &maxSize,
 					}
 					return newMockOperatorConfig(cfg)
 				}(),
@@ -574,7 +574,7 @@ func TestBuild(t *testing.T) {
 							Builder: regexCfg,
 						},
 					},
-					MaxHeaderSize: &maxSize,
+					MaxHeaderLineSize: &maxSize,
 				}
 			},
 			require.Error,

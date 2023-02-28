@@ -57,7 +57,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 						Builder: regexConf,
 					},
 				},
-				MaxHeaderSize: &defaultMaxHeaderByteSize,
+				MaxHeaderLineSize: &defaultMaxHeaderByteSize,
 			},
 		},
 		{
@@ -80,7 +80,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 						Builder: regexConf,
 					},
 				},
-				MaxHeaderSize: &defaultMaxHeaderByteSize,
+				MaxHeaderLineSize: &defaultMaxHeaderByteSize,
 			},
 			expectedErr: "invalid `multiline_pattern`:",
 		},
@@ -93,7 +93,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 						Builder: regexConf,
 					},
 				},
-				MaxHeaderSize: &negativeMaxHeaderByteSize,
+				MaxHeaderLineSize: &negativeMaxHeaderByteSize,
 			},
 			expectedErr: "the `max_size` of the header must be greater than 0",
 		},
@@ -102,7 +102,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 			conf: HeaderConfig{
 				LineStartPattern:  "^#",
 				MetadataOperators: []operator.Config{},
-				MaxHeaderSize:     &defaultMaxHeaderByteSize,
+				MaxHeaderLineSize: &defaultMaxHeaderByteSize,
 			},
 			expectedErr: "at least one operator must be specified for `metadata_operators`",
 		},
@@ -115,7 +115,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 						Builder: invalidRegexConf,
 					},
 				},
-				MaxHeaderSize: &defaultMaxHeaderByteSize,
+				MaxHeaderLineSize: &defaultMaxHeaderByteSize,
 			},
 			expectedErr: "failed to build pipelines:",
 		},
@@ -128,7 +128,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 						Builder: generateConf,
 					},
 				},
-				MaxHeaderSize: &defaultMaxHeaderByteSize,
+				MaxHeaderLineSize: &defaultMaxHeaderByteSize,
 			},
 			expectedErr: "first operator must be able to process entries",
 		},
@@ -239,9 +239,17 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 	fullCaptureRegexConfig := regex.NewConfig()
 	fullCaptureRegexConfig.Regex = `^(?P<header>[\s\S]*)$`
 
+	captureFieldOneRegexConfig := regex.NewConfig()
+	captureFieldOneRegexConfig.Regex = `^#aField: (?P<field1>.*)$`
+	captureFieldOneRegexConfig.IfExpr = `body startsWith "#aField:"`
+
+	captureFieldTwoRegexConfig := regex.NewConfig()
+	captureFieldTwoRegexConfig.Regex = `^#secondValue: (?P<field2>.*)$`
+	captureFieldTwoRegexConfig.IfExpr = `body startsWith "#secondValue:"`
+
 	generateConf := generate.NewConfig("")
 
-	smallByteSize := helper.ByteSize(28)
+	smallByteSize := helper.ByteSize(8)
 
 	testCases := []struct {
 		name               string
@@ -267,9 +275,9 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 		},
 		{
 			name:         "Header truncates when too long",
-			fileContents: "#aField: SomeValue\n#aField2: SomeValue2\nThis is a non-header line\n",
+			fileContents: "#aField: SomeValue\nThis is a non-header line\n",
 			expectedAttributes: map[string]any{
-				"header": "#aField: SomeValue\n#aField2:",
+				"header": "#aField:",
 			},
 			conf: HeaderConfig{
 				LineStartPattern: "^#",
@@ -278,13 +286,47 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 						Builder: fullCaptureRegexConfig,
 					},
 				},
-				MaxHeaderSize: &smallByteSize,
+				MaxHeaderLineSize: &smallByteSize,
+			},
+		},
+		{
+			name:         "Header attribute from following line overwrites previous",
+			fileContents: "#aField: SomeValue\n#secondValue: SomeValue2\nThis is a non-header line\n",
+			expectedAttributes: map[string]any{
+				"header": "#secondValue: SomeValue2",
+			},
+			conf: HeaderConfig{
+				LineStartPattern: "^#",
+				MetadataOperators: []operator.Config{
+					{
+						Builder: fullCaptureRegexConfig,
+					},
+				},
+			},
+		},
+		{
+			name:         "Header attribute from both lines merged",
+			fileContents: "#aField: SomeValue\n#secondValue: SomeValue2\nThis is a non-header line\n",
+			expectedAttributes: map[string]any{
+				"field1": "SomeValue",
+				"field2": "SomeValue2",
+			},
+			conf: HeaderConfig{
+				LineStartPattern: "^#",
+				MetadataOperators: []operator.Config{
+					{
+						Builder: captureFieldOneRegexConfig,
+					},
+					{
+						Builder: captureFieldTwoRegexConfig,
+					},
+				},
 			},
 		},
 		{
 			name:               "Pipeline starts with non-parser",
 			fileContents:       "#aField: SomeValue\nThis is a non-header line\n",
-			expectedAttributes: nil,
+			expectedAttributes: map[string]any{},
 			conf: HeaderConfig{
 				LineStartPattern: "^#",
 				MetadataOperators: []operator.Config{
@@ -316,6 +358,7 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 			h.ReadHeader(context.Background(), r, enc, fa)
 
 			require.Equal(t, tc.expectedAttributes, fa.HeaderAttributes)
+			require.NoError(t, h.Shutdown())
 		})
 	}
 }

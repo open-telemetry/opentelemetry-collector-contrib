@@ -62,7 +62,7 @@ func (c *Config) withHeader(headerMatchPattern, extractRegex string, maxSize int
 				Builder: regexOpConfig,
 			},
 		},
-		MaxHeaderSize: &maxSizeByteSize,
+		MaxHeaderLineSize: &maxSizeByteSize,
 	}
 
 	return c

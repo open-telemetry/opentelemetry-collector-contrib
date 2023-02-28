@@ -36,7 +36,7 @@ const defaultMaxHeaderSize = 1024 * 1024 // max size of 1 MiB by default
 type HeaderConfig struct {
 	LineStartPattern  string            `mapstructure:"multiline_pattern"`
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
-	MaxHeaderSize     *helper.ByteSize  `mapstructure:"max_size,omitempty"`
+	MaxHeaderLineSize *helper.ByteSize  `mapstructure:"max_line_size,omitempty"`
 }
 
 // validate returns an error describing why the configuration is invalid, or nil if the configuration is valid.
@@ -46,7 +46,7 @@ func (hc *HeaderConfig) validate() error {
 		return fmt.Errorf("invalid `multiline_pattern`: %w", err)
 	}
 
-	if hc.MaxHeaderSize != nil && *hc.MaxHeaderSize <= 0 {
+	if hc.MaxHeaderLineSize != nil && *hc.MaxHeaderLineSize <= 0 {
 		return errors.New("the `max_size` of the header must be greater than 0")
 	}
 
@@ -89,6 +89,13 @@ func (hc *HeaderConfig) buildHeader(logger *zap.SugaredLogger, enc encoding.Enco
 		return nil, fmt.Errorf("failed to build pipeline: %w", err)
 	}
 
+	scopedPersister := operator.NewScopedPersister("header", persister)
+
+	// TODO: STOP the pipeline at some point!
+	if err := p.Start(scopedPersister); err != nil {
+		return nil, fmt.Errorf("failed to start header pipeline: %w", err)
+	}
+
 	splitFunc, err := helper.NewNewlineSplitFunc(enc, false, func(b []byte) []byte {
 		return bytes.Trim(b, "\r\n")
 	})
@@ -97,21 +104,21 @@ func (hc *HeaderConfig) buildHeader(logger *zap.SugaredLogger, enc encoding.Enco
 	}
 
 	var maxSize int
-	if hc.MaxHeaderSize != nil {
-		maxSize = int(*hc.MaxHeaderSize)
+	if hc.MaxHeaderLineSize != nil {
+		maxSize = int(*hc.MaxHeaderLineSize)
 	} else {
 		maxSize = defaultMaxHeaderSize
 	}
 
 	return &header{
-		matchRegex:     reg,
-		headerBytes:    &bytes.Buffer{},
-		outputOperator: outOp,
-		headerPipeline: p,
-		logger:         logger,
-		splitFunc:      splitFunc,
-		maxHeaderSize:  maxSize,
-		persister:      operator.NewScopedPersister("header", persister),
+		matchRegex:           reg,
+		outputOperator:       outOp,
+		headerPipeline:       p,
+		logger:               logger,
+		splitFunc:            splitFunc,
+		maxHeaderLineSize:    maxSize,
+		persister:            scopedPersister,
+		attributesFromHeader: map[string]any{},
 	}, nil
 }
 
@@ -119,12 +126,11 @@ type header struct {
 	finalized            bool
 	attributesFromHeader map[string]any
 
-	matchRegex    *regexp.Regexp
-	offset        int64
-	splitFunc     bufio.SplitFunc
-	maxHeaderSize int
+	offset            int64
+	matchRegex        *regexp.Regexp
+	splitFunc         bufio.SplitFunc
+	maxHeaderLineSize int
 
-	headerBytes    *bytes.Buffer
 	outputOperator *headerPipelineOutput
 	headerPipeline pipeline.Pipeline
 	persister      operator.Persister
@@ -144,7 +150,7 @@ func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Enc
 		return
 	}
 
-	scanner := NewPositionalScanner(f, h.maxHeaderSize, h.offset, h.splitFunc)
+	scanner := NewPositionalScanner(f, h.maxHeaderLineSize, h.offset, h.splitFunc)
 
 	for {
 		select {
@@ -176,67 +182,46 @@ func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Enc
 			return
 		}
 
-		remainingSpace := h.maxHeaderSize - h.headerBytes.Len()
-		// If writing this line to the header's buffer would cross the maximum allotted size,
-		// we'll truncate to the largest size and finalize the header.
-		if remainingSpace < len(line) {
-			h.logger.Warnw("Max header size was reached; Truncated header is being used.", zap.Int("maxHeaderSize", h.maxHeaderSize))
-			h.headerBytes.Write(line[:remainingSpace])
-			// Set final offset to the end of this last line we read for the headers.
-			h.offset = scanner.Pos()
-			h.finalizeHeader(ctx, fileAttributes)
-			return
+		if err := h.processHeaderLine(ctx, line); err != nil {
+			h.logger.Errorw("Failed to process header", zap.Error(err))
 		}
-
-		h.headerBytes.Write(line)
-		h.headerBytes.Write([]byte("\n"))
 		h.offset = scanner.Pos()
 	}
 }
 
-// finalizeHeader marks the header as completely read, and parses the attributes using the configured pipeline.
+// finalizeHeader marks the header as completely read, and adds the resultant attributes to the FileAttributes.
 func (h *header) finalizeHeader(ctx context.Context, fileAttributes *FileAttributes) {
 	h.finalized = true
-
-	e, err := h.processHeaderEntry(ctx)
-	if err != nil {
-		h.logger.Errorw("Failed to process header", zap.Error(err))
-	} else {
-		h.attributesFromHeader = e.Attributes
-		fileAttributes.HeaderAttributes = h.attributesFromHeader
-	}
-
-	// Drop the header bytes so that the buffer can be reclaimed by the garbage collector.
-	h.headerBytes = nil
+	fileAttributes.HeaderAttributes = h.attributesFromHeader
 }
 
-// processHeaderEntry process the header's internal buffer as the body of an entry
-func (h *header) processHeaderEntry(ctx context.Context) (*entry.Entry, error) {
-	if err := h.headerPipeline.Start(h.persister); err != nil {
-		return nil, fmt.Errorf("failed to start header pipeline: %w", err)
-	}
-
-	defer func() {
-		if err := h.headerPipeline.Stop(); err != nil {
-			h.logger.Errorw("Failed to stop header pipeline", zap.Error(err))
-		}
-	}()
-
+// processHeaderLine processes a header line, upserting entries from the line into the header attributes
+func (h *header) processHeaderLine(ctx context.Context, line []byte) error {
 	firstOperator := h.headerPipeline.Operators()[0]
 
 	newEntry := entry.New()
-	newEntry.Body = h.headerBytes.String()
+	newEntry.Body = string(line)
 
 	if err := firstOperator.Process(ctx, newEntry); err != nil {
-		return nil, fmt.Errorf("failed to process header entry: %w", err)
+		return fmt.Errorf("failed to process header entry: %w", err)
 	}
 
 	ent, err := h.outputOperator.WaitForEntry(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("got error while waiting for header entry: %w", err)
+		return fmt.Errorf("got error while waiting for header entry: %w", err)
 	}
 
-	return ent, nil
+	// Copy resultant attributes over current set of attributes (upsert)
+	for k, v := range ent.Attributes {
+		h.attributesFromHeader[k] = v
+	}
+
+	return nil
+}
+
+// TODO: Call in reader/manager
+func (h *header) Shutdown() error {
+	return h.headerPipeline.Stop()
 }
 
 // Finalized returns true if the header is "finalized", meaning the header has been completely

@@ -169,4 +169,4 @@ header_config_max_size:
     multiline_pattern: "^#"
     metadata_operators:
      - type: "regex_parser"
-    max_size: "16kib"
+    max_line_size: "16kib"
