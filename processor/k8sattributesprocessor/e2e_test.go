@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 )
@@ -47,7 +48,6 @@ func newExpectedValue(mode int, value string) *expectedValue {
 		value: value,
 	}
 }
-
 func TestTraceE2E(t *testing.T) {
 	tcs := []struct {
 		name    string
@@ -353,41 +353,4 @@ func scanMetricForAttributes(t *testing.T, expectedService string, kvs map[strin
 	}
 	assert.NoError(t, err)
 
-}
-
-func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedValue) error {
-	foundAttrs := make(map[string]bool)
-	for k := range kvs {
-		foundAttrs[k] = false
-	}
-
-	resource.Attributes().Range(
-		func(k string, v pcommon.Value) bool {
-			if val, ok := kvs[k]; ok {
-				switch val.mode {
-				case equal:
-					if val.value == v.AsString() {
-						foundAttrs[k] = true
-					}
-				case regex:
-					matched, _ := regexp.MatchString(val.value, v.AsString())
-					if matched {
-						foundAttrs[k] = true
-					}
-				case exist:
-					foundAttrs[k] = true
-				}
-
-			}
-			return true
-		},
-	)
-
-	var err error
-	for k, v := range foundAttrs {
-		if !v {
-			err = multierr.Append(err, fmt.Errorf("%v attribute not found", k))
-		}
-	}
-	return err
 }
