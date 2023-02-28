@@ -25,22 +25,14 @@ type splitterFactory interface {
 }
 
 type multilineSplitterFactory struct {
-	EncodingConfig          helper.EncodingConfig
-	Flusher                 helper.FlusherConfig
-	Multiline               helper.MultilineConfig
-	TrimLeadingWhitespaces  bool
-	TrimTrailingWhitespaces bool
+	helper.SplitterConfig
 }
 
 var _ splitterFactory = (*multilineSplitterFactory)(nil)
 
 func newMultilineSplitterFactory(splitter helper.SplitterConfig) *multilineSplitterFactory {
 	return &multilineSplitterFactory{
-		EncodingConfig:          splitter.EncodingConfig,
-		Flusher:                 splitter.Flusher,
-		Multiline:               splitter.Multiline,
-		TrimLeadingWhitespaces:  splitter.TrimTrailingWhitespaces,
-		TrimTrailingWhitespaces: splitter.TrimTrailingWhitespaces,
+		SplitterConfig: splitter,
 	}
 }
 
@@ -51,7 +43,7 @@ func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc,
 		return nil, err
 	}
 	flusher := factory.Flusher.Build()
-	splitter, err := factory.Multiline.Build(enc.Encoding, false, factory.TrimLeadingWhitespaces, factory.TrimTrailingWhitespaces, flusher, maxLogSize)
+	splitter, err := factory.Multiline.Build(enc.Encoding, false, factory.PreserveLeadingWhitespaces, factory.PreserveTrailingWhitespaces, flusher, maxLogSize)
 	if err != nil {
 		return nil, err
 	}

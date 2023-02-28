@@ -95,16 +95,16 @@ func (r *reader) SplitFunc(splitFunc bufio.SplitFunc) bufio.SplitFunc {
 }
 
 type tokenizerTestCase struct {
-	Name                    string
-	Pattern                 string
-	Raw                     []byte
-	ExpectedTokenized       []string
-	ExpectedError           error
-	Flusher                 *Flusher
-	Sleep                   time.Duration
-	AdditionalIterations    int
-	TrimLeadingWhitespaces  bool
-	TrimTrailingWhitespaces bool
+	Name                        string
+	Pattern                     string
+	Raw                         []byte
+	ExpectedTokenized           []string
+	ExpectedError               error
+	Flusher                     *Flusher
+	Sleep                       time.Duration
+	AdditionalIterations        int
+	PreserveLeadingWhitespaces  bool
+	PreserveTrailingWhitespaces bool
 }
 
 func (tc tokenizerTestCase) RunFunc(splitFunc bufio.SplitFunc) func(t *testing.T) {
@@ -143,8 +143,6 @@ func TestLineStartSplitFunc(t *testing.T) {
 			ExpectedTokenized: []string{
 				`LOGSTART 123 log1`,
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name:    "TwoLogsSimple",
@@ -154,8 +152,6 @@ func TestLineStartSplitFunc(t *testing.T) {
 				`LOGSTART 123 log1`,
 				`LOGSTART 234 log2`,
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name:    "TwoLogsLineStart",
@@ -165,15 +161,11 @@ func TestLineStartSplitFunc(t *testing.T) {
 				"LOGSTART 123 LOGSTART 345 log1",
 				"LOGSTART 234 log2",
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
-			Name:                    "NoMatches",
-			Pattern:                 `LOGSTART \d+ `,
-			Raw:                     []byte(`file that has no matches in it`),
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			Name:    "NoMatches",
+			Pattern: `LOGSTART \d+ `,
+			Raw:     []byte(`file that has no matches in it`),
 		},
 		{
 			Name:    "PrecedingNonMatches",
@@ -183,8 +175,6 @@ func TestLineStartSplitFunc(t *testing.T) {
 				`part that doesn't match`,
 				`LOGSTART 123 part that matches`,
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name:    "HugeLog100",
@@ -198,8 +188,6 @@ func TestLineStartSplitFunc(t *testing.T) {
 			ExpectedTokenized: []string{
 				`LOGSTART 123 ` + string(generatedByteSliceOfLength(100)),
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name:    "HugeLog10000",
@@ -213,8 +201,6 @@ func TestLineStartSplitFunc(t *testing.T) {
 			ExpectedTokenized: []string{
 				`LOGSTART 123 ` + string(generatedByteSliceOfLength(10000)),
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name:    "ErrTooLong",
@@ -225,9 +211,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 				newRaw = append(newRaw, []byte(`LOGSTART 234 endlog`)...)
 				return newRaw
 			}(),
-			ExpectedError:           errors.New("bufio.Scanner: token too long"),
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			ExpectedError: errors.New("bufio.Scanner: token too long"),
 		},
 		{
 			Name:    "MultipleMultilineLogs",
@@ -237,15 +221,11 @@ func TestLineStartSplitFunc(t *testing.T) {
 				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1",
 				"LOGSTART 17 log2\nLOGPART log2\nanother line",
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
-			Name:                    "LogsWithoutFlusher",
-			Pattern:                 `^LOGSTART \d+`,
-			Raw:                     []byte("LOGPART log1\nLOGPART log1\t   \n"),
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			Name:    "LogsWithoutFlusher",
+			Pattern: `^LOGSTART \d+`,
+			Raw:     []byte("LOGPART log1\nLOGPART log1\t   \n"),
 		},
 		{
 			Name:    "LogsWithFlusher",
@@ -257,10 +237,8 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Flusher: &Flusher{
 				forcePeriod: forcePeriod,
 			},
-			AdditionalIterations:    1,
-			Sleep:                   sleepDuration,
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			AdditionalIterations: 1,
+			Sleep:                sleepDuration,
 		},
 		{
 			Name:    "LogsWithFlusherWithMultipleLogsInBuffer",
@@ -273,10 +251,8 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Flusher: &Flusher{
 				forcePeriod: forcePeriod,
 			},
-			AdditionalIterations:    1,
-			Sleep:                   sleepDuration,
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			AdditionalIterations: 1,
+			Sleep:                sleepDuration,
 		},
 		{
 			Name:    "LogsWithLongFlusherWithMultipleLogsInBuffer",
@@ -288,10 +264,8 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Flusher: &Flusher{
 				forcePeriod: forcePeriod * 16,
 			},
-			AdditionalIterations:    1,
-			Sleep:                   forcePeriod / 4,
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			AdditionalIterations: 1,
+			Sleep:                forcePeriod / 4,
 		},
 		{
 			Name:    "LogsWithFlusherWithLogStartingWithWhiteChars",
@@ -304,10 +278,8 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Flusher: &Flusher{
 				forcePeriod: forcePeriod,
 			},
-			AdditionalIterations:    1,
-			Sleep:                   sleepDuration,
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			AdditionalIterations: 1,
+			Sleep:                sleepDuration,
 		},
 	}
 
@@ -316,7 +288,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			LineStartPattern: tc.Pattern,
 		}
 
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0, tc.TrimLeadingWhitespaces, tc.TrimTrailingWhitespaces)
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
@@ -350,8 +322,6 @@ func TestLineEndSplitFunc(t *testing.T) {
 			ExpectedTokenized: []string{
 				`my log LOGEND 123`,
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name:    "TwoLogsSimple",
@@ -361,8 +331,6 @@ func TestLineEndSplitFunc(t *testing.T) {
 				`log1 LOGEND 123`,
 				`log2 LOGEND 234`,
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name:    "TwoLogsLineEndSimple",
@@ -372,15 +340,11 @@ func TestLineEndSplitFunc(t *testing.T) {
 				"log1 LOGEND LOGEND",
 				"log2 LOGEND",
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
-			Name:                    "NoMatches",
-			Pattern:                 `LOGEND \d+`,
-			Raw:                     []byte(`file that has no matches in it`),
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			Name:    "NoMatches",
+			Pattern: `LOGEND \d+`,
+			Raw:     []byte(`file that has no matches in it`),
 		},
 		{
 			Name:    "NonMatchesAfter",
@@ -389,8 +353,6 @@ func TestLineEndSplitFunc(t *testing.T) {
 			ExpectedTokenized: []string{
 				`part that matches LOGEND 123`,
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name:    "HugeLog100",
@@ -403,8 +365,6 @@ func TestLineEndSplitFunc(t *testing.T) {
 			ExpectedTokenized: []string{
 				string(generatedByteSliceOfLength(100)) + `LOGEND 1`,
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name:    "HugeLog10000",
@@ -417,8 +377,6 @@ func TestLineEndSplitFunc(t *testing.T) {
 			ExpectedTokenized: []string{
 				string(generatedByteSliceOfLength(10000)) + `LOGEND 1`,
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name:    "HugeLog1000000",
@@ -428,9 +386,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 				newRaw = append(newRaw, []byte(`LOGEND 1 `)...)
 				return newRaw
 			}(),
-			ExpectedError:           errors.New("bufio.Scanner: token too long"),
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			ExpectedError: errors.New("bufio.Scanner: token too long"),
 		},
 		{
 			Name:    "MultipleMultilineLogs",
@@ -440,16 +396,12 @@ func TestLineEndSplitFunc(t *testing.T) {
 				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1",
 				"LOGSTART 17 log2\nLOGPART log2\nLOGEND log2",
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
-			Name:                    "LogsWithoutFlusher",
-			Pattern:                 `^LOGEND.*$`,
-			Raw:                     []byte("LOGPART log1\nLOGPART log1\t   \n"),
-			Flusher:                 &Flusher{},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			Name:    "LogsWithoutFlusher",
+			Pattern: `^LOGEND.*$`,
+			Raw:     []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			Flusher: &Flusher{},
 		},
 		{
 			Name:    "LogsWithFlusher",
@@ -461,10 +413,8 @@ func TestLineEndSplitFunc(t *testing.T) {
 			Flusher: &Flusher{
 				forcePeriod: forcePeriod,
 			},
-			AdditionalIterations:    1,
-			Sleep:                   sleepDuration,
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			AdditionalIterations: 1,
+			Sleep:                sleepDuration,
 		},
 		{
 			Name:    "LogsWithFlusherWithMultipleLogsInBuffer",
@@ -477,10 +427,8 @@ func TestLineEndSplitFunc(t *testing.T) {
 			Flusher: &Flusher{
 				forcePeriod: forcePeriod,
 			},
-			AdditionalIterations:    1,
-			Sleep:                   sleepDuration,
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			AdditionalIterations: 1,
+			Sleep:                sleepDuration,
 		},
 		{
 			Name:    "LogsWithLongFlusherWithMultipleLogsInBuffer",
@@ -492,10 +440,8 @@ func TestLineEndSplitFunc(t *testing.T) {
 			Flusher: &Flusher{
 				forcePeriod: forcePeriod * 16,
 			},
-			AdditionalIterations:    1,
-			Sleep:                   forcePeriod / 4,
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			AdditionalIterations: 1,
+			Sleep:                forcePeriod / 4,
 		},
 		{
 			Name:    "LogsWithFlusherWithLogStartingWithWhiteChars",
@@ -507,10 +453,8 @@ func TestLineEndSplitFunc(t *testing.T) {
 			Flusher: &Flusher{
 				forcePeriod: forcePeriod,
 			},
-			AdditionalIterations:    1,
-			Sleep:                   sleepDuration,
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			AdditionalIterations: 1,
+			Sleep:                sleepDuration,
 		},
 	}
 
@@ -519,7 +463,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			LineEndPattern: tc.Pattern,
 		}
 
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0, tc.TrimLeadingWhitespaces, tc.TrimTrailingWhitespaces)
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
@@ -533,8 +477,6 @@ func TestNewlineSplitFunc(t *testing.T) {
 			ExpectedTokenized: []string{
 				`my log`,
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name: "OneLogCarriageReturn",
@@ -542,8 +484,6 @@ func TestNewlineSplitFunc(t *testing.T) {
 			ExpectedTokenized: []string{
 				`my log`,
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name: "TwoLogsSimple",
@@ -552,8 +492,6 @@ func TestNewlineSplitFunc(t *testing.T) {
 				`log1`,
 				`log2`,
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name: "TwoLogsCarriageReturn",
@@ -562,14 +500,10 @@ func TestNewlineSplitFunc(t *testing.T) {
 				`log1`,
 				`log2`,
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
-			Name:                    "NoTailingNewline",
-			Raw:                     []byte(`foo`),
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			Name: "NoTailingNewline",
+			Raw:  []byte(`foo`),
 		},
 		{
 			Name: "HugeLog100",
@@ -581,8 +515,6 @@ func TestNewlineSplitFunc(t *testing.T) {
 			ExpectedTokenized: []string{
 				string(generatedByteSliceOfLength(100)),
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name: "HugeLog10000",
@@ -594,8 +526,6 @@ func TestNewlineSplitFunc(t *testing.T) {
 			ExpectedTokenized: []string{
 				string(generatedByteSliceOfLength(10000)),
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name: "HugeLog1000000",
@@ -604,16 +534,12 @@ func TestNewlineSplitFunc(t *testing.T) {
 				newRaw = append(newRaw, '\n')
 				return newRaw
 			}(),
-			ExpectedError:           errors.New("bufio.Scanner: token too long"),
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			ExpectedError: errors.New("bufio.Scanner: token too long"),
 		},
 		{
-			Name:                    "LogsWithoutFlusher",
-			Raw:                     []byte("LOGPART log1"),
-			Flusher:                 &Flusher{},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			Name:    "LogsWithoutFlusher",
+			Raw:     []byte("LOGPART log1"),
+			Flusher: &Flusher{},
 		},
 		{
 			Name: "LogsWithFlusher",
@@ -624,10 +550,8 @@ func TestNewlineSplitFunc(t *testing.T) {
 			Flusher: &Flusher{
 				forcePeriod: forcePeriod,
 			},
-			AdditionalIterations:    1,
-			Sleep:                   sleepDuration,
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
+			AdditionalIterations: 1,
+			Sleep:                sleepDuration,
 		},
 		{
 			Name: "DefaultFlusherSplits",
@@ -636,8 +560,6 @@ func TestNewlineSplitFunc(t *testing.T) {
 				"log1",
 				"log2",
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
 			Name: "LogsWithLogStartingWithWhiteChars",
@@ -646,43 +568,39 @@ func TestNewlineSplitFunc(t *testing.T) {
 				"",
 				"LOGEND 333",
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: true,
 		},
 		{
-			Name: "NotTrimLeadingWhitespaces",
+			Name: "PreserveLeadingWhitespaces",
 			Raw:  []byte("\n LOGEND 333 \nAnother one "),
 			ExpectedTokenized: []string{
 				"",
 				" LOGEND 333",
 			},
-			TrimLeadingWhitespaces:  false,
-			TrimTrailingWhitespaces: true,
+			PreserveLeadingWhitespaces: true,
 		},
 		{
-			Name: "NotTrimTrailingWhitespaces",
+			Name: "PreserveTrailingWhitespaces",
 			Raw:  []byte("\n LOGEND 333 \nAnother one "),
 			ExpectedTokenized: []string{
 				"",
 				"LOGEND 333 ",
 			},
-			TrimLeadingWhitespaces:  true,
-			TrimTrailingWhitespaces: false,
+			PreserveTrailingWhitespaces: true,
 		},
 		{
-			Name: "NotTrimBothLeadingAndTrailingWhitespaces",
+			Name: "PreserveBothLeadingAndTrailingWhitespaces",
 			Raw:  []byte("\n LOGEND 333 \nAnother one "),
 			ExpectedTokenized: []string{
 				"",
 				" LOGEND 333 ",
 			},
-			TrimLeadingWhitespaces:  false,
-			TrimTrailingWhitespaces: false,
+			PreserveLeadingWhitespaces:  true,
+			PreserveTrailingWhitespaces: true,
 		},
 	}
 
 	for _, tc := range testCases {
-		splitFunc, err := NewNewlineSplitFunc(unicode.UTF8, false, getTrimFunc(tc.TrimLeadingWhitespaces, tc.TrimTrailingWhitespaces))
+		splitFunc, err := NewNewlineSplitFunc(unicode.UTF8, false, getTrimFunc(tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces))
 		require.NoError(t, err)
 		if tc.Flusher != nil {
 			splitFunc = tc.Flusher.SplitFunc(splitFunc)
@@ -788,14 +706,14 @@ func TestNoopEncodingError(t *testing.T) {
 		LineEndPattern: "\n",
 	}
 
-	_, err := cfg.getSplitFunc(encoding.Nop, false, nil, 0, true, true)
+	_, err := cfg.getSplitFunc(encoding.Nop, false, nil, 0, false, false)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 
 	cfg = &MultilineConfig{
 		LineStartPattern: "\n",
 	}
 
-	_, err = cfg.getSplitFunc(encoding.Nop, false, nil, 0, true, true)
+	_, err = cfg.getSplitFunc(encoding.Nop, false, nil, 0, false, false)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 }
 

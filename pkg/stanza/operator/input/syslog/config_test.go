@@ -59,8 +59,6 @@ func TestUnmarshal(t *testing.T) {
 						},
 						ClientCAFile: "foo4",
 					}
-					cfg.TCP.TrimLeadingWhitespaces = true
-					cfg.TCP.TrimTrailingWhitespaces = true
 					return cfg
 				}(),
 			},
@@ -78,8 +76,6 @@ func TestUnmarshal(t *testing.T) {
 					cfg.UDP.Encoding.Encoding = "utf-16"
 					cfg.UDP.Multiline = helper.NewMultilineConfig()
 					cfg.UDP.Multiline.LineStartPattern = "ABC"
-					cfg.UDP.TrimLeadingWhitespaces = true
-					cfg.UDP.TrimTrailingWhitespaces = true
 					return cfg
 				}(),
 			},

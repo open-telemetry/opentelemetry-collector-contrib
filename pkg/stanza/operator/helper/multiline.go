@@ -44,12 +44,12 @@ type MultilineConfig struct {
 }
 
 // Build will build a Multiline operator.
-func (c MultilineConfig) Build(enc encoding.Encoding, flushAtEOF, trimLeadingWhitespaces, trimTrailingWhitespaces bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
-	return c.getSplitFunc(enc, flushAtEOF, force, maxLogSize, trimLeadingWhitespaces, trimTrailingWhitespaces)
+func (c MultilineConfig) Build(enc encoding.Encoding, flushAtEOF, preserveLeadingWhitespaces, preserveTrailingWhitespaces bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
+	return c.getSplitFunc(enc, flushAtEOF, force, maxLogSize, preserveLeadingWhitespaces, preserveTrailingWhitespaces)
 }
 
 // getSplitFunc returns split function for bufio.Scanner basing on configured pattern
-func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int, trimLeadingWhitespaces, trimTrailingWhitespaces bool) (bufio.SplitFunc, error) {
+func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int, preserveLeadingWhitespaces, preserveTrailingWhitespaces bool) (bufio.SplitFunc, error) {
 	endPattern := c.LineEndPattern
 	startPattern := c.LineStartPattern
 
@@ -66,7 +66,7 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 	case enc == encoding.Nop:
 		return SplitNone(maxLogSize), nil
 	case endPattern == "" && startPattern == "":
-		splitFunc, err = NewNewlineSplitFunc(enc, flushAtEOF, getTrimFunc(trimLeadingWhitespaces, trimTrailingWhitespaces))
+		splitFunc, err = NewNewlineSplitFunc(enc, flushAtEOF, getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces))
 
 		if err != nil {
 			return nil, err
@@ -76,13 +76,13 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 		if err != nil {
 			return nil, fmt.Errorf("compile line end regex: %w", err)
 		}
-		splitFunc = NewLineEndSplitFunc(re, flushAtEOF, getTrimFunc(trimLeadingWhitespaces, trimTrailingWhitespaces))
+		splitFunc = NewLineEndSplitFunc(re, flushAtEOF, getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces))
 	case startPattern != "":
 		re, err := regexp.Compile("(?m)" + c.LineStartPattern)
 		if err != nil {
 			return nil, fmt.Errorf("compile line start regex: %w", err)
 		}
-		splitFunc = NewLineStartSplitFunc(re, flushAtEOF, getTrimFunc(trimLeadingWhitespaces, trimTrailingWhitespaces))
+		splitFunc = NewLineStartSplitFunc(re, flushAtEOF, getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces))
 	default:
 		return nil, fmt.Errorf("unreachable")
 	}
@@ -98,7 +98,6 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 // tokens that start with a match to the regex pattern provided
 func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool, trimFunc trimFunc) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-
 		firstLoc := re.FindIndex(data)
 		if firstLoc == nil {
 			// Flush if no more data is expected
@@ -255,15 +254,15 @@ func trimWhitespacesFunc(data []byte) []byte {
 	return trimLeadingWhitespacesFunc(trimTrailingWhitespacesFunc(data))
 }
 
-func getTrimFunc(trimLeadingWhitespaces, trimTrailingWhitespaces bool) trimFunc {
-	if trimLeadingWhitespaces && trimTrailingWhitespaces {
-		return trimWhitespacesFunc
+func getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces bool) trimFunc {
+	if preserveLeadingWhitespaces && preserveTrailingWhitespaces {
+		return noTrim
 	}
-	if trimLeadingWhitespaces {
-		return trimLeadingWhitespacesFunc
-	}
-	if trimTrailingWhitespaces {
+	if preserveLeadingWhitespaces {
 		return trimTrailingWhitespacesFunc
 	}
-	return noTrim
+	if preserveTrailingWhitespaces {
+		return trimLeadingWhitespacesFunc
+	}
+	return trimWhitespacesFunc
 }

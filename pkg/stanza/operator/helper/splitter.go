@@ -18,21 +18,19 @@ import "bufio"
 
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
-	EncodingConfig          EncodingConfig  `mapstructure:",squash,omitempty"`
-	Flusher                 FlusherConfig   `mapstructure:",squash,omitempty"`
-	Multiline               MultilineConfig `mapstructure:"multiline,omitempty"`
-	TrimLeadingWhitespaces  bool            `mapstructure:"trim_leading_whitespaces,omitempty"`
-	TrimTrailingWhitespaces bool            `mapstructure:"trim_trailing_whitespaces,omitempty"`
+	EncodingConfig              EncodingConfig  `mapstructure:",squash,omitempty"`
+	Flusher                     FlusherConfig   `mapstructure:",squash,omitempty"`
+	Multiline                   MultilineConfig `mapstructure:"multiline,omitempty"`
+	PreserveLeadingWhitespaces  bool            `mapstructure:"preserve_leading_whitespaces,omitempty"`
+	PreserveTrailingWhitespaces bool            `mapstructure:"preserve_trailing_whitespaces,omitempty"`
 }
 
 // NewSplitterConfig returns default SplitterConfig
 func NewSplitterConfig() SplitterConfig {
 	return SplitterConfig{
-		EncodingConfig:          NewEncodingConfig(),
-		Multiline:               NewMultilineConfig(),
-		Flusher:                 NewFlusherConfig(),
-		TrimLeadingWhitespaces:  true,
-		TrimTrailingWhitespaces: true,
+		EncodingConfig: NewEncodingConfig(),
+		Multiline:      NewMultilineConfig(),
+		Flusher:        NewFlusherConfig(),
 	}
 }
 
@@ -44,7 +42,7 @@ func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, erro
 	}
 
 	flusher := c.Flusher.Build()
-	splitFunc, err := c.Multiline.Build(enc.Encoding, flushAtEOF, c.TrimLeadingWhitespaces, c.TrimTrailingWhitespaces, flusher, maxLogSize)
+	splitFunc, err := c.Multiline.Build(enc.Encoding, flushAtEOF, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, flusher, maxLogSize)
 	if err != nil {
 		return nil, err
 	}
