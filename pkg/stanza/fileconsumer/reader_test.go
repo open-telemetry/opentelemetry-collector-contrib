@@ -20,8 +20,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -159,6 +162,47 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	for _, expected := range expected {
 		require.Equal(t, expected, readToken(t, emitChan))
 	}
+}
+
+func TestHeaderFingerprintIncluded(t *testing.T) {
+	fileContent := []byte("#header-line\naaa\n")
+
+	f, _ := testReaderFactory(t)
+	f.readerConfig.maxLogSize = 10
+
+	regexConf := regex.NewConfig()
+	regexConf.Regex = "^#(?P<header>.*)"
+
+	headerConf := &HeaderConfig{
+		LineStartPattern: "^#",
+		MetadataOperators: []operator.Config{
+			{
+				Builder: regexConf,
+			},
+		},
+	}
+
+	enc, err := helper.EncodingConfig{
+		Encoding: "utf-8",
+	}.Build()
+	require.NoError(t, err)
+
+	require.NoError(t, headerConf.build(zaptest.NewLogger(t).Sugar(), enc.Encoding))
+
+	h, err := headerConf.buildHeader(nil)
+	require.NoError(t, err)
+
+	temp := openTemp(t, t.TempDir())
+
+	r, err := f.newReaderBuilder().withFile(temp).withHeader(h).build()
+	require.NoError(t, err)
+
+	_, err = temp.Write(fileContent)
+	require.NoError(t, err)
+
+	r.ReadToEnd(context.Background())
+
+	require.Equal(t, []byte("#header-line\naaa\n"), r.Fingerprint.FirstBytes)
 }
 
 func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {

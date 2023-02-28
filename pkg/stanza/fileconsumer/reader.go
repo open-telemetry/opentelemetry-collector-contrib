@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"go.uber.org/zap"
@@ -69,6 +70,9 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		// Set r to the end of the headers if our current offset is within the header logs
 		if r.Offset < r.header.Offset() {
+			if err := r.readHeaderFingerprint(); err != nil {
+				r.Errorw("Failed to read header into fingerprint.", zap.Error(err))
+			}
 			r.Offset = r.header.Offset()
 		}
 	}
@@ -142,6 +146,27 @@ func (r *Reader) Read(dst []byte) (int, error) {
 	// for appendCount==0, the following code would add `0` to fingerprint
 	r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
 	return n, err
+}
+
+func (r *Reader) readHeaderFingerprint() error {
+	// Check if fingerprint already has the header bytes
+	readAmnt := min0(int(r.header.Offset()), r.fingerprintSize)
+	if len(r.Fingerprint.FirstBytes) >= readAmnt {
+		return nil
+	}
+
+	initialFpBytes := make([]uint8, readAmnt, r.fingerprintSize)
+
+	if _, err := r.file.Seek(0, io.SeekStart); err != nil {
+		return fmt.Errorf("failed to seek to start of file: %w", err)
+	}
+
+	if _, err := r.file.Read(initialFpBytes); err != nil {
+		return fmt.Errorf("failed to read from file: %w", err)
+	}
+
+	r.Fingerprint.FirstBytes = initialFpBytes
+	return nil
 }
 
 func min0(a, b int) int {
