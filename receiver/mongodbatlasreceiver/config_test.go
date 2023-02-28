@@ -265,7 +265,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Metrics = metadata.DefaultMetricsSettings()
+	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
 	expected.PrivateKey = "my-private-key"
 	expected.PublicKey = "my-public-key"
 	expected.Logs = LogConfig{

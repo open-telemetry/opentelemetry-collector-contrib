@@ -49,7 +49,7 @@ func createDefaultConfig() component.Config {
 			Endpoint: "http://localhost:80/status",
 			Timeout:  10 * time.Second,
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

@@ -53,7 +53,7 @@ func (s *topicScraper) shutdown(context.Context) error {
 }
 
 func (s *topicScraper) start(_ context.Context, _ component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings)
+	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
 }
 
