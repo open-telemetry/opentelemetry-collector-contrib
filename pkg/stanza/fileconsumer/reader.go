@@ -80,7 +80,6 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				// If Scan returned an error then we are not guaranteed to be at the end of the file
 				r.eof = false
 				r.Errorw("Failed during scan", zap.Error(err))
-
 			}
 			break
 		}
