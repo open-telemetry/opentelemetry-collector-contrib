@@ -37,7 +37,7 @@ const (
 	logsType           = 2
 	tracesType         = 3
 	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
+	stability = component.StabilityLevelBeta
 )
 
 // Creates a factory for the ADX Exporter
