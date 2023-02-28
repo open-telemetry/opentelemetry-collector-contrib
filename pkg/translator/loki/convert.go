@@ -35,6 +35,7 @@ const (
 const (
 	formatJSON   string = "json"
 	formatLogfmt string = "logfmt"
+	formatRaw    string = "raw"
 )
 
 func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model.LabelSet {
@@ -170,14 +171,23 @@ func convertLogToLogfmtEntry(lr plog.LogRecord, res pcommon.Resource, scope pcom
 	}, nil
 }
 
+func convertLogToLogRawEntry(lr plog.LogRecord) (*push.Entry, error) {
+	return &push.Entry{
+		Timestamp: timestampFromLogRecord(lr),
+		Line:      lr.Body().Str(),
+	}, nil
+}
+
 func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format string, scope pcommon.InstrumentationScope) (*push.Entry, error) {
 	switch format {
 	case formatJSON:
 		return convertLogToJSONEntry(lr, res, scope)
 	case formatLogfmt:
 		return convertLogToLogfmtEntry(lr, res, scope)
+	case formatRaw:
+		return convertLogToLogRawEntry(lr)
 	default:
-		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s", format, formatJSON, formatLogfmt)
+		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s, %s", format, formatJSON, formatLogfmt, formatRaw)
 	}
 
 }
