@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: test-telemetrygen-job
+  name: telemetrygen-trace-job
   namespace: default
 spec:
   template:
@@ -9,7 +9,7 @@ spec:
       annotations:
         workload: job
       labels:
-        app: test-telemetrygen
+        app: telemetrygen-trace
     spec:
       containers:
       - command:

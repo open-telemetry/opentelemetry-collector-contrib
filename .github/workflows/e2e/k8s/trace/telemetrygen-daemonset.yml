@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: test-telemetrygen-daemonset
+  name: telemetrygen-trace-daemonset
 spec:
   selector:
     matchLabels:
-      app: test-telemetrygen-daemonset
+      app: telemetrygen-trace-daemonset
   template:
     metadata:
       annotations:
         workload: daemonset
       labels:
-        app: test-telemetrygen-daemonset
+        app: telemetrygen-trace-daemonset
     spec:
       containers:
       - command:

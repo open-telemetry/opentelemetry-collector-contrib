@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata: 
-  name: test-telemetrygen-deployment
+  name: telemetrygen-trace-deployment
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: test-telemetrygen-deployment
+      app: telemetrygen-trace-deployment
   template:
     metadata:
       annotations:
         workload: deployment
       labels:
-        app: test-telemetrygen-deployment
+        app: telemetrygen-trace-deployment
     spec:
       containers:
       - command:

@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata: 
-  name: test-telemetrygen-statefulset
+  name: telemetrygen-metric-statefulset
   namespace: default
 spec:
-  serviceName: test-telemetrygen-statefulset
+  serviceName: telemetrygen-metric-statefulset
   replicas: 1
   selector:
     matchLabels:
-      app: test-telemetrygen-statefulset
+      app: telemetrygen-metric-statefulset
   template:
     metadata:
     metadata:
       annotations:
         workload: statefulset
       labels:
-        app: test-telemetrygen-statefulset
+        app: telemetrygen-metric-statefulset
     spec:
       containers:
       - command:
