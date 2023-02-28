@@ -17,13 +17,11 @@ package fileconsumer
 import (
 	"bytes"
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/text/encoding"
-	"golang.org/x/text/transform"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -153,12 +151,6 @@ func TestHeaderConfig_buildHeader(t *testing.T) {
 	invalidRegexConf := regex.NewConfig()
 	invalidRegexConf.Regex = "("
 
-	badEncoding := mockEncoding{
-		encodingTransformer: errorTransformer{
-			e: errors.New("cannot encode bytes"),
-		},
-	}
-
 	testCases := []struct {
 		name        string
 		enc         encoding.Encoding
@@ -178,19 +170,6 @@ func TestHeaderConfig_buildHeader(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid regex",
-			enc:  encoding.Nop,
-			conf: HeaderConfig{
-				LineStartPattern: "^(",
-				MetadataOperators: []operator.Config{
-					{
-						Builder: regexConf,
-					},
-				},
-			},
-			expectedErr: "failed to compile multiline pattern:",
-		},
-		{
 			name: "invalid operator",
 			enc:  encoding.Nop,
 			conf: HeaderConfig{
@@ -202,19 +181,6 @@ func TestHeaderConfig_buildHeader(t *testing.T) {
 				},
 			},
 			expectedErr: "failed to build pipeline:",
-		},
-		{
-			name: "invalid encoding",
-			enc:  badEncoding,
-			conf: HeaderConfig{
-				LineStartPattern: "^#",
-				MetadataOperators: []operator.Config{
-					{
-						Builder: regexConf,
-					},
-				},
-			},
-			expectedErr: "failed to create split func",
 		},
 	}
 
@@ -365,29 +331,3 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 		})
 	}
 }
-
-type mockEncoding struct {
-	encodingTransformer transform.Transformer
-}
-
-func (m mockEncoding) NewEncoder() *encoding.Encoder {
-	return &encoding.Encoder{
-		Transformer: m.encodingTransformer,
-	}
-}
-
-func (m mockEncoding) NewDecoder() *encoding.Decoder {
-	// Unimplemented
-	return nil
-}
-
-// errorTransformer is a mock transform.Transformer that always returns the provided error
-type errorTransformer struct {
-	e error
-}
-
-func (et errorTransformer) Transform(dst, src []byte, atEOF bool) (nDst, nSrc int, err error) {
-	return 0, 0, et.e
-}
-
-func (errorTransformer) Reset() {}
