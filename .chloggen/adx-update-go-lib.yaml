@@ -1,5 +1,5 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: bug_fix
+change_type: deprecation
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
 component: azuredataexplorer
@@ -8,7 +8,7 @@ component: azuredataexplorer
 note: Upgrades to the core library azure-kusto-go that fixes deprecations and also makes it possible to update azblob. Also removes auto-rest that will be deprecated in March 31
 
 # One or more tracking issues related to the change
-issues: [18886] , [18637]
+issues: [18886],[18637]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
