@@ -3,6 +3,7 @@ routing:
     - jaeger
   attribute_source: resource
   from_attribute: X-Tenant
+  error_mode: ignore
   table:
     - value: acme
       exporters:
