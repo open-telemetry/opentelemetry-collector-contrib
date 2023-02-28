@@ -1380,13 +1380,10 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	wg.Wait()
 
 	// short file was fully consumed and should have been deleted
-	_, err := os.Stat(shortFile.Name())
-	require.Error(t, err)
-	require.True(t, os.IsNotExist(err))
+	require.NoFileExists(t, shortFile.Name())
 
 	// long file was partially consumed and should NOT have been deleted
-	_, err = os.Stat(longFile.Name())
-	require.NoError(t, err)
+	require.FileExists(t, longFile.Name())
 
 	// Verify that only long file is remembered and that (0 < offset < fileSize)
 	require.Equal(t, 1, len(operator.knownFiles))
