@@ -302,22 +302,30 @@ func initSpan(span span, s ptrace.Span) {
 }
 
 func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
+
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
-	buf := &bytes.Buffer{}
-	buildKey(buf, "ab", span0, nil, pcommon.NewMap())
-	k0 := metricKey(buf.String())
-	buf.Reset()
+	k0 := c.buildKey("ab", span0, nil, pcommon.NewMap())
+
 	span1 := ptrace.NewSpan()
 	span1.SetName("bc")
-	buildKey(buf, "a", span1, nil, pcommon.NewMap())
-	k1 := metricKey(buf.String())
+	k1 := c.buildKey("a", span1, nil, pcommon.NewMap())
+
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, metricKey("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
 	assert.Equal(t, metricKey("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
 }
 
 func TestBuildKeyWithDimensions(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
+
 	defaultFoo := pcommon.NewValueStr("bar")
 	for _, tc := range []struct {
 		name            string
@@ -384,84 +392,10 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			span0 := ptrace.NewSpan()
 			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
-			buf := &bytes.Buffer{}
-			buildKey(buf, "ab", span0, tc.optionalDims, resAttr)
-			assert.Equal(t, tc.wantKey, buf.String())
+			key := c.buildKey("ab", span0, tc.optionalDims, resAttr)
+			assert.Equal(t, metricKey(tc.wantKey), key)
 		})
 	}
-}
-
-func TestSanitize(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
-	require.Equal(t, "key_test", sanitize("_test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key__test", sanitize("__test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
-	// testcases with skipSanitizeLabel flag turned on
-	cfg.skipSanitizeLabel = true
-	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
-	require.Equal(t, "_test", sanitize("_test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key__test", sanitize("__test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
-}
-
-func TestSetExemplars(t *testing.T) {
-	// ----- conditions -------------------------------------------------------
-	traces := buildSampleTrace()
-	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
-	exemplarSlice := pmetric.NewExemplarSlice()
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	value := float64(42)
-
-	ed := []exemplar{{traceID: traceID, spanID: spanID, value: value}}
-
-	// ----- call -------------------------------------------------------------
-	setExemplars(ed, timestamp, exemplarSlice)
-
-	// ----- verify -----------------------------------------------------------
-	traceIDValue := exemplarSlice.At(0).TraceID()
-	spanIDValue := exemplarSlice.At(0).SpanID()
-
-	assert.NotEmpty(t, exemplarSlice)
-	assert.Equal(t, traceIDValue, traceID)
-	assert.Equal(t, spanIDValue, spanID)
-	assert.Equal(t, exemplarSlice.At(0).Timestamp(), timestamp)
-	assert.Equal(t, exemplarSlice.At(0).DoubleValue(), value)
-}
-
-func TestConnectorUpdateExemplars(t *testing.T) {
-	// ----- conditions -------------------------------------------------------
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	traces := buildSampleTrace()
-	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
-	key := metricKey("metricKey")
-	next := new(consumertest.MetricsSink)
-	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	c.metricsConsumer = next
-	value := float64(42)
-
-	// ----- call -------------------------------------------------------------
-	h := c.getOrCreateHistogram(key, pcommon.NewMap())
-	h.observe(value, traceID, spanID)
-
-	// ----- verify -----------------------------------------------------------
-	assert.NoError(t, err)
-	assert.NotEmpty(t, c.histograms[key].exemplars)
-	assert.Equal(t, c.histograms[key].exemplars[0], exemplar{traceID: traceID, spanID: spanID, value: value})
-
-	// ----- call -------------------------------------------------------------
-	c.resetExemplars()
-
-	// ----- verify -----------------------------------------------------------
-	assert.NoError(t, err)
-	assert.Empty(t, c.histograms[key].exemplars)
 }
 
 func TestStart(t *testing.T) {
@@ -755,6 +689,7 @@ func newConnectorImp(mcon consumer.Metrics, defaultNullValue *pcommon.Value, tem
 		metricsConsumer: mcon,
 
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
+		sums:           make(map[metricKey]*sum),
 		histograms:     make(map[metricKey]*histogram),
 		latencyBounds:  defaultLatencyHistogramBucketsMs,
 		dimensions: []dimension{
@@ -780,33 +715,88 @@ func newConnectorImp(mcon consumer.Metrics, defaultNullValue *pcommon.Value, tem
 	}
 }
 
-func TestUpdateExemplars(t *testing.T) {
-	// ----- conditions -------------------------------------------------------
+func TestConnector_AggregateLatencies(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
+
 	traces := buildSampleTrace()
-	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
-	key := metricKey("metricKey")
+	span := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+
+	// aggregate over the same metric key
 	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	c.metricsConsumer = new(consumertest.MetricsSink)
-	value := float64(42)
+	require.NoError(t, err)
 
-	// ----- call -------------------------------------------------------------
-	h := c.getOrCreateHistogram(key, pcommon.NewMap())
-	h.observe(value, traceID, spanID)
+	c.aggregateLatencies("key", span.Attributes(), span, 1.5)
+	c.aggregateLatencies("key", span.Attributes(), span, 1.7)
 
-	// ----- verify -----------------------------------------------------------
-	assert.NoError(t, err)
-	assert.NotEmpty(t, c.histograms[key].exemplars)
-	assert.Equal(t, c.histograms[key].exemplars[0], exemplar{traceID: traceID, spanID: spanID, value: value})
+	got, ok := c.histograms["key"]
+	require.True(t, ok)
+	assert.Equal(t, uint64(2), got.count)
+	assert.Equal(t, 3.2, got.sum)
+	assert.Equal(t, uint64(2), got.bucketCounts[0])
+	exemplars := pmetric.NewExemplarSlice()
+	e := exemplars.AppendEmpty()
+	e.SetTraceID(span.TraceID())
+	e.SetSpanID(span.SpanID())
+	e.SetDoubleValue(1.5)
+	e = exemplars.AppendEmpty()
+	e.SetTraceID(span.TraceID())
+	e.SetSpanID(span.SpanID())
+	e.SetDoubleValue(1.7)
+	assert.Equal(t, exemplars, got.exemplars)
 
-	// ----- call -------------------------------------------------------------
-	c.resetExemplars()
+	// aggregate over different metric keys
+	c, err = newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
 
-	// ----- verify -----------------------------------------------------------
-	assert.NoError(t, err)
-	assert.Empty(t, c.histograms[key].exemplars)
+	c.aggregateLatencies("key", span.Attributes(), span, 1.5)
+	c.aggregateLatencies("another_key", span.Attributes(), span, 1.7)
+
+	got, ok = c.histograms["key"]
+	require.True(t, ok)
+	assert.Equal(t, uint64(1), got.count)
+	assert.Equal(t, 1.5, got.sum)
+	assert.Equal(t, uint64(1), got.bucketCounts[0])
+	exemplars = pmetric.NewExemplarSlice()
+	e = exemplars.AppendEmpty()
+	e.SetTraceID(span.TraceID())
+	e.SetSpanID(span.SpanID())
+	e.SetDoubleValue(1.5)
+	assert.Equal(t, exemplars, got.exemplars)
+}
+
+func TestConnector_AggregateCalls(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	traces := buildSampleTrace()
+	span := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+
+	// aggregate over the same metric key
+	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
+
+	c.aggregateCalls("key", span.Attributes())
+	c.aggregateCalls("key", span.Attributes())
+
+	got, ok := c.sums["key"]
+	require.True(t, ok)
+	assert.Equal(t, uint64(2), got.count)
+
+	// aggregate over different metric keys
+	c, err = newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
+
+	c.aggregateCalls("key", span.Attributes())
+	c.aggregateCalls("key", span.Attributes())
+	c.aggregateCalls("another_key", span.Attributes())
+
+	got, ok = c.sums["key"]
+	require.True(t, ok)
+	assert.Equal(t, uint64(2), got.count)
+	got, ok = c.sums["another_key"]
+	require.True(t, ok)
+	assert.Equal(t, uint64(1), got.count)
 }
 
 func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {

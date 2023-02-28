@@ -31,11 +31,12 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -132,34 +133,64 @@ func TestConnectorShutdown(t *testing.T) {
 }
 
 func TestProcessorConsume(t *testing.T) {
-	// Prepare
-	cfg := &Config{
-		MetricsExporter: "mock",
-		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
-	}
-
-	mockMetricsExporter := newMockMetricsExporter(func(md pmetric.Metrics) error {
+	metricsExporter := newMockMetricsExporter(func(md pmetric.Metrics) error {
 		return verifyMetrics(t, md)
 	})
+	// set virtual node feature
+	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), true)
 
-	processor := newProcessor(zaptest.NewLogger(t), cfg)
-	processor.tracesConsumer = consumertest.NewNop()
-
-	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
-			component.NewID("mock"): mockMetricsExporter,
+	for _, tc := range []struct {
+		name         string
+		cfg          Config
+		sampleTraces ptrace.Traces
+	}{
+		{
+			name: "traces with client and server span",
+			cfg: Config{
+				MetricsExporter: "mock",
+				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+			}, sampleTraces: buildSampleTrace("val"),
 		},
-	})
+		{
+			name: "incomplete traces with server span lost",
+			cfg: Config{
+				MetricsExporter: "mock",
+				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+			},
+			sampleTraces: incompleteClientTraces(),
+		},
+		{
+			name: "incomplete traces with client span lost",
+			cfg: Config{
+				MetricsExporter: "mock",
+				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+			},
+			sampleTraces: incompleteServerTraces(),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Prepare
+			processor := newProcessor(zaptest.NewLogger(t), &tc.cfg)
+			processor.tracesConsumer = consumertest.NewNop()
+			mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
+				component.DataTypeMetrics: {
+					component.NewID("mock"): metricsExporter,
+				},
+			})
 
-	assert.NoError(t, processor.Start(context.Background(), mHost))
+			assert.NoError(t, processor.Start(context.Background(), mHost))
 
-	// Test & verify
-	td := buildSampleTrace("val")
-	// The assertion is part of verifyMetrics func.
-	assert.NoError(t, processor.ConsumeTraces(context.Background(), td))
+			// Test & verify
+			// The assertion is part of verifyMetrics func.
+			assert.NoError(t, processor.ConsumeTraces(context.Background(), tc.sampleTraces))
+			time.Sleep(time.Second * 2)
+			// Shutdown the processor
+			assert.NoError(t, processor.Shutdown(context.Background()))
+		})
+	}
 
-	// Shutdown the processor
-	assert.NoError(t, processor.Shutdown(context.Background()))
+	// unset virtual node feature
+	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), false)
 }
 
 func TestConnectorConsume(t *testing.T) {
@@ -217,7 +248,7 @@ func verifyCount(t *testing.T, m pmetric.Metric) {
 	assert.Equal(t, int64(1), dp.IntValue())
 
 	attributes := dp.Attributes()
-	assert.Equal(t, 4, attributes.Len())
+	assert.Equal(t, 6, attributes.Len())
 	verifyAttr(t, attributes, "client", "some-service")
 	verifyAttr(t, attributes, "server", "some-service")
 	verifyAttr(t, attributes, "failed", "false")
@@ -286,6 +317,50 @@ func buildSampleTrace(attrValue string) ptrace.Traces {
 	serverSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	serverSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
 
+	return traces
+}
+
+func incompleteClientTraces() ptrace.Traces {
+	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
+	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
+
+	traces := ptrace.NewTraces()
+
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-client-service")
+
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	anotherClientSpanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
+	clientSpanNoServerSpan := scopeSpans.Spans().AppendEmpty()
+	clientSpanNoServerSpan.SetName("client span")
+	clientSpanNoServerSpan.SetSpanID(anotherClientSpanID)
+	clientSpanNoServerSpan.SetTraceID(anotherTraceID)
+	clientSpanNoServerSpan.SetKind(ptrace.SpanKindClient)
+	clientSpanNoServerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+	clientSpanNoServerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
+	clientSpanNoServerSpan.Attributes().PutStr(semconv.AttributeNetSockPeerAddr, "127.10.10.1") // Attribute selected as dimension for metrics
+
+	return traces
+}
+
+func incompleteServerTraces() ptrace.Traces {
+	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
+	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
+
+	traces := ptrace.NewTraces()
+
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-server-service")
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	serverSpanNoClientSpan := scopeSpans.Spans().AppendEmpty()
+	serverSpanNoClientSpan.SetName("server span")
+	serverSpanNoClientSpan.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
+	serverSpanNoClientSpan.SetTraceID(anotherTraceID)
+	serverSpanNoClientSpan.SetKind(ptrace.SpanKindServer)
+	serverSpanNoClientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+	serverSpanNoClientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
 	return traces
 }
 
