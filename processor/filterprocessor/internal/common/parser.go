@@ -41,7 +41,8 @@ func ParseSpan(conditions []string, set component.TelemetrySettings) (expr.BoolE
 	if err != nil {
 		return nil, err
 	}
-	return statementsToExpr(statements), nil
+	s := ottlspan.NewStatements(statements, set, ottlspan.WithErrorMode(ottl.PropagateError))
+	return &s, nil
 }
 
 func ParseSpanEvent(conditions []string, set component.TelemetrySettings) (expr.BoolExpr[ottlspanevent.TransformContext], error) {
@@ -54,7 +55,8 @@ func ParseSpanEvent(conditions []string, set component.TelemetrySettings) (expr.
 	if err != nil {
 		return nil, err
 	}
-	return statementsToExpr(statements), nil
+	s := ottlspanevent.NewStatements(statements, set, ottlspanevent.WithErrorMode(ottl.PropagateError))
+	return &s, nil
 }
 
 func ParseLog(conditions []string, set component.TelemetrySettings) (expr.BoolExpr[ottllog.TransformContext], error) {
@@ -67,7 +69,8 @@ func ParseLog(conditions []string, set component.TelemetrySettings) (expr.BoolEx
 	if err != nil {
 		return nil, err
 	}
-	return statementsToExpr(statements), nil
+	s := ottllog.NewStatements(statements, set, ottllog.WithErrorMode(ottl.PropagateError))
+	return &s, nil
 }
 
 func ParseMetric(conditions []string, set component.TelemetrySettings) (expr.BoolExpr[ottlmetric.TransformContext], error) {
@@ -80,7 +83,8 @@ func ParseMetric(conditions []string, set component.TelemetrySettings) (expr.Boo
 	if err != nil {
 		return nil, err
 	}
-	return statementsToExpr(statements), nil
+	s := ottlmetric.NewStatements(statements, set, ottlmetric.WithErrorMode(ottl.PropagateError))
+	return &s, nil
 }
 
 func ParseDataPoint(conditions []string, set component.TelemetrySettings) (expr.BoolExpr[ottldatapoint.TransformContext], error) {
@@ -93,7 +97,8 @@ func ParseDataPoint(conditions []string, set component.TelemetrySettings) (expr.
 	if err != nil {
 		return nil, err
 	}
-	return statementsToExpr(statements), nil
+	s := ottldatapoint.NewStatements(statements, set, ottldatapoint.WithErrorMode(ottl.PropagateError))
+	return &s, nil
 }
 
 func conditionsToStatements(conditions []string) []string {
@@ -102,23 +107,6 @@ func conditionsToStatements(conditions []string) []string {
 		statements[i] = "drop() where " + condition
 	}
 	return statements
-}
-
-type statementExpr[K any] struct {
-	statement *ottl.Statement[K]
-}
-
-func (se statementExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
-	_, ret, err := se.statement.Execute(ctx, tCtx)
-	return ret, err
-}
-
-func statementsToExpr[K any](statements []*ottl.Statement[K]) expr.BoolExpr[K] {
-	var rets []expr.BoolExpr[K]
-	for _, statement := range statements {
-		rets = append(rets, statementExpr[K]{statement: statement})
-	}
-	return expr.Or(rets...)
 }
 
 func functions[K any]() map[string]interface{} {
