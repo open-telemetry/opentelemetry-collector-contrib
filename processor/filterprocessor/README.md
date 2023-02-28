@@ -317,6 +317,15 @@ The same relationship applies to metrics and datapoints.
 If all span events for a span are dropped, the span will be left intact.
 If all datapoints for a metric are dropped, the metric will also be dropped.
 
+The filter processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing an OTTL condition.
+
+| error_mode            | description                                                                                                                |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------|
+| ignore                | The processor ignores errors returned by conditions and continues on to the next condition.  This is the recommended mode. |
+| propagate             | The processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.        |
+
+If not specified, `propagate` will be used.
+
 ### OTTL Functions
 
 The filter processor has access to all the [factory functions of the OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions)
@@ -354,6 +363,7 @@ Examples:
 ```yaml
 processors:
   filter/ottl:
+    error_mode: ignore
     traces:
       span:
         - 'attributes["container.name"] == "app_container_1"'
