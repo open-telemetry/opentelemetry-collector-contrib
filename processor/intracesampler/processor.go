@@ -37,6 +37,7 @@ type inTraceSamplerProcessor struct {
 	logger             *zap.Logger
 	config             Config
 	scaledSamplingRate uint32
+	hashSeedBytes      []byte
 }
 
 func newInTraceSamplerSpansProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
@@ -45,6 +46,7 @@ func newInTraceSamplerSpansProcessor(ctx context.Context, set processor.CreateSe
 		logger:             set.Logger,
 		config:             *cfg,
 		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
+		hashSeedBytes:      i32tob(cfg.HashSeed),
 	}
 
 	return processorhelper.NewTracesProcessor(
@@ -204,7 +206,7 @@ func (its *inTraceSamplerProcessor) processTraces(ctx context.Context, td ptrace
 	}
 
 	// some of the traces will be sampled in trace, but some will still be allowed to pass through as is
-	sampled := hash((*singleTraceID)[:], its.config.HashSeed)&bitMaskHashBuckets < its.scaledSamplingRate
+	sampled := computeHash((*singleTraceID)[:], its.hashSeedBytes)&bitMaskHashBuckets < its.scaledSamplingRate
 	// sampled means we keep all spans (not dropping anything), thus forwarding td as is
 	if sampled {
 		return td, nil
