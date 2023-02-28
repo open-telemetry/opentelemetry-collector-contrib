@@ -17,10 +17,10 @@ package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-
 import (
 	"bytes"
 	"context"
-	"sort"
 	"sync"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -31,6 +31,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
@@ -47,12 +48,6 @@ const (
 	metricNameCalls   = "calls"
 )
 
-var defaultLatencyHistogramBucketsMs = []float64{
-	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
-}
-
-type metricKey string
-
 type connectorImp struct {
 	lock   sync.Mutex
 	logger *zap.Logger
@@ -67,37 +62,20 @@ type connectorImp struct {
 	startTimestamp pcommon.Timestamp
 
 	// Metrics
-	sums          map[metricKey]*sum
-	histograms    map[metricKey]*histogram
-	latencyBounds []float64
+	histograms metrics.HistogramMetrics
+	sums       map[string]*metrics.Sum
 
 	keyBuf *bytes.Buffer
 
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "span.name": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions *cache.Cache[metricKey, pcommon.Map]
+	metricKeyToDimensions *cache.Cache[string, pcommon.Map]
 
 	ticker  *clock.Ticker
 	done    chan struct{}
 	started bool
 
 	shutdownOnce sync.Once
-}
-
-type histogram struct {
-	attributes pcommon.Map
-	exemplars  pmetric.ExemplarSlice
-
-	bucketCounts []uint64
-	count        uint64
-	sum          float64
-
-	latencyBounds []float64
-}
-
-type sum struct {
-	attributes pcommon.Map
-	count      uint64
 }
 
 type dimension struct {
@@ -121,27 +99,48 @@ func newDimensions(cfgDims []Dimension) []dimension {
 }
 
 func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Ticker) (*connectorImp, error) {
-	logger.Info("Building spanmetrics")
-	pConfig := config.(*Config)
+	logger.Info("Building spanmetrics connector")
+	cfg := config.(*Config)
 
-	bounds := defaultLatencyHistogramBucketsMs
-	if pConfig.LatencyHistogramBuckets != nil {
-		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
-	}
-
-	metricKeyToDimensionsCache, err := cache.NewCache[metricKey, pcommon.Map](pConfig.DimensionsCacheSize)
+	metricKeyToDimensionsCache, err := cache.NewCache[string, pcommon.Map](cfg.DimensionsCacheSize)
 	if err != nil {
 		return nil, err
 	}
 
+	var histograms metrics.HistogramMetrics
+	if cfg.Histogram.Exponential != nil {
+		maxSize := cfg.Histogram.Exponential.MaxSize
+		if cfg.Histogram.Exponential.MaxSize == 0 {
+			maxSize = structure.DefaultMaxSize
+		}
+		histograms = &metrics.ExponentialHistogramMetrics{
+			Metrics: make(map[string]*metrics.ExponentialHistogram),
+			MaxSize: maxSize,
+		}
+	} else {
+		bounds := defaultHistogramBucketsMs
+		// TODO remove deprecated `latency_histogram_buckets`
+		if cfg.LatencyHistogramBuckets != nil {
+			logger.Warn("latency_histogram_buckets is deprecated. " +
+				"Use `histogram: explicit: buckets` to set histogram buckets")
+			bounds = mapDurationsToMillis(cfg.LatencyHistogramBuckets)
+		}
+		if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
+			bounds = mapDurationsToMillis(cfg.Histogram.Explicit.Buckets)
+		}
+		histograms = &metrics.ExplicitHistogramMetrics{
+			Metrics: make(map[string]*metrics.ExplicitHistogram),
+			Bounds:  bounds,
+		}
+	}
+
 	return &connectorImp{
 		logger:                logger,
-		config:                *pConfig,
+		config:                *cfg,
 		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
-		latencyBounds:         bounds,
-		sums:                  make(map[metricKey]*sum),
-		histograms:            make(map[metricKey]*histogram),
-		dimensions:            newDimensions(pConfig.Dimensions),
+		histograms:            histograms,
+		sums:                  make(map[string]*metrics.Sum),
+		dimensions:            newDimensions(cfg.Dimensions),
 		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
 		ticker:                ticker,
@@ -165,7 +164,7 @@ func mapDurationsToMillis(vs []time.Duration) []float64 {
 
 // Start implements the component.Component interface.
 func (p *connectorImp) Start(ctx context.Context, _ component.Host) error {
-	p.logger.Info("Starting spanmetricsconnector")
+	p.logger.Info("Starting spanmetrics connector")
 
 	p.started = true
 	go func() {
@@ -185,7 +184,7 @@ func (p *connectorImp) Start(ctx context.Context, _ component.Host) error {
 // Shutdown implements the component.Component interface.
 func (p *connectorImp) Shutdown(context.Context) error {
 	p.shutdownOnce.Do(func() {
-		p.logger.Info("Shutting down spanmetricsconnector")
+		p.logger.Info("Shutting down spanmetrics connector")
 		if p.started {
 			p.logger.Info("Stopping ticker")
 			p.ticker.Stop()
@@ -233,41 +232,109 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName("spanmetricsconnector")
 
-	p.buildCallsSumMetrics(ilm)
-	p.buildLatencyHistogramMetrics(ilm)
+	p.buildCallsMetrics(ilm)
+
+	switch histograms := p.histograms.(type) {
+	case *metrics.ExplicitHistogramMetrics:
+		p.buildLatencyMetricsFromExplicitHistograms(ilm, histograms.Metrics)
+	case *metrics.ExponentialHistogramMetrics:
+		p.buildLatencyMetricsFromExponentialHistograms(ilm, histograms.Metrics)
+	}
 
 	return m
 }
 
-// buildLatencyHistogramMetrics collects the raw latency metrics and builds
-// a histogram scope metric.
-func (p *connectorImp) buildLatencyHistogramMetrics(ilm pmetric.ScopeMetrics) {
+// buildLatencyMetricsFromExponentialHistograms collects the raw exponential buckets histogram
+// metrics and builds a Histogram scope metric.
+func (p *connectorImp) buildLatencyMetricsFromExponentialHistograms(
+	ilm pmetric.ScopeMetrics,
+	histograms map[string]*metrics.ExponentialHistogram,
+) {
+	m := ilm.Metrics().AppendEmpty()
+	m.SetName(buildMetricName(p.config.Namespace, metricNameLatency))
+	m.SetUnit("ms")
+	m.SetEmptyExponentialHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
+
+	dps := m.ExponentialHistogram().DataPoints()
+	dps.EnsureCapacity(len(histograms))
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	for _, h := range histograms {
+		dp := dps.AppendEmpty()
+		dp.SetStartTimestamp(p.startTimestamp)
+		dp.SetTimestamp(timestamp)
+
+		expoHistToExponentialDataPoint(h.Agg, dp)
+
+		for i := 0; i < dp.Exemplars().Len(); i++ {
+			dp.Exemplars().At(i).SetTimestamp(timestamp)
+		}
+		h.Attributes.CopyTo(dp.Attributes())
+	}
+}
+
+// expoHistToExponentialDataPoint copies `lightstep/go-expohisto` structure.Histogram to
+// pmetric.ExponentialHistogramDataPoint
+func expoHistToExponentialDataPoint(agg *structure.Histogram[float64], dp pmetric.ExponentialHistogramDataPoint) {
+	dp.SetCount(agg.Count())
+	dp.SetSum(agg.Sum())
+	if agg.Count() != 0 {
+		dp.SetMin(agg.Min())
+		dp.SetMax(agg.Max())
+	}
+
+	dp.SetZeroCount(agg.ZeroCount())
+	dp.SetScale(agg.Scale())
+
+	for _, half := range []struct {
+		inFunc  func() *structure.Buckets
+		outFunc func() pmetric.ExponentialHistogramDataPointBuckets
+	}{
+		{agg.Positive, dp.Positive},
+		{agg.Negative, dp.Negative},
+	} {
+		in := half.inFunc()
+		out := half.outFunc()
+		out.SetOffset(in.Offset())
+		out.BucketCounts().EnsureCapacity(int(in.Len()))
+
+		for i := uint32(0); i < in.Len(); i++ {
+			out.BucketCounts().Append(in.At(i))
+		}
+	}
+}
+
+// buildLatencyExplicitHistogramMetrics collects the raw explicit buckets histogram metrics
+// and builds a Histogram scope metric.
+func (p *connectorImp) buildLatencyMetricsFromExplicitHistograms(
+	ilm pmetric.ScopeMetrics,
+	histograms map[string]*metrics.ExplicitHistogram,
+) {
 	m := ilm.Metrics().AppendEmpty()
 	m.SetName(buildMetricName(p.config.Namespace, metricNameLatency))
 	m.SetUnit("ms")
 	m.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
 
 	dps := m.Histogram().DataPoints()
-	dps.EnsureCapacity(len(p.histograms))
+	dps.EnsureCapacity(len(histograms))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for _, hist := range p.histograms {
+	for _, h := range histograms {
 		dp := dps.AppendEmpty()
 		dp.SetStartTimestamp(p.startTimestamp)
 		dp.SetTimestamp(timestamp)
-		dp.ExplicitBounds().FromRaw(p.latencyBounds)
-		dp.BucketCounts().FromRaw(hist.bucketCounts)
-		dp.SetCount(hist.count)
-		dp.SetSum(hist.sum)
+		dp.ExplicitBounds().FromRaw(h.Bounds)
+		dp.BucketCounts().FromRaw(h.BucketCounts)
+		dp.SetCount(h.Count)
+		dp.SetSum(h.Sum)
 		for i := 0; i < dp.Exemplars().Len(); i++ {
 			dp.Exemplars().At(i).SetTimestamp(timestamp)
 		}
-		hist.attributes.CopyTo(dp.Attributes())
+		h.Attributes.CopyTo(dp.Attributes())
 	}
 }
 
-// buildCallsSumMetrics collects the raw call count metrics and builds
+// buildCallsMetrics collects the raw call count metrics and builds
 // a sum scope metric.
-func (p *connectorImp) buildCallsSumMetrics(ilm pmetric.ScopeMetrics) {
+func (p *connectorImp) buildCallsMetrics(ilm pmetric.ScopeMetrics) {
 	m := ilm.Metrics().AppendEmpty()
 	m.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
 	m.SetEmptySum().SetIsMonotonic(true)
@@ -276,29 +343,26 @@ func (p *connectorImp) buildCallsSumMetrics(ilm pmetric.ScopeMetrics) {
 	dps := m.Sum().DataPoints()
 	dps.EnsureCapacity(len(p.sums))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for _, c := range p.sums {
+	for _, s := range p.sums {
 		dp := dps.AppendEmpty()
 		dp.SetStartTimestamp(p.startTimestamp)
 		dp.SetTimestamp(timestamp)
-		dp.SetIntValue(int64(c.count))
-		c.attributes.CopyTo(dp.Attributes())
+		dp.SetIntValue(int64(s.Count))
+		s.Attributes.CopyTo(dp.Attributes())
 	}
 }
 
 func (p *connectorImp) resetState() {
-	// Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
-	// regardless of error while building metrics, before the next batch of spans is received.
-	for _, h := range p.histograms {
-		h.exemplars = pmetric.NewExemplarSlice()
-	}
-
 	// If delta metrics, reset accumulated data
 	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-		p.histograms = make(map[metricKey]*histogram)
-		p.sums = make(map[metricKey]*sum)
+		p.histograms.Reset(false)
+		p.sums = make(map[string]*metrics.Sum)
 		p.metricKeyToDimensions.Purge()
 	} else {
 		p.metricKeyToDimensions.RemoveEvictedItems()
+
+		// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
+		p.histograms.Reset(true)
 	}
 }
 
@@ -336,55 +400,28 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					p.metricKeyToDimensions.Add(key, attributes)
 				}
 
-				p.aggregateLatencies(key, attributes, span, latencyMs)
-				p.aggregateCalls(key, attributes)
+				// aggregate histogram metrics
+				h := p.histograms.GetOrCreate(key, attributes)
+				h.Observe(latencyMs)
+				if !span.TraceID().IsEmpty() {
+					h.AddExemplar(span.TraceID(), span.SpanID(), latencyMs)
+				}
+
+				p.aggregateSumMetrics(key, attributes)
 			}
 		}
 	}
 }
 
-func (p *connectorImp) aggregateLatencies(
-	key metricKey,
-	attributes pcommon.Map,
-	span ptrace.Span,
-	latency float64,
-) {
-	h, ok := p.histograms[key]
+func (p *connectorImp) aggregateSumMetrics(key string, attributes pcommon.Map) {
+	s, ok := p.sums[key]
 	if !ok {
-		h = &histogram{
-			attributes:    attributes,
-			bucketCounts:  make([]uint64, len(p.latencyBounds)+1),
-			latencyBounds: p.latencyBounds,
-			exemplars:     pmetric.NewExemplarSlice(),
+		s = &metrics.Sum{
+			Attributes: attributes,
 		}
-		p.histograms[key] = h
+		p.sums[key] = s
 	}
-
-	h.sum += latency
-	h.count++
-
-	// Binary search to find the latencyMs bucket index.
-	index := sort.SearchFloat64s(h.latencyBounds, latency)
-	h.bucketCounts[index]++
-
-	if !span.TraceID().IsEmpty() {
-		e := h.exemplars.AppendEmpty()
-		e.SetTraceID(span.TraceID())
-		e.SetSpanID(span.SpanID())
-		e.SetDoubleValue(latency)
-	}
-}
-
-func (p *connectorImp) aggregateCalls(key metricKey, attributes pcommon.Map) {
-	c, ok := p.sums[key]
-	if !ok {
-		c = &sum{
-			attributes: attributes,
-		}
-		p.sums[key] = c
-	}
-
-	c.count++
+	s.Count++
 }
 
 func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {
@@ -414,7 +451,7 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceAttrs pcommon.Map) metricKey {
+func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceAttrs pcommon.Map) string {
 	p.keyBuf.Reset()
 	concatDimensionValue(p.keyBuf, serviceName, false)
 	concatDimensionValue(p.keyBuf, span.Name(), true)
@@ -427,7 +464,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 		}
 	}
 
-	return metricKey(p.keyBuf.String())
+	return p.keyBuf.String()
 }
 
 // getDimensionValue gets the dimension value for the given configured dimension.
