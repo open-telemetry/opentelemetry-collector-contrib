@@ -40,7 +40,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 
 	generateConf := generate.NewConfig("")
 
-	defaultMaxHeaderByteSize := helper.ByteSize(defaultMaxHeaderSize)
+	defaultMaxHeaderByteSize := helper.ByteSize(defaultMaxHeaderLineSize)
 	negativeMaxHeaderByteSize := helper.ByteSize(-1)
 
 	testCases := []struct {
@@ -220,7 +220,8 @@ func TestHeaderConfig_buildHeader(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h, err := tc.conf.buildHeader(zaptest.NewLogger(t).Sugar(), tc.enc, nil)
+			tc.conf.build(zaptest.NewLogger(t).Sugar(), tc.enc)
+			h, err := tc.conf.buildHeader(nil)
 			if tc.expectedErr != "" {
 				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
@@ -348,7 +349,9 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 			enc, err := encConf.Build()
 			require.NoError(t, err)
 
-			h, err := tc.conf.buildHeader(zaptest.NewLogger(t).Sugar(), enc.Encoding, nil)
+			tc.conf.build(zaptest.NewLogger(t).Sugar(), enc.Encoding)
+
+			h, err := tc.conf.buildHeader(nil)
 			require.NoError(t, err)
 
 			r := bytes.NewReader([]byte(tc.fileContents))

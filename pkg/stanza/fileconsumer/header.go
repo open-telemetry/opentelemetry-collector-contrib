@@ -32,11 +32,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
-const defaultMaxHeaderSize = 1024 * 1024 // max size of 1 MiB by default
+const defaultMaxHeaderLineSize = 1024 * 1024 // max size of 1 MiB by default
 type HeaderConfig struct {
 	LineStartPattern  string            `mapstructure:"multiline_pattern"`
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
 	MaxHeaderLineSize *helper.ByteSize  `mapstructure:"max_line_size,omitempty"`
+
+	// these are set by the "build" function
+	matchRegex *regexp.Regexp
+	splitFunc  bufio.SplitFunc
+	logger     *zap.SugaredLogger
 }
 
 // validate returns an error describing why the configuration is invalid, or nil if the configuration is valid.
@@ -72,18 +77,32 @@ func (hc *HeaderConfig) validate() error {
 	return nil
 }
 
-// buildHeader builds a header struct from the header config.
-func (hc *HeaderConfig) buildHeader(logger *zap.SugaredLogger, enc encoding.Encoding, persister operator.Persister) (*header, error) {
-	reg, err := regexp.Compile(hc.LineStartPattern)
+func (hc *HeaderConfig) build(logger *zap.SugaredLogger, enc encoding.Encoding) error {
+	hc.logger = logger
+
+	var err error
+	hc.matchRegex, err = regexp.Compile(hc.LineStartPattern)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compile multiline pattern: %w", err)
+		return fmt.Errorf("failed to compile multiline pattern: %w", err)
 	}
 
-	outOp := newHeaderPipelineOutput(logger)
+	hc.splitFunc, err = helper.NewNewlineSplitFunc(enc, false, func(b []byte) []byte {
+		return bytes.Trim(b, "\r\n")
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create split func: %w", err)
+	}
+
+	return nil
+}
+
+// buildHeader builds a header struct from the header config.
+func (hc *HeaderConfig) buildHeader(persister operator.Persister) (*header, error) {
+	outOp := newHeaderPipelineOutput(hc.logger)
 	p, err := pipeline.Config{
 		Operators:     hc.MetadataOperators,
 		DefaultOutput: outOp,
-	}.Build(logger)
+	}.Build(hc.logger)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipeline: %w", err)
@@ -91,50 +110,35 @@ func (hc *HeaderConfig) buildHeader(logger *zap.SugaredLogger, enc encoding.Enco
 
 	scopedPersister := operator.NewScopedPersister("header", persister)
 
-	// TODO: STOP the pipeline at some point!
 	if err := p.Start(scopedPersister); err != nil {
 		return nil, fmt.Errorf("failed to start header pipeline: %w", err)
 	}
 
-	splitFunc, err := helper.NewNewlineSplitFunc(enc, false, func(b []byte) []byte {
-		return bytes.Trim(b, "\r\n")
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create split func: %w", err)
-	}
-
-	var maxSize int
-	if hc.MaxHeaderLineSize != nil {
-		maxSize = int(*hc.MaxHeaderLineSize)
-	} else {
-		maxSize = defaultMaxHeaderSize
-	}
-
 	return &header{
-		matchRegex:           reg,
+		config:               hc,
 		outputOperator:       outOp,
 		headerPipeline:       p,
-		logger:               logger,
-		splitFunc:            splitFunc,
-		maxHeaderLineSize:    maxSize,
-		persister:            scopedPersister,
 		attributesFromHeader: map[string]any{},
 	}, nil
 }
 
+func (hc *HeaderConfig) MaxLineSize() int {
+	if hc.MaxHeaderLineSize != nil {
+		return int(*hc.MaxHeaderLineSize)
+	} else {
+		return defaultMaxHeaderLineSize
+	}
+}
+
 type header struct {
+	config *HeaderConfig
+
 	finalized            bool
 	attributesFromHeader map[string]any
-
-	offset            int64
-	matchRegex        *regexp.Regexp
-	splitFunc         bufio.SplitFunc
-	maxHeaderLineSize int
+	offset               int64
 
 	outputOperator *headerPipelineOutput
 	headerPipeline pipeline.Pipeline
-	persister      operator.Persister
-	logger         *zap.SugaredLogger
 }
 
 // ReadHeader attempts to read the header from the given file. If the header is completed, fileAttributes will
@@ -146,11 +150,11 @@ func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Enc
 
 	// Seek to the end of the last read header line
 	if _, err := f.Seek(h.offset, io.SeekStart); err != nil {
-		h.logger.Errorw("Failed to seek", zap.Error(err))
+		h.config.logger.Errorw("Failed to seek", zap.Error(err))
 		return
 	}
 
-	scanner := NewPositionalScanner(f, h.maxHeaderLineSize, h.offset, h.splitFunc)
+	scanner := NewPositionalScanner(f, h.config.MaxLineSize(), h.offset, h.config.splitFunc)
 
 	for {
 		select {
@@ -162,7 +166,7 @@ func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Enc
 		ok := scanner.Scan()
 		if !ok {
 			if err := scanner.getError(); err != nil {
-				h.logger.Errorw("Failed during header scan", zap.Error(err))
+				h.config.logger.Errorw("Failed during header scan", zap.Error(err))
 				h.offset = scanner.Pos()
 			}
 			break
@@ -171,19 +175,19 @@ func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Enc
 		b := scanner.Bytes()
 		line, err := enc.Decode(b)
 		if err != nil {
-			h.logger.Errorw("Failed to decode header bytes", zap.Error(err))
+			h.config.logger.Errorw("Failed to decode header bytes", zap.Error(err))
 			h.offset = scanner.Pos()
 			continue
 		}
 
-		// If the regex doesn't match, this line is not part of the header
-		if !h.matchRegex.Match(line) {
+		// If the regex doesn't match, we've reached the end of the header, so we'll finalize.
+		if !h.config.matchRegex.Match(line) {
 			h.finalizeHeader(ctx, fileAttributes)
 			return
 		}
 
 		if err := h.processHeaderLine(ctx, line); err != nil {
-			h.logger.Errorw("Failed to process header", zap.Error(err))
+			h.config.logger.Errorw("Failed to process header line", zap.Error(err))
 		}
 		h.offset = scanner.Pos()
 	}
@@ -219,7 +223,6 @@ func (h *header) processHeaderLine(ctx context.Context, line []byte) error {
 	return nil
 }
 
-// TODO: Call in reader/manager
 func (h *header) Shutdown() error {
 	return h.headerPipeline.Stop()
 }

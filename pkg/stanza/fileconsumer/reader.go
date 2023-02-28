@@ -117,6 +117,12 @@ func (r *Reader) Close() {
 			r.Debugw("Problem closing reader", zap.Error(err))
 		}
 	}
+
+	if r.header != nil {
+		if err := r.header.Shutdown(); err != nil {
+			r.Warnw("Problem shutting down header pipeline", zap.Error(err))
+		}
+	}
 }
 
 // Read from the file and update the fingerprint if necessary

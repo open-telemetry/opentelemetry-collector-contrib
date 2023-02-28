@@ -39,12 +39,7 @@ func (f *readerFactory) newReader(file *os.File, fp *Fingerprint, persister oper
 		withFingerprint(fp)
 
 	if hc != nil {
-		enc, err := f.encodingConfig.Build()
-		if err != nil {
-			return nil, fmt.Errorf("failed to build encoding: %w", err)
-		}
-
-		h, err := hc.buildHeader(f.SugaredLogger, enc.Encoding, persister)
+		h, err := hc.buildHeader(persister)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header metadata manager: %w", err)
 		}
@@ -143,7 +138,7 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		}
 
 		// Copy header attributes to new fileAttributes if the header has been finalized
-		if b.header != nil && b.header.finalized {
+		if b.header != nil && b.header.Finalized() {
 			r.fileAttributes.HeaderAttributes = b.header.attributesFromHeader
 		}
 
