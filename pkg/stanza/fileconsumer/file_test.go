@@ -1343,12 +1343,14 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	operator.persister = testutil.NewMockPersister("test")
 
 	shortFile := openTemp(t, tempDir)
-	shortFile.WriteString(string(shortFileLine) + "\n")
+	_, err := shortFile.WriteString(string(shortFileLine) + "\n")
+	require.NoError(t, err)
 	require.NoError(t, shortFile.Close())
 
 	longFile := openTemp(t, tempDir)
 	for line := 0; line < longFileLines; line++ {
-		longFile.WriteString(string(tokenWithLength(bytesPerLine-1)) + "\n")
+		_, err := longFile.WriteString(string(tokenWithLength(bytesPerLine-1)) + "\n")
+		require.NoError(t, err)
 	}
 	require.NoError(t, longFile.Close())
 
