@@ -1,31 +1,29 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata: 
-  name: telemetrygen-metric-statefulset
+  name: telemetrygen-DATA_TYPE-deployment
   namespace: default
 spec:
-  serviceName: telemetrygen-metric-statefulset
   replicas: 1
   selector:
     matchLabels:
-      app: telemetrygen-metric-statefulset
+      app: telemetrygen-DATA_TYPE-deployment
   template:
     metadata:
-    metadata:
       annotations:
-        workload: statefulset
+        workload: deployment
       labels:
-        app: telemetrygen-metric-statefulset
+        app: telemetrygen-DATA_TYPE-deployment
     spec:
       containers:
       - command:
         - /telemetrygen
-        - metrics
+        - DATA_TYPE
         - --otlp-insecure
         - --otlp-endpoint=test-opentelemetry-collector:4317
         - --duration=36000s
         - --rate=1
-        - --otlp-attributes=service.name="test-statefulset"
+        - --otlp-attributes=service.name="test-deployment"
         - --otlp-attributes=k8s.container.name="telemetrygen"
         - --otlp-attributes=k8s.container.restart_count="0"
         image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
