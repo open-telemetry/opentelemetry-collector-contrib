@@ -17,6 +17,8 @@ require (
 )
 
 require (
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.2 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.72.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.72.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.72.0 // indirect
@@ -237,9 +239,8 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.6.4 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.73 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230221135433-65e01983bba4 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230221135433-65e01983bba4 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230227093656-ca3af9ce4c3c // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.3 // indirect
