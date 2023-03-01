@@ -17,10 +17,10 @@ require (
 )
 
 require (
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.2 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.72.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.72.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.72.0 // indirect
