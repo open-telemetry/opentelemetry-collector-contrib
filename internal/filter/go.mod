@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.72.0
 	github.com/stretchr/testify v1.8.2
+	go.opentelemetry.io/collector/component v0.72.0
 	go.opentelemetry.io/collector/confmap v0.72.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc6
 	go.opentelemetry.io/collector/semconv v0.72.0
@@ -18,8 +19,10 @@ require (
 	github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -31,7 +34,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	go.opentelemetry.io/collector v0.72.0 // indirect
-	go.opentelemetry.io/collector/component v0.72.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.72.0 // indirect
 	go.opentelemetry.io/otel v1.13.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect

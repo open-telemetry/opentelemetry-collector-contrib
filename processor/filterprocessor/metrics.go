@@ -28,7 +28,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
@@ -49,14 +51,14 @@ func newFilterMetricProcessor(set component.TelemetrySettings, cfg *Config) (*fi
 	}
 	if cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil {
 		if cfg.Metrics.MetricConditions != nil {
-			fsp.skipMetricExpr, err = common.ParseMetric(cfg.Metrics.MetricConditions, set)
+			fsp.skipMetricExpr, err = filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, common.MetricFunctions(), ottl.PropagateError, set)
 			if err != nil {
 				return nil, err
 			}
 		}
 
 		if cfg.Metrics.DataPointConditions != nil {
-			fsp.skipDataPointExpr, err = common.ParseDataPoint(cfg.Metrics.DataPointConditions, set)
+			fsp.skipDataPointExpr, err = filterottl.NewBoolExprForDataPoint(cfg.Metrics.DataPointConditions, filterottl.StandardDataPointFuncs(), ottl.PropagateError, set)
 			if err != nil {
 				return nil, err
 			}
