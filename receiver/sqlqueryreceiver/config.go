@@ -17,6 +17,7 @@ package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -81,6 +82,8 @@ type MetricCfg struct {
 	Unit             string            `mapstructure:"unit"`
 	Description      string            `mapstructure:"description"`
 	StaticAttributes map[string]string `mapstructure:"static_attributes"`
+	StartTsColumn    string            `mapstructure:"start_ts_column"`
+	StopTsColumn     string            `mapstructure:"stop_ts_column"`
 }
 
 func (c MetricCfg) Validate() error {
@@ -102,6 +105,18 @@ func (c MetricCfg) Validate() error {
 	}
 	if c.DataType == MetricTypeGauge && c.Aggregation != "" {
 		errs = multierr.Append(errs, fmt.Errorf("aggregation=%s but data_type=%s does not support aggregation", c.Aggregation, c.DataType))
+	}
+	if c.StartTsColumn != "" {
+		_, err := strconv.ParseUint(c.StartTsColumn,10,64)
+		if err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("metric config has unsupported timestamp: '%s'", c.StartTsColumn))
+		}
+	}
+	if c.StopTsColumn != "" {
+		_, err := strconv.ParseUint(c.StopTsColumn,10,64)
+		if err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("metric config has unsupported timestamp: '%s'", c.StopTsColumn))
+		}
 	}
 	if errs != nil && c.MetricName != "" {
 		errs = multierr.Append(fmt.Errorf("invalid metric config with metric_name '%s'", c.MetricName), errs)

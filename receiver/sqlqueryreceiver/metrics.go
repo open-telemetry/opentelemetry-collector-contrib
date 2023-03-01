@@ -29,6 +29,26 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTime pc
 	dest.SetUnit(cfg.Unit)
 	dataPointSlice := setMetricFields(cfg, dest)
 	dataPoint := dataPointSlice.AppendEmpty()
+	if cfg.StartTsColumn != "" {
+		val, found := row[cfg.StartTsColumn]
+		if found {
+			time, err := strconv.ParseUint(val, 10, 64)
+			if err != nil {
+				return fmt.Errorf("failed to parse uint64 for %s, value was %s: %w", cfg.StartTsColumn, val, err)
+			}
+			startTime = pcommon.Timestamp(time)
+		}
+	}
+	if cfg.StopTsColumn != "" {
+		val, found := row[cfg.StopTsColumn]
+		if found {
+			time, err := strconv.ParseUint(val, 10, 64)
+			if err != nil {
+				return fmt.Errorf("failed to parse uint64 for %s, value was %s: %w", cfg.StopTsColumn, val, err)
+			}
+			ts = pcommon.Timestamp(time)
+		}
+	}
 	setTimestamp(cfg, dataPoint, startTime, ts, scrapeCfg)
 	value, found := row[cfg.ValueColumn]
 	if !found {
