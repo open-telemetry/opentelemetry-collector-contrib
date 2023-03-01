@@ -88,6 +88,15 @@ load:
   cpu_average: <false|true>
 ```
 
+### Memory
+
+`enable_additional_memory_states` specifies whether to enable reporting of a couple of additional memory state metrics: `slab_reclaimable`, `slab_unreclaimable` and `available`. When those are enabled, all the memory states don't sum up well (the result exceeds `total` memory) (default: `false`).
+
+```yaml
+memory:
+  enable_additional_memory_states: <false|true>
+```
+
 ### Network
 
 ```yaml

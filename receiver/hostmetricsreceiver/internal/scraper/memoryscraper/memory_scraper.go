@@ -75,6 +75,11 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 				memInfo.Total), metricsLen)
 		}
 		s.recordMemoryUtilizationMetric(now, memInfo)
+
+		if s.config.EnableAdditionalMemoryStates {
+			s.recordMemoryUsageMetricAdditionalStates(now, memInfo)
+			s.recordMemoryUtilizationMetricAdditionalStates(now, memInfo)
+		}
 	}
 
 	return s.mb.Emit(), nil

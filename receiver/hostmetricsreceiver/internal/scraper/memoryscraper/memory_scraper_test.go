@@ -67,6 +67,21 @@ func TestScrape(t *testing.T) {
 			expectedMetricCount: 2,
 		},
 		{
+			name: "Additional memory state metrics enabled",
+			config: &Config{
+				MetricsBuilderConfig: metadata.NewMetricsBuilderConfig(metadata.MetricsSettings{
+					SystemMemoryUtilization: metadata.MetricSettings{
+						Enabled: true,
+					},
+					SystemMemoryUsage: metadata.MetricSettings{
+						Enabled: true,
+					},
+				}, metadata.DefaultResourceAttributesSettings()),
+				EnableAdditionalMemoryStates: true,
+			},
+			expectedMetricCount: 2,
+		},
+		{
 			name:              "Error",
 			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
 			expectedErr:       "err1",
@@ -125,6 +140,10 @@ func TestScrape(t *testing.T) {
 
 			if runtime.GOOS == "linux" {
 				assertMemoryUsageMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
+
+				if test.config.EnableAdditionalMemoryStates {
+					assertMemoryUsageMetricHasLinuxSpecificAdditionalStateLabels(t, metrics.At(0))
+				}
 			} else if runtime.GOOS != "windows" {
 				internal.AssertSumMetricHasAttributeValue(t, metrics.At(0), 2, "state",
 					pcommon.NewValueStr(metadata.AttributeStateInactive.String()))
@@ -137,13 +156,18 @@ func TestScrape(t *testing.T) {
 
 func TestScrape_MemoryUtilization(t *testing.T) {
 	type testCase struct {
-		name              string
-		virtualMemoryFunc func() (*mem.VirtualMemoryStat, error)
-		expectedErr       error
+		name                         string
+		virtualMemoryFunc            func() (*mem.VirtualMemoryStat, error)
+		enableAdditionalMemoryStates bool
+		expectedErr                  error
 	}
 	testCases := []testCase{
 		{
 			name: "Standard",
+		},
+		{
+			name:                         "Standard with additional memory states",
+			enableAdditionalMemoryStates: true,
 		},
 		{
 			name:              "Invalid total memory",
@@ -157,7 +181,8 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 			mbc.Metrics.SystemMemoryUtilization.Enabled = true
 			mbc.Metrics.SystemMemoryUsage.Enabled = false
 			scraperConfig := Config{
-				MetricsBuilderConfig: mbc,
+				MetricsBuilderConfig:         mbc,
+				EnableAdditionalMemoryStates: test.enableAdditionalMemoryStates,
 			}
 			scraper := newMemoryScraper(context.Background(), receivertest.NewNopCreateSettings(), &scraperConfig)
 			if test.virtualMemoryFunc != nil {
@@ -180,6 +205,10 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 
 			if runtime.GOOS == "linux" {
 				assertMemoryUtilizationMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
+
+				if test.enableAdditionalMemoryStates {
+					assertMemoryUtilizationMetricHasLinuxSpecificAdditionalStateLabels(t, metrics.At(0))
+				}
 			} else if runtime.GOOS != "windows" {
 				internal.AssertGaugeMetricHasAttributeValue(t, metrics.At(0), 2, "state",
 					pcommon.NewValueStr(metadata.AttributeStateInactive.String()))
@@ -213,6 +242,9 @@ func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pme
 		pcommon.NewValueStr(metadata.AttributeStateBuffered.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 3, "state",
 		pcommon.NewValueStr(metadata.AttributeStateCached.String()))
+}
+
+func assertMemoryUsageMetricHasLinuxSpecificAdditionalStateLabels(t *testing.T, metric pmetric.Metric) {
 	internal.AssertSumMetricHasAttributeValue(t, metric, 4, "state",
 		pcommon.NewValueStr(metadata.AttributeStateSlabReclaimable.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 5, "state",
@@ -226,6 +258,9 @@ func assertMemoryUtilizationMetricHasLinuxSpecificStateLabels(t *testing.T, metr
 		pcommon.NewValueStr(metadata.AttributeStateBuffered.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 3, "state",
 		pcommon.NewValueStr(metadata.AttributeStateCached.String()))
+}
+
+func assertMemoryUtilizationMetricHasLinuxSpecificAdditionalStateLabels(t *testing.T, metric pmetric.Metric) {
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 4, "state",
 		pcommon.NewValueStr(metadata.AttributeStateSlabReclaimable.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 5, "state",

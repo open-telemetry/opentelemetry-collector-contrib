@@ -23,4 +23,10 @@ import (
 type Config struct {
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	internal.ScraperConfig
+
+	// EnableAdditionalMemoryStates (false by default) controls the reporting of a couple of additional memory state metrics:
+	// slab_reclaimable, slab_unreclaimable and available.
+	// When those are enabled, all the memory states don't sum up well (the result exceeds `total` memory).
+	// For more details, see the discussion https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7417.
+	EnableAdditionalMemoryStates bool `mapstructure:"enable_additional_memory_states"`
 }
