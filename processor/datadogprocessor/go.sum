@@ -3,12 +3,10 @@ cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230206114529-17c7dfde736c h1:vilzDJudtBAAgCjFsOnq4PZDBsVG8YbJCfmNJ8XTIvw=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230206114529-17c7dfde736c/go.mod h1:o+rJy3B2o+Zb+wCgLSkMlkD7EiUEA5Q63cid53fZkQY=
-github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230221135433-65e01983bba4 h1:ZrKp3lGN73CucXaqGV89/a1kduMqOgCRuLfZpqxSngo=
-github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230221135433-65e01983bba4/go.mod h1:jH+R74p8Kqpu8PPr8H7YbeXNb9jfqOGRnTjngUYofMQ=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230206114529-17c7dfde736c h1:WX9D8cWfWbt1hDvh1t9DuY2rEq1apIkCAFn29O+91MU=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230206114529-17c7dfde736c/go.mod h1:VVMDDibJxYEkwcLdZBT2g8EHKpbMT4JdOhRbQ9GdjbM=
-github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230221135433-65e01983bba4 h1:8w10VdqwZBMX1GMm1JHARipjXew+VVbdaNUaTE27n98=
-github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230221135433-65e01983bba4/go.mod h1:FoLytWtX6e1s4X7C1P0F/OUAd9ibclwNYiy86B/aEW8=
+github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230227093656-ca3af9ce4c3c h1:mRDzUOKQEjKEXYUiMYYqdoGDwJpxBfW48e+xRo8V7ww=
+github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230227093656-ca3af9ce4c3c/go.mod h1:FJV6iciUpjDXMNckKi1mWuQX8u9chyEYAS1o9au0VCw=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230206114529-17c7dfde736c h1:dCU5wtokXCUXcJVIL6ZAGFWhx6G8aQ5P20vZ5N2ECV4=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230206114529-17c7dfde736c/go.mod h1:Yy59y4UyxYL8h4rxZzh8QGgxUFm+kCFMvs8WUXqF/go=
 github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.3.0.20230206114529-17c7dfde736c h1:eqOCvamJLxvQvF6vp25xmFByyoxjSh0hEQtCiGBY88A=
@@ -21,6 +19,10 @@ github.com/DataDog/datadog-go/v5 v5.1.1 h1:JLZ6s2K1pG2h9GkvEvMdEGqMDyVLEAccdX5Tl
 github.com/DataDog/datadog-go/v5 v5.1.1/go.mod h1:KhiYb2Badlv9/rofz+OznKoEF5XKTonWyhx5K83AP8E=
 github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork h1:yBq5PrAtrM4yVeSzQ+bn050+Ysp++RKF1QmtkL4VqvU=
 github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork/go.mod h1:yA5JwkZsHTLuqq3zaRgUQf35DfDkpOZqgtBqHKpwrBs=
+github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.2 h1:gpPr6YYilZMlr+GDNIHiCGcrgQuzBD5sk9YDI7yQDUA=
+github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.2/go.mod h1:rlVyj1Bu2+fPIZOGAL37ucLrYa5BO9ADWgcwBZYQ9sw=
+github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.1 h1:xX7lmiJKFAy3q3sUxO7rEj+zGGOft2sdURZrNLSyOQs=
+github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.1/go.mod h1:bzWkV8SRH/a1hlQKun8Bp84T+nhKcpdCfvts05zJxgk=
 github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.2 h1:wbufgRsHTmTua2s3nxJJ4tNjgmHeEF91lSSM3Duc6mo=
 github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.2/go.mod h1:qW+xU9EdDaoyRmNmEhYFGPgTqXjxIYB1V2B/L4BQ/18=
 github.com/DataDog/sketches-go v1.4.1 h1:j5G6as+9FASM2qC36lvpvQAj9qsv/jUs3FtO8CwZNAY=

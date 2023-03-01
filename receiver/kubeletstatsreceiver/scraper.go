@@ -53,7 +53,7 @@ func newKubletScraper(
 	restClient kubelet.RestClient,
 	set receiver.CreateSettings,
 	rOptions *scraperOptions,
-	metricsConfig metadata.MetricsSettings,
+	metricsConfig metadata.MetricsBuilderConfig,
 ) (scraperhelper.Scraper, error) {
 	ks := &kubletScraper{
 		statsProvider:         kubelet.NewStatsProvider(restClient),

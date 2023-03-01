@@ -80,6 +80,6 @@ func createDefaultConfig() component.Config {
 		Endpoint:              defaultEndpoint,
 		Timeout:               defaultTimeout,
 		CollectClusterMetrics: defaultCollectClusterMetrics,
-		Metrics:               metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:  metadata.DefaultMetricsBuilderConfig(),
 	}
 }

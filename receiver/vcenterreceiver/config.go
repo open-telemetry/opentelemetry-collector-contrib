@@ -30,10 +30,10 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
-	Endpoint                                string                   `mapstructure:"endpoint"`
-	Username                                string                   `mapstructure:"username"`
-	Password                                string                   `mapstructure:"password"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
+	Endpoint                                string `mapstructure:"endpoint"`
+	Username                                string `mapstructure:"username"`
+	Password                                string `mapstructure:"password"`
 }
 
 // Validate checks to see if the supplied config will work for the receiver

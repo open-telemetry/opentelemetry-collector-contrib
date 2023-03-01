@@ -131,20 +131,6 @@ func DefaultMetricsSettings() MetricsSettings {
 // ResourceAttributeSettings provides common settings for a particular metric.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
-}
-
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ras.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
 }
 
 // ResourceAttributesSettings provides settings for postgresqlreceiver metrics.
@@ -1537,6 +1523,12 @@ func newMetricPostgresqlWalLag(settings MetricSettings) metricPostgresqlWalLag {
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1580,41 +1572,48 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
-func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.resourceAttributesSettings = ras
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                            pmetric.NewMetrics(),
 		buildInfo:                                settings.BuildInfo,
-		resourceAttributesSettings:               DefaultResourceAttributesSettings(),
-		metricPostgresqlBackends:                 newMetricPostgresqlBackends(ms.PostgresqlBackends),
-		metricPostgresqlBgwriterBuffersAllocated: newMetricPostgresqlBgwriterBuffersAllocated(ms.PostgresqlBgwriterBuffersAllocated),
-		metricPostgresqlBgwriterBuffersWrites:    newMetricPostgresqlBgwriterBuffersWrites(ms.PostgresqlBgwriterBuffersWrites),
-		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(ms.PostgresqlBgwriterCheckpointCount),
-		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(ms.PostgresqlBgwriterDuration),
-		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(ms.PostgresqlBgwriterMaxwritten),
-		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(ms.PostgresqlBlocksRead),
-		metricPostgresqlCommits:                  newMetricPostgresqlCommits(ms.PostgresqlCommits),
-		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(ms.PostgresqlConnectionMax),
-		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(ms.PostgresqlDatabaseCount),
-		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(ms.PostgresqlDbSize),
-		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(ms.PostgresqlIndexScans),
-		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(ms.PostgresqlIndexSize),
-		metricPostgresqlOperations:               newMetricPostgresqlOperations(ms.PostgresqlOperations),
-		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(ms.PostgresqlReplicationDataDelay),
-		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(ms.PostgresqlRollbacks),
-		metricPostgresqlRows:                     newMetricPostgresqlRows(ms.PostgresqlRows),
-		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(ms.PostgresqlTableCount),
-		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(ms.PostgresqlTableSize),
-		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(ms.PostgresqlTableVacuumCount),
-		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(ms.PostgresqlWalAge),
-		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(ms.PostgresqlWalLag),
+		resourceAttributesSettings:               mbc.ResourceAttributes,
+		metricPostgresqlBackends:                 newMetricPostgresqlBackends(mbc.Metrics.PostgresqlBackends),
+		metricPostgresqlBgwriterBuffersAllocated: newMetricPostgresqlBgwriterBuffersAllocated(mbc.Metrics.PostgresqlBgwriterBuffersAllocated),
+		metricPostgresqlBgwriterBuffersWrites:    newMetricPostgresqlBgwriterBuffersWrites(mbc.Metrics.PostgresqlBgwriterBuffersWrites),
+		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(mbc.Metrics.PostgresqlBgwriterCheckpointCount),
+		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(mbc.Metrics.PostgresqlBgwriterDuration),
+		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(mbc.Metrics.PostgresqlBgwriterMaxwritten),
+		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(mbc.Metrics.PostgresqlBlocksRead),
+		metricPostgresqlCommits:                  newMetricPostgresqlCommits(mbc.Metrics.PostgresqlCommits),
+		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(mbc.Metrics.PostgresqlConnectionMax),
+		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(mbc.Metrics.PostgresqlDatabaseCount),
+		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(mbc.Metrics.PostgresqlDbSize),
+		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(mbc.Metrics.PostgresqlIndexScans),
+		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(mbc.Metrics.PostgresqlIndexSize),
+		metricPostgresqlOperations:               newMetricPostgresqlOperations(mbc.Metrics.PostgresqlOperations),
+		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(mbc.Metrics.PostgresqlReplicationDataDelay),
+		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(mbc.Metrics.PostgresqlRollbacks),
+		metricPostgresqlRows:                     newMetricPostgresqlRows(mbc.Metrics.PostgresqlRows),
+		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(mbc.Metrics.PostgresqlTableCount),
+		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(mbc.Metrics.PostgresqlTableSize),
+		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(mbc.Metrics.PostgresqlTableVacuumCount),
+		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
+		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(mbc.Metrics.PostgresqlWalLag),
 	}
 	for _, op := range options {
 		op(mb)

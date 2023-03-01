@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
