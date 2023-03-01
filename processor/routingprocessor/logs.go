@@ -16,6 +16,7 @@ package routingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"

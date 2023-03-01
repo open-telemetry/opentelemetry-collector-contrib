@@ -17,8 +17,9 @@ package routingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"strings"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 var (
