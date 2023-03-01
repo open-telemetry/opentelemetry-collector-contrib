@@ -51,8 +51,8 @@ func createDefaultConfig() component.Config {
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: ":2181",
 		},
-		Timeout: defaultTimeout,
-		Metrics: metadata.DefaultMetricsSettings(),
+		Timeout:              defaultTimeout,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

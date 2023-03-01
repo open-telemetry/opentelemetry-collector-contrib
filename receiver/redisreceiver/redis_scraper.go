@@ -62,7 +62,7 @@ func newRedisScraperWithClient(client client, settings receiver.CreateSettings, 
 		client:   client,
 		redisSvc: newRedisSvc(client),
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 	return scraperhelper.NewScraper(
 		typeStr,

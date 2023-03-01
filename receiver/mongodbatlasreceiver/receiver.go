@@ -51,7 +51,7 @@ func newMongoDBAtlasReceiver(settings rcvr.CreateSettings, cfg *Config) *receive
 		log:         settings.Logger,
 		cfg:         cfg,
 		client:      client,
-		mb:          metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:          metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		stopperChan: make(chan struct{}),
 	}
 }

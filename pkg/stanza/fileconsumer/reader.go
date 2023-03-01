@@ -43,6 +43,7 @@ type Reader struct {
 	generation     int
 	file           *os.File
 	fileAttributes *FileAttributes
+	eof            bool
 }
 
 // offsetToEnd sets the starting offset
@@ -74,7 +75,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		ok := scanner.Scan()
 		if !ok {
+			r.eof = true
 			if err := scanner.getError(); err != nil {
+				// If Scan returned an error then we are not guaranteed to be at the end of the file
+				r.eof = false
 				r.Errorw("Failed during scan", zap.Error(err))
 			}
 			break
