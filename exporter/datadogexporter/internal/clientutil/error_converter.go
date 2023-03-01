@@ -29,5 +29,5 @@ func WrapError(err error, resp *http.Response) error {
 }
 
 func isNonRetriable(resp *http.Response) bool {
-	return resp.StatusCode == 400 || resp.StatusCode == 404 || resp.StatusCode == 413 || resp.StatusCode == 403
+	return resp == nil || resp.StatusCode == 400 || resp.StatusCode == 404 || resp.StatusCode == 413 || resp.StatusCode == 403
 }
