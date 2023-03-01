@@ -55,7 +55,6 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			AggregationTemporality: cumulative,
 			DimensionsCacheSize:    defaultDimensionsCacheSize,
-			skipSanitizeLabel:      dropSanitizationGate.IsEnabled(),
 			MetricsFlushInterval:   15 * time.Second,
 		},
 		simpleCfg.Connectors[component.NewID(typeStr)],
@@ -73,7 +72,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 			AggregationTemporality: delta,
 			DimensionsCacheSize:    1500,
-			skipSanitizeLabel:      dropSanitizationGate.IsEnabled(),
 			MetricsFlushInterval:   30 * time.Second,
 		},
 		fullCfg.Connectors[component.NewID(typeStr)],
@@ -89,4 +87,48 @@ func TestGetAggregationTemporality(t *testing.T) {
 
 	cfg = &Config{}
 	assert.Equal(t, pmetric.AggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+}
+
+func TestValidateDimensions(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		dimensions  []Dimension
+		expectedErr string
+	}{
+		{
+			name:       "no additional dimensions",
+			dimensions: []Dimension{},
+		},
+		{
+			name: "no duplicate dimensions",
+			dimensions: []Dimension{
+				{Name: "http.service_name"},
+				{Name: "http.status_code"},
+			},
+		},
+		{
+			name: "duplicate dimension with reserved labels",
+			dimensions: []Dimension{
+				{Name: "service.name"},
+			},
+			expectedErr: "duplicate dimension name service.name",
+		},
+		{
+			name: "duplicate additional dimensions",
+			dimensions: []Dimension{
+				{Name: "service_name"},
+				{Name: "service_name"},
+			},
+			expectedErr: "duplicate dimension name service_name",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateDimensions(tc.dimensions)
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

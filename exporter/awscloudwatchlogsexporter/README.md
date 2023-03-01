@@ -24,6 +24,7 @@ The following settings can be optionally configured:
 - `region`: The AWS region where the log stream is in.
 - `endpoint`: The CloudWatch Logs service endpoint which the requests are forwarded to. [See the CloudWatch Logs endpoints](https://docs.aws.amazon.com/general/latest/gr/cwl_region.html) for a list.
 - `log_retention`: LogRetention is the option to set the log retention policy for only newly created CloudWatch Log Groups. Defaults to Never Expire if not specified or set to 0.  Possible values for retention in days are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653. 
+- `raw_log`: Boolean default false. If you want to export only the log message to cw logs. This is required for emf logs. 
 
 ### Examples
 

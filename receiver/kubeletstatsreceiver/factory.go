@@ -61,7 +61,7 @@ func createDefaultConfig() component.Config {
 				AuthType: k8sconfig.AuthTypeTLS,
 			},
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -81,7 +81,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scrp, err := newKubletScraper(rest, set, rOptions, cfg.Metrics)
+	scrp, err := newKubletScraper(rest, set, rOptions, cfg.MetricsBuilderConfig)
 	if err != nil {
 		return nil, err
 	}

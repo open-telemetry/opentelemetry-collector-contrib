@@ -44,7 +44,7 @@ func newMongodbScraper(settings receiver.CreateSettings, config *Config) *mongod
 	return &mongodbScraper{
 		logger: settings.Logger,
 		config: config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics, settings),
+		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
 }
 

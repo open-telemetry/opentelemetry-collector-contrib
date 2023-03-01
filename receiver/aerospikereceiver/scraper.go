@@ -93,7 +93,7 @@ func newAerospikeReceiver(params receiver.CreateSettings, cfg *Config, consumer 
 				nodeGetterFactory,
 			)
 		},
-		mb: metadata.NewMetricsBuilder(cfg.Metrics, params),
+		mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
 	}, nil
 }
 

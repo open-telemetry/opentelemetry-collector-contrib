@@ -30,6 +30,6 @@ type Config struct {
 	// Timeout for the memcache stats request
 	Timeout time.Duration `mapstructure:"timeout"`
 
-	// Metrics allows customizing scraped metrics representation.
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }

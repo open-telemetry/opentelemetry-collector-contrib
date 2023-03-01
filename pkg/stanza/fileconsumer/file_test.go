@@ -1322,3 +1322,75 @@ func TestMaxBatching(t *testing.T) {
 		logNum++
 	}
 }
+
+func TestDeleteAfterRead_SkipPartials(t *testing.T) {
+	bytesPerLine := 100
+	shortFileLine := tokenWithLength(bytesPerLine - 1)
+	longFileLines := 100000
+	longFileSize := longFileLines * bytesPerLine
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), false))
+	}()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.DeleteAfterRead = true
+	emitCalls := make(chan *emitParams, longFileLines+1)
+	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
+	operator.persister = testutil.NewMockPersister("test")
+
+	shortFile := openTemp(t, tempDir)
+	_, err := shortFile.WriteString(string(shortFileLine) + "\n")
+	require.NoError(t, err)
+	require.NoError(t, shortFile.Close())
+
+	longFile := openTemp(t, tempDir)
+	for line := 0; line < longFileLines; line++ {
+		_, err := longFile.WriteString(string(tokenWithLength(bytesPerLine-1)) + "\n")
+		require.NoError(t, err)
+	}
+	require.NoError(t, longFile.Close())
+
+	// Verify we have no checkpointed files
+	require.Equal(t, 0, len(operator.knownFiles))
+
+	// Wait until the only line in the short file and
+	// at least one line from the long file have been consumed
+	var shortOne, longOne bool
+	ctx, cancel := context.WithCancel(context.Background())
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		operator.poll(ctx)
+	}()
+
+	for !(shortOne && longOne) {
+		if line := waitForEmit(t, emitCalls); string(line.token) == string(shortFileLine) {
+			shortOne = true
+		} else {
+			longOne = true
+		}
+	}
+
+	// Stop consuming before long file has been fully consumed
+	cancel()
+	wg.Wait()
+
+	// short file was fully consumed and should have been deleted
+	require.NoFileExists(t, shortFile.Name())
+
+	// long file was partially consumed and should NOT have been deleted
+	require.FileExists(t, longFile.Name())
+
+	// Verify that only long file is remembered and that (0 < offset < fileSize)
+	require.Equal(t, 1, len(operator.knownFiles))
+	reader := operator.knownFiles[0]
+	require.Equal(t, longFile.Name(), reader.file.Name())
+	require.Greater(t, reader.Offset, int64(0))
+	require.Less(t, reader.Offset, int64(longFileSize))
+}

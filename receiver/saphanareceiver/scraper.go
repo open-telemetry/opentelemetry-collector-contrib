@@ -57,7 +57,7 @@ func (s *sapHanaScraper) getMetricsBuilder(resourceAttributes map[string]string)
 	key := string(bytes)
 	mb, ok := s.mbs[key]
 	if !ok {
-		mb = metadata.NewMetricsBuilder(s.cfg.Metrics, s.settings)
+		mb = metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings)
 		s.mbs[key] = mb
 	}
 

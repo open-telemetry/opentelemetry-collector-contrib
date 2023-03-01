@@ -86,6 +86,6 @@ func newScraper(conf *Config, settings receiver.CreateSettings) *httpcheckScrape
 	return &httpcheckScraper{
 		cfg:      conf,
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(conf.Metrics, settings),
+		mb:       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
 	}
 }
