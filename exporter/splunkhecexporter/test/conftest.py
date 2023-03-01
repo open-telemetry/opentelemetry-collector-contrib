@@ -15,34 +15,41 @@ limitations under the License.
 """
 
 import pytest
+import config.config_data as config_data
 from common import check_events_from_splunk
 
 
 def pytest_addoption(parser):
-    parser.addoption("--splunkd-url",
-                     help="splunkd url used to send test data to. \
+    parser.addoption(
+        "--splunkd-url",
+        help="splunkd url used to send test data to. \
                           Eg: https://localhost:8089",
-                     default="https://localhost:8089")
-    parser.addoption("--splunk-user",
-                     help="splunk username",
-                     default="admin")
-    parser.addoption("--splunk-password",
-                     help="splunk user password",
-                     default="password")
+        default="https://localhost:8089",
+    )
+    parser.addoption("--splunk-user", help="splunk username", default="admin")
+    parser.addoption(
+        "--splunk-password", help="splunk user password", default="password"
+    )
 
 
 # Print events ingested in splunk for debugging
 def pytest_unconfigure(config):
-    indexes = ["main", "sck-metrics"]
+    indexes = [
+        config_data.EVENT_INDEX_1,
+        config_data.EVENT_INDEX_2,
+        config_data.EVENT_INDEX_FILE_LOG,
+    ]
     for index in indexes:
         search_query = "index=" + index + "  | fields *"
-        events = check_events_from_splunk(start_time="-1h@h",
-                                          url=config.getoption("--splunkd-url"),
-                                          user=config.getoption("--splunk-user"),
-                                          query=["search {0}".format(
-                                              search_query)],
-                                          password=config.getoption("--splunk-password"))
+        events = check_events_from_splunk(
+            start_time="-1h@h",
+            url=config.getoption("--splunkd-url"),
+            user=config.getoption("--splunk-user"),
+            query=["search {0}".format(search_query)],
+            password=config.getoption("--splunk-password"),
+        )
         print("index=" + index + " event count=" + str(len(events)))
+        # debug print all events
         # for event in events:
         #     print(event)
 
