@@ -238,7 +238,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	return data, errs.Combine()
 }
 
-func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle processHandle, processHandle, pid int32) error {
+func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle processHandle, pid int32) error {
 	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled {
 		return nil
 	}
