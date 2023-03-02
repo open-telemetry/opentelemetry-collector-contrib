@@ -107,7 +107,7 @@ func TestHeaderConfig_validate(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "first operator must be able to process entries",
+			expectedErr: "operator 'generate_input' in `metadata_operators` cannot process entries",
 		},
 	}
 

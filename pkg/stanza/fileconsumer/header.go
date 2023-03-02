@@ -64,8 +64,10 @@ func (hc *HeaderConfig) validate() error {
 		return fmt.Errorf("failed to build pipelines: %w", err)
 	}
 
-	if !p.Operators()[0].CanProcess() {
-		return errors.New("first operator must be able to process entries")
+	for _, op := range p.Operators() {
+		if !op.CanProcess() {
+			return fmt.Errorf("operator '%s' in `metadata_operators` cannot process entries", op.ID())
+		}
 	}
 
 	return nil
