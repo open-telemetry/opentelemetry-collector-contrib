@@ -50,13 +50,13 @@ func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, cur
 
 // cpuUtilization calculates the difference between 2 cpu.TimesStat using spent time between them
 func cpuUtilization(startStats *cpu.TimesStat, startTime pcommon.Timestamp, endStats *cpu.TimesStat, endTime pcommon.Timestamp) CPUUtilization {
-	elapsedTime := time.Duration(endTime - startTime)
+	elapsedTime := time.Duration(endTime - startTime).Seconds()
 	if elapsedTime <= 0 {
 		return CPUUtilization{}
 	}
 	return CPUUtilization{
-		User:   (endStats.User - startStats.User) / elapsedTime.Seconds(),
-		System: (endStats.System - startStats.System) / elapsedTime.Seconds(),
-		Iowait: (endStats.Iowait - startStats.Iowait) / elapsedTime.Seconds(),
+		User:   (endStats.User - startStats.User) / elapsedTime,
+		System: (endStats.System - startStats.System) / elapsedTime,
+		Iowait: (endStats.Iowait - startStats.Iowait) / elapsedTime,
 	}
 }
