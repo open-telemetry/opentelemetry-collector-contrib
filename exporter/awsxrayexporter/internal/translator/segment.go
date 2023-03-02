@@ -323,10 +323,10 @@ func timestampToFloatSeconds(ts pcommon.Timestamp) float64 {
 
 func addSpecialAttributes(attributes map[string]pcommon.Value, indexedAttrs []string, unfilteredAttributes pcommon.Map) map[string]pcommon.Value {
 	for _, name := range indexedAttrs {
-		// Index attributes that have been filtered out before if explicitly added
-		_, filteredIn := attributes[name]
-		unfilteredAttribute, filteredOut := unfilteredAttributes.Get(name)
-		if !filteredIn && filteredOut {
+		// Allow attributes that have been filtered out before if explicitly added to be annotated/indexed
+		_, isAnnotatable := attributes[name]
+		unfilteredAttribute, attributeExists := unfilteredAttributes.Get(name)
+		if !isAnnotatable && attributeExists {
 			attributes[name] = unfilteredAttribute
 		}
 	}
