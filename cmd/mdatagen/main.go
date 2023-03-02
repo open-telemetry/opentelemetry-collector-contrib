@@ -57,6 +57,12 @@ func run(ymlPath string) error {
 		filepath.Join(codeDir, "generated_metrics.go"), md); err != nil {
 		return err
 	}
+	if len(md.Status.Stability) > 0 {
+		if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
+			filepath.Join(codeDir, "generated_status.go"), md); err != nil {
+			return err
+		}
+	}
 	if err = generateFile(filepath.Join(tmplDir, "testdata", "config.yaml.tmpl"),
 		filepath.Join(codeDir, "testdata", "config.yaml"), md); err != nil {
 		return err
@@ -99,6 +105,36 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 				},
 				"stringsJoin": strings.Join,
 				"inc":         func(i int) int { return i + 1 },
+				"stability": func(in string) string {
+					switch in {
+					case "alpha":
+						return "Alpha"
+					case "beta":
+						return "Beta"
+					case "unmaintained":
+						return "Unmaintained"
+					case "deprecated":
+						return "Deprecated"
+					case "development":
+						return "Development"
+					case "stable":
+						return "Stable"
+					}
+					return "Undefined"
+				},
+				"distroJoin": func(d []Distribution, sep string) string {
+					if len(d) == 1 {
+						return d[0].Name
+					}
+					output := ""
+					for idx, distro := range d {
+						if idx > 0 {
+							output += sep
+						}
+						output += distro.Name
+					}
+					return output
+				},
 				// ParseFS delegates the parsing of the files to `Glob`
 				// which uses the `\` as a special character.
 				// Meaning on windows based machines, the `\` needs to be replaced

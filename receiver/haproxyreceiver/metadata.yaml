@@ -1,5 +1,13 @@
 name: haproxyreceiver
 
+status:
+  type: receiver
+  stability: alpha
+  pipelines: [metrics]
+  distributions:
+    - name: contrib
+      url: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+
 resource_attributes:
   haproxy.url:
     description: The path to the HAProxy socket or HTTP URL.
