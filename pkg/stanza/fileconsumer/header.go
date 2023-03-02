@@ -34,7 +34,7 @@ import (
 
 const defaultMaxHeaderLineSize = 1024 * 1024 // max size of 1 MiB by default
 type HeaderConfig struct {
-	LineStartPattern  string            `mapstructure:"multiline_pattern"`
+	MultilinePattern  string            `mapstructure:"multiline_pattern"`
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
 	MaxHeaderLineSize *helper.ByteSize  `mapstructure:"max_line_size,omitempty"`
 
@@ -46,7 +46,7 @@ type HeaderConfig struct {
 
 // validate returns an error describing why the configuration is invalid, or nil if the configuration is valid.
 func (hc *HeaderConfig) validate() error {
-	_, err := regexp.Compile(hc.LineStartPattern)
+	_, err := regexp.Compile(hc.MultilinePattern)
 	if err != nil {
 		return fmt.Errorf("invalid `multiline_pattern`: %w", err)
 	}
@@ -81,7 +81,7 @@ func (hc *HeaderConfig) build(logger *zap.SugaredLogger, enc encoding.Encoding) 
 	hc.logger = logger
 
 	var err error
-	hc.matchRegex, err = regexp.Compile(hc.LineStartPattern)
+	hc.matchRegex, err = regexp.Compile(hc.MultilinePattern)
 	if err != nil {
 		return fmt.Errorf("failed to compile multiline pattern: %w", err)
 	}
@@ -137,8 +137,8 @@ type header struct {
 	attributesFromHeader map[string]any
 	offset               int64
 
-	outputOperator *headerPipelineOutput
 	headerPipeline pipeline.Pipeline
+	outputOperator *headerPipelineOutput
 }
 
 // ReadHeader attempts to read the header from the given file. If the header is completed, fileAttributes will

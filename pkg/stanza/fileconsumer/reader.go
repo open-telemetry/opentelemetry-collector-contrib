@@ -76,7 +76,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			return
 		}
 
-		// Set r to the end of the headers if our current offset is within the header logs
+		// Set r to the end of the headers if our current offset is within the header
 		if r.Offset < r.header.Offset() {
 			r.Offset = r.header.Offset()
 		}
