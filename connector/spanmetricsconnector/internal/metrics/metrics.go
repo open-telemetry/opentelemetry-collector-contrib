@@ -16,6 +16,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"sort"
+	"time"
 
 	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -24,6 +25,7 @@ import (
 
 type HistogramMetrics interface {
 	GetOrCreate(key string, attributes pcommon.Map) Histogram
+	BuildMetrics(pmetric.Metric, pcommon.Timestamp, pmetric.AggregationTemporality)
 	Reset(onlyExemplars bool)
 }
 
@@ -75,6 +77,30 @@ func (m *ExplicitHistogramMetrics) GetOrCreate(key string, attributes pcommon.Ma
 	return h
 }
 
+func (m *ExplicitHistogramMetrics) BuildMetrics(
+	metric pmetric.Metric,
+	start pcommon.Timestamp,
+	temporality pmetric.AggregationTemporality,
+) {
+	metric.SetEmptyHistogram().SetAggregationTemporality(temporality)
+	dps := metric.Histogram().DataPoints()
+	dps.EnsureCapacity(len(m.Metrics))
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	for _, h := range m.Metrics {
+		dp := dps.AppendEmpty()
+		dp.SetStartTimestamp(start)
+		dp.SetTimestamp(timestamp)
+		dp.ExplicitBounds().FromRaw(h.Bounds)
+		dp.BucketCounts().FromRaw(h.BucketCounts)
+		dp.SetCount(h.Count)
+		dp.SetSum(h.Sum)
+		for i := 0; i < dp.Exemplars().Len(); i++ {
+			dp.Exemplars().At(i).SetTimestamp(timestamp)
+		}
+		h.Attributes.CopyTo(dp.Attributes())
+	}
+}
+
 func (m *ExplicitHistogramMetrics) Reset(onlyExemplars bool) {
 	if onlyExemplars {
 		for _, h := range m.Metrics {
@@ -104,6 +130,58 @@ func (m *ExponentialHistogramMetrics) GetOrCreate(key string, attributes pcommon
 	}
 
 	return h
+}
+
+func (m *ExponentialHistogramMetrics) BuildMetrics(
+	metric pmetric.Metric,
+	start pcommon.Timestamp,
+	temporality pmetric.AggregationTemporality,
+) {
+	metric.SetEmptyExponentialHistogram().SetAggregationTemporality(temporality)
+	dps := metric.ExponentialHistogram().DataPoints()
+	dps.EnsureCapacity(len(m.Metrics))
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	for _, h := range m.Metrics {
+		dp := dps.AppendEmpty()
+		dp.SetStartTimestamp(start)
+		dp.SetTimestamp(timestamp)
+		expoHistToExponentialDataPoint(h.Agg, dp)
+		for i := 0; i < dp.Exemplars().Len(); i++ {
+			dp.Exemplars().At(i).SetTimestamp(timestamp)
+		}
+		h.Attributes.CopyTo(dp.Attributes())
+	}
+}
+
+// expoHistToExponentialDataPoint copies `lightstep/go-expohisto` structure.Histogram to
+// pmetric.ExponentialHistogramDataPoint
+func expoHistToExponentialDataPoint(agg *structure.Histogram[float64], dp pmetric.ExponentialHistogramDataPoint) {
+	dp.SetCount(agg.Count())
+	dp.SetSum(agg.Sum())
+	if agg.Count() != 0 {
+		dp.SetMin(agg.Min())
+		dp.SetMax(agg.Max())
+	}
+
+	dp.SetZeroCount(agg.ZeroCount())
+	dp.SetScale(agg.Scale())
+
+	for _, half := range []struct {
+		inFunc  func() *structure.Buckets
+		outFunc func() pmetric.ExponentialHistogramDataPointBuckets
+	}{
+		{agg.Positive, dp.Positive},
+		{agg.Negative, dp.Negative},
+	} {
+		in := half.inFunc()
+		out := half.outFunc()
+		out.SetOffset(in.Offset())
+		out.BucketCounts().EnsureCapacity(int(in.Len()))
+
+		for i := uint32(0); i < in.Len(); i++ {
+			out.BucketCounts().Append(in.At(i))
+		}
+	}
 }
 
 func (m *ExponentialHistogramMetrics) Reset(onlyExemplars bool) {
@@ -147,4 +225,32 @@ func (h *ExponentialHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcomm
 type Sum struct {
 	Attributes pcommon.Map
 	Count      uint64
+}
+
+type SumMetrics struct {
+	Metrics map[string]*Sum
+}
+
+func (m *SumMetrics) BuildMetrics(
+	metric pmetric.Metric,
+	start pcommon.Timestamp,
+	temporality pmetric.AggregationTemporality,
+) {
+	metric.SetEmptySum().SetIsMonotonic(true)
+	metric.Sum().SetAggregationTemporality(temporality)
+
+	dps := metric.Sum().DataPoints()
+	dps.EnsureCapacity(len(m.Metrics))
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	for _, s := range m.Metrics {
+		dp := dps.AppendEmpty()
+		dp.SetStartTimestamp(start)
+		dp.SetTimestamp(timestamp)
+		dp.SetIntValue(int64(s.Count))
+		s.Attributes.CopyTo(dp.Attributes())
+	}
+}
+
+func (m *SumMetrics) Reset() {
+	m.Metrics = make(map[string]*Sum)
 }
