@@ -60,6 +60,7 @@ func (r *Reader) offsetToEnd() error {
 
 // ReadToEnd will read until the end of the file
 func (r *Reader) ReadToEnd(ctx context.Context) {
+	// read through the fingerprintReader in order to update the fingerprint as we read.
 	fpr := &fingerprintReader{
 		offset:          r.Offset,
 		fingerprintSize: r.fingerprintSize,
