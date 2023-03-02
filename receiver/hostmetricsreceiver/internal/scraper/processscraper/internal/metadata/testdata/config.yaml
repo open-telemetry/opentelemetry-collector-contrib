@@ -1,51 +1,83 @@
 default:
-all_metrics:
-  process.context_switches:
-    enabled: true
-  process.cpu.time:
-    enabled: true
-  process.cpu.utilization:
-    enabled: true
-  process.disk.io:
-    enabled: true
-  process.disk.operations:
-    enabled: true
-  process.memory.usage:
-    enabled: true
-  process.memory.utilization:
-    enabled: true
-  process.memory.virtual:
-    enabled: true
-  process.open_file_descriptors:
-    enabled: true
-  process.paging.faults:
-    enabled: true
-  process.signals_pending:
-    enabled: true
-  process.threads:
-    enabled: true
-no_metrics:
-  process.context_switches:
-    enabled: false
-  process.cpu.time:
-    enabled: false
-  process.cpu.utilization:
-    enabled: false
-  process.disk.io:
-    enabled: false
-  process.disk.operations:
-    enabled: false
-  process.memory.usage:
-    enabled: false
-  process.memory.utilization:
-    enabled: false
-  process.memory.virtual:
-    enabled: false
-  process.open_file_descriptors:
-    enabled: false
-  process.paging.faults:
-    enabled: false
-  process.signals_pending:
-    enabled: false
-  process.threads:
-    enabled: false
+all_set:
+  metrics:
+    process.context_switches:
+      enabled: true
+    process.cpu.time:
+      enabled: true
+    process.cpu.utilization:
+      enabled: true
+    process.disk.io:
+      enabled: true
+    process.disk.operations:
+      enabled: true
+    process.memory.usage:
+      enabled: true
+    process.memory.utilization:
+      enabled: true
+    process.memory.virtual:
+      enabled: true
+    process.open_file_descriptors:
+      enabled: true
+    process.paging.faults:
+      enabled: true
+    process.signals_pending:
+      enabled: true
+    process.threads:
+      enabled: true
+  resource_attributes:
+    process.command:
+      enabled: true
+    process.command_line:
+      enabled: true
+    process.executable.name:
+      enabled: true
+    process.executable.path:
+      enabled: true
+    process.owner:
+      enabled: true
+    process.parent_pid:
+      enabled: true
+    process.pid:
+      enabled: true
+none_set:
+  metrics:
+    process.context_switches:
+      enabled: false
+    process.cpu.time:
+      enabled: false
+    process.cpu.utilization:
+      enabled: false
+    process.disk.io:
+      enabled: false
+    process.disk.operations:
+      enabled: false
+    process.memory.usage:
+      enabled: false
+    process.memory.utilization:
+      enabled: false
+    process.memory.virtual:
+      enabled: false
+    process.open_file_descriptors:
+      enabled: false
+    process.paging.faults:
+      enabled: false
+    process.signals_pending:
+      enabled: false
+    process.threads:
+      enabled: false
+  resource_attributes:
+    process.command:
+      enabled: false
+    process.command_line:
+      enabled: false
+    process.executable.name:
+      enabled: false
+    process.executable.path:
+      enabled: false
+    process.owner:
+      enabled: false
+    process.parent_pid:
+      enabled: false
+    process.pid:
+      enabled: false

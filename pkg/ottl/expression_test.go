@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -290,10 +290,10 @@ func Test_newGetter(t *testing.T) {
 
 	functions := map[string]interface{}{"Hello": hello[interface{}]}
 
-	p := NewParser[any](
+	p, _ := NewParser[any](
 		functions,
 		testParsePath,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
 
@@ -347,6 +347,16 @@ func Test_StandardTypeGetter(t *testing.T) {
 			valid:            false,
 			expectedErrorMsg: "expected string but got bool",
 		},
+		{
+			name: "nil",
+			getter: StandardTypeGetter[interface{}, string]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected string but got nil",
+		},
 	}
 
 	for _, tt := range tests {
@@ -354,7 +364,7 @@ func Test_StandardTypeGetter(t *testing.T) {
 			val, err := tt.getter.Get(context.Background(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.want, *val)
+				assert.Equal(t, tt.want, val)
 			} else {
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}

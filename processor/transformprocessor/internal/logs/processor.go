@@ -20,16 +20,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
 	contexts []consumer.Logs
+	logger   *zap.Logger
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
-	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(LogFunctions()))
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings) (*Processor, error) {
+	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(LogFunctions()), common.WithLogErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +48,7 @@ func NewProcessor(contextStatements []common.ContextStatements, settings compone
 
 	return &Processor{
 		contexts: contexts,
+		logger:   settings.Logger,
 	}, nil
 }
 
@@ -52,6 +56,7 @@ func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, e
 	for _, c := range p.contexts {
 		err := c.ConsumeLogs(ctx, ld)
 		if err != nil {
+			p.logger.Error("failed processing logs", zap.Error(err))
 			return ld, err
 		}
 	}

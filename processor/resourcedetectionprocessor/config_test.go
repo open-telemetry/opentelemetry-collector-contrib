@@ -28,6 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
@@ -105,6 +106,14 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(typeStr, "lambda"),
+			expected: &Config{
+				Detectors:          []string{"env", "lambda"},
+				HTTPClientSettings: cfg,
+				Override:           false,
+			},
+		},
+		{
 			id:           component.NewIDWithName(typeStr, "invalid"),
 			errorMessage: "hostname_sources contains invalid value: \"invalid_source\"",
 		},
@@ -175,6 +184,12 @@ func TestGetConfigFromType(t *testing.T) {
 		{
 			name:                "Get Heroku Config",
 			detectorType:        heroku.TypeStr,
+			inputDetectorConfig: DetectorConfig{},
+			expectedConfig:      nil,
+		},
+		{
+			name:                "Get AWS Lambda Config",
+			detectorType:        lambda.TypeStr,
 			inputDetectorConfig: DetectorConfig{},
 			expectedConfig:      nil,
 		},

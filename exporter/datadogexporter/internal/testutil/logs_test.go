@@ -27,7 +27,7 @@ import (
 
 func TestDatadogLogsServer(t *testing.T) {
 	server := DatadogLogServerMock()
-	values := []map[string]interface{}{
+	values := JSONLogs{
 		{
 			"company":   "datadog",
 			"component": "logs",

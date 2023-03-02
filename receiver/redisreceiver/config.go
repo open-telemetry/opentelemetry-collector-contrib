@@ -36,5 +36,5 @@ type Config struct {
 
 	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }

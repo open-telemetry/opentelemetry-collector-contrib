@@ -33,7 +33,7 @@ const (
 	Probabilistic PolicyType = "probabilistic"
 	// StatusCode sample traces that have a given status code.
 	StatusCode PolicyType = "status_code"
-	// StringAttribute sample traces that a attribute, of type string, matching
+	// StringAttribute sample traces that an attribute, of type string, matching
 	// one of the listed values.
 	StringAttribute PolicyType = "string_attribute"
 	// RateLimiting allows all traces until the specified limits are satisfied.
@@ -46,6 +46,9 @@ const (
 	SpanCount PolicyType = "span_count"
 	// TraceState sample traces with specified values by the given key
 	TraceState PolicyType = "trace_state"
+	// BooleanAttribute sample traces having an attribute, of type bool, that matches
+	// the specified boolean value [true|false].
+	BooleanAttribute PolicyType = "boolean_attribute"
 )
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
@@ -71,6 +74,8 @@ type sharedPolicyCfg struct {
 	SpanCountCfg SpanCountCfg `mapstructure:"span_count"`
 	// Configs for defining trace_state policy
 	TraceStateCfg TraceStateCfg `mapstructure:"trace_state"`
+	// Configs for boolean attribute filter sampling policy evaluator.
+	BooleanAttributeCfg BooleanAttributeCfg `mapstructure:"boolean_attribute"`
 }
 
 // CompositeSubPolicyCfg holds the common configuration to all policies under composite policy.
@@ -190,6 +195,17 @@ type RateLimitingCfg struct {
 type SpanCountCfg struct {
 	// Minimum number of spans in a Trace
 	MinSpans int32 `mapstructure:"min_spans"`
+	MaxSpans int32 `mapstructure:"max_spans"`
+}
+
+// BooleanAttributeCfg holds the configurable settings to create a boolean attribute filter
+// sampling policy evaluator.
+type BooleanAttributeCfg struct {
+	// Tag that the filter is going to be matching against.
+	Key string `mapstructure:"key"`
+	// Value indicate the bool value, either true or false to use when matching against attribute values.
+	// BooleanAttribute Policy will apply exact value match on Value
+	Value bool `mapstructure:"value"`
 }
 
 // Config holds the configuration for tail-based sampling.

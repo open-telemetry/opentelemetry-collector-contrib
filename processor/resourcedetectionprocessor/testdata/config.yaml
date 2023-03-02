@@ -28,6 +28,11 @@ resourcedetection/ecs:
   timeout: 2s
   override: false
 
+resourcedetection/lambda:
+  detectors: [env, lambda]
+  timeout: 2s
+  override: false
+
 resourcedetection/system:
   detectors: [env, system]
   timeout: 2s
