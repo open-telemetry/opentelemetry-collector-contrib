@@ -645,10 +645,6 @@ func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
 					"foo":             "bar",
 					"metric_name:mem": 1233.4,
 				}),
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
-					"foo":             "bar",
-					"metric_name:mem": 123,
-				}),
 			},
 		},
 		{
@@ -668,10 +664,6 @@ func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
 				oneEvent,
 			},
 			merged: []*splunk.Event{
-				oneEvent,
-				oneEvent,
-				oneEvent,
-				oneEvent,
 				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
 					"foo":              "bar",
 					"metric_name:mem":  123,
@@ -697,12 +689,8 @@ func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
 			},
 			merged: []*splunk.Event{
 				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
-					"foo":             "bar",
-					"metric_name:mem": 125,
-				}),
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
 					"foo":              "bar",
-					"metric_name:mem":  123,
+					"metric_name:mem":  125,
 					"metric_name:mem2": 1233.4,
 				}),
 			},
