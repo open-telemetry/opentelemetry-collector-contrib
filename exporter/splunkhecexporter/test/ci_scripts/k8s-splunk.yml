@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: splunk
+spec:
+  hostNetwork: true
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+  containers:
+  - name: splunk
+    image: splunk/splunk:8.2.0
+    ports:
+    - containerPort: 8000
+      hostPort: 8000
+      protocol: TCP
+    - containerPort: 8088
+      hostPort: 8088
+      protocol: TCP
+    - containerPort: 8089
+      hostPort: 8089
+      protocol: TCP
+    env:
+    - name: SPLUNK_START_ARGS
+      value: --accept-license
+    - name: SPLUNK_USER
+      value: root
+    - name: SPLUNK_PASSWORD
+      value: helloworld
+    - name: SPLUNK_LAUNCH_CONF
+      value: OPTIMISTIC_ABOUT_FILE_LOCKING=1
