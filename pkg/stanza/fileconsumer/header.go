@@ -181,7 +181,7 @@ func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Enc
 
 		// If the regex doesn't match, we've reached the end of the header, so we'll finalize.
 		if !h.config.matchRegex.Match(line) {
-			h.finalizeHeader(ctx, fileAttributes)
+			h.finalizeHeader(fileAttributes)
 			return
 		}
 
@@ -193,7 +193,7 @@ func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Enc
 }
 
 // finalizeHeader marks the header as completely read, and adds the resultant attributes to the FileAttributes.
-func (h *header) finalizeHeader(ctx context.Context, fileAttributes *FileAttributes) {
+func (h *header) finalizeHeader(fileAttributes *FileAttributes) {
 	h.finalized = true
 	fileAttributes.HeaderAttributes = h.attributesFromHeader
 }
