@@ -69,7 +69,7 @@ type connectorImp struct {
 
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "span.name": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions *cache.Cache[string, pcommon.Map]
+	metricKeyToDimensions *cache.Cache[metrics.Key, pcommon.Map]
 
 	ticker  *clock.Ticker
 	done    chan struct{}
@@ -102,7 +102,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 	logger.Info("Building spanmetrics connector")
 	cfg := config.(*Config)
 
-	metricKeyToDimensionsCache, err := cache.NewCache[string, pcommon.Map](cfg.DimensionsCacheSize)
+	metricKeyToDimensionsCache, err := cache.NewCache[metrics.Key, pcommon.Map](cfg.DimensionsCacheSize)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 			maxSize = structure.DefaultMaxSize
 		}
 		histograms = &metrics.ExponentialHistogramMetrics{
-			Metrics: make(map[string]*metrics.ExponentialHistogram),
+			Metrics: make(map[metrics.Key]*metrics.ExponentialHistogram),
 			MaxSize: maxSize,
 		}
 	} else {
@@ -129,12 +129,12 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 			bounds = mapDurationsToMillis(cfg.Histogram.Explicit.Buckets)
 		}
 		histograms = &metrics.ExplicitHistogramMetrics{
-			Metrics: make(map[string]*metrics.ExplicitHistogram),
+			Metrics: make(map[metrics.Key]*metrics.ExplicitHistogram),
 			Bounds:  bounds,
 		}
 	}
 	sums := metrics.SumMetrics{
-		Metrics: make(map[string]*metrics.Sum),
+		Metrics: make(map[metrics.Key]*metrics.Sum),
 	}
 
 	return &connectorImp{
@@ -321,7 +321,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	}
 }
 
-func (p *connectorImp) aggregateSumMetrics(key string, attributes pcommon.Map) {
+func (p *connectorImp) aggregateSumMetrics(key metrics.Key, attributes pcommon.Map) {
 	s, ok := p.sums.Metrics[key]
 	if !ok {
 		s = &metrics.Sum{
@@ -359,7 +359,7 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceAttrs pcommon.Map) string {
+func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceAttrs pcommon.Map) metrics.Key {
 	p.keyBuf.Reset()
 	concatDimensionValue(p.keyBuf, serviceName, false)
 	concatDimensionValue(p.keyBuf, span.Name(), true)
@@ -372,7 +372,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 		}
 	}
 
-	return p.keyBuf.String()
+	return metrics.Key(p.keyBuf.String())
 }
 
 // getDimensionValue gets the dimension value for the given configured dimension.

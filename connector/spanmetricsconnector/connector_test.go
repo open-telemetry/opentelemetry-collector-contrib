@@ -338,14 +338,14 @@ func initSpan(span span, s ptrace.Span) {
 
 func initExplicitHistograms() HistogramMetrics {
 	return &ExplicitHistogramMetrics{
-		Metrics: make(map[string]*ExplicitHistogram),
+		Metrics: make(map[Key]*ExplicitHistogram),
 		Bounds:  defaultHistogramBucketsMs,
 	}
 }
 
 func initExponentialHistograms() HistogramMetrics {
 	return &ExponentialHistogramMetrics{
-		Metrics: make(map[string]*ExponentialHistogram),
+		Metrics: make(map[Key]*ExponentialHistogram),
 		MaxSize: 10,
 	}
 }
@@ -365,8 +365,8 @@ func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 	k1 := c.buildKey("a", span1, nil, pcommon.NewMap())
 
 	assert.NotEqual(t, k0, k1)
-	assert.Equal(t, "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET", k0)
-	assert.Equal(t, "a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET", k1)
+	assert.Equal(t, Key("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
+	assert.Equal(t, Key("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
 }
 
 func TestBuildKeyWithDimensions(t *testing.T) {
@@ -442,7 +442,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
 			key := c.buildKey("ab", span0, tc.optionalDims, resAttr)
-			assert.Equal(t, tc.wantKey, key)
+			assert.Equal(t, Key(tc.wantKey), key)
 		})
 	}
 }
@@ -806,7 +806,7 @@ func newConnectorImp(
 ) *connectorImp {
 	defaultNotInSpanAttrVal := pcommon.NewValueStr("defaultNotInSpanAttrVal")
 	// use size 2 for LRU cache for testing purpose
-	metricKeyToDimensions, err := cache.NewCache[string, pcommon.Map](DimensionsCacheSize)
+	metricKeyToDimensions, err := cache.NewCache[Key, pcommon.Map](DimensionsCacheSize)
 	if err != nil {
 		panic(err)
 	}
@@ -817,7 +817,7 @@ func newConnectorImp(
 
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
 		histograms:     histograms(),
-		sums:           SumMetrics{Metrics: make(map[string]*Sum)},
+		sums:           SumMetrics{Metrics: make(map[Key]*Sum)},
 		dimensions: []dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},

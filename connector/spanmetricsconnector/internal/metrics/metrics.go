@@ -23,8 +23,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
+type Key string
+
 type HistogramMetrics interface {
-	GetOrCreate(key string, attributes pcommon.Map) Histogram
+	GetOrCreate(key Key, attributes pcommon.Map) Histogram
 	BuildMetrics(pmetric.Metric, pcommon.Timestamp, pmetric.AggregationTemporality)
 	Reset(onlyExemplars bool)
 }
@@ -35,12 +37,12 @@ type Histogram interface {
 }
 
 type ExplicitHistogramMetrics struct {
-	Metrics map[string]*ExplicitHistogram
+	Metrics map[Key]*ExplicitHistogram
 	Bounds  []float64
 }
 
 type ExponentialHistogramMetrics struct {
-	Metrics map[string]*ExponentialHistogram
+	Metrics map[Key]*ExponentialHistogram
 	MaxSize int32
 }
 
@@ -62,7 +64,7 @@ type ExponentialHistogram struct {
 	Agg *structure.Histogram[float64]
 }
 
-func (m *ExplicitHistogramMetrics) GetOrCreate(key string, attributes pcommon.Map) Histogram {
+func (m *ExplicitHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map) Histogram {
 	h, ok := m.Metrics[key]
 	if !ok {
 		h = &ExplicitHistogram{
@@ -109,10 +111,10 @@ func (m *ExplicitHistogramMetrics) Reset(onlyExemplars bool) {
 		return
 	}
 
-	m.Metrics = make(map[string]*ExplicitHistogram)
+	m.Metrics = make(map[Key]*ExplicitHistogram)
 }
 
-func (m *ExponentialHistogramMetrics) GetOrCreate(key string, attributes pcommon.Map) Histogram {
+func (m *ExponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map) Histogram {
 	h, ok := m.Metrics[key]
 	if !ok {
 		agg := new(structure.Histogram[float64])
@@ -192,7 +194,7 @@ func (m *ExponentialHistogramMetrics) Reset(onlyExemplars bool) {
 		return
 	}
 
-	m.Metrics = make(map[string]*ExponentialHistogram)
+	m.Metrics = make(map[Key]*ExponentialHistogram)
 }
 
 func (h *ExplicitHistogram) Observe(value float64) {
@@ -228,7 +230,7 @@ type Sum struct {
 }
 
 type SumMetrics struct {
-	Metrics map[string]*Sum
+	Metrics map[Key]*Sum
 }
 
 func (m *SumMetrics) BuildMetrics(
@@ -252,5 +254,5 @@ func (m *SumMetrics) BuildMetrics(
 }
 
 func (m *SumMetrics) Reset() {
-	m.Metrics = make(map[string]*Sum)
+	m.Metrics = make(map[Key]*Sum)
 }
