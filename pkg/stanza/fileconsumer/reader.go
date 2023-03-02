@@ -60,8 +60,15 @@ func (r *Reader) offsetToEnd() error {
 
 // ReadToEnd will read until the end of the file
 func (r *Reader) ReadToEnd(ctx context.Context) {
+	fpr := &fingerprintReader{
+		offset:          r.Offset,
+		fingerprintSize: r.fingerprintSize,
+		file:            r.file,
+		fingerprint:     r.Fingerprint,
+	}
+
 	if r.header != nil && !r.header.Finalized() {
-		r.header.ReadHeader(ctx, r.file, r.encoding, r.fileAttributes)
+		r.header.ReadHeader(ctx, fpr, r.encoding, r.fileAttributes)
 		// Don't read log entries if the header has not yet been finalized
 		// (we are still waiting for the full header to be read).
 		if !r.header.Finalized() {
@@ -70,19 +77,16 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		// Set r to the end of the headers if our current offset is within the header logs
 		if r.Offset < r.header.Offset() {
-			if err := r.readHeaderFingerprint(); err != nil {
-				r.Errorw("Failed to read header into fingerprint.", zap.Error(err))
-			}
 			r.Offset = r.header.Offset()
 		}
 	}
 
-	if _, err := r.file.Seek(r.Offset, 0); err != nil {
+	if _, err := fpr.Seek(r.Offset, 0); err != nil {
 		r.Errorw("Failed to seek", zap.Error(err))
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+	scanner := NewPositionalScanner(fpr, r.maxLogSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -129,46 +133,6 @@ func (r *Reader) Close() {
 	}
 }
 
-// Read from the file and update the fingerprint if necessary
-func (r *Reader) Read(dst []byte) (int, error) {
-	// Skip if fingerprint is already built
-	// or if fingerprint is behind Offset
-	if len(r.Fingerprint.FirstBytes) == r.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
-		return r.file.Read(dst)
-	}
-	n, err := r.file.Read(dst)
-	appendCount := min0(n, r.fingerprintSize-int(r.Offset))
-	// return for n == 0 or r.Offset >= r.fileInput.fingerprintSize
-	if appendCount == 0 {
-		return n, err
-	}
-
-	// for appendCount==0, the following code would add `0` to fingerprint
-	r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
-	return n, err
-}
-
-func (r *Reader) readHeaderFingerprint() error {
-	// Check if fingerprint already has the header bytes
-	readAmnt := min0(int(r.header.Offset()), r.fingerprintSize)
-	if len(r.Fingerprint.FirstBytes) >= readAmnt {
-		return nil
-	}
-
-	initialFpBytes := make([]uint8, readAmnt, r.fingerprintSize)
-
-	if _, err := r.file.Seek(0, io.SeekStart); err != nil {
-		return fmt.Errorf("failed to seek to start of file: %w", err)
-	}
-
-	if _, err := r.file.Read(initialFpBytes); err != nil {
-		return fmt.Errorf("failed to read from file: %w", err)
-	}
-
-	r.Fingerprint.FirstBytes = initialFpBytes
-	return nil
-}
-
 func min0(a, b int) int {
 	if a < 0 || b < 0 {
 		return 0
@@ -177,4 +141,49 @@ func min0(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// fingerprintReader is an io.ReadSeeker that updates it's fingerprint as it reads.
+type fingerprintReader struct {
+	fingerprint     *Fingerprint
+	fingerprintSize int
+	file            *os.File
+	offset          int64
+}
+
+// Read from the file and update the fingerprint if necessary
+func (f *fingerprintReader) Read(dst []byte) (int, error) {
+	// Skip if fingerprint is already built
+	// or if fingerprint is behind Offset
+	if len(f.fingerprint.FirstBytes) == f.fingerprintSize || int(f.offset) > len(f.fingerprint.FirstBytes) {
+		n, err := f.file.Read(dst)
+		f.offset += int64(n)
+		return n, err
+	}
+
+	n, err := f.file.Read(dst)
+	appendCount := min0(n, f.fingerprintSize-int(f.offset))
+
+	// return for n == 0 or r.Offset >= r.fileInput.fingerprintSize
+	if appendCount == 0 {
+		f.offset += int64(n)
+		return n, err
+	}
+
+	// for appendCount==0, the following code would add `0` to fingerprint
+	f.fingerprint.FirstBytes = append(f.fingerprint.FirstBytes[:f.offset], dst[:appendCount]...)
+
+	f.offset += int64(n)
+	return n, err
+}
+
+func (f *fingerprintReader) Seek(offset int64, whence int) (int64, error) {
+	if whence != io.SeekStart {
+		return 0, fmt.Errorf("cannot seek with whence (%d)", whence)
+	}
+
+	n, err := f.file.Seek(offset, whence)
+	f.offset = n
+
+	return n, err
 }
