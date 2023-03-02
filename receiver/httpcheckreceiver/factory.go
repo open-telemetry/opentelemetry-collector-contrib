@@ -52,8 +52,8 @@ func createDefaultConfig() component.Config {
 			Endpoint: defaultEndpoint,
 			Timeout:  10 * time.Second,
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
-		Method:  "GET",
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Method:               "GET",
 	}
 }
 

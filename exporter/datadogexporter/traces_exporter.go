@@ -21,11 +21,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
+	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -187,5 +188,5 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 		acfg.Endpoints[0].Host = addr
 	}
 	tracelog.SetLogger(&zaplogger{params.Logger})
-	return agent.NewAgent(ctx, acfg), nil
+	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector()), nil
 }

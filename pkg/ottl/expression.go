@@ -43,16 +43,16 @@ type GetSetter[K any] interface {
 }
 
 type StandardGetSetter[K any] struct {
-	Getter func(ctx context.Context, tCx K) (interface{}, error)
-	Setter func(ctx context.Context, tCx K, val interface{}) error
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Setter func(ctx context.Context, tCtx K, val interface{}) error
 }
 
-func (path StandardGetSetter[K]) Get(ctx context.Context, tCx K) (interface{}, error) {
-	return path.Getter(ctx, tCx)
+func (path StandardGetSetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
+	return path.Getter(ctx, tCtx)
 }
 
-func (path StandardGetSetter[K]) Set(ctx context.Context, tCx K, val interface{}) error {
-	return path.Setter(ctx, tCx, val)
+func (path StandardGetSetter[K]) Set(ctx context.Context, tCtx K, val interface{}) error {
+	return path.Setter(ctx, tCtx, val)
 }
 
 type literal[K any] struct {
@@ -87,6 +87,34 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 	}
 
 	return evaluated, nil
+}
+
+type StringGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (string, error)
+}
+
+type IntGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (int64, error)
+}
+
+type StandardTypeGetter[K any, T any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+func (g StandardTypeGetter[K, T]) Get(ctx context.Context, tCtx K) (T, error) {
+	var v T
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return v, err
+	}
+	if val == nil {
+		return v, fmt.Errorf("expected %T but got nil", v)
+	}
+	v, ok := val.(T)
+	if !ok {
+		return v, fmt.Errorf("expected %T but got %T", v, val)
+	}
+	return v, nil
 }
 
 func (p *Parser[K]) newGetter(val value) (Getter[K], error) {

@@ -35,9 +35,9 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	factory := NewFactory()
-	metricCfg := metadata.DefaultMetricsSettings()
-	metricCfg.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
-	metricCfg.ProcessRuntimeMemstatsMallocs.Enabled = false
+	metricCfg := metadata.DefaultMetricsBuilderConfig()
+	metricCfg.Metrics.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
+	metricCfg.Metrics.ProcessRuntimeMemstatsMallocs.Enabled = false
 
 	tests := []struct {
 		id           component.ID
@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint: "http://localhost:8000/custom/path",
 					Timeout:  time.Second * 5,
 				},
-				MetricsConfig: metricCfg,
+				MetricsBuilderConfig: metricCfg,
 			},
 		},
 		{

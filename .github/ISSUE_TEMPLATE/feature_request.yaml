@@ -19,6 +19,8 @@ body:
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - connector/count
+      - connector/servicegraph
+      - connector/spanmetrics
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
@@ -186,7 +188,6 @@ body:
       - receiver/postgresql
       - receiver/prometheus
       - receiver/prometheusexec
-      - receiver/promtail
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb

@@ -52,7 +52,6 @@ func TestLoadConfig(t *testing.T) {
 				Timeout:          20 * time.Second,
 				DockerAPIVersion: 1.24,
 
-				ProvidePerCoreCPUMetrics: true,
 				ExcludedImages: []string{
 					"undesired-container",
 					"another-*-container",
@@ -67,12 +66,12 @@ func TestLoadConfig(t *testing.T) {
 					"MY_ENVIRONMENT_VARIABLE":       "my-metric-label",
 					"MY_OTHER_ENVIRONMENT_VARIABLE": "my-other-metric-label",
 				},
-				MetricsConfig: func() metadata.MetricsSettings {
-					m := metadata.DefaultMetricsSettings()
-					m.ContainerCPUUsageSystem = metadata.MetricSettings{
+				MetricsBuilderConfig: func() metadata.MetricsBuilderConfig {
+					m := metadata.DefaultMetricsBuilderConfig()
+					m.Metrics.ContainerCPUUsageSystem = metadata.MetricSettings{
 						Enabled: false,
 					}
-					m.ContainerMemoryTotalRss = metadata.MetricSettings{
+					m.Metrics.ContainerMemoryTotalRss = metadata.MetricSettings{
 						Enabled: true,
 					}
 					return m

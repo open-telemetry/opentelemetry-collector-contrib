@@ -856,6 +856,8 @@ func TestFileBatching(t *testing.T) {
 	linesPerFile := 10
 	maxConcurrentFiles := 20
 	maxBatchFiles := maxConcurrentFiles / 2
+	// Explicitly setting maxBatches to ensure a value of 0 does not enforce a limit
+	maxBatches := 0
 
 	expectedBatches := files / maxBatchFiles // assumes no remainder
 
@@ -863,6 +865,7 @@ func TestFileBatching(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.MaxConcurrentFiles = maxConcurrentFiles
+	cfg.MaxBatches = maxBatches
 	emitCalls := make(chan *emitParams, files*linesPerFile)
 	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
 	operator.persister = testutil.NewMockPersister("test")
@@ -1231,4 +1234,163 @@ func TestDeleteAfterRead(t *testing.T) {
 		_, err := os.Stat(temp.Name())
 		require.True(t, os.IsNotExist(err))
 	}
+}
+
+func TestMaxBatching(t *testing.T) {
+	t.Parallel()
+
+	files := 50
+	linesPerFile := 10
+	maxConcurrentFiles := 20
+	maxBatchFiles := maxConcurrentFiles / 2
+	maxBatches := 2
+
+	expectedBatches := maxBatches
+	expectedMaxFilesPerPoll := maxBatches * maxBatchFiles
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.MaxConcurrentFiles = maxConcurrentFiles
+	cfg.MaxBatches = maxBatches
+	emitCalls := make(chan *emitParams, files*linesPerFile)
+	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
+	operator.persister = testutil.NewMockPersister("test")
+
+	core, observedLogs := observer.New(zap.DebugLevel)
+	operator.SugaredLogger = zap.New(core).Sugar()
+
+	temps := make([]*os.File, 0, files)
+	for i := 0; i < files; i++ {
+		temps = append(temps, openTemp(t, tempDir))
+	}
+
+	// Write logs to each file
+	numExpectedTokens := expectedMaxFilesPerPoll * linesPerFile
+	for i, temp := range temps {
+		for j := 0; j < linesPerFile; j++ {
+			message := fmt.Sprintf("%s %d %d", tokenWithLength(100), i, j)
+			_, err := temp.WriteString(message + "\n")
+			require.NoError(t, err)
+		}
+	}
+
+	// Poll and wait for all lines
+	operator.poll(context.Background())
+	actualTokens := make([][]byte, 0, numExpectedTokens)
+	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, numExpectedTokens)...)
+	require.Len(t, actualTokens, numExpectedTokens)
+
+	// During the first poll, we expect one log per batch and one log per file
+	require.Equal(t, expectedMaxFilesPerPoll+expectedBatches, observedLogs.Len())
+	logNum := 0
+	for b := 0; b < expectedBatches; b++ {
+		log := observedLogs.All()[logNum]
+		require.Equal(t, "Consuming files", log.Message)
+		require.Equal(t, zapcore.DebugLevel, log.Level)
+		logNum++
+
+		for f := 0; f < maxBatchFiles; f++ {
+			log = observedLogs.All()[logNum]
+			require.Equal(t, "Started watching file", log.Message)
+			require.Equal(t, zapcore.InfoLevel, log.Level)
+			logNum++
+		}
+	}
+
+	// Write more logs to each file so we can validate that all files are still known
+	for i, temp := range temps {
+		for j := 0; j < linesPerFile; j++ {
+			message := fmt.Sprintf("%s %d %d", tokenWithLength(20), i, j)
+			_, err := temp.WriteString(message + "\n")
+			require.NoError(t, err)
+		}
+	}
+
+	// Poll again and wait for all new lines
+	operator.poll(context.Background())
+	actualTokens = make([][]byte, 0, numExpectedTokens)
+	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, numExpectedTokens)...)
+	require.Len(t, actualTokens, numExpectedTokens)
+
+	// During the second poll, we only expect one log per batch
+	require.Equal(t, expectedMaxFilesPerPoll+expectedBatches*2, observedLogs.Len())
+	for b := logNum; b < observedLogs.Len(); b++ {
+		log := observedLogs.All()[logNum]
+		require.Equal(t, "Consuming files", log.Message)
+		require.Equal(t, zapcore.DebugLevel, log.Level)
+		logNum++
+	}
+}
+
+func TestDeleteAfterRead_SkipPartials(t *testing.T) {
+	bytesPerLine := 100
+	shortFileLine := tokenWithLength(bytesPerLine - 1)
+	longFileLines := 100000
+	longFileSize := longFileLines * bytesPerLine
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), false))
+	}()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.DeleteAfterRead = true
+	emitCalls := make(chan *emitParams, longFileLines+1)
+	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
+	operator.persister = testutil.NewMockPersister("test")
+
+	shortFile := openTemp(t, tempDir)
+	_, err := shortFile.WriteString(string(shortFileLine) + "\n")
+	require.NoError(t, err)
+	require.NoError(t, shortFile.Close())
+
+	longFile := openTemp(t, tempDir)
+	for line := 0; line < longFileLines; line++ {
+		_, err := longFile.WriteString(string(tokenWithLength(bytesPerLine-1)) + "\n")
+		require.NoError(t, err)
+	}
+	require.NoError(t, longFile.Close())
+
+	// Verify we have no checkpointed files
+	require.Equal(t, 0, len(operator.knownFiles))
+
+	// Wait until the only line in the short file and
+	// at least one line from the long file have been consumed
+	var shortOne, longOne bool
+	ctx, cancel := context.WithCancel(context.Background())
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		operator.poll(ctx)
+	}()
+
+	for !(shortOne && longOne) {
+		if line := waitForEmit(t, emitCalls); string(line.token) == string(shortFileLine) {
+			shortOne = true
+		} else {
+			longOne = true
+		}
+	}
+
+	// Stop consuming before long file has been fully consumed
+	cancel()
+	wg.Wait()
+
+	// short file was fully consumed and should have been deleted
+	require.NoFileExists(t, shortFile.Name())
+
+	// long file was partially consumed and should NOT have been deleted
+	require.FileExists(t, longFile.Name())
+
+	// Verify that only long file is remembered and that (0 < offset < fileSize)
+	require.Equal(t, 1, len(operator.knownFiles))
+	reader := operator.knownFiles[0]
+	require.Equal(t, longFile.Name(), reader.file.Name())
+	require.Greater(t, reader.Offset, int64(0))
+	require.Less(t, reader.Offset, int64(longFileSize))
 }

@@ -43,7 +43,7 @@ type Config struct {
 	Databases                               []string                       `mapstructure:"databases"`
 	confignet.NetAddr                       `mapstructure:",squash"`       // provides Endpoint and Transport
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"` // provides SSL details
-	Metrics                                 metadata.MetricsSettings       `mapstructure:"metrics"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 }
 
 func (cfg *Config) Validate() error {

@@ -99,7 +99,7 @@ func (f *Flusher) SplitFunc(splitFunc bufio.SplitFunc) bufio.SplitFunc {
 		if f.ShouldFlush() {
 			// Inform flusher that we just flushed
 			f.Flushed()
-			token = trimWhitespaces(data)
+			token = trimWhitespacesFunc(data)
 			advance = len(data)
 			return
 		}

@@ -109,6 +109,13 @@ func TestLoadConfig(t *testing.T) {
 				},
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
+						Name:                "test-policy-10",
+						Type:                BooleanAttribute,
+						BooleanAttributeCfg: BooleanAttributeCfg{Key: "key4", Value: true},
+					},
+				},
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
 						Name: "and-policy-1",
 						Type: And,
 					},

@@ -42,13 +42,14 @@ func NewFactory() exporter.Factory {
 // CreateDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
 	return &Config{
-		AWSSessionSettings:    awsutil.CreateDefaultSessionConfig(),
-		LogGroupName:          "",
-		LogStreamName:         "",
-		Namespace:             "",
-		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
-		OutputDestination:     "cloudwatch",
-		logger:                zap.NewNop(),
+		AWSSessionSettings:              awsutil.CreateDefaultSessionConfig(),
+		LogGroupName:                    "",
+		LogStreamName:                   "",
+		Namespace:                       "",
+		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
+		RetainInitialValueOfDeltaMetric: false,
+		OutputDestination:               "cloudwatch",
+		logger:                          zap.NewNop(),
 	}
 }
 
