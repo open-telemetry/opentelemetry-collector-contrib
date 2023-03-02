@@ -81,6 +81,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id:           component.NewIDWithName(typeStr, "exponential_and_explicit_histogram"),
+			errorMessage: "use either `explicit` or `exponential` buckets histogram",
+		},
 	}
 
 	for _, tt := range tests {
@@ -91,6 +95,7 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			err = component.UnmarshalConfig(sub, cfg)
+			require.NoError(t, err)
 
 			if tt.expected == nil {
 				err = multierr.Append(err, component.ValidateConfig(cfg))

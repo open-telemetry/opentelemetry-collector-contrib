@@ -15,6 +15,7 @@
 package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -97,6 +98,10 @@ func (c Config) Validate() error {
 			"invalid cache size: %v, the maximum number of the items in the cache should be positive",
 			c.DimensionsCacheSize,
 		)
+	}
+
+	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {
+		return errors.New("use either `explicit` or `exponential` buckets histogram")
 	}
 
 	return nil

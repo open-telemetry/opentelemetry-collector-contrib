@@ -42,3 +42,11 @@ spanmetrics/exponential_histogram:
   histogram:
     exponential:
       max_size: 10
+
+# invalid histogram configuration
+spanmetrics/exponential_and_explicit_histogram:
+  histogram:
+    exponential:
+      max_size: 10
+    explicit:
+      buckets: [ 10ms, 100ms, 250ms ]
