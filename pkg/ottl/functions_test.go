@@ -509,6 +509,43 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "pmapgetter slice arg",
+			inv: invocation{
+				Function: "testing_pmapgetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									Literal: &mathExprLiteral{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+								},
+								{
+									Literal: &mathExprLiteral{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
 			name: "setter arg",
 			inv: invocation{
 				Function: "testing_setter",
@@ -665,6 +702,26 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Literal: &mathExprLiteral{
 							Int: ottltest.Intp(1),
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "pmapgetter arg",
+			inv: invocation{
+				Function: "testing_pmapgetter",
+				Arguments: []value{
+					{
+						Literal: &mathExprLiteral{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name: "name",
+									},
+								},
+							},
 						},
 					},
 				},
@@ -908,6 +965,12 @@ func functionWithStringGetterSlice(getters []Getter[interface{}]) (ExprFunc[inte
 	}, nil
 }
 
+func functionWithPMapGetterSlice(getters []PMapGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
 func functionWithSetter(Setter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
@@ -933,6 +996,12 @@ func functionWithStringGetter(StringGetter[interface{}]) (ExprFunc[interface{}],
 }
 
 func functionWithIntGetter(IntGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+func functionWithPMapGetter(PMapGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
@@ -1007,11 +1076,13 @@ func defaultFunctionsForTests() map[string]interface{} {
 	functions["testing_byte_slice"] = functionWithByteSlice
 	functions["testing_getter_slice"] = functionWithGetterSlice
 	functions["testing_stringgetter_slice"] = functionWithStringGetterSlice
+	functions["testing_pmapgetter_slice"] = functionWithPMapGetterSlice
 	functions["testing_setter"] = functionWithSetter
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter
 	functions["testing_stringgetter"] = functionWithStringGetter
 	functions["testing_intgetter"] = functionWithIntGetter
+	functions["testing_pmapgetter"] = functionWithPMapGetter
 	functions["testing_string"] = functionWithString
 	functions["testing_float"] = functionWithFloat
 	functions["testing_int"] = functionWithInt
