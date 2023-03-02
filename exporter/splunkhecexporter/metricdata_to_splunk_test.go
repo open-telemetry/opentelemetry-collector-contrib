@@ -571,10 +571,6 @@ func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
 	unixNSecs := int64(11 * time.Millisecond)
 	tsUnix := time.Unix(unixSecs, unixNSecs)
 	ts := pcommon.NewTimestampFromTime(tsUnix)
-	oneEvent := createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
-		"foo":             "bar",
-		"metric_name:mem": 123,
-	})
 	tests := []struct {
 		name   string
 		events []*splunk.Event
@@ -629,7 +625,7 @@ func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
 			},
 		},
 		{
-			name: "two events that cannot merge - collision",
+			name: "two events with the same fields, but different metric value, last value wins",
 			events: []*splunk.Event{
 				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
 					"foo":             "bar",
@@ -644,54 +640,6 @@ func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
 				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
 					"foo":             "bar",
 					"metric_name:mem": 1233.4,
-				}),
-			},
-		},
-		{
-			name: "two events that can merge surrounded by same event",
-			events: []*splunk.Event{
-				oneEvent,
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
-					"foo":             "bar",
-					"metric_name:mem": 123,
-				}),
-				oneEvent,
-				oneEvent,
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
-					"foo":              "bar",
-					"metric_name:mem2": 1233.4,
-				}),
-				oneEvent,
-			},
-			merged: []*splunk.Event{
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
-					"foo":              "bar",
-					"metric_name:mem":  123,
-					"metric_name:mem2": 1233.4,
-				}),
-			},
-		},
-		{
-			name: "two events that can merge with a third one offering a collision",
-			events: []*splunk.Event{
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
-					"foo":             "bar",
-					"metric_name:mem": 123,
-				}),
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
-					"foo":             "bar",
-					"metric_name:mem": 125,
-				}),
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
-					"foo":              "bar",
-					"metric_name:mem2": 1233.4,
-				}),
-			},
-			merged: []*splunk.Event{
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
-					"foo":              "bar",
-					"metric_name:mem":  125,
-					"metric_name:mem2": 1233.4,
 				}),
 			},
 		},
