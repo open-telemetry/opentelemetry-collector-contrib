@@ -48,6 +48,7 @@ func newExpectedValue(mode int, value string) *expectedValue {
 		value: value,
 	}
 }
+
 func TestTraceE2E(t *testing.T) {
 	tcs := []struct {
 		name    string
