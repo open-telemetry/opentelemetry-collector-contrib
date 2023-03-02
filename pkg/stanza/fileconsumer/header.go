@@ -33,6 +33,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
+const headerPipelineOutputType = "header_log_emitter"
+
 type HeaderConfig struct {
 	Pattern           string            `mapstructure:"pattern"`
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
@@ -65,8 +67,22 @@ func (hc *HeaderConfig) validate() error {
 	}
 
 	for _, op := range p.Operators() {
+		// This is the default output we created, it's always valid
+		if op.Type() == headerPipelineOutputType {
+			continue
+		}
+
 		if !op.CanProcess() {
 			return fmt.Errorf("operator '%s' in `metadata_operators` cannot process entries", op.ID())
+		}
+
+		if !op.CanOutput() {
+			return fmt.Errorf("operator '%s' in `metadata_operators` does not propagate entries", op.ID())
+		}
+
+		// Filter processor also may fail to propagate some entries
+		if op.Type() == "filter" {
+			return fmt.Errorf("operator of type filter is not allowed in `metadata_operators`")
 		}
 	}
 
@@ -236,8 +252,8 @@ func newHeaderPipelineOutput(logger *zap.SugaredLogger) *headerPipelineOutput {
 	return &headerPipelineOutput{
 		OutputOperator: helper.OutputOperator{
 			BasicOperator: helper.BasicOperator{
-				OperatorID:    "header_log_emitter",
-				OperatorType:  "header_log_emitter",
+				OperatorID:    headerPipelineOutputType,
+				OperatorType:  headerPipelineOutputType,
 				SugaredLogger: logger,
 			},
 		},

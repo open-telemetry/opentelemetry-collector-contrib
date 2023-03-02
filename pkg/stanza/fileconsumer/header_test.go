@@ -26,7 +26,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/generate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/output/stdout"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/filter"
 )
 
 func TestHeaderConfig_validate(t *testing.T) {
@@ -37,6 +39,9 @@ func TestHeaderConfig_validate(t *testing.T) {
 	invalidRegexConf.Regex = "("
 
 	generateConf := generate.NewConfig("")
+	stdoutConf := stdout.NewConfig("")
+	filterConfg := filter.NewConfig()
+	filterConfg.Expression = "true"
 
 	testCases := []struct {
 		name        string
@@ -108,6 +113,30 @@ func TestHeaderConfig_validate(t *testing.T) {
 				},
 			},
 			expectedErr: "operator 'generate_input' in `metadata_operators` cannot process entries",
+		},
+		{
+			name: "operator cannot output",
+			conf: HeaderConfig{
+				Pattern: "^#",
+				MetadataOperators: []operator.Config{
+					{
+						Builder: stdoutConf,
+					},
+				},
+			},
+			expectedErr: "operator 'stdout' in `metadata_operators` does not propagate entries",
+		},
+		{
+			name: "filter operator present",
+			conf: HeaderConfig{
+				Pattern: "^#",
+				MetadataOperators: []operator.Config{
+					{
+						Builder: filterConfg,
+					},
+				},
+			},
+			expectedErr: "operator of type filter is not allowed in `metadata_operators`",
 		},
 	}
 
