@@ -189,7 +189,7 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 
 	require.NoError(t, headerConf.build(enc.Encoding))
 
-	h, err := headerConf.buildHeader(zaptest.NewLogger(t).Sugar(), nil)
+	h, err := headerConf.buildHeader(zaptest.NewLogger(t).Sugar())
 	require.NoError(t, err)
 
 	temp := openTemp(t, t.TempDir())

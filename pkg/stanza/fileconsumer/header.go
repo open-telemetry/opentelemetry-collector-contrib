@@ -23,6 +23,7 @@ import (
 	"io"
 	"regexp"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -88,7 +89,7 @@ func (hc *HeaderConfig) build(enc encoding.Encoding) error {
 }
 
 // buildHeader builds a header struct from the header config.
-func (hc *HeaderConfig) buildHeader(logger *zap.SugaredLogger, persister operator.Persister) (*header, error) {
+func (hc *HeaderConfig) buildHeader(logger *zap.SugaredLogger) (*header, error) {
 	outOp := newHeaderPipelineOutput(logger)
 	p, err := pipeline.Config{
 		Operators:     hc.MetadataOperators,
@@ -99,9 +100,7 @@ func (hc *HeaderConfig) buildHeader(logger *zap.SugaredLogger, persister operato
 		return nil, fmt.Errorf("failed to build pipeline: %w", err)
 	}
 
-	scopedPersister := operator.NewScopedPersister("header", persister)
-
-	if err := p.Start(scopedPersister); err != nil {
+	if err := p.Start(storage.NewNopClient()); err != nil {
 		return nil, fmt.Errorf("failed to start header pipeline: %w", err)
 	}
 

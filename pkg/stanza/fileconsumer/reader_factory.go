@@ -39,7 +39,7 @@ func (f *readerFactory) newReader(file *os.File, fp *Fingerprint, persister oper
 		withFingerprint(fp)
 
 	if hc != nil {
-		h, err := hc.buildHeader(f.SugaredLogger, persister)
+		h, err := hc.buildHeader(f.SugaredLogger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header metadata manager: %w", err)
 		}

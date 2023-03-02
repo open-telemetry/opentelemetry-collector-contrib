@@ -166,7 +166,7 @@ func TestHeaderConfig_buildHeader(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			require.NoError(t, tc.conf.build(tc.enc))
-			h, err := tc.conf.buildHeader(zaptest.NewLogger(t).Sugar(), nil)
+			h, err := tc.conf.buildHeader(zaptest.NewLogger(t).Sugar())
 			if tc.expectedErr != "" {
 				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
@@ -295,7 +295,7 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 
 			require.NoError(t, tc.conf.build(enc.Encoding))
 
-			h, err := tc.conf.buildHeader(zaptest.NewLogger(t).Sugar(), nil)
+			h, err := tc.conf.buildHeader(zaptest.NewLogger(t).Sugar())
 			require.NoError(t, err)
 
 			r := bytes.NewReader([]byte(tc.fileContents))
