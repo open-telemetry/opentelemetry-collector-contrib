@@ -29,7 +29,7 @@ receivers:
       - address: array01
         auth:
           authenticator: bearertokenauth/array01
-    host:
+    hosts:
       - address: array01
         auth:
           authenticator: bearertokenauth/array01
@@ -49,7 +49,7 @@ receivers:
     settings:
       reload_intervals:
         array: 10s
-        host: 13s
+        hosts: 13s
         directories: 15s
         pods: 30s
         volumes: 25s

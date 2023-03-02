@@ -57,7 +57,7 @@ type Settings struct {
 
 type ReloadIntervals struct {
 	Array       time.Duration `mapstructure:"array"`
-	Hosts       time.Duration `mapstructure:"host"`
+	Hosts       time.Duration `mapstructure:"hosts"`
 	Directories time.Duration `mapstructure:"directories"`
 	Pods        time.Duration `mapstructure:"pods"`
 	Volumes     time.Duration `mapstructure:"volumes"`
