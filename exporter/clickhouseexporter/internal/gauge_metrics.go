@@ -50,7 +50,13 @@ CREATE TABLE IF NOT EXISTS %s_gauge (
 		Value Float64,
 		SpanId String,
 		TraceId String
-    ) CODEC(ZSTD(1))
+    ) CODEC(ZSTD(1)),
+	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_scope_attr_key mapKeys(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_scope_attr_value mapValues(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_attr_key mapKeys(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_attr_value mapValues(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE MergeTree()
 %s
 PARTITION BY toDate(TimeUnix)
@@ -134,6 +140,8 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 			valueArgs[index+17] = values
 			valueArgs[index+18] = traceIDs
 			valueArgs[index+19] = spanIDs
+
+			index += gaugeValueCounts
 		}
 	}
 

@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -42,11 +43,14 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
+	set := receivertest.NewNopCreateSettings()
+	set.Logger = logger
+
 	conf := &Config{
 		ListenAddress: "127.0.0.1:0",
 	}
 
-	receiver, err := newFluentReceiver(logger, conf, next)
+	receiver, err := newFluentReceiver(set, conf, next)
 	require.NoError(t, err)
 	require.NoError(t, receiver.Start(ctx, nil))
 
@@ -342,7 +346,7 @@ func TestUnixEndpoint(t *testing.T) {
 		ListenAddress: "unix://" + filepath.Join(tmpdir, "fluent.sock"),
 	}
 
-	receiver, err := newFluentReceiver(zap.NewNop(), conf, next)
+	receiver, err := newFluentReceiver(receivertest.NewNopCreateSettings(), conf, next)
 	require.NoError(t, err)
 	require.NoError(t, receiver.Start(ctx, nil))
 

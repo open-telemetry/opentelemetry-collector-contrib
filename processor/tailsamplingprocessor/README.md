@@ -23,6 +23,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `trace_state`: Sample based on [TraceState](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracestate) value matches
 - `rate_limiting`: Sample based on rate
 - `span_count`: Sample based on the minimum number of spans within a batch. If all traces within the batch have less number of spans than the threshold, the batch will not be sampled.
+- `boolean_attribute`: Sample based on boolean attribute (resource and record).
 - `and`: Sample based on multiple policies, creates an AND policy 
 - `composite`: Sample based on a combination of above samplers, with ordering and rate allocation per sampler. Rate allocation allocates certain percentages of spans per policy order. 
   For example if we have set max_total_spans_per_second as 100 then we can set rate_allocation as follows
@@ -107,6 +108,11 @@ processors:
              name: test-policy-11,
              type: trace_state,
              trace_state: { key: key3, values: [value1, value2] }
+         },
+         {
+              name: test-policy-12,
+              type: boolean_attribute,
+              boolean_attrbiute: {key: key4, value: true}
          },
          {
             name: and-policy-1,

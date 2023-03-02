@@ -54,8 +54,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
-		ClientID: defaultClientID,
-		Scrapers: []string{"brokers", "topics", "consumers"},
-		Metrics:  metadata.DefaultMetricsSettings(),
+		ClientID:             defaultClientID,
+		Scrapers:             []string{"brokers", "topics", "consumers"},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}, cfg)
 }

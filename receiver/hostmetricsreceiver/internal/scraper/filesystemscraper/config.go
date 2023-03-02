@@ -24,8 +24,8 @@ import (
 
 // Config relating to FileSystem Metric Scraper.
 type Config struct {
-	// Metrics allows to customize scraped metrics representation.
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	// MetricsBuilderConfig allows to customize scraped metrics/attributes representation.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	internal.ScraperConfig
 
 	// IncludeVirtualFS will also capture filesystems such as tmpfs, ramfs

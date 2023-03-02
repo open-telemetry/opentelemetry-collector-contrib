@@ -19,8 +19,18 @@ The value of `context` specifies which [OTTL Context](#contexts) to use when int
 The statement strings, which must be OTTL compatible, will be passed to the OTTL and interpreted using the associated context. 
 Each context will be processed in the order specified and each statement for a context will be executed in the order specified.
 
+The transform processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing a statement.
+
+| error_mode            | description                                                                                                                |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------|
+| ignore                | The processor ignores errors returned by statements and continues on to the next statement.  This is the recommended mode. |
+| propagate             | The processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.        |
+
+If not specified, `propagate` will be used.
+
 ```yaml
 transform:
+  error_mode: ignore
   <trace|metric|log>_statements:
     - context: string
       statements:
@@ -52,6 +62,7 @@ See [Contexts](#contexts) for more details.
 Example configuration:
 ```yaml
 transform:
+  error_mode: ignore
   trace_statements:
     - context: resource
       statements:

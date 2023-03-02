@@ -58,7 +58,7 @@ func newReceiver(set rcvr.CreateSettings, config *Config) *receiver {
 	return &receiver{
 		config:   config,
 		settings: set,
-		mb:       metadata.NewMetricsBuilder(config.MetricsConfig, set),
+		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
 }
 

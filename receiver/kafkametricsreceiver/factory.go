@@ -49,7 +49,7 @@ func createDefaultConfig() component.Config {
 		GroupMatch:                defaultGroupMatch,
 		TopicMatch:                defaultTopicMatch,
 		ClientID:                  defaultClientID,
-		Metrics:                   metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
