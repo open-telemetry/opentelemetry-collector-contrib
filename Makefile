@@ -18,7 +18,7 @@ FOR_GROUP_TARGET=for-$(GROUP)-target
 
 FIND_MOD_ARGS=-type f -name "go.mod"
 TO_MOD_DIR=dirname {} \; | sort | grep -E '^./'
-EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path "./exporter/*" -not -path "./extension/*"
+EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path "./exporter/*" -not -path "./extension/*" -not -path "./connector/*"
 EX_INTERNAL=-not -path "./internal/*"
 
 # NONROOT_MODS includes ./* dirs (excludes . dir)
@@ -29,8 +29,8 @@ RECEIVER_MODS_1 := $(shell find ./receiver/[l-z]* $(FIND_MOD_ARGS) -exec $(TO_MO
 RECEIVER_MODS := $(RECEIVER_MODS_0) $(RECEIVER_MODS_1)
 PROCESSOR_MODS := $(shell find ./processor/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 EXPORTER_MODS := $(shell find ./exporter/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 CONNECTOR_MODS := $(shell find ./connector/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
 ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(OTHER_MODS)
@@ -124,7 +124,7 @@ COMMIT?=HEAD
 MODSET?=contrib-core
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
 .PHONY: push-tags
-push-tags: $(MULITMOD) 
+push-tags: $(MULITMOD)
 	$(MULITMOD) verify
 	set -e; for tag in `$(MULITMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
 		echo "pushing tag $${tag}"; \
