@@ -31,6 +31,7 @@ jobs:
           - processor
           - exporter
           - extension
+          - connectors
           - internal
           - other
     runs-on: windows-latest
