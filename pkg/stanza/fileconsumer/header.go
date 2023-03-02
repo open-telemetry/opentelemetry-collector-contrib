@@ -46,11 +46,6 @@ type HeaderConfig struct {
 
 // validate returns an error describing why the configuration is invalid, or nil if the configuration is valid.
 func (hc *HeaderConfig) validate() error {
-	_, err := regexp.Compile(hc.Pattern)
-	if err != nil {
-		return fmt.Errorf("invalid `pattern`: %w", err)
-	}
-
 	if len(hc.MetadataOperators) == 0 {
 		return errors.New("at least one operator must be specified for `metadata_operators`")
 	}
@@ -93,7 +88,7 @@ func (hc *HeaderConfig) build(enc encoding.Encoding) error {
 	var err error
 	hc.matchRegex, err = regexp.Compile(hc.Pattern)
 	if err != nil {
-		return fmt.Errorf("failed to compile pattern: %w", err)
+		return fmt.Errorf("failed to compile `pattern`: %w", err)
 	}
 
 	hc.splitFunc, err = helper.NewNewlineSplitFunc(enc, false, func(b []byte) []byte {

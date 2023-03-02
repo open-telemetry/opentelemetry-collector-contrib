@@ -71,18 +71,6 @@ func TestHeaderConfig_validate(t *testing.T) {
 			},
 		},
 		{
-			name: "Invalid pattern",
-			conf: HeaderConfig{
-				Pattern: "(",
-				MetadataOperators: []operator.Config{
-					{
-						Builder: regexConf,
-					},
-				},
-			},
-			expectedErr: "invalid `pattern`:",
-		},
-		{
 			name: "No operators specified",
 			conf: HeaderConfig{
 				Pattern:           "^#",
@@ -152,6 +140,46 @@ func TestHeaderConfig_validate(t *testing.T) {
 	}
 }
 
+func TestHeaderConfig_build(t *testing.T) {
+	regexConf := regex.NewConfig()
+	regexConf.Regex = "^#(?P<header_line>.*)"
+
+	invalidRegexConf := regex.NewConfig()
+	invalidRegexConf.Regex = "("
+
+	testCases := []struct {
+		name        string
+		enc         encoding.Encoding
+		conf        HeaderConfig
+		expectedErr string
+	}{
+		{
+			name: "Invalid pattern",
+			conf: HeaderConfig{
+				Pattern: "(",
+				MetadataOperators: []operator.Config{
+					{
+						Builder: regexConf,
+					},
+				},
+			},
+			expectedErr: "failed to compile `pattern`:",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.conf.build(tc.enc)
+			if tc.expectedErr != "" {
+				require.ErrorContains(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+
+		})
+	}
+}
+
 func TestHeaderConfig_buildHeader(t *testing.T) {
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header_line>.*)"
@@ -178,7 +206,19 @@ func TestHeaderConfig_buildHeader(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid operator",
+			name: "Invalid pattern",
+			conf: HeaderConfig{
+				Pattern: "(",
+				MetadataOperators: []operator.Config{
+					{
+						Builder: regexConf,
+					},
+				},
+			},
+			expectedErr: "failed to compile `pattern`:",
+		},
+		{
+			name: "Invalid operator",
 			enc:  encoding.Nop,
 			conf: HeaderConfig{
 				Pattern: "^#",
