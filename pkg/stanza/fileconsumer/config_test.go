@@ -378,24 +378,6 @@ func TestUnmarshal(t *testing.T) {
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
-			{
-				Name: "header_config_max_size",
-				Expect: func() *mockOperatorConfig {
-					cfg := NewConfig()
-					regexCfg := regex.NewConfig()
-					maxSize := helper.ByteSize(16 * 1024)
-					cfg.Header = &HeaderConfig{
-						MultilinePattern: "^#",
-						MetadataOperators: []operator.Config{
-							{
-								Builder: regexCfg,
-							},
-						},
-						MaxHeaderLineSize: &maxSize,
-					}
-					return newMockOperatorConfig(cfg)
-				}(),
-			},
 		},
 	}.Run(t)
 }
@@ -566,7 +548,6 @@ func TestBuild(t *testing.T) {
 			"ValidHeaderConfig",
 			func(f *Config) {
 				regexCfg := regex.NewConfig()
-				maxSize := helper.ByteSize(16 * 1024)
 				f.Header = &HeaderConfig{
 					MultilinePattern: "^#",
 					MetadataOperators: []operator.Config{
@@ -574,7 +555,6 @@ func TestBuild(t *testing.T) {
 							Builder: regexCfg,
 						},
 					},
-					MaxHeaderLineSize: &maxSize,
 				}
 			},
 			require.Error,

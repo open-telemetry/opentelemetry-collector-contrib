@@ -1334,7 +1334,7 @@ func TestReadExistingLogsWithHeader(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)", 8096)
+	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
 
 	operator, emitCalls := buildTestManager(t, cfg)
 
@@ -1436,7 +1436,7 @@ func TestReadExistingLogsWithHeaderStartEnd(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "end"
-	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)", 8096)
+	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
 
 	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()

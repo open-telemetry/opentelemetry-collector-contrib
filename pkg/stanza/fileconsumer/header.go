@@ -32,11 +32,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
-const defaultMaxHeaderLineSize = 1024 * 1024 // max size of 1 MiB by default
 type HeaderConfig struct {
 	MultilinePattern  string            `mapstructure:"multiline_pattern"`
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
-	MaxHeaderLineSize *helper.ByteSize  `mapstructure:"max_line_size,omitempty"`
 
 	// these are set by the "build" function
 	matchRegex *regexp.Regexp
@@ -48,10 +46,6 @@ func (hc *HeaderConfig) validate() error {
 	_, err := regexp.Compile(hc.MultilinePattern)
 	if err != nil {
 		return fmt.Errorf("invalid `multiline_pattern`: %w", err)
-	}
-
-	if hc.MaxHeaderLineSize != nil && *hc.MaxHeaderLineSize <= 0 {
-		return errors.New("the `max_size` of the header must be greater than 0")
 	}
 
 	if len(hc.MetadataOperators) == 0 {
@@ -120,14 +114,6 @@ func (hc *HeaderConfig) buildHeader(logger *zap.SugaredLogger, persister operato
 	}, nil
 }
 
-func (hc *HeaderConfig) MaxLineSize() int {
-	if hc.MaxHeaderLineSize != nil {
-		return int(*hc.MaxHeaderLineSize)
-	} else {
-		return defaultMaxHeaderLineSize
-	}
-}
-
 type header struct {
 	config *HeaderConfig
 	logger *zap.SugaredLogger
@@ -142,7 +128,7 @@ type header struct {
 
 // ReadHeader attempts to read the header from the given file. If the header is completed, fileAttributes will
 // have its HeaderAttributes field set to the resultant header attributes.
-func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Encoding, fileAttributes *FileAttributes) {
+func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, maxLineSize int, enc helper.Encoding, fileAttributes *FileAttributes) {
 	if h.finalized {
 		return
 	}
@@ -153,7 +139,7 @@ func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Enc
 		return
 	}
 
-	scanner := NewPositionalScanner(f, h.config.MaxLineSize(), h.offset, h.config.splitFunc)
+	scanner := NewPositionalScanner(f, maxLineSize, h.offset, h.config.splitFunc)
 
 	for {
 		select {

@@ -49,11 +49,9 @@ func (c *Config) includeDir(dir string) *Config {
 }
 
 // withHeader is a builder-like helper for quickly setting up a test config header
-func (c *Config) withHeader(headerMatchPattern, extractRegex string, maxSize int) *Config {
+func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
 	regexOpConfig := regex.NewConfig()
 	regexOpConfig.Regex = extractRegex
-
-	maxSizeByteSize := helper.ByteSize(maxSize)
 
 	c.Header = &HeaderConfig{
 		MultilinePattern: headerMatchPattern,
@@ -62,7 +60,6 @@ func (c *Config) withHeader(headerMatchPattern, extractRegex string, maxSize int
 				Builder: regexOpConfig,
 			},
 		},
-		MaxHeaderLineSize: &maxSizeByteSize,
 	}
 
 	return c

@@ -69,7 +69,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	}
 
 	if r.header != nil && !r.header.Finalized() {
-		r.header.ReadHeader(ctx, fpr, r.encoding, r.fileAttributes)
+		r.header.ReadHeader(ctx, fpr, r.maxLogSize, r.encoding, r.fileAttributes)
 		// Don't read log entries if the header has not yet been finalized
 		// (we are still waiting for the full header to be read).
 		if !r.header.Finalized() {

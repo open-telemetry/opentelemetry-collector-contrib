@@ -38,9 +38,6 @@ func TestHeaderConfig_validate(t *testing.T) {
 
 	generateConf := generate.NewConfig("")
 
-	defaultMaxHeaderByteSize := helper.ByteSize(defaultMaxHeaderLineSize)
-	negativeMaxHeaderByteSize := helper.ByteSize(-1)
-
 	testCases := []struct {
 		name        string
 		conf        HeaderConfig
@@ -55,7 +52,6 @@ func TestHeaderConfig_validate(t *testing.T) {
 						Builder: regexConf,
 					},
 				},
-				MaxHeaderLineSize: &defaultMaxHeaderByteSize,
 			},
 		},
 		{
@@ -78,29 +74,14 @@ func TestHeaderConfig_validate(t *testing.T) {
 						Builder: regexConf,
 					},
 				},
-				MaxHeaderLineSize: &defaultMaxHeaderByteSize,
 			},
 			expectedErr: "invalid `multiline_pattern`:",
-		},
-		{
-			name: "Negative max header size",
-			conf: HeaderConfig{
-				MultilinePattern: "^#",
-				MetadataOperators: []operator.Config{
-					{
-						Builder: regexConf,
-					},
-				},
-				MaxHeaderLineSize: &negativeMaxHeaderByteSize,
-			},
-			expectedErr: "the `max_size` of the header must be greater than 0",
 		},
 		{
 			name: "No operators specified",
 			conf: HeaderConfig{
 				MultilinePattern:  "^#",
 				MetadataOperators: []operator.Config{},
-				MaxHeaderLineSize: &defaultMaxHeaderByteSize,
 			},
 			expectedErr: "at least one operator must be specified for `metadata_operators`",
 		},
@@ -113,7 +94,6 @@ func TestHeaderConfig_validate(t *testing.T) {
 						Builder: invalidRegexConf,
 					},
 				},
-				MaxHeaderLineSize: &defaultMaxHeaderByteSize,
 			},
 			expectedErr: "failed to build pipelines:",
 		},
@@ -126,7 +106,6 @@ func TestHeaderConfig_validate(t *testing.T) {
 						Builder: generateConf,
 					},
 				},
-				MaxHeaderLineSize: &defaultMaxHeaderByteSize,
 			},
 			expectedErr: "first operator must be able to process entries",
 		},
@@ -216,12 +195,11 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 
 	generateConf := generate.NewConfig("")
 
-	smallByteSize := helper.ByteSize(8)
-
 	testCases := []struct {
 		name               string
 		fileContents       string
 		expectedAttributes map[string]any
+		maxLineSize        int
 		conf               HeaderConfig
 	}{
 		{
@@ -253,8 +231,8 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 						Builder: fullCaptureRegexConfig,
 					},
 				},
-				MaxHeaderLineSize: &smallByteSize,
 			},
+			maxLineSize: 8,
 		},
 		{
 			name:         "Header attribute from following line overwrites previous",
@@ -324,7 +302,14 @@ func TestHeaderConfig_ReadHeader(t *testing.T) {
 
 			fa := &FileAttributes{}
 
-			h.ReadHeader(context.Background(), r, enc, fa)
+			var maxLineSize int
+			if tc.maxLineSize == 0 {
+				maxLineSize = defaultMaxLogSize
+			} else {
+				maxLineSize = tc.maxLineSize
+			}
+
+			h.ReadHeader(context.Background(), r, maxLineSize, enc, fa)
 
 			require.Equal(t, tc.expectedAttributes, fa.HeaderAttributes)
 			require.NoError(t, h.Shutdown())

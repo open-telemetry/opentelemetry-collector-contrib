@@ -37,7 +37,6 @@ Tails and parses logs from files.
 | `header`                        | nil              | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. |
 | `header.multiline_pattern`      | required for header metadata parsing | A regex that matches every header line. |
 | `header.metadata_operators`     | required for header metadata parsing | A list of operators used to parse metadata from the header. |
-| `header.max_line_size`               | `1MiB`           | The maximum number of bytes to read for a header line before failing. Protects against reading large amounts of data into memory. |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 

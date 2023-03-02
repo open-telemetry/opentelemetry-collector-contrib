@@ -163,10 +163,3 @@ header_config:
     multiline_pattern: "^#"
     metadata_operators:
      - type: "regex_parser"
-header_config_max_size:
-  type: mock
-  header:
-    multiline_pattern: "^#"
-    metadata_operators:
-     - type: "regex_parser"
-    max_line_size: "16kib"
