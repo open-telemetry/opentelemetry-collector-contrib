@@ -107,7 +107,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 			return nil, fmt.Errorf("failed to create encoding: %w", err)
 		}
 
-		if err := c.Header.build(logger, enc.Encoding); err != nil {
+		if err := c.Header.build(enc.Encoding); err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
 	}

@@ -41,7 +41,6 @@ type HeaderConfig struct {
 	// these are set by the "build" function
 	matchRegex *regexp.Regexp
 	splitFunc  bufio.SplitFunc
-	logger     *zap.SugaredLogger
 }
 
 // validate returns an error describing why the configuration is invalid, or nil if the configuration is valid.
@@ -77,9 +76,7 @@ func (hc *HeaderConfig) validate() error {
 	return nil
 }
 
-func (hc *HeaderConfig) build(logger *zap.SugaredLogger, enc encoding.Encoding) error {
-	hc.logger = logger
-
+func (hc *HeaderConfig) build(enc encoding.Encoding) error {
 	var err error
 	hc.matchRegex, err = regexp.Compile(hc.MultilinePattern)
 	if err != nil {
@@ -97,12 +94,12 @@ func (hc *HeaderConfig) build(logger *zap.SugaredLogger, enc encoding.Encoding) 
 }
 
 // buildHeader builds a header struct from the header config.
-func (hc *HeaderConfig) buildHeader(persister operator.Persister) (*header, error) {
-	outOp := newHeaderPipelineOutput(hc.logger)
+func (hc *HeaderConfig) buildHeader(logger *zap.SugaredLogger, persister operator.Persister) (*header, error) {
+	outOp := newHeaderPipelineOutput(logger)
 	p, err := pipeline.Config{
 		Operators:     hc.MetadataOperators,
 		DefaultOutput: outOp,
-	}.Build(hc.logger)
+	}.Build(logger)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipeline: %w", err)
@@ -116,6 +113,7 @@ func (hc *HeaderConfig) buildHeader(persister operator.Persister) (*header, erro
 
 	return &header{
 		config:               hc,
+		logger:               logger,
 		outputOperator:       outOp,
 		headerPipeline:       p,
 		attributesFromHeader: map[string]any{},
@@ -132,6 +130,7 @@ func (hc *HeaderConfig) MaxLineSize() int {
 
 type header struct {
 	config *HeaderConfig
+	logger *zap.SugaredLogger
 
 	finalized            bool
 	attributesFromHeader map[string]any
@@ -150,7 +149,7 @@ func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Enc
 
 	// Seek to the end of the last read header line
 	if _, err := f.Seek(h.offset, io.SeekStart); err != nil {
-		h.config.logger.Errorw("Failed to seek", zap.Error(err))
+		h.logger.Errorw("Failed to seek", zap.Error(err))
 		return
 	}
 
@@ -166,7 +165,7 @@ func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Enc
 		ok := scanner.Scan()
 		if !ok {
 			if err := scanner.getError(); err != nil {
-				h.config.logger.Errorw("Failed during header scan", zap.Error(err))
+				h.logger.Errorw("Failed during header scan", zap.Error(err))
 				h.offset = scanner.Pos()
 			}
 			break
@@ -175,7 +174,7 @@ func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Enc
 		b := scanner.Bytes()
 		line, err := enc.Decode(b)
 		if err != nil {
-			h.config.logger.Errorw("Failed to decode header bytes", zap.Error(err))
+			h.logger.Errorw("Failed to decode header bytes", zap.Error(err))
 			h.offset = scanner.Pos()
 			continue
 		}
@@ -187,7 +186,7 @@ func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, enc helper.Enc
 		}
 
 		if err := h.processHeaderLine(ctx, line); err != nil {
-			h.config.logger.Errorw("Failed to process header line", zap.Error(err))
+			h.logger.Errorw("Failed to process header line", zap.Error(err))
 		}
 		h.offset = scanner.Pos()
 	}

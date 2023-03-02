@@ -174,7 +174,7 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	regexConf.Regex = "^#(?P<header>.*)"
 
 	headerConf := &HeaderConfig{
-		LinePattern: "^#",
+		MultilinePattern: "^#",
 		MetadataOperators: []operator.Config{
 			{
 				Builder: regexConf,
@@ -187,9 +187,9 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	}.Build()
 	require.NoError(t, err)
 
-	require.NoError(t, headerConf.build(zaptest.NewLogger(t).Sugar(), enc.Encoding))
+	require.NoError(t, headerConf.build(enc.Encoding))
 
-	h, err := headerConf.buildHeader(nil)
+	h, err := headerConf.buildHeader(zaptest.NewLogger(t).Sugar(), nil)
 	require.NoError(t, err)
 
 	temp := openTemp(t, t.TempDir())

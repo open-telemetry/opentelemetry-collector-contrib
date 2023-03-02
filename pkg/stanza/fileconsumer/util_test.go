@@ -56,7 +56,7 @@ func (c *Config) withHeader(headerMatchPattern, extractRegex string, maxSize int
 	maxSizeByteSize := helper.ByteSize(maxSize)
 
 	c.Header = &HeaderConfig{
-		LinePattern: headerMatchPattern,
+		MultilinePattern: headerMatchPattern,
 		MetadataOperators: []operator.Config{
 			{
 				Builder: regexOpConfig,
