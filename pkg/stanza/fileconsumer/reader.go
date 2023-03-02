@@ -43,7 +43,7 @@ type Reader struct {
 	generation     int
 	file           *os.File
 	fileAttributes *FileAttributes
-	eof            bool
+	eof            bool `json:"-"` // json tag excludes embedded fields from storage
 }
 
 // offsetToEnd sets the starting offset
