@@ -33,7 +33,7 @@ import (
 )
 
 type HeaderConfig struct {
-	MultilinePattern  string            `mapstructure:"multiline_pattern"`
+	Pattern           string            `mapstructure:"pattern"`
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
 
 	// these are set by the "build" function
@@ -43,9 +43,9 @@ type HeaderConfig struct {
 
 // validate returns an error describing why the configuration is invalid, or nil if the configuration is valid.
 func (hc *HeaderConfig) validate() error {
-	_, err := regexp.Compile(hc.MultilinePattern)
+	_, err := regexp.Compile(hc.Pattern)
 	if err != nil {
-		return fmt.Errorf("invalid `multiline_pattern`: %w", err)
+		return fmt.Errorf("invalid `pattern`: %w", err)
 	}
 
 	if len(hc.MetadataOperators) == 0 {
@@ -72,7 +72,7 @@ func (hc *HeaderConfig) validate() error {
 
 func (hc *HeaderConfig) build(enc encoding.Encoding) error {
 	var err error
-	hc.matchRegex, err = regexp.Compile(hc.MultilinePattern)
+	hc.matchRegex, err = regexp.Compile(hc.Pattern)
 	if err != nil {
 		return fmt.Errorf("failed to compile multiline pattern: %w", err)
 	}

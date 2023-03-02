@@ -160,6 +160,6 @@ max_batches_1:
 header_config:
   type: mock
   header:
-    multiline_pattern: "^#"
+    pattern: "^#"
     metadata_operators:
      - type: "regex_parser"

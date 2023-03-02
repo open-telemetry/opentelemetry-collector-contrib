@@ -368,7 +368,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg := NewConfig()
 					regexCfg := regex.NewConfig()
 					cfg.Header = &HeaderConfig{
-						MultilinePattern: "^#",
+						Pattern: "^#",
 						MetadataOperators: []operator.Config{
 							{
 								Builder: regexCfg,
@@ -549,7 +549,7 @@ func TestBuild(t *testing.T) {
 			func(f *Config) {
 				regexCfg := regex.NewConfig()
 				f.Header = &HeaderConfig{
-					MultilinePattern: "^#",
+					Pattern: "^#",
 					MetadataOperators: []operator.Config{
 						{
 							Builder: regexCfg,

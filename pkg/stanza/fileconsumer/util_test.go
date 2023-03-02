@@ -54,7 +54,7 @@ func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
 	regexOpConfig.Regex = extractRegex
 
 	c.Header = &HeaderConfig{
-		MultilinePattern: headerMatchPattern,
+		Pattern: headerMatchPattern,
 		MetadataOperators: []operator.Config{
 			{
 				Builder: regexOpConfig,

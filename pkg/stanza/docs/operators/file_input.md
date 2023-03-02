@@ -29,7 +29,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `attributes`                    | {}               | A map of `key: value` pairs to add to the entry's attributes. |
 | `resource`                      | {}               | A map of `key: value` pairs to add to the entry's resource. |
 | `header`                        | nil              | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. |
-| `header.multiline_pattern`      | required for header metadata parsing | A regex that matches every header line. |
+| `header.pattern`      | required for header metadata parsing | A regex that matches every header line. |
 | `header.metadata_operators`     | required for header metadata parsing | A list of operators used to parse metadata from the header. |
 
 Note that by default, no logs will be read unless the monitored file is actively being written to because `start_at` defaults to `end`.
@@ -72,7 +72,7 @@ Other less common encodings are supported on a best-effort basis. See [https://w
 
 To enable header metadata parsing, the `filelog.allowHeaderMetadataParsing` feature gate must be set.
 
-If set, the file input operator will attempt to read a header from the start of the file. Each header line must match the `header.multiline_pattern` pattern. Each line is emitted into a pipeline defined by `header.metadata_operators`. Any attributes on the resultant entry from the embedded pipeline will be merged with the attributes from previous lines (attribute collisions will be resolved with an upsert strategy). After all header lines are read, the final merged header attributes will be present on every log line that is emitted for the file.
+If set, the file input operator will attempt to read a header from the start of the file. Each header line must match the `header.pattern` pattern. Each line is emitted into a pipeline defined by `header.metadata_operators`. Any attributes on the resultant entry from the embedded pipeline will be merged with the attributes from previous lines (attribute collisions will be resolved with an upsert strategy). After all header lines are read, the final merged header attributes will be present on every log line that is emitted for the file.
 
 The header lines are not emitted to the output operator.
 

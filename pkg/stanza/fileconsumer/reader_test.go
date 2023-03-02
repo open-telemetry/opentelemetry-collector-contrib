@@ -174,7 +174,7 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	regexConf.Regex = "^#(?P<header>.*)"
 
 	headerConf := &HeaderConfig{
-		MultilinePattern: "^#",
+		Pattern: "^#",
 		MetadataOperators: []operator.Config{
 			{
 				Builder: regexConf,
