@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -52,10 +53,12 @@ func TestLoadConfig(t *testing.T) {
 					Timeout: 5 * time.Second,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         false,
-					InitialInterval: 99 * time.Second,
-					MaxInterval:     199 * time.Second,
-					MaxElapsedTime:  299 * time.Minute,
+					Enabled:             false,
+					InitialInterval:     99 * time.Second,
+					MaxInterval:         199 * time.Second,
+					MaxElapsedTime:      299 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      false,
@@ -93,12 +96,16 @@ func TestConfig_Validate_Path(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.IngestURL = "https://example.com:8088/otel/ingest/rest"
+	cfg.IngestURL = "https://example.com:8088/ingest/rest"
+	cfg.IngestKey = "1234-1234"
+	assert.NoError(t, cfg.Validate())
+
+	cfg.IngestURL = "https://example.com:8088/v1/ABC123"
 	cfg.IngestKey = "1234-1234"
 	assert.NoError(t, cfg.Validate())
 
 	// Set values that don't have a valid default.
-	cfg.IngestURL = "https://example.com"
+	cfg.IngestURL = "/nohost/path"
 	cfg.IngestKey = "testToken"
 	assert.Error(t, cfg.Validate())
 }

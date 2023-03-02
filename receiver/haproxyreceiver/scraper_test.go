@@ -61,7 +61,7 @@ func Test_scraper_readStats(t *testing.T) {
 	haProxyCfg := newDefaultConfig().(*Config)
 	haProxyCfg.Endpoint = socketAddr
 	settings := receivertest.NewNopCreateSettings()
-	metricsBuilder := metadata.NewMetricsBuilder(haProxyCfg.MetricsSettings, settings)
+	metricsBuilder := metadata.NewMetricsBuilder(haProxyCfg.MetricsBuilderConfig, settings)
 
 	s := newScraper(metricsBuilder, haProxyCfg, zap.NewNop())
 	m, err := s.scrape(context.Background())

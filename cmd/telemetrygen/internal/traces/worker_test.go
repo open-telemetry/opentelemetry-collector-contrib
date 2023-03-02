@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 func TestFixedNumberOfTraces(t *testing.T) {
@@ -36,8 +38,10 @@ func TestFixedNumberOfTraces(t *testing.T) {
 	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
-		NumTraces:   1,
-		WorkerCount: 1,
+		Config: common.Config{
+			WorkerCount: 1,
+		},
+		NumTraces: 1,
 	}
 
 	// test
@@ -57,9 +61,11 @@ func TestRateOfSpans(t *testing.T) {
 	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
-		Rate:          10,
-		TotalDuration: time.Second / 2,
-		WorkerCount:   1,
+		Config: common.Config{
+			Rate:          10,
+			TotalDuration: time.Second / 2,
+			WorkerCount:   1,
+		},
 	}
 
 	// sanity check
@@ -85,8 +91,10 @@ func TestUnthrottled(t *testing.T) {
 	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
-		TotalDuration: 50 * time.Millisecond,
-		WorkerCount:   1,
+		Config: common.Config{
+			TotalDuration: 50 * time.Millisecond,
+			WorkerCount:   1,
+		},
 	}
 
 	// sanity check

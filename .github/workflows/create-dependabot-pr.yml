@@ -1,4 +1,4 @@
-name: dependabot-pr
+name: Automation - Dependabot PR
 
 on:
   workflow_dispatch:
@@ -11,8 +11,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19
+          go-version: ~1.19.6
       - name: Run dependabot-pr.sh
         run: ./.github/workflows/scripts/dependabot-pr.sh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}

@@ -145,7 +145,7 @@ func TestScaperScrape(t *testing.T) {
 			},
 			setupCfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Metrics = metadata.MetricsSettings{
+				cfg.MetricsBuilderConfig.Metrics = metadata.MetricsSettings{
 					RiakMemoryLimit: metadata.MetricSettings{
 						Enabled: false,
 					},
@@ -208,7 +208,8 @@ func TestScaperScrape(t *testing.T) {
 
 			expectedMetrics := tc.expectedMetricGen(t)
 
-			err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics)
+			err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp())
 			require.NoError(t, err)
 		})
 	}

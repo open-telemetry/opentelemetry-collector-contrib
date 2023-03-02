@@ -85,6 +85,7 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "serverSample.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]interface{} {
 				return map[string]interface{}{
+					conventions.AttributeServiceName:          *seg.Name,
 					conventions.AttributeCloudProvider:        conventions.AttributeCloudProviderAWS,
 					conventions.AttributeTelemetrySDKVersion:  *seg.AWS.XRay.SDKVersion,
 					conventions.AttributeTelemetrySDKName:     *seg.AWS.XRay.SDK,
@@ -126,6 +127,7 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "ddbSample.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]interface{} {
 				return map[string]interface{}{
+					conventions.AttributeServiceName:          *seg.Name,
 					conventions.AttributeCloudProvider:        conventions.AttributeCloudProviderAWS,
 					conventions.AttributeTelemetrySDKVersion:  *seg.AWS.XRay.SDKVersion,
 					conventions.AttributeTelemetrySDKName:     *seg.AWS.XRay.SDK,
@@ -154,15 +156,17 @@ func TestTranslation(t *testing.T) {
 				// this is the subsegment with ID that starts with 7df6
 				subseg7df6 := seg.Subsegments[0]
 				childSpan7df6Attrs := pcommon.NewMap()
+				childKeys := childSpan7df6Attrs.PutEmptySlice(awsxray.AWSXraySegmentAnnotationsAttribute)
 				for k, v := range subseg7df6.Annotations {
 					childSpan7df6Attrs.PutStr(k, v.(string))
+					childKeys.AppendEmpty().SetStr(k)
 				}
 				for k, v := range subseg7df6.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
 					childSpan7df6Attrs.PutStr(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
-				assert.Equal(t, 2, childSpan7df6Attrs.Len(), testCase+": childSpan7df6Attrs has incorrect size")
+				assert.Equal(t, 3, childSpan7df6Attrs.Len(), testCase+": childSpan7df6Attrs has incorrect size")
 				childSpan7df6Evts := initExceptionEvents(&subseg7df6)
 				assert.Len(t, childSpan7df6Evts, 1, testCase+": childSpan7df6Evts has incorrect size")
 				childSpan7df6 := perSpanProperties{
@@ -526,6 +530,7 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "awsMissingAwsField.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]interface{} {
 				return map[string]interface{}{
+					conventions.AttributeServiceName:   *seg.Name,
 					conventions.AttributeCloudProvider: "unknown",
 				}
 			},
@@ -561,6 +566,7 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "awsValidAwsFields.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]interface{} {
 				return map[string]interface{}{
+					conventions.AttributeServiceName:           *seg.Name,
 					conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderAWS,
 					conventions.AttributeCloudAccountID:        *seg.AWS.AccountID,
 					conventions.AttributeCloudAvailabilityZone: *seg.AWS.EC2.AvailabilityZone,
@@ -610,6 +616,7 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "minCauseIsExceptionId.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]interface{} {
 				return map[string]interface{}{
+					conventions.AttributeServiceName:   *seg.Name,
 					conventions.AttributeCloudProvider: "unknown",
 				}
 			},
@@ -663,6 +670,7 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "indepSubsegment.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]interface{} {
 				return map[string]interface{}{
+					conventions.AttributeServiceName:   *seg.Name,
 					conventions.AttributeCloudProvider: "unknown",
 				}
 			},
@@ -706,6 +714,7 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "indepSubsegmentWithContentLengthString.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]interface{} {
 				return map[string]interface{}{
+					conventions.AttributeServiceName:   *seg.Name,
 					conventions.AttributeCloudProvider: "unknown",
 				}
 			},
@@ -750,6 +759,7 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "indepSubsegmentWithSql.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]interface{} {
 				return map[string]interface{}{
+					conventions.AttributeServiceName:   *seg.Name,
 					conventions.AttributeCloudProvider: "unknown",
 				}
 			},

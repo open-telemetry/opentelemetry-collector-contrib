@@ -6,6 +6,8 @@ resourcedetection/openshift:
   openshift:
     address: "127.0.0.1:4444"
     token: "some_token"
+    tls:
+      insecure: true
 
 resourcedetection/gcp:
   detectors: [env, gcp]
@@ -23,6 +25,11 @@ resourcedetection/ec2:
 
 resourcedetection/ecs:
   detectors: [env, ecs]
+  timeout: 2s
+  override: false
+
+resourcedetection/lambda:
+  detectors: [env, lambda]
   timeout: 2s
   override: false
 

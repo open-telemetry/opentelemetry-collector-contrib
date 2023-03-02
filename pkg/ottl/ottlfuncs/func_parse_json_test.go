@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -154,9 +155,7 @@ func Test_ParseJSON(t *testing.T) {
 			assert.NoError(t, err)
 
 			resultMap, ok := result.(pcommon.Map)
-			if !ok {
-				assert.Fail(t, "pcommon.Map not returned")
-			}
+			require.True(t, ok)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)

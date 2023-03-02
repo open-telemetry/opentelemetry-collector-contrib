@@ -223,7 +223,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.TCPAddr.Endpoint = localAddr
 			if tt.metricsSettings != nil {
-				cfg.Metrics = tt.metricsSettings()
+				cfg.MetricsBuilderConfig.Metrics = tt.metricsSettings()
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)
@@ -270,7 +270,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 
-			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
 }

@@ -38,7 +38,7 @@ func newSnowflakeMetricsScraper(settings receiver.CreateSettings, conf *Config) 
 	return &snowflakeMetricsScraper{
 		settings: settings.TelemetrySettings,
 		conf:     conf,
-		mb:       metadata.NewMetricsBuilder(conf.Metrics, settings),
+		mb:       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
 	}
 }
 

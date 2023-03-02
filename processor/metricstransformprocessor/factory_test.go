@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -311,9 +310,9 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 		for j, expOp := range expTr.Operations {
 			mtpOp := mtpT.Operations[j]
 			assert.Equal(t, expOp.configOperation, mtpOp.configOperation)
-			assert.True(t, reflect.DeepEqual(mtpOp.valueActionsMapping, expOp.valueActionsMapping))
-			assert.True(t, reflect.DeepEqual(mtpOp.labelSetMap, expOp.labelSetMap))
-			assert.True(t, reflect.DeepEqual(mtpOp.aggregatedValuesSet, expOp.aggregatedValuesSet))
+			assert.Equal(t, expOp.valueActionsMapping, mtpOp.valueActionsMapping)
+			assert.Equal(t, expOp.labelSetMap, mtpOp.labelSetMap)
+			assert.Equal(t, expOp.aggregatedValuesSet, mtpOp.aggregatedValuesSet)
 		}
 	}
 }

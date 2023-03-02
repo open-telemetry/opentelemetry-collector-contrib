@@ -41,6 +41,7 @@ type Manager struct {
 	persister     operator.Persister
 
 	pollInterval    time.Duration
+	maxBatches      int
 	maxBatchFiles   int
 	deleteAfterRead bool
 
@@ -112,10 +113,22 @@ func (m *Manager) poll(ctx context.Context) {
 		m.knownFiles[i].generation++
 	}
 
+	// Used to keep track of the number of batches processed in this poll cycle
+	batchesProcessed := 0
+
 	// Get the list of paths on disk
 	matches := m.finder.FindFiles()
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])
+
+		// If a maxBatches is set, check if we have hit the limit
+		if m.maxBatches != 0 {
+			batchesProcessed++
+			if batchesProcessed >= m.maxBatches {
+				return
+			}
+		}
+
 		matches = matches[m.maxBatchFiles:]
 	}
 	m.consume(ctx, matches)
@@ -136,7 +149,8 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		go func(r *Reader) {
 			defer wg.Done()
 			r.ReadToEnd(ctx)
-			if m.deleteAfterRead {
+			// Delete a file if deleteAfterRead is enabled and we reached the end of the file
+			if m.deleteAfterRead && r.eof {
 				r.Close()
 				if err := os.Remove(r.file.Name()); err != nil {
 					m.Errorf("could not delete %s", r.file.Name())
@@ -146,9 +160,20 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	}
 	wg.Wait()
 
+	// Save off any files that were not fully read
 	if m.deleteAfterRead {
-		// no need to track files since they were deleted
-		return
+		unfinished := make([]*Reader, 0, len(readers))
+		for _, r := range readers {
+			if !r.eof {
+				unfinished = append(unfinished, r)
+			}
+		}
+		readers = unfinished
+
+		// If all files were read and deleted then no need to do bookkeeping on readers
+		if len(readers) == 0 {
+			return
+		}
 	}
 
 	// Any new files that appear should be consumed entirely

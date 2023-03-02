@@ -19,10 +19,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/testutil"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -35,7 +35,7 @@ func TestTraceAgentConfig(t *testing.T) {
 	agnt := newAgentWithConfig(context.Background(), cfg, out)
 	require.Zero(t, cfg.ReceiverPort)
 	require.NotEmpty(t, cfg.Endpoints[0].APIKey)
-	require.Equal(t, translator.UnsetHostnamePlaceholder, cfg.Hostname)
+	require.Equal(t, metrics.UnsetHostnamePlaceholder, cfg.Hostname)
 	require.Equal(t, out, agnt.Concentrator.Out)
 }
 

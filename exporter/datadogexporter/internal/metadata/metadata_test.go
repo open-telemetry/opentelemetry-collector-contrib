@@ -23,8 +23,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes/azure"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/azure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -244,9 +244,9 @@ func TestMetadataFromAttributes(t *testing.T) {
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			registry := featuregate.NewRegistry()
-			registry.MustRegisterID(HostnamePreviewFeatureGate, featuregate.StageBeta)
-			require.NoError(t, registry.Apply(map[string]bool{HostnamePreviewFeatureGate: testInstance.usePreviewHostnameLogic}))
-			metadata := metadataFromAttributesWithRegistry(registry, testInstance.attrs)
+			gate := registry.MustRegister(HostnamePreviewFeatureGate.ID(), featuregate.StageBeta)
+			require.NoError(t, registry.Set(HostnamePreviewFeatureGate.ID(), testInstance.usePreviewHostnameLogic))
+			metadata := metadataFromAttributesWithRegistry(gate, testInstance.attrs)
 			assert.Equal(t, testInstance.expected.InternalHostname, metadata.InternalHostname)
 			assert.Equal(t, testInstance.expected.Meta, metadata.Meta)
 			assert.ElementsMatch(t, testInstance.expected.Tags.GCP, metadata.Tags.GCP)

@@ -34,14 +34,15 @@ var _ component.Config = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	PublicKey                               string                       `mapstructure:"public_key"`
-	PrivateKey                              string                       `mapstructure:"private_key"`
-	Granularity                             string                       `mapstructure:"granularity"`
-	Metrics                                 metadata.MetricsSettings     `mapstructure:"metrics"`
-	Alerts                                  AlertConfig                  `mapstructure:"alerts"`
-	Logs                                    LogConfig                    `mapstructure:"logs"`
-	RetrySettings                           exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
-	StorageID                               *component.ID                `mapstructure:"storage"`
+	PublicKey                               string                        `mapstructure:"public_key"`
+	PrivateKey                              string                        `mapstructure:"private_key"`
+	Granularity                             string                        `mapstructure:"granularity"`
+	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Alerts                                  AlertConfig                   `mapstructure:"alerts"`
+	Events                                  *EventsConfig                 `mapstructure:"events"`
+	Logs                                    LogConfig                     `mapstructure:"logs"`
+	RetrySettings                           exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	StorageID                               *component.ID                 `mapstructure:"storage"`
 }
 
 type AlertConfig struct {
@@ -61,6 +62,15 @@ type AlertConfig struct {
 type LogConfig struct {
 	Enabled  bool             `mapstructure:"enabled"`
 	Projects []*ProjectConfig `mapstructure:"projects"`
+}
+
+// EventsConfig is the configuration options for events collection
+type EventsConfig struct {
+	Projects     []*ProjectConfig `mapstructure:"projects"`
+	PollInterval time.Duration    `mapstructure:"poll_interval"`
+	Types        []string         `mapstructure:"types"`
+	PageSize     int64            `mapstructure:"page_size"`
+	MaxPages     int64            `mapstructure:"max_pages"`
 }
 
 type ProjectConfig struct {
@@ -109,6 +119,9 @@ func (c *Config) Validate() error {
 
 	errs = multierr.Append(errs, c.Alerts.validate())
 	errs = multierr.Append(errs, c.Logs.validate())
+	if c.Events != nil {
+		errs = multierr.Append(errs, c.Events.validate())
+	}
 
 	return errs
 }
@@ -193,4 +206,11 @@ func (a AlertConfig) validateListenConfig() error {
 		}
 	}
 	return errs
+}
+
+func (e EventsConfig) validate() error {
+	if len(e.Projects) == 0 {
+		return errNoProjects
+	}
+	return nil
 }

@@ -62,7 +62,7 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperNoDatabaseSingle(t *testing.T) {
@@ -82,7 +82,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperNoDatabaseMultiple(t *testing.T) {
@@ -102,7 +102,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
@@ -120,7 +120,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
@@ -138,7 +138,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 type mockClientFactory struct{ mock.Mock }

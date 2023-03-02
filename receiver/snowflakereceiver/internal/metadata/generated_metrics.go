@@ -16,12 +16,7 @@ import (
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -32,7 +27,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -180,6 +175,24 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		SnowflakeTotalElapsedTimeAvg: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesSettings provides settings for snowflakereceiver metrics.
+type ResourceAttributesSettings struct {
+	SnowflakeAccountName ResourceAttributeSettings `mapstructure:"snowflake.account.name"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		SnowflakeAccountName: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -2080,6 +2093,12 @@ func newMetricSnowflakeTotalElapsedTimeAvg(settings MetricSettings) metricSnowfl
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -2088,6 +2107,7 @@ type MetricsBuilder struct {
 	resourceCapacity                                     int                 // maximum observed number of resource attributes.
 	metricsBuffer                                        pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                            component.BuildInfo // contains version information
+	resourceAttributesSettings                           ResourceAttributesSettings
 	metricSnowflakeBillingCloudServiceTotal              metricSnowflakeBillingCloudServiceTotal
 	metricSnowflakeBillingTotalCreditTotal               metricSnowflakeBillingTotalCreditTotal
 	metricSnowflakeBillingVirtualWarehouseTotal          metricSnowflakeBillingVirtualWarehouseTotal
@@ -2135,46 +2155,61 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                            pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                        pmetric.NewMetrics(),
 		buildInfo:                                            settings.BuildInfo,
-		metricSnowflakeBillingCloudServiceTotal:              newMetricSnowflakeBillingCloudServiceTotal(ms.SnowflakeBillingCloudServiceTotal),
-		metricSnowflakeBillingTotalCreditTotal:               newMetricSnowflakeBillingTotalCreditTotal(ms.SnowflakeBillingTotalCreditTotal),
-		metricSnowflakeBillingVirtualWarehouseTotal:          newMetricSnowflakeBillingVirtualWarehouseTotal(ms.SnowflakeBillingVirtualWarehouseTotal),
-		metricSnowflakeBillingWarehouseCloudServiceTotal:     newMetricSnowflakeBillingWarehouseCloudServiceTotal(ms.SnowflakeBillingWarehouseCloudServiceTotal),
-		metricSnowflakeBillingWarehouseTotalCreditTotal:      newMetricSnowflakeBillingWarehouseTotalCreditTotal(ms.SnowflakeBillingWarehouseTotalCreditTotal),
-		metricSnowflakeBillingWarehouseVirtualWarehouseTotal: newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(ms.SnowflakeBillingWarehouseVirtualWarehouseTotal),
-		metricSnowflakeDatabaseBytesScannedAvg:               newMetricSnowflakeDatabaseBytesScannedAvg(ms.SnowflakeDatabaseBytesScannedAvg),
-		metricSnowflakeDatabaseQueryCount:                    newMetricSnowflakeDatabaseQueryCount(ms.SnowflakeDatabaseQueryCount),
-		metricSnowflakeLoginsTotal:                           newMetricSnowflakeLoginsTotal(ms.SnowflakeLoginsTotal),
-		metricSnowflakePipeCreditsUsedTotal:                  newMetricSnowflakePipeCreditsUsedTotal(ms.SnowflakePipeCreditsUsedTotal),
-		metricSnowflakeQueryBlocked:                          newMetricSnowflakeQueryBlocked(ms.SnowflakeQueryBlocked),
-		metricSnowflakeQueryBytesDeletedAvg:                  newMetricSnowflakeQueryBytesDeletedAvg(ms.SnowflakeQueryBytesDeletedAvg),
-		metricSnowflakeQueryBytesSpilledLocalAvg:             newMetricSnowflakeQueryBytesSpilledLocalAvg(ms.SnowflakeQueryBytesSpilledLocalAvg),
-		metricSnowflakeQueryBytesSpilledRemoteAvg:            newMetricSnowflakeQueryBytesSpilledRemoteAvg(ms.SnowflakeQueryBytesSpilledRemoteAvg),
-		metricSnowflakeQueryBytesWrittenAvg:                  newMetricSnowflakeQueryBytesWrittenAvg(ms.SnowflakeQueryBytesWrittenAvg),
-		metricSnowflakeQueryCompilationTimeAvg:               newMetricSnowflakeQueryCompilationTimeAvg(ms.SnowflakeQueryCompilationTimeAvg),
-		metricSnowflakeQueryDataScannedCacheAvg:              newMetricSnowflakeQueryDataScannedCacheAvg(ms.SnowflakeQueryDataScannedCacheAvg),
-		metricSnowflakeQueryExecuted:                         newMetricSnowflakeQueryExecuted(ms.SnowflakeQueryExecuted),
-		metricSnowflakeQueryExecutionTimeAvg:                 newMetricSnowflakeQueryExecutionTimeAvg(ms.SnowflakeQueryExecutionTimeAvg),
-		metricSnowflakeQueryPartitionsScannedAvg:             newMetricSnowflakeQueryPartitionsScannedAvg(ms.SnowflakeQueryPartitionsScannedAvg),
-		metricSnowflakeQueryQueuedOverload:                   newMetricSnowflakeQueryQueuedOverload(ms.SnowflakeQueryQueuedOverload),
-		metricSnowflakeQueryQueuedProvision:                  newMetricSnowflakeQueryQueuedProvision(ms.SnowflakeQueryQueuedProvision),
-		metricSnowflakeQueuedOverloadTimeAvg:                 newMetricSnowflakeQueuedOverloadTimeAvg(ms.SnowflakeQueuedOverloadTimeAvg),
-		metricSnowflakeQueuedProvisioningTimeAvg:             newMetricSnowflakeQueuedProvisioningTimeAvg(ms.SnowflakeQueuedProvisioningTimeAvg),
-		metricSnowflakeQueuedRepairTimeAvg:                   newMetricSnowflakeQueuedRepairTimeAvg(ms.SnowflakeQueuedRepairTimeAvg),
-		metricSnowflakeRowsDeletedAvg:                        newMetricSnowflakeRowsDeletedAvg(ms.SnowflakeRowsDeletedAvg),
-		metricSnowflakeRowsInsertedAvg:                       newMetricSnowflakeRowsInsertedAvg(ms.SnowflakeRowsInsertedAvg),
-		metricSnowflakeRowsProducedAvg:                       newMetricSnowflakeRowsProducedAvg(ms.SnowflakeRowsProducedAvg),
-		metricSnowflakeRowsUnloadedAvg:                       newMetricSnowflakeRowsUnloadedAvg(ms.SnowflakeRowsUnloadedAvg),
-		metricSnowflakeRowsUpdatedAvg:                        newMetricSnowflakeRowsUpdatedAvg(ms.SnowflakeRowsUpdatedAvg),
-		metricSnowflakeSessionIDCount:                        newMetricSnowflakeSessionIDCount(ms.SnowflakeSessionIDCount),
-		metricSnowflakeStorageFailsafeBytesTotal:             newMetricSnowflakeStorageFailsafeBytesTotal(ms.SnowflakeStorageFailsafeBytesTotal),
-		metricSnowflakeStorageStageBytesTotal:                newMetricSnowflakeStorageStageBytesTotal(ms.SnowflakeStorageStageBytesTotal),
-		metricSnowflakeStorageStorageBytesTotal:              newMetricSnowflakeStorageStorageBytesTotal(ms.SnowflakeStorageStorageBytesTotal),
-		metricSnowflakeTotalElapsedTimeAvg:                   newMetricSnowflakeTotalElapsedTimeAvg(ms.SnowflakeTotalElapsedTimeAvg),
+		resourceAttributesSettings:                           mbc.ResourceAttributes,
+		metricSnowflakeBillingCloudServiceTotal:              newMetricSnowflakeBillingCloudServiceTotal(mbc.Metrics.SnowflakeBillingCloudServiceTotal),
+		metricSnowflakeBillingTotalCreditTotal:               newMetricSnowflakeBillingTotalCreditTotal(mbc.Metrics.SnowflakeBillingTotalCreditTotal),
+		metricSnowflakeBillingVirtualWarehouseTotal:          newMetricSnowflakeBillingVirtualWarehouseTotal(mbc.Metrics.SnowflakeBillingVirtualWarehouseTotal),
+		metricSnowflakeBillingWarehouseCloudServiceTotal:     newMetricSnowflakeBillingWarehouseCloudServiceTotal(mbc.Metrics.SnowflakeBillingWarehouseCloudServiceTotal),
+		metricSnowflakeBillingWarehouseTotalCreditTotal:      newMetricSnowflakeBillingWarehouseTotalCreditTotal(mbc.Metrics.SnowflakeBillingWarehouseTotalCreditTotal),
+		metricSnowflakeBillingWarehouseVirtualWarehouseTotal: newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(mbc.Metrics.SnowflakeBillingWarehouseVirtualWarehouseTotal),
+		metricSnowflakeDatabaseBytesScannedAvg:               newMetricSnowflakeDatabaseBytesScannedAvg(mbc.Metrics.SnowflakeDatabaseBytesScannedAvg),
+		metricSnowflakeDatabaseQueryCount:                    newMetricSnowflakeDatabaseQueryCount(mbc.Metrics.SnowflakeDatabaseQueryCount),
+		metricSnowflakeLoginsTotal:                           newMetricSnowflakeLoginsTotal(mbc.Metrics.SnowflakeLoginsTotal),
+		metricSnowflakePipeCreditsUsedTotal:                  newMetricSnowflakePipeCreditsUsedTotal(mbc.Metrics.SnowflakePipeCreditsUsedTotal),
+		metricSnowflakeQueryBlocked:                          newMetricSnowflakeQueryBlocked(mbc.Metrics.SnowflakeQueryBlocked),
+		metricSnowflakeQueryBytesDeletedAvg:                  newMetricSnowflakeQueryBytesDeletedAvg(mbc.Metrics.SnowflakeQueryBytesDeletedAvg),
+		metricSnowflakeQueryBytesSpilledLocalAvg:             newMetricSnowflakeQueryBytesSpilledLocalAvg(mbc.Metrics.SnowflakeQueryBytesSpilledLocalAvg),
+		metricSnowflakeQueryBytesSpilledRemoteAvg:            newMetricSnowflakeQueryBytesSpilledRemoteAvg(mbc.Metrics.SnowflakeQueryBytesSpilledRemoteAvg),
+		metricSnowflakeQueryBytesWrittenAvg:                  newMetricSnowflakeQueryBytesWrittenAvg(mbc.Metrics.SnowflakeQueryBytesWrittenAvg),
+		metricSnowflakeQueryCompilationTimeAvg:               newMetricSnowflakeQueryCompilationTimeAvg(mbc.Metrics.SnowflakeQueryCompilationTimeAvg),
+		metricSnowflakeQueryDataScannedCacheAvg:              newMetricSnowflakeQueryDataScannedCacheAvg(mbc.Metrics.SnowflakeQueryDataScannedCacheAvg),
+		metricSnowflakeQueryExecuted:                         newMetricSnowflakeQueryExecuted(mbc.Metrics.SnowflakeQueryExecuted),
+		metricSnowflakeQueryExecutionTimeAvg:                 newMetricSnowflakeQueryExecutionTimeAvg(mbc.Metrics.SnowflakeQueryExecutionTimeAvg),
+		metricSnowflakeQueryPartitionsScannedAvg:             newMetricSnowflakeQueryPartitionsScannedAvg(mbc.Metrics.SnowflakeQueryPartitionsScannedAvg),
+		metricSnowflakeQueryQueuedOverload:                   newMetricSnowflakeQueryQueuedOverload(mbc.Metrics.SnowflakeQueryQueuedOverload),
+		metricSnowflakeQueryQueuedProvision:                  newMetricSnowflakeQueryQueuedProvision(mbc.Metrics.SnowflakeQueryQueuedProvision),
+		metricSnowflakeQueuedOverloadTimeAvg:                 newMetricSnowflakeQueuedOverloadTimeAvg(mbc.Metrics.SnowflakeQueuedOverloadTimeAvg),
+		metricSnowflakeQueuedProvisioningTimeAvg:             newMetricSnowflakeQueuedProvisioningTimeAvg(mbc.Metrics.SnowflakeQueuedProvisioningTimeAvg),
+		metricSnowflakeQueuedRepairTimeAvg:                   newMetricSnowflakeQueuedRepairTimeAvg(mbc.Metrics.SnowflakeQueuedRepairTimeAvg),
+		metricSnowflakeRowsDeletedAvg:                        newMetricSnowflakeRowsDeletedAvg(mbc.Metrics.SnowflakeRowsDeletedAvg),
+		metricSnowflakeRowsInsertedAvg:                       newMetricSnowflakeRowsInsertedAvg(mbc.Metrics.SnowflakeRowsInsertedAvg),
+		metricSnowflakeRowsProducedAvg:                       newMetricSnowflakeRowsProducedAvg(mbc.Metrics.SnowflakeRowsProducedAvg),
+		metricSnowflakeRowsUnloadedAvg:                       newMetricSnowflakeRowsUnloadedAvg(mbc.Metrics.SnowflakeRowsUnloadedAvg),
+		metricSnowflakeRowsUpdatedAvg:                        newMetricSnowflakeRowsUpdatedAvg(mbc.Metrics.SnowflakeRowsUpdatedAvg),
+		metricSnowflakeSessionIDCount:                        newMetricSnowflakeSessionIDCount(mbc.Metrics.SnowflakeSessionIDCount),
+		metricSnowflakeStorageFailsafeBytesTotal:             newMetricSnowflakeStorageFailsafeBytesTotal(mbc.Metrics.SnowflakeStorageFailsafeBytesTotal),
+		metricSnowflakeStorageStageBytesTotal:                newMetricSnowflakeStorageStageBytesTotal(mbc.Metrics.SnowflakeStorageStageBytesTotal),
+		metricSnowflakeStorageStorageBytesTotal:              newMetricSnowflakeStorageStorageBytesTotal(mbc.Metrics.SnowflakeStorageStorageBytesTotal),
+		metricSnowflakeTotalElapsedTimeAvg:                   newMetricSnowflakeTotalElapsedTimeAvg(mbc.Metrics.SnowflakeTotalElapsedTimeAvg),
 	}
 	for _, op := range options {
 		op(mb)
@@ -2193,19 +2228,21 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithSnowflakeAccountName sets provided value as "snowflake.account.name" attribute for current resource.
 func WithSnowflakeAccountName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("snowflake.account.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.SnowflakeAccountName.Enabled {
+			rm.Resource().Attributes().PutStr("snowflake.account.name", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -2269,8 +2306,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSnowflakeStorageStageBytesTotal.emit(ils.Metrics())
 	mb.metricSnowflakeStorageStorageBytesTotal.emit(ils.Metrics())
 	mb.metricSnowflakeTotalElapsedTimeAvg.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -2283,8 +2321,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

@@ -50,7 +50,7 @@ func createDefaultConfig() component.Config {
 			Endpoint:  "localhost:3306",
 			Transport: "tcp",
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		StatementEvents: StatementEventsConfig{
 			DigestTextLimit: defaultStatementEventsDigestTextLimit,
 			Limit:           defaultStatementEventsLimit,

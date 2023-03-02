@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
@@ -34,18 +34,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 )
 
-const (
-	HostnamePreviewFeatureGate = "exporter.datadog.hostname.preview"
+var HostnamePreviewFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadog.hostname.preview",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("Use the 'preview' hostname resolution rules, which are consistent with Datadog cloud integration hostname resolution rules, and set 'host_metadata::hostname_source' to 'config_or_system' by default."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10424"),
 )
-
-func init() {
-	featuregate.GlobalRegistry().MustRegisterID(
-		HostnamePreviewFeatureGate,
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("Use the 'preview' hostname resolution rules, which are consistent with Datadog cloud integration hostname resolution rules, and set 'host_metadata::hostname_source' to 'config_or_system' by default."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10424"),
-	)
-}
 
 func buildPreviewProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
 	ecs, err := ecs.NewProvider(set)
@@ -113,7 +107,7 @@ func buildCurrentProvider(set component.TelemetrySettings, configHostname string
 }
 
 func GetSourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
-	if featuregate.GlobalRegistry().IsEnabled(HostnamePreviewFeatureGate) {
+	if HostnamePreviewFeatureGate.IsEnabled() {
 		return buildPreviewProvider(set, configHostname)
 	}
 

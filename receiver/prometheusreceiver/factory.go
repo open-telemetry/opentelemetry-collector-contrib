@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 
+	promconfig "github.com/prometheus/prometheus/config"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -28,19 +29,16 @@ import (
 // This file implements config for Prometheus receiver.
 
 const (
-	typeStr                = "prometheus"
-	stability              = component.StabilityLevelBeta
-	useCreatedMetricGateID = "receiver.prometheusreceiver.UseCreatedMetric"
+	typeStr   = "prometheus"
+	stability = component.StabilityLevelBeta
 )
 
-func init() {
-	featuregate.GlobalRegistry().MustRegisterID(
-		useCreatedMetricGateID,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
-			" retrieve the start time for Summary, Histogram and Sum metrics from _created metric"),
-	)
-}
+var useCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.UseCreatedMetric",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
+		" retrieve the start time for Summary, Histogram and Sum metrics from _created metric"),
+)
 
 var errRenamingDisallowed = errors.New("metric renaming using metric_relabel_configs is disallowed")
 
@@ -53,7 +51,11 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		PrometheusConfig: &promconfig.Config{
+			GlobalConfig: promconfig.DefaultGlobalConfig,
+		},
+	}
 }
 
 func createMetricsReceiver(

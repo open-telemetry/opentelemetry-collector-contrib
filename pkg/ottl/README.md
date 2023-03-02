@@ -63,7 +63,10 @@ A Path Value is a reference to a telemetry field.  Paths are made up of lowercas
 
 - Identifiers are used to map to a telemetry field.
 - Dots (`.`) are used to separate nested fields.
-- Square brackets and keys (`["key"]`) are used to access maps or slices.
+- Square brackets and keys (`["key"]`) are used to access values within maps.
+
+When accessing a map's value, if the given key does not exist, `nil` will be returned.
+This can be used to check for the presence of a key within a map within a [Boolean Expression](#boolean_expressions).
 
 Example Paths
 - `name`
@@ -74,6 +77,8 @@ Example Paths
 #### Lists
 
 A List Value comprises a sequence of Values.
+Currently, list can only be created by the grammar to be used in functions or conditions;
+the grammar does not provide an accessor to individual list entries.
 
 Example List Values:
 - `[]`
@@ -179,7 +184,7 @@ The valid operators are:
 Booleans can be negated with the `not` keyword such as
 - `not true`
 - `not name == "foo"`   
-  `not (IsMatch(name, "http_.*") == true and kind > 0)`
+- `not (IsMatch(name, "http_.*") == true and kind > 0)`
 
 ### Comparison Rules
 
@@ -202,6 +207,12 @@ A `not equal` notation in the table below means that the "!=" operator returns t
 | string    | not equal   | not equal           | not equal           | normal (compared as Go strings) | not equal                | not equal              |
 | Bytes     | not equal   | not equal           | not equal           | not equal                       | byte-for-byte comparison | []byte(nil) == nil     |
 | nil       | not equal   | not equal           | not equal           | not equal                       | []byte(nil) == nil       | true for equality only |
+
+Examples:
+- `name == "a name"`
+- `1 < 2`
+- `attributes["custom-attr"] != nil`
+- `IsMatch(resource.attributes["host.name"], "pod-*") == true`
 
 ## Accessing signal telemetry
 
@@ -279,13 +290,6 @@ logs:
   delete(resource.attributes["process.command_line"])
 ```
 
-### Drop specific telemetry
-
-```
-metrics:
-  drop() where attributes["http.target"] == "/health"
-```
-
 ### Attach information from resource into telemetry
 
 ```
@@ -301,14 +305,6 @@ traces:
   set(attributes["whose_fault"], "ours") where attributes["http.status"] == 500
 ```
 
-### Group spans by trace ID
-
-```
-traces:
-  group_by(trace_id, 2m)
-```
-
-
 ### Update a spans ID
 
 ```
@@ -318,16 +314,16 @@ traces:
   set(span_id, SpanID(0x0000000000000000))
 ```
 
-### Create utilization metric from base metrics.
-
-```
-metrics:
-  create_gauge("pod.cpu.utilized", read_gauge("pod.cpu.usage") / read_gauge("node.cpu.limit")
-```
-
 ### Convert metric name to snake case
 
 ```
 metrics:
   set(metric.name, ConvertCase(metric.name, "snake"))
+```
+
+### Check if an attribute exists
+
+```
+traces:
+  set(attributes["test-passed"], true) where attributes["target-attribute"] != nil
 ```

@@ -87,7 +87,7 @@ func TestMongodbIntegration(t *testing.T) {
 			name:      "4_0",
 			container: containerRequest4_0,
 			cfgMod: func(cfg *Config, endpoint string) {
-				cfg.Metrics.MongodbLockAcquireTime.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.MongodbLockAcquireTime.Enabled = false
 				cfg.Hosts = []confignet.NetAddr{
 					{
 						Endpoint: endpoint,
@@ -168,7 +168,7 @@ func TestMongodbIntegration(t *testing.T) {
 			require.NoError(t, err)
 
 			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
-				pmetrictest.IgnoreMetricDataPointsOrder()))
+				pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
 }

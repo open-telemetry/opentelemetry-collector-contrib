@@ -16,7 +16,6 @@ package kubeletstatsreceiver
 
 import (
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
 
@@ -63,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -91,7 +90,7 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -111,7 +110,7 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -134,7 +133,7 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -153,7 +152,7 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.NodeMetricGroup,
 					kubelet.VolumeMetricGroup,
 				},
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -175,8 +174,8 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				K8sAPIConfig: &k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-				Metrics:      metadata.DefaultMetricsSettings(),
+				K8sAPIConfig:         &k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 	}
@@ -270,13 +269,12 @@ func TestGetReceiverOptions(t *testing.T) {
 				K8sAPIConfig:          tt.fields.k8sAPIConfig,
 			}
 			got, err := cfg.getReceiverOptions()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getReceiverOptions() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getReceiverOptions() got = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
