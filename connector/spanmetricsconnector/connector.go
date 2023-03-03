@@ -128,16 +128,12 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		histograms = metrics.NewExplicitHistogramMetrics(bounds)
 	}
 
-	sums := metrics.SumMetrics{
-		Metrics: make(map[metrics.Key]*metrics.Sum),
-	}
-
 	return &connectorImp{
 		logger:                logger,
 		config:                *cfg,
 		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
 		histograms:            histograms,
-		sums:                  sums,
+		sums:                  metrics.NewSumMetrics(),
 		dimensions:            newDimensions(cfg.Dimensions),
 		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
@@ -310,21 +306,12 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					h.AddExemplar(span.TraceID(), span.SpanID(), latencyMs)
 				}
 
-				p.aggregateSumMetrics(key, attributes)
+				// aggregate sums metrics
+				s := p.sums.GetOrCreate(key, attributes)
+				s.Add(1)
 			}
 		}
 	}
-}
-
-func (p *connectorImp) aggregateSumMetrics(key metrics.Key, attributes pcommon.Map) {
-	s, ok := p.sums.Metrics[key]
-	if !ok {
-		s = &metrics.Sum{
-			Attributes: attributes,
-		}
-		p.sums.Metrics[key] = s
-	}
-	s.Count++
 }
 
 func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {

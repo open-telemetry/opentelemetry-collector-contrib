@@ -766,7 +766,7 @@ func newConnectorImp(
 
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
 		histograms:     histograms(),
-		sums:           metrics.SumMetrics{Metrics: make(map[metrics.Key]*metrics.Sum)},
+		sums:           metrics.NewSumMetrics(),
 		dimensions: []dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},

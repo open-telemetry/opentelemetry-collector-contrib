@@ -239,12 +239,31 @@ func (h *exponentialHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcomm
 }
 
 type Sum struct {
-	Attributes pcommon.Map
-	Count      uint64
+	attributes pcommon.Map
+	count      uint64
+}
+
+func (s *Sum) Add(value uint64) {
+	s.count += value
+}
+
+func NewSumMetrics() SumMetrics {
+	return SumMetrics{metrics: make(map[Key]*Sum)}
 }
 
 type SumMetrics struct {
-	Metrics map[Key]*Sum
+	metrics map[Key]*Sum
+}
+
+func (m *SumMetrics) GetOrCreate(key Key, attributes pcommon.Map) *Sum {
+	s, ok := m.metrics[key]
+	if !ok {
+		s = &Sum{
+			attributes: attributes,
+		}
+		m.metrics[key] = s
+	}
+	return s
 }
 
 func (m *SumMetrics) BuildMetrics(
@@ -256,17 +275,17 @@ func (m *SumMetrics) BuildMetrics(
 	metric.Sum().SetAggregationTemporality(temporality)
 
 	dps := metric.Sum().DataPoints()
-	dps.EnsureCapacity(len(m.Metrics))
+	dps.EnsureCapacity(len(m.metrics))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for _, s := range m.Metrics {
+	for _, s := range m.metrics {
 		dp := dps.AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(timestamp)
-		dp.SetIntValue(int64(s.Count))
-		s.Attributes.CopyTo(dp.Attributes())
+		dp.SetIntValue(int64(s.count))
+		s.attributes.CopyTo(dp.Attributes())
 	}
 }
 
 func (m *SumMetrics) Reset() {
-	m.Metrics = make(map[Key]*Sum)
+	m.metrics = make(map[Key]*Sum)
 }
