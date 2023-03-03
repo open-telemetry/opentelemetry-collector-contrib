@@ -138,7 +138,8 @@ func (e *headerPipelineOutput) Stop() error {
 
 func (e *headerPipelineOutput) Process(_ context.Context, ent *entry.Entry) error {
 	// Drop the entry if logChan is full, in order to avoid this operator blocking.
-	// Otherwise, we could potentially deadlock if Process is sequenced before WaitForEntry
+	// This protects against a case where an operator could return an error, but continue propagating a log entry,
+	// leaving an unexpected entry in the output channel.
 	select {
 	case e.logChan <- ent:
 	default:
