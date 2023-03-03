@@ -93,6 +93,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.72.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.72.0
@@ -881,6 +882,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver => ../../receiver/simpleprometheusreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver => ../../receiver/kafkametricsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver => ../../receiver/cloudflarereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver => ../../receiver/cloudfoundryreceiver
 

@@ -1,0 +1,45 @@
+{
+    "resourceLogs": [
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "cloudflare.ZoneID",
+                        "value": {
+                            "stringValue": "023e105f4ecef8ad9ca31a8372d0c353"
+                        }
+                    }
+                ]
+            },
+            "scopeLogs": [
+                {
+                    "scope": {},
+                    "logRecords": [
+                        {
+                            "observedTimeUnixNano": "1676351710810488000",
+                            "body": {
+                                "stringValue": "[{\"ClientIP\":\"89.163.253.200\",\"ClientRequestHost\":null,\"ClientRequestMethod\":null,\"ClientRequestURI\":null,\"EdgeEndTimestamp\":1506702504461999900,\"EdgeResponseBytes\":null,\"EdgeResponseStatus\":null,\"EdgeStartTimestamp\":null,\"RayID\":null}]"
+                            },
+                            "attributes": [
+                                {
+                                    "key": "ClientIP",
+                                    "value": {
+                                        "stringValue": "89.163.253.200"
+                                    }
+                                },
+                                {
+                                    "key": "EdgeEndTimestamp",
+                                    "value": {
+                                        "intValue": "1506702504461999900"
+                                    }
+                                }
+                            ],
+                            "traceId": "",
+                            "spanId": ""
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

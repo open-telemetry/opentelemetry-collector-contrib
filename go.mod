@@ -891,6 +891,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbo
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver => ./receiver/chronyreceiver
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver => ./receiver/cloudflarereceiver
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver => ./receiver/cloudfoundryreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver => ./receiver/collectdreceiver
