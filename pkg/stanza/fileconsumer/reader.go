@@ -97,8 +97,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
 		} else if r.headerSettings != nil && !r.HeaderFinalized {
-			r.headerEmitFunc(ctx, r.fileAttributes, token)
-			if r.HeaderFinalized {
+			if !r.consumeHeaderLine(ctx, r.fileAttributes, token) {
 				// recreate the scanner with the log-line's split func.
 				// We do not use the updated offset from the scanner,
 				// as the log line we just used could be multiline
@@ -125,17 +124,22 @@ func (r *Reader) curSplitFunc() bufio.SplitFunc {
 	return r.splitFunc
 }
 
-func (r *Reader) headerEmitFunc(ctx context.Context, attrs *FileAttributes, token []byte) {
+// consumeHeaderLine checks if the given token is a line of the header, and consumes it if it is.
+// The return value dictates whether the given line was a header line or not.
+// If false is returned, the full header can be assumed to be read.
+func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, token []byte) bool {
 	if !r.headerSettings.matchRegex.Match(token) {
+		// Finalize and cleanup the pipeline
 		r.HeaderFinalized = true
 		attrs.headerAttributes = r.HeaderAttributes
 
+		// Stop and drop the header pipeline.
 		if err := r.headerPipeline.Stop(); err != nil {
 			r.SugaredLogger.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
 		}
 		r.headerPipeline = nil
 		r.headerPipelineOutput = nil
-		return
+		return false
 	}
 
 	firstOperator := r.headerPipeline.Operators()[0]
@@ -145,13 +149,13 @@ func (r *Reader) headerEmitFunc(ctx context.Context, attrs *FileAttributes, toke
 
 	if err := firstOperator.Process(ctx, newEntry); err != nil {
 		r.SugaredLogger.Errorw("Failed to process header entry", zap.Error(err))
-		return
+		return true
 	}
 
 	ent, err := r.headerPipelineOutput.WaitForEntry(ctx)
 	if err != nil {
 		r.SugaredLogger.Errorw("Error while waiting for header entry", zap.Error(err))
-		return
+		return true
 	}
 
 	// Copy resultant attributes over current set of attributes (upsert)
@@ -159,6 +163,7 @@ func (r *Reader) headerEmitFunc(ctx context.Context, attrs *FileAttributes, toke
 		r.HeaderAttributes[k] = v
 	}
 
+	return true
 }
 
 // Read from the file and update the fingerprint if necessary
