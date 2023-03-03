@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -758,25 +757,4 @@ func TestManyLogsDelivered(t *testing.T) {
 		waitForMessage(t, logReceived, message)
 	}
 	expectNoMessages(t, logReceived)
-}
-
-func TestMapCopy(t *testing.T) {
-	initMap := map[string]any{
-		"mapVal": map[string]any{
-			"nestedVal": "value1",
-		},
-		"intVal": 1,
-		"strVal": "OrigStr",
-	}
-
-	copyMap := mapCopy(initMap)
-	// Mutate values on the copied map
-	copyMap["mapVal"].(map[string]any)["nestedVal"] = "overwrittenValue"
-	copyMap["intVal"] = 2
-	copyMap["strVal"] = "CopyString"
-
-	// Assert that the original map should have the same values
-	assert.Equal(t, "value1", initMap["mapVal"].(map[string]any)["nestedVal"])
-	assert.Equal(t, 1, initMap["intVal"])
-	assert.Equal(t, "OrigStr", initMap["strVal"])
 }

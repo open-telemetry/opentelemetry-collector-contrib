@@ -178,7 +178,7 @@ func waitForTokenHeaderAttributes(t *testing.T, c chan *emitParams, expected []b
 	select {
 	case call := <-c:
 		require.Equal(t, expected, call.token)
-		require.Equal(t, headerAttributes, call.attrs.HeaderAttributes)
+		require.Equal(t, headerAttributes, call.attrs.headerAttributes)
 	case <-time.After(3 * time.Hour):
 		require.FailNow(t, fmt.Sprintf("Timed out waiting for token: %s", expected))
 	}

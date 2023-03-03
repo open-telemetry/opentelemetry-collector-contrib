@@ -25,7 +25,12 @@ type FileAttributes struct {
 	Path             string
 	NameResolved     string
 	PathResolved     string
-	HeaderAttributes map[string]any
+	headerAttributes map[string]any
+}
+
+// HeaderAttributes gives a copy of the headerAttributes, in order to restrict mutation of the HeaderAttributes.
+func (f *FileAttributes) HeaderAttributes() map[string]any {
+	return mapCopy(f.headerAttributes)
 }
 
 // resolveFileAttributes resolves file attributes

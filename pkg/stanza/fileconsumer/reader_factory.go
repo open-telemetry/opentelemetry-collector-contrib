@@ -49,8 +49,7 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 		withFingerprint(old.Fingerprint.Copy()).
 		withOffset(old.Offset).
 		withSplitterFunc(old.splitFunc).
-		// TODO: Copy header attributes map
-		withHeaderAttributes(old.HeaderAttributes).
+		withHeaderAttributes(mapCopy(old.HeaderAttributes)).
 		withHeaderFinalized(old.HeaderFinalized).
 		build()
 }
@@ -150,7 +149,7 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 			}
 		}
 
-		r.fileAttributes.HeaderAttributes = r.HeaderAttributes
+		r.fileAttributes.headerAttributes = r.HeaderAttributes
 	} else {
 		r.SugaredLogger = b.SugaredLogger.With("path", "uninitialized")
 	}
