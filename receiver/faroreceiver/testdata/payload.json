@@ -1,0 +1,552 @@
+{
+  "events": [
+    {
+      "name": "page",
+      "domain": "browser",
+      "attributes": {
+        "name": "product/[productId]",
+        "productId": "9SIQT8TOJO"
+      },
+      "timestamp": "2023-03-02T23:24:38.824Z"
+    }
+  ],
+  "traces": {
+    "resourceSpans": [
+      {
+        "resource": {
+          "attributes": [
+            { "key": "service.name", "value": { "stringValue": "undefined" } },
+            {
+              "key": "telemetry.sdk.language",
+              "value": { "stringValue": "webjs" }
+            },
+            {
+              "key": "telemetry.sdk.name",
+              "value": { "stringValue": "opentelemetry" }
+            },
+            {
+              "key": "telemetry.sdk.version",
+              "value": { "stringValue": "1.8.0" }
+            },
+            { "key": "service.version", "value": { "stringValue": "1.0.0" } }
+          ],
+          "droppedAttributesCount": 0
+        },
+        "scopeSpans": [
+          {
+            "scope": {
+              "name": "@opentelemetry/instrumentation-user-interaction",
+              "version": "0.32.0"
+            },
+            "spans": [
+              {
+                "traceId": "29ef2265d80853f0e56f3c1fa55e36ac",
+                "spanId": "5b078dcb08627a02",
+                "name": "click",
+                "kind": 1,
+                "startTimeUnixNano": 1677799478798400000,
+                "endTimeUnixNano": 1677799478798600000,
+                "attributes": [
+                  {
+                    "key": "session_id",
+                    "value": { "stringValue": "8BjAm1K4P8" }
+                  },
+                  {
+                    "key": "component",
+                    "value": { "stringValue": "user-interaction" }
+                  },
+                  { "key": "event_type", "value": { "stringValue": "click" } },
+                  {
+                    "key": "target_element",
+                    "value": { "stringValue": "DIV" }
+                  },
+                  {
+                    "key": "target_xpath",
+                    "value": {
+                      "stringValue": "//html/body/div/main/div/div[2]/div/div/div/div/div[8]/div"
+                    }
+                  },
+                  {
+                    "key": "http.url",
+                    "value": {
+                      "stringValue": "http://frontendproxy.k3d.localhost:50080/"
+                    }
+                  },
+                  {
+                    "key": "http.user_agent",
+                    "value": {
+                      "stringValue": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+                    }
+                  }
+                ],
+                "droppedAttributesCount": 0,
+                "events": [],
+                "droppedEventsCount": 0,
+                "status": { "code": 0 },
+                "links": [],
+                "droppedLinksCount": 0
+              },
+              {
+                "traceId": "1fc5ae400925fc4ddb5e8cfcd347677d",
+                "spanId": "c6d24e62d80811c3",
+                "name": "click",
+                "kind": 1,
+                "startTimeUnixNano": 1677799478798999800,
+                "endTimeUnixNano": 1677799478799100000,
+                "attributes": [
+                  {
+                    "key": "session_id",
+                    "value": { "stringValue": "8BjAm1K4P8" }
+                  },
+                  {
+                    "key": "component",
+                    "value": { "stringValue": "user-interaction" }
+                  },
+                  { "key": "event_type", "value": { "stringValue": "click" } },
+                  {
+                    "key": "target_element",
+                    "value": { "stringValue": "DIV" }
+                  },
+                  {
+                    "key": "target_xpath",
+                    "value": {
+                      "stringValue": "//html/body/div/main/div/div[2]/div/div/div/div/div[8]/div"
+                    }
+                  },
+                  {
+                    "key": "http.url",
+                    "value": {
+                      "stringValue": "http://frontendproxy.k3d.localhost:50080/"
+                    }
+                  },
+                  {
+                    "key": "http.user_agent",
+                    "value": {
+                      "stringValue": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+                    }
+                  }
+                ],
+                "droppedAttributesCount": 0,
+                "events": [],
+                "droppedEventsCount": 0,
+                "status": { "code": 0 },
+                "links": [],
+                "droppedLinksCount": 0
+              },
+              {
+                "traceId": "8009d7ead0949849df143d055ee7dcfb",
+                "spanId": "30ac4329e59bb057",
+                "name": "Navigation: /product/9SIQT8TOJO",
+                "kind": 1,
+                "startTimeUnixNano": 1677799478799299800,
+                "endTimeUnixNano": 1677799478801399800,
+                "attributes": [
+                  {
+                    "key": "session_id",
+                    "value": { "stringValue": "8BjAm1K4P8" }
+                  },
+                  {
+                    "key": "component",
+                    "value": { "stringValue": "user-interaction" }
+                  },
+                  { "key": "event_type", "value": { "stringValue": "click" } },
+                  {
+                    "key": "target_element",
+                    "value": { "stringValue": "DIV" }
+                  },
+                  {
+                    "key": "target_xpath",
+                    "value": {
+                      "stringValue": "//html/body/div/main/div/div[2]/div/div/div/div/div[8]/div"
+                    }
+                  },
+                  {
+                    "key": "http.url",
+                    "value": {
+                      "stringValue": "http://frontendproxy.k3d.localhost:50080/"
+                    }
+                  },
+                  {
+                    "key": "http.user_agent",
+                    "value": {
+                      "stringValue": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+                    }
+                  }
+                ],
+                "droppedAttributesCount": 0,
+                "events": [],
+                "droppedEventsCount": 0,
+                "status": { "code": 0 },
+                "links": [],
+                "droppedLinksCount": 0
+              }
+            ]
+          },
+          {
+            "scope": {
+              "name": "@opentelemetry/instrumentation-fetch",
+              "version": "0.34.0"
+            },
+            "spans": [
+              {
+                "traceId": "ec22ea662543abd6c035a33ae0e7b9f5",
+                "spanId": "6275a6525b1249cb",
+                "name": "HTTP GET",
+                "kind": 3,
+                "startTimeUnixNano": 1677799478826300000,
+                "endTimeUnixNano": 1677799478889699800,
+                "attributes": [
+                  {
+                    "key": "session_id",
+                    "value": { "stringValue": "8BjAm1K4P8" }
+                  },
+                  { "key": "component", "value": { "stringValue": "fetch" } },
+                  { "key": "http.method", "value": { "stringValue": "GET" } },
+                  {
+                    "key": "http.url",
+                    "value": {
+                      "stringValue": "http://frontendproxy.k3d.localhost:50080/api/products/9SIQT8TOJO?currencyCode=USD"
+                    }
+                  },
+                  { "key": "http.status_code", "value": { "intValue": 200 } },
+                  {
+                    "key": "http.status_text",
+                    "value": { "stringValue": "OK" }
+                  },
+                  {
+                    "key": "http.host",
+                    "value": {
+                      "stringValue": "frontendproxy.k3d.localhost:50080"
+                    }
+                  },
+                  { "key": "http.scheme", "value": { "stringValue": "http" } },
+                  {
+                    "key": "http.user_agent",
+                    "value": {
+                      "stringValue": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+                    }
+                  },
+                  {
+                    "key": "http.response_content_length",
+                    "value": { "intValue": 799 }
+                  }
+                ],
+                "droppedAttributesCount": 0,
+                "events": [
+                  {
+                    "attributes": [],
+                    "name": "fetchStart",
+                    "timeUnixNano": 1677799478826700000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "domainLookupStart",
+                    "timeUnixNano": 1677799478826700000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "domainLookupEnd",
+                    "timeUnixNano": 1677799478826700000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "connectStart",
+                    "timeUnixNano": 1677799478826700000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "secureConnectionStart",
+                    "timeUnixNano": 1677799419498000000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "connectEnd",
+                    "timeUnixNano": 1677799478826700000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "requestStart",
+                    "timeUnixNano": 1677799478836000000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "responseStart",
+                    "timeUnixNano": 1677799478887400000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "responseEnd",
+                    "timeUnixNano": 1677799478888000000,
+                    "droppedAttributesCount": 0
+                  }
+                ],
+                "droppedEventsCount": 0,
+                "status": { "code": 0 },
+                "links": [],
+                "droppedLinksCount": 0
+              },
+              {
+                "traceId": "fb041753b5b1357698f5a3863793ba10",
+                "spanId": "0449f1ca629ef850",
+                "name": "HTTP GET",
+                "kind": 3,
+                "startTimeUnixNano": 1677799478892599800,
+                "endTimeUnixNano": 1677799478925300000,
+                "attributes": [
+                  {
+                    "key": "session_id",
+                    "value": { "stringValue": "8BjAm1K4P8" }
+                  },
+                  { "key": "component", "value": { "stringValue": "fetch" } },
+                  { "key": "http.method", "value": { "stringValue": "GET" } },
+                  {
+                    "key": "http.url",
+                    "value": {
+                      "stringValue": "http://frontendproxy.k3d.localhost:50080/api/data?contextKeys=accessories%2Ctelescopes%2Cassembly"
+                    }
+                  },
+                  { "key": "http.status_code", "value": { "intValue": 200 } },
+                  {
+                    "key": "http.status_text",
+                    "value": { "stringValue": "OK" }
+                  },
+                  {
+                    "key": "http.host",
+                    "value": {
+                      "stringValue": "frontendproxy.k3d.localhost:50080"
+                    }
+                  },
+                  { "key": "http.scheme", "value": { "stringValue": "http" } },
+                  {
+                    "key": "http.user_agent",
+                    "value": {
+                      "stringValue": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+                    }
+                  },
+                  {
+                    "key": "http.response_content_length",
+                    "value": { "intValue": 496 }
+                  }
+                ],
+                "droppedAttributesCount": 0,
+                "events": [
+                  {
+                    "attributes": [],
+                    "name": "fetchStart",
+                    "timeUnixNano": 1677799478893100000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "domainLookupStart",
+                    "timeUnixNano": 1677799478893100000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "domainLookupEnd",
+                    "timeUnixNano": 1677799478893100000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "connectStart",
+                    "timeUnixNano": 1677799478893100000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "secureConnectionStart",
+                    "timeUnixNano": 1677799419498000000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "connectEnd",
+                    "timeUnixNano": 1677799478893100000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "requestStart",
+                    "timeUnixNano": 1677799478897399800,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "responseStart",
+                    "timeUnixNano": 1677799478922700000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "responseEnd",
+                    "timeUnixNano": 1677799478923400000,
+                    "droppedAttributesCount": 0
+                  }
+                ],
+                "droppedEventsCount": 0,
+                "status": { "code": 0 },
+                "links": [],
+                "droppedLinksCount": 0
+              },
+              {
+                "traceId": "94d0bbf7ed0965661fb1cfe1f812b795",
+                "spanId": "97b77b46ab13c548",
+                "name": "HTTP GET",
+                "kind": 3,
+                "startTimeUnixNano": 1677799478824300000,
+                "endTimeUnixNano": 1677799478931200000,
+                "attributes": [
+                  {
+                    "key": "session_id",
+                    "value": { "stringValue": "8BjAm1K4P8" }
+                  },
+                  { "key": "component", "value": { "stringValue": "fetch" } },
+                  { "key": "http.method", "value": { "stringValue": "GET" } },
+                  {
+                    "key": "http.url",
+                    "value": {
+                      "stringValue": "http://frontendproxy.k3d.localhost:50080/api/recommendations?productIds=9SIQT8TOJO&sessionId=306cf2c2-6316-4703-936e-d579dd6fa6d4&currencyCode=USD"
+                    }
+                  },
+                  { "key": "http.status_code", "value": { "intValue": 200 } },
+                  {
+                    "key": "http.status_text",
+                    "value": { "stringValue": "OK" }
+                  },
+                  {
+                    "key": "http.host",
+                    "value": {
+                      "stringValue": "frontendproxy.k3d.localhost:50080"
+                    }
+                  },
+                  { "key": "http.scheme", "value": { "stringValue": "http" } },
+                  {
+                    "key": "http.user_agent",
+                    "value": {
+                      "stringValue": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+                    }
+                  },
+                  {
+                    "key": "http.response_content_length",
+                    "value": { "intValue": 1141 }
+                  },
+                  {
+                    "key": "http.response_content_length_uncompressed",
+                    "value": { "intValue": 2393 }
+                  }
+                ],
+                "droppedAttributesCount": 0,
+                "events": [
+                  {
+                    "attributes": [],
+                    "name": "fetchStart",
+                    "timeUnixNano": 1677799478824899800,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "domainLookupStart",
+                    "timeUnixNano": 1677799478824899800,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "domainLookupEnd",
+                    "timeUnixNano": 1677799478824899800,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "connectStart",
+                    "timeUnixNano": 1677799478824899800,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "secureConnectionStart",
+                    "timeUnixNano": 1677799419498000000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "connectEnd",
+                    "timeUnixNano": 1677799478824899800,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "requestStart",
+                    "timeUnixNano": 1677799478831400000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "responseStart",
+                    "timeUnixNano": 1677799478929500000,
+                    "droppedAttributesCount": 0
+                  },
+                  {
+                    "attributes": [],
+                    "name": "responseEnd",
+                    "timeUnixNano": 1677799478930000000,
+                    "droppedAttributesCount": 0
+                  }
+                ],
+                "droppedEventsCount": 0,
+                "status": { "code": 0 },
+                "links": [],
+                "droppedLinksCount": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "meta": {
+    "sdk": {
+      "name": "@grafana/faro-core",
+      "version": "1.0.0-beta3",
+      "integrations": [
+        {
+          "name": "@grafana/faro-web-sdk:instrumentation-errors",
+          "version": "1.0.0-beta3"
+        },
+        {
+          "name": "@grafana/faro-web-sdk:instrumentation-web-vitals",
+          "version": "1.0.0-beta3"
+        },
+        {
+          "name": "@grafana/faro-web-sdk:instrumentation-session",
+          "version": "1.0.32"
+        },
+        {
+          "name": "@grafana/faro-web-sdk:instrumentation-console",
+          "version": "1.0.0-beta3"
+        },
+        { "name": "@grafana/faro-web-tracing", "version": "1.0.0-beta3" }
+      ]
+    },
+    "app": { "name": "undefined", "version": "1.0.0" },
+    "browser": {
+      "name": "Chrome",
+      "version": "110.0.0.0",
+      "os": "Mac OS 10.15.7",
+      "mobile": false
+    },
+    "page": {
+      "url": "http://frontendproxy.k3d.localhost:50080/product/9SIQT8TOJO"
+    },
+    "session": { "id": "8BjAm1K4P8" }
+  }
+}
