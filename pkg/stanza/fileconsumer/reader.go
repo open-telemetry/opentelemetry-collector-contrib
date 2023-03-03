@@ -137,7 +137,7 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, t
 
 		// Stop and drop the header pipeline.
 		if err := r.headerPipeline.Stop(); err != nil {
-			r.SugaredLogger.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
+			r.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
 		}
 		r.headerPipeline = nil
 		r.headerPipelineOutput = nil
@@ -150,13 +150,13 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, t
 	newEntry.Body = string(token)
 
 	if err := firstOperator.Process(ctx, newEntry); err != nil {
-		r.SugaredLogger.Errorw("Failed to process header entry", zap.Error(err))
+		r.Errorw("Failed to process header entry", zap.Error(err))
 		return true
 	}
 
 	ent, err := r.headerPipelineOutput.WaitForEntry(ctx)
 	if err != nil {
-		r.SugaredLogger.Errorw("Error while waiting for header entry", zap.Error(err))
+		r.Errorw("Error while waiting for header entry", zap.Error(err))
 		return true
 	}
 
@@ -178,7 +178,7 @@ func (r *Reader) Close() {
 
 	if r.headerPipeline != nil {
 		if err := r.headerPipeline.Stop(); err != nil {
-			r.SugaredLogger.Errorw("Failed to stop header pipeline", zap.Error(err))
+			r.Errorw("Failed to stop header pipeline", zap.Error(err))
 		}
 	}
 }
