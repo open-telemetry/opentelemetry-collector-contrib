@@ -129,7 +129,8 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 	var logPushersUsed []cwlogs.Pusher
 
-	for _, logEvent := range logEvents {
+	for i := range logEvents {
+		logEvent := logEvents[i]
 		pusherK := pusherKey{
 			LogGroupName:  logEvent.LogGroupName,
 			LogStreamName: logEvent.LogStreamName,
@@ -158,7 +159,7 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	if len(flushErrArray) != 0 {
 		errorString := ""
 		for _, err := range flushErrArray {
-			errorString = errorString + err.Error()
+			errorString += err.Error()
 		}
 		return errors.New(errorString)
 	}
@@ -238,19 +239,19 @@ func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord, config
 	var err error
 	if config.RawLog {
 		// Check if this is an emf log
-		var emfMetadata emfMetadata
+		var metadata emfMetadata
 		bodyString := log.Body().AsString()
-		err := json.Unmarshal([]byte(bodyString), &emfMetadata)
+		err = json.Unmarshal([]byte(bodyString), &metadata)
 		// v1 emf json
-		if err == nil && emfMetadata.AWSMetadata != nil && emfMetadata.AWSMetadata.LogGroupName != "" {
-			logGroupName = emfMetadata.AWSMetadata.LogGroupName
-			if emfMetadata.AWSMetadata.LogStreamName != "" {
-				logStreamName = emfMetadata.AWSMetadata.LogStreamName
+		if err == nil && metadata.AWSMetadata != nil && metadata.AWSMetadata.LogGroupName != "" {
+			logGroupName = metadata.AWSMetadata.LogGroupName
+			if metadata.AWSMetadata.LogStreamName != "" {
+				logStreamName = metadata.AWSMetadata.LogStreamName
 			}
-		} /* v0 emf json */ else if err == nil && emfMetadata.LogGroupName != "" {
-			logGroupName = emfMetadata.LogGroupName
-			if emfMetadata.LogStreamName != "" {
-				logStreamName = emfMetadata.LogStreamName
+		} else /* v0 emf json */ if err == nil && metadata.LogGroupName != "" {
+			logGroupName = metadata.LogGroupName
+			if metadata.LogStreamName != "" {
+				logStreamName = metadata.LogStreamName
 			}
 		}
 		bodyJSON = []byte(bodyString)

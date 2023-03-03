@@ -2061,7 +2061,6 @@ github.com/signalfx/sapm-proto v0.12.0 h1:OtOe+Jm8L61Ml8K6X8a89zc8/RlaaMRElCImeG
 github.com/signalfx/sapm-proto v0.12.0/go.mod h1:wQEki8RNCYjkv19jw5aWDcmDMTQru0ckfUbgHI69U2E=
 github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e h1:ssfFrlJBWuiH6YkAaCbf9PkOtnQL87/if/2D0OougCw=
 github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e/go.mod h1:II1zi/nz5Af7ep689U012sr0HD9vRShFKaAjw39D+7g=
-github.com/sijms/go-ora/v2 v2.5.21 h1:8pfAJC6nY72uDXzD5oxP9xUoxknTuiNVg1dT1dhoHpw=
 github.com/sijms/go-ora/v2 v2.5.21/go.mod h1:EHxlY6x7y9HAsdfumurRfTd+v8NrEOTR3Xl4FWlH6xk=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
