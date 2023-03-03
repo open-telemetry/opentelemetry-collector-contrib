@@ -15,6 +15,9 @@
 package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -33,6 +36,8 @@ type Config struct {
 	Topic string `mapstructure:"topic"`
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
+	// Producer configuration of the Pulsar producer
+	Producer Producer `mapstructure:"producer"`
 	// Set the path to the trusted TLS certificate file
 	TLSTrustCertsFilePath string `mapstructure:"tls_trust_certs_file_path"`
 	// Configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
@@ -70,6 +75,22 @@ type OAuth2 struct {
 	IssuerURL string `mapstructure:"issuer_url"`
 	ClientID  string `mapstructure:"client_id"`
 	Audience  string `mapstructure:"audience"`
+}
+
+// Producer defines configuration for producer
+type Producer struct {
+	MaxReconnectToBroker            *uint         `mapstructure:"max_reconnect_broker"`
+	HashingScheme                   string        `mapstructure:"hashing_scheme"`
+	CompressionLevel                string        `mapstructure:"compression_level"`
+	CompressionType                 string        `mapstructure:"compression_type"`
+	MaxPendingMessages              int           `mapstructure:"max_pending_messages"`
+	BatcherBuilderType              string        `mapstructure:"batch_builder_type"`
+	PartitionsAutoDiscoveryInterval time.Duration `mapstructure:"partitions_auto_discovery_interval"`
+	BatchingMaxPublishDelay         time.Duration `mapstructure:"batching_max_publish_delay"`
+	BatchingMaxMessages             uint          `mapstructure:"batching_max_messages"`
+	BatchingMaxSize                 uint          `mapstructure:"batching_max_size"`
+	DisableBlockIfQueueFull         bool          `mapstructure:"disable_block_if_queue_full"`
+	DisableBatching                 bool          `mapstructure:"disable_batching"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -123,4 +144,96 @@ func (cfg *Config) clientOptions() pulsar.ClientOptions {
 	options.Authentication = cfg.auth()
 
 	return options
+}
+
+func (cfg *Config) getProducerOptions() (pulsar.ProducerOptions, error) {
+
+	producerOptions := pulsar.ProducerOptions{
+		Topic:                           cfg.Topic,
+		SendTimeout:                     cfg.Timeout,
+		DisableBatching:                 cfg.Producer.DisableBatching,
+		DisableBlockIfQueueFull:         cfg.Producer.DisableBlockIfQueueFull,
+		MaxPendingMessages:              cfg.Producer.MaxPendingMessages,
+		BatchingMaxPublishDelay:         cfg.Producer.BatchingMaxPublishDelay,
+		BatchingMaxSize:                 cfg.Producer.BatchingMaxSize,
+		BatchingMaxMessages:             cfg.Producer.BatchingMaxMessages,
+		PartitionsAutoDiscoveryInterval: cfg.Producer.PartitionsAutoDiscoveryInterval,
+		MaxReconnectToBroker:            cfg.Producer.MaxReconnectToBroker,
+	}
+
+	batchBuilderType, err := stringToBatchBuilderType(cfg.Producer.BatcherBuilderType)
+	if err != nil {
+		return producerOptions, err
+	}
+	producerOptions.BatcherBuilderType = batchBuilderType
+
+	compressionType, err := stringToCompressionType(cfg.Producer.CompressionType)
+	if err != nil {
+		return producerOptions, err
+	}
+	producerOptions.CompressionType = compressionType
+
+	compressionLevel, err := stringToCompressionLevel(cfg.Producer.CompressionLevel)
+	if err != nil {
+		return producerOptions, err
+	}
+	producerOptions.CompressionLevel = compressionLevel
+
+	hashingScheme, err := stringToHashingScheme(cfg.Producer.HashingScheme)
+	if err != nil {
+		return producerOptions, err
+	}
+	producerOptions.HashingScheme = hashingScheme
+
+	return producerOptions, nil
+}
+
+func stringToBatchBuilderType(builderType string) (pulsar.BatcherBuilderType, error) {
+	switch builderType {
+	case "default":
+		return pulsar.DefaultBatchBuilder, nil
+	case "key_based":
+		return pulsar.KeyBasedBatchBuilder, nil
+	default:
+		return pulsar.DefaultBatchBuilder, fmt.Errorf("producer.batchBuilderType should be one of 'default' or 'key_based'. configured value %v. Assigning default value as default", builderType)
+	}
+}
+
+func stringToCompressionType(compressionType string) (pulsar.CompressionType, error) {
+	switch compressionType {
+	case "none":
+		return pulsar.NoCompression, nil
+	case "lz4":
+		return pulsar.LZ4, nil
+	case "zlib":
+		return pulsar.ZLib, nil
+	case "zstd":
+		return pulsar.ZSTD, nil
+	default:
+		return pulsar.NoCompression, fmt.Errorf("producer.compressionType should be one of 'none', 'lz4', 'zlib', or 'zstd'. configured value %v. Assigning default value as none", compressionType)
+	}
+}
+
+func stringToCompressionLevel(compressionLevel string) (pulsar.CompressionLevel, error) {
+	switch compressionLevel {
+	case "default":
+		return pulsar.Default, nil
+	case "faster":
+		return pulsar.Faster, nil
+	case "better":
+		return pulsar.Better, nil
+	default:
+		return pulsar.Default, fmt.Errorf("producer.compressionLevel should be one of 'default', 'faster', or 'better'. configured value %v. Assigning default value as default", compressionLevel)
+	}
+}
+
+func stringToHashingScheme(hashingScheme string) (pulsar.HashingScheme, error) {
+	switch hashingScheme {
+	case "java_string_hash":
+		return pulsar.JavaStringHash, nil
+	case "murmur3_32hash":
+		return pulsar.Murmur3_32Hash, nil
+	default:
+		return pulsar.JavaStringHash, fmt.Errorf("producer.hashingScheme should be one of 'java_string_hash' or 'murmur3_32hash'. configured value %v, Assigning default value as java_string_hash", hashingScheme)
+	}
 }
