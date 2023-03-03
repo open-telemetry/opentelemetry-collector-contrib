@@ -164,7 +164,9 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		r.Fingerprint = fp
 	}
 
-	if b.headerSettings != nil {
+	// Create the header pipeline if we need it
+	// (if we are doing header parsing (headerSettings != nil), and if the header is not yet finalized)
+	if b.headerSettings != nil && !b.headerFinalized {
 		outOp := newHeaderPipelineOutput(b.SugaredLogger)
 		p, err := pipeline.Config{
 			Operators:     b.headerSettings.config.MetadataOperators,
