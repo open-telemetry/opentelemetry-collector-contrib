@@ -5,10 +5,10 @@ go 1.19
 require (
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/tinylib/msgp v1.1.8
-	go.opentelemetry.io/collector v0.72.0
-	go.opentelemetry.io/collector/component v0.72.0
-	go.opentelemetry.io/collector/consumer v0.72.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc6
+	go.opentelemetry.io/collector v0.72.1-0.20230303004618-4a6ebc82b8e3
+	go.opentelemetry.io/collector/component v0.72.1-0.20230303004618-4a6ebc82b8e3
+	go.opentelemetry.io/collector/consumer v0.72.1-0.20230303004618-4a6ebc82b8e3
+	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230303004618-4a6ebc82b8e3
 )
 
 require (
@@ -32,8 +32,9 @@ require (
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/rs/cors v1.8.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.72.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.72.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.72.1-0.20230303004618-4a6ebc82b8e3 // indirect
+	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230303004618-4a6ebc82b8e3 // indirect
+	go.opentelemetry.io/collector/receiver v0.0.0-20230302200458-4071a47d0ee3 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.39.0 // indirect
 	go.opentelemetry.io/otel v1.13.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect
