@@ -952,7 +952,7 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	fp, err := operator.readerFactory.newFingerprint(temp)
 	require.NoError(t, err)
 
-	reader, err := operator.readerFactory.newReader(tempCopy, fp, nil, nil)
+	reader, err := operator.readerFactory.newReader(tempCopy, fp)
 	require.NoError(t, err)
 	defer reader.Close()
 
@@ -995,7 +995,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, []byte(""), fp.FirstBytes)
 
-			reader, err := operator.readerFactory.newReader(tempCopy, fp, nil, nil)
+			reader, err := operator.readerFactory.newReader(tempCopy, fp)
 			require.NoError(t, err)
 			defer reader.Close()
 
@@ -1058,7 +1058,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, []byte(""), fp.FirstBytes)
 
-			reader, err := operator.readerFactory.newReader(tempCopy, fp, nil, nil)
+			reader, err := operator.readerFactory.newReader(tempCopy, fp)
 			require.NoError(t, err)
 			defer reader.Close()
 
@@ -1425,9 +1425,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.Less(t, reader.Offset, int64(longFileSize))
 }
 
-// TestReadExistingLogsWithHeader tests that, when starting from beginning, we
-// read all the lines that are already there, and parses the headers
-func TestReadExistingLogsWithHeaderStartEnd(t *testing.T) {
+func TestHeaderPersistance(t *testing.T) {
 	require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), true))
 	t.Cleanup(func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), false))
@@ -1435,24 +1433,81 @@ func TestReadExistingLogsWithHeaderStartEnd(t *testing.T) {
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "end"
+	cfg.StartAt = "beginning"
 	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
 
-	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewUnscopedMockPersister()
+	op1, emitCalls1 := buildTestManager(t, cfg)
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
-	writeString(t, temp, "#headerField: headerValue\nskipped log line\n")
+	writeString(t, temp, "#headerField: headerValue\nlog line\n")
 
-	operator.poll(context.Background())
+	persister := testutil.NewUnscopedMockPersister()
+	require.NoError(t, op1.Start(persister))
 
-	writeString(t, temp, "new log line\n")
-
-	operator.poll(context.Background())
-
-	waitForTokenHeaderAttributes(t, emitCalls, []byte("new log line"), map[string]any{
+	waitForTokenHeaderAttributes(t, emitCalls1, []byte("log line"), map[string]any{
 		"header_key":   "headerField",
 		"header_value": "headerValue",
 	})
+
+	require.NoError(t, op1.Stop())
+
+	writeString(t, temp, "log line 2\n")
+
+	op2, emitCalls2 := buildTestManager(t, cfg)
+
+	require.NoError(t, op2.Start(persister))
+
+	waitForTokenHeaderAttributes(t, emitCalls2, []byte("log line 2"), map[string]any{
+		"header_key":   "headerField",
+		"header_value": "headerValue",
+	})
+
+	require.NoError(t, op2.Stop())
+
+}
+
+func TestHeaderPersistanceInHeader(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), false))
+	})
+
+	tempDir := t.TempDir()
+	cfg1 := NewConfig().includeDir(tempDir)
+	cfg1.StartAt = "beginning"
+	cfg1 = cfg1.withHeader("^#", "headerField1: (?P<header_value_1>[A-z0-9]+)")
+
+	op1, _ := buildTestManager(t, cfg1)
+
+	// Create a file, then start
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "#headerField1: headerValue1\n")
+
+	persister := testutil.NewUnscopedMockPersister()
+	require.NoError(t, op1.Start(persister))
+
+	// The operator will poll at fixed time intervals, but we just want to make sure at least
+	// one poll operation occurs between now and when we stop.
+	op1.poll(context.Background())
+
+	require.NoError(t, op1.Stop())
+
+	writeString(t, temp, "#headerField2: headerValue2\nlog line\n")
+
+	cfg2 := NewConfig().includeDir(tempDir)
+	cfg2.StartAt = "beginning"
+	cfg2 = cfg2.withHeader("^#", "headerField2: (?P<header_value_2>[A-z0-9]+)")
+
+	op2, emitCalls := buildTestManager(t, cfg2)
+
+	require.NoError(t, op2.Start(persister))
+
+	waitForTokenHeaderAttributes(t, emitCalls, []byte("log line"), map[string]any{
+		"header_value_1": "headerValue1",
+		"header_value_2": "headerValue2",
+	})
+
+	require.NoError(t, op2.Stop())
+
 }

@@ -20,10 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"regexp"
 
-	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -38,10 +36,6 @@ const headerPipelineOutputType = "header_log_emitter"
 type HeaderConfig struct {
 	Pattern           string            `mapstructure:"pattern"`
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
-
-	// these are set by the "build" function
-	matchRegex *regexp.Regexp
-	splitFunc  bufio.SplitFunc
 }
 
 // validate returns an error describing why the configuration is invalid, or nil if the configuration is valid.
@@ -84,156 +78,32 @@ func (hc *HeaderConfig) validate() error {
 	return nil
 }
 
-func (hc *HeaderConfig) build(enc encoding.Encoding) error {
+func (hc *HeaderConfig) buildHeaderSettings(enc encoding.Encoding) (*headerSettings, error) {
 	var err error
-	hc.matchRegex, err = regexp.Compile(hc.Pattern)
+	matchRegex, err := regexp.Compile(hc.Pattern)
 	if err != nil {
-		return fmt.Errorf("failed to compile `pattern`: %w", err)
+		return nil, fmt.Errorf("failed to compile `pattern`: %w", err)
 	}
 
-	hc.splitFunc, err = helper.NewNewlineSplitFunc(enc, false, func(b []byte) []byte {
+	splitFunc, err := helper.NewNewlineSplitFunc(enc, false, func(b []byte) []byte {
 		return bytes.Trim(b, "\r\n")
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create split func: %w", err)
+		return nil, fmt.Errorf("failed to create split func: %w", err)
 	}
 
-	return nil
-}
-
-// buildHeader builds a header struct from the header config.
-func (hc *HeaderConfig) buildHeader(logger *zap.SugaredLogger) (*header, error) {
-	outOp := newHeaderPipelineOutput(logger)
-	p, err := pipeline.Config{
-		Operators:     hc.MetadataOperators,
-		DefaultOutput: outOp,
-	}.Build(logger)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to build pipeline: %w", err)
-	}
-
-	if err := p.Start(storage.NewNopClient()); err != nil {
-		return nil, fmt.Errorf("failed to start header pipeline: %w", err)
-	}
-
-	return &header{
-		config:               hc,
-		logger:               logger,
-		outputOperator:       outOp,
-		headerPipeline:       p,
-		attributesFromHeader: map[string]any{},
+	return &headerSettings{
+		matchRegex: matchRegex,
+		splitFunc:  splitFunc,
+		config:     hc,
 	}, nil
 }
 
-type header struct {
-	config *HeaderConfig
-	logger *zap.SugaredLogger
-
-	finalized            bool
-	attributesFromHeader map[string]any
-	offset               int64
-
-	headerPipeline pipeline.Pipeline
-	outputOperator *headerPipelineOutput
-}
-
-// ReadHeader attempts to read the header from the given file. If the header is completed, fileAttributes will
-// have its HeaderAttributes field set to the resultant header attributes.
-func (h *header) ReadHeader(ctx context.Context, f io.ReadSeeker, maxLineSize int, enc helper.Encoding, fileAttributes *FileAttributes) {
-	if h.finalized {
-		return
-	}
-
-	// Seek to the end of the last read header line
-	if _, err := f.Seek(h.offset, io.SeekStart); err != nil {
-		h.logger.Errorw("Failed to seek", zap.Error(err))
-		return
-	}
-
-	scanner := NewPositionalScanner(f, maxLineSize, h.offset, h.config.splitFunc)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-
-		ok := scanner.Scan()
-		if !ok {
-			if err := scanner.getError(); err != nil {
-				h.logger.Errorw("Failed during header scan", zap.Error(err))
-				h.offset = scanner.Pos()
-			}
-			break
-		}
-
-		b := scanner.Bytes()
-		line, err := enc.Decode(b)
-		if err != nil {
-			h.logger.Errorw("Failed to decode header bytes", zap.Error(err))
-			h.offset = scanner.Pos()
-			continue
-		}
-
-		// If the regex doesn't match, we've reached the end of the header, so we'll finalize.
-		if !h.config.matchRegex.Match(line) {
-			h.finalizeHeader(fileAttributes)
-			return
-		}
-
-		if err := h.processHeaderLine(ctx, line); err != nil {
-			h.logger.Errorw("Failed to process header line", zap.Error(err))
-		}
-		h.offset = scanner.Pos()
-	}
-}
-
-// finalizeHeader marks the header as completely read, and adds the resultant attributes to the FileAttributes.
-func (h *header) finalizeHeader(fileAttributes *FileAttributes) {
-	h.finalized = true
-	fileAttributes.HeaderAttributes = h.attributesFromHeader
-}
-
-// processHeaderLine processes a header line, upserting entries from the line into the header attributes
-func (h *header) processHeaderLine(ctx context.Context, line []byte) error {
-	firstOperator := h.headerPipeline.Operators()[0]
-
-	newEntry := entry.New()
-	newEntry.Body = string(line)
-
-	if err := firstOperator.Process(ctx, newEntry); err != nil {
-		return fmt.Errorf("failed to process header entry: %w", err)
-	}
-
-	ent, err := h.outputOperator.WaitForEntry(ctx)
-	if err != nil {
-		return fmt.Errorf("got error while waiting for header entry: %w", err)
-	}
-
-	// Copy resultant attributes over current set of attributes (upsert)
-	for k, v := range ent.Attributes {
-		h.attributesFromHeader[k] = v
-	}
-
-	return nil
-}
-
-func (h *header) Shutdown() error {
-	return h.headerPipeline.Stop()
-}
-
-// Finalized returns true if the header is "finalized", meaning the header has been completely
-// read and processed.
-func (h header) Finalized() bool {
-	return h.finalized
-}
-
-// Offset returns the current offset into the file that the header has been read.
-// if Finalized is true, this offset indicates where the header ends for the current file.
-func (h header) Offset() int64 {
-	return h.offset
+// headerSettings contains compiled objects defined by a HeaderConfig
+type headerSettings struct {
+	matchRegex *regexp.Regexp
+	splitFunc  bufio.SplitFunc
+	config     *HeaderConfig
 }
 
 // headerPipelineOutput is a stanza operator that emits log entries to a channel

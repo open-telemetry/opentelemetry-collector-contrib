@@ -18,12 +18,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"os"
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 type readerConfig struct {
@@ -45,7 +46,13 @@ type Reader struct {
 	file           *os.File
 	fileAttributes *FileAttributes
 	eof            bool
-	header         *header
+
+	HeaderFinalized  bool
+	HeaderAttributes map[string]any
+
+	headerSettings       *headerSettings
+	headerPipeline       pipeline.Pipeline
+	headerPipelineOutput *headerPipelineOutput
 }
 
 // offsetToEnd sets the starting offset
@@ -60,34 +67,12 @@ func (r *Reader) offsetToEnd() error {
 
 // ReadToEnd will read until the end of the file
 func (r *Reader) ReadToEnd(ctx context.Context) {
-	// read through the fingerprintReader in order to update the fingerprint as we read.
-	fpr := &fingerprintReader{
-		offset:          r.Offset,
-		fingerprintSize: r.fingerprintSize,
-		file:            r.file,
-		fingerprint:     r.Fingerprint,
-	}
-
-	if r.header != nil && !r.header.Finalized() {
-		r.header.ReadHeader(ctx, fpr, r.maxLogSize, r.encoding, r.fileAttributes)
-		// Don't read log entries if the header has not yet been finalized
-		// (we are still waiting for the full header to be read).
-		if !r.header.Finalized() {
-			return
-		}
-
-		// Set r to the end of the headers if our current offset is within the header
-		if r.Offset < r.header.Offset() {
-			r.Offset = r.header.Offset()
-		}
-	}
-
-	if _, err := fpr.Seek(r.Offset, 0); err != nil {
+	if _, err := r.file.Seek(r.Offset, 0); err != nil {
 		r.Errorw("Failed to seek", zap.Error(err))
 		return
 	}
 
-	scanner := NewPositionalScanner(fpr, r.maxLogSize, r.Offset, r.splitFunc)
+	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.curSplitFunc())
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -111,12 +96,91 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		token, err := r.encoding.Decode(scanner.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
+		} else if r.headerSettings != nil && !r.HeaderFinalized {
+			r.headerEmitFunc(ctx, r.fileAttributes, token)
+			if r.HeaderFinalized {
+				// recreate the scanner with the log-line's split func.
+				// We do not use the updated offset from the scanner,
+				// as the log line we just used could be multiline
+				if _, err := r.file.Seek(r.Offset, 0); err != nil {
+					r.Errorw("Failed to seek post-header", zap.Error(err))
+					return
+				}
+
+				scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.curSplitFunc())
+			}
 		} else {
 			r.emit(ctx, r.fileAttributes, token)
 		}
 
 		r.Offset = scanner.Pos()
 	}
+}
+
+func (r *Reader) curSplitFunc() bufio.SplitFunc {
+	if r.headerSettings != nil && !r.HeaderFinalized {
+		return r.headerSettings.splitFunc
+	}
+
+	return r.splitFunc
+}
+
+func (r *Reader) headerEmitFunc(ctx context.Context, attrs *FileAttributes, token []byte) {
+	if !r.headerSettings.matchRegex.Match(token) {
+		r.HeaderFinalized = true
+		attrs.HeaderAttributes = r.HeaderAttributes
+
+		if err := r.headerPipeline.Stop(); err != nil {
+			r.SugaredLogger.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
+		}
+		r.headerPipeline = nil
+		r.headerPipelineOutput = nil
+		return
+	}
+
+	firstOperator := r.headerPipeline.Operators()[0]
+
+	newEntry := entry.New()
+	newEntry.Body = string(token)
+
+	if err := firstOperator.Process(ctx, newEntry); err != nil {
+		r.SugaredLogger.Errorw("Failed to process header entry", zap.Error(err))
+		return
+	}
+
+	ent, err := r.headerPipelineOutput.WaitForEntry(ctx)
+	if err != nil {
+		r.SugaredLogger.Errorw("Error while waiting for header entry", zap.Error(err))
+		return
+	}
+
+	// Copy resultant attributes over current set of attributes (upsert)
+	for k, v := range ent.Attributes {
+		r.HeaderAttributes[k] = v
+	}
+
+}
+
+// Read from the file and update the fingerprint if necessary
+func (r *Reader) Read(dst []byte) (int, error) {
+	// Skip if fingerprint is already built
+	// or if fingerprint is behind Offset
+	if len(r.Fingerprint.FirstBytes) == r.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
+		n, err := r.file.Read(dst)
+		return n, err
+	}
+
+	n, err := r.file.Read(dst)
+	appendCount := min0(n, r.fingerprintSize-int(r.Offset))
+
+	// return for n == 0 or r.Offset >= r.fileInput.fingerprintSize
+	if appendCount == 0 {
+		return n, err
+	}
+
+	// for appendCount==0, the following code would add `0` to fingerprint
+	r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
+	return n, err
 }
 
 // Close will close the file
@@ -127,9 +191,9 @@ func (r *Reader) Close() {
 		}
 	}
 
-	if r.header != nil {
-		if err := r.header.Shutdown(); err != nil {
-			r.Warnw("Problem shutting down header pipeline", zap.Error(err))
+	if r.headerPipeline != nil {
+		if err := r.headerPipeline.Stop(); err != nil {
+			r.SugaredLogger.Errorw("Failed to stop header pipeline", zap.Error(err))
 		}
 	}
 }
@@ -142,49 +206,4 @@ func min0(a, b int) int {
 		return a
 	}
 	return b
-}
-
-// fingerprintReader is an io.ReadSeeker that updates it's fingerprint as it reads.
-type fingerprintReader struct {
-	fingerprint     *Fingerprint
-	fingerprintSize int
-	file            *os.File
-	offset          int64
-}
-
-// Read from the file and update the fingerprint if necessary
-func (f *fingerprintReader) Read(dst []byte) (int, error) {
-	// Skip if fingerprint is already built
-	// or if fingerprint is behind Offset
-	if len(f.fingerprint.FirstBytes) == f.fingerprintSize || int(f.offset) > len(f.fingerprint.FirstBytes) {
-		n, err := f.file.Read(dst)
-		f.offset += int64(n)
-		return n, err
-	}
-
-	n, err := f.file.Read(dst)
-	appendCount := min0(n, f.fingerprintSize-int(f.offset))
-
-	// return for n == 0 or r.Offset >= r.fileInput.fingerprintSize
-	if appendCount == 0 {
-		f.offset += int64(n)
-		return n, err
-	}
-
-	// for appendCount==0, the following code would add `0` to fingerprint
-	f.fingerprint.FirstBytes = append(f.fingerprint.FirstBytes[:f.offset], dst[:appendCount]...)
-
-	f.offset += int64(n)
-	return n, err
-}
-
-func (f *fingerprintReader) Seek(offset int64, whence int) (int64, error) {
-	if whence != io.SeekStart {
-		return 0, fmt.Errorf("cannot seek with whence (%d)", whence)
-	}
-
-	n, err := f.file.Seek(offset, whence)
-	f.offset = n
-
-	return n, err
 }

@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -187,14 +186,13 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	}.Build()
 	require.NoError(t, err)
 
-	require.NoError(t, headerConf.build(enc.Encoding))
-
-	h, err := headerConf.buildHeader(zaptest.NewLogger(t).Sugar())
+	h, err := headerConf.buildHeaderSettings(enc.Encoding)
 	require.NoError(t, err)
+	f.headerSettings = h
 
 	temp := openTemp(t, t.TempDir())
 
-	r, err := f.newReaderBuilder().withFile(temp).withHeader(h).build()
+	r, err := f.newReaderBuilder().withFile(temp).build()
 	require.NoError(t, err)
 
 	_, err = temp.Write(fileContent)

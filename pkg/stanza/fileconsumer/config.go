@@ -101,17 +101,6 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 		return nil, err
 	}
 
-	if c.Header != nil {
-		enc, err := c.Splitter.EncodingConfig.Build()
-		if err != nil {
-			return nil, fmt.Errorf("failed to create encoding: %w", err)
-		}
-
-		if err := c.Header.build(enc.Encoding); err != nil {
-			return nil, fmt.Errorf("failed to build header config: %w", err)
-		}
-	}
-
 	return c.buildManager(logger, emit, factory)
 }
 
@@ -148,6 +137,20 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 	default:
 		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
 	}
+
+	var hs *headerSettings
+	if c.Header != nil {
+		enc, err := c.Splitter.EncodingConfig.Build()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create encoding: %w", err)
+		}
+
+		hs, err = c.Header.buildHeaderSettings(enc.Encoding)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build header config: %w", err)
+		}
+	}
+
 	return &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
@@ -161,6 +164,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 			fromBeginning:   startAtBeginning,
 			splitterFactory: factory,
 			encodingConfig:  c.Splitter.EncodingConfig,
+			headerSettings:  hs,
 		},
 		finder:          c.Finder,
 		roller:          newRoller(),
@@ -170,7 +174,6 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		deleteAfterRead: c.DeleteAfterRead,
 		knownFiles:      make([]*Reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
-		headerConfig:    c.Header,
 	}, nil
 }
 
@@ -209,6 +212,10 @@ func (c Config) validate() error {
 
 	if c.DeleteAfterRead && c.StartAt == "end" {
 		return fmt.Errorf("`delete_after_read` cannot be used with `start_at: end`")
+	}
+
+	if c.Header != nil && c.StartAt == "end" {
+		return fmt.Errorf("`header` cannot be specified with `start_at: end`")
 	}
 
 	if c.MaxBatches < 0 {

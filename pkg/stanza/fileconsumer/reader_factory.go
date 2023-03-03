@@ -19,10 +19,11 @@ import (
 	"fmt"
 	"os"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 type readerFactory struct {
@@ -31,23 +32,14 @@ type readerFactory struct {
 	fromBeginning   bool
 	splitterFactory splitterFactory
 	encodingConfig  helper.EncodingConfig
+	headerSettings  *headerSettings
 }
 
-func (f *readerFactory) newReader(file *os.File, fp *Fingerprint, persister operator.Persister, hc *HeaderConfig) (*Reader, error) {
-	rb := f.newReaderBuilder().
+func (f *readerFactory) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
+	return f.newReaderBuilder().
 		withFile(file).
-		withFingerprint(fp)
-
-	if hc != nil {
-		h, err := hc.buildHeader(f.SugaredLogger)
-		if err != nil {
-			return nil, fmt.Errorf("failed to build header metadata manager: %w", err)
-		}
-
-		rb.withHeader(h)
-	}
-
-	return rb.build()
+		withFingerprint(fp).
+		build()
 }
 
 // copy creates a deep copy of a Reader
@@ -57,7 +49,9 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 		withFingerprint(old.Fingerprint.Copy()).
 		withOffset(old.Offset).
 		withSplitterFunc(old.splitFunc).
-		withHeader(old.header).
+		// TODO: Copy header attributes map
+		withHeaderAttributes(old.HeaderAttributes).
+		withHeaderFinalized(old.HeaderFinalized).
 		build()
 }
 
@@ -71,11 +65,12 @@ func (f *readerFactory) newFingerprint(file *os.File) (*Fingerprint, error) {
 
 type readerBuilder struct {
 	*readerFactory
-	file      *os.File
-	fp        *Fingerprint
-	offset    int64
-	splitFunc bufio.SplitFunc
-	header    *header
+	file             *os.File
+	fp               *Fingerprint
+	offset           int64
+	splitFunc        bufio.SplitFunc
+	headerFinalized  bool
+	headerAttributes map[string]any
 }
 
 func (f *readerFactory) newReaderBuilder() *readerBuilder {
@@ -102,16 +97,27 @@ func (b *readerBuilder) withOffset(offset int64) *readerBuilder {
 	return b
 }
 
-func (b *readerBuilder) withHeader(h *header) *readerBuilder {
-	b.header = h
+func (b *readerBuilder) withHeaderFinalized(finalized bool) *readerBuilder {
+	b.headerFinalized = finalized
+	return b
+}
+
+func (b *readerBuilder) withHeaderAttributes(attrs map[string]any) *readerBuilder {
+	b.headerAttributes = attrs
 	return b
 }
 
 func (b *readerBuilder) build() (r *Reader, err error) {
 	r = &Reader{
-		readerConfig: b.readerConfig,
-		Offset:       b.offset,
-		header:       b.header,
+		readerConfig:     b.readerConfig,
+		Offset:           b.offset,
+		headerSettings:   b.headerSettings,
+		HeaderFinalized:  b.headerFinalized,
+		HeaderAttributes: b.headerAttributes,
+	}
+
+	if r.HeaderAttributes == nil {
+		r.HeaderAttributes = map[string]any{}
 	}
 
 	if b.splitFunc != nil {
@@ -137,17 +143,14 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 			b.Errorf("resolve attributes: %w", err)
 		}
 
-		// Copy header attributes to new fileAttributes if the header has been finalized
-		if b.header != nil && b.header.Finalized() {
-			r.fileAttributes.HeaderAttributes = b.header.attributesFromHeader
-		}
-
 		// unsafeReader has the file set to nil, so don't try emending its offset.
 		if !b.fromBeginning {
 			if err := r.offsetToEnd(); err != nil {
 				return nil, err
 			}
 		}
+
+		r.fileAttributes.HeaderAttributes = r.HeaderAttributes
 	} else {
 		r.SugaredLogger = b.SugaredLogger.With("path", "uninitialized")
 	}
@@ -160,6 +163,25 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 			return nil, err
 		}
 		r.Fingerprint = fp
+	}
+
+	if b.headerSettings != nil {
+		outOp := newHeaderPipelineOutput(b.SugaredLogger)
+		p, err := pipeline.Config{
+			Operators:     b.headerSettings.config.MetadataOperators,
+			DefaultOutput: outOp,
+		}.Build(b.SugaredLogger)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to build pipeline: %w", err)
+		}
+
+		if err := p.Start(storage.NewNopClient()); err != nil {
+			return nil, fmt.Errorf("failed to start header pipeline: %w", err)
+		}
+
+		r.headerPipeline = p
+		r.headerPipelineOutput = outOp
 	}
 
 	return r, nil

@@ -71,7 +71,7 @@ Other less common encodings are supported on a best-effort basis. See [https://w
 
 ### Header Metadata Parsing
 
-To enable header metadata parsing, the `filelog.allowHeaderMetadataParsing` feature gate must be set.
+To enable header metadata parsing, the `filelog.allowHeaderMetadataParsing` feature gate must be set, and `start_at` must be `beginning`.
 
 If set, the file input operator will attempt to read a header from the start of the file. Each header line must match the `header.pattern` pattern. Each line is emitted into a pipeline defined by `header.metadata_operators`. Any attributes on the resultant entry from the embedded pipeline will be merged with the attributes from previous lines (attribute collisions will be resolved with an upsert strategy). After all header lines are read, the final merged header attributes will be present on every log line that is emitted for the file.
 
