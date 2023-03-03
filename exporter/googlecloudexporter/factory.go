@@ -54,9 +54,11 @@ func NewFactory() exporter.Factory {
 
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
+	retrySettings := exporterhelper.NewDefaultRetrySettings()
+	retrySettings.Enabled = false
 	return &Config{
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		RetrySettings:   retrySettings,
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		Config:          collector.DefaultConfig(),
 	}

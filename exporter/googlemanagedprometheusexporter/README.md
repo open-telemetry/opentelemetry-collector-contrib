@@ -20,7 +20,7 @@ The following configuration options are supported:
   - `endpoint` (optional): Endpoint where metric data is going to be sent to. Replaces `endpoint`.
 - `use_insecure` (optional): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
-  - `enabled` (default = true)
+  - `enabled` (default = false)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
   - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
   - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
