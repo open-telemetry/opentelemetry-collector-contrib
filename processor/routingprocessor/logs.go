@@ -16,6 +16,7 @@ package routingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -26,7 +27,6 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
@@ -106,8 +106,12 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, ltx)
-			if err != nil && p.config.ErrorMode == ottl.PropagateError {
-				return err
+			if err != nil {
+				if p.config.ErrorMode == ottl.PropagateError {
+					return err
+				}
+				p.group("", groups, p.router.defaultExporters, rlogs)
+				continue
 			}
 			if !isMatch {
 				matchCount--

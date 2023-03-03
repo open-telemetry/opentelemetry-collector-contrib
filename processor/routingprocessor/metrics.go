@@ -108,8 +108,12 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, mtx)
-			if err != nil && p.config.ErrorMode == ottl.PropagateError {
-				return err
+			if err != nil {
+				if p.config.ErrorMode == ottl.PropagateError {
+					return err
+				}
+				p.group("", groups, p.router.defaultExporters, rmetrics)
+				continue
 			}
 			if !isMatch {
 				matchCount--
