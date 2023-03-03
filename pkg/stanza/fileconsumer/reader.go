@@ -168,6 +168,21 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, t
 	return true
 }
 
+// Close will close the file
+func (r *Reader) Close() {
+	if r.file != nil {
+		if err := r.file.Close(); err != nil {
+			r.Debugw("Problem closing reader", zap.Error(err))
+		}
+	}
+
+	if r.headerPipeline != nil {
+		if err := r.headerPipeline.Stop(); err != nil {
+			r.SugaredLogger.Errorw("Failed to stop header pipeline", zap.Error(err))
+		}
+	}
+}
+
 // Read from the file and update the fingerprint if necessary
 func (r *Reader) Read(dst []byte) (int, error) {
 	// Skip if fingerprint is already built
@@ -185,21 +200,6 @@ func (r *Reader) Read(dst []byte) (int, error) {
 	// for appendCount==0, the following code would add `0` to fingerprint
 	r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
 	return n, err
-}
-
-// Close will close the file
-func (r *Reader) Close() {
-	if r.file != nil {
-		if err := r.file.Close(); err != nil {
-			r.Debugw("Problem closing reader", zap.Error(err))
-		}
-	}
-
-	if r.headerPipeline != nil {
-		if err := r.headerPipeline.Stop(); err != nil {
-			r.SugaredLogger.Errorw("Failed to stop header pipeline", zap.Error(err))
-		}
-	}
 }
 
 func min0(a, b int) int {
