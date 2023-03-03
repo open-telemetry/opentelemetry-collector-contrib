@@ -50,6 +50,7 @@ type Reader struct {
 	eof            bool
 
 	HeaderFinalized bool
+	recreateScanner bool
 
 	headerSettings       *headerSettings
 	headerPipeline       pipeline.Pipeline
@@ -94,7 +95,6 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
-		var prevHeaderFinalized = r.HeaderFinalized
 		token, err := r.encoding.Decode(scanner.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
@@ -102,8 +102,8 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			r.processFunc(ctx, r.FileAttributes, token)
 		}
 
-		if !prevHeaderFinalized && r.HeaderFinalized {
-			// The header finalized with the last processFunc call;
+		if r.recreateScanner {
+			r.recreateScanner = false
 			// recreate the scanner with the log-line's split func.
 			// We do not use the updated offset from the scanner,
 			// as the log line we just read could be multiline, and would be
@@ -138,6 +138,8 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, t
 		// Use the line split func instead of the header split func
 		r.splitFunc = r.lineSplitFunc
 		r.processFunc = r.emit
+		// Mark that we should recreate the scanner, since we changed the split function
+		r.recreateScanner = true
 		return
 	}
 
