@@ -113,10 +113,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		if cfg.Histogram.Exponential.MaxSize == 0 {
 			maxSize = structure.DefaultMaxSize
 		}
-		histograms = &metrics.ExponentialHistogramMetrics{
-			Metrics: make(map[metrics.Key]*metrics.ExponentialHistogram),
-			MaxSize: maxSize,
-		}
+		histograms = metrics.NewExponentialHistogramMetrics(maxSize)
 	} else {
 		bounds := defaultHistogramBucketsMs
 		// TODO remove deprecated `latency_histogram_buckets`
@@ -128,11 +125,9 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
 			bounds = mapDurationsToMillis(cfg.Histogram.Explicit.Buckets)
 		}
-		histograms = &metrics.ExplicitHistogramMetrics{
-			Metrics: make(map[metrics.Key]*metrics.ExplicitHistogram),
-			Bounds:  bounds,
-		}
+		histograms = metrics.NewExplicitHistogramMetrics(bounds)
 	}
+
 	sums := metrics.SumMetrics{
 		Metrics: make(map[metrics.Key]*metrics.Sum),
 	}

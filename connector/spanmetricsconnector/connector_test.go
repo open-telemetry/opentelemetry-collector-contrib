@@ -41,7 +41,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
-	. "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/mocks"
 )
 
@@ -336,18 +336,12 @@ func initSpan(span span, s ptrace.Span) {
 	s.SetSpanID(pcommon.SpanID([8]byte{byte(42)}))
 }
 
-func initExplicitHistograms() HistogramMetrics {
-	return &ExplicitHistogramMetrics{
-		Metrics: make(map[Key]*ExplicitHistogram),
-		Bounds:  defaultHistogramBucketsMs,
-	}
+func initExplicitHistograms() metrics.HistogramMetrics {
+	return metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs)
 }
 
-func initExponentialHistograms() HistogramMetrics {
-	return &ExponentialHistogramMetrics{
-		Metrics: make(map[Key]*ExponentialHistogram),
-		MaxSize: 10,
-	}
+func initExponentialHistograms() metrics.HistogramMetrics {
+	return metrics.NewExponentialHistogramMetrics(10)
 }
 
 func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
@@ -365,8 +359,8 @@ func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 	k1 := c.buildKey("a", span1, nil, pcommon.NewMap())
 
 	assert.NotEqual(t, k0, k1)
-	assert.Equal(t, Key("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
-	assert.Equal(t, Key("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
+	assert.Equal(t, metrics.Key("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
+	assert.Equal(t, metrics.Key("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
 }
 
 func TestBuildKeyWithDimensions(t *testing.T) {
@@ -442,7 +436,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
 			key := c.buildKey("ab", span0, tc.optionalDims, resAttr)
-			assert.Equal(t, Key(tc.wantKey), key)
+			assert.Equal(t, metrics.Key(tc.wantKey), key)
 		})
 	}
 }
@@ -505,51 +499,6 @@ func TestConcurrentShutdown(t *testing.T) {
 	// Shutting down spanmetricsconnector...
 	// Stopping ticker.
 	assert.Len(t, allLogs, 3)
-}
-
-func TestConfigureLatencyBounds(t *testing.T) {
-	// Prepare
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Histogram.Explicit = &ExplicitHistogramConfig{
-		Buckets: []time.Duration{
-			3 * time.Nanosecond,
-			3 * time.Microsecond,
-			3 * time.Millisecond,
-			3 * time.Second,
-		},
-	}
-
-	// Test
-	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	c.metricsConsumer = new(consumertest.MetricsSink)
-
-	// Verify
-	assert.NoError(t, err)
-	assert.NotNil(t, c)
-	assert.Equal(
-		t,
-		[]float64{0.000003, 0.003, 3, 3000},
-		c.histograms.(*ExplicitHistogramMetrics).Bounds,
-	)
-}
-
-func TestConfigureMaxBuckets(t *testing.T) {
-	// Prepare
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Histogram.Exponential = &ExponentialHistogramConfig{
-		MaxSize: 10,
-	}
-
-	// Test
-	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	c.metricsConsumer = new(consumertest.MetricsSink)
-
-	// Verify
-	assert.NoError(t, err)
-	assert.NotNil(t, c)
-	assert.Equal(t, int32(10), c.histograms.(*ExponentialHistogramMetrics).MaxSize)
 }
 
 func TestConnectorCapabilities(t *testing.T) {
@@ -620,7 +569,7 @@ func TestConsumeTraces(t *testing.T) {
 	testcases := []struct {
 		name                   string
 		aggregationTemporality string
-		histograms             func() HistogramMetrics
+		histograms             func() metrics.HistogramMetrics
 		verifier               func(t testing.TB, input pmetric.Metrics) bool
 		traces                 []ptrace.Traces
 	}{
@@ -799,14 +748,14 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 func newConnectorImp(
 	mcon consumer.Metrics,
 	defaultNullValue *pcommon.Value,
-	histograms func() HistogramMetrics,
+	histograms func() metrics.HistogramMetrics,
 	temporality string,
 	logger *zap.Logger,
 	ticker *clock.Ticker,
 ) *connectorImp {
 	defaultNotInSpanAttrVal := pcommon.NewValueStr("defaultNotInSpanAttrVal")
 	// use size 2 for LRU cache for testing purpose
-	metricKeyToDimensions, err := cache.NewCache[Key, pcommon.Map](DimensionsCacheSize)
+	metricKeyToDimensions, err := cache.NewCache[metrics.Key, pcommon.Map](DimensionsCacheSize)
 	if err != nil {
 		panic(err)
 	}
@@ -817,7 +766,7 @@ func newConnectorImp(
 
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
 		histograms:     histograms(),
-		sums:           SumMetrics{Metrics: make(map[Key]*Sum)},
+		sums:           metrics.SumMetrics{Metrics: make(map[metrics.Key]*metrics.Sum)},
 		dimensions: []dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
@@ -982,5 +931,32 @@ func TestBuildMetricName(t *testing.T) {
 	for _, test := range tests {
 		actual := buildMetricName(test.namespace, test.metricName)
 		assert.Equal(t, test.expected, actual)
+	}
+}
+
+func TestConnector_MapDurationsToMillis(t *testing.T) {
+	tests := []struct {
+		input []time.Duration
+		want  []float64
+	}{
+		{
+			input: []time.Duration{
+				3 * time.Nanosecond,
+				3 * time.Microsecond,
+				3 * time.Millisecond,
+				3 * time.Second,
+			},
+			want: []float64{0.000003, 0.003, 3, 3000},
+		},
+		{
+			input: []time.Duration{},
+			want:  []float64{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run("", func(t *testing.T) {
+			got := mapDurationsToMillis(tt.input)
+			assert.Equal(t, tt.want, got)
+		})
 	}
 }

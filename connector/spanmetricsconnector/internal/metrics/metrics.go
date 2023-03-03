@@ -36,122 +36,136 @@ type Histogram interface {
 	AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64)
 }
 
-type ExplicitHistogramMetrics struct {
-	Metrics map[Key]*ExplicitHistogram
-	Bounds  []float64
+type explicitHistogramMetrics struct {
+	metrics map[Key]*explicitHistogram
+	bounds  []float64
 }
 
-type ExponentialHistogramMetrics struct {
-	Metrics map[Key]*ExponentialHistogram
-	MaxSize int32
+type exponentialHistogramMetrics struct {
+	metrics map[Key]*exponentialHistogram
+	maxSize int32
 }
 
-type ExplicitHistogram struct {
-	Attributes pcommon.Map
-	Exemplars  pmetric.ExemplarSlice
+type explicitHistogram struct {
+	attributes pcommon.Map
+	exemplars  pmetric.ExemplarSlice
 
-	BucketCounts []uint64
-	Count        uint64
-	Sum          float64
+	bucketCounts []uint64
+	count        uint64
+	sum          float64
 
-	Bounds []float64
+	bounds []float64
 }
 
-type ExponentialHistogram struct {
-	Attributes pcommon.Map
-	Exemplars  pmetric.ExemplarSlice
+type exponentialHistogram struct {
+	attributes pcommon.Map
+	exemplars  pmetric.ExemplarSlice
 
-	Agg *structure.Histogram[float64]
+	histogram *structure.Histogram[float64]
 }
 
-func (m *ExplicitHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map) Histogram {
-	h, ok := m.Metrics[key]
+func NewExponentialHistogramMetrics(maxSize int32) HistogramMetrics {
+	return &exponentialHistogramMetrics{
+		metrics: make(map[Key]*exponentialHistogram),
+		maxSize: maxSize,
+	}
+}
+
+func NewExplicitHistogramMetrics(bounds []float64) HistogramMetrics {
+	return &explicitHistogramMetrics{
+		metrics: make(map[Key]*explicitHistogram),
+		bounds:  bounds,
+	}
+}
+
+func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map) Histogram {
+	h, ok := m.metrics[key]
 	if !ok {
-		h = &ExplicitHistogram{
-			Attributes:   attributes,
-			Exemplars:    pmetric.NewExemplarSlice(),
-			Bounds:       m.Bounds,
-			BucketCounts: make([]uint64, len(m.Bounds)+1),
+		h = &explicitHistogram{
+			attributes:   attributes,
+			exemplars:    pmetric.NewExemplarSlice(),
+			bounds:       m.bounds,
+			bucketCounts: make([]uint64, len(m.bounds)+1),
 		}
-		m.Metrics[key] = h
+		m.metrics[key] = h
 	}
 
 	return h
 }
 
-func (m *ExplicitHistogramMetrics) BuildMetrics(
+func (m *explicitHistogramMetrics) BuildMetrics(
 	metric pmetric.Metric,
 	start pcommon.Timestamp,
 	temporality pmetric.AggregationTemporality,
 ) {
 	metric.SetEmptyHistogram().SetAggregationTemporality(temporality)
 	dps := metric.Histogram().DataPoints()
-	dps.EnsureCapacity(len(m.Metrics))
+	dps.EnsureCapacity(len(m.metrics))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for _, h := range m.Metrics {
+	for _, h := range m.metrics {
 		dp := dps.AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(timestamp)
-		dp.ExplicitBounds().FromRaw(h.Bounds)
-		dp.BucketCounts().FromRaw(h.BucketCounts)
-		dp.SetCount(h.Count)
-		dp.SetSum(h.Sum)
+		dp.ExplicitBounds().FromRaw(h.bounds)
+		dp.BucketCounts().FromRaw(h.bucketCounts)
+		dp.SetCount(h.count)
+		dp.SetSum(h.sum)
 		for i := 0; i < dp.Exemplars().Len(); i++ {
 			dp.Exemplars().At(i).SetTimestamp(timestamp)
 		}
-		h.Attributes.CopyTo(dp.Attributes())
+		h.attributes.CopyTo(dp.Attributes())
 	}
 }
 
-func (m *ExplicitHistogramMetrics) Reset(onlyExemplars bool) {
+func (m *explicitHistogramMetrics) Reset(onlyExemplars bool) {
 	if onlyExemplars {
-		for _, h := range m.Metrics {
-			h.Exemplars = pmetric.NewExemplarSlice()
+		for _, h := range m.metrics {
+			h.exemplars = pmetric.NewExemplarSlice()
 		}
 		return
 	}
 
-	m.Metrics = make(map[Key]*ExplicitHistogram)
+	m.metrics = make(map[Key]*explicitHistogram)
 }
 
-func (m *ExponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map) Histogram {
-	h, ok := m.Metrics[key]
+func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map) Histogram {
+	h, ok := m.metrics[key]
 	if !ok {
-		agg := new(structure.Histogram[float64])
+		histogram := new(structure.Histogram[float64])
 		cfg := structure.NewConfig(
-			structure.WithMaxSize(m.MaxSize),
+			structure.WithMaxSize(m.maxSize),
 		)
-		agg.Init(cfg)
+		histogram.Init(cfg)
 
-		h = &ExponentialHistogram{
-			Agg:        agg,
-			Attributes: attributes,
-			Exemplars:  pmetric.NewExemplarSlice(),
+		h = &exponentialHistogram{
+			histogram:  histogram,
+			attributes: attributes,
+			exemplars:  pmetric.NewExemplarSlice(),
 		}
-		m.Metrics[key] = h
+		m.metrics[key] = h
 	}
 
 	return h
 }
 
-func (m *ExponentialHistogramMetrics) BuildMetrics(
+func (m *exponentialHistogramMetrics) BuildMetrics(
 	metric pmetric.Metric,
 	start pcommon.Timestamp,
 	temporality pmetric.AggregationTemporality,
 ) {
 	metric.SetEmptyExponentialHistogram().SetAggregationTemporality(temporality)
 	dps := metric.ExponentialHistogram().DataPoints()
-	dps.EnsureCapacity(len(m.Metrics))
+	dps.EnsureCapacity(len(m.metrics))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for _, h := range m.Metrics {
+	for _, m := range m.metrics {
 		dp := dps.AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(timestamp)
-		expoHistToExponentialDataPoint(h.Agg, dp)
+		expoHistToExponentialDataPoint(m.histogram, dp)
 		for i := 0; i < dp.Exemplars().Len(); i++ {
 			dp.Exemplars().At(i).SetTimestamp(timestamp)
 		}
-		h.Attributes.CopyTo(dp.Attributes())
+		m.attributes.CopyTo(dp.Attributes())
 	}
 }
 
@@ -186,39 +200,39 @@ func expoHistToExponentialDataPoint(agg *structure.Histogram[float64], dp pmetri
 	}
 }
 
-func (m *ExponentialHistogramMetrics) Reset(onlyExemplars bool) {
+func (m *exponentialHistogramMetrics) Reset(onlyExemplars bool) {
 	if onlyExemplars {
-		for _, h := range m.Metrics {
-			h.Exemplars = pmetric.NewExemplarSlice()
+		for _, m := range m.metrics {
+			m.exemplars = pmetric.NewExemplarSlice()
 		}
 		return
 	}
 
-	m.Metrics = make(map[Key]*ExponentialHistogram)
+	m.metrics = make(map[Key]*exponentialHistogram)
 }
 
-func (h *ExplicitHistogram) Observe(value float64) {
-	h.Sum += value
-	h.Count++
+func (h *explicitHistogram) Observe(value float64) {
+	h.sum += value
+	h.count++
 
 	// Binary search to find the latencyMs bucket index.
-	index := sort.SearchFloat64s(h.Bounds, value)
-	h.BucketCounts[index]++
+	index := sort.SearchFloat64s(h.bounds, value)
+	h.bucketCounts[index]++
 }
 
-func (h *ExplicitHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64) {
-	e := h.Exemplars.AppendEmpty()
+func (h *explicitHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64) {
+	e := h.exemplars.AppendEmpty()
 	e.SetTraceID(traceID)
 	e.SetSpanID(spanID)
 	e.SetDoubleValue(value)
 }
 
-func (h *ExponentialHistogram) Observe(value float64) {
-	h.Agg.Update(value)
+func (h *exponentialHistogram) Observe(value float64) {
+	h.histogram.Update(value)
 }
 
-func (h *ExponentialHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64) {
-	e := h.Exemplars.AppendEmpty()
+func (h *exponentialHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64) {
+	e := h.exemplars.AppendEmpty()
 	e.SetTraceID(traceID)
 	e.SetSpanID(spanID)
 	e.SetDoubleValue(value)
