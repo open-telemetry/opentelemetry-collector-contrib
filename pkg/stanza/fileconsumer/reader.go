@@ -40,6 +40,7 @@ type Reader struct {
 	lineSplitFunc bufio.SplitFunc
 	splitFunc     bufio.SplitFunc
 	encoding      helper.Encoding
+	processFunc   EmitFunc
 
 	Fingerprint    *Fingerprint
 	Offset         int64
@@ -93,25 +94,26 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
+		var prevHeaderFinalized = r.HeaderFinalized
 		token, err := r.encoding.Decode(scanner.Bytes())
-		switch {
-		case err != nil:
+		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
-		case r.headerSettings != nil && !r.HeaderFinalized:
-			if !r.consumeHeaderLine(ctx, r.FileAttributes, token) {
-				// recreate the scanner with the log-line's split func.
-				// We do not use the updated offset from the scanner,
-				// as the log line we just read could be multiline, and would be
-				// split differently with the new splitter.
-				if _, err := r.file.Seek(r.Offset, 0); err != nil {
-					r.Errorw("Failed to seek post-header", zap.Error(err))
-					return
-				}
+		} else {
+			r.processFunc(ctx, r.FileAttributes, token)
+		}
 
-				scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+		if !prevHeaderFinalized && r.HeaderFinalized {
+			// The header finalized with the last processFunc call;
+			// recreate the scanner with the log-line's split func.
+			// We do not use the updated offset from the scanner,
+			// as the log line we just read could be multiline, and would be
+			// split differently with the new splitter.
+			if _, err := r.file.Seek(r.Offset, 0); err != nil {
+				r.Errorw("Failed to seek post-header", zap.Error(err))
+				return
 			}
-		default:
-			r.emit(ctx, r.FileAttributes, token)
+
+			scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
 		}
 
 		r.Offset = scanner.Pos()
@@ -121,7 +123,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 // consumeHeaderLine checks if the given token is a line of the header, and consumes it if it is.
 // The return value dictates whether the given line was a header line or not.
 // If false is returned, the full header can be assumed to be read.
-func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, token []byte) bool {
+func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, token []byte) {
 	if !r.headerSettings.matchRegex.Match(token) {
 		// Finalize and cleanup the pipeline
 		r.HeaderFinalized = true
@@ -135,7 +137,8 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, t
 
 		// Use the line split func instead of the header split func
 		r.splitFunc = r.lineSplitFunc
-		return false
+		r.processFunc = r.emit
+		return
 	}
 
 	firstOperator := r.headerPipeline.Operators()[0]
@@ -145,21 +148,19 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, t
 
 	if err := firstOperator.Process(ctx, newEntry); err != nil {
 		r.Errorw("Failed to process header entry", zap.Error(err))
-		return true
+		return
 	}
 
 	ent, err := r.headerPipelineOutput.WaitForEntry(ctx)
 	if err != nil {
 		r.Errorw("Error while waiting for header entry", zap.Error(err))
-		return true
+		return
 	}
 
 	// Copy resultant attributes over current set of attributes (upsert)
 	for k, v := range ent.Attributes {
 		r.FileAttributes.HeaderAttributes[k] = v
 	}
-
-	return true
 }
 
 // Close will close the file

@@ -190,6 +190,11 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 
 		r.headerPipeline = p
 		r.headerPipelineOutput = outOp
+
+		// Set initial emit func to header function
+		r.processFunc = r.consumeHeaderLine
+	} else {
+		r.processFunc = b.readerConfig.emit
 	}
 
 	return r, nil
