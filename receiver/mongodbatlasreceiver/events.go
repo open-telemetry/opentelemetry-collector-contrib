@@ -114,6 +114,10 @@ func (er *eventsReceiver) Shutdown(ctx context.Context) error {
 	er.logger.Debug("Shutting down events receiver")
 	er.cancel()
 	er.wg.Wait()
+	// if storageClient was never set, we shouldn't try to checkpoint
+	if er.storageClient == nil {
+		return nil
+	}
 	return er.checkpoint(ctx)
 }
 
@@ -228,11 +232,6 @@ func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongo
 }
 
 func (er *eventsReceiver) checkpoint(ctx context.Context) error {
-	// if storageClient was never set, we shouldn't try to checkpoint
-	if er.storageClient == nil {
-		return nil
-	}
-
 	marshalBytes, err := json.Marshal(er.record)
 	if err != nil {
 		return fmt.Errorf("unable to write checkpoint: %w", err)
