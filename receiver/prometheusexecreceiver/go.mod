@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.72.1-0.20230303004618-4a6ebc82b8e3
 	go.opentelemetry.io/collector/consumer v0.72.1-0.20230303004618-4a6ebc82b8e3
 	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/receiver v0.0.0-20230302200458-4071a47d0ee3
+	go.opentelemetry.io/collector/receiver v0.0.0-20230303004618-4a6ebc82b8e3
 	go.uber.org/zap v1.24.0
 )
 
