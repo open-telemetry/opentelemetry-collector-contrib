@@ -1476,13 +1476,13 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg1 := NewConfig().includeDir(tempDir)
 	cfg1.StartAt = "beginning"
-	cfg1 = cfg1.withHeader("^#", "headerField1: (?P<header_value_1>[A-z0-9]+)")
+	cfg1 = cfg1.withHeader(`^\|`, "headerField1: (?P<header_value_1>[A-z0-9]+)")
 
 	op1, _ := buildTestManager(t, cfg1)
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
-	writeString(t, temp, "#headerField1: headerValue1\n")
+	writeString(t, temp, "|headerField1: headerValue1\n")
 
 	persister := testutil.NewUnscopedMockPersister()
 	require.NoError(t, op1.Start(persister))
@@ -1493,11 +1493,11 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 
 	require.NoError(t, op1.Stop())
 
-	writeString(t, temp, "#headerField2: headerValue2\nlog line\n")
+	writeString(t, temp, "|headerField2: headerValue2\nlog line\n")
 
 	cfg2 := NewConfig().includeDir(tempDir)
 	cfg2.StartAt = "beginning"
-	cfg2 = cfg2.withHeader("^#", "headerField2: (?P<header_value_2>[A-z0-9]+)")
+	cfg2 = cfg2.withHeader(`^\|`, "headerField2: (?P<header_value_2>[A-z0-9]+)")
 
 	op2, emitCalls := buildTestManager(t, cfg2)
 

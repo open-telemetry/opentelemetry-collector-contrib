@@ -94,13 +94,15 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		}
 
 		token, err := r.encoding.Decode(scanner.Bytes())
-		if err != nil {
+		switch {
+		case err != nil:
 			r.Errorw("decode: %w", zap.Error(err))
-		} else if r.headerSettings != nil && !r.HeaderFinalized {
+		case r.headerSettings != nil && !r.HeaderFinalized:
 			if !r.consumeHeaderLine(ctx, r.fileAttributes, token) {
 				// recreate the scanner with the log-line's split func.
 				// We do not use the updated offset from the scanner,
-				// as the log line we just used could be multiline
+				// as the log line we just read could be multiline, and would be
+				// split differently with the new splitter.
 				if _, err := r.file.Seek(r.Offset, 0); err != nil {
 					r.Errorw("Failed to seek post-header", zap.Error(err))
 					return
@@ -108,7 +110,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 				scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.curSplitFunc())
 			}
-		} else {
+		default:
 			r.emit(ctx, r.fileAttributes, token)
 		}
 
