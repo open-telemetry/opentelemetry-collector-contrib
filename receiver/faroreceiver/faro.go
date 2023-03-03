@@ -81,6 +81,8 @@ func (r *faroReceiver) Start(ctx context.Context, host component.Host) error {
 				host,
 				r.set.TelemetrySettings,
 				&Handler{
+					logLogger:     r.logLogger,
+					traceLogger:   r.traceLogger,
 					logConsumer:   r.logConsumer,
 					traceConsumer: r.traceConsumer,
 				},
