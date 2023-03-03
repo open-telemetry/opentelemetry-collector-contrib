@@ -173,13 +173,10 @@ func (r *Reader) Read(dst []byte) (int, error) {
 	// Skip if fingerprint is already built
 	// or if fingerprint is behind Offset
 	if len(r.Fingerprint.FirstBytes) == r.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
-		n, err := r.file.Read(dst)
-		return n, err
+		return r.file.Read(dst)
 	}
-
 	n, err := r.file.Read(dst)
 	appendCount := min0(n, r.fingerprintSize-int(r.Offset))
-
 	// return for n == 0 or r.Offset >= r.fileInput.fingerprintSize
 	if appendCount == 0 {
 		return n, err
