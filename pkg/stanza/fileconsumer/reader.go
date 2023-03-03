@@ -37,8 +37,9 @@ type readerConfig struct {
 type Reader struct {
 	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
 	*readerConfig
-	splitFunc bufio.SplitFunc
-	encoding  helper.Encoding
+	lineSplitFunc bufio.SplitFunc
+	splitFunc     bufio.SplitFunc
+	encoding      helper.Encoding
 
 	Fingerprint    *Fingerprint
 	Offset         int64
@@ -71,7 +72,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.curSplitFunc())
+	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -107,7 +108,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 					return
 				}
 
-				scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.curSplitFunc())
+				scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
 			}
 		default:
 			r.emit(ctx, r.FileAttributes, token)
@@ -115,14 +116,6 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		r.Offset = scanner.Pos()
 	}
-}
-
-func (r *Reader) curSplitFunc() bufio.SplitFunc {
-	if r.headerSettings != nil && !r.HeaderFinalized {
-		return r.headerSettings.splitFunc
-	}
-
-	return r.splitFunc
 }
 
 // consumeHeaderLine checks if the given token is a line of the header, and consumes it if it is.
@@ -139,6 +132,9 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, t
 		}
 		r.headerPipeline = nil
 		r.headerPipelineOutput = nil
+
+		// Use the line split func instead of the header split func
+		r.splitFunc = r.lineSplitFunc
 		return false
 	}
 

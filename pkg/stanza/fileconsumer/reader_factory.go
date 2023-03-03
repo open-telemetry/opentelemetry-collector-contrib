@@ -48,7 +48,7 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 		withFile(newFile).
 		withFingerprint(old.Fingerprint.Copy()).
 		withOffset(old.Offset).
-		withSplitterFunc(old.splitFunc).
+		withSplitterFunc(old.lineSplitFunc).
 		withHeaderAttributes(mapCopy(old.FileAttributes.HeaderAttributes)).
 		withHeaderFinalized(old.HeaderFinalized).
 		build()
@@ -115,12 +115,19 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 	}
 
 	if b.splitFunc != nil {
-		r.splitFunc = b.splitFunc
+		r.lineSplitFunc = b.splitFunc
 	} else {
-		r.splitFunc, err = b.splitterFactory.Build(b.readerConfig.maxLogSize)
+		r.lineSplitFunc, err = b.splitterFactory.Build(b.readerConfig.maxLogSize)
 		if err != nil {
 			return
 		}
+	}
+
+	if b.headerSettings != nil && !b.headerFinalized {
+		// If we are reading the header, we should start with the header split func
+		r.splitFunc = b.headerSettings.splitFunc
+	} else {
+		r.splitFunc = r.lineSplitFunc
 	}
 
 	enc, err := b.encodingConfig.Build()
