@@ -167,7 +167,9 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		queueURL = value.Str()
 	}
 	if value, ok := attributes[conventions.AttributeAWSDynamoDBTableNames]; ok {
-		tableName = value.Str()
+		if value.Slice().Len() > 0 {
+			tableName = value.Slice().At(0).Str()
+		}
 	}
 
 	// EC2 - add ec2 metadata to xray request if
