@@ -49,7 +49,7 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 		withFingerprint(old.Fingerprint.Copy()).
 		withOffset(old.Offset).
 		withSplitterFunc(old.splitFunc).
-		withHeaderAttributes(mapCopy(old.HeaderAttributes)).
+		withHeaderAttributes(mapCopy(old.FileAttributes.HeaderAttributes)).
 		withHeaderFinalized(old.HeaderFinalized).
 		build()
 }
@@ -108,15 +108,10 @@ func (b *readerBuilder) withHeaderAttributes(attrs map[string]any) *readerBuilde
 
 func (b *readerBuilder) build() (r *Reader, err error) {
 	r = &Reader{
-		readerConfig:     b.readerConfig,
-		Offset:           b.offset,
-		headerSettings:   b.headerSettings,
-		HeaderFinalized:  b.headerFinalized,
-		HeaderAttributes: b.headerAttributes,
-	}
-
-	if r.HeaderAttributes == nil {
-		r.HeaderAttributes = map[string]any{}
+		readerConfig:    b.readerConfig,
+		Offset:          b.offset,
+		headerSettings:  b.headerSettings,
+		HeaderFinalized: b.headerFinalized,
 	}
 
 	if b.splitFunc != nil {
@@ -137,7 +132,7 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 	if b.file != nil {
 		r.file = b.file
 		r.SugaredLogger = b.SugaredLogger.With("path", b.file.Name())
-		r.fileAttributes, err = resolveFileAttributes(b.file.Name())
+		r.FileAttributes, err = resolveFileAttributes(b.file.Name())
 		if err != nil {
 			b.Errorf("resolve attributes: %w", err)
 		}
@@ -148,10 +143,15 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 				return nil, err
 			}
 		}
-
-		r.fileAttributes.headerAttributes = r.HeaderAttributes
 	} else {
 		r.SugaredLogger = b.SugaredLogger.With("path", "uninitialized")
+		r.FileAttributes = &FileAttributes{}
+	}
+
+	if b.headerAttributes != nil {
+		r.FileAttributes.HeaderAttributes = b.headerAttributes
+	} else {
+		r.FileAttributes.HeaderAttributes = map[string]any{}
 	}
 
 	if b.fp != nil {

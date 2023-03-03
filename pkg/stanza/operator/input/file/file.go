@@ -68,7 +68,7 @@ func (f *Input) emit(ctx context.Context, attrs *fileconsumer.FileAttributes, to
 type preEmitOption func(*fileconsumer.FileAttributes, *entry.Entry) error
 
 func setHeaderMetadata(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
-	return ent.Set(entry.NewAttributeField(), attrs.HeaderAttributes())
+	return ent.Set(entry.NewAttributeField(), attrs.HeaderAttributesCopy())
 }
 
 func setFileName(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {

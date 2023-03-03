@@ -44,11 +44,10 @@ type Reader struct {
 	Offset         int64
 	generation     int
 	file           *os.File
-	fileAttributes *FileAttributes
+	FileAttributes *FileAttributes
 	eof            bool
 
-	HeaderFinalized  bool
-	HeaderAttributes map[string]any
+	HeaderFinalized bool
 
 	headerSettings       *headerSettings
 	headerPipeline       pipeline.Pipeline
@@ -98,7 +97,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		case err != nil:
 			r.Errorw("decode: %w", zap.Error(err))
 		case r.headerSettings != nil && !r.HeaderFinalized:
-			if !r.consumeHeaderLine(ctx, r.fileAttributes, token) {
+			if !r.consumeHeaderLine(ctx, r.FileAttributes, token) {
 				// recreate the scanner with the log-line's split func.
 				// We do not use the updated offset from the scanner,
 				// as the log line we just read could be multiline, and would be
@@ -111,7 +110,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.curSplitFunc())
 			}
 		default:
-			r.emit(ctx, r.fileAttributes, token)
+			r.emit(ctx, r.FileAttributes, token)
 		}
 
 		r.Offset = scanner.Pos()
@@ -133,7 +132,6 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, t
 	if !r.headerSettings.matchRegex.Match(token) {
 		// Finalize and cleanup the pipeline
 		r.HeaderFinalized = true
-		attrs.headerAttributes = r.HeaderAttributes
 
 		// Stop and drop the header pipeline.
 		if err := r.headerPipeline.Stop(); err != nil {
@@ -162,7 +160,7 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, t
 
 	// Copy resultant attributes over current set of attributes (upsert)
 	for k, v := range ent.Attributes {
-		r.HeaderAttributes[k] = v
+		r.FileAttributes.HeaderAttributes[k] = v
 	}
 
 	return true
