@@ -43,6 +43,9 @@ type Config struct {
 	// Configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
 	TLSAllowInsecureConnection bool           `mapstructure:"tls_allow_insecure_connection"`
 	Authentication             Authentication `mapstructure:"auth"`
+	OperationTimeout           time.Duration  `mapstructure:"operation_timeout"`
+	ConnectionTimeout          time.Duration  `mapstructure:"connection_timeout"`
+	MaxConnectionsPerBroker    int            `mapstructure:"map_connections_per_broker"`
 }
 
 type Authentication struct {
@@ -133,7 +136,10 @@ func (cfg *Config) auth() pulsar.Authentication {
 
 func (cfg *Config) clientOptions() pulsar.ClientOptions {
 	options := pulsar.ClientOptions{
-		URL: cfg.Endpoint,
+		URL:                     cfg.Endpoint,
+		ConnectionTimeout:       cfg.ConnectionTimeout,
+		OperationTimeout:        cfg.OperationTimeout,
+		MaxConnectionsPerBroker: cfg.MaxConnectionsPerBroker,
 	}
 
 	options.TLSAllowInsecureConnection = cfg.TLSAllowInsecureConnection
