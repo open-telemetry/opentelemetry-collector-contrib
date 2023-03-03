@@ -7,6 +7,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.72.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.72.0
 	github.com/stretchr/testify v1.8.2
@@ -74,3 +75,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../../pkg/batchperresourceattr
 
 retract v0.65.0
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
