@@ -16,6 +16,7 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
+	"regexp"
 
 	"go.uber.org/zap"
 
@@ -52,6 +53,9 @@ type Config struct {
 	// LogRetention is the option to set the log retention policy for the CloudWatch Log Group. Defaults to Never Expire if not specified or set to 0
 	// Possible values are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653
 	LogRetention int64 `mapstructure:"log_retention"`
+
+	// Tags is the option to set tags for the CloudWatch Log Group.
+	Tags map[string]*string `mapstructure:"tags"`
 
 	// ParseJSONEncodedAttributeValues is an array of attribute keys whose corresponding values are JSON-encoded as strings.
 	// Those strings will be decoded to its original json structure.
@@ -127,7 +131,33 @@ func (config *Config) Validate() error {
 		return errors.New("invalid value for retention policy.  Please make sure to use the following values: 0 (Never Expire), 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653")
 	}
 
+	tagInputReturnVal := isValidTagsInput(config.Tags)
+	if tagInputReturnVal != "Valid" {
+		return errors.New(tagInputReturnVal)
+	}
+
 	return nil
+}
+
+// Check if the tags input is valid
+func isValidTagsInput(input map[string]*string) string {
+	if len(input) > 50 || len(input) < 1 {
+		return "invalid amount of items. Please input at least 1 and at most 50 tags."
+	}
+	validPattern := regexp.MustCompile("^([p{L}p{Z}p{N}_.:/=+-@]+)$")
+	for key, value := range input {
+		if !validPattern.MatchString(key) || !validPattern.MatchString(*value) {
+			return "key: " + key + " or " + "value: " + *value + "does not follow the regex pattern ^([p{L}p{Z}p{N}_.:/=+-@]+)$"
+		}
+		if len(key) < 1 || len(key) > 128 {
+			return "key: " + key + " has an invalid length. Please use keys with a length of 1 to 128 characters"
+		}
+		if len(*value) < 1 || len(*value) > 256 {
+			return "value: " + *value + " has an invalid length. Please use values with a length of 1 to 256 characters"
+		}
+	}
+
+	return "Valid"
 }
 
 // Added function to check if value is an accepted number of log retention days

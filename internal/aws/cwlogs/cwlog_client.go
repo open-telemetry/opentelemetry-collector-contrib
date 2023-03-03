@@ -25,6 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
@@ -42,23 +43,32 @@ const (
 type Client struct {
 	svc          cloudwatchlogsiface.CloudWatchLogsAPI
 	logRetention int64
+	tags         map[string]*string
+	accountId    string
+	region       string
 	logger       *zap.Logger
 }
 
 // Create a log client based on the actual cloudwatch logs client.
-func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, logger *zap.Logger) *Client {
+func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, tags map[string]*string, accountId string, region string, logger *zap.Logger) *Client {
 	logClient := &Client{svc: svc,
 		logRetention: logRetention,
+		tags:         tags,
+		accountId:    accountId,
+		region:       region,
 		logger:       logger}
 	return logClient
 }
 
 // NewClient create Client
-func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, sess *session.Session) *Client {
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
-	return newCloudWatchLogClient(client, logRetention, logger)
+	stsClient := sts.New(sess, awsConfig)
+	accountCall, _ := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	accountId := accountCall.Account
+	return newCloudWatchLogClient(client, logRetention, tags, *accountId, *awsConfig.Region, logger)
 }
 
 // PutLogEvents mainly handles different possible error could be returned from server side, and retries them
@@ -165,6 +175,17 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 						var awsErr awserr.Error
 						if errors.As(err, &awsErr) {
 							client.logger.Debug("CreateLogStream / CreateLogGroup has errors related to log retention policy.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.Error(e))
+							return token, err
+						}
+					}
+				}
+				logGroupArn := "arn:aws:logs:" + client.region + ":" + client.accountId + ":log-group:" + *logGroup
+				if client.tags != nil {
+					_, err = client.svc.TagResource(&cloudwatchlogs.TagResourceInput{ResourceArn: &logGroupArn, Tags: client.tags})
+					if err != nil {
+						var awsErr awserr.Error
+						if errors.As(err, &awsErr) {
+							client.logger.Debug("CreateLogStream / CreateLogGroup has errors related to the tags.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.Error(e))
 							return token, err
 						}
 					}
