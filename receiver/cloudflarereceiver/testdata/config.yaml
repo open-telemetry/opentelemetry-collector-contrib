@@ -4,3 +4,4 @@ cloudflare:
     cert_file: some_cert_file
   endpoint: 0.0.0.0:12345
   secret: 1234567890abcdef1234567890abcdef
+  timestamp_field: EdgeStartTimestamp

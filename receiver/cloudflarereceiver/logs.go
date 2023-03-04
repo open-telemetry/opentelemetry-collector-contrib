@@ -17,8 +17,8 @@ package cloudflarereceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"compress/gzip"
 	"context"
-	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -58,15 +58,9 @@ func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.
 		id:       params.ID,
 	}
 
-	var tlsConfig *tls.Config
-
-	if cfg.TLS != nil {
-		var err error
-
-		tlsConfig, err = cfg.TLS.LoadTLSConfig()
-		if err != nil {
-			return nil, err
-		}
+	tlsConfig, err := cfg.TLS.LoadTLSConfig()
+	if err != nil {
+		return nil, err
 	}
 
 	s := &http.Server{
@@ -131,15 +125,14 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 }
 
 func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) {
-	//TODO - check headers for useful data
 	if len(l.cfg.Secret) > 0 {
 		secretHeader := req.Header.Get(secretHeaderName)
 		if secretHeader == "" {
-			rw.WriteHeader(http.StatusBadRequest)
+			rw.WriteHeader(http.StatusUnauthorized)
 			l.logger.Debug("Got payload with no Secret when it was specified in config, dropping...")
 			return
 		} else if secretHeader != l.cfg.Secret {
-			rw.WriteHeader(http.StatusBadRequest)
+			rw.WriteHeader(http.StatusUnauthorized)
 			l.logger.Debug("Got payload with invalid Secret, dropping...")
 			return
 		}
@@ -150,7 +143,7 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 	if req.Header.Get("Content-Encoding") == "gzip" {
 		reader, err := gzip.NewReader(req.Body)
 		if err != nil {
-			rw.WriteHeader(http.StatusBadRequest)
+			rw.WriteHeader(http.StatusUnprocessableEntity)
 			l.logger.Debug("Got payload with gzip, but failed to read", zap.Error(err))
 			return
 		}
@@ -158,14 +151,14 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 		// Read the decompressed response body
 		payload, err = io.ReadAll(reader)
 		if err != nil {
-			rw.WriteHeader(http.StatusBadRequest)
+			rw.WriteHeader(http.StatusUnprocessableEntity)
 			l.logger.Debug("Got payload with gzip, but failed to read", zap.Error(err))
 			return
 		}
 	} else {
 		payload, err = io.ReadAll(req.Body)
 		if err != nil {
-			rw.WriteHeader(http.StatusBadRequest)
+			rw.WriteHeader(http.StatusUnprocessableEntity)
 			l.logger.Debug("Failed to read alerts payload", zap.Error(err), zap.String("remote", req.RemoteAddr))
 			return
 		}
@@ -181,7 +174,7 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 
 	logs, err := parsePayload(strPayload)
 	if err != nil {
-		rw.WriteHeader(http.StatusBadRequest)
+		rw.WriteHeader(http.StatusUnprocessableEntity)
 		l.logger.Error("Failed to convert cloudflare request payload to maps", zap.Error(err))
 		return
 	}
@@ -217,20 +210,19 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]inte
 	for _, log := range logs {
 		resourceLogs := pLogs.ResourceLogs().AppendEmpty()
 		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-		attrs := logRecord.Attributes()
 
 		logRecord.SetObservedTimestamp(now)
 
-		if v, ok := log["EdgeStartTimestamp"]; ok {
+		if v, ok := log[l.cfg.TimestampField]; ok {
 			if stringV, ok := v.(string); ok {
 				ts, err := time.Parse(time.RFC3339, stringV)
 				if err != nil {
-					l.logger.Warn("unable to parse EdgeStartTimestamp", zap.Error(err), zap.String("value", stringV))
+					l.logger.Warn(fmt.Sprintf("unable to parse %s", l.cfg.TimestampField), zap.Error(err), zap.String("value", stringV))
 				} else {
 					logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 			} else {
-				l.logger.Warn("unable to parse EdgeStartTimestamp", zap.Any("value", v))
+				l.logger.Warn(fmt.Sprintf("unable to parse %s", l.cfg.TimestampField), zap.Any("value", v))
 			}
 		}
 
@@ -242,37 +234,13 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]inte
 			}
 		}
 
-		bodyBytes, err := json.Marshal(logs)
-		if err != nil {
-			l.logger.Warn("unable to marshal log into a body string")
-			continue
-		}
-		logRecord.Body().SetStr(string(bodyBytes))
-
-		for k, v := range log {
-			if k == "EdgeStartTimestamp" || k == "EdgeResponseStatus" {
-				continue
-			}
-
-			//TODO - only do this for desired keys, based on user config
-
-			switch v := v.(type) {
-			case string:
-				attrs.PutStr(k, v)
-			case int:
-				attrs.PutInt(k, int64(v))
-			case float64:
-				attrs.PutDouble(k, v)
-			case bool:
-				attrs.PutBool(k, v)
-			}
-		}
+		logRecord.Body().SetEmptyMap().FromRaw(log)
 	}
 
 	return pLogs
 }
 
-// severityFromAPI is a workaround for shared types between the API and the model
+// severityFromAPI translates HTTP status code to OpenTelemetry severity number.
 func severityFromAPI(statusCode int) plog.SeverityNumber {
 	switch {
 	case statusCode < 300:

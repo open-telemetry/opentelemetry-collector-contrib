@@ -25,9 +25,10 @@ import (
 
 // Config holds all the parameters to start an HTTP server that can be sent logs from CloudFlare
 type Config struct {
-	Secret   string                      `mapstructure:"secret"`
-	Endpoint string                      `mapstructure:"endpoint"`
-	TLS      *configtls.TLSServerSetting `mapstructure:"tls"`
+	Secret         string                      `mapstructure:"secret"`
+	Endpoint       string                      `mapstructure:"endpoint"`
+	TLS            *configtls.TLSServerSetting `mapstructure:"tls"`
+	TimestampField string                      `mapstructure:"timestamp_field"`
 }
 
 var (

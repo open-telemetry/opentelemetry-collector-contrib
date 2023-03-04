@@ -31,13 +31,6 @@ func TestValidate(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name: "Valid config",
-			config: Config{
-				Endpoint: "0.0.0.0:9999",
-				Secret:   "1234567890abcdef1234567890abcdef",
-			},
-		},
-		{
 			name: "Valid config with tls",
 			config: Config{
 				Endpoint: "0.0.0.0:9999",
@@ -50,14 +43,27 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
-			name:        "missing endpoint",
-			config:      Config{},
+			name: "missing endpoint",
+			config: Config{
+				TLS: &configtls.TLSServerSetting{
+					TLSSetting: configtls.TLSSetting{
+						CertFile: "some_cert_file",
+						KeyFile:  "some_key_file",
+					},
+				},
+			},
 			expectedErr: errNoEndpoint.Error(),
 		},
 		{
 			name: "Invalid endpoint",
 			config: Config{
 				Endpoint: "9999",
+				TLS: &configtls.TLSServerSetting{
+					TLSSetting: configtls.TLSSetting{
+						CertFile: "some_cert_file",
+						KeyFile:  "some_key_file",
+					},
+				},
 			},
 			expectedErr: "failed to split endpoint into 'host:port' pair",
 		},
@@ -108,14 +114,7 @@ func TestLoadConfig(t *testing.T) {
 		expectedConfig component.Config
 	}{
 		{
-			name: "no_tls",
-			expectedConfig: &Config{
-				Endpoint: "0.0.0.0:12345",
-				Secret:   "1234567890abcdef1234567890abcdef",
-			},
-		},
-		{
-			name: "tls",
+			name: "",
 			expectedConfig: &Config{
 				Endpoint: "0.0.0.0:12345",
 				TLS: &configtls.TLSServerSetting{
@@ -124,6 +123,8 @@ func TestLoadConfig(t *testing.T) {
 						KeyFile:  "some_key_file",
 					},
 				},
+				Secret:         "1234567890abcdef1234567890abcdef",
+				TimestampField: "EdgeStartTimestamp",
 			},
 		},
 	}
@@ -136,7 +137,7 @@ func TestLoadConfig(t *testing.T) {
 			loaded, err := cm.Sub(component.NewIDWithName(typeStr, tc.name).String())
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(loaded, cfg))
-			require.Equal(t, cfg, tc.expectedConfig)
+			require.Equal(t, tc.expectedConfig, cfg)
 			require.NoError(t, component.ValidateConfig(cfg))
 		})
 	}

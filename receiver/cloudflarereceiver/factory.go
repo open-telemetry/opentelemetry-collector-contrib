@@ -47,5 +47,7 @@ func createLogsReceiver(
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		TimestampField: "EdgeStartTimestamp",
+	}
 }

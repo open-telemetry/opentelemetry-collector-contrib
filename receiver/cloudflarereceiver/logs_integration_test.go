@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
+
 package cloudflarereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver"
 
 import (
@@ -45,10 +47,10 @@ const (
 )
 
 var testPayloads = []string{
-	"simple-test-request.json",
+	"multiple_log_payload",
 }
 
-func TestAlertsReceiverTLS(t *testing.T) {
+func TestReceiverTLS(t *testing.T) {
 	for _, payloadName := range testPayloads {
 		t.Run(payloadName, func(t *testing.T) {
 			testAddr := testutil.GetAvailableLocalAddress(t)
@@ -66,10 +68,11 @@ func TestAlertsReceiverTLS(t *testing.T) {
 					Endpoint: testAddr,
 					TLS: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
-							CertFile: filepath.Join("testdata", "cert", "server.crt"),
+							CertFile: filepath.Join("testdata", "cert", "server.bundle.crt"),
 							KeyFile:  filepath.Join("testdata", "cert", "server.key"),
 						},
 					},
+					TimestampField: "EdgeStartTimestamp",
 				},
 				sink,
 			)
@@ -82,21 +85,26 @@ func TestAlertsReceiverTLS(t *testing.T) {
 				require.NoError(t, recv.Shutdown(context.Background()))
 			}()
 
-			payload, err := os.ReadFile(filepath.Join("testdata", "sample-payloads", payloadName))
+			payload, err := os.ReadFile(filepath.Join("testdata", "sample-payloads", fmt.Sprintf("%s.txt", payloadName)))
 			require.NoError(t, err)
 
 			req, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
 			require.NoError(t, err)
 
-			req.Header.Add(secretHeaderName, testSecret)
-
-			client, err := clientWithCert(filepath.Join("testdata", "cert", "ca.crt"))
+			client, err := clientWithCert(filepath.Join("testdata", "cert", "CAroot.crt"))
 			require.NoError(t, err)
 
+			// try first without secret to see failure
 			resp, err := client.Do(req)
 			require.NoError(t, err)
+			require.Equal(t, resp.StatusCode, http.StatusUnauthorized)
+			resp.Body.Close()
 
-			defer resp.Body.Close()
+			// add header to see success
+			req.Header.Add(secretHeaderName, testSecret)
+			resp, err = client.Do(req)
+			require.NoError(t, err)
+			resp.Body.Close()
 
 			require.Equal(t, resp.StatusCode, http.StatusOK)
 
@@ -106,7 +114,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 
 			logs := sink.AllLogs()[0]
 
-			expectedLogs, err := readLogs(filepath.Join("testdata", "golden", payloadName))
+			expectedLogs, err := readLogs(filepath.Join("testdata", "processed", fmt.Sprintf("%s.json", payloadName)))
 			require.NoError(t, err)
 
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
