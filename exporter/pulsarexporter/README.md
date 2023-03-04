@@ -41,7 +41,6 @@ The following settings can be optionally configured:
         - `principal_header`:
         - `zts_url`:
 - `producer`
-    - `producer_properties`: 
     - `max_reconnect_broker`: specifies the maximum retry number of reconnectToBroker. (default: ultimate)
     - `hashing_scheme`: used to define the partition on where to publish a particular message. Can be set to `java_string_hash` (default) or `murmur3_32hash`. 
     - `compression_level`: one of 'default' (default), 'faster', or 'better'.
@@ -58,6 +57,9 @@ The following settings can be optionally configured:
   only be used if `insecure` is set to true.
 - `tls_allow_insecure_connection`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
 - `timeout`: send pulsar message timeout (default: 5s)
+- `operation_timeout`: sets producer-create, subscribe and unsubscribe operations timeout (default: 30 seconds)
+- `connection_timeout`: timeout for the establishment of a TCP connection (default: 5 seconds)
+- `map_connections_per_broker`: max number of connections to a single broker that will kept in the pool. (default: 1 connection)
 - `retry_on_failure`
     - `enabled` (default = true)
     - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`

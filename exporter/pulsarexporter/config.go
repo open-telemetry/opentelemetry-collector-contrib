@@ -82,18 +82,18 @@ type OAuth2 struct {
 
 // Producer defines configuration for producer
 type Producer struct {
-	MaxReconnectToBroker            *uint         `mapstructure:"max_reconnect_broker"`
-	HashingScheme                   string        `mapstructure:"hashing_scheme"`
-	CompressionLevel                string        `mapstructure:"compression_level"`
-	CompressionType                 string        `mapstructure:"compression_type"`
-	MaxPendingMessages              int           `mapstructure:"max_pending_messages"`
-	BatcherBuilderType              string        `mapstructure:"batch_builder_type"`
-	PartitionsAutoDiscoveryInterval time.Duration `mapstructure:"partitions_auto_discovery_interval"`
-	BatchingMaxPublishDelay         time.Duration `mapstructure:"batching_max_publish_delay"`
-	BatchingMaxMessages             uint          `mapstructure:"batching_max_messages"`
-	BatchingMaxSize                 uint          `mapstructure:"batching_max_size"`
-	DisableBlockIfQueueFull         bool          `mapstructure:"disable_block_if_queue_full"`
-	DisableBatching                 bool          `mapstructure:"disable_batching"`
+	MaxReconnectToBroker            *uint            `mapstructure:"max_reconnect_broker"`
+	HashingScheme                   HashingScheme    `mapstructure:"hashing_scheme"`
+	CompressionLevel                CompressionLevel `mapstructure:"compression_level"`
+	CompressionType                 CompressionType  `mapstructure:"compression_type"`
+	MaxPendingMessages              int              `mapstructure:"max_pending_messages"`
+	BatcherBuilderType              BatchBuilderType `mapstructure:"batch_builder_type"`
+	PartitionsAutoDiscoveryInterval time.Duration    `mapstructure:"partitions_auto_discovery_interval"`
+	BatchingMaxPublishDelay         time.Duration    `mapstructure:"batching_max_publish_delay"`
+	BatchingMaxMessages             uint             `mapstructure:"batching_max_messages"`
+	BatchingMaxSize                 uint             `mapstructure:"batching_max_size"`
+	DisableBlockIfQueueFull         bool             `mapstructure:"disable_block_if_queue_full"`
+	DisableBatching                 bool             `mapstructure:"disable_batching"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -152,94 +152,143 @@ func (cfg *Config) clientOptions() pulsar.ClientOptions {
 	return options
 }
 
-func (cfg *Config) getProducerOptions() (pulsar.ProducerOptions, error) {
-
+func (cfg *Config) getProducerOptions() pulsar.ProducerOptions {
 	producerOptions := pulsar.ProducerOptions{
 		Topic:                           cfg.Topic,
 		SendTimeout:                     cfg.Timeout,
-		DisableBatching:                 cfg.Producer.DisableBatching,
-		DisableBlockIfQueueFull:         cfg.Producer.DisableBlockIfQueueFull,
-		MaxPendingMessages:              cfg.Producer.MaxPendingMessages,
+		BatcherBuilderType:              cfg.Producer.BatcherBuilderType.ToPulsar(),
+		BatchingMaxMessages:             cfg.Producer.BatchingMaxMessages,
 		BatchingMaxPublishDelay:         cfg.Producer.BatchingMaxPublishDelay,
 		BatchingMaxSize:                 cfg.Producer.BatchingMaxSize,
-		BatchingMaxMessages:             cfg.Producer.BatchingMaxMessages,
-		PartitionsAutoDiscoveryInterval: cfg.Producer.PartitionsAutoDiscoveryInterval,
+		CompressionLevel:                cfg.Producer.CompressionLevel.ToPulsar(),
+		CompressionType:                 cfg.Producer.CompressionType.ToPulsar(),
+		DisableBatching:                 cfg.Producer.DisableBatching,
+		DisableBlockIfQueueFull:         cfg.Producer.DisableBlockIfQueueFull,
+		HashingScheme:                   cfg.Producer.HashingScheme.ToPulsar(),
+		MaxPendingMessages:              cfg.Producer.MaxPendingMessages,
 		MaxReconnectToBroker:            cfg.Producer.MaxReconnectToBroker,
+		PartitionsAutoDiscoveryInterval: cfg.Producer.PartitionsAutoDiscoveryInterval,
 	}
-
-	batchBuilderType, err := stringToBatchBuilderType(cfg.Producer.BatcherBuilderType)
-	if err != nil {
-		return producerOptions, err
-	}
-	producerOptions.BatcherBuilderType = batchBuilderType
-
-	compressionType, err := stringToCompressionType(cfg.Producer.CompressionType)
-	if err != nil {
-		return producerOptions, err
-	}
-	producerOptions.CompressionType = compressionType
-
-	compressionLevel, err := stringToCompressionLevel(cfg.Producer.CompressionLevel)
-	if err != nil {
-		return producerOptions, err
-	}
-	producerOptions.CompressionLevel = compressionLevel
-
-	hashingScheme, err := stringToHashingScheme(cfg.Producer.HashingScheme)
-	if err != nil {
-		return producerOptions, err
-	}
-	producerOptions.HashingScheme = hashingScheme
-
-	return producerOptions, nil
+	return producerOptions
 }
 
-func stringToBatchBuilderType(builderType string) (pulsar.BatcherBuilderType, error) {
-	switch builderType {
-	case "default":
-		return pulsar.DefaultBatchBuilder, nil
-	case "key_based":
-		return pulsar.KeyBasedBatchBuilder, nil
+type BatchBuilderType string
+
+const (
+	DefaultBatchBuilder  BatchBuilderType = "default"
+	KeyBasedBatchBuilder BatchBuilderType = "key_based"
+)
+
+func (c *BatchBuilderType) UnmarshalText(text []byte) error {
+	switch read := BatchBuilderType(text); read {
+	case DefaultBatchBuilder, KeyBasedBatchBuilder:
+		*c = read
+		return nil
 	default:
-		return pulsar.DefaultBatchBuilder, fmt.Errorf("producer.batchBuilderType should be one of 'default' or 'key_based'. configured value %v. Assigning default value as default", builderType)
+		return fmt.Errorf("producer.compressionType should be one of 'none', 'lz4', 'zlib', or 'zstd'. configured value %v", string(read))
 	}
 }
 
-func stringToCompressionType(compressionType string) (pulsar.CompressionType, error) {
-	switch compressionType {
-	case "none":
-		return pulsar.NoCompression, nil
-	case "lz4":
-		return pulsar.LZ4, nil
-	case "zlib":
-		return pulsar.ZLib, nil
-	case "zstd":
-		return pulsar.ZSTD, nil
+func (c *BatchBuilderType) ToPulsar() pulsar.BatcherBuilderType {
+	switch *c {
+	case DefaultBatchBuilder:
+		return pulsar.DefaultBatchBuilder
+	case KeyBasedBatchBuilder:
+		return pulsar.KeyBasedBatchBuilder
 	default:
-		return pulsar.NoCompression, fmt.Errorf("producer.compressionType should be one of 'none', 'lz4', 'zlib', or 'zstd'. configured value %v. Assigning default value as none", compressionType)
+		return pulsar.DefaultBatchBuilder
 	}
 }
 
-func stringToCompressionLevel(compressionLevel string) (pulsar.CompressionLevel, error) {
-	switch compressionLevel {
-	case "default":
-		return pulsar.Default, nil
-	case "faster":
-		return pulsar.Faster, nil
-	case "better":
-		return pulsar.Better, nil
+type CompressionType string
+
+const (
+	None CompressionType = "none"
+	LZ4  CompressionType = "lz4"
+	ZLib CompressionType = "zlib"
+	ZStd CompressionType = "zstd"
+)
+
+func (c *CompressionType) UnmarshalText(text []byte) error {
+	switch read := CompressionType(text); read {
+	case None, LZ4, ZLib, ZStd:
+		*c = read
+		return nil
 	default:
-		return pulsar.Default, fmt.Errorf("producer.compressionLevel should be one of 'default', 'faster', or 'better'. configured value %v. Assigning default value as default", compressionLevel)
+		return fmt.Errorf("producer.compressionType should be one of 'none', 'lz4', 'zlib', or 'zstd'. configured value %v", string(read))
 	}
 }
 
-func stringToHashingScheme(hashingScheme string) (pulsar.HashingScheme, error) {
-	switch hashingScheme {
-	case "java_string_hash":
-		return pulsar.JavaStringHash, nil
-	case "murmur3_32hash":
-		return pulsar.Murmur3_32Hash, nil
+func (c *CompressionType) ToPulsar() pulsar.CompressionType {
+	switch *c {
+	case None:
+		return pulsar.NoCompression
+	case LZ4:
+		return pulsar.LZ4
+	case ZLib:
+		return pulsar.ZLib
+	case ZStd:
+		return pulsar.ZSTD
 	default:
-		return pulsar.JavaStringHash, fmt.Errorf("producer.hashingScheme should be one of 'java_string_hash' or 'murmur3_32hash'. configured value %v, Assigning default value as java_string_hash", hashingScheme)
+		return pulsar.NoCompression
+	}
+}
+
+type CompressionLevel string
+
+const (
+	Default CompressionLevel = "default"
+	Faster  CompressionLevel = "faster"
+	Better  CompressionLevel = "better"
+)
+
+func (c *CompressionLevel) UnmarshalText(text []byte) error {
+	switch read := CompressionLevel(text); read {
+	case Default, Faster, Better:
+		*c = read
+		return nil
+	default:
+		return fmt.Errorf("producer.compressionLevel should be one of 'default', 'faster', or 'better'. configured value %v", read)
+	}
+}
+
+func (c *CompressionLevel) ToPulsar() pulsar.CompressionLevel {
+	switch *c {
+	case Default:
+		return pulsar.Default
+	case Faster:
+		return pulsar.Faster
+	case Better:
+		return pulsar.Better
+	default:
+		return pulsar.Default
+	}
+}
+
+type HashingScheme string
+
+const (
+	JavaStringHash HashingScheme = "java_string_hash"
+	Murmur3_32Hash HashingScheme = "murmur3_32hash"
+)
+
+func (c *HashingScheme) UnmarshalText(text []byte) error {
+	switch read := HashingScheme(text); read {
+	case JavaStringHash, Murmur3_32Hash:
+		*c = read
+		return nil
+	default:
+		return fmt.Errorf("producer.hashingScheme should be one of 'java_string_hash' or 'murmur3_32hash'. configured value %v", read)
+	}
+}
+
+func (c *HashingScheme) ToPulsar() pulsar.HashingScheme {
+	switch *c {
+	case JavaStringHash:
+		return pulsar.JavaStringHash
+	case Murmur3_32Hash:
+		return pulsar.Murmur3_32Hash
+	default:
+		return pulsar.JavaStringHash
 	}
 }
