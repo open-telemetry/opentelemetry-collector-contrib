@@ -42,6 +42,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `label_selector`: select objects by label(s)
 - `field_selector`: select objects by field(s)
 - `interval`: the interval at which object is pulled, default 60 minutes. Only useful for `pull` mode.
+- `resource_version` allows watch resources starting from a specific version (default = `1`). Only available for `watch` mode.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)
 - `group`: API group name. It is an optional config. When given resource object is present in multiple groups,
 use this config to specify the group to select. By default, it will select the first group.

@@ -1,11 +1,15 @@
 default:
-all_metrics:
-  system.processes.count:
-    enabled: true
-  system.processes.created:
-    enabled: true
-no_metrics:
-  system.processes.count:
-    enabled: false
-  system.processes.created:
-    enabled: false
+all_set:
+  metrics:
+    system.processes.count:
+      enabled: true
+    system.processes.created:
+      enabled: true
+  resource_attributes:
+none_set:
+  metrics:
+    system.processes.count:
+      enabled: false
+    system.processes.created:
+      enabled: false
+  resource_attributes:

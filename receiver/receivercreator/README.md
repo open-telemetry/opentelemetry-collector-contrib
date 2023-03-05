@@ -3,7 +3,7 @@
 | Status                   |                       |
 |--------------------------|-----------------------|
 | Stability                | [beta]                |
-| Supported pipeline types | logs, metrics, traces |
+| Supported pipeline types | metrics               |
 | Distributions            | [contrib]             |
 
 This receiver can instantiate other receivers at runtime based on whether
@@ -61,6 +61,11 @@ port but the port needs to be set inside endpoint. You could do:
 config:
    endpoint: '`endpoint`:8080'
 ```
+
+If your target receiver provides an `endpoint` config field and you aren't
+manually setting it like the above example, the observer endpoint target value
+will automatically be sourced. If no `endpoint` field is available you are
+required to specify any necessary fields.
 
 **receivers.resource_attributes**
 

@@ -19,6 +19,8 @@ body:
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - connector/count
+      - connector/servicegraph
+      - connector/spanmetrics
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
@@ -149,6 +151,7 @@ body:
       - receiver/cloudfoundry
       - receiver/collectd
       - receiver/couchdb
+      - receiver/datadog
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
@@ -185,7 +188,6 @@ body:
       - receiver/postgresql
       - receiver/prometheus
       - receiver/prometheusexec
-      - receiver/promtail
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb
@@ -217,6 +219,7 @@ body:
       - receiver/zookeeper
       - testbed
       - testbed/mockdatareceivers/mockawsxrayreceiver
+      - testbed/mockdatasenders/mockdatadogagentexporter
       # End Collector components list
   - type: textarea
     attributes:

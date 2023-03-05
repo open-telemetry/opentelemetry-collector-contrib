@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -1307,6 +1308,196 @@ func Test_Execute(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func Test_Statements_Execute_Error(t *testing.T) {
+	tests := []struct {
+		name      string
+		condition boolExpressionEvaluator[interface{}]
+		function  ExprFunc[interface{}]
+		errorMode ErrorMode
+	}{
+		{
+			name: "IgnoreError error from condition",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, fmt.Errorf("test")
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, nil
+			},
+			errorMode: IgnoreError,
+		},
+		{
+			name: "PropagateError error from condition",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, fmt.Errorf("test")
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, nil
+			},
+			errorMode: PropagateError,
+		},
+		{
+			name: "IgnoreError error from function",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, nil
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, fmt.Errorf("test")
+			},
+			errorMode: IgnoreError,
+		},
+		{
+			name: "PropagateError error from function",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, nil
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, fmt.Errorf("test")
+			},
+			errorMode: PropagateError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statements := Statements[interface{}]{
+				statements: []*Statement[interface{}]{
+					{
+						condition: BoolExpr[any]{tt.condition},
+						function:  Expr[any]{exprFunc: tt.function},
+					},
+				},
+				errorMode:         tt.errorMode,
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+			}
+
+			err := statements.Execute(context.Background(), nil)
+			if tt.errorMode == PropagateError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func Test_Statements_Eval(t *testing.T) {
+	tests := []struct {
+		name           string
+		conditions     []boolExpressionEvaluator[interface{}]
+		function       ExprFunc[interface{}]
+		errorMode      ErrorMode
+		expectedResult bool
+	}{
+		{
+			name: "True",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				alwaysTrue[interface{}],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: true,
+		},
+		{
+			name: "At least one True",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				alwaysFalse[interface{}],
+				alwaysFalse[interface{}],
+				alwaysTrue[interface{}],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: true,
+		},
+		{
+			name: "False",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				alwaysFalse[interface{}],
+				alwaysFalse[interface{}],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: false,
+		},
+		{
+			name: "Error is false when using Ignore",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				alwaysFalse[interface{}],
+				func(context.Context, interface{}) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+				alwaysTrue[interface{}],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var rawStatements []*Statement[interface{}]
+			for _, condition := range tt.conditions {
+				rawStatements = append(rawStatements, &Statement[interface{}]{
+					condition: BoolExpr[any]{condition},
+					function: Expr[any]{
+						exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+							return nil, fmt.Errorf("function should not be called")
+						},
+					},
+				})
+			}
+
+			statements := Statements[interface{}]{
+				statements:        rawStatements,
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+				errorMode:         tt.errorMode,
+			}
+
+			result, err := statements.Eval(context.Background(), nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func Test_Statements_Eval_Error(t *testing.T) {
+	tests := []struct {
+		name       string
+		conditions []boolExpressionEvaluator[interface{}]
+		function   ExprFunc[interface{}]
+		errorMode  ErrorMode
+	}{
+		{
+			name: "Propagate Error from function",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				func(context.Context, interface{}) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+			},
+			errorMode: PropagateError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var rawStatements []*Statement[interface{}]
+			for _, condition := range tt.conditions {
+				rawStatements = append(rawStatements, &Statement[interface{}]{
+					condition: BoolExpr[any]{condition},
+					function: Expr[any]{
+						exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+							return nil, fmt.Errorf("function should not be called")
+						},
+					},
+				})
+			}
+
+			statements := Statements[interface{}]{
+				statements:        rawStatements,
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+				errorMode:         tt.errorMode,
+			}
+
+			result, err := statements.Eval(context.Background(), nil)
+			assert.Error(t, err)
+			assert.False(t, result)
 		})
 	}
 }

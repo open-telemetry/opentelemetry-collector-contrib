@@ -53,7 +53,7 @@ func createDefaultConfig() component.Config {
 			Insecure:           false,
 			InsecureSkipVerify: true,
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

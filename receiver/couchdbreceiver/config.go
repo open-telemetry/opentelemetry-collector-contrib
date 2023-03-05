@@ -41,9 +41,9 @@ var (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
-	Username                                string                   `mapstructure:"username"`
-	Password                                string                   `mapstructure:"password"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
+	Username                                string `mapstructure:"username"`
+	Password                                string `mapstructure:"password"`
 }
 
 // Validate validates missing and invalid configuration fields.

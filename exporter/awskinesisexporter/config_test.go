@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -60,10 +61,12 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         false,
-					MaxInterval:     30 * time.Second,
-					InitialInterval: 5 * time.Second,
-					MaxElapsedTime:  300 * time.Second,
+					Enabled:             false,
+					MaxInterval:         30 * time.Second,
+					InitialInterval:     5 * time.Second,
+					MaxElapsedTime:      300 * time.Second,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),

@@ -53,6 +53,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
@@ -74,7 +75,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
@@ -122,6 +122,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
@@ -200,7 +201,6 @@ func Components() (otelcol.Factories, error) {
 		dbstorage.NewFactory(),
 		ecstaskobserver.NewFactory(),
 		filestorage.NewFactory(),
-		fluentbitextension.NewFactory(),
 		headerssetterextension.NewFactory(),
 		healthcheckextension.NewFactory(),
 		hostobserver.NewFactory(),
@@ -234,6 +234,7 @@ func Components() (otelcol.Factories, error) {
 		cloudfoundryreceiver.NewFactory(),
 		collectdreceiver.NewFactory(),
 		couchdbreceiver.NewFactory(),
+		datadogreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
 		dotnetdiagnosticsreceiver.NewFactory(),
 		elasticsearchreceiver.NewFactory(),
@@ -271,7 +272,6 @@ func Components() (otelcol.Factories, error) {
 		postgresqlreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
-		// promtailreceiver.NewFactory(),
 		pulsarreceiver.NewFactory(),
 		purefareceiver.NewFactory(),
 		purefbreceiver.NewFactory(),
@@ -332,6 +332,7 @@ func Components() (otelcol.Factories, error) {
 		kafkaexporter.NewFactory(),
 		loadbalancingexporter.NewFactory(),
 		loggingexporter.NewFactory(),
+		logicmonitorexporter.NewFactory(),
 		logzioexporter.NewFactory(),
 		lokiexporter.NewFactory(),
 		mezmoexporter.NewFactory(),

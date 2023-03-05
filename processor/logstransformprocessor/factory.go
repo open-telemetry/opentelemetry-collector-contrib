@@ -33,8 +33,6 @@ const (
 	stability = component.StabilityLevelDevelopment
 )
 
-var processorCapabilities = consumer.Capabilities{MutatesData: true}
-
 // NewFactory returns a new factory for the Logs Transform processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(

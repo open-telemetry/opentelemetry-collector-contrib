@@ -21,6 +21,7 @@ The following configuration options can also be configured:
 - `sourcetype` (no default): Optional Splunk source type: https://docs.splunk.com/Splexicon:Sourcetype
 - `index` (no default): Splunk index, optional name of the Splunk index targeted
 - `max_connections` (default: 100): Maximum HTTP connections to use simultaneously when sending data. Deprecated: use `max_idle_conns` or `max_idle_conns_per_host` instead. See [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md) for more info.
+- `use_multi_metric_format` (default: false): Combines metrics with the same metadata to reduce ingest using the [multiple-metric JSON format](https://docs.splunk.com/Documentation/Splunk/9.0.0/Metrics/GetMetricsInOther#The_multiple-metric_JSON_format). Applicable in the `metrics` pipeline only.
 - `disable_compression` (default: false): Whether to disable gzip compression over HTTP.
 - `timeout` (default: 10s): HTTP timeout when sending data.
 - `insecure_skip_verify` (default: false): Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS.
@@ -45,6 +46,7 @@ The following configuration options can also be configured:
   you want the profiling data to be dropped instead. Applicable in the `logs` pipeline only.
 - `health_path` (default = '/services/collector/health'): The path reporting [health checks](https://docs.splunk.com/Documentation/Splunk/9.0.1/RESTREF/RESTinput#services.2Fcollector.2Fhealth).
 - `health_check_enabled` (default = false): Whether to perform Splunk HEC Health Check during the exporter's startup.
+- `export_raw` (default = false): send only the log's body, targeting a Splunk HEC raw endpoint.
 - `hec_metadata_to_otel_attrs/source` (default = 'com.splunk.source'): Specifies the mapping of a specific unified model attribute value to the standard source field of a HEC event.
 - `hec_metadata_to_otel_attrs/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of a specific unified model attribute value to the standard sourcetype field of a HEC event.
 - `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'):  Specifies the mapping of a specific unified model attribute value to the standard index field of a HEC event.

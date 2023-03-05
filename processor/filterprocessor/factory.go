@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 const (
@@ -44,7 +46,9 @@ func NewFactory() processor.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		ErrorMode: ottl.PropagateError,
+	}
 }
 
 func createMetricsProcessor(

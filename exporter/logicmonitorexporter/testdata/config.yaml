@@ -1,13 +1,13 @@
 # The following entry demonstrates 
-# - endpoint: The URL on which logs/traces will be forwarded based on the configured pipeline
+# - endpoint: The URL on which logs will be forwarded based on the configured pipeline
 # - apitoken: Configuring the API Token as an authorization mechanism.
 logicmonitor/apitoken:
   endpoint: https://company.logicmonitor.com/rest
-  apitoken:
+  api_token:
     access_id: "accessid"
     access_key: "accesskey"
 # The following entry demonstrates 
-# - endpoint: The URL on which logs/traces will be forwarded based on the configured pipeline
+# - endpoint: The URL on which logs will be forwarded based on the configured pipeline
 # - headers: Passing bearer token in headers for authorization.
 logicmonitor/bearertoken:
   endpoint: https://company.logicmonitor.com/rest

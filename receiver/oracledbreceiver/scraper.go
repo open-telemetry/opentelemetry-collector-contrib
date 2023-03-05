@@ -70,18 +70,18 @@ type scraper struct {
 	instanceName               string
 	scrapeCfg                  scraperhelper.ScraperControllerSettings
 	startTime                  pcommon.Timestamp
-	metricsSettings            metadata.MetricsSettings
+	metricsBuilderConfig       metadata.MetricsBuilderConfig
 }
 
-func newScraper(id component.ID, metricsBuilder *metadata.MetricsBuilder, metricsSettings metadata.MetricsSettings, scrapeCfg scraperhelper.ScraperControllerSettings, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) (scraperhelper.Scraper, error) {
+func newScraper(id component.ID, metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ScraperControllerSettings, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) (scraperhelper.Scraper, error) {
 	s := &scraper{
-		metricsBuilder:     metricsBuilder,
-		metricsSettings:    metricsSettings,
-		scrapeCfg:          scrapeCfg,
-		logger:             logger,
-		dbProviderFunc:     providerFunc,
-		clientProviderFunc: clientProviderFunc,
-		instanceName:       instanceName,
+		metricsBuilder:       metricsBuilder,
+		metricsBuilderConfig: metricsBuilderConfig,
+		scrapeCfg:            scrapeCfg,
+		logger:               logger,
+		dbProviderFunc:       providerFunc,
+		clientProviderFunc:   clientProviderFunc,
+		instanceName:         instanceName,
 	}
 	return scraperhelper.NewScraper(id.String(), s.scrape, scraperhelper.WithShutdown(s.shutdown), scraperhelper.WithStart(s.start))
 }
@@ -106,7 +106,17 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	var scrapeErrors []error
 
-	runStats := s.metricsSettings.OracledbEnqueueDeadlocks.Enabled || s.metricsSettings.OracledbExchangeDeadlocks.Enabled || s.metricsSettings.OracledbExecutions.Enabled || s.metricsSettings.OracledbParseCalls.Enabled || s.metricsSettings.OracledbHardParses.Enabled || s.metricsSettings.OracledbUserCommits.Enabled || s.metricsSettings.OracledbUserRollbacks.Enabled || s.metricsSettings.OracledbPhysicalReads.Enabled || s.metricsSettings.OracledbLogicalReads.Enabled || s.metricsSettings.OracledbCPUTime.Enabled || s.metricsSettings.OracledbPgaMemory.Enabled
+	runStats := s.metricsBuilderConfig.Metrics.OracledbEnqueueDeadlocks.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbExchangeDeadlocks.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbExecutions.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParseCalls.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbHardParses.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbUserCommits.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbUserRollbacks.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalReads.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLogicalReads.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCPUTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPgaMemory.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -179,7 +189,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	if s.metricsSettings.OracledbSessionsUsage.Enabled {
+	if s.metricsBuilderConfig.Metrics.OracledbSessionsUsage.Enabled {
 		rows, err := s.sessionCountClient.metricRows(ctx)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", sessionCountSQL, err))
@@ -192,10 +202,13 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	if s.metricsSettings.OracledbSessionsLimit.Enabled ||
-		s.metricsSettings.OracledbProcessesUsage.Enabled || s.metricsSettings.OracledbProcessesLimit.Enabled ||
-		s.metricsSettings.OracledbEnqueueResourcesUsage.Enabled || s.metricsSettings.OracledbEnqueueResourcesLimit.Enabled ||
-		s.metricsSettings.OracledbEnqueueLocksLimit.Enabled || s.metricsSettings.OracledbEnqueueLocksUsage.Enabled {
+	if s.metricsBuilderConfig.Metrics.OracledbSessionsLimit.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbProcessesUsage.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbProcessesLimit.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbEnqueueResourcesUsage.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbEnqueueResourcesLimit.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbEnqueueLocksLimit.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbEnqueueLocksUsage.Enabled {
 		rows, err := s.systemResourceLimitsClient.metricRows(ctx)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", systemResourceLimitsSQL, err))
@@ -246,7 +259,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			}
 		}
 	}
-	if s.metricsSettings.OracledbTablespaceSizeUsage.Enabled {
+	if s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeUsage.Enabled {
 		rows, err := s.tablespaceUsageClient.metricRows(ctx)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", tablespaceUsageSQL, err))
@@ -261,7 +274,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			}
 		}
 	}
-	if s.metricsSettings.OracledbTablespaceSizeLimit.Enabled {
+	if s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeLimit.Enabled {
 		rows, err := s.tablespaceMaxSpaceClient.metricRows(ctx)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", tablespaceMaxSpaceSQL, err))
@@ -269,10 +282,18 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			now := pcommon.NewTimestampFromTime(time.Now())
 			for _, row := range rows {
 				tablespaceName := row["TABLESPACE_NAME"]
-				err := s.metricsBuilder.RecordOracledbTablespaceSizeLimitDataPoint(now, row["VALUE"], tablespaceName)
-				if err != nil {
-					scrapeErrors = append(scrapeErrors, err)
+				var val int64
+				inputVal := row["VALUE"]
+				if inputVal == "" {
+					val = -1
+				} else {
+					val, err = strconv.ParseInt(inputVal, 10, 64)
+					if err != nil {
+						scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbTablespaceSizeLimit, value was %s: %w", inputVal, err))
+						continue
+					}
 				}
+				s.metricsBuilder.RecordOracledbTablespaceSizeLimitDataPoint(now, val, tablespaceName)
 			}
 		}
 	}

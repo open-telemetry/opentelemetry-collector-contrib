@@ -152,10 +152,13 @@ func getSharedPolicyEvaluator(logger *zap.Logger, cfg *sharedPolicyCfg) (samplin
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
 	case SpanCount:
 		spCfg := cfg.SpanCountCfg
-		return sampling.NewSpanCount(logger, spCfg.MinSpans), nil
+		return sampling.NewSpanCount(logger, spCfg.MinSpans, spCfg.MaxSpans), nil
 	case TraceState:
 		tsfCfg := cfg.TraceStateCfg
 		return sampling.NewTraceStateFilter(logger, tsfCfg.Key, tsfCfg.Values), nil
+	case BooleanAttribute:
+		bafCfg := cfg.BooleanAttributeCfg
+		return sampling.NewBooleanAttributeFilter(logger, bafCfg.Key, bafCfg.Value), nil
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
@@ -185,9 +188,9 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 		// Sampled or not, remove the batches
 		trace.Lock()
-		allSpans := ptrace.NewTraces()
+		allSpans := trace.ReceivedBatches
 		trace.FinalDecision = decision
-		trace.ReceivedBatches.MoveTo(allSpans)
+		trace.ReceivedBatches = ptrace.NewTraces()
 		trace.Unlock()
 
 		if decision == sampling.Sampled {

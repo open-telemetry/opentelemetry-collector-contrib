@@ -24,10 +24,10 @@ import (
 	"time"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -37,7 +37,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
@@ -87,7 +87,7 @@ func TestNewExporter(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	body := <-server.MetadataChan
-	var recvMetadata metadata.HostMetadata
+	var recvMetadata hostmetadata.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
@@ -404,7 +404,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	body := <-server.MetadataChan
-	var recvMetadata metadata.HostMetadata
+	var recvMetadata hostmetadata.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
@@ -748,7 +748,7 @@ func createTestMetricsWithStats() pmetric.Metrics {
 	})
 	dest := md.ResourceMetrics()
 	logger, _ := zap.NewDevelopment()
-	trans, err := translator.New(logger)
+	trans, err := metrics.NewTranslator(logger)
 	if err != nil {
 		panic(err)
 	}

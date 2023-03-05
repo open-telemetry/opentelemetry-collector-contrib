@@ -43,7 +43,7 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 1 * time.Minute,
 		},

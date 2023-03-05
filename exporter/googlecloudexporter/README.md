@@ -136,6 +136,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
 The following configuration options are supported:
 
 - `project` (default = Fetch from Credentials): GCP project identifier.
+- `destination_project_quota` (optional): Counts quota for traces and metrics against the project to which the data is sent (as opposed to the project associated with the Collector's service account. For example, when setting `project_id` or using [multi-project export](#multi-project-exporting). (default = false)
 - `user_agent` (default = `opentelemetry-collector-contrib {{version}}`): Override the user agent string sent on requests to Cloud Monitoring (currently only applies to metrics). Specify `{{version}}` to include the application version number.
 - `impersonate` (optional): Configuration for service account impersonation
   - `target_principal`: TargetPrincipal is the email address of the service account to impersonate.
@@ -156,6 +157,7 @@ The following configuration options are supported:
     - `regex`: Match resource keys by regex.
   - `cumulative_normalization` (default = true): If true, normalizes cumulative metrics without start times or with explicit reset points by subtracting subsequent points from the initial point. It is enabled by default. Since it caches starting points, it may result inincreased memory usage.
   - `sum_of_squared_deviation` (default = false): If true, enables calculation of an estimated sum of squared deviation.  It is an estimate, and is not exact.
+  - `compression` (optional): Enable gzip compression for gRPC requests (valid vlaues: `gzip`).
 - `trace` (optional): Configuration for sending traces to Cloud Trace.
   - `endpoint` (default = cloudtrace.googleapis.com): Endpoint where trace data is going to be sent to.
   - `use_insecure` (default = false): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "". Replaces `use_insecure`.
@@ -169,6 +171,7 @@ The following configuration options are supported:
   - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in log labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
     - `prefix`: Match resource keys by prefix.
     - `regex`: Match resource keys by regex.
+  - `compression` (optional): Enable gzip compression for gRPC requests (valid vlaues: `gzip`).
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
   - `enabled` (default = true)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
@@ -311,6 +314,14 @@ additional flexibility in parsing log severity from incoming entries.
 ## Multi-Project exporting
 
 By default, the exporter sends telemetry to the project specified by `project` in the configuration. This can be overridden on a per-metrics basis using the `gcp.project.id` resource attribute. For example, if a metric has a label `project`, you could use the `groupbyattrs` processor to promote it to a resource label, and the `resource` processor to rename the attribute from `project` to `gcp.project.id`.
+
+### Multi-Project quota usage
+
+The `gcp.project.id` label can be combined with the `destination_project_quota` option to attribute quota usage to the project parsed by the label. This feature is currently only available
+for traces and metrics. The Collector's default service account will need `roles/serviceusage.serviceUsageConsumer` IAM permissions in the destination quota project.
+
+Note that this option will not work  if a quota project is already defined in your Collector's GCP credentials. In this case, the telemetry will fail to export with a "project not found" error.
+This can be done by manually editing your [ADC file](https://cloud.google.com/docs/authentication/application-default-credentials#personal) (if it exists) to remove the `quota_project_id` entry line.
 
 ## Features and Feature-Gates
 

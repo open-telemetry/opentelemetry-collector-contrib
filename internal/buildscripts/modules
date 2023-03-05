@@ -12,6 +12,8 @@ beta_modules=(
   "go.opentelemetry.io/collector/featuregate"
   "go.opentelemetry.io/collector/processor/batchprocessor"
   "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+  # TODO: enable after v0.73.0 release of the collector
+  # "go.opentelemetry.io/collector/receiver"
   "go.opentelemetry.io/collector/receiver/otlpreceiver"
   "go.opentelemetry.io/collector/semconv"
 )

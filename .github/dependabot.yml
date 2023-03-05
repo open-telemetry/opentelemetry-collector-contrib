@@ -43,7 +43,15 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/connector/count"
+    directory: "/connector/countconnector"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/connector/servicegraphconnector"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/connector/spanmetricsconnector"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -236,10 +244,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/extension/bearertokenauthextension"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/extension/fluentbitextension"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -598,6 +602,10 @@ updates:
     directory: "/receiver/couchdbreceiver"
     schedule:
       interval: "weekly"
+ - package-ecosystem: "gomod"
+    directory: "/receiver/datadogreceiver"
+    schedule:
+      interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/dockerstatsreceiver"
     schedule:
@@ -868,5 +876,9 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/testbed/mockdatareceivers/mockawsxrayreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/testbed/mockdatasenders/mockdatadogagentexporter"
     schedule:
       interval: "weekly"

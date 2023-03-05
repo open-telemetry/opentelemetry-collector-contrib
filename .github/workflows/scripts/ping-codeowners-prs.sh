@@ -57,7 +57,7 @@ main() {
         -H "Authorization: Bearer ${GITHUB_TOKEN}" \
         "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
         -d "{\"reviewers\":[${REVIEWERS}]}" \
-        | jq ".message"
+        | jq ".message" \
         || echo "jq was unable to parse GitHub's response"
 }
 

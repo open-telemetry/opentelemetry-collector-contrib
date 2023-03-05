@@ -54,12 +54,14 @@ type QueueSettings struct {
 	QueueSize int `mapstructure:"queue_size"`
 }
 
+const defaultDatabase = "default"
+
 var (
 	errConfigNoHost     = errors.New("host must be specified")
 	errConfigInvalidDSN = errors.New("DSN is invalid")
 )
 
-// Validate validates the clickhouse server configuration.
+// Validate the clickhouse server configuration.
 func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
 		err = multierr.Append(err, errConfigNoHost)
@@ -70,8 +72,6 @@ func (cfg *Config) Validate() (err error) {
 	}
 	return err
 }
-
-const defaultDatabase = "default"
 
 func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 	return exporterhelper.QueueSettings{

@@ -25,9 +25,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -37,7 +37,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
@@ -155,10 +155,8 @@ func TestTracesSource(t *testing.T) {
 	assert := assert.New(t)
 	params := exportertest.NewNopCreateSettings()
 	reg := featuregate.NewRegistry()
-	reg.MustRegisterID(metadata.HostnamePreviewFeatureGate, featuregate.StageBeta)
-	assert.NoError(reg.Apply(map[string]bool{
-		metadata.HostnamePreviewFeatureGate: true,
-	}))
+	reg.MustRegister(hostmetadata.HostnamePreviewFeatureGate.ID(), featuregate.StageBeta)
+	assert.NoError(reg.Set(hostmetadata.HostnamePreviewFeatureGate.ID(), true))
 	f := newFactoryWithRegistry(reg)
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(err)
@@ -341,7 +339,7 @@ func TestPushTraceData(t *testing.T) {
 	assert.NoError(t, err)
 
 	body := <-server.MetadataChan
-	var recvMetadata metadata.HostMetadata
+	var recvMetadata hostmetadata.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")

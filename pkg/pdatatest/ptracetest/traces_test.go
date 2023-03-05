@@ -160,7 +160,31 @@ func TestCompareTraces(t *testing.T) {
 		{
 			name: "scopespans-spans-events-mismatch",
 			withoutOptions: multierr.Combine(
-				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": events doesn't match"),
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": number of events doesn't match expected: 1, actual: 0"),
+			),
+		},
+		{
+			name: "scopespans-spans-events-attributes-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span event \"event1\": attributes don't match expected: map[eventkey1:value1], actual: map[eventkey1:value2]"),
+			),
+		},
+		{
+			name: "scopespans-spans-events-dropattributescount-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span event \"event1\": dropped attributes count doesn't match expected: 1, actual: 0"),
+			),
+		},
+		{
+			name: "scopespans-spans-events-name-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": missing expected span event: event1; resource \"map[host.name:node1]\": scope \"collector\": span \"\": unexpected span event: event2"),
+			),
+		},
+		{
+			name: "scopespans-spans-events-timestamp-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span event \"event1\": timestamp doesn't match expected: 11651379494838206400, actual: 11651379494838206464"),
 			),
 		},
 		{
@@ -172,7 +196,37 @@ func TestCompareTraces(t *testing.T) {
 		{
 			name: "scopespans-spans-links-mismatch",
 			withoutOptions: multierr.Combine(
-				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": links doesn't match"),
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": number of span links doesn't match expected: 1, actual: 0"),
+			),
+		},
+		{
+			name: "scopespans-spans-links-traceid-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span link \"\": trace ID doesn't match expected: 8c8b1765a7b0acf0b66aa4623fcb7bd5, actual: "),
+			),
+		},
+		{
+			name: "scopespans-spans-links-spanid-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": missing expected span link: ; resource \"map[host.name:node1]\": scope \"collector\": span \"\": unexpected span link: fd0da883bb27cd6b"),
+			),
+		},
+		{
+			name: "scopespans-spans-links-tracestate-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span link \"fd0da883bb27cd6b\": trace state doesn't match expected: placeholder, actual: "),
+			),
+		},
+		{
+			name: "scopespans-spans-links-attributes-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span link \"fd0da883bb27cd6b\": attributes don't match expected: map[testKey1:teststringvalue1], actual: map[testKey1:teststringvalue2]"),
+			),
+		},
+		{
+			name: "scopespans-spans-links-dropattributescount-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span link \"fd0da883bb27cd6b\": dropped attributes count doesn't match expected: 1, actual: 0"),
 			),
 		},
 		{

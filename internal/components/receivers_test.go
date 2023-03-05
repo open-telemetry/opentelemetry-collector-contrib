@@ -146,6 +146,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "couchdb",
 		},
 		{
+			receiver: "datadog",
+		},
+		{
 			receiver:     "docker_stats",
 			skipLifecyle: true,
 		},
@@ -300,35 +303,6 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver:     "prometheus_exec",
 			skipLifecyle: true, // Requires running a subproccess that can not be easily set across platforms
 		},
-		// {
-		// 	receiver: "promtail",
-		// 	getConfigFn: func() component.Config {
-		// 		cfg := rcvrFactories["promtail"].CreateDefaultConfig().(*promtailreceiver.PromtailConfig)
-		// 		cfg.InputConfig = *promtailreceiver.NewConfigWithID("testconfig")
-		// 		cfg.InputConfig.Input = promtailreceiver.PromtailInputConfig{
-		// 			ScrapeConfig: []scrapeconfig.Config{
-		// 				{
-		// 					JobName:        "test",
-		// 					PipelineStages: []interface{}{},
-		// 					ServiceDiscoveryConfig: scrapeconfig.ServiceDiscoveryConfig{
-		// 						StaticConfigs: discovery.StaticConfig{
-		// 							{
-		// 								Labels: model.LabelSet{
-		// 									"job": "varlogs",
-		// 								},
-		// 								Targets: []model.LabelSet{},
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 			TargetConfig: file.Config{
-		// 				SyncPeriod: 10 * time.Second,
-		// 			},
-		// 		}
-		// 		return cfg
-		// 	},
-		// },
 		{
 			receiver:     "pulsar",
 			skipLifecyle: true, // TODO It requires a running pulsar instance to start successfully.
