@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const defaultEndpoint = "tcp://127.0.0.1:9000"
+const defaultEndpoint = "clickhouse://127.0.0.1:9000"
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "full"),
 			expected: &Config{
-				Endpoint:         "tcp://127.0.0.1:9000",
+				Endpoint:         "clickhouse://127.0.0.1:9000",
 				Database:         "otel",
 				Username:         "foo",
 				Password:         "bar",
