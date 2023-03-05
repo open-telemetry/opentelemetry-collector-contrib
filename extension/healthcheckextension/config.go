@@ -32,8 +32,8 @@ type Config struct {
 	// The default path is "/".
 	Path string `mapstructure:"path"`
 
-	// StaticResponseBody represents the body of the response returned by the health check service.
-	// This is override the default response that it would return.
+	// StaticResponseBody represents the body of the response returned by the health check service when the collector is healthy.
+	// This overrides the default response that it would return.
 	// The default value is ""
 	StaticResponseBody string `mapstructure:"static_response_body"`
 
