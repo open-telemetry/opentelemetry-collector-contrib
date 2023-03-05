@@ -17,9 +17,10 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"database/sql"
 	"errors"
-	"github.com/ClickHouse/clickhouse-go/v2"
+	"fmt"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
+	"net/url"
 )
 
 // Config defines configuration for Elastic exporter.
@@ -81,36 +82,52 @@ func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 	}
 }
 
-func (cfg *Config) buildDBOptions(database string) (*clickhouse.Options, error) {
-	opts, err := clickhouse.ParseDSN(cfg.Endpoint)
+func (cfg *Config) buildDSN(database string) (string, error) {
+	parsedDSN, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return nil, errConfigInvalidDSN
+		return "", fmt.Errorf("%w: %s", errConfigInvalidDSN, err)
 	}
 
-	// Override database if specified.
-	// If not specified, use the database from the DSN.
-	if database != "" {
-		opts.Auth.Database = database
+	dsnCopy := *parsedDSN
+
+	queryParams := dsnCopy.Query()
+
+	// Enable TLS if scheme is https. This flag is necessary to support https connections.
+	if dsnCopy.Scheme == "https" {
+		queryParams.Set("secure", "true")
 	}
 
-	// Override auth if specified.
-	// If not specified, use the auth from the DSN.
+	// Override database if specified in config.
+	if cfg.Database != "" {
+		dsnCopy.Path = cfg.Database
+	} else if database == "" && cfg.Database == "" {
+		// Use default database if not specified.
+		dsnCopy.Path = defaultDatabase
+	}
+
+	// Override username and password if specified in config.
 	if cfg.Username != "" {
-		opts.Auth.Username = cfg.Username
-		opts.Auth.Password = cfg.Password
+		dsnCopy.User = url.UserPassword(cfg.Username, cfg.Password)
 	}
 
-	return opts, nil
+	dsnCopy.RawQuery = queryParams.Encode()
+
+	return dsnCopy.String(), nil
 }
 
 func (cfg *Config) buildDB(database string) (*sql.DB, error) {
-	opts, err := cfg.buildDBOptions(database)
+	dsn, err := cfg.buildDSN(database)
 	if err != nil {
 		return nil, err
 	}
 
-	// Before opening the db, OpenDB ensure connection defaults (if not overridden).
-	conn := clickhouse.OpenDB(opts)
+	// ClickHouse sql driver will read settings from the DSN string.
+	// It also ensures good defaults.
+	// See https://github.com/ClickHouse/clickhouse-go/blob/08b27884b899f587eb5c509769cd2bdf74a9e2a1/clickhouse_std.go#L189
+	conn, err := sql.Open(driverName, dsn)
+	if err != nil {
+		return nil, err
+	}
 
 	return conn, nil
 

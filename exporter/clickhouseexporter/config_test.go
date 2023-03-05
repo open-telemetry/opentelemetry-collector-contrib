@@ -15,6 +15,7 @@
 package clickhouseexporter
 
 import (
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"path/filepath"
 	"testing"
 	"time"
@@ -109,15 +110,43 @@ func TestConfig_buildDBOptions(t *testing.T) {
 	type args struct {
 		database string
 	}
+	type ChOptions struct {
+		Secure      bool
+		DialTimeout time.Duration
+		Compress    clickhouse.CompressionMethod
+	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    struct{ address, username, password, database string }
-		wantErr error
+		name      string
+		fields    fields
+		args      args
+		want      string
+		chOptions ChOptions
+		wantErr   error
 	}{
 		{
-			name: "valid config",
+			name: "valid default config",
+			fields: fields{
+				Endpoint: defaultEndpoint,
+			},
+			args: args{},
+			chOptions: ChOptions{
+				Secure: false,
+			},
+			want: "clickhouse://127.0.0.1:9000/default",
+		},
+		{
+			name: "Support tcp scheme",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000",
+			},
+			args: args{},
+			chOptions: ChOptions{
+				Secure: false,
+			},
+			want: "tcp://127.0.0.1:9000/default",
+		},
+		{
+			name: "prefers database name from config over from DSN",
 			fields: fields{
 				Endpoint: defaultEndpoint,
 				Username: "foo",
@@ -127,19 +156,70 @@ func TestConfig_buildDBOptions(t *testing.T) {
 			args: args{
 				database: defaultDatabase,
 			},
-			want: struct{ address, username, password, database string }{
-				address:  "127.0.0.1:9000",
-				username: "foo",
-				password: "bar",
-				database: "default",
+			chOptions: ChOptions{
+				Secure: false,
 			},
+			want: "clickhouse://foo:bar@127.0.0.1:9000/otel",
+		},
+		{
+			name: "use database name from DSN if not set in config",
+			fields: fields{
+				Endpoint: defaultEndpoint,
+				Username: "foo",
+				Password: "bar",
+				Database: "otel",
+			},
+			args: args{
+				database: "",
+			},
+			chOptions: ChOptions{
+				Secure: false,
+			},
+			want: "clickhouse://foo:bar@127.0.0.1:9000/otel",
 		},
 		{
 			name: "invalid config",
 			fields: fields{
 				Endpoint: "127.0.0.1:9000",
 			},
+			chOptions: ChOptions{
+				Secure: false,
+			},
 			wantErr: errConfigInvalidDSN,
+		},
+		{
+			name: "Auto enable TLS connection based on scheme",
+			fields: fields{
+				Endpoint: "https://127.0.0.1:9000",
+			},
+			chOptions: ChOptions{
+				Secure: true,
+			},
+			args: args{},
+			want: "https://127.0.0.1:9000/default?secure=true",
+		},
+		{
+			name: "Preserve query parameters",
+			fields: fields{
+				Endpoint: "https://127.0.0.1:9000?a=1",
+			},
+			chOptions: ChOptions{
+				Secure: true,
+			},
+			args: args{},
+			want: "https://127.0.0.1:9000/default?a=1&secure=true",
+		}, {
+			name: "Parse clickhouse settings",
+			fields: fields{
+				Endpoint: "https://127.0.0.1:9000?secure=true&dial_timeout=30s&compress=lz4",
+			},
+			chOptions: ChOptions{
+				Secure:      true,
+				DialTimeout: 30 * time.Second,
+				Compress:    clickhouse.CompressionLZ4,
+			},
+			args: args{},
+			want: "https://127.0.0.1:9000/default?compress=lz4&dial_timeout=30s&secure=true",
 		},
 	}
 	for _, tt := range tests {
@@ -150,15 +230,20 @@ func TestConfig_buildDBOptions(t *testing.T) {
 				Password: tt.fields.Password,
 				Database: tt.fields.Database,
 			}
-			got, err := cfg.buildDBOptions(tt.args.database)
+			got, err := cfg.buildDSN(tt.args.database)
 
 			if tt.wantErr != nil {
-				assert.Equalf(t, tt.wantErr, err, "buildDSN(%v)", tt.args.database)
+				assert.ErrorIs(t, err, tt.wantErr, "buildDSN(%v)", tt.args.database)
 			} else {
-				assert.Equalf(t, tt.want.address, got.Addr[0], "buildDSN(%v)", tt.args.database)
-				assert.Equalf(t, tt.want.username, got.Auth.Username, "buildDSN(%v)", tt.args.database)
-				assert.Equalf(t, tt.want.password, got.Auth.Password, "buildDSN(%v)", tt.args.database)
-				assert.Equalf(t, tt.want.database, got.Auth.Database, "buildDSN(%v)", tt.args.database)
+				// Validate DSN
+				opts, err := clickhouse.ParseDSN(got)
+				assert.Nil(t, err)
+				assert.Equalf(t, tt.chOptions.Secure, opts.TLS != nil, "TLSConfig is not nil")
+				assert.Equalf(t, tt.chOptions.DialTimeout, opts.DialTimeout, "DialTimeout is not nil")
+				if tt.chOptions.Compress != 0 {
+					assert.Equalf(t, tt.chOptions.Compress, opts.Compression.Method, "Compress is not nil")
+				}
+				assert.Equalf(t, tt.want, got, "buildDSN(%v)", tt.args.database)
 			}
 
 		})

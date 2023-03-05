@@ -63,7 +63,7 @@ func TestLogsExporter_New(t *testing.T) {
 	}{
 		"no dsn": {
 			config: withDefaultConfig(),
-			want:   failWithMsg("DSN is invalid"),
+			want:   failWithMsg("exec create logs table sql: parse dsn address failed"),
 		},
 	}
 
@@ -143,6 +143,7 @@ func mustPushLogsData(t *testing.T, exporter *logsExporter, ld plog.Logs) {
 }
 
 func initClickhouseTestServer(t *testing.T, recorder recorder) {
+	driverName = t.Name()
 	sql.Register(t.Name(), &testClickhouseDriver{
 		recorder: recorder,
 	})
