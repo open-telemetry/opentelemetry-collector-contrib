@@ -7,14 +7,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.72.0
 	github.com/stretchr/testify v1.8.2
 	github.com/tilinna/clock v1.1.0
-	go.opentelemetry.io/collector v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/component v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/confmap v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/consumer v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/semconv v0.72.1-0.20230303004618-4a6ebc82b8e3
+	go.opentelemetry.io/collector v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/component v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/confmap v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/consumer v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/exporter v0.0.0-20230303211526-ec5d71fec2da
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/semconv v0.72.1-0.20230303235035-7318c14f1a2b
 	go.uber.org/zap v1.24.0
 	google.golang.org/grpc v1.53.0
 )

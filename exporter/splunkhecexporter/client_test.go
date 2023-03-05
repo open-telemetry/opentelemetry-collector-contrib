@@ -1147,28 +1147,28 @@ func Test_pushLogData_PostError(t *testing.T) {
 	require.Error(t, err)
 	var logsErr consumererror.Logs
 	assert.ErrorAs(t, err, &logsErr)
-	assert.Equal(t, logs, logsErr.GetLogs())
+	assert.Equal(t, logs, logsErr.Data())
 
 	// 0 -> unlimited size batch, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, false
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &logsErr)
-	assert.Equal(t, logs, logsErr.GetLogs())
+	assert.Equal(t, logs, logsErr.Data())
 
 	// 200000 < 371888 -> multiple batches, true -> compression disabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, true
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &logsErr)
-	assert.Equal(t, logs, logsErr.GetLogs())
+	assert.Equal(t, logs, logsErr.Data())
 
 	// 200000 < 371888 -> multiple batches, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, false
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &logsErr)
-	assert.Equal(t, logs, logsErr.GetLogs())
+	assert.Equal(t, logs, logsErr.Data())
 }
 
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
@@ -1230,8 +1230,8 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	// Only the record that was not successfully sent should be returned
 	var logsErr consumererror.Logs
 	require.ErrorAs(t, err, &logsErr)
-	assert.Equal(t, 1, logsErr.GetLogs().ResourceLogs().Len())
-	assert.Equal(t, logs.ResourceLogs().At(1), logsErr.GetLogs().ResourceLogs().At(0))
+	assert.Equal(t, 1, logsErr.Data().ResourceLogs().Len())
+	assert.Equal(t, logs.ResourceLogs().At(1), logsErr.Data().ResourceLogs().At(0))
 }
 
 func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {

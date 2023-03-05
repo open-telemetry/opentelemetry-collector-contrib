@@ -29,21 +29,22 @@ require (
 	github.com/prometheus/prometheus v0.42.1-0.20230210113933-af1d9e01c7e4
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/component v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/confmap v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/consumer v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/extension/ballastextension v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/extension/zpagesextension v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/processor/batchprocessor v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.72.1-0.20230303004618-4a6ebc82b8e3
+	go.opentelemetry.io/collector v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/component v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/confmap v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/consumer v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/exporter v0.0.0-20230303211526-ec5d71fec2da
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/extension/ballastextension v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/extension/zpagesextension v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/processor/batchprocessor v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.72.1-0.20230303235035-7318c14f1a2b
 	go.opentelemetry.io/collector/receiver v0.0.0-20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.1-0.20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/semconv v0.72.1-0.20230303004618-4a6ebc82b8e3
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/semconv v0.72.1-0.20230303235035-7318c14f1a2b
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
@@ -202,7 +203,7 @@ require (
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230303004618-4a6ebc82b8e3 // indirect
+	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230303235035-7318c14f1a2b // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.39.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.14.0 // indirect
