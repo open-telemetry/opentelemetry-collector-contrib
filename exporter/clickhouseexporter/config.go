@@ -60,8 +60,8 @@ type QueueSettings struct {
 const defaultDatabase = "default"
 
 var (
-	errConfigNoHost     = errors.New("host must be specified")
-	errConfigInvalidDSN = errors.New("DSN is invalid")
+	errConfigNoHost          = errors.New("host must be specified")
+	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
 )
 
 // Validate the clickhouse server configuration.
@@ -94,7 +94,7 @@ func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 func (cfg *Config) buildDSN(database string) (string, error) {
 	parsedDSN, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return "", fmt.Errorf("%w: %s", errConfigInvalidDSN, err)
+		return "", fmt.Errorf("%w: %s", errConfigInvalidEndpoint, err)
 	}
 
 	dsnCopy := *parsedDSN

@@ -185,7 +185,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			chOptions: ChOptions{
 				Secure: false,
 			},
-			wantErr: errConfigInvalidDSN,
+			wantErr: errConfigInvalidEndpoint,
 		},
 		{
 			name: "Auto enable TLS connection based on scheme",
