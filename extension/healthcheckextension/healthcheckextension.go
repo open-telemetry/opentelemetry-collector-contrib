@@ -111,15 +111,14 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 
 // base handler function
 func (hc *healthCheckExtension) baseHandler() http.Handler {
-	if hc.config.StaticResponseBody != "" {
+	if hc.config.ResponseBody != nil {
 		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			if hc.state.Get() == healthcheck.Ready {
 				w.WriteHeader(http.StatusOK)
-				if hc.config.StaticResponseBody != "" {
-					w.Write([]byte(hc.config.StaticResponseBody))
-				}
+				w.Write([]byte(hc.config.ResponseBody.Healthy))
 			} else {
 				w.WriteHeader(http.StatusServiceUnavailable)
+				w.Write([]byte(hc.config.ResponseBody.Unhealthy))
 			}
 		})
 	} else {
@@ -132,11 +131,14 @@ func (hc *healthCheckExtension) checkCollectorPipelineHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		if hc.check() && hc.state.Get() == healthcheck.Ready {
 			w.WriteHeader(http.StatusOK)
-			if hc.config.StaticResponseBody != "" {
-				w.Write([]byte(hc.config.StaticResponseBody))
+			if hc.config.ResponseBody != nil {
+				w.Write([]byte(hc.config.ResponseBody.Healthy))
 			}
 		} else {
-			w.WriteHeader(http.StatusServiceUnavailable)
+			w.WriteHeader(http.StatusInternalServerError)
+			if hc.config.ResponseBody != nil {
+				w.Write([]byte(hc.config.ResponseBody.Unhealthy))
+			}
 		}
 	})
 }
