@@ -187,9 +187,6 @@ func newClickhouseClient(cfg *Config) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err != nil {
-		return nil, err
-	}
 	return db, nil
 }
 
@@ -202,9 +199,6 @@ func createDatabase(ctx context.Context, cfg *Config) error {
 	db, err := cfg.buildDB(defaultDatabase)
 	if err != nil {
 		return err
-	}
-	if err != nil {
-		return fmt.Errorf("sql.Open:%w", err)
 	}
 	defer func() {
 		_ = db.Close()
