@@ -5,7 +5,7 @@ change_type: breaking
 component: clickhouseexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Use native clickhouse driver for connection management
+note: Improve clickhouse DSN parsing
 
 # One or more tracking issues related to the change
 issues: [18079]
@@ -14,5 +14,4 @@ issues: [18079]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Clickhouse library provides a `clickhouse.ParseDSN` function which do 99% of the work.
-  This approach covers all possible configuration options and fixes TLS support.
+  Improve clickhouse DSN parsing to support all possible configuration options and fixes TLS support.
