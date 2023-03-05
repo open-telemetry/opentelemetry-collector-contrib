@@ -115,15 +115,14 @@ func (hc *healthCheckExtension) baseHandler() http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			if hc.state.Get() == healthcheck.Ready {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(hc.config.ResponseBody.Healthy))
+				_, _ = w.Write([]byte(hc.config.ResponseBody.Healthy))
 			} else {
 				w.WriteHeader(http.StatusServiceUnavailable)
-				w.Write([]byte(hc.config.ResponseBody.Unhealthy))
+				_, _ = w.Write([]byte(hc.config.ResponseBody.Unhealthy))
 			}
 		})
-	} else {
-		return hc.state.Handler()
 	}
+	return hc.state.Handler()
 }
 
 // new handler function used for check collector pipeline
@@ -132,12 +131,12 @@ func (hc *healthCheckExtension) checkCollectorPipelineHandler() http.Handler {
 		if hc.check() && hc.state.Get() == healthcheck.Ready {
 			w.WriteHeader(http.StatusOK)
 			if hc.config.ResponseBody != nil {
-				w.Write([]byte(hc.config.ResponseBody.Healthy))
+				_, _ = w.Write([]byte(hc.config.ResponseBody.Healthy))
 			}
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			if hc.config.ResponseBody != nil {
-				w.Write([]byte(hc.config.ResponseBody.Unhealthy))
+				_, _ = w.Write([]byte(hc.config.ResponseBody.Unhealthy))
 			}
 		}
 	})
