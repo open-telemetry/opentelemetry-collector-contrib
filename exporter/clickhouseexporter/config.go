@@ -109,7 +109,7 @@ func (cfg *Config) buildDB(database string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	// Before opening the db, OpenDB ensure connection defaults if not overridden.
+	// Before opening the db, OpenDB ensure connection defaults (if not overridden).
 	conn := clickhouse.OpenDB(opts)
 
 	return conn, nil

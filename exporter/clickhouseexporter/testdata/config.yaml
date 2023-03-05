@@ -1,7 +1,7 @@
 clickhouse:
-  endpoint: tcp://127.0.0.1:9000
+  endpoint: clickhouse://127.0.0.1:9000
 clickhouse/full:
-  endpoint: tcp://127.0.0.1:9000
+  endpoint: clickhouse://127.0.0.1:9000
   username: foo
   password: bar
   database: otel
