@@ -18,9 +18,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
+
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
-	"net/url"
 )
 
 // Config defines configuration for Elastic exporter.

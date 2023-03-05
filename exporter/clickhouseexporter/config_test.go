@@ -15,11 +15,11 @@
 package clickhouseexporter
 
 import (
-	"github.com/ClickHouse/clickhouse-go/v2"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -100,7 +100,7 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 	return cfg
 }
 
-func TestConfig_buildDBOptions(t *testing.T) {
+func TestConfig_buildDSN(t *testing.T) {
 	type fields struct {
 		Endpoint string
 		Username string
