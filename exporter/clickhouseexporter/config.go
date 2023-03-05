@@ -18,6 +18,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"net/url"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -68,10 +69,17 @@ func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
 		err = multierr.Append(err, errConfigNoHost)
 	}
-	_, e := cfg.buildDB(cfg.Database)
+	dsn, e := cfg.buildDSN(cfg.Database)
 	if e != nil {
 		err = multierr.Append(err, e)
 	}
+
+	// Validate DSN with clickhouse driver.
+	// Last chance to catch invalid config.
+	if _, e := clickhouse.ParseDSN(dsn); e != nil {
+		err = multierr.Append(err, e)
+	}
+
 	return err
 }
 
