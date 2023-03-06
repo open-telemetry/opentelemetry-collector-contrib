@@ -226,7 +226,8 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			exp.params.Logger.Debug("exporting native Datadog payload", zap.Any("metric", ms))
 			_, experr := exp.retrier.DoWithRetries(ctx, func(context.Context) error {
 				ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
-				_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms})
+				param := datadogV2.NewSubmitMetricsOptionalParameters().WithContentEncoding(datadogV2.METRICCONTENTENCODING_GZIP)
+				_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms}, *param)
 				return clientutil.WrapError(merr, httpresp)
 			})
 			err = multierr.Append(err, experr)
