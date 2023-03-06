@@ -27,8 +27,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 type filterLogProcessor struct {
@@ -41,7 +41,7 @@ func newFilterLogsProcessor(set component.TelemetrySettings, cfg *Config) (*filt
 		logger: set.Logger,
 	}
 	if cfg.Logs.LogConditions != nil {
-		skipExpr, err := common.ParseLog(cfg.Logs.LogConditions, set)
+		skipExpr, err := filterottl.NewBoolExprForLog(cfg.Logs.LogConditions, filterottl.StandardLogFuncs(), cfg.ErrorMode, set)
 		if err != nil {
 			return nil, err
 		}

@@ -127,7 +127,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 			// Detect reset (non-monotonic sums are not converted)
 			if value < prevValue {
-				delta = value
+				valid = false
 			}
 
 			out.FloatValue = delta
@@ -138,7 +138,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 			// Detect reset (non-monotonic sums are not converted)
 			if value < prevValue {
-				delta = value
+				valid = false
 			}
 
 			out.IntValue = delta

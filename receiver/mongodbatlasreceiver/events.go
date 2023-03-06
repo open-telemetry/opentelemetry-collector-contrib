@@ -69,16 +69,17 @@ type eventRecord struct {
 
 func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consumer.Logs) *eventsReceiver {
 	r := &eventsReceiver{
-		client:       internal.NewMongoDBAtlasClient(c.PublicKey, c.PrivateKey, c.RetrySettings, settings.Logger),
-		cfg:          c,
-		logger:       settings.Logger,
-		id:           settings.ID,
-		storageID:    c.StorageID,
-		consumer:     consumer,
-		pollInterval: c.Events.PollInterval,
-		wg:           &sync.WaitGroup{},
-		maxPages:     int(c.Events.MaxPages),
-		pageSize:     int(c.Events.PageSize),
+		client:        internal.NewMongoDBAtlasClient(c.PublicKey, c.PrivateKey, c.RetrySettings, settings.Logger),
+		cfg:           c,
+		logger:        settings.Logger,
+		id:            settings.ID,
+		storageID:     c.StorageID,
+		consumer:      consumer,
+		pollInterval:  c.Events.PollInterval,
+		wg:            &sync.WaitGroup{},
+		maxPages:      int(c.Events.MaxPages),
+		pageSize:      int(c.Events.PageSize),
+		storageClient: storage.NewNopClient(),
 	}
 
 	if r.maxPages == 0 {

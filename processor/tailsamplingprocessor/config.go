@@ -195,6 +195,7 @@ type RateLimitingCfg struct {
 type SpanCountCfg struct {
 	// Minimum number of spans in a Trace
 	MinSpans int32 `mapstructure:"min_spans"`
+	MaxSpans int32 `mapstructure:"max_spans"`
 }
 
 // BooleanAttributeCfg holds the configurable settings to create a boolean attribute filter
