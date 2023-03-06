@@ -553,6 +553,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 					"special_key": nil,
 				},
 			},
+			// we no longer expect the port when the IP is not present
 			want: map[string]interface{}{
 				"messaging.system":                                        "SolacePubSub+",
 				"messaging.operation":                                     "receive",
@@ -565,13 +566,11 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.solace.delivery_mode":                          "Unknown Delivery Mode (1000)",
 				"messaging.solace.dropped_enqueue_events_success":         int64(42),
 				"messaging.solace.dropped_enqueue_events_failed":          int64(24),
-				"net.host.port":                                           int64(55555),
-				"net.peer.port":                                           int64(12345),
 				"messaging.solace.broker_receive_time_unix_nano":          int64(1357924680),
 				"messaging.solace.dropped_application_message_properties": true,
 			},
 			// Invalid delivery mode, missing IPs, invalid baggage string
-			expectedUnmarshallingErrors: 4,
+			expectedUnmarshallingErrors: 2,
 		},
 	}
 	for _, tt := range tests {
