@@ -55,6 +55,11 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	var preEmitOptions []preEmitOption
+
+	if fileconsumer.AllowHeaderMetadataParsing.IsEnabled() {
+		preEmitOptions = append(preEmitOptions, setHeaderMetadata)
+	}
+
 	if c.IncludeFileName {
 		preEmitOptions = append(preEmitOptions, setFileName)
 	}
