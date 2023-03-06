@@ -164,10 +164,10 @@ func TestConfig_buildDSN(t *testing.T) {
 		{
 			name: "use database name from DSN if not set in config",
 			fields: fields{
-				Endpoint: defaultEndpoint,
+				Endpoint: "clickhouse://foo:bar@127.0.0.1:9000/otel",
 				Username: "foo",
 				Password: "bar",
-				Database: "otel",
+				Database: "",
 			},
 			args: args{
 				database: "",
