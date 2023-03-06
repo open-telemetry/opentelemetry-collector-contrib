@@ -9,6 +9,7 @@ dist:
 exporters:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.71.0"
   - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.71.0
+  - gomod: "go.opentelemetry.io/collector/exporter/otlphttpexporter v0.71.0"
 
 extensions:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.71.0"
