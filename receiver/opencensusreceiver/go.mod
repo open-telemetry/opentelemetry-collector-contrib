@@ -18,10 +18,10 @@ require (
 	go.opentelemetry.io/collector/consumer v0.72.1-0.20230303235035-7318c14f1a2b
 	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230303235035-7318c14f1a2b
 	go.opentelemetry.io/collector/receiver v0.0.0-20230302200458-4071a47d0ee3
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.39.0
-	go.opentelemetry.io/otel v1.13.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.40.0
+	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/sdk v1.13.0
-	go.opentelemetry.io/otel/trace v1.13.0
+	go.opentelemetry.io/otel/trace v1.14.0
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.1
 )
@@ -61,7 +61,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230303235035-7318c14f1a2b // indirect
 	go.opentelemetry.io/collector/semconv v0.72.1-0.20230303235035-7318c14f1a2b // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.36.0 // indirect
-	go.opentelemetry.io/otel/metric v0.36.0 // indirect
+	go.opentelemetry.io/otel/metric v0.37.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.36.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
