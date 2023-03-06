@@ -159,15 +159,15 @@ require (
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.72.1-0.20230306190955-966865880707
 	go.opentelemetry.io/collector/component v0.72.1-0.20230306190955-966865880707
-	go.opentelemetry.io/collector/connector/forwardconnector v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/connector/forwardconnector v0.72.1-0.20230306190955-966865880707
 	go.opentelemetry.io/collector/exporter v0.0.0-20230303211526-ec5d71fec2da
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.72.1-0.20230306190955-966865880707
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.72.1-0.20230306190955-966865880707
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.72.1-0.20230306190955-966865880707
-	go.opentelemetry.io/collector/extension/ballastextension v0.72.1-0.20230303235035-7318c14f1a2b
-	go.opentelemetry.io/collector/extension/zpagesextension v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/extension/ballastextension v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/extension/zpagesextension v0.72.1-0.20230306190955-966865880707
 	go.opentelemetry.io/collector/processor/batchprocessor v0.72.1-0.20230306190955-966865880707
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.72.1-0.20230306190955-966865880707
 	go.opentelemetry.io/collector/receiver v0.0.0-20230303004618-4a6ebc82b8e3
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.1-0.20230306190955-966865880707
 	golang.org/x/sys v0.6.0
