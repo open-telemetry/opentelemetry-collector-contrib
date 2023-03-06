@@ -92,36 +92,34 @@ func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 }
 
 func (cfg *Config) buildDSN(database string) (string, error) {
-	parsedDSN, err := url.Parse(cfg.Endpoint)
+	dsnURL, err := url.Parse(cfg.Endpoint)
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", errConfigInvalidEndpoint, err)
 	}
 
-	dsnCopy := *parsedDSN
-
-	queryParams := dsnCopy.Query()
+	queryParams := dsnURL.Query()
 
 	// Enable TLS if scheme is https. This flag is necessary to support https connections.
-	if dsnCopy.Scheme == "https" {
+	if dsnURL.Scheme == "https" {
 		queryParams.Set("secure", "true")
 	}
 
 	// Override database if specified in config.
 	if cfg.Database != "" {
-		dsnCopy.Path = cfg.Database
-	} else if database == "" && cfg.Database == "" && dsnCopy.Path == "" {
+		dsnURL.Path = cfg.Database
+	} else if database == "" && cfg.Database == "" && dsnURL.Path == "" {
 		// Use default database if not specified in any other place.
-		dsnCopy.Path = defaultDatabase
+		dsnURL.Path = defaultDatabase
 	}
 
 	// Override username and password if specified in config.
 	if cfg.Username != "" {
-		dsnCopy.User = url.UserPassword(cfg.Username, cfg.Password)
+		dsnURL.User = url.UserPassword(cfg.Username, cfg.Password)
 	}
 
-	dsnCopy.RawQuery = queryParams.Encode()
+	dsnURL.RawQuery = queryParams.Encode()
 
-	return dsnCopy.String(), nil
+	return dsnURL.String(), nil
 }
 
 func (cfg *Config) buildDB(database string) (*sql.DB, error) {
