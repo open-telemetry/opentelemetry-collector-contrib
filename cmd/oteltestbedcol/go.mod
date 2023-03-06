@@ -34,15 +34,15 @@ require (
 	go.opentelemetry.io/collector v0.72.1-0.20230306190955-966865880707
 	go.opentelemetry.io/collector/component v0.72.1-0.20230306190955-966865880707
 	go.opentelemetry.io/collector/exporter v0.0.0-20230303211526-ec5d71fec2da
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.72.1-0.20230306190955-966865880707
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.72.1-0.20230306190955-966865880707
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.72.1-0.20230306190955-966865880707
-	go.opentelemetry.io/collector/extension/ballastextension v0.72.1-0.20230306190955-966865880707
-	go.opentelemetry.io/collector/extension/zpagesextension v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/extension/ballastextension v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector/extension/zpagesextension v0.72.1-0.20230303235035-7318c14f1a2b
 	go.opentelemetry.io/collector/processor/batchprocessor v0.72.1-0.20230306190955-966865880707
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.72.1-0.20230303235035-7318c14f1a2b
 	go.opentelemetry.io/collector/receiver v0.0.0-20230303004618-4a6ebc82b8e3
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.1-0.20230303235035-7318c14f1a2b
 	golang.org/x/sys v0.6.0
 )
 
@@ -351,8 +351,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
-// openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
 
-// It appears that the v0.2.0 tag was modified.  Replacing with v0.2.1
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
