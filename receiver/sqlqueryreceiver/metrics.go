@@ -30,8 +30,7 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTime pc
 	dataPointSlice := setMetricFields(cfg, dest)
 	dataPoint := dataPointSlice.AppendEmpty()
 	if cfg.StartTsColumn != "" {
-		val, found := row[cfg.StartTsColumn]
-		if found {
+		if val, found := row[cfg.StartTsColumn]; found {
 			time, err := strconv.ParseUint(val, 10, 64)
 			if err != nil {
 				return fmt.Errorf("failed to parse uint64 for %s, value was %s: %w", cfg.StartTsColumn, val, err)
@@ -40,8 +39,7 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTime pc
 		}
 	}
 	if cfg.StopTsColumn != "" {
-		val, found := row[cfg.StopTsColumn]
-		if found {
+		if val, found := row[cfg.StopTsColumn]; found {
 			time, err := strconv.ParseUint(val, 10, 64)
 			if err != nil {
 				return fmt.Errorf("failed to parse uint64 for %s, value was %s: %w", cfg.StopTsColumn, val, err)

@@ -107,14 +107,12 @@ func (c MetricCfg) Validate() error {
 		errs = multierr.Append(errs, fmt.Errorf("aggregation=%s but data_type=%s does not support aggregation", c.Aggregation, c.DataType))
 	}
 	if c.StartTsColumn != "" {
-		_, err := strconv.ParseUint(c.StartTsColumn,10,64)
-		if err != nil {
+		if _, err := strconv.ParseUint(c.StartTsColumn, 10, 64); err != nil {
 			errs = multierr.Append(errs, fmt.Errorf("metric config has unsupported timestamp: '%s'", c.StartTsColumn))
 		}
 	}
 	if c.StopTsColumn != "" {
-		_, err := strconv.ParseUint(c.StopTsColumn,10,64)
-		if err != nil {
+		if _, err := strconv.ParseUint(c.StopTsColumn, 10, 64); err != nil {
 			errs = multierr.Append(errs, fmt.Errorf("metric config has unsupported timestamp: '%s'", c.StopTsColumn))
 		}
 	}
