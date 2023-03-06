@@ -1,0 +1,4 @@
+change_type: enhancement
+component: spanmetricsconnector
+note: Allow optional usage of Exponential Histograms when generating latency metrics.
+issues: [18528]

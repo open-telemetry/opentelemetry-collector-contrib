@@ -40,7 +40,14 @@ visit the [Connectors README].
 
 The following settings can be optionally configured:
 
-- `latency_histogram_buckets`: the list of durations defining the latency histogram buckets.
+- `histogram` (default: `explicit_buckets`): Use to configure the type of histogram to record
+  calculated from spans latency measurements.
+  - `explicit`:
+    - `buckets`: the list of durations defining the latency histogram buckets. Default
+      buckets: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
+  - `exponential`:
+    - `max_size` (default: 160) the maximum number of buckets per positive or negative number range.
+- `latency_histogram_buckets` (deprecated): the list of durations defining the latency histogram buckets.
   - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
 - `dimensions`: the list of dimensions to add together with the default dimensions defined above.
   
@@ -74,7 +81,9 @@ exporters:
 
 connector:
   spanmetrics:
-    latency_histogram_buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms]
+    histogram:
+      explicit:
+        buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms]
     dimensions:
       - name: http.method
         default: GET
