@@ -60,14 +60,14 @@ type QueueSettings struct {
 const defaultDatabase = "default"
 
 var (
-	errConfigNoHost          = errors.New("host must be specified")
+	errConfigNoEndpoint      = errors.New("endpoint must be specified")
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
 )
 
 // Validate the clickhouse server configuration.
 func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
-		err = multierr.Append(err, errConfigNoHost)
+		err = multierr.Append(err, errConfigNoEndpoint)
 	}
 	dsn, e := cfg.buildDSN(cfg.Database)
 	if e != nil {
