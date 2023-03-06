@@ -41,6 +41,8 @@ config:
       path: /tmp/trace.json
     file/metric:
       path: /tmp/metric.json
+    file/log:
+      path: /tmp/log.json
   service:
     pipelines:
       traces:
@@ -49,6 +51,10 @@ config:
       metrics:
         exporters:
           - file/metric
+      logs:
+        exporters:
+          - file/log
+      
           
 image:
   repository: otel/opentelemetry-collector-contrib-dev
