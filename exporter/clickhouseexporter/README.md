@@ -293,6 +293,11 @@ Processing:
     - `max_elapsed_time` (default = 300s): The maximum amount of time spent trying to send a batch; ignored if `enabled`
       is `false`
 
+## TLS
+
+The exporter supports TLS. To enable TLS, you need to specify the `secure=true` query parameter in the `endpoint` URL or
+use the `https` scheme.
+
 ## Example
 
 This example shows how to configure the exporter to send data to a ClickHouse server.

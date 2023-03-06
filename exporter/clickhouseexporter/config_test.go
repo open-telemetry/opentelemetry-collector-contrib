@@ -116,12 +116,12 @@ func TestConfig_buildDSN(t *testing.T) {
 		Compress    clickhouse.CompressionMethod
 	}
 	tests := []struct {
-		name      string
-		fields    fields
-		args      args
-		want      string
-		chOptions ChOptions
-		wantErr   error
+		name              string
+		fields            fields
+		args              args
+		want              string
+		expectedChOptions ChOptions
+		wantErr           error
 	}{
 		{
 			name: "valid default config",
@@ -129,7 +129,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: defaultEndpoint,
 			},
 			args: args{},
-			chOptions: ChOptions{
+			expectedChOptions: ChOptions{
 				Secure: false,
 			},
 			want: "clickhouse://127.0.0.1:9000/default",
@@ -140,7 +140,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: "tcp://127.0.0.1:9000",
 			},
 			args: args{},
-			chOptions: ChOptions{
+			expectedChOptions: ChOptions{
 				Secure: false,
 			},
 			want: "tcp://127.0.0.1:9000/default",
@@ -156,7 +156,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			args: args{
 				database: defaultDatabase,
 			},
-			chOptions: ChOptions{
+			expectedChOptions: ChOptions{
 				Secure: false,
 			},
 			want: "clickhouse://foo:bar@127.0.0.1:9000/otel",
@@ -172,7 +172,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			args: args{
 				database: "",
 			},
-			chOptions: ChOptions{
+			expectedChOptions: ChOptions{
 				Secure: false,
 			},
 			want: "clickhouse://foo:bar@127.0.0.1:9000/otel",
@@ -182,7 +182,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			fields: fields{
 				Endpoint: "127.0.0.1:9000",
 			},
-			chOptions: ChOptions{
+			expectedChOptions: ChOptions{
 				Secure: false,
 			},
 			wantErr: errConfigInvalidEndpoint,
@@ -192,7 +192,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			fields: fields{
 				Endpoint: "https://127.0.0.1:9000",
 			},
-			chOptions: ChOptions{
+			expectedChOptions: ChOptions{
 				Secure: true,
 			},
 			args: args{},
@@ -201,19 +201,19 @@ func TestConfig_buildDSN(t *testing.T) {
 		{
 			name: "Preserve query parameters",
 			fields: fields{
-				Endpoint: "https://127.0.0.1:9000?a=1",
+				Endpoint: "clickhouse://127.0.0.1:9000?secure=true&foo=bar",
 			},
-			chOptions: ChOptions{
+			expectedChOptions: ChOptions{
 				Secure: true,
 			},
 			args: args{},
-			want: "https://127.0.0.1:9000/default?a=1&secure=true",
+			want: "clickhouse://127.0.0.1:9000/default?foo=bar&secure=true",
 		}, {
 			name: "Parse clickhouse settings",
 			fields: fields{
 				Endpoint: "https://127.0.0.1:9000?secure=true&dial_timeout=30s&compress=lz4",
 			},
-			chOptions: ChOptions{
+			expectedChOptions: ChOptions{
 				Secure:      true,
 				DialTimeout: 30 * time.Second,
 				Compress:    clickhouse.CompressionLZ4,
@@ -238,10 +238,10 @@ func TestConfig_buildDSN(t *testing.T) {
 				// Validate DSN
 				opts, err := clickhouse.ParseDSN(got)
 				assert.Nil(t, err)
-				assert.Equalf(t, tt.chOptions.Secure, opts.TLS != nil, "TLSConfig is not nil")
-				assert.Equalf(t, tt.chOptions.DialTimeout, opts.DialTimeout, "DialTimeout is not nil")
-				if tt.chOptions.Compress != 0 {
-					assert.Equalf(t, tt.chOptions.Compress, opts.Compression.Method, "Compress is not nil")
+				assert.Equalf(t, tt.expectedChOptions.Secure, opts.TLS != nil, "TLSConfig is not nil")
+				assert.Equalf(t, tt.expectedChOptions.DialTimeout, opts.DialTimeout, "DialTimeout is not nil")
+				if tt.expectedChOptions.Compress != 0 {
+					assert.Equalf(t, tt.expectedChOptions.Compress, opts.Compression.Method, "Compress is not nil")
 				}
 				assert.Equalf(t, tt.want, got, "buildDSN(%v)", tt.args.database)
 			}
