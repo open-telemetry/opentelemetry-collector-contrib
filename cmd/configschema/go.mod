@@ -8,9 +8,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.72.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.72.1-0.20230303235035-7318c14f1a2b
-	go.opentelemetry.io/collector/component v0.72.1-0.20230303235035-7318c14f1a2b
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/component v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.1-0.20230306190955-966865880707
 	golang.org/x/mod v0.8.0
 	golang.org/x/text v0.7.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -525,7 +525,7 @@ require (
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
-	github.com/prometheus/common v0.40.0 // indirect
+	github.com/prometheus/common v0.41.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/prometheus/prometheus v0.42.1-0.20230210113933-af1d9e01c7e4 // indirect
@@ -537,7 +537,7 @@ require (
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.23.1 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.2 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
@@ -583,28 +583,28 @@ require (
 	go.mongodb.org/atlas v0.23.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.72.1-0.20230303235035-7318c14f1a2b // indirect
-	go.opentelemetry.io/collector/consumer v0.72.1-0.20230303235035-7318c14f1a2b // indirect
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.72.1-0.20230303235035-7318c14f1a2b // indirect
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.72.1-0.20230303235035-7318c14f1a2b // indirect
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.72.1-0.20230303235035-7318c14f1a2b // indirect
-	go.opentelemetry.io/collector/extension/ballastextension v0.72.1-0.20230303235035-7318c14f1a2b // indirect
-	go.opentelemetry.io/collector/extension/zpagesextension v0.72.1-0.20230303235035-7318c14f1a2b // indirect
-	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230303235035-7318c14f1a2b // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230303235035-7318c14f1a2b // indirect
-	go.opentelemetry.io/collector/processor/batchprocessor v0.72.1-0.20230303235035-7318c14f1a2b // indirect
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.72.1-0.20230303235035-7318c14f1a2b // indirect
-	go.opentelemetry.io/collector/semconv v0.72.1-0.20230303235035-7318c14f1a2b // indirect
+	go.opentelemetry.io/collector/confmap v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/consumer v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/extension/ballastextension v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/extension/zpagesextension v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/processor/batchprocessor v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/semconv v0.72.1-0.20230306190955-966865880707 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.39.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.14.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.39.0 // indirect
-	go.opentelemetry.io/otel v1.13.0 // indirect
+	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.36.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.13.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.14.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.36.0 // indirect
-	go.opentelemetry.io/otel/trace v1.13.0 // indirect
+	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
@@ -614,7 +614,7 @@ require (
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.5.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
@@ -1042,3 +1042,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filte
 retract v0.65.0
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ../../receiver/sshcheckreceiver
+
+// openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
+replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
+
+// It appears that the v0.2.0 tag was modified.  Replacing with v0.2.1
+replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
