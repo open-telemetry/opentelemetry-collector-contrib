@@ -7,9 +7,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.72.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.72.1-0.20230303235035-7318c14f1a2b
-	go.opentelemetry.io/collector/component v0.72.1-0.20230303235035-7318c14f1a2b
-	go.opentelemetry.io/collector/confmap v0.72.1-0.20230303235035-7318c14f1a2b
+	go.opentelemetry.io/collector v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/component v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/confmap v0.72.1-0.20230306190955-966865880707
 	go.uber.org/zap v1.24.0
 )
 
@@ -27,11 +27,11 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.3 // indirect
-	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230303235035-7318c14f1a2b // indirect
+	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230306190955-966865880707 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.39.0 // indirect
-	go.opentelemetry.io/otel v1.13.0 // indirect
+	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect
-	go.opentelemetry.io/otel/trace v1.13.0 // indirect
+	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
