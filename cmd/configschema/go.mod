@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector v0.72.1-0.20230303235035-7318c14f1a2b
 	go.opentelemetry.io/collector/component v0.72.1-0.20230303235035-7318c14f1a2b
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.1-0.20230303235035-7318c14f1a2b
-	golang.org/x/mod v0.8.0
+	golang.org/x/mod v0.9.0
 	golang.org/x/text v0.7.0
 	gopkg.in/yaml.v2 v2.4.0
 )
