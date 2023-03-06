@@ -73,7 +73,7 @@ func buildGetMetricDataQueries(metric *namedRequest, nammetricDataInput *cloudwa
 			MetricName: aws.String(metric.MetricName),
 			Dimensions: metric.Dimensions,
 		},
-		Period: aws.Int32(int32(metric.Period / time.Nanosecond)),
+		Period: aws.Int32(int32(metric.Period / time.Second)),
 		Stat:   aws.String(metric.AwsAggregation),
 	}
 	return *mdq
@@ -97,7 +97,7 @@ func chunkSlice(namedRequestMetrics []namedRequest, maxSize int) [][]namedReques
 // GetMetricData only allows 500 elements in a slice, otherwise we'll get validation error
 // Avoids making a network call for each metric configured
 func (m *metricReceiver) request(st, et *time.Time) []cloudwatch.GetMetricDataInput {
-	var metricDataInput []cloudwatch.GetMetricDataInput
+	metricDataInput := make([]cloudwatch.GetMetricDataInput, len(m.namedRequests))
 
 	chunks := chunkSlice(m.namedRequests, maxNumberOfElements)
 	for idx, chunk := range chunks {
@@ -112,12 +112,13 @@ func (m *metricReceiver) request(st, et *time.Time) []cloudwatch.GetMetricDataIn
 }
 
 func newMetricsRceiver(cfg *Config, logger *zap.Logger, consumer consumer.Metrics) *metricReceiver {
-	requests := []namedRequest{}
-	for _, nc := range cfg.Metrics.Names {
-		dimensions := []types.Dimension{}
-		for idx := range nc.Dimensions {
+	var requests []namedRequest
+	for idx, nc := range cfg.Metrics.Names {
+		logger.Debug(nc.MetricName)
+		var dimensions []types.Dimension
+		for ydx := range nc.Dimensions {
 			dimensions = append(dimensions,
-				types.Dimension{Name: dimensions[idx].Name, Value: dimensions[idx].Value})
+				types.Dimension{Name: &cfg.Metrics.Names[idx].Dimensions[ydx].Name, Value: &cfg.Metrics.Names[idx].Dimensions[ydx].Value})
 		}
 
 		requests = append(requests, namedRequest{
@@ -144,7 +145,7 @@ func newMetricsRceiver(cfg *Config, logger *zap.Logger, consumer consumer.Metric
 func (m *metricReceiver) Start(ctx context.Context, host component.Host) error {
 	m.logger.Debug("Starting to poll for CloudWatch metrics")
 	m.wg.Add(1)
-	go m.poll(ctx)
+	go m.startPolling(ctx)
 	return nil
 }
 
@@ -157,6 +158,11 @@ func (m *metricReceiver) Shutdown(ctx context.Context) error {
 
 func (m *metricReceiver) startPolling(ctx context.Context) {
 	defer m.wg.Done()
+
+	err := m.configureAWSClient()
+	if err != nil {
+		m.logger.Error("unable to establish connection to cloudwatch", zap.Error(err))
+	}
 
 	t := time.NewTicker(m.pollInterval)
 

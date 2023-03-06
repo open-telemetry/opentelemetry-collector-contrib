@@ -28,15 +28,15 @@ const (
 )
 
 // NewFactory creates a factory for awscloudwatchmetrics receiver.
-func NewFactory() component.Factory {
+func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsRceiver, stabilityLevel),
+		receiver.WithMetrics(createMetricsReceiver, stabilityLevel),
 	)
 }
 
-func createMetricsRceiver(_ context.Context, params receiver.CreateSettings, baseCfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, baseCfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	cfg := baseCfg.(*Config)
 	rcvr := newMetricsRceiver(cfg, params.Logger, consumer)
 	return rcvr, nil
