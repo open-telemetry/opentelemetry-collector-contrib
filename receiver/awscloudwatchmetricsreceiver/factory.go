@@ -37,7 +37,9 @@ func NewFactory() component.Factory {
 }
 
 func createMetricsRceiver(_ context.Context, params receiver.CreateSettings, baseCfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
-	return nil, nil
+	cfg := baseCfg.(*Config)
+	rcvr := newMetricsRceiver(cfg, params.Logger, consumer)
+	return rcvr, nil
 }
 
 func createDefaultConfig() component.Config {

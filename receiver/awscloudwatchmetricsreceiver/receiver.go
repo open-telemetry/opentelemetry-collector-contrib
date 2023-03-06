@@ -16,7 +16,6 @@ package awscloudwatchmetricsreceiver // import "github.com/open-telemetry/opente
 
 import (
 	"context"
-	"math"
 	"sync"
 	"time"
 
@@ -40,9 +39,8 @@ type metricReceiver struct {
 	pollInterval  time.Duration
 	nextStartTime time.Time
 	logger        *zap.Logger
-	client        *cloudwatch.Client
-	namedRequest  []namedRequest
-	mc            *MetricsConfig
+	client        client
+	namedRequests []namedRequest
 	consumer      consumer.Metrics
 	wg            *sync.WaitGroup
 	doneChan      chan bool
@@ -50,11 +48,6 @@ type metricReceiver struct {
 
 type client interface {
 	GetMetricData(ctx context.Context, params *cloudwatch.GetMetricDataInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.GetMetricDataOutput, error)
-}
-
-type metricsRequest interface {
-	request(st, et *time.Time, rqid string) *cloudwatch.GetMetricDataOutput
-	name() string
 }
 
 type namedRequest struct {
@@ -65,39 +58,87 @@ type namedRequest struct {
 	Dimensions     []types.Dimension
 }
 
-func (nr *namedRequest) request(st, et *time.Time, rqid string) *cloudwatch.GetMetricDataInput {
-	getMetricInput := &cloudwatch.GetMetricDataInput{
-		EndTime:   et,
-		StartTime: st,
-		MetricDataQueries: []types.MetricDataQuery{
-			types.MetricDataQuery{
-				Id: aws.String(rqid),
-				MetricStat: &types.MetricStat{
-					Metric: &types.Metric{
-						Namespace:  &nr.Namespace,
-						MetricName: &nr.MetricName,
-						Dimensions: nr.Dimensions,
-					},
-					Period: aws.Int32(int32(math.Abs(nr.Period.Seconds()))),
-					Stat:   &nr.AwsAggregation,
-				},
-				ReturnData: aws.Bool(true),
-			},
-		},
-	}
+const (
+	maxNumberOfElements = 500
+)
 
-	return getMetricInput
+func buildGetMetricDataQueries(metric *namedRequest, nammetricDataInput *cloudwatch.GetMetricDataInput) types.MetricDataQuery {
+	mdq := &types.MetricDataQuery{
+		Id:         aws.String("m1"),
+		ReturnData: aws.Bool(true),
+	}
+	mdq.MetricStat = &types.MetricStat{
+		Metric: &types.Metric{
+			Namespace:  aws.String(metric.Namespace),
+			MetricName: aws.String(metric.MetricName),
+			Dimensions: metric.Dimensions,
+		},
+		Period: aws.Int32(int32(metric.Period / time.Nanosecond)),
+		Stat:   aws.String(metric.AwsAggregation),
+	}
+	return *mdq
 }
 
-func (m *metricReceiver) configureAWSClient() error {
-	if m.client != nil {
-		return nil
+func chunkSlice(namedRequestMetrics []namedRequest, maxSize int) [][]namedRequest {
+	var slicedMetrics [][]namedRequest
+	for i := 0; i < len(namedRequestMetrics); i += maxSize {
+		end := i + maxSize
+
+		if end > len(namedRequestMetrics) {
+			end = len(namedRequestMetrics)
+		}
+		slicedMetrics = append(slicedMetrics, namedRequestMetrics[i:end])
 	}
-	// if "", helper functions (withXXX) ignores parameter
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(m.region), config.WithEC2IMDSEndpoint(m.imdsEndpoint), config.WithSharedConfigProfile(m.profile))
-	m.client = cloudwatch.NewFromConfig(cfg)
-	return err
+	return slicedMetrics
+}
+
+// divide up into slices of 500, then execute
+// Split metricNamedRequest slices into small slicer no longer than 500 elements
+// GetMetricData only allows 500 elements in a slice, otherwise we'll get validation error
+// Avoids making a network call for each metric configured
+func (m *metricReceiver) request(st, et *time.Time) []cloudwatch.GetMetricDataInput {
+	var metricDataInput []cloudwatch.GetMetricDataInput
+
+	chunks := chunkSlice(m.namedRequests, maxNumberOfElements)
+	for idx, chunk := range chunks {
+		for ydx := range chunk {
+			metricDataInput[idx].StartTime = st
+			metricDataInput[idx].EndTime = et
+			metricDataInput[idx].MetricDataQueries =
+				append(metricDataInput[idx].MetricDataQueries, buildGetMetricDataQueries(&chunk[ydx], &metricDataInput[idx]))
+		}
+	}
+	return metricDataInput
+}
+
+func newMetricsRceiver(cfg *Config, logger *zap.Logger, consumer consumer.Metrics) *metricReceiver {
+	requests := []namedRequest{}
+	for _, nc := range cfg.Metrics.Names {
+		dimensions := []types.Dimension{}
+		for idx := range nc.Dimensions {
+			dimensions = append(dimensions,
+				types.Dimension{Name: dimensions[idx].Name, Value: dimensions[idx].Value})
+		}
+
+		requests = append(requests, namedRequest{
+			Namespace:      nc.Namespace,
+			MetricName:     nc.MetricName,
+			Period:         nc.Period,
+			AwsAggregation: nc.AwsAggregation,
+			Dimensions:     dimensions,
+		})
+	}
+	return &metricReceiver{
+		region:        cfg.Region,
+		profile:       cfg.Profile,
+		imdsEndpoint:  cfg.IMDSEndpoint,
+		pollInterval:  cfg.PollInterval,
+		nextStartTime: time.Now().Add(-cfg.PollInterval),
+		logger:        logger,
+		wg:            &sync.WaitGroup{},
+		namedRequests: requests,
+		doneChan:      make(chan bool),
+	}
 }
 
 func (m *metricReceiver) Start(ctx context.Context, host component.Host) error {
@@ -132,43 +173,42 @@ func (m *metricReceiver) startPolling(ctx context.Context) {
 			}
 		}
 	}
-
 }
 
 func (m *metricReceiver) poll(ctx context.Context) error {
 	var errs error
 	startTime := m.nextStartTime
 	endTime := time.Now()
-	for _, r := range m.namedRequest {
-		if err := m.pollForMetrics(ctx, r, startTime, endTime); err != nil {
-			errs = multierr.Append(errs, err)
-		}
+	if err := m.pollForMetrics(ctx, m.namedRequests, startTime, endTime); err != nil {
+		errs = multierr.Append(errs, err)
 	}
 	m.nextStartTime = endTime
 	return errs
 }
 
-func (m *metricReceiver) pollForMetrics(ctx context.Context, r namedRequest, startTime time.Time, endTime time.Time) error {
+func (m *metricReceiver) pollForMetrics(ctx context.Context, r []namedRequest, startTime time.Time, endTime time.Time) error {
 	select {
 	case _, ok := <-m.doneChan:
 		if !ok {
 			return nil
 		}
 	default:
-		filter := r.request(&startTime, &endTime, "test")
-		paginator := cloudwatch.NewGetMetricDataPaginator(m.client, filter)
-		for paginator.HasMorePages() {
-			output, err := paginator.NextPage(ctx)
-			if err != nil {
-				m.logger.Error("unable to retrive metric data from cloudwatch", zap.String("metric name", r.MetricName), zap.Error(err))
-				break
-			}
-			observedTime := pcommon.NewTimestampFromTime(time.Now())
-			metrics := m.parseMetrics(observedTime, r.Namespace, r.MetricName, output)
-			if metrics.MetricCount() > 0 {
-				if err = m.consumer.ConsumeMetrics(ctx, metrics); err != nil {
-					m.logger.Error("unable to consume logs", zap.Error(err))
+		filters := m.request(&startTime, &endTime)
+		for idx := range filters {
+			paginator := cloudwatch.NewGetMetricDataPaginator(m.client, &filters[idx])
+			for paginator.HasMorePages() {
+				output, err := paginator.NextPage(ctx)
+				if err != nil {
+					m.logger.Error("unable to retrieve metric data from cloudwatch", zap.Error(err))
 					break
+				}
+				observedTime := pcommon.NewTimestampFromTime(time.Now())
+				metrics := m.parseMetrics(observedTime, output, r)
+				if metrics.MetricCount() > 0 {
+					if err = m.consumer.ConsumeMetrics(ctx, metrics); err != nil {
+						m.logger.Error("unable to consume logs", zap.Error(err))
+						break
+					}
 				}
 			}
 		}
@@ -176,13 +216,33 @@ func (m *metricReceiver) pollForMetrics(ctx context.Context, r namedRequest, sta
 	return nil
 }
 
-func (m *metricReceiver) parseMetrics(observedTime pcommon.Timestamp, namespace, metricName string, output *cloudwatch.GetMetricDataOutput) pmetric.Metrics {
-	metrics := pmetric.NewMetrics()
-	for _, metric := range output.MetricDataResults {
+func (m *metricReceiver) parseMetrics(observedTime pcommon.Timestamp, output *cloudwatch.GetMetricDataOutput, r []namedRequest) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	for idx, metric := range output.MetricDataResults {
 		if len(metric.Timestamps) < 1 {
 			m.logger.Error("no timestamps received from cloudwatch")
-			return metrics
+			continue
 		}
+		if len(metric.Values) < 1 {
+			m.logger.Error("no values received from cloudwatch")
+			continue
+		}
+		rm := md.ResourceMetrics().AppendEmpty()
+		resourceAttributes := rm.Resource().Attributes()
+		resourceAttributes.PutStr("aws.region", m.region)
+		resourceAttributes.PutStr("cloudwatch.metric.namespace", r[idx].Namespace)
+		resourceAttributes.PutStr("cloudwatch.metric.name", r[idx].MetricName)
 	}
-	return metrics
+	return md
+}
+
+func (m *metricReceiver) configureAWSClient() error {
+	if m.client != nil {
+		return nil
+	}
+	// if "", helper functions (withXXX) ignores parameter
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(m.region), config.WithEC2IMDSEndpoint(m.imdsEndpoint), config.WithSharedConfigProfile(m.profile))
+	m.client = cloudwatch.NewFromConfig(cfg)
+	return err
 }
