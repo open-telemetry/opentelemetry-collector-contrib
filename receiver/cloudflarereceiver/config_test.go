@@ -125,6 +125,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Secret:         "1234567890abcdef1234567890abcdef",
 				TimestampField: "EdgeStartTimestamp",
+				FieldAttributeMap: map[string]string{
+					"ClientIP":         "http_request.client_ip",
+					"ClientRequestURI": "http_request.uri",
+				},
 			},
 		},
 	}

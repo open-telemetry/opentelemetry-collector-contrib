@@ -118,11 +118,6 @@ func TestReceiverTLS(t *testing.T) {
 
 			logs := sink.AllLogs()[0]
 
-			marshaler := plog.JSONMarshaler{}
-			b, err := marshaler.MarshalLogs(logs)
-			require.NoError(t, err)
-			os.WriteFile(filepath.Join("testdata", "processed", fmt.Sprintf("%s.json", payloadName)), b, 0644)
-
 			expectedLogs, err := readLogs(filepath.Join("testdata", "processed", fmt.Sprintf("%s.json", payloadName)))
 			require.NoError(t, err)
 

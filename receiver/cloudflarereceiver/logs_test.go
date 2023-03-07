@@ -58,21 +58,23 @@ func TestPayloadToLogRecord(t *testing.T) {
 			expectedLogs: func(t *testing.T, payload string) plog.Logs {
 				logs := plog.NewLogs()
 				rl := logs.ResourceLogs().AppendEmpty()
+				scopeLogs := rl.ScopeLogs().AppendEmpty().LogRecords()
 
 				for idx, line := range strings.Split(payload, "\n") {
-					lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+					lr := scopeLogs.AppendEmpty()
 
 					lr.Attributes().FromRaw(map[string]interface{}{
 						"http_request.client_ip": fmt.Sprintf("89.163.253.%d", 200+idx),
 					})
 
 					lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
-					ts, _ := time.Parse(time.RFC3339, "2023-03-03T05:30:05Z")
+					ts, _ := time.Parse(time.RFC3339, "2023-03-03T05:29:05Z")
 					lr.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 					lr.SetSeverityNumber(plog.SeverityNumberInfo)
+					lr.SetSeverityText(plog.SeverityNumberInfo.String())
 
 					var log map[string]interface{}
-					err := json.Unmarshal([]byte(payload), &log)
+					err := json.Unmarshal([]byte(line), &log)
 					require.NoError(t, err)
 
 					payloadToExpectedBody(t, line, lr)
@@ -84,7 +86,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 
 		{
 			name:    "all fields",
-			payload: `{"RayID":"7a1f7ad4df2f870a","EdgeStartTimestamp":"2023-03-03T05:29:06Z","CacheCacheStatus":"dynamic","CacheReserveUsed":false,"CacheResponseBytes":9247,"CacheResponseStatus":401"CacheTieredFill":false,"ClientASN":20115,"ClientCountry":"us","ClientDeviceType":"desktop","ClientIP":"47.35.104.49","ClientIPClass":"noRecord","ClientMTLSAuthCertFingerprint":"","ClientMTLSAuthStatus":"unknown","ClientRegionCode":"MI","ClientRequestBytes":2667,"ClientRequestHost":"www.theburritobot2.com","ClientRequestMethod":"GET","ClientRequestPath":"/product/66VCHSJNUP","ClientRequestProtocol":"HTTP/2","ClientRequestReferer":"https://www.theburritobot2.com/","ClientRequestScheme":"https","ClientRequestSource":"eyeball","ClientRequestURI":"/product/66VCHSJNUP","ClientRequestUserAgent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36","ClientSSLCipher":"AEAD-AES128-GCM-SHA256","ClientSSLProtocol":"TLSv1.3","ClientSrcPort":49358,"ClientTCPRTTMs":18,"ClientXRequestedWith":"","ContentScanObjResults":[],"ContentScanObjTypes":[],"Cookies":{},"EdgeCFConnectingO2O":false,"EdgeColoCode":"ORD","EdgeColoID":398,"EdgeEndTimestamp":"2023-03-03T05:29:06Z","EdgePathingOp":"wl","EdgePathingSrc":"macro","EdgePathingStatus":"nr","EdgeRateLimitAction":"","EdgeRateLimitID":0,"EdgeRequestHost":"www.theburritobot2.com","EdgeResponseBodyBytes":1963,"EdgeResponseBytes":2301,"EdgeResponseCompressionRatio":2.54,"EdgeResponseContentType":"text/html","EdgeResponseStatus":401"EdgeServerIP":"172.70.131.84","EdgeTimeToFirstByteMs":28,"FirewallMatchesActions":[],"FirewallMatchesRuleIDs":[],"FirewallMatchesSources":[],"OriginDNSResponseTimeMs":0,"OriginIP":"35.223.103.128","OriginRequestHeaderSendDurationMs":0,"OriginResponseBytes":0,"OriginResponseDurationMs":22,"OriginResponseHTTPExpires":"","OriginResponseHTTPLastModified":"","OriginResponseHeaderReceiveDurationMs":21,"OriginResponseStatus":401"OriginResponseTime":22000000,"OriginSSLProtocol":"none","OriginTCPHandshakeDurationMs":0,"OriginTLSHandshakeDurationMs":0,"ParentRayID":"00","RequestHeaders":{},"ResponseHeaders":{},"SecurityLevel":"med","SmartRouteColoID":0,"UpperTierColoID":0,"WAFAction":"unknown","WAFAttackScore":0,"WAFFlags":"0","WAFMatchedVar":"","WAFProfile":"unknown","WAFRCEAttackScore":0,"WAFRuleID":"","WAFRuleMessage":"","WAFSQLiAttackScore":0,"WAFXSSAttackScore":0,"WorkerCPUTime":0,"WorkerStatus":"unknown","WorkerSubrequest":false,"WorkerSubrequestCount":0,"WorkerWallTimeUs":0,"ZoneName":"otlpdev.net"}`,
+			payload: `{"RayID":"7a1f7ad4df2f870a","EdgeStartTimestamp":"2023-03-03T05:29:06Z","CacheCacheStatus":"dynamic","CacheReserveUsed":false,"CacheResponseBytes":9247,"CacheResponseStatus":401,"CacheTieredFill":false,"ClientASN":20115,"ClientCountry":"us","ClientDeviceType":"desktop","ClientIP":"47.35.104.49","ClientIPClass":"noRecord","ClientMTLSAuthCertFingerprint":"","ClientMTLSAuthStatus":"unknown","ClientRegionCode":"MI","ClientRequestBytes":2667,"ClientRequestHost":"www.theburritobot2.com","ClientRequestMethod":"GET","ClientRequestPath":"/product/66VCHSJNUP","ClientRequestProtocol":"HTTP/2","ClientRequestReferer":"https://www.theburritobot2.com/","ClientRequestScheme":"https","ClientRequestSource":"eyeball","ClientRequestURI":"/product/66VCHSJNUP","ClientRequestUserAgent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36","ClientSSLCipher":"AEAD-AES128-GCM-SHA256","ClientSSLProtocol":"TLSv1.3","ClientSrcPort":49358,"ClientTCPRTTMs":18,"ClientXRequestedWith":"","ContentScanObjResults":[],"ContentScanObjTypes":[],"Cookies":{},"EdgeCFConnectingO2O":false,"EdgeColoCode":"ORD","EdgeColoID":398,"EdgeEndTimestamp":"2023-03-03T05:29:06Z","EdgePathingOp":"wl","EdgePathingSrc":"macro","EdgePathingStatus":"nr","EdgeRateLimitAction":"","EdgeRateLimitID":0,"EdgeRequestHost":"www.theburritobot2.com","EdgeResponseBodyBytes":1963,"EdgeResponseBytes":2301,"EdgeResponseCompressionRatio":2.54,"EdgeResponseContentType":"text/html","EdgeResponseStatus":401,"EdgeServerIP":"172.70.131.84","EdgeTimeToFirstByteMs":28,"FirewallMatchesActions":[],"FirewallMatchesRuleIDs":[],"FirewallMatchesSources":[],"OriginDNSResponseTimeMs":0,"OriginIP":"35.223.103.128","OriginRequestHeaderSendDurationMs":0,"OriginResponseBytes":0,"OriginResponseDurationMs":22,"OriginResponseHTTPExpires":"","OriginResponseHTTPLastModified":"","OriginResponseHeaderReceiveDurationMs":21,"OriginResponseStatus":401,"OriginResponseTime":22000000,"OriginSSLProtocol":"none","OriginTCPHandshakeDurationMs":0,"OriginTLSHandshakeDurationMs":0,"ParentRayID":"00","RequestHeaders":{},"ResponseHeaders":{},"SecurityLevel":"med","SmartRouteColoID":0,"UpperTierColoID":0,"WAFAction":"unknown","WAFAttackScore":0,"WAFFlags":"0","WAFMatchedVar":"","WAFProfile":"unknown","WAFRCEAttackScore":0,"WAFRuleID":"","WAFRuleMessage":"","WAFSQLiAttackScore":0,"WAFXSSAttackScore":0,"WorkerCPUTime":0,"WorkerStatus":"unknown","WorkerSubrequest":false,"WorkerSubrequestCount":0,"WorkerWallTimeUs":0,"ZoneName":"otlpdev.net"}`,
 			expectedLogs: func(t *testing.T, payload string) plog.Logs {
 				logs := plog.NewLogs()
 				rl := logs.ResourceLogs().AppendEmpty()
@@ -98,6 +100,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 				ts, _ := time.Parse(time.RFC3339, "2023-03-03T05:29:06Z")
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 				lr.SetSeverityNumber(plog.SeverityNumberWarn)
+				lr.SetSeverityText(plog.SeverityNumberWarn.String())
 
 				var log map[string]interface{}
 				err := json.Unmarshal([]byte(payload), &log)
@@ -113,15 +116,19 @@ func TestPayloadToLogRecord(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			recv := newReceiver(t, &Config{
-				Endpoint: "localhost:0",
-				TLS:      &configtls.TLSServerSetting{},
+				Endpoint:       "localhost:0",
+				TLS:            &configtls.TLSServerSetting{},
+				TimestampField: "EdgeStartTimestamp",
+				FieldAttributeMap: map[string]string{
+					"ClientIP": "http_request.client_ip",
+				},
 			},
 				&consumertest.LogsSink{},
 			)
 			var logs plog.Logs
 			rawLogs, err := parsePayload(tc.payload)
 			if err == nil {
-				recv.processLogs(pcommon.NewTimestampFromTime(time.Now()), rawLogs)
+				logs = recv.processLogs(pcommon.NewTimestampFromTime(time.Now()), rawLogs)
 			}
 			if tc.expectedErr != "" {
 				require.Error(t, err)
@@ -130,7 +137,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, logs)
-				require.NoError(t, plogtest.CompareLogs(tc.expectedLogs(t, tc.payload), logs))
+				require.NoError(t, plogtest.CompareLogs(tc.expectedLogs(t, tc.payload), logs, plogtest.IgnoreObservedTimestamp()))
 			}
 		})
 	}
@@ -145,7 +152,7 @@ func payloadToExpectedBody(t *testing.T, payload string, lr plog.LogRecord) {
 
 func TestSeverityParsing(t *testing.T) {
 	testCases := []struct {
-		statusCode int
+		statusCode int64
 		s          plog.SeverityNumber
 	}{
 		{

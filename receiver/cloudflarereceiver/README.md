@@ -36,7 +36,7 @@ To successfully operate this receiver, you must follow these steps in order:
   - This receiver was built with the Cloudflare `http_requests` dataset in mind, but should be able to support any Cloudflare dataset. If using another dataset, you will need to set the `timestamp_field` appropriately in order to have the log record be associated with the correct timestamp.
 - `field_attribute_map`
   - This parameter allows the receiver to be configured to set log record attributes based on fields found in the log message. The fields are not removed from the log message when set in this way. Only string, boolean, integer or float fields can be mapped using this parameter.
-  
+
 
 ### Example:
 

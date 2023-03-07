@@ -22,6 +22,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -207,10 +208,9 @@ func parsePayload(payload string) ([]map[string]interface{}, error) {
 func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]interface{}) plog.Logs {
 	pLogs := plog.NewLogs()
 
+	resourceLogs := pLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	for _, log := range logs {
-		resourceLogs := pLogs.ResourceLogs().AppendEmpty()
-		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
+		logRecord := resourceLogs.AppendEmpty()
 		logRecord.SetObservedTimestamp(now)
 
 		if v, ok := log[l.cfg.TimestampField]; ok {
@@ -227,8 +227,21 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]inte
 		}
 
 		if v, ok := log["EdgeResponseStatus"]; ok {
-			if intV, ok := v.(int); ok {
-				sev := severityFromStatusCode(intV)
+			sev := plog.SeverityNumberUnspecified
+			switch v := v.(type) {
+			case string:
+				intV, err := strconv.ParseInt(v, 10, 64)
+				if err != nil {
+					l.logger.Warn("unable to parse EdgeResponseStatus", zap.Error(err), zap.String("value", v))
+				} else {
+					sev = severityFromStatusCode(intV)
+				}
+			case int64:
+				sev = severityFromStatusCode(v)
+			case float64:
+				sev = severityFromStatusCode(int64(v))
+			}
+			if sev != plog.SeverityNumberUnspecified {
 				logRecord.SetSeverityNumber(sev)
 				logRecord.SetSeverityText(sev.String())
 			}
@@ -261,7 +274,7 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]inte
 }
 
 // severityFromStatusCode translates HTTP status code to OpenTelemetry severity number.
-func severityFromStatusCode(statusCode int) plog.SeverityNumber {
+func severityFromStatusCode(statusCode int64) plog.SeverityNumber {
 	switch {
 	case statusCode < 300:
 		return plog.SeverityNumberInfo
