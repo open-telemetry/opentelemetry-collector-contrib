@@ -46,7 +46,14 @@ const (
 
 	metricNameLatency = "latency"
 	metricNameCalls   = "calls"
+
+	defaultUnit = "ms"
 )
+
+var units = map[string]int64{
+	"s":  time.Second.Nanoseconds(),
+	"ms": time.Millisecond.Nanoseconds(),
+}
 
 type connectorImp struct {
 	lock   sync.Mutex
@@ -64,6 +71,9 @@ type connectorImp struct {
 	// Metrics
 	histograms metrics.HistogramMetrics
 	sums       metrics.SumMetrics
+
+	// unit divider, used to convert nanoseconds to milliseconds or seconds
+	unit int64
 
 	keyBuf *bytes.Buffer
 
@@ -107,6 +117,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		return nil, err
 	}
 
+	unit := units[cfg.Histogram.Unit]
 	var histograms metrics.HistogramMetrics
 	if cfg.Histogram.Exponential != nil {
 		maxSize := cfg.Histogram.Exponential.MaxSize
@@ -120,10 +131,10 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		if cfg.LatencyHistogramBuckets != nil {
 			logger.Warn("latency_histogram_buckets is deprecated. " +
 				"Use `histogram: explicit: buckets` to set histogram buckets")
-			bounds = mapDurationsToMillis(cfg.LatencyHistogramBuckets)
+			bounds = durationsToUnits(cfg.LatencyHistogramBuckets, unit)
 		}
 		if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
-			bounds = mapDurationsToMillis(cfg.Histogram.Explicit.Buckets)
+			bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unit)
 		}
 		histograms = metrics.NewExplicitHistogramMetrics(bounds)
 	}
@@ -134,6 +145,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
 		histograms:            histograms,
 		sums:                  metrics.NewSumMetrics(),
+		unit:                  unit,
 		dimensions:            newDimensions(cfg.Dimensions),
 		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
@@ -142,16 +154,10 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 	}, nil
 }
 
-// durationToMillis converts the given duration to the number of milliseconds it represents.
-// Note that this can return sub-millisecond (i.e. < 1ms) values as well.
-func durationToMillis(d time.Duration) float64 {
-	return float64(d.Nanoseconds()) / float64(time.Millisecond.Nanoseconds())
-}
-
-func mapDurationsToMillis(vs []time.Duration) []float64 {
+func durationsToUnits(vs []time.Duration, unitDivider int64) []float64 {
 	vsm := make([]float64, len(vs))
 	for i, v := range vs {
-		vsm[i] = durationToMillis(v)
+		vsm[i] = float64(v.Nanoseconds()) / float64(unitDivider)
 	}
 	return vsm
 }
@@ -237,7 +243,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 func (p *connectorImp) buildLatencyMetrics(ilm pmetric.ScopeMetrics) {
 	m := ilm.Metrics().AppendEmpty()
 	m.SetName(buildMetricName(p.config.Namespace, metricNameLatency))
-	m.SetUnit("ms")
+	m.SetUnit(p.config.Histogram.Unit)
 
 	p.histograms.BuildMetrics(m, p.startTimestamp, p.config.GetAggregationTemporality())
 }
@@ -285,11 +291,11 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				// Protect against end timestamps before start timestamps. Assume 0 duration.
-				latencyMs := float64(0)
+				latency := float64(0)
 				startTime := span.StartTimestamp()
 				endTime := span.EndTimestamp()
 				if endTime > startTime {
-					latencyMs = float64(endTime-startTime) / float64(time.Millisecond.Nanoseconds())
+					latency = float64(endTime-startTime) / float64(p.unit)
 				}
 				key := p.buildKey(serviceName, span, p.dimensions, resourceAttr)
 
@@ -301,9 +307,9 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 				// aggregate histogram metrics
 				h := p.histograms.GetOrCreate(key, attributes)
-				h.Observe(latencyMs)
+				h.Observe(latency)
 				if !span.TraceID().IsEmpty() {
-					h.AddExemplar(span.TraceID(), span.SpanID(), latencyMs)
+					h.AddExemplar(span.TraceID(), span.SpanID(), latency)
 				}
 
 				// aggregate sums metrics

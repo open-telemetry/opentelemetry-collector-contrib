@@ -145,7 +145,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 
 	h := m.At(1)
 	assert.Equal(t, metricNameLatency, h.Name())
-	assert.Equal(t, "ms", h.Unit())
+	assert.Equal(t, defaultUnit, h.Unit())
 
 	// The remaining 3 data points are for latency.
 	if h.Type() == pmetric.MetricTypeExponentialHistogram {
@@ -761,12 +761,12 @@ func newConnectorImp(
 	}
 	return &connectorImp{
 		logger:          logger,
-		config:          Config{AggregationTemporality: temporality},
+		config:          Config{AggregationTemporality: temporality, Histogram: HistogramConfig{Unit: defaultUnit}},
 		metricsConsumer: mcon,
-
-		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
-		histograms:     histograms(),
-		sums:           metrics.NewSumMetrics(),
+		unit:            units[defaultUnit],
+		startTimestamp:  pcommon.NewTimestampFromTime(time.Now()),
+		histograms:      histograms(),
+		sums:            metrics.NewSumMetrics(),
 		dimensions: []dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
@@ -934,9 +934,10 @@ func TestBuildMetricName(t *testing.T) {
 	}
 }
 
-func TestConnector_MapDurationsToMillis(t *testing.T) {
+func TestConnector_durationsToUnits(t *testing.T) {
 	tests := []struct {
 		input []time.Duration
+		unit  string
 		want  []float64
 	}{
 		{
@@ -946,7 +947,18 @@ func TestConnector_MapDurationsToMillis(t *testing.T) {
 				3 * time.Millisecond,
 				3 * time.Second,
 			},
+			unit: defaultUnit,
 			want: []float64{0.000003, 0.003, 3, 3000},
+		},
+		{
+			input: []time.Duration{
+				3 * time.Nanosecond,
+				3 * time.Microsecond,
+				3 * time.Millisecond,
+				3 * time.Second,
+			},
+			unit: "s",
+			want: []float64{3e-09, 3e-06, 0.003, 3},
 		},
 		{
 			input: []time.Duration{},
@@ -955,7 +967,7 @@ func TestConnector_MapDurationsToMillis(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
-			got := mapDurationsToMillis(tt.input)
+			got := durationsToUnits(tt.input, units[tt.unit])
 			assert.Equal(t, tt.want, got)
 		})
 	}
