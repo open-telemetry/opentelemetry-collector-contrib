@@ -138,7 +138,8 @@ func (g *JaegerDependencyGraph) Start(_ context.Context, _ component.Host) error
 		for {
 			select {
 			case <-ticker.C:
-				resourceMetrics, err := g.meterReader.Collect(g.backgroundCtx)
+				resourceMetrics := metricdata.ResourceMetrics{}
+				err := g.meterReader.Collect(g.backgroundCtx, &resourceMetrics)
 				if err != nil {
 					g.logger.Debug("dependency graph reader failed to collect", err)
 					continue
