@@ -70,6 +70,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
+				ConnectionParams: map[string]string{},
 				QueueSettings: QueueSettings{
 					QueueSize: 100,
 				},
@@ -102,10 +103,11 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 
 func TestConfig_buildDSN(t *testing.T) {
 	type fields struct {
-		Endpoint string
-		Username string
-		Password string
-		Database string
+		Endpoint         string
+		Username         string
+		Password         string
+		Database         string
+		ConnectionParams map[string]string
 	}
 	type args struct {
 		database string
@@ -221,14 +223,27 @@ func TestConfig_buildDSN(t *testing.T) {
 			args: args{},
 			want: "https://127.0.0.1:9000/default?compress=lz4&dial_timeout=30s&secure=true",
 		},
+		{
+			name: "Should respect connection parameters",
+			fields: fields{
+				Endpoint:         "clickhouse://127.0.0.1:9000?foo=bar",
+				ConnectionParams: map[string]string{"secure": "true"},
+			},
+			expectedChOptions: ChOptions{
+				Secure: true,
+			},
+			args: args{},
+			want: "clickhouse://127.0.0.1:9000/default?foo=bar&secure=true",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				Endpoint: tt.fields.Endpoint,
-				Username: tt.fields.Username,
-				Password: tt.fields.Password,
-				Database: tt.fields.Database,
+				Endpoint:         tt.fields.Endpoint,
+				Username:         tt.fields.Username,
+				Password:         tt.fields.Password,
+				Database:         tt.fields.Database,
+				ConnectionParams: tt.fields.ConnectionParams,
 			}
 			got, err := cfg.buildDSN(tt.args.database)
 

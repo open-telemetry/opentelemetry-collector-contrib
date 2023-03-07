@@ -35,12 +35,14 @@ type Config struct {
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
-	// Database is the database name to export.
-	Database string `mapstructure:"database"`
 	// Username is the authentication username.
 	Username string `mapstructure:"username"`
 	// Username is the authentication password.
 	Password string `mapstructure:"password"`
+	// Database is the database name to export.
+	Database string `mapstructure:"database"`
+	// ConnectionParams is the extra connection parameters with map format. for example compression/dial_timeout
+	ConnectionParams map[string]string `mapstructure:"connection_params"`
 	// LogsTableName is the table name for logs. default is `otel_logs`.
 	LogsTableName string `mapstructure:"logs_table_name"`
 	// TracesTableName is the table name for logs. default is `otel_traces`.
@@ -98,6 +100,11 @@ func (cfg *Config) buildDSN(database string) (string, error) {
 	}
 
 	queryParams := dsnURL.Query()
+
+	// Add connection params to query params.
+	for k, v := range cfg.ConnectionParams {
+		queryParams.Set(k, v)
+	}
 
 	// Enable TLS if scheme is https. This flag is necessary to support https connections.
 	if dsnURL.Scheme == "https" {
