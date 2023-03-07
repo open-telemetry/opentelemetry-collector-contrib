@@ -151,6 +151,7 @@ func (c *WatchClient) Stop() {
 func (c *WatchClient) handlePodAdd(obj interface{}) {
 	observability.RecordPodAdded()
 	if pod, ok := obj.(*api_v1.Pod); ok {
+		c.logger.Info("[fatsheep9146] watch pod add", zap.Any("pod", pod.Name))
 		c.addOrUpdatePod(pod)
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", obj))
@@ -163,6 +164,7 @@ func (c *WatchClient) handlePodUpdate(old, new interface{}) {
 	observability.RecordPodUpdated()
 	if pod, ok := new.(*api_v1.Pod); ok {
 		// TODO: update or remove based on whether container is ready/unready?.
+		c.logger.Info("[fatsheep9146] watch pod update", zap.Any("pod", pod.Name))
 		c.addOrUpdatePod(pod)
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", new))
@@ -539,6 +541,7 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 		// and only replace old pod if scheduled time of new pod is newer or equal.
 		// This should fix the case where scheduler has assigned the same attributes (like IP address)
 		// to a new pod but update event for the old pod came in later.
+		c.logger.Info("[fatsheep9146] get pod identifier", zap.Any("pod", pod.Name), zap.Any("identifier", id))
 		if p, ok := c.Pods[id]; ok {
 			if pod.Status.StartTime.Before(p.StartTime) {
 				continue
