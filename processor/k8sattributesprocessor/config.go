@@ -88,7 +88,6 @@ type ExtractConfig struct {
 	//  - k8s.deployment.name (if the pod is controlled by a deployment)
 	//  - container.image.name (requires an additional attribute to be set: k8s.container.name)
 	//  - container.image.tag (requires an additional attribute to be set: k8s.container.name)
-	//  - container.id (requires additional attributes to be set: k8s.container.name, k8s.container.restart_count)
 	Metadata []string `mapstructure:"metadata"`
 
 	// Annotations allows extracting data from pod annotations and record it
