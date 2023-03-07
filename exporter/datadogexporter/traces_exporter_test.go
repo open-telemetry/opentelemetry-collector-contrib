@@ -16,6 +16,7 @@ package datadogexporter
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -179,8 +180,12 @@ func TestTracesSource(t *testing.T) {
 	// getHostTagsV2 extracts the host and tags from the native DatadogV2 metrics series payload
 	// body found in data.
 	getHostTagsV2 := func(data []byte) (host string, tags []string) {
+		buf := bytes.NewBuffer(data)
+		reader, derr := gzip.NewReader(buf)
+		assert.NoError(derr)
+		dec := json.NewDecoder(reader)
 		var p datadogV2.MetricPayload
-		assert.NoError(json.Unmarshal(data, &p))
+		assert.NoError(dec.Decode(&p))
 		assert.Len(p.Series, 1)
 		assert.Len(p.Series[0].Resources, 1)
 		return *p.Series[0].Resources[0].Name, p.Series[0].Tags

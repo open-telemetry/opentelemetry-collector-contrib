@@ -15,6 +15,8 @@
 package datadogexporter
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -333,10 +335,15 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			} else {
 				assert.Equal(t, "gzip", seriesRecorder.Header.Get("Accept-Encoding"))
 				assert.Equal(t, "application/json", seriesRecorder.Header.Get("Content-Type"))
+				assert.Equal(t, "gzip", seriesRecorder.Header.Get("Content-Encoding"))
 				assert.Equal(t, "otelcol/latest", seriesRecorder.Header.Get("User-Agent"))
 				assert.NoError(t, err)
+				buf := bytes.NewBuffer(seriesRecorder.ByteBody)
+				reader, err := gzip.NewReader(buf)
+				assert.NoError(t, err)
+				dec := json.NewDecoder(reader)
 				var actual map[string]interface{}
-				assert.NoError(t, json.Unmarshal(seriesRecorder.ByteBody, &actual))
+				assert.NoError(t, dec.Decode(&actual))
 				assert.EqualValues(t, tt.expectedSeries, actual)
 			}
 			if tt.expectedSketchPayload == nil {
