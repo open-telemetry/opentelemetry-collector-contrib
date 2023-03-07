@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,12 +25,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 )
 
 type nextLokiExporter struct {
@@ -51,9 +49,29 @@ func newNextExporter(config *Config, settings component.TelemetrySettings) *next
 }
 
 func (l *nextLokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	pushReq := logDataToLoki(l.settings.Logger, ld)
+	requests := loki.LogsToLokiRequests(ld)
+
+	var errs error
+	for tenant, request := range requests {
+		err := l.sendPushRequest(ctx, tenant, request, ld)
+		errs = multierr.Append(errs, err)
+	}
+
+	return errs
+}
+
+func (l *nextLokiExporter) sendPushRequest(ctx context.Context, tenant string, request loki.PushRequest, ld plog.Logs) error {
+	pushReq := request.PushRequest
+	report := request.Report
 	if len(pushReq.Streams) == 0 {
 		return consumererror.NewPermanent(fmt.Errorf("failed to transform logs into Loki log streams"))
+	}
+	if len(report.Errors) > 0 {
+		l.settings.Logger.Info(
+			"not all log entries were converted to Loki",
+			zap.Int("dropped", report.NumDropped),
+			zap.Int("submitted", report.NumSubmitted),
+		)
 	}
 
 	buf, err := encode(pushReq)
@@ -67,9 +85,12 @@ func (l *nextLokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error 
 	}
 
 	for k, v := range l.config.HTTPClientSettings.Headers {
-		req.Header.Set(k, v)
+		req.Header.Set(k, string(v))
 	}
 	req.Header.Set("Content-Type", "application/x-protobuf")
+	if len(tenant) > 0 {
+		req.Header.Set("X-Scope-OrgID", tenant)
+	}
 
 	resp, err := l.client.Do(req)
 	if err != nil {
@@ -88,6 +109,14 @@ func (l *nextLokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error 
 			line = scanner.Text()
 		}
 		err = fmt.Errorf("HTTP %d %q: %s", resp.StatusCode, http.StatusText(resp.StatusCode), line)
+
+		// Errors with 4xx status code (excluding 429) should not be retried
+		if resp.StatusCode >= http.StatusBadRequest &&
+			resp.StatusCode < http.StatusInternalServerError &&
+			resp.StatusCode != http.StatusTooManyRequests {
+			return consumererror.NewPermanent(err)
+		}
+
 		return consumererror.NewLogs(err, ld)
 	}
 
@@ -108,77 +137,4 @@ func (l *nextLokiExporter) start(_ context.Context, host component.Host) (err er
 func (l *nextLokiExporter) stop(context.Context) (err error) {
 	l.wg.Wait()
 	return nil
-}
-
-func logDataToLoki(logger *zap.Logger, ld plog.Logs) (pr *logproto.PushRequest) {
-	var errs error
-
-	streams := make(map[string]*logproto.Stream)
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		ills := rls.At(i).ScopeLogs()
-
-		// we may remove attributes, so we make a copy and change our version
-		resource := pcommon.NewResource()
-		rls.At(i).Resource().CopyTo(resource)
-
-		for j := 0; j < ills.Len(); j++ {
-			logs := ills.At(j).LogRecords()
-			for k := 0; k < logs.Len(); k++ {
-
-				// similarly, we may remove attributes, so change only our version
-				log := plog.NewLogRecord()
-				logs.At(k).CopyTo(log)
-
-				mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
-				// remove the attributes that were promoted to labels
-				removeAttributes(log.Attributes(), mergedLabels)
-				removeAttributes(resource.Attributes(), mergedLabels)
-
-				// create the stream name based on the labels
-				labels := mergedLabels.String()
-
-				entry, err := convertLogToJSONEntry(log, resource)
-				if err != nil {
-					// Couldn't convert so dropping log.
-					errs = multierr.Append(
-						errs,
-						errors.New(
-							fmt.Sprint(
-								"failed to convert, dropping log",
-								zap.Error(err),
-							),
-						),
-					)
-					continue
-				}
-
-				if stream, ok := streams[labels]; ok {
-					stream.Entries = append(stream.Entries, *entry)
-					continue
-				}
-
-				streams[labels] = &logproto.Stream{
-					Labels:  labels,
-					Entries: []logproto.Entry{*entry},
-				}
-			}
-		}
-	}
-
-	if errs != nil {
-		logger.Debug("some logs has been dropped", zap.Error(errs))
-	}
-
-	pr = &logproto.PushRequest{
-		Streams: make([]logproto.Stream, len(streams)),
-	}
-
-	i := 0
-	for _, stream := range streams {
-		pr.Streams[i] = *stream
-		i++
-	}
-
-	return pr
 }

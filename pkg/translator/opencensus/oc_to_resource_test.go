@@ -42,9 +42,9 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	ocResource = generateOcResource()
 	expectedAttrs := generateResourceWithOcNodeAndResource().Attributes()
 	// We don't have type information in ocResource, so need to make int attr string
-	expectedAttrs.PutString("resource-int-attr", "123")
+	expectedAttrs.PutStr("resource-int-attr", "123")
 	ocNodeResourceToInternal(ocNode, ocResource, resource)
-	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
+	assert.Equal(t, expectedAttrs.AsRaw(), resource.Attributes().AsRaw())
 
 	// Make sure hard-coded fields override same-name values in Attributes.
 	// To do that add Attributes with same-name.
@@ -60,8 +60,9 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	// Convert again.
 	resource = pcommon.NewResource()
 	ocNodeResourceToInternal(ocNode, ocResource, resource)
+
 	// And verify that same-name attributes were ignored.
-	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
+	assert.Equal(t, expectedAttrs.AsRaw(), resource.Attributes().AsRaw())
 }
 
 func BenchmarkOcNodeResourceToInternal(b *testing.B) {

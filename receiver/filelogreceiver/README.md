@@ -2,7 +2,7 @@
 
 | Status                   |           |
 | ------------------------ |-----------|
-| Stability                | [alpha]   |
+| Stability                | [beta]    |
 | Supported pipeline types | logs      |
 | Distributions            | [contrib] |
 
@@ -24,17 +24,13 @@ Tails and parses logs from files.
 | `include_file_path_resolved` | `false`          | Whether to add the file path after symlinks resolution as the attribute `log.file.path_resolved`. |
 | `poll_interval`              | 200ms            | The duration between filesystem polls                                                                              |
 | `fingerprint_size`           | `1kb`            | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time) |
-| `max_log_size`               | `1MiB`           | The maximum size of a log entry to read before failing. Protects against reading large amounts of data into memory |
+| `max_log_size`               | `1MiB`           | The maximum size of a log entry to read. A log entry will be truncated if it is larger than `max_log_size`. Protects against reading large amounts of data into memory |
 | `max_concurrent_files`       | 1024             | The maximum number of log files from which logs will be read concurrently. If the number of files matched in the `include` pattern exceeds this number, then files will be processed in batches. One batch will be processed per `poll_interval` |
+| `delete_after_read`          | `false`          | If `true`, each log file will be read and then immediately deleted. Requires that the `filelog.allowFileDeletion` feature gate is enabled. |
 | `attributes`                 | {}               | A map of `key: value` pairs to add to the entry's attributes                                                       |
 | `resource`                   | {}               | A map of `key: value` pairs to add to the entry's resource                                                    |
 | `operators`                  | []               | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
-| `converter`                  | <pre lang="jsonp">{<br>  max_flush_count: 100,<br>  flush_interval: 100ms,<br>  worker_count: max(1,runtime.NumCPU()/4)<br>}</pre> | A map of `key: value` pairs to configure the [`entry.Entry`][entry_link] to [`plog.LogRecord`][pdata_logrecord_link] converter, more info can be found [here][converter_link] |
-| `storage`                   |                  | The ID of a storage extension. The extension will be used to store file checkpoints, which allows the receiver to pick up where it left off in the case of a collector restart. |
-
-[entry_link]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/entry/entry.go
-[pdata_logrecord_link]: https://github.com/open-telemetry/opentelemetry-collector/blob/v0.40.0/model/pdata/generated_log.go#L553-L564
-[converter_link]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.40.0/internal/stanza/converter.go#L41-L82
+| `storage`                    | none             | The ID of a storage extension to be used to store file checkpoints. File checkpoints allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage checkpoints in memory only. |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
@@ -91,5 +87,5 @@ receivers:
           layout: '%Y-%m-%d %H:%M:%S'
 ```
 
-[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

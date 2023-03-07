@@ -55,7 +55,7 @@ Configuration:
   "body": {
     "message": "Host=127.0.0.1, Type=HTTP"
   },
-  "attributes:" {
+  "attributes": {
     "host": "127.0.0.1",
     "type": "HTTP"
   }

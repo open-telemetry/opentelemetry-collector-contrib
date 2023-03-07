@@ -18,13 +18,14 @@ import (
 	"context"
 	"errors"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -41,18 +42,41 @@ type Exporter struct {
 	batcher  batch.Encoder
 }
 
+// options is used to override the default shipped behavior
+// to allow for testing correct setup of components
+type options struct {
+	NewKinesisClient func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client
+}
+
 var (
-	_ component.TracesExporter  = (*Exporter)(nil)
-	_ component.MetricsExporter = (*Exporter)(nil)
-	_ component.LogsExporter    = (*Exporter)(nil)
+	_ exporter.Traces  = (*Exporter)(nil)
+	_ exporter.Metrics = (*Exporter)(nil)
+	_ exporter.Logs    = (*Exporter)(nil)
 )
 
-func createExporter(ctx context.Context, c config.Exporter, log *zap.Logger) (*Exporter, error) {
+func createExporter(ctx context.Context, c component.Config, log *zap.Logger, opts ...func(opt *options)) (*Exporter, error) {
+	options := &options{
+		NewKinesisClient: kinesis.NewFromConfig,
+	}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	conf, ok := c.(*Config)
 	if !ok || conf == nil {
 		return nil, errors.New("incorrect config provided")
 	}
-	awsconf, err := awsconfig.LoadDefaultConfig(ctx)
+
+	var configOpts []func(*awsconfig.LoadOptions) error
+	if conf.AWS.Region != "" {
+		configOpts = append(configOpts, func(lo *awsconfig.LoadOptions) error {
+			lo.Region = conf.AWS.Region
+			return nil
+		})
+	}
+
+	awsconf, err := awsconfig.LoadDefaultConfig(ctx, configOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +100,7 @@ func createExporter(ctx context.Context, c config.Exporter, log *zap.Logger) (*E
 	}
 
 	producer, err := producer.NewBatcher(
-		kinesis.NewFromConfig(awsconf, kinesisOpts...),
+		options.NewKinesisClient(awsconf, kinesisOpts...),
 		conf.AWS.StreamName,
 		producer.WithLogger(log),
 	)

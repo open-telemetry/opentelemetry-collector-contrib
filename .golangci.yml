@@ -53,6 +53,12 @@ output:
 
 # all available settings of specific linters
 linters-settings:
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
+
   govet:
     # report about shadowed variables
     check-shadowing: true
@@ -70,6 +76,7 @@ linters-settings:
     # TODO: Enable this and fix the alignment issues.
     disable:
       - fieldalignment
+      - loopclosure
 
   revive:
     # minimal confidence for issues, default is 0.8
@@ -121,6 +128,7 @@ linters:
     - errcheck
     - errorlint
     - exportloopref
+    - gci
     - gocritic
     - gofmt
     - goimports
@@ -132,6 +140,7 @@ linters:
     - tenv
     - unconvert
     - unparam
+    - unused
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,10 @@ package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 	"net/url"
-	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -44,7 +43,6 @@ const (
 
 // Config defines configuration for Mezmo exporter.
 type Config struct {
-	config.ExporterSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
@@ -53,7 +51,7 @@ type Config struct {
 	IngestURL string `mapstructure:"ingest_url"`
 
 	// Token is the authentication token provided by Mezmo.
-	IngestKey string `mapstructure:"ingest_key"`
+	IngestKey configopaque.String `mapstructure:"ingest_key"`
 }
 
 // returns default http client settings
@@ -70,10 +68,6 @@ func (c *Config) Validate() error {
 	parsed, err = url.Parse(c.IngestURL)
 	if c.IngestURL == "" || err != nil {
 		return fmt.Errorf(`"ingest_url" must be a valid URL`)
-	}
-
-	if !strings.HasSuffix(c.IngestURL, "/otel/ingest/rest") {
-		return fmt.Errorf(`"ingest_url" must end with "/otel/ingest/rest"`)
 	}
 
 	if parsed.Host == "" {

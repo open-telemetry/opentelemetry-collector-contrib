@@ -57,6 +57,9 @@ func (pt *PolicyTicker) OnTick() {
 }
 
 func (pt *PolicyTicker) Stop() {
+	if pt.StopCh == nil {
+		return
+	}
 	close(pt.StopCh)
 	pt.Ticker.Stop()
 }

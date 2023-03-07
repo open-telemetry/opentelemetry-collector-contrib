@@ -20,19 +20,21 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestNewProcessor(t *testing.T) {
 	defaultMethod := "GET"
+	defaultMethodValue := pcommon.NewValueStr(defaultMethod)
 	for _, tc := range []struct {
 		name                        string
 		metricsExporter             string
 		latencyHistogramBuckets     []time.Duration
 		dimensions                  []Dimension
 		wantLatencyHistogramBuckets []float64
-		wantDimensions              []Dimension
+		wantDimensions              []dimension
 	}{
 		{
 			name:                        "simplest config (use defaults)",
@@ -42,12 +44,12 @@ func TestNewProcessor(t *testing.T) {
 			name:                    "1 configured latency histogram bucket should result in 1 explicit latency bucket (+1 implicit +Inf bucket)",
 			latencyHistogramBuckets: []time.Duration{2 * time.Millisecond},
 			dimensions: []Dimension{
-				{"http.method", &defaultMethod},
-				{"http.status_code", nil},
+				{Name: "http.method", Default: &defaultMethod},
+				{Name: "http.status_code"},
 			},
 			wantLatencyHistogramBuckets: []float64{2},
-			wantDimensions: []Dimension{
-				{"http.method", &defaultMethod},
+			wantDimensions: []dimension{
+				{name: "http.method", value: &defaultMethodValue},
 				{"http.status_code", nil},
 			},
 		},
@@ -56,7 +58,7 @@ func TestNewProcessor(t *testing.T) {
 			// Prepare
 			factory := NewFactory()
 
-			creationParams := componenttest.NewNopProcessorCreateSettings()
+			creationParams := processortest.NewNopCreateSettings()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.LatencyHistogramBuckets = tc.latencyHistogramBuckets
 			cfg.Dimensions = tc.dimensions

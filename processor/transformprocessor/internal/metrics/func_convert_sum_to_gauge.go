@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,22 +15,19 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-func convertSumToGauge() (tql.ExprFunc, error) {
-	return func(ctx tql.TransformContext) interface{} {
-		mtc, ok := ctx.(tqlmetrics.TransformContext)
-		if !ok {
-			return nil
-		}
-
-		metric := mtc.GetMetric()
-		if metric.DataType() != pmetric.MetricDataTypeSum {
-			return nil
+func convertSumToGauge() (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
+		metric := tCtx.GetMetric()
+		if metric.Type() != pmetric.MetricTypeSum {
+			return nil, nil
 		}
 
 		dps := metric.Sum().DataPoints()
@@ -38,6 +35,6 @@ func convertSumToGauge() (tql.ExprFunc, error) {
 		// Setting the data type removed all the data points, so we must copy them back to the metric.
 		dps.CopyTo(metric.SetEmptyGauge().DataPoints())
 
-		return nil
+		return nil, nil
 	}, nil
 }

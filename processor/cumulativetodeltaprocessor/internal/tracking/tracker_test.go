@@ -16,10 +16,11 @@ package tracking
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/atomic"
@@ -30,7 +31,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 	miSum := MetricIdentity{
 		Resource:               pcommon.NewResource(),
 		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
-		MetricDataType:         pmetric.MetricDataTypeSum,
+		MetricType:             pmetric.MetricTypeSum,
 		MetricIsMonotonic:      true,
 		MetricName:             "",
 		MetricUnit:             "",
@@ -46,19 +47,16 @@ func TestMetricTracker_Convert(t *testing.T) {
 		name    string
 		value   ValuePoint
 		wantOut DeltaValue
+		noOut   bool
 	}{
 		{
-			name: "Initial Value recorded",
+			name: "Initial Value not recorded",
 			value: ValuePoint{
 				ObservedTimestamp: 10,
 				FloatValue:        100.0,
 				IntValue:          100,
 			},
-			wantOut: DeltaValue{
-				StartTimestamp: 10,
-				FloatValue:     100.0,
-				IntValue:       100,
-			},
+			noOut: true,
 		},
 		{
 			name: "Higher Value Recorded",
@@ -124,19 +122,25 @@ func TestMetricTracker_Convert(t *testing.T) {
 				Value:    tt.value,
 			}
 
-			if gotOut, valid := m.Convert(floatPoint); !valid || !reflect.DeepEqual(gotOut.StartTimestamp, tt.wantOut.StartTimestamp) || !reflect.DeepEqual(gotOut.FloatValue, tt.wantOut.FloatValue) {
-				t.Errorf("MetricTracker.Convert(MetricDataTypeSum) = %v, want %v", gotOut, tt.wantOut)
+			gotOut, valid := m.Convert(floatPoint)
+			if !tt.noOut {
+				require.True(t, valid)
+				assert.Equal(t, tt.wantOut.StartTimestamp, gotOut.StartTimestamp)
+				assert.Equal(t, tt.wantOut.FloatValue, gotOut.FloatValue)
 			}
 
-			if gotOut, valid := m.Convert(intPoint); !valid || !reflect.DeepEqual(gotOut.StartTimestamp, tt.wantOut.StartTimestamp) || !reflect.DeepEqual(gotOut.IntValue, tt.wantOut.IntValue) {
-				t.Errorf("MetricTracker.Convert(MetricDataTypeIntSum) = %v, want %v", gotOut, tt.wantOut)
+			gotOut, valid = m.Convert(intPoint)
+			if !tt.noOut {
+				require.True(t, valid)
+				assert.Equal(t, tt.wantOut.StartTimestamp, gotOut.StartTimestamp)
+				assert.Equal(t, tt.wantOut.IntValue, gotOut.IntValue)
 			}
 		})
 	}
 
 	t.Run("Invalid metric identity", func(t *testing.T) {
 		invalidID := miIntSum
-		invalidID.MetricDataType = pmetric.MetricDataTypeGauge
+		invalidID.MetricType = pmetric.MetricTypeGauge
 		_, valid := m.Convert(MetricPoint{
 			Identity: invalidID,
 			Value: ValuePoint{
@@ -205,10 +209,7 @@ func Test_metricTracker_removeStale(t *testing.T) {
 				gotOut[key.(string)] = value.(*State)
 				return true
 			})
-
-			if !reflect.DeepEqual(gotOut, tt.wantOut) {
-				t.Errorf("MetricTracker.removeStale() = %v, want %v", gotOut, tt.wantOut)
-			}
+			assert.Equal(t, tt.wantOut, gotOut)
 		})
 	}
 }
@@ -237,18 +238,9 @@ func Test_metricTracker_sweeper(t *testing.T) {
 	for i := 1; i <= 2; i++ {
 		staleBefore := <-sweepEvent
 		tickTime := time.Since(start) + tr.maxStaleness*time.Duration(i)
-		if closed.Load() {
-			t.Fatalf("Sweeper returned prematurely.")
-		}
-
-		if tickTime < tr.maxStaleness {
-			t.Errorf("Sweeper tick time is too fast. (%v, want %v)", tickTime, tr.maxStaleness)
-		}
-
-		staleTime := staleBefore.AsTime()
-		if time.Since(staleTime) < tr.maxStaleness {
-			t.Errorf("Sweeper called with invalid staleBefore value = %v", staleTime)
-		}
+		require.False(t, closed.Load())
+		assert.LessOrEqual(t, tr.maxStaleness, tickTime)
+		assert.LessOrEqual(t, tr.maxStaleness, time.Since(staleBefore.AsTime()))
 	}
 	cancel()
 	for range sweepEvent {

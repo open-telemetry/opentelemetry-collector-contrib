@@ -27,7 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/otelcol"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
@@ -90,13 +90,13 @@ func TestHandleCLI_All(t *testing.T) {
 	assert.NotNil(t, writer.fileContents)
 }
 
-func defaultComponents(t *testing.T) component.Factories {
+func defaultComponents(t *testing.T) otelcol.Factories {
 	factories, err := components.Components()
 	require.NoError(t, err)
 	return factories
 }
 
-func testHandleCLI(t *testing.T, cs component.Factories, wr *fakeFilesystemWriter, args []string) {
+func testHandleCLI(t *testing.T, cs otelcol.Factories, wr *fakeFilesystemWriter, args []string) {
 	stdoutWriter := &fakeIOWriter{}
 	tmpl := testTemplate(t)
 	dr := configschema.NewDirResolver(filepath.Join("..", "..", "..", ".."), configschema.DefaultModule)

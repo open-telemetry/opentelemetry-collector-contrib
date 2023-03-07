@@ -33,8 +33,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
@@ -187,7 +187,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 
 			require.NoError(t, err)
 			expectedMetrics, err := golden.ReadMetrics(test.expectedMetricPath)
-			scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+			pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues())
 			require.NoError(t, err)
 		})
 	}
@@ -376,7 +376,7 @@ func TestScrape(t *testing.T) {
 					dps := metric.Gauge().DataPoints()
 					assert.Equal(t, len(test.mockCounterValues), dps.Len())
 					for dpIdx, val := range test.mockCounterValues {
-						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleVal())
+						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleValue())
 						expectedAttributeLen := len(counterCfg.MetricRep.Attributes)
 						if val.InstanceName != "" {
 							expectedAttributeLen++
@@ -384,10 +384,10 @@ func TestScrape(t *testing.T) {
 						assert.Equal(t, expectedAttributeLen, dps.At(dpIdx).Attributes().Len())
 						dps.At(dpIdx).Attributes().Range(func(k string, v pcommon.Value) bool {
 							if k == instanceLabelName {
-								assert.Equal(t, val.InstanceName, v.StringVal())
+								assert.Equal(t, val.InstanceName, v.Str())
 								return true
 							}
-							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.StringVal())
+							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.Str())
 							return true
 						})
 					}

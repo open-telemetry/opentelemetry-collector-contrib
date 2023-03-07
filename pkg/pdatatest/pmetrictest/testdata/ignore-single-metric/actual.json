@@ -1,0 +1,32 @@
+{
+   "resourceMetrics": [
+      {
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "name": "sum.one",
+                     "sum": {
+                        "dataPoints": [
+                           {
+                              "asInt": 654
+                           }
+                        ]
+                     }
+                  },
+                  {
+                     "name": "sum.two",
+                     "sum": {
+                        "dataPoints": [
+                           {
+                              "asInt": 654
+                           }
+                        ]
+                     }
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

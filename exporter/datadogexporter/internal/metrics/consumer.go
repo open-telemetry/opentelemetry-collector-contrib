@@ -19,25 +19,30 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/component"
-	"gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 )
 
 var _ translator.Consumer = (*Consumer)(nil)
 var _ translator.HostConsumer = (*Consumer)(nil)
 var _ translator.TagsConsumer = (*Consumer)(nil)
+var _ translator.APMStatsConsumer = (*Consumer)(nil)
 
-// Consumer is the metrics Consumer.
+// Consumer implements translator.Consumer. It records consumed metrics, sketches and
+// APM stats payloads. It provides them to the caller using the All method.
 type Consumer struct {
-	ms        []datadog.Metric
+	ms        []datadogV2.MetricSeries
 	sl        sketches.SketchSeriesList
+	as        []pb.ClientStatsPayload
 	seenHosts map[string]struct{}
 	seenTags  map[string]struct{}
 }
 
-// NewConsumer creates a new zorkian consumer.
+// NewConsumer creates a new Datadog consumer. It implements translator.Consumer.
 func NewConsumer() *Consumer {
 	return &Consumer{
 		seenHosts: make(map[string]struct{}),
@@ -45,22 +50,22 @@ func NewConsumer() *Consumer {
 	}
 }
 
-// toDataType maps translator datatypes to zorkian's datatypes.
-func (c *Consumer) toDataType(dt translator.MetricDataType) (out MetricDataType) {
-	out = MetricDataType("unknown")
+// toDataType maps translator datatypes to DatadogV2's datatypes.
+func (c *Consumer) toDataType(dt translator.MetricDataType) (out datadogV2.MetricIntakeType) {
+	out = datadogV2.METRICINTAKETYPE_UNSPECIFIED
 
 	switch dt {
 	case translator.Count:
-		out = Count
+		out = datadogV2.METRICINTAKETYPE_COUNT
 	case translator.Gauge:
-		out = Gauge
+		out = datadogV2.METRICINTAKETYPE_GAUGE
 	}
 
 	return
 }
 
 // runningMetrics gets the running metrics for the exporter.
-func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo) (series []datadog.Metric) {
+func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo) (series []datadogV2.MetricSeries) {
 	for host := range c.seenHosts {
 		// Report the host as running
 		runningMetric := DefaultMetrics("metrics", host, timestamp, buildInfo)
@@ -79,19 +84,27 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]datadog.Metric, sketches.SketchSeriesList) {
+func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]datadogV2.MetricSeries, sketches.SketchSeriesList, []pb.ClientStatsPayload) {
 	series := c.ms
 	series = append(series, c.runningMetrics(timestamp, buildInfo)...)
 	if len(tags) == 0 {
-		return series, c.sl
+		return series, c.sl, c.as
 	}
-	for i := 0; i < len(series); i++ {
+	for i := range series {
 		series[i].Tags = append(series[i].Tags, tags...)
 	}
-	for i := 0; i < len(c.sl); i++ {
+	for i := range c.sl {
 		c.sl[i].Tags = append(c.sl[i].Tags, tags...)
 	}
-	return series, c.sl
+	for i := range c.as {
+		c.as[i].Tags = append(c.as[i].Tags, tags...)
+	}
+	return series, c.sl, c.as
+}
+
+// ConsumeAPMStats implements translator.APMStatsConsumer.
+func (c *Consumer) ConsumeAPMStats(s pb.ClientStatsPayload) {
+	c.as = append(c.as, s)
 }
 
 // ConsumeTimeSeries implements the translator.Consumer interface.
@@ -104,7 +117,12 @@ func (c *Consumer) ConsumeTimeSeries(
 ) {
 	dt := c.toDataType(typ)
 	met := NewMetric(dims.Name(), dt, timestamp, value, dims.Tags())
-	met.SetHost(dims.Host())
+	met.SetResources([]datadogV2.MetricResource{
+		{
+			Name: datadog.PtrString(dims.Host()),
+			Type: datadog.PtrString("host"),
+		},
+	})
 	c.ms = append(c.ms, met)
 }
 

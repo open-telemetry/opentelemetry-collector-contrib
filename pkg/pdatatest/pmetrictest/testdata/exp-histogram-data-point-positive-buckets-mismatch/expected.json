@@ -1,0 +1,24 @@
+{
+  "resourceMetrics": [
+    {
+      "scopeMetrics": [
+        {
+          "metrics": [
+            {
+              "name": "exponential_histogram.one",
+              "exponentialHistogram": {
+                "dataPoints": [
+                  {
+                    "positive": {
+                      "bucketCounts": [1, 2, 3]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

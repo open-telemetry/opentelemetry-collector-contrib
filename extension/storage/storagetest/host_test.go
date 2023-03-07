@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 )
 
 func TestStorageHostWithNone(t *testing.T) {
@@ -26,7 +26,7 @@ func TestStorageHostWithNone(t *testing.T) {
 }
 
 func TestStorageHostWithOne(t *testing.T) {
-	storageID := config.NewComponentIDWithName(testStorageType, "one")
+	storageID := component.NewIDWithName(testStorageType, "one")
 
 	host := NewStorageHost().WithInMemoryStorageExtension("one")
 
@@ -38,12 +38,12 @@ func TestStorageHostWithOne(t *testing.T) {
 
 	storageOne, ok := extOne.(*TestStorage)
 	require.True(t, ok)
-	require.Equal(t, storageID, storageOne.ID())
+	require.Equal(t, storageID, storageOne.ID)
 }
 
 func TestStorageHostWithTwo(t *testing.T) {
-	storageOneID := config.NewComponentIDWithName(testStorageType, "one")
-	storageTwoID := config.NewComponentIDWithName(testStorageType, "two")
+	storageOneID := component.NewIDWithName(testStorageType, "one")
+	storageTwoID := component.NewIDWithName(testStorageType, "two")
 
 	host := NewStorageHost().
 		WithInMemoryStorageExtension("one").
@@ -57,20 +57,20 @@ func TestStorageHostWithTwo(t *testing.T) {
 
 	storageOne, ok := extOne.(*TestStorage)
 	require.True(t, ok)
-	require.Equal(t, storageOneID, storageOne.ID())
+	require.Equal(t, storageOneID, storageOne.ID)
 
 	extTwo, exists := exts[storageTwoID]
 	require.True(t, exists)
 
 	storageTwo, ok := extTwo.(*TestStorage)
 	require.True(t, ok)
-	require.Equal(t, storageTwoID, storageTwo.ID())
+	require.Equal(t, storageTwoID, storageTwo.ID)
 }
 
 func TestStorageHostWithMixed(t *testing.T) {
-	storageOneID := config.NewComponentIDWithName(testStorageType, "one")
-	storageTwoID := config.NewComponentIDWithName(testStorageType, "two")
-	nonStorageID := config.NewComponentIDWithName(nonStorageType, "non-storage")
+	storageOneID := component.NewIDWithName(testStorageType, "one")
+	storageTwoID := component.NewIDWithName(testStorageType, "two")
+	nonStorageID := component.NewIDWithName(nonStorageType, "non-storage")
 
 	host := NewStorageHost().
 		WithInMemoryStorageExtension("one").
@@ -85,19 +85,19 @@ func TestStorageHostWithMixed(t *testing.T) {
 
 	storageOne, ok := extOne.(*TestStorage)
 	require.True(t, ok)
-	require.Equal(t, storageOneID, storageOne.ID())
+	require.Equal(t, storageOneID, storageOne.ID)
 
 	extTwo, exists := exts[storageTwoID]
 	require.True(t, exists)
 
 	storageTwo, ok := extTwo.(*TestStorage)
 	require.True(t, ok)
-	require.Equal(t, storageTwoID, storageTwo.ID())
+	require.Equal(t, storageTwoID, storageTwo.ID)
 
 	extNon, exists := exts[nonStorageID]
 	require.True(t, exists)
 
 	nonStorage, ok := extNon.(*NonStorage)
 	require.True(t, ok)
-	require.Equal(t, nonStorageID, nonStorage.ID())
+	require.Equal(t, nonStorageID, nonStorage.ID)
 }

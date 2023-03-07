@@ -2,11 +2,11 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: "localhost:4317"
+        endpoint: "127.0.0.1:4317"
 
 exporters:
   otlp:
-    endpoint: "localhost:55680"
+    endpoint: "127.0.0.1:55680"
     tls:
       insecure: true
 

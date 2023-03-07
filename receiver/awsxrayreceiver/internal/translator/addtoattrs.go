@@ -24,7 +24,7 @@ func addBool(val *bool, attrKey string, attrs pcommon.Map) {
 
 func addString(val *string, attrKey string, attrs pcommon.Map) {
 	if val != nil {
-		attrs.PutString(attrKey, *val)
+		attrs.PutStr(attrKey, *val)
 	}
 }
 

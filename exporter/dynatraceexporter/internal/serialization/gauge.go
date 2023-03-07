@@ -27,12 +27,12 @@ func serializeGaugePoint(name, prefix string, dims dimensions.NormalizedDimensio
 	var metricOption dtMetric.MetricOption
 
 	switch dp.ValueType() {
-	case pmetric.NumberDataPointValueTypeNone:
+	case pmetric.NumberDataPointValueTypeEmpty:
 		return "", fmt.Errorf("unsupported value type none")
 	case pmetric.NumberDataPointValueTypeInt:
-		metricOption = dtMetric.WithIntGaugeValue(dp.IntVal())
+		metricOption = dtMetric.WithIntGaugeValue(dp.IntValue())
 	case pmetric.NumberDataPointValueTypeDouble:
-		metricOption = dtMetric.WithFloatGaugeValue(dp.DoubleVal())
+		metricOption = dtMetric.WithFloatGaugeValue(dp.DoubleValue())
 	default:
 		return "", fmt.Errorf("unknown data type")
 	}

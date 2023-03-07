@@ -13,24 +13,16 @@
 #  https://help.github.com/en/articles/about-code-owners
 #
 
-cmd/configschema
-examples/demo/client
-examples/demo/server
-exporter/influxdbexporter
-exporter/parquetexporter
-extension/fluentbitextension
-extension/httpforwarder
-extension/sigv4authextension
-extension/storage
+## 
+# NOTE: New components MUST have a codeowner. Add new components to the CODEOWNERS file instead of here.
+##
+
+## COMMON & SHARED components
 internal/common
-internal/containertest
-internal/coreinternal
-internal/sharedcomponent
-internal/tools
-pkg/batchperresourceattr
-pkg/experimentalmetricmetadata
-processor/deltatorateprocessor
-processor/metricsgenerationprocessor
+
+## DEPRECATED components
+extension/fluentbitextension
+
+## UNMANTAINED components
+extension/httpforwarder
 receiver/dotnetdiagnosticsreceiver
-receiver/influxdbreceiver
-testbed

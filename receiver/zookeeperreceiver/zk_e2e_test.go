@@ -24,11 +24,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 type testHost struct {
@@ -50,40 +50,64 @@ func TestIntegration(t *testing.T) {
 		name               string
 		image              string
 		expectedNumMetrics int
-		env                []string
+		env                map[string]string
 	}{
 		{
 			name:               "3.4.14",
 			image:              "docker.io/library/zookeeper:3.4",
 			expectedNumMetrics: 14,
-			env:                []string{"ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr", "ZOO_STANDALONE_ENABLED=false"},
+			env: map[string]string{
+				"ZOO_4LW_COMMANDS_WHITELIST": "srvr,mntr",
+				"ZOO_STANDALONE_ENABLED":     "false",
+			},
 		},
 		{
 			name:               "3.5.5-standalone",
 			image:              "docker.io/library/zookeeper:3.5.5",
 			expectedNumMetrics: 13,
-			env:                []string{"ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr"},
+			env: map[string]string{
+				"ZOO_4LW_COMMANDS_WHITELIST": "srvr,mntr",
+			},
 		},
 		{
 			name:               "3.5.5",
 			image:              "docker.io/library/zookeeper:3.5.5",
 			expectedNumMetrics: 16,
-			env:                []string{"ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr", "ZOO_STANDALONE_ENABLED=false"},
+			env: map[string]string{
+				"ZOO_4LW_COMMANDS_WHITELIST": "srvr,mntr",
+				"ZOO_STANDALONE_ENABLED":     "false",
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			d := containertest.New(t)
-			c := d.StartImageWithEnv(test.image, test.env, containertest.WithPortReady(zkPort))
+			ctx := context.Background()
+			req := testcontainers.ContainerRequest{
+				Image:        test.image,
+				ExposedPorts: []string{fmt.Sprintf("%d/tcp", zkPort)},
+				Env:          test.env,
+				WaitingFor:   wait.ForListeningPort("2181/tcp"),
+			}
+			container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+				ContainerRequest: req,
+				Started:          true,
+			})
+			require.Nil(t, err)
+
+			mappedPort, err := container.MappedPort(ctx, "2181")
+			require.Nil(t, err)
+
+			hostIP, err := container.Host(ctx)
+			require.Nil(t, err)
 
 			f := NewFactory()
 			cfg := f.CreateDefaultConfig().(*Config)
-			cfg.Endpoint = c.AddrForPort(zkPort)
+			cfg.Endpoint = fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
 
 			consumer := new(consumertest.MetricsSink)
 
-			rcvr, err := f.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer)
+			rcvr, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumer)
 			require.NoError(t, err, "failed creating metrics receiver")
 			require.NoError(t, rcvr.Start(context.Background(), &testHost{t: t}))
 

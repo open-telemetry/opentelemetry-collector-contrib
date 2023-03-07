@@ -47,7 +47,7 @@ func (naf *numericAttributeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData)
 
 	return hasSpanWithCondition(batches, func(span ptrace.Span) bool {
 		if v, ok := span.Attributes().Get(naf.key); ok {
-			value := v.IntVal()
+			value := v.Int()
 			if value >= naf.minValue && value <= naf.maxValue {
 				return true
 			}

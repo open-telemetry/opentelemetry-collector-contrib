@@ -44,6 +44,8 @@ var (
 	errInvalidTraceID = errors.New("TraceID is invalid")
 )
 
+var appResAttrsKeys = []string{labelApplication, conventions.AttributeServiceName, labelService, labelShard, labelCluster}
+
 type span struct {
 	Name           string
 	TraceID        uuid.UUID
@@ -72,6 +74,7 @@ func (t *traceTransformer) Span(orig ptrace.Span) (span, error) {
 	source, attributesWithoutSource := getSourceAndResourceTags(t.resAttrs)
 	tags := attributesToTagsReplaceSource(
 		newMap(attributesWithoutSource), orig.Attributes())
+	fixServiceTag(tags)
 	t.setRequiredTags(tags)
 
 	tags[labelSpanKind] = spanKind(orig)
@@ -93,8 +96,8 @@ func (t *traceTransformer) Span(orig ptrace.Span) (span, error) {
 		tags[k] = v
 	}
 
-	traceState := orig.TraceStateStruct().AsRaw()
-	if orig.TraceStateStruct().AsRaw() != "" {
+	traceState := orig.TraceState().AsRaw()
+	if orig.TraceState().AsRaw() != "" {
 		tags[tracetranslator.TagW3CTraceState] = traceState
 	}
 
@@ -165,13 +168,9 @@ func spanKind(span ptrace.Span) string {
 
 func (t *traceTransformer) setRequiredTags(tags map[string]string) {
 	if _, ok := tags[labelService]; !ok {
-		if svcName, svcNameOk := tags[conventions.AttributeServiceName]; svcNameOk {
-			tags[labelService] = svcName
-			delete(tags, conventions.AttributeServiceName)
-		} else {
-			tags[labelService] = defaultServiceName
-		}
+		tags[labelService] = defaultServiceName
 	}
+
 	if _, ok := tags[labelApplication]; !ok {
 		tags[labelApplication] = defaultApplicationName
 	}
@@ -203,6 +202,21 @@ func calculateTimes(span ptrace.Span) (int64, int64) {
 	return startMillis, durationMillis
 }
 
+func fixServiceTag(tags map[string]string) {
+	// tag `service` will take preference over `service.name` if both are provided
+	if _, ok := tags[labelService]; !ok {
+		if svcName, svcNameOk := tags[conventions.AttributeServiceName]; svcNameOk {
+			tags[labelService] = svcName
+			delete(tags, conventions.AttributeServiceName)
+		}
+	}
+}
+
+func fixSourceKey(sourceKey string, tags map[string]string) {
+	delete(tags, sourceKey)
+	replaceSource(tags)
+}
+
 func attributesToTags(attributes ...pcommon.Map) map[string]string {
 	tags := map[string]string{}
 	for _, att := range attributes {
@@ -211,6 +225,17 @@ func attributesToTags(attributes ...pcommon.Map) map[string]string {
 			return true
 		})
 	}
+	return tags
+}
+
+func appAttributesToTags(attributes pcommon.Map) map[string]string {
+	tags := map[string]string{}
+	for _, resAttrsKey := range appResAttrsKeys {
+		if resAttrVal, ok := attributes.Get(resAttrsKey); ok {
+			tags[resAttrsKey] = resAttrVal.AsString()
+		}
+	}
+
 	return tags
 }
 
@@ -227,15 +252,22 @@ func attributesToTagsReplaceSource(attributes ...pcommon.Map) map[string]string 
 	return tags
 }
 
+func pointAndResAttrsToTagsAndFixSource(sourceKey string, attributes ...pcommon.Map) map[string]string {
+	tags := attributesToTags(attributes...)
+	fixServiceTag(tags)
+	fixSourceKey(sourceKey, tags)
+	return tags
+}
+
 func newMap(tags map[string]string) pcommon.Map {
 	m := pcommon.NewMap()
 	for key, value := range tags {
-		m.PutString(key, value)
+		m.PutStr(key, value)
 	}
 	return m
 }
 
-func errorTagsFromStatus(status ptrace.SpanStatus) map[string]string {
+func errorTagsFromStatus(status ptrace.Status) map[string]string {
 	tags := make(map[string]string)
 
 	if status.Code() != ptrace.StatusCodeError {
@@ -256,7 +288,7 @@ func errorTagsFromStatus(status ptrace.SpanStatus) map[string]string {
 }
 
 func traceIDtoUUID(id pcommon.TraceID) (uuid.UUID, error) {
-	formatted, err := uuid.Parse(id.HexString())
+	formatted, err := uuid.FromBytes(id[:])
 	if err != nil || id.IsEmpty() {
 		return uuid.Nil, errInvalidTraceID
 	}

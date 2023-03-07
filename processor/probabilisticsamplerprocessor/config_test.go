@@ -20,28 +20,34 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
-
 	tests := []struct {
-		id       config.ComponentID
-		expected config.Processor
+		id       component.ID
+		expected component.Config
 	}{
 		{
-			id: config.NewComponentIDWithName(typeStr, ""),
+			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				SamplingPercentage: 15.3,
 				HashSeed:           22,
+				AttributeSource:    "traceID",
 			},
 		},
 		{
-			id:       config.NewComponentIDWithName(typeStr, "empty"),
-			expected: createDefaultConfig(),
+			id: component.NewIDWithName(typeStr, "logs"),
+			expected: &Config{
+				SamplingPercentage: 15.3,
+				HashSeed:           22,
+				AttributeSource:    "record",
+				FromAttribute:      "foo",
+				SamplingPriority:   "bar",
+			},
 		},
 	}
 
@@ -49,16 +55,29 @@ func TestLoadConfig(t *testing.T) {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 			require.NoError(t, err)
+			processors, err := cm.Sub("processors")
+			require.NoError(t, err)
 
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
-			sub, err := cm.Sub(tt.id.String())
+			sub, err := processors.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestLoadInvalidConfig(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+
+	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid.yaml"), factories)
+	require.ErrorContains(t, err, "negative sampling rate: -15.30")
 }

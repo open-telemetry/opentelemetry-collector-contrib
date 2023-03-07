@@ -121,17 +121,17 @@ func DiffMetric(diffs []*MetricDiff, expected pmetric.Metric, actual pmetric.Met
 	if mismatch {
 		return diffs
 	}
-	switch actual.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch actual.Type() {
+	case pmetric.MetricTypeGauge:
 		diffs = diffNumberPts(diffs, expected.Gauge().DataPoints(), actual.Gauge().DataPoints())
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		diffs = diff(diffs, expected.Sum().IsMonotonic(), actual.Sum().IsMonotonic(), "Sum IsMonotonic")
 		diffs = diff(diffs, expected.Sum().AggregationTemporality(), actual.Sum().AggregationTemporality(), "Sum AggregationTemporality")
 		diffs = diffNumberPts(diffs, expected.Sum().DataPoints(), actual.Sum().DataPoints())
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		diffs = diff(diffs, expected.Histogram().AggregationTemporality(), actual.Histogram().AggregationTemporality(), "Histogram AggregationTemporality")
 		diffs = diffHistogramPts(diffs, expected.Histogram().DataPoints(), actual.Histogram().DataPoints())
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		diffs = diff(diffs, expected.ExponentialHistogram().AggregationTemporality(), actual.ExponentialHistogram().AggregationTemporality(), "ExponentialHistogram AggregationTemporality")
 		diffs = diffExponentialHistogramPts(diffs, expected.ExponentialHistogram().DataPoints(), actual.ExponentialHistogram().DataPoints())
 	default:
@@ -149,7 +149,7 @@ func diffMetricDescriptor(
 	diffs = diff(diffs, expected.Name(), actual.Name(), "Metric Name")
 	diffs = diff(diffs, expected.Description(), actual.Description(), "Metric Description")
 	diffs = diff(diffs, expected.Unit(), actual.Unit(), "Metric Unit")
-	return diffValues(diffs, expected.DataType(), actual.DataType(), "Metric Type")
+	return diffValues(diffs, expected.Type(), actual.Type(), "Metric Type")
 }
 
 func diffNumberPts(
@@ -173,9 +173,9 @@ func diffNumberPts(
 		}
 		switch exPt.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
-			diffs = diff(diffs, exPt.IntVal(), acPt.IntVal(), "NumberDataPoint Value")
+			diffs = diff(diffs, exPt.IntValue(), acPt.IntValue(), "NumberDataPoint Value")
 		case pmetric.NumberDataPointValueTypeDouble:
-			diffs = diff(diffs, exPt.DoubleVal(), acPt.DoubleVal(), "NumberDataPoint Value")
+			diffs = diff(diffs, exPt.DoubleValue(), acPt.DoubleValue(), "NumberDataPoint Value")
 		}
 		diffExemplars(diffs, exPt.Exemplars(), acPt.Exemplars())
 	}
@@ -206,6 +206,7 @@ func diffHistogramPt(
 	diffs = diffMetricAttrs(diffs, expected.Attributes(), actual.Attributes())
 	diffs = diff(diffs, expected.Count(), actual.Count(), "HistogramDataPoint Count")
 	diffs = diff(diffs, expected.Sum(), actual.Sum(), "HistogramDataPoint Sum")
+	// TODO: HasSum, Min, HasMin, Max, HasMax are not covered in tests.
 	diffs = diff(diffs, expected.BucketCounts(), actual.BucketCounts(), "HistogramDataPoint BucketCounts")
 	diffs = diff(diffs, expected.ExplicitBounds(), actual.ExplicitBounds(), "HistogramDataPoint ExplicitBounds")
 	return diffExemplars(diffs, expected.Exemplars(), actual.Exemplars())
@@ -234,7 +235,12 @@ func diffExponentialHistogramPt(
 ) []*MetricDiff {
 	diffs = diffMetricAttrs(diffs, expected.Attributes(), actual.Attributes())
 	diffs = diff(diffs, expected.Count(), actual.Count(), "ExponentialHistogramDataPoint Count")
+	diffs = diff(diffs, expected.HasSum(), actual.HasSum(), "ExponentialHistogramDataPoint HasSum")
+	diffs = diff(diffs, expected.HasMin(), actual.HasMin(), "ExponentialHistogramDataPoint HasMin")
+	diffs = diff(diffs, expected.HasMax(), actual.HasMax(), "ExponentialHistogramDataPoint HasMax")
 	diffs = diff(diffs, expected.Sum(), actual.Sum(), "ExponentialHistogramDataPoint Sum")
+	diffs = diff(diffs, expected.Min(), actual.Min(), "ExponentialHistogramDataPoint Min")
+	diffs = diff(diffs, expected.Max(), actual.Max(), "ExponentialHistogramDataPoint Max")
 	diffs = diff(diffs, expected.ZeroCount(), actual.ZeroCount(), "ExponentialHistogramDataPoint ZeroCount")
 	diffs = diff(diffs, expected.Scale(), actual.Scale(), "ExponentialHistogramDataPoint Scale")
 
@@ -246,8 +252,8 @@ func diffExponentialHistogramPt(
 
 func diffExponentialHistogramPtBuckets(
 	diffs []*MetricDiff,
-	expected pmetric.Buckets,
-	actual pmetric.Buckets,
+	expected pmetric.ExponentialHistogramDataPointBuckets,
+	actual pmetric.ExponentialHistogramDataPointBuckets,
 ) []*MetricDiff {
 	diffs = diff(diffs, expected.Offset(), actual.Offset(), "ExponentialHistogramDataPoint Buckets Offset")
 	exC := expected.BucketCounts()
@@ -276,9 +282,9 @@ func diffExemplars(
 		diffs = diff(diffs, expected.At(i).ValueType(), actual.At(i).ValueType(), "Exemplar Value Type")
 		switch expected.At(i).ValueType() {
 		case pmetric.ExemplarValueTypeInt:
-			diffs = diff(diffs, expected.At(i).IntVal(), actual.At(i).IntVal(), "Exemplar Value")
+			diffs = diff(diffs, expected.At(i).IntValue(), actual.At(i).IntValue(), "Exemplar Value")
 		case pmetric.ExemplarValueTypeDouble:
-			diffs = diff(diffs, expected.At(i).DoubleVal(), actual.At(i).DoubleVal(), "Exemplar Value")
+			diffs = diff(diffs, expected.At(i).DoubleValue(), actual.At(i).DoubleValue(), "Exemplar Value")
 		}
 	}
 	return diffs
@@ -334,7 +340,7 @@ func diffValues(
 func attrMapToString(m pcommon.Map) string {
 	out := ""
 	m.Range(func(k string, v pcommon.Value) bool {
-		out += "[" + k + "=" + v.StringVal() + "]"
+		out += "[" + k + "=" + v.Str() + "]"
 		return true
 	})
 	return out

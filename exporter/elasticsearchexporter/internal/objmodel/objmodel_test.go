@@ -42,7 +42,7 @@ func TestObjectModel_CreateMap(t *testing.T) {
 			build: func() Document {
 				m := pcommon.NewMap()
 				m.PutInt("i", 42)
-				m.PutString("str", "test")
+				m.PutStr("str", "test")
 				return DocumentFromAttributes(m)
 			},
 			want: Document{[]field{{"i", IntValue(42)}, {"str", StringValue("test")}}},
@@ -51,7 +51,7 @@ func TestObjectModel_CreateMap(t *testing.T) {
 			build: func() Document {
 				m := pcommon.NewMap()
 				m.PutEmpty("null")
-				m.PutString("str", "test")
+				m.PutStr("str", "test")
 				return DocumentFromAttributes(m)
 			},
 			want: Document{[]field{{"str", StringValue("test")}}},
@@ -60,7 +60,7 @@ func TestObjectModel_CreateMap(t *testing.T) {
 			build: func() Document {
 				m := pcommon.NewMap()
 				m.PutInt("i", 42)
-				m.PutString("str", "test")
+				m.PutStr("str", "test")
 				return DocumentFromAttributesWithPath("prefix", m)
 			},
 			want: Document{[]field{{"prefix.i", IntValue(42)}, {"prefix.str", StringValue("test")}}},
@@ -69,7 +69,7 @@ func TestObjectModel_CreateMap(t *testing.T) {
 			build: func() (doc Document) {
 				m := pcommon.NewMap()
 				m.PutInt("i", 42)
-				m.PutString("str", "test")
+				m.PutStr("str", "test")
 				doc.AddAttributes("prefix", m)
 				return doc
 			},
@@ -78,9 +78,9 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		"add attribute flattens a map value": {
 			build: func() (doc Document) {
 				mapVal := pcommon.NewValueMap()
-				m := mapVal.MapVal()
+				m := mapVal.Map()
 				m.PutInt("i", 42)
-				m.PutString("str", "test")
+				m.PutStr("str", "test")
 				doc.AddAttribute("prefix", mapVal)
 				return doc
 			},
@@ -157,7 +157,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 			build: func() Document {
 				am := pcommon.NewMap()
 				am.PutInt("namespace.a", 42)
-				am.PutString("toplevel", "test")
+				am.PutStr("toplevel", "test")
 				am.PutEmptyMap("namespace").PutInt("a", 23)
 				return DocumentFromAttributes(am)
 			},
@@ -168,7 +168,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				am := pcommon.NewMap()
 				am.PutEmptyMap("namespace").PutInt("a", 23)
 				am.PutInt("namespace.a", 42)
-				am.PutString("toplevel", "test")
+				am.PutStr("toplevel", "test")
 				return DocumentFromAttributes(am)
 			},
 			want: Document{[]field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(42)}, {"toplevel", StringValue("test")}}},
@@ -228,7 +228,7 @@ func TestValue_FromAttribute(t *testing.T) {
 			want: nilValue,
 		},
 		"string": {
-			in:   pcommon.NewValueString("test"),
+			in:   pcommon.NewValueStr("test"),
 			want: StringValue("test"),
 		},
 		"int": {
@@ -250,7 +250,7 @@ func TestValue_FromAttribute(t *testing.T) {
 		"non-empty array": {
 			in: func() pcommon.Value {
 				v := pcommon.NewValueSlice()
-				tgt := v.SliceVal().AppendEmpty()
+				tgt := v.Slice().AppendEmpty()
 				pcommon.NewValueInt(1).CopyTo(tgt)
 				return v
 			}(),
@@ -263,7 +263,7 @@ func TestValue_FromAttribute(t *testing.T) {
 		"non-empty map": {
 			in: func() pcommon.Value {
 				v := pcommon.NewValueMap()
-				v.MapVal().PutInt("a", 1)
+				v.Map().PutInt("a", 1)
 				return v
 			}(),
 			want: Value{kind: KindObject, doc: Document{[]field{{"a", IntValue(1)}}}},
@@ -328,7 +328,7 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var buf strings.Builder
 			m := pcommon.NewMap()
-			m.FromRaw(test.attrs)
+			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
 			doc.Dedup()
 			err := doc.Serialize(&buf, false)
@@ -389,7 +389,7 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var buf strings.Builder
 			m := pcommon.NewMap()
-			m.FromRaw(test.attrs)
+			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
 			doc.Dedup()
 			err := doc.Serialize(&buf, true)

@@ -18,33 +18,56 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "azureeventhub"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelAlpha
 )
 
-type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-}
-
 // NewFactory creates a factory for the Azure Event Hub receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver, stability))
+		receiver.WithLogs(createLogsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
-	return &Config{ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr))}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
-func createLogsReceiver(ctx context.Context, settings component.ReceiverCreateSettings, receiver config.Receiver, logs consumer.Logs) (component.LogsReceiver, error) {
-	return &client{}, nil
+func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, cfg component.Config, logs consumer.Logs) (receiver.Logs, error) {
+
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             settings.ID,
+		Transport:              "azureeventhub",
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var converter eventConverter
+	switch logFormat(cfg.(*Config).Format) {
+	case azureLogFormat:
+		converter = newAzureLogFormatConverter(settings)
+	case rawLogFormat:
+		converter = newRawConverter(settings)
+	default:
+		converter = newAzureLogFormatConverter(settings)
+	}
+
+	return &client{
+		settings: settings,
+		consumer: logs,
+		config:   cfg.(*Config),
+		obsrecv:  obsrecv,
+		convert:  converter,
+	}, nil
 }

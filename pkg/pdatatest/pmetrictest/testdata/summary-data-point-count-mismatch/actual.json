@@ -1,0 +1,22 @@
+{
+  "resourceMetrics": [
+    {
+      "scopeMetrics": [
+        {
+          "metrics": [
+            {
+              "name": "summary.one",
+              "summary": {
+                "dataPoints": [
+                  {
+                    "count": 654
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+extensions:
+  lumigoauth: {}
+
+# Data pipeline is required to load the config.
+receivers:
+  otlp:
+    protocols:
+      http:
+        auth:
+          authenticator: lumigoauth
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  extensions: [lumigoauth]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [nop]
+      exporters: [nop]

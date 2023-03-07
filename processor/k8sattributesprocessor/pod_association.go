@@ -141,8 +141,8 @@ func connectionIP(ctx context.Context) string {
 
 func stringAttributeFromMap(attrs pcommon.Map, key string) string {
 	if val, ok := attrs.Get(key); ok {
-		if val.Type() == pcommon.ValueTypeString {
-			return val.StringVal()
+		if val.Type() == pcommon.ValueTypeStr {
+			return val.Str()
 		}
 	}
 	return ""

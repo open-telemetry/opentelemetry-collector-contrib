@@ -20,15 +20,16 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 )
 
-var _ component.MetricsReceiver = (*awsEcsContainerMetricsReceiver)(nil)
+var _ receiver.Metrics = (*awsEcsContainerMetricsReceiver)(nil)
 
-// awsEcsContainerMetricsReceiver implements the component.MetricsReceiver for aws ecs container metrics.
+// awsEcsContainerMetricsReceiver implements the receiver.Metrics for aws ecs container metrics.
 type awsEcsContainerMetricsReceiver struct {
 	logger       *zap.Logger
 	nextConsumer consumer.Metrics
@@ -43,7 +44,7 @@ func newAWSECSContainermetrics(
 	logger *zap.Logger,
 	config *Config,
 	nextConsumer consumer.Metrics,
-	rest ecsutil.RestClient) (component.MetricsReceiver, error) {
+	rest ecsutil.RestClient) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}

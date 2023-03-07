@@ -74,12 +74,12 @@ func getNamespace(rm pmetric.ResourceMetrics, namespace string) string {
 		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
 		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
 		switch {
-		case svcNameOk && svcNsOk && serviceName.Type() == pcommon.ValueTypeString && serviceNamespace.Type() == pcommon.ValueTypeString:
-			namespace = fmt.Sprintf("%s/%s", serviceNamespace.StringVal(), serviceName.StringVal())
-		case svcNameOk && serviceName.Type() == pcommon.ValueTypeString:
-			namespace = serviceName.StringVal()
-		case svcNsOk && serviceNamespace.Type() == pcommon.ValueTypeString:
-			namespace = serviceNamespace.StringVal()
+		case svcNameOk && svcNsOk && serviceName.Type() == pcommon.ValueTypeStr && serviceNamespace.Type() == pcommon.ValueTypeStr:
+			namespace = fmt.Sprintf("%s/%s", serviceNamespace.Str(), serviceName.Str())
+		case svcNameOk && serviceName.Type() == pcommon.ValueTypeStr:
+			namespace = serviceName.Str()
+		case svcNsOk && serviceNamespace.Type() == pcommon.ValueTypeStr:
+			namespace = serviceNamespace.Str()
 		}
 	}
 
@@ -131,13 +131,15 @@ func dedupDimensions(dimensions [][]string) (deduped [][]string) {
 // The returned dimensions are sorted in alphabetical order within each dimension set
 func dimensionRollup(dimensionRollupOption string, labels map[string]string) [][]string {
 	var rollupDimensionArray [][]string
-	var dimensionZero []string
+
+	// Empty dimension must be always present in a roll up.
+	dimensionZero := []string{}
 
 	instrLibName, hasOTelKey := labels[oTellibDimensionKey]
 	if hasOTelKey {
 		// If OTel key exists in labels, add it as a zero dimension but remove it
 		// temporarily from labels as it is not an original label
-		dimensionZero = []string{oTellibDimensionKey}
+		dimensionZero = append(dimensionZero, oTellibDimensionKey)
 		delete(labels, oTellibDimensionKey)
 	}
 

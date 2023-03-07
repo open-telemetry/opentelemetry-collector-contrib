@@ -21,8 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -40,7 +38,7 @@ func TestMetricProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newMetricProcessor(zap.NewNop(), config)
+	p := newMetricProcessor(component.TelemetrySettings{}, config)
 	require.NotNil(t, p)
 
 	// verify
@@ -51,19 +49,14 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	defaultExp := &mockMetricsExporter{}
 	mExp := &mockMetricsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.MetricsDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): mExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): mExp,
 		},
-	}
+	})
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -78,19 +71,19 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	m := pmetric.NewMetrics()
 
 	rm := m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutString("X-Tenant", "acme")
+	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
 	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetName("cpu")
 	metric.SetEmptyGauge()
 
 	rm = m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutString("X-Tenant", "acme")
+	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
 	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetName("cpu_system")
 	metric.SetEmptyGauge()
 
 	rm = m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutString("X-Tenant", "something-else")
+	rm.Resource().Attributes().PutStr("X-Tenant", "something-else")
 	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetName("cpu_idle")
 	metric.SetEmptyGauge()
@@ -114,19 +107,14 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 	defaultExp := &mockMetricsExporter{}
 	mExp := &mockMetricsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.MetricsDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): mExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): mExp,
 		},
-	}
+	})
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -141,7 +129,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 
 	m := pmetric.NewMetrics()
 	rm := m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutString("X-Tenant", "acme")
+	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 	t.Run("non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeMetrics(
@@ -178,19 +166,14 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 	defaultExp := &mockMetricsExporter{}
 	mExp := &mockMetricsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.MetricsDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): mExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): mExp,
 		},
-	}
+	})
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -206,7 +189,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("non default route is properly used", func(t *testing.T) {
 		m := pmetric.NewMetrics()
 		rm := m.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().PutString("X-Tenant", "acme")
+		rm.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), m))
 		assert.Len(t, defaultExp.AllMetrics(), 0,
@@ -220,7 +203,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
 		m := pmetric.NewMetrics()
 		rm := m.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().PutString("X-Tenant", "some-custom-value")
+		rm.Resource().Attributes().PutStr("X-Tenant", "some-custom-value")
 
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), m))
 		assert.Len(t, defaultExp.AllMetrics(), 1,
@@ -236,19 +219,14 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 	defaultExp := &mockMetricsExporter{}
 	mExp := &mockMetricsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.MetricsDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): mExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): mExp,
 		},
-	}
+	})
 
-	exp := newMetricProcessor(zap.NewNop(), &Config{
+	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -264,8 +242,8 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 
 	m := pmetric.NewMetrics()
 	rm := m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutString("X-Tenant", "acme")
-	rm.Resource().Attributes().PutString("attr", "acme")
+	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
+	rm.Resource().Attributes().PutStr("attr", "acme")
 
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), m))
 	metrics := mExp.AllMetrics()
@@ -276,7 +254,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 	assert.False(t, ok, "routing attribute should have been dropped")
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
-	assert.Equal(t, "acme", v.StringVal())
+	assert.Equal(t, "acme", v.Str())
 }
 
 type mockMetricsExporter struct {
@@ -301,19 +279,14 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 		defaultExp := &mockMetricsExporter{}
 		mExp := &mockMetricsExporter{}
 
-		host := &mockHost{
-			Host: componenttest.NewNopHost(),
-			GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-				return map[config.DataType]map[config.ComponentID]component.Exporter{
-					config.MetricsDataType: {
-						config.NewComponentID("otlp"):              defaultExp,
-						config.NewComponentIDWithName("otlp", "2"): mExp,
-					},
-				}
+		host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+			component.DataTypeMetrics: {
+				component.NewID("otlp"):              defaultExp,
+				component.NewIDWithName("otlp", "2"): mExp,
 			},
-		}
+		})
 
-		exp := newMetricProcessor(zap.NewNop(), cfg)
+		exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, cfg)
 		assert.NoError(b, exp.Start(context.Background(), host))
 
 		for i := 0; i < b.N; i++ {
@@ -321,13 +294,145 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 			rm := m.ResourceMetrics().AppendEmpty()
 
 			attrs := rm.Resource().Attributes()
-			attrs.PutString("X-Tenant", "acme")
-			attrs.PutString("X-Tenant1", "acme")
-			attrs.PutString("X-Tenant2", "acme")
+			attrs.PutStr("X-Tenant", "acme")
+			attrs.PutStr("X-Tenant1", "acme")
+			attrs.PutStr("X-Tenant2", "acme")
 
 			assert.NoError(b, exp.ConsumeMetrics(context.Background(), m))
 		}
 	}
 
 	runBenchmark(b, cfg)
+}
+
+func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.T) {
+	defaultExp := &mockMetricsExporter{}
+	firstExp := &mockMetricsExporter{}
+	secondExp := &mockMetricsExporter{}
+
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "1"): firstExp,
+			component.NewIDWithName("otlp", "2"): secondExp,
+		},
+	})
+
+	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where resource.attributes["value"] > 2.5`,
+				Exporters: []string{"otlp/1"},
+			},
+			{
+				Statement: `route() where resource.attributes["value"] > 3.0`,
+				Exporters: []string{"otlp/2"},
+			},
+		},
+	})
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	t.Run("metric matched by no expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 0.0)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultExp.AllMetrics(), 1)
+		assert.Len(t, firstExp.AllMetrics(), 0)
+		assert.Len(t, secondExp.AllMetrics(), 0)
+	})
+
+	t.Run("metric matched by one of two expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 2.7)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultExp.AllMetrics(), 0)
+		assert.Len(t, firstExp.AllMetrics(), 1)
+		assert.Len(t, secondExp.AllMetrics(), 0)
+	})
+
+	t.Run("metric matched by all expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 5.0)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		rm = m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 3.1)
+		metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu1")
+
+		require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultExp.AllMetrics(), 0)
+		assert.Len(t, firstExp.AllMetrics(), 1)
+		assert.Len(t, secondExp.AllMetrics(), 1)
+
+		assert.Equal(t, firstExp.AllMetrics()[0].MetricCount(), 2)
+		assert.Equal(t, secondExp.AllMetrics()[0].MetricCount(), 2)
+		assert.Equal(t, firstExp.AllMetrics(), secondExp.AllMetrics())
+	})
+
+	t.Run("one metric matched by all expressions, other matched by none", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 5.0)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		rm = m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", -1.0)
+		metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu1")
+
+		require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultExp.AllMetrics(), 1)
+		assert.Len(t, firstExp.AllMetrics(), 1)
+		assert.Len(t, secondExp.AllMetrics(), 1)
+
+		assert.Equal(t, firstExp.AllMetrics(), secondExp.AllMetrics())
+
+		rmetric := defaultExp.AllMetrics()[0].ResourceMetrics().At(0)
+		attr, ok := rmetric.Resource().Attributes().Get("value")
+		assert.True(t, ok, "routing attribute must exists")
+		assert.Equal(t, attr.Double(), float64(-1.0))
+	})
 }

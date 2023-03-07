@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -41,7 +43,7 @@ func TestValidateCredentials(t *testing.T) {
 
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.Username = "user"
-				require.ErrorIs(t, cfg.Validate(), errPasswordNotSpecified)
+				require.ErrorIs(t, component.ValidateConfig(cfg), errPasswordNotSpecified)
 			},
 		},
 		{
@@ -51,7 +53,7 @@ func TestValidateCredentials(t *testing.T) {
 
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.Password = "pass"
-				require.ErrorIs(t, cfg.Validate(), errUsernameNotSpecified)
+				require.ErrorIs(t, component.ValidateConfig(cfg), errUsernameNotSpecified)
 			},
 		},
 		{
@@ -62,7 +64,7 @@ func TestValidateCredentials(t *testing.T) {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.Username = "user"
 				cfg.Password = "pass"
-				require.NoError(t, cfg.Validate())
+				require.NoError(t, component.ValidateConfig(cfg))
 			},
 		},
 		{
@@ -71,7 +73,7 @@ func TestValidateCredentials(t *testing.T) {
 				t.Parallel()
 
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				require.NoError(t, cfg.Validate())
+				require.NoError(t, component.ValidateConfig(cfg))
 			},
 		},
 	}
@@ -132,7 +134,7 @@ func TestValidateEndpoint(t *testing.T) {
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
 			cfg.Endpoint = testCase.rawURL
 
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 
 			switch {
 			case testCase.expectedErr != nil:
@@ -156,20 +158,20 @@ func TestLoadConfig(t *testing.T) {
 	defaultMetrics := metadata.DefaultMetricsSettings()
 	defaultMetrics.ElasticsearchNodeFsDiskAvailable.Enabled = false
 	tests := []struct {
-		id       config.ComponentID
-		expected config.Receiver
+		id       component.ID
+		expected component.Config
 	}{
 		{
-			id:       config.NewComponentIDWithName(typeStr, "defaults"),
+			id:       component.NewIDWithName(typeStr, "defaults"),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, ""),
+			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
 				SkipClusterMetrics: true,
 				Nodes:              []string{"_local"},
+				Indices:            []string{".geoip_databases"},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					CollectionInterval: 2 * time.Minute,
 				},
 				Metrics:  defaultMetrics,
@@ -190,10 +192,12 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
-			assert.Equal(t, tt.expected, cfg)
+			assert.NoError(t, component.ValidateConfig(cfg))
+			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
 		})
 	}
 }

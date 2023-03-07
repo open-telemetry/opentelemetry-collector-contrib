@@ -17,7 +17,8 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
@@ -25,6 +26,7 @@ import (
 type Config struct {
 	// Metrics allows to customize scraped metrics representation.
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	internal.ScraperConfig
 	// Include specifies a filter on the process names that should be included from the generated metrics.
 	// Exclude specifies a filter on the process names that should be excluded from the generated metrics.
 	// If neither `include` or `exclude` are set, process metrics will be generated for all processes.

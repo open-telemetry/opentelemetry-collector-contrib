@@ -19,74 +19,94 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id:       component.NewIDWithName(typeStr, ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: component.NewIDWithName(typeStr, "allsettings"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: 2 * time.Second,
+				},
 
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-	assert.Equal(t, 2, len(cfg.Receivers))
+				Endpoint:         "http://example.com/",
+				Timeout:          20 * time.Second,
+				DockerAPIVersion: 1.24,
 
-	defaultConfig := cfg.Receivers[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), defaultConfig)
+				ExcludedImages: []string{
+					"undesired-container",
+					"another-*-container",
+				},
 
-	dcfg := defaultConfig.(*Config)
-	assert.Equal(t, "docker_stats", dcfg.ID().String())
-	assert.Equal(t, "unix:///var/run/docker.sock", dcfg.Endpoint)
-	assert.Equal(t, 10*time.Second, dcfg.CollectionInterval)
-	assert.Equal(t, 5*time.Second, dcfg.Timeout)
-	assert.Equal(t, defaultDockerAPIVersion, dcfg.DockerAPIVersion)
+				ContainerLabelsToMetricLabels: map[string]string{
+					"my.container.label":       "my-metric-label",
+					"my.other.container.label": "my-other-metric-label",
+				},
 
-	assert.Nil(t, dcfg.ExcludedImages)
-	assert.Nil(t, dcfg.ContainerLabelsToMetricLabels)
-	assert.Nil(t, dcfg.EnvVarsToMetricLabels)
+				EnvVarsToMetricLabels: map[string]string{
+					"MY_ENVIRONMENT_VARIABLE":       "my-metric-label",
+					"MY_OTHER_ENVIRONMENT_VARIABLE": "my-other-metric-label",
+				},
+				MetricsConfig: func() metadata.MetricsSettings {
+					m := metadata.DefaultMetricsSettings()
+					m.ContainerCPUUsageSystem = metadata.MetricSettings{
+						Enabled: false,
+					}
+					m.ContainerMemoryTotalRss = metadata.MetricSettings{
+						Enabled: true,
+					}
+					return m
+				}(),
+			},
+		},
+	}
 
-	assert.False(t, dcfg.ProvidePerCoreCPUMetrics)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
 
-	ascfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "allsettings")].(*Config)
-	assert.Equal(t, "docker_stats/allsettings", ascfg.ID().String())
-	assert.Equal(t, "http://example.com/", ascfg.Endpoint)
-	assert.Equal(t, 2*time.Second, ascfg.CollectionInterval)
-	assert.Equal(t, 20*time.Second, ascfg.Timeout)
-	assert.Equal(t, 1.24, ascfg.DockerAPIVersion)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, []string{
-		"undesired-container",
-		"another-*-container",
-	}, ascfg.ExcludedImages)
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	assert.Equal(t, map[string]string{
-		"my.container.label":       "my-metric-label",
-		"my.other.container.label": "my-other-metric-label",
-	}, ascfg.ContainerLabelsToMetricLabels)
-
-	assert.Equal(t, map[string]string{
-		"MY_ENVIRONMENT_VARIABLE":       "my-metric-label",
-		"MY_OTHER_ENVIRONMENT_VARIABLE": "my-other-metric-label",
-	}, ascfg.EnvVarsToMetricLabels)
-
-	assert.True(t, ascfg.ProvidePerCoreCPUMetrics)
+			assert.NoError(t, component.ValidateConfig(cfg))
+			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
+		})
+	}
 }
 
 func TestValidateErrors(t *testing.T) {
 	cfg := &Config{}
-	assert.Equal(t, "endpoint must be specified", cfg.Validate().Error())
+	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{Endpoint: "someEndpoint"}
-	assert.Equal(t, "collection_interval must be a positive duration", cfg.Validate().Error())
+	assert.Equal(t, "collection_interval must be a positive duration", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: 1 * time.Second}, Endpoint: "someEndpoint", DockerAPIVersion: 1.21}
-	assert.Equal(t, "api_version must be at least 1.22", cfg.Validate().Error())
+	assert.Equal(t, "api_version must be at least 1.22", component.ValidateConfig(cfg).Error())
 }

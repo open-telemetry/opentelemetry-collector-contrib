@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -65,9 +65,9 @@ func TestJThriftTagsToInternalAttributes(t *testing.T) {
 	expected := pcommon.NewMap()
 	expected.PutBool("bool-val", true)
 	expected.PutInt("int-val", 123)
-	expected.PutString("string-val", "abc")
+	expected.PutStr("string-val", "abc")
 	expected.PutDouble("double-val", 1.23)
-	expected.PutString("binary-val", "AAAAAABkfZg=")
+	expected.PutStr("binary-val", "AAAAAABkfZg=")
 
 	got := pcommon.NewMap()
 	jThriftTagsToInternalAttributes(tags, got)
@@ -116,6 +116,17 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 			td: generateTracesTwoSpansChildParent(),
 		},
 
+		{
+			name: "a-spans-with-two-parent",
+			jb: &jaeger.Batch{
+				Spans: []*jaeger.Span{
+					generateThriftSpan(),
+					generateThriftFollowerSpan(),
+					generateThriftTwoParentsSpan(),
+				},
+			},
+			td: generateTracesSpanWithTwoParents(),
+		},
 		{
 			name: "two-spans-with-follower",
 			jb: &jaeger.Batch{
@@ -284,6 +295,48 @@ func generateThriftFollowerSpan() *jaeger.Span {
 	}
 }
 
+func generateThriftTwoParentsSpan() *jaeger.Span {
+	spanStartTs := unixNanoToMicroseconds(testSpanStartTimestamp)
+	spanEndTs := unixNanoToMicroseconds(testSpanEndTimestamp)
+	statusCode := statusOk
+	statusMsg := "status-ok"
+	kind := string(tracetranslator.OpenTracingSpanKindConsumer)
+
+	return &jaeger.Span{
+		TraceIdHigh:   int64(binary.BigEndian.Uint64([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8})),
+		TraceIdLow:    int64(binary.BigEndian.Uint64([]byte{0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})),
+		SpanId:        int64(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x20})),
+		OperationName: "operationD",
+		StartTime:     spanStartTs,
+		Duration:      spanEndTs - spanStartTs,
+		ParentSpanId:  int64(binary.BigEndian.Uint64([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})),
+		Tags: []*jaeger.Tag{
+			{
+				Key:   conventions.OtelStatusCode,
+				VType: jaeger.TagType_STRING,
+				VStr:  &statusCode,
+			},
+			{
+				Key:   conventions.OtelStatusDescription,
+				VType: jaeger.TagType_STRING,
+				VStr:  &statusMsg,
+			},
+			{
+				Key:   tracetranslator.TagSpanKind,
+				VType: jaeger.TagType_STRING,
+				VStr:  &kind,
+			},
+		},
+		References: []*jaeger.SpanRef{
+			{
+				TraceIdHigh: int64(binary.BigEndian.Uint64([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8})),
+				TraceIdLow:  int64(binary.BigEndian.Uint64([]byte{0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})),
+				SpanId:      int64(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})),
+				RefType:     jaeger.SpanRefType_CHILD_OF,
+			},
+		},
+	}
+}
 func unixNanoToMicroseconds(ns pcommon.Timestamp) int64 {
 	return int64(ns / 1000)
 }

@@ -2,91 +2,400 @@
 
 # vcenterreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **vcenter.cluster.cpu.effective** | The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive. | {MHz} | Sum(Int) | <ul> </ul> |
-| **vcenter.cluster.cpu.limit** | The amount of CPU available to the cluster. | {MHz} | Sum(Int) | <ul> </ul> |
-| **vcenter.cluster.host.count** | The number of hosts in the cluster. | {hosts} | Sum(Int) | <ul> <li>host_effective</li> </ul> |
-| **vcenter.cluster.memory.effective** | The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive. | By | Sum(Int) | <ul> </ul> |
-| **vcenter.cluster.memory.limit** | The available memory of the cluster. | By | Sum(Int) | <ul> </ul> |
-| **vcenter.cluster.memory.used** | The memory that is currently used by the cluster. | By | Sum(Int) | <ul> </ul> |
-| **vcenter.cluster.vm.count** | the number of virtual machines in the cluster. | {virtual_machines} | Sum(Int) | <ul> <li>vm_count_power_state</li> </ul> |
-| **vcenter.datastore.disk.usage** | The amount of space in the datastore. | By | Sum(Int) | <ul> <li>disk_state</li> </ul> |
-| **vcenter.datastore.disk.utilization** | The utilization of the datastore. | % | Gauge(Double) | <ul> </ul> |
-| **vcenter.host.cpu.usage** | The amount of CPU in Hz used by the host. | MHz | Sum(Int) | <ul> </ul> |
-| **vcenter.host.cpu.utilization** | The CPU utilization of the host system. | % | Gauge(Double) | <ul> </ul> |
-| **vcenter.host.disk.latency.avg** | The latency of operations to the host system's disk. This latency is the sum of the device and kernel read and write latencies. Requires Performance Counter level 2 for metric to populate. | ms | Gauge(Int) | <ul> <li>disk_direction</li> </ul> |
-| **vcenter.host.disk.latency.avg.read** | The latency of reads to the host system's disk. This latency is the sum of the device and kernel read latencies. Requires Performance Counter level 2 for metric to populate. | ms | Gauge(Int) | <ul> </ul> |
-| **vcenter.host.disk.latency.avg.write** | The latency of writes to the host system's disk. This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate. | ms | Gauge(Int) | <ul> </ul> |
-| **vcenter.host.disk.latency.max** | Highest latency value across all disks used by the host. As measured over the most recent 20s interval. Requires Performance Level 3. | ms | Gauge(Int) | <ul> </ul> |
-| **vcenter.host.disk.throughput** | Average number of kilobytes read from or written to the disk each second. As measured over the most recent 20s interval. Aggregated disk I/O rate. Requires Performance Level 4. | {KiBy/s} | Sum(Int) | <ul> <li>disk_direction</li> </ul> |
-| **vcenter.host.disk.throughput.read** | Average number of kilobytes read from the disk each second. As measured over the most recent 20s interval. Aggregated disk read rate. Requires Performance Level 4. | {KiBy/s} | Sum(Int) | <ul> </ul> |
-| **vcenter.host.disk.throughput.write** | Average number of kilobytes written to the disk each second. As measured over the most recent 20s interval. Aggregated disk write rate. Requires Performance Level 4. | {KiBy/s} | Sum(Int) | <ul> </ul> |
-| **vcenter.host.memory.usage** | The amount of memory the host system is using. | MiBy | Sum(Int) | <ul> </ul> |
-| **vcenter.host.memory.utilization** | The percentage of the host system's memory capacity that is being utilized. | % | Gauge(Double) | <ul> </ul> |
-| **vcenter.host.network.packet.count** | The number of packets transmitted and received, as measured over the most recent 20s interval. | {packets/sec} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
-| **vcenter.host.network.packet.count.receive** | The number of packets received, as measured over the most recent 20s interval. | {packets/sec} | Sum(Int) | <ul> </ul> |
-| **vcenter.host.network.packet.count.transmit** | The number of packets transmitted, as measured over the most recent 20s interval. | {packets/sec} | Sum(Int) | <ul> </ul> |
-| **vcenter.host.network.packet.errors** | The summation of packet errors on the host network. As measured over the most recent 20s interval. | {errors} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
-| **vcenter.host.network.packet.errors.receive** | The summation of receive packet errors on the host network. As measured over the most recent 20s interval. | {errors} | Sum(Int) | <ul> </ul> |
-| **vcenter.host.network.packet.errors.transmit** | The summation of transmit packet errors on the host network. As measured over the most recent 20s interval. | {errors} | Sum(Int) | <ul> </ul> |
-| **vcenter.host.network.throughput** | The amount of data that was transmitted or received over the network by the host. As measured over the most recent 20s interval. | {KiBy/s} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
-| **vcenter.host.network.throughput.receive** | The amount of data that was received over the network by the host. As measured over the most recent 20s interval. | {KiBy/s} | Sum(Int) | <ul> </ul> |
-| **vcenter.host.network.throughput.transmit** | The amount of data that was transmitted over the network by the host. As measured over the most recent 20s interval. | {KiBy/s} | Sum(Int) | <ul> </ul> |
-| **vcenter.host.network.usage** | The sum of the data transmitted and received for all the NIC instances of the host. | {KiBy/s} | Sum(Int) | <ul> </ul> |
-| **vcenter.resource_pool.cpu.shares** | The amount of shares of CPU in the resource pool. | {shares} | Sum(Int) | <ul> </ul> |
-| **vcenter.resource_pool.cpu.usage** | The usage of the CPU used by the resource pool. | {MHz} | Sum(Int) | <ul> </ul> |
-| **vcenter.resource_pool.memory.shares** | The amount of shares of memory in the resource pool. | {shares} | Sum(Int) | <ul> </ul> |
-| **vcenter.resource_pool.memory.usage** | The usage of the memory by the resource pool. | MiBy | Sum(Int) | <ul> </ul> |
-| **vcenter.vm.disk.latency.avg** | The latency of operations to the virtual machine's disk. Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval. | ms | Gauge(Int) | <ul> <li>disk_direction</li> <li>disk_type</li> </ul> |
-| **vcenter.vm.disk.latency.avg.read** | The latency of reads to the virtual machine's disk. Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval. | ms | Gauge(Int) | <ul> <li>disk_type</li> </ul> |
-| **vcenter.vm.disk.latency.avg.write** | The latency of writes to the virtual machine's disk. Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval. | ms | Gauge(Int) | <ul> <li>disk_type</li> </ul> |
-| **vcenter.vm.disk.latency.max** | The highest reported total latency (device and kernel times) over an interval of 20 seconds. | ms | Gauge(Int) | <ul> </ul> |
-| **vcenter.vm.disk.throughput** | The throughput of the virtual machine's disk. | By/sec | Sum(Int) | <ul> </ul> |
-| **vcenter.vm.disk.usage** | The amount of storage space used by the virtual machine. | By | Sum(Int) | <ul> <li>disk_state</li> </ul> |
-| **vcenter.vm.disk.utilization** | The utilization of storage on the virtual machine. | % | Gauge(Double) | <ul> </ul> |
-| **vcenter.vm.memory.ballooned** | The amount of memory that is ballooned due to virtualization. | By | Sum(Int) | <ul> </ul> |
-| **vcenter.vm.memory.usage** | The amount of memory that is used by the virtual machine. | MiBy | Sum(Int) | <ul> </ul> |
-| **vcenter.vm.network.packet.count** | The amount of packets that was received or transmitted over the instance's network. | {packets/sec} | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
-| **vcenter.vm.network.packet.count.receive** | The amount of packets that was received over the instance's network. | {packets/sec} | Sum(Int) | <ul> </ul> |
-| **vcenter.vm.network.packet.count.transmit** | The amount of packets that was transmitted over the instance's network. | {packets/sec} | Sum(Int) | <ul> </ul> |
-| **vcenter.vm.network.throughput** | The amount of data that was transmitted or received over the network of the virtual machine. As measured over the most recent 20s interval. | By/sec | Sum(Int) | <ul> <li>throughput_direction</li> </ul> |
-| **vcenter.vm.network.throughput.receive** | The amount of data that was received over the network of the virtual machine. As measured over the most recent 20s interval. | By/sec | Sum(Int) | <ul> </ul> |
-| **vcenter.vm.network.throughput.transmit** | The amount of data that was transmitted over the network of the virtual machine. As measured over the most recent 20s interval. | By/sec | Sum(Int) | <ul> </ul> |
-| **vcenter.vm.network.usage** | The network utilization combined transmit and receive rates during an interval. As measured over the most recent 20s interval. | {KiBy/s} | Sum(Int) | <ul> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Resource attributes
+### vcenter.cluster.cpu.effective
 
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| vcenter.cluster.name | The name of the vCenter Cluster. | String |
-| vcenter.datastore.name | The name of the vCenter datastore. | String |
-| vcenter.host.name | The hostname of the vCenter ESXi host. | String |
-| vcenter.resource_pool.name | The name of the resource pool. | String |
-| vcenter.vm.id | The instance UUID of the virtual machine. | String |
-| vcenter.vm.name | The name of the virtual machine. | String |
+The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.
 
-## Metric attributes
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {MHz} | Sum | Int | Cumulative | false |
+
+### vcenter.cluster.cpu.limit
+
+The amount of CPU available to the cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {MHz} | Sum | Int | Cumulative | false |
+
+### vcenter.cluster.host.count
+
+The number of hosts in the cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {hosts} | Sum | Int | Cumulative | false |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| disk_direction (direction) | The direction of disk latency. | read, write |
-| disk_state | The state of storage and whether it is already allocated or free. | available, used |
-| disk_type | The type of storage device that is being recorded. | virtual, physical |
-| host_effective (effective) | Whether the host is effective in the vCenter cluster. |  |
-| latency_type (type) | The type of disk latency being reported. | kernel, device |
-| throughput_direction (direction) | The direction of network throughput. | transmitted, received |
-| vm_count_power_state (power_state) | Whether the virtual machines are powered on or off. | on, off |
+| effective | Whether the host is effective in the vCenter cluster. | Any Bool |
+
+### vcenter.cluster.memory.effective
+
+The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### vcenter.cluster.memory.limit
+
+The available memory of the cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### vcenter.cluster.memory.used
+
+The memory that is currently used by the cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### vcenter.cluster.vm.count
+
+the number of virtual machines in the cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {virtual_machines} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| power_state | Whether the virtual machines are powered on or off. | Str: ``on``, ``off`` |
+
+### vcenter.datastore.disk.usage
+
+The amount of space in the datastore.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` |
+
+### vcenter.datastore.disk.utilization
+
+The utilization of the datastore.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+### vcenter.host.cpu.usage
+
+The amount of CPU in Hz used by the host.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MHz | Sum | Int | Cumulative | false |
+
+### vcenter.host.cpu.utilization
+
+The CPU utilization of the host system.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+### vcenter.host.disk.latency.avg
+
+The latency of operations to the host system's disk.
+
+This latency is the sum of the device and kernel read and write latencies. Requires Performance Counter level 2 for metric to populate.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` |
+
+### vcenter.host.disk.latency.max
+
+Highest latency value across all disks used by the host.
+
+As measured over the most recent 20s interval. Requires Performance Level 3.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+### vcenter.host.disk.throughput
+
+Average number of kilobytes read from or written to the disk each second.
+
+As measured over the most recent 20s interval. Aggregated disk I/O rate. Requires Performance Level 4.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {KiBy/s} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` |
+
+### vcenter.host.memory.usage
+
+The amount of memory the host system is using.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.host.memory.utilization
+
+The percentage of the host system's memory capacity that is being utilized.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+### vcenter.host.network.packet.count
+
+The number of packets transmitted and received, as measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {packets/sec} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+
+### vcenter.host.network.packet.errors
+
+The summation of packet errors on the host network.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {errors} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+
+### vcenter.host.network.throughput
+
+The amount of data that was transmitted or received over the network by the host.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {KiBy/s} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+
+### vcenter.host.network.usage
+
+The sum of the data transmitted and received for all the NIC instances of the host.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {KiBy/s} | Sum | Int | Cumulative | false |
+
+### vcenter.resource_pool.cpu.shares
+
+The amount of shares of CPU in the resource pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {shares} | Sum | Int | Cumulative | false |
+
+### vcenter.resource_pool.cpu.usage
+
+The usage of the CPU used by the resource pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {MHz} | Sum | Int | Cumulative | false |
+
+### vcenter.resource_pool.memory.shares
+
+The amount of shares of memory in the resource pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {shares} | Sum | Int | Cumulative | false |
+
+### vcenter.resource_pool.memory.usage
+
+The usage of the memory by the resource pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.disk.latency.avg
+
+The latency of operations to the virtual machine's disk.
+
+Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` |
+| disk_type | The type of storage device that is being recorded. | Str: ``virtual``, ``physical`` |
+
+### vcenter.vm.disk.latency.max
+
+The highest reported total latency (device and kernel times) over an interval of 20 seconds.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+### vcenter.vm.disk.throughput
+
+The throughput of the virtual machine's disk.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By/sec | Sum | Int | Cumulative | false |
+
+### vcenter.vm.disk.usage
+
+The amount of storage space used by the virtual machine.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` |
+
+### vcenter.vm.disk.utilization
+
+The utilization of storage on the virtual machine.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+### vcenter.vm.memory.ballooned
+
+The amount of memory that is ballooned due to virtualization.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.memory.swapped
+
+The portion of memory that is granted to this VM from the host's swap space.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.memory.swapped_ssd
+
+The amount of memory swapped to fast disk device such as SSD.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| KiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.memory.usage
+
+The amount of memory that is used by the virtual machine.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.network.packet.count
+
+The amount of packets that was received or transmitted over the instance's network.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {packets/sec} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+
+### vcenter.vm.network.throughput
+
+The amount of data that was transmitted or received over the network of the virtual machine.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By/sec | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+
+### vcenter.vm.network.usage
+
+The network utilization combined transmit and receive rates during an interval.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {KiBy/s} | Sum | Int | Cumulative | false |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| vcenter.cluster.name | The name of the vCenter Cluster. | Any Str | true |
+| vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
+| vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
+| vcenter.resource_pool.name | The name of the resource pool. | Any Str | true |
+| vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
+| vcenter.vm.name | The name of the virtual machine. | Any Str | true |

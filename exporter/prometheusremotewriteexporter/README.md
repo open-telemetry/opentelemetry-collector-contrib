@@ -50,6 +50,10 @@ The following settings can be optionally configured:
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 - `target_info`: customize `target_info` metric
   - `enabled` (default = true): If `enabled` is `true`, a `target_info` metric will be generated for each resource metric (see https://github.com/open-telemetry/opentelemetry-specification/pull/2381).
+- `export_created_metric`:
+  - `enabled` (default = false): If `enabled` is `true`, a `_created` metric is
+    exported for Summary, Histogram, and Monotonic Sum metric points if
+    `StartTimeUnixNano` is set.
 
 Example:
 

@@ -34,6 +34,11 @@ const DefaultSrcRoot = "."
 // DirResolver.
 const DefaultModule = "github.com/open-telemetry/opentelemetry-collector-contrib"
 
+type DirResolverIntf interface {
+	TypeToPackagePath(t reflect.Type) (string, error)
+	ReflectValueToProjectPath(v reflect.Value) string
+}
+
 // DirResolver is used to resolve the base directory of a given reflect.Type.
 type DirResolver struct {
 	SrcRoot    string
@@ -71,9 +76,10 @@ func (dr DirResolver) TypeToPackagePath(t reflect.Type) (string, error) {
 	return verifiedGoPath, nil
 }
 
-// TypeToProjectPath accepts a Type and returns its directory in the current project. If
+// ReflectValueToProjectPath accepts a reflect.Value and returns its directory in the current project. If
 // the type doesn't live in the current project, returns "".
-func (dr DirResolver) TypeToProjectPath(t reflect.Type) string {
+func (dr DirResolver) ReflectValueToProjectPath(v reflect.Value) string {
+	t := v.Type().Elem()
 	if !strings.HasPrefix(t.PkgPath(), dr.ModuleName) {
 		return ""
 	}

@@ -22,13 +22,13 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
 	"github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal"
 )
 
-var _ component.Extension = (*jrsExtension)(nil)
+var _ extension.Extension = (*jrsExtension)(nil)
 
 type jrsExtension struct {
 	cfg       *Config
@@ -71,11 +71,7 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 	}
 
 	if jrse.cfg.Source.Remote != nil {
-		opts, err := jrse.cfg.Source.Remote.ToDialOptions(host, jrse.telemetry)
-		if err != nil {
-			return fmt.Errorf("error while setting up the remote sampling source: %w", err)
-		}
-		conn, err := grpc.Dial(jrse.cfg.Source.Remote.Endpoint, opts...)
+		conn, err := jrse.cfg.Source.Remote.ToClientConn(ctx, host, jrse.telemetry)
 		if err != nil {
 			return fmt.Errorf("error while connecting to the remote sampling source: %w", err)
 		}

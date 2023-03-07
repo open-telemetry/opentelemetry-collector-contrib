@@ -17,18 +17,33 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
+)
+
+const (
+	rotationFieldName = "rotation"
+	backupsFieldName  = "max_backups"
 )
 
 // Config defines configuration for file exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Path of the file to write to. Path is relative to current directory.
 	Path string `mapstructure:"path"`
 
 	// Rotation defines an option about rotation of telemetry files
-	Rotation Rotation `mapstructure:"rotation"`
+	Rotation *Rotation `mapstructure:"rotation"`
+
+	// FormatType define the data format of encoded telemetry data
+	// Options:
+	// - json[default]:  OTLP json bytes.
+	// - proto:  OTLP binary protobuf bytes.
+	FormatType string `mapstructure:"format"`
+
+	// Compression Codec used to export telemetry data
+	// Supported compression algorithms:`zstd`
+	Compression string `mapstructure:"compression"`
 }
 
 // Rotation an option to rolling log files
@@ -54,13 +69,37 @@ type Rotation struct {
 	LocalTime bool `mapstructure:"localtime"`
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
 	if cfg.Path == "" {
 		return errors.New("path must be non-empty")
 	}
+	if cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto {
+		return errors.New("format type is not supported")
+	}
+	if cfg.Compression != "" && cfg.Compression != compressionZSTD {
+		return errors.New("compression is not supported")
+	}
+	return nil
+}
 
+// Unmarshal a confmap.Conf into the config struct.
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		return errors.New("empty config for file exporter")
+	}
+	// first load the config normally
+	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+
+	// next manually search for protocols in the confmap.Conf,
+	// if rotation is not present it means it is disabled.
+	if !componentParser.IsSet(rotationFieldName) {
+		cfg.Rotation = nil
+	}
 	return nil
 }

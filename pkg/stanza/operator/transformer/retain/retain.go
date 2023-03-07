@@ -46,8 +46,8 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a retain operator
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
-	Fields                   []entry.Field `mapstructure:"fields" json:"fields" yaml:"fields"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	Fields                   []entry.Field `mapstructure:"fields"`
 }
 
 // Build will build a retain operator from the supplied configuration

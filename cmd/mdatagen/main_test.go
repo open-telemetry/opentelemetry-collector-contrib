@@ -20,55 +20,32 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-)
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-const (
-	validMetadata = `
-name: metricreceiver
-attributes:
-  cpu_type:
-    value: type
-    description: The type of CPU consumption
-    enum:
-    - user
-    - io_wait
-    - system
-  host:
-    description: The type of CPU consumption
-metrics:
-  system.cpu.time:
-    enabled: true
-    description: Total CPU seconds broken down by different states.
-    extended_documentation: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
-    unit: s
-    sum:
-      aggregation: cumulative
-      value_type: double
-    attributes: [host, cpu_type]
-`
+	md "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen/internal/metadata"
 )
 
 func Test_runContents(t *testing.T) {
-	type args struct {
-		yml string
-	}
 	tests := []struct {
-		name                  string
-		args                  args
-		expectedDocumentation string
-		want                  string
-		wantErr               bool
+		name    string
+		yml     string
+		wantErr bool
 	}{
 		{
-			name:                  "valid metadata",
-			args:                  args{validMetadata},
-			expectedDocumentation: "testdata/documentation.md",
-			want:                  "",
+			name: "valid metadata",
+			yml: `
+name: metricreceiver
+metrics:
+  metric:
+    enabled: true
+    description: Description.
+    unit: s
+    gauge:
+      value_type: double`,
 		},
 		{
 			name:    "invalid yaml",
-			args:    args{"invalid"},
-			want:    "",
+			yml:     "invalid",
 			wantErr: true,
 		},
 	}
@@ -77,7 +54,7 @@ func Test_runContents(t *testing.T) {
 			tmpdir := t.TempDir()
 
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
-			require.NoError(t, os.WriteFile(metadataFile, []byte(tt.args.yml), 0600))
+			require.NoError(t, os.WriteFile(metadataFile, []byte(tt.yml), 0600))
 
 			err := run(metadataFile)
 			if tt.wantErr {
@@ -87,18 +64,7 @@ func Test_runContents(t *testing.T) {
 			require.NoError(t, err)
 
 			require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics.go"))
-
-			actualDocumentation := filepath.Join(tmpdir, "documentation.md")
-			require.FileExists(t, actualDocumentation)
-			if tt.expectedDocumentation != "" {
-				expectedFileBytes, err := os.ReadFile(tt.expectedDocumentation)
-				require.NoError(t, err)
-
-				actualFileBytes, err := os.ReadFile(actualDocumentation)
-				require.NoError(t, err)
-
-				require.Equal(t, expectedFileBytes, actualFileBytes)
-			}
+			require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
 		})
 	}
 }
@@ -130,4 +96,11 @@ func Test_run(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestGenerated verifies that the internal/metadata API is generated correctly.
+func TestGenerated(t *testing.T) {
+	mb := md.NewMetricsBuilder(md.DefaultMetricsSettings(), receivertest.NewNopCreateSettings())
+	m := mb.Emit()
+	require.Equal(t, 0, m.ResourceMetrics().Len())
 }

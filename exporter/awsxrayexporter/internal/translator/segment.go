@@ -30,6 +30,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 // AWS X-Ray acceptable values for origin field.
@@ -66,8 +67,8 @@ var (
 )
 
 // MakeSegmentDocumentString converts an OpenTelemetry Span to an X-Ray Segment and then serialzies to JSON
-func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool) (string, error) {
-	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs)
+func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (string, error) {
+	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames)
 	if err != nil {
 		return "", err
 	}
@@ -81,7 +82,7 @@ func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, inde
 }
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
-func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool) (*awsxray.Segment, error) {
+func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (*awsxray.Segment, error) {
 	var segmentType string
 
 	storeResource := true
@@ -104,9 +105,9 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		httpfiltered, http                                 = makeHTTP(span)
 		isError, isFault, isThrottle, causefiltered, cause = makeCause(span, httpfiltered, resource)
 		origin                                             = determineAwsOrigin(resource)
-		awsfiltered, aws                                   = makeAws(causefiltered, resource)
+		awsfiltered, aws                                   = makeAws(causefiltered, resource, logGroupNames)
 		service                                            = makeService(resource)
-		sqlfiltered, sql                                   = makeSQL(awsfiltered)
+		sqlfiltered, sql                                   = makeSQL(span, awsfiltered)
 		user, annotations, metadata                        = makeXRayAttributes(sqlfiltered, resource, storeResource, indexedAttrs, indexAllAttrs)
 		name                                               string
 		namespace                                          string
@@ -118,12 +119,12 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 
 	// peer.service should always be prioritized for segment names when set because it is what the user decided.
 	if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
-		name = peerService.StringVal()
+		name = peerService.Str()
 	}
 
 	if namespace == "" {
 		if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
-			if rpcSystem.StringVal() == "aws-api" {
+			if rpcSystem.Str() == "aws-api" {
 				namespace = conventions.AttributeCloudProviderAWS
 			}
 		}
@@ -133,7 +134,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		if awsService, ok := attributes.Get(awsxray.AWSServiceAttribute); ok {
 			// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
 			// to be named "Service"
-			name = awsService.StringVal()
+			name = awsService.Str()
 
 			if namespace == "" {
 				namespace = conventions.AttributeCloudProviderAWS
@@ -144,9 +145,9 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	if name == "" {
 		if dbInstance, ok := attributes.Get(conventions.AttributeDBName); ok {
 			// For database queries, the segment name convention is <db name>@<db host>
-			name = dbInstance.StringVal()
+			name = dbInstance.Str()
 			if dbURL, ok := attributes.Get(conventions.AttributeDBConnectionString); ok {
-				if parsed, _ := url.Parse(dbURL.StringVal()); parsed != nil {
+				if parsed, _ := url.Parse(dbURL.Str()); parsed != nil {
 					if parsed.Hostname() != "" {
 						name += "@" + parsed.Hostname()
 					}
@@ -158,25 +159,25 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	if name == "" && span.Kind() == ptrace.SpanKindServer {
 		// Only for a server span, we can use the resource.
 		if service, ok := resource.Attributes().Get(conventions.AttributeServiceName); ok {
-			name = service.StringVal()
+			name = service.Str()
 		}
 	}
 
 	if name == "" {
 		if rpcservice, ok := attributes.Get(conventions.AttributeRPCService); ok {
-			name = rpcservice.StringVal()
+			name = rpcservice.Str()
 		}
 	}
 
 	if name == "" {
 		if host, ok := attributes.Get(conventions.AttributeHTTPHost); ok {
-			name = host.StringVal()
+			name = host.Str()
 		}
 	}
 
 	if name == "" {
 		if peer, ok := attributes.Get(conventions.AttributeNetPeerName); ok {
-			name = peer.StringVal()
+			name = peer.Str()
 		}
 	}
 
@@ -189,12 +190,12 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	return &awsxray.Segment{
-		ID:          awsxray.String(span.SpanID().HexString()),
+		ID:          awsxray.String(traceutil.SpanIDToHexOrEmptyString(span.SpanID())),
 		TraceID:     awsxray.String(traceID),
 		Name:        awsxray.String(name),
 		StartTime:   awsP.Float64(startTime),
 		EndTime:     awsP.Float64(endTime),
-		ParentID:    awsxray.String(span.ParentSpanID().HexString()),
+		ParentID:    awsxray.String(traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())),
 		Fault:       awsP.Bool(isFault),
 		Error:       awsP.Bool(isError),
 		Throttle:    awsP.Bool(isThrottle),
@@ -228,13 +229,13 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 	}
 
 	if provider, ok := resource.Attributes().Get(conventions.AttributeCloudProvider); ok {
-		if provider.StringVal() != conventions.AttributeCloudProviderAWS {
+		if provider.Str() != conventions.AttributeCloudProviderAWS {
 			return ""
 		}
 	}
 
 	if is, present := resource.Attributes().Get(conventions.AttributeCloudPlatform); present {
-		switch is.StringVal() {
+		switch is.Str() {
 		case conventions.AttributeCloudPlatformAWSAppRunner:
 			return OriginAppRunner
 		case conventions.AttributeCloudPlatformAWSEKS:
@@ -246,7 +247,7 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 			if !present {
 				return OriginECS
 			}
-			switch lt.StringVal() {
+			switch lt.Str() {
 			case conventions.AttributeAWSECSLaunchtypeEC2:
 				return OriginECSEC2
 			case conventions.AttributeAWSECSLaunchtypeFargate:
@@ -301,7 +302,7 @@ func convertToAmazonTraceID(traceID pcommon.TraceID) (string, error) {
 	//
 	// In that case, we return invalid traceid error
 	if delta := epochNow - epoch; delta > maxAge || delta < -maxSkew {
-		return "", fmt.Errorf("invalid xray traceid: %s", traceID.HexString())
+		return "", fmt.Errorf("invalid xray traceid: %s", traceID)
 	}
 
 	binary.BigEndian.PutUint32(b[0:4], uint32(epoch))
@@ -328,7 +329,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 	)
 	userid, ok := attributes[conventions.AttributeEnduserID]
 	if ok {
-		user = userid.StringVal()
+		user = userid.Str()
 		delete(attributes, conventions.AttributeEnduserID)
 	}
 
@@ -345,6 +346,20 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		}
 	}
 
+	annotationKeys, ok := attributes[awsxray.AWSXraySegmentAnnotationsAttribute]
+	if ok && annotationKeys.Type() == pcommon.ValueTypeSlice {
+		slice := annotationKeys.Slice()
+		for i := 0; i < slice.Len(); i++ {
+			value := slice.At(i)
+			if value.Type() != pcommon.ValueTypeStr {
+				continue
+			}
+			key := value.AsString()
+			indexedKeys[key] = true
+		}
+		delete(attributes, awsxray.AWSXraySegmentAnnotationsAttribute)
+	}
+
 	if storeResource {
 		resource.Attributes().Range(func(key string, value pcommon.Value) bool {
 			key = "otel.resource." + key
@@ -354,7 +369,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 				key = fixAnnotationKey(key)
 				annotations[key] = annoVal
 			} else {
-				metaVal := metadataValue(value)
+				metaVal := value.AsRaw()
 				if metaVal != nil {
 					defaultMetadata[key] = metaVal
 				}
@@ -380,7 +395,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 					annotations[key] = annoVal
 				}
 			} else {
-				metaVal := metadataValue(value)
+				metaVal := value.AsRaw()
 				if metaVal != nil {
 					defaultMetadata[key] = metaVal
 				}
@@ -397,42 +412,14 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 
 func annotationValue(value pcommon.Value) interface{} {
 	switch value.Type() {
-	case pcommon.ValueTypeString:
-		return value.StringVal()
+	case pcommon.ValueTypeStr:
+		return value.Str()
 	case pcommon.ValueTypeInt:
-		return value.IntVal()
+		return value.Int()
 	case pcommon.ValueTypeDouble:
-		return value.DoubleVal()
+		return value.Double()
 	case pcommon.ValueTypeBool:
-		return value.BoolVal()
-	}
-	return nil
-}
-
-func metadataValue(value pcommon.Value) interface{} {
-	switch value.Type() {
-	case pcommon.ValueTypeString:
-		return value.StringVal()
-	case pcommon.ValueTypeInt:
-		return value.IntVal()
-	case pcommon.ValueTypeDouble:
-		return value.DoubleVal()
-	case pcommon.ValueTypeBool:
-		return value.BoolVal()
-	case pcommon.ValueTypeMap:
-		converted := map[string]interface{}{}
-		value.MapVal().Range(func(key string, value pcommon.Value) bool {
-			converted[key] = metadataValue(value)
-			return true
-		})
-		return converted
-	case pcommon.ValueTypeSlice:
-		arrVal := value.SliceVal()
-		converted := make([]interface{}, arrVal.Len())
-		for i := 0; i < arrVal.Len(); i++ {
-			converted[i] = metadataValue(arrVal.At(i))
-		}
-		return converted
+		return value.Bool()
 	}
 	return nil
 }

@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -33,7 +34,7 @@ import (
 
 type topicScraper struct {
 	client       sarama.Client
-	settings     component.ReceiverCreateSettings
+	settings     receiver.CreateSettings
 	topicFilter  *regexp.Regexp
 	saramaConfig *sarama.Config
 	config       Config
@@ -52,7 +53,7 @@ func (s *topicScraper) shutdown(context.Context) error {
 }
 
 func (s *topicScraper) start(_ context.Context, _ component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo)
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings)
 	return nil
 }
 
@@ -116,7 +117,7 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), scrapeErrors.Combine()
 }
 
-func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
+func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, settings receiver.CreateSettings) (scraperhelper.Scraper, error) {
 	topicFilter, err := regexp.Compile(cfg.TopicMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)

@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
@@ -76,49 +75,6 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 			assert.Equal(t,
 				tc.expectedValue,
 				e.extractFromContext(tc.ctxFunc()),
-			)
-		})
-	}
-}
-
-func TestExtractorForTraces_FromResourceAttribute(t *testing.T) {
-	testcases := []struct {
-		name          string
-		tracesFunc    func() ptrace.Traces
-		fromAttr      string
-		expectedValue string
-	}{
-		{
-			name: "value from resource attribute",
-			tracesFunc: func() ptrace.Traces {
-				traces := ptrace.NewTraces()
-				rSpans := traces.ResourceSpans().AppendEmpty()
-				rSpans.Resource().Attributes().PutString("k8s.namespace.name", "namespace-1")
-				return traces
-			},
-			fromAttr:      "k8s.namespace.name",
-			expectedValue: "namespace-1",
-		},
-		{
-			name: "value from resource attribute even when the same context attribute exists",
-			tracesFunc: func() ptrace.Traces {
-				traces := ptrace.NewTraces()
-				rSpans := traces.ResourceSpans().AppendEmpty()
-				rSpans.Resource().Attributes().PutString("k8s.namespace.name", "namespace-1")
-				return traces
-			},
-			fromAttr:      "k8s.namespace.name",
-			expectedValue: "namespace-1",
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			e := newExtractor(tc.fromAttr, zap.NewNop())
-
-			assert.Equal(t,
-				tc.expectedValue,
-				e.extractAttrFromResource(tc.tracesFunc().ResourceSpans().At(0).Resource()),
 			)
 		})
 	}

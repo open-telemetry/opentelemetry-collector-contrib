@@ -1,0 +1,15 @@
+default:
+all_metrics:
+  system.cpu.load_average.15m:
+    enabled: true
+  system.cpu.load_average.1m:
+    enabled: true
+  system.cpu.load_average.5m:
+    enabled: true
+no_metrics:
+  system.cpu.load_average.15m:
+    enabled: false
+  system.cpu.load_average.1m:
+    enabled: false
+  system.cpu.load_average.5m:
+    enabled: false

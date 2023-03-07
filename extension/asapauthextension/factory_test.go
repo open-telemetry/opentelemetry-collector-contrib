@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,22 +20,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
-	expected := &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-	}
+	expected := &Config{}
 
 	// test
 	cfg := createDefaultConfig()
 
 	// verify
 	assert.Equal(t, expected, cfg)
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestNewFactory(t *testing.T) {
@@ -86,7 +83,7 @@ func TestCreateExtension(t *testing.T) {
 			cfg.PrivateKey = testcase.settings.PrivateKey
 
 			// validate extension creation
-			ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+			ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 			if testcase.shouldError {
 				assert.Error(t, err)
 			} else {

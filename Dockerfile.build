@@ -4,12 +4,11 @@ ENV GOOS="linux"
 ENV GOARCH="amd64"
 ENV CGO_ENABLED=0
 
-ARG builder_version=v0.60.0
+ARG builder_version=v0.71.0
 RUN GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@${builder_version}
 
 ADD . /repo
 
-RUN /go/bin/builder --config=/repo/builder/builder_configuration.yaml --output-path=/repo/dist
-
+RUN /repo/builder/lumigo-builder-config.yaml --config=/repo/builder/lumigo-builder-config.yaml
 
 CMD [ "/repo/dist/otelcol-custom", "--config", "/repo/builder/test-config.yaml"]

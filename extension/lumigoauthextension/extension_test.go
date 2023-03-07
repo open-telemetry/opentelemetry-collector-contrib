@@ -17,6 +17,7 @@ package lumigoauthextension // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,21 +26,100 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestLumigoAuth_NoHeader(t *testing.T) {
-	ext, err := newServerAuthExtension(&Config{}, zap.NewNop())
-	require.NoError(t, err)
-	_, err = ext.Authenticate(context.Background(), map[string][]string{})
-	assert.Equal(t, errNoAuth, err)
+type mockRoundTripper struct{}
+
+func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp := &http.Response{StatusCode: http.StatusOK, Header: map[string][]string{}}
+	for k, v := range req.Header {
+		resp.Header[k] = v
+	}
+	return resp, nil
 }
 
-func TestLumigoAuth_InvalidPrefix(t *testing.T) {
+func TestLumigoAuth_Client_NoTokenAnywhere(t *testing.T) {
+	ext, err := newClientAuthExtension(&Config{
+		Type: Client,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	base := &mockRoundTripper{}
+	c, err := ext.RoundTripper(base)
+	require.NoError(t, err)
+	require.NotNil(t, c)
+
+	orgHeaders := http.Header{
+		"Test-Header-1": []string{"test-value-1"},
+	}
+
+	_, err = c.RoundTrip(&http.Request{Header: orgHeaders})
+	assert.ErrorContains(t, err, "no Lumigo token set in the configurations, and none found in the context")
+}
+
+func TestLumigoAuth_Client_TokenInConfig(t *testing.T) {
+	testToken := "t_123456789012345678901"
+	ext, err := newClientAuthExtension(&Config{
+		Type:  Client,
+		Token: testToken,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	base := &mockRoundTripper{}
+	c, err := ext.RoundTripper(base)
+	require.NoError(t, err)
+	require.NotNil(t, c)
+
+	orgHeaders := http.Header{
+		"Test-Header-1": []string{"test-value-1"},
+	}
+	expectedHeaders := http.Header{
+		"Test-Header-1": []string{"test-value-1"},
+		"Authorization": []string{"LumigoToken " + testToken},
+	}
+
+	resp, err := c.RoundTrip(&http.Request{Header: orgHeaders})
+	assert.NoError(t, err)
+	assert.Equal(t, expectedHeaders, resp.Header)
+}
+
+func TestLumigoAuth_Client_TokenInContext(t *testing.T) {
+	testToken := "t_123456789012345678901"
+	ext, err := newClientAuthExtension(&Config{
+		Type: Client,
+	}, zap.NewNop())
+	require.NotNil(t, ext)
+	require.NoError(t, err)
+
+	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+	base := &mockRoundTripper{}
+	c, err := ext.RoundTripper(base)
+	require.NoError(t, err)
+	require.NotNil(t, c)
+
+	orgHeaders := http.Header{
+		"Test-Header-1": []string{"test-value-1"},
+	}
+	expectedHeaders := http.Header{
+		"Test-Header-1": []string{"test-value-1"},
+		"Authorization": []string{"LumigoToken " + testToken},
+	}
+
+	req := &http.Request{Header: orgHeaders}
+	req = req.WithContext(context.WithValue(req.Context(), lumigoTokenContextKey, testToken))
+	resp, err := c.RoundTrip(req)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, expectedHeaders, resp.Header)
+}
+
+func TestLumigoAuth_Server_InvalidPrefix(t *testing.T) {
 	ext, err := newServerAuthExtension(&Config{}, zap.NewNop())
 	require.NoError(t, err)
 	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer token"}})
 	assert.Equal(t, errInvalidSchemePrefix, err)
 }
 
-func TestLumigoAuth_SupportedHeaders(t *testing.T) {
+func TestLumigoAuth_Server_SupportedHeaders(t *testing.T) {
 	ext, err := newServerAuthExtension(&Config{}, zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))

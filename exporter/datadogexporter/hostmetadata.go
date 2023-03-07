@@ -24,7 +24,7 @@ func newMetadataConfigfromConfig(cfg *Config) metadata.PusherConfig {
 		ConfigHostname:      cfg.Hostname,
 		ConfigTags:          cfg.HostMetadata.Tags,
 		MetricsEndpoint:     cfg.Metrics.Endpoint,
-		APIKey:              cfg.API.Key,
+		APIKey:              string(cfg.API.Key),
 		UseResourceMetadata: cfg.HostMetadata.HostnameSource == HostnameSourceFirstResource,
 		InsecureSkipVerify:  cfg.TLSSetting.InsecureSkipVerify,
 		TimeoutSettings:     cfg.TimeoutSettings,

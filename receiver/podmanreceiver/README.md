@@ -1,9 +1,10 @@
 # Podman Stats Receiver
-| Status                   |                   |
-| ------------------------ |-------------------|
-| Stability                | [unmaintained]    |
-| Supported pipeline types | metrics           |
-| Distributions            | [contrib]         |
+
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [development] |
+| Supported pipeline types | metrics       |
+| Distributions            | [contrib]     |
 
 The Podman Stats receiver queries the Podman service API to fetch stats for all running containers 
 on a configured interval.  These stats are for container
@@ -88,5 +89,5 @@ Recommended build tags to use when including this receiver in your build:
 - `exclude_graphdriver_btrfs`
 - `exclude_graphdriver_devicemapper`
 
-[unmaintained]: https://github.com/open-telemetry/opentelemetry-collector#unmaintained
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

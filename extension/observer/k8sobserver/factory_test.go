@@ -21,8 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -30,16 +29,15 @@ import (
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	assert.Equal(t, cfg.ExtensionSettings, config.NewExtensionSettings(config.NewComponentID(typeStr)))
 	assert.Equal(t, cfg.APIConfig, k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount})
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestFactory_CreateExtension(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	ext, err := factory.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	ext, err := factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.Error(t, err)
 	require.Nil(t, ext)
 }

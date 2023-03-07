@@ -19,19 +19,19 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr config.Type = "host_observer"
+	typeStr component.Type = "host_observer"
 
 	defaultCollectionInterval = 10
 )
 
 // NewFactory creates a factory for HostObserver extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -39,18 +39,16 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		RefreshInterval:   defaultCollectionInterval * time.Second,
+		RefreshInterval: defaultCollectionInterval * time.Second,
 	}
 }
 
 func createExtension(
 	_ context.Context,
-	params component.ExtensionCreateSettings,
-	cfg config.Extension,
-) (component.Extension, error) {
-	config := cfg.(*Config)
-	return newObserver(params.Logger, config)
+	params extension.CreateSettings,
+	cfg component.Config,
+) (extension.Extension, error) {
+	return newObserver(params, cfg.(*Config))
 }

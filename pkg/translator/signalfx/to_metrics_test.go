@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestNumMetricTypes(t *testing.T) {
@@ -57,7 +59,7 @@ func TestToMetrics(t *testing.T) {
 		{
 			name:          "int_gauge",
 			sfxDataPoints: []*sfxpb.DataPoint{buildDefaulstSFxDataPt()},
-			wantMetrics:   buildDefaultMetrics(pmetric.MetricDataTypeGauge, 13, now),
+			wantMetrics:   buildDefaultMetrics(pmetric.MetricTypeGauge, 13, now),
 		},
 		{
 			name: "double_gauge",
@@ -69,13 +71,13 @@ func TestToMetrics(t *testing.T) {
 				}
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetrics: buildDefaultMetrics(pmetric.MetricDataTypeGauge, 13.13, now),
+			wantMetrics: buildDefaultMetrics(pmetric.MetricTypeGauge, 13.13, now),
 		},
 		{
 			name:          "same_name_multiple_gauges",
 			sfxDataPoints: []*sfxpb.DataPoint{buildDefaulstSFxDataPt(), buildDefaulstSFxDataPt()},
 			wantMetrics: func() pmetric.Metrics {
-				m := buildDefaultMetrics(pmetric.MetricDataTypeGauge, 13, now)
+				m := buildDefaultMetrics(pmetric.MetricTypeGauge, 13, now)
 				dps := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints()
 				dps.At(0).CopyTo(dps.AppendEmpty())
 				return m
@@ -89,9 +91,9 @@ func TestToMetrics(t *testing.T) {
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
-				m := buildDefaultMetrics(pmetric.MetricDataTypeSum, 13, now)
+				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				return m
 			}(),
@@ -107,9 +109,9 @@ func TestToMetrics(t *testing.T) {
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
-				m := buildDefaultMetrics(pmetric.MetricDataTypeSum, 13.13, now)
+				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13.13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				return m
 			}(),
@@ -125,9 +127,9 @@ func TestToMetrics(t *testing.T) {
 				return []*sfxpb.DataPoint{pt, pt}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
-				m := buildDefaultMetrics(pmetric.MetricDataTypeSum, 13.13, now)
+				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13.13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				d.DataPoints().At(0).CopyTo(d.DataPoints().AppendEmpty())
 				return m
@@ -141,9 +143,9 @@ func TestToMetrics(t *testing.T) {
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
-				m := buildDefaultMetrics(pmetric.MetricDataTypeSum, 13, now)
+				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				d.SetIsMonotonic(true)
 				return m
 			}(),
@@ -159,9 +161,9 @@ func TestToMetrics(t *testing.T) {
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
-				m := buildDefaultMetrics(pmetric.MetricDataTypeSum, 13.13, now)
+				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13.13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				d.SetIsMonotonic(true)
 				return m
 			}(),
@@ -174,9 +176,9 @@ func TestToMetrics(t *testing.T) {
 				return []*sfxpb.DataPoint{pt, pt}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
-				m := buildDefaultMetrics(pmetric.MetricDataTypeSum, 13, now)
+				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				d.SetIsMonotonic(true)
 				d.DataPoints().At(0).CopyTo(d.DataPoints().AppendEmpty())
 				return m
@@ -190,12 +192,12 @@ func TestToMetrics(t *testing.T) {
 				return []*sfxpb.DataPoint{pt, buildDefaulstSFxDataPt()}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
-				m := buildDefaultMetrics(pmetric.MetricDataTypeSum, 13, now)
+				m := buildDefaultMetrics(pmetric.MetricTypeSum, 13, now)
 				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				d.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				// Append the Gauge metric as well.
-				gm := buildDefaultMetrics(pmetric.MetricDataTypeGauge, 13, now)
+				gm := buildDefaultMetrics(pmetric.MetricTypeGauge, 13, now)
 				gm.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).MoveTo(m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty())
 				return m
 			}(),
@@ -208,7 +210,7 @@ func TestToMetrics(t *testing.T) {
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
-				md := buildDefaultMetrics(pmetric.MetricDataTypeGauge, 13, now)
+				md := buildDefaultMetrics(pmetric.MetricTypeGauge, 13, now)
 				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).SetTimestamp(0)
 				return md
 			}(),
@@ -221,8 +223,8 @@ func TestToMetrics(t *testing.T) {
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
-				md := buildDefaultMetrics(pmetric.MetricDataTypeGauge, 13, now)
-				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().PutString("k0", "")
+				md := buildDefaultMetrics(pmetric.MetricTypeGauge, 13, now)
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().PutStr("k0", "")
 				return md
 			}(),
 		},
@@ -238,12 +240,12 @@ func TestToMetrics(t *testing.T) {
 				pt.Dimensions = dimensions
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetrics: buildDefaultMetrics(pmetric.MetricDataTypeGauge, 13, now),
+			wantMetrics: buildDefaultMetrics(pmetric.MetricTypeGauge, 13, now),
 		},
 		{
 			name:          "nil_datapoint_ignored",
 			sfxDataPoints: []*sfxpb.DataPoint{nil, buildDefaulstSFxDataPt(), nil},
-			wantMetrics:   buildDefaultMetrics(pmetric.MetricDataTypeGauge, 13, now),
+			wantMetrics:   buildDefaultMetrics(pmetric.MetricTypeGauge, 13, now),
 		},
 		{
 			name: "drop_inconsistent_datapoints",
@@ -266,7 +268,7 @@ func TestToMetrics(t *testing.T) {
 
 				return []*sfxpb.DataPoint{pt0, buildDefaulstSFxDataPt(), pt1, pt2, pt3}
 			}(),
-			wantMetrics: buildDefaultMetrics(pmetric.MetricDataTypeGauge, 13, now),
+			wantMetrics: buildDefaultMetrics(pmetric.MetricTypeGauge, 13, now),
 			wantError:   true,
 		},
 	}
@@ -280,12 +282,12 @@ func TestToMetrics(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, tt.wantMetrics, md)
+			assert.NoError(t, pmetrictest.CompareMetrics(tt.wantMetrics, md))
 		})
 	}
 }
 
-func buildDefaultMetrics(typ pmetric.MetricDataType, value interface{}, now time.Time) pmetric.Metrics {
+func buildDefaultMetrics(typ pmetric.MetricType, value interface{}, now time.Time) pmetric.Metrics {
 	out := pmetric.NewMetrics()
 	rm := out.ResourceMetrics().AppendEmpty()
 	ilm := rm.ScopeMetrics().AppendEmpty()
@@ -296,26 +298,25 @@ func buildDefaultMetrics(typ pmetric.MetricDataType, value interface{}, now time
 	var dps pmetric.NumberDataPointSlice
 
 	switch typ {
-	case pmetric.MetricDataTypeGauge:
+	case pmetric.MetricTypeGauge:
 		dps = m.SetEmptyGauge().DataPoints()
-	case pmetric.MetricDataTypeSum:
-		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	case pmetric.MetricTypeSum:
+		m.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		dps = m.Sum().DataPoints()
 	}
 
 	dp := dps.AppendEmpty()
-	dp.Attributes().PutString("k0", "v0")
-	dp.Attributes().PutString("k1", "v1")
-	dp.Attributes().PutString("k2", "v2")
-	dp.Attributes().Sort()
+	dp.Attributes().PutStr("k0", "v0")
+	dp.Attributes().PutStr("k1", "v1")
+	dp.Attributes().PutStr("k2", "v2")
 
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 
 	switch val := value.(type) {
 	case int:
-		dp.SetIntVal(int64(val))
+		dp.SetIntValue(int64(val))
 	case float64:
-		dp.SetDoubleVal(val)
+		dp.SetDoubleValue(val)
 	}
 
 	return out

@@ -38,32 +38,32 @@ func newGohai(logger *zap.Logger) *gohai {
 	res := new(gohai)
 
 	if p, err := new(cpu.Cpu).Collect(); err != nil {
-		logger.Warn("Failed to retrieve cpu metadata", zap.Error(err))
+		logger.Info("Failed to retrieve cpu metadata", zap.Error(err))
 	} else {
 		res.CPU = p
 	}
 
 	if p, err := new(filesystem.FileSystem).Collect(); err != nil {
-		logger.Warn("Failed to retrieve filesystem metadata", zap.Error(err))
+		logger.Info("Failed to retrieve filesystem metadata", zap.Error(err))
 	} else {
 		res.FileSystem = p
 	}
 
 	if p, err := new(memory.Memory).Collect(); err != nil {
-		logger.Warn("Failed to retrieve memory metadata", zap.Error(err))
+		logger.Info("Failed to retrieve memory metadata", zap.Error(err))
 	} else {
 		res.Memory = p
 	}
 
 	// in case of containerized environment, this would return pod id not node's ip
 	if p, err := new(network.Network).Collect(); err != nil {
-		logger.Warn("Failed to retrieve network metadata", zap.Error(err))
+		logger.Info("Failed to retrieve network metadata", zap.Error(err))
 	} else {
 		res.Network = p
 	}
 
 	if p, err := new(platform.Platform).Collect(); err != nil {
-		logger.Warn("Failed to retrieve platform metadata", zap.Error(err))
+		logger.Info("Failed to retrieve platform metadata", zap.Error(err))
 	} else {
 		res.Platform = p
 	}

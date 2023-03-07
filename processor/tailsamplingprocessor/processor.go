@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
@@ -68,7 +69,7 @@ const (
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform tail sampling according to the given
 // configuration.
-func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (component.TracesProcessor, error) {
+func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -184,20 +185,12 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 		// Sampled or not, remove the batches
 		trace.Lock()
-		traceBatches := trace.ReceivedBatches
-		trace.ReceivedBatches = nil
+		allSpans := ptrace.NewTraces()
+		trace.FinalDecision = decision
+		trace.ReceivedBatches.MoveTo(allSpans)
 		trace.Unlock()
 
 		if decision == sampling.Sampled {
-
-			// Combine all individual batches into a single batch so
-			// consumers may operate on the entire trace
-			allSpans := ptrace.NewTraces()
-			for j := 0; j < len(traceBatches); j++ {
-				batch := traceBatches[j]
-				batch.ResourceSpans().MoveAndAppendTo(allSpans.ResourceSpans())
-			}
-
 			_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, allSpans)
 		}
 	}
@@ -301,7 +294,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	return finalDecision, matchingPolicy
 }
 
-// ConsumeTraceData is required by the SpanProcessor interface.
+// ConsumeTraces is required by the processor.Traces interface.
 func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -336,13 +329,15 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		for i := 0; i < lenPolicies; i++ {
 			initialDecisions[i] = sampling.Pending
 		}
-		initialTraceData := &sampling.TraceData{
-			Decisions:   initialDecisions,
-			ArrivalTime: time.Now(),
-			SpanCount:   atomic.NewInt64(lenSpans),
+		d, loaded := tsp.idToTrace.Load(id)
+		if !loaded {
+			d, loaded = tsp.idToTrace.LoadOrStore(id, &sampling.TraceData{
+				Decisions:       initialDecisions,
+				ArrivalTime:     time.Now(),
+				SpanCount:       atomic.NewInt64(lenSpans),
+				ReceivedBatches: ptrace.NewTraces(),
+			})
 		}
-		d, loaded := tsp.idToTrace.LoadOrStore(id, initialTraceData)
-
 		actualData := d.(*sampling.TraceData)
 		if loaded {
 			actualData.SpanCount.Add(lenSpans)
@@ -363,44 +358,32 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			}
 		}
 
-		for i, p := range tsp.policies {
-			var traceTd ptrace.Traces
-			actualData.Lock()
-			actualDecision := actualData.Decisions[i]
-			// If decision is pending, we want to add the new spans still under the lock, so the decision doesn't happen
-			// in between the transition from pending.
-			if actualDecision == sampling.Pending {
-				// Add the spans to the trace, but only once for all policy, otherwise same spans will
-				// be duplicated in the final trace.
-				traceTd = prepareTraceBatch(resourceSpans, spans)
-				actualData.ReceivedBatches = append(actualData.ReceivedBatches, traceTd)
-				actualData.Unlock()
-				break
-			}
+		// The only thing we really care about here is the final decision.
+		actualData.Lock()
+		finalDecision := actualData.FinalDecision
+
+		if finalDecision == sampling.Unspecified {
+			// If the final decision hasn't been made, add the new spans under the lock.
+			appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
+			actualData.Unlock()
+		} else {
 			actualData.Unlock()
 
-			switch actualDecision {
+			switch finalDecision {
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
-				traceTd := prepareTraceBatch(resourceSpans, spans)
-				if err := tsp.nextConsumer.ConsumeTraces(p.ctx, traceTd); err != nil {
-					tsp.logger.Warn("Error sending late arrived spans to destination",
-						zap.String("policy", p.name),
+				traceTd := ptrace.NewTraces()
+				appendToTraces(traceTd, resourceSpans, spans)
+				if err := tsp.nextConsumer.ConsumeTraces(tsp.ctx, traceTd); err != nil {
+					tsp.logger.Warn(
+						"Error sending late arrived spans to destination",
 						zap.Error(err))
 				}
 			case sampling.NotSampled:
 				stats.Record(tsp.ctx, statLateSpanArrivalAfterDecision.M(int64(time.Since(actualData.DecisionTime)/time.Second)))
-
 			default:
 				tsp.logger.Warn("Encountered unexpected sampling decision",
-					zap.String("policy", p.name),
-					zap.Int("decision", int(actualDecision)))
-			}
-
-			// At this point the late arrival has been passed to nextConsumer. Need to break out of the policy loop
-			// so that it isn't sent to nextConsumer more than once when multiple policies chose to sample
-			if actualDecision == sampling.Sampled {
-				break
+					zap.Int("decision", int(finalDecision)))
 			}
 		}
 	}
@@ -441,14 +424,12 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 	stats.Record(tsp.ctx, statTraceRemovalAgeSec.M(int64(deletionTime.Sub(trace.ArrivalTime)/time.Second)))
 }
 
-func prepareTraceBatch(rss ptrace.ResourceSpans, spans []*ptrace.Span) ptrace.Traces {
-	traceTd := ptrace.NewTraces()
-	rs := traceTd.ResourceSpans().AppendEmpty()
+func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spans []*ptrace.Span) {
+	rs := dest.ResourceSpans().AppendEmpty()
 	rss.Resource().CopyTo(rs.Resource())
 	ils := rs.ScopeSpans().AppendEmpty()
 	for _, span := range spans {
 		sp := ils.Spans().AppendEmpty()
 		span.CopyTo(sp)
 	}
-	return traceTd
 }

@@ -27,10 +27,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
@@ -46,13 +46,13 @@ func TestDefaultProcessors(t *testing.T) {
 	procFactories := allFactories.Processors
 
 	tests := []struct {
-		processor     config.Type
+		processor     component.Type
 		getConfigFn   getProcessorConfigFn
 		skipLifecycle bool
 	}{
 		{
 			processor: "attributes",
-			getConfigFn: func() config.Processor {
+			getConfigFn: func() component.Config {
 				cfg := procFactories["attributes"].CreateDefaultConfig().(*attributesprocessor.Config)
 				cfg.Actions = []attraction.ActionKeyValue{
 					{Key: "attribute1", Action: attraction.INSERT, Value: 123},
@@ -62,6 +62,10 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "batch",
+		},
+		{
+			processor:     "datadog",
+			skipLifecycle: true, // requires external exporters to be configured to route data
 		},
 		{
 			processor: "deltatorate",
@@ -81,7 +85,7 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "memory_limiter",
-			getConfigFn: func() config.Processor {
+			getConfigFn: func() component.Config {
 				cfg := procFactories["memory_limiter"].CreateDefaultConfig().(*memorylimiterprocessor.Config)
 				cfg.CheckInterval = 100 * time.Millisecond
 				cfg.MemoryLimitMiB = 1024 * 1024
@@ -102,7 +106,7 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "redactionbykey",
-			getConfigFn: func() config.Processor {
+			getConfigFn: func() component.Config {
 				cfg := procFactories["redactionbykey"].CreateDefaultConfig().(*redactionbykeyprocessor.Config)
 				cfg.BlockedValues = []string{"4[0-9]{12}(?:[0-9]{3})?"}
 				return cfg
@@ -110,7 +114,7 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "resource",
-			getConfigFn: func() config.Processor {
+			getConfigFn: func() component.Config {
 				cfg := procFactories["resource"].CreateDefaultConfig().(*resourceprocessor.Config)
 				cfg.AttributesActions = []attraction.ActionKeyValue{
 					{Key: "attribute1", Action: attraction.INSERT, Value: 123},
@@ -124,11 +128,15 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "span",
-			getConfigFn: func() config.Processor {
+			getConfigFn: func() component.Config {
 				cfg := procFactories["span"].CreateDefaultConfig().(*spanprocessor.Config)
 				cfg.Rename.FromAttributes = []string{"test-key"}
 				return cfg
 			},
+		},
+		{
+			processor:     "servicegraph",
+			skipLifecycle: true,
 		},
 		{
 			processor:     "spanmetrics",
@@ -151,13 +159,13 @@ func TestDefaultProcessors(t *testing.T) {
 			factory, ok := procFactories[tt.processor]
 			require.True(t, ok)
 			assert.Equal(t, tt.processor, factory.Type())
-			assert.EqualValues(t, config.NewComponentID(tt.processor), factory.CreateDefaultConfig().ID())
 
-			if tt.skipLifecycle {
-				t.Skip("Skipping lifecycle processor check for:", tt.processor)
-				return
+			verifyProcessorShutdown(t, factory, tt.getConfigFn)
+
+			if !tt.skipLifecycle {
+				verifyProcessorLifecycle(t, factory, tt.getConfigFn)
 			}
-			verifyProcessorLifecycle(t, factory, tt.getConfigFn)
+
 		})
 	}
 }
@@ -165,15 +173,15 @@ func TestDefaultProcessors(t *testing.T) {
 // getProcessorConfigFn is used customize the configuration passed to the verification.
 // This is used to change ports or provide values required but not provided by the
 // default configuration.
-type getProcessorConfigFn func() config.Processor
+type getProcessorConfigFn func() component.Config
 
-// verifyProcessorLifecycle is used to test if an processor type can handle the typical
+// verifyProcessorLifecycle is used to test if a processor type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
 // the test can't be done with the default configuration for the component.
-func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, getConfigFn getProcessorConfigFn) {
+func verifyProcessorLifecycle(t *testing.T, factory processor.Factory, getConfigFn getProcessorConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	processorCreationSet := componenttest.NewNopProcessorCreateSettings()
+	processorCreationSet := processortest.NewNopCreateSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -201,26 +209,56 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 	}
 }
 
+// verifyProcessorShutdown is used to test if a processor type can be shutdown without being started first.
+// We disregard errors being returned by shutdown, we're just making sure the processors don't panic.
+func verifyProcessorShutdown(tb testing.TB, factory processor.Factory, getConfigFn getProcessorConfigFn) {
+	ctx := context.Background()
+	processorCreationSet := processortest.NewNopCreateSettings()
+
+	if getConfigFn == nil {
+		getConfigFn = factory.CreateDefaultConfig
+	}
+
+	createFns := []createProcessorFn{
+		wrapCreateLogsProc(factory),
+		wrapCreateTracesProc(factory),
+		wrapCreateMetricsProc(factory),
+	}
+
+	for _, createFn := range createFns {
+		p, err := createFn(ctx, processorCreationSet, getConfigFn())
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			continue
+		}
+		if p == nil {
+			continue
+		}
+		assert.NotPanics(tb, func() {
+			_ = p.Shutdown(ctx)
+		})
+	}
+}
+
 type createProcessorFn func(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
-) (component.Processor, error)
+	set processor.CreateSettings,
+	cfg component.Config,
+) (component.Component, error)
 
-func wrapCreateLogsProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg config.Processor) (component.Processor, error) {
+func wrapCreateLogsProc(factory processor.Factory) createProcessorFn {
+	return func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
-func wrapCreateMetricsProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg config.Processor) (component.Processor, error) {
+func wrapCreateMetricsProc(factory processor.Factory) createProcessorFn {
+	return func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
-func wrapCreateTracesProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg config.Processor) (component.Processor, error) {
+func wrapCreateTracesProc(factory processor.Factory) createProcessorFn {
+	return func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }

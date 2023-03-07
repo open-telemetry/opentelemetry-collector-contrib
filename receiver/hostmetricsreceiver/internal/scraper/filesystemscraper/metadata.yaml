@@ -5,18 +5,23 @@ sem_conv_version: 1.9.0
 attributes:
   device:
     description: Identifier of the filesystem.
+    type: string
 
   mode:
     description: Mountpoint mode such "ro", "rw", etc.
+    type: string
 
   mountpoint:
     description: Mountpoint path.
+    type: string
 
   state:
     description: Breakdown of filesystem usage by type.
+    type: string
     enum: [free, reserved, used]
 
   type:
+    type: string
     description: Filesystem type, such as, "ext4", "tmpfs", etc.
 
 metrics:

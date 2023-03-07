@@ -45,9 +45,9 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a remove operator
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
+	helper.TransformerConfig `mapstructure:",squash"`
 
-	Field rootableField `mapstructure:"field"  json:"field" yaml:"field"`
+	Field rootableField `mapstructure:"field"`
 }
 
 // Build will build a Remove operator from the supplied configuration

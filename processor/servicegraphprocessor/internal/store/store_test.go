@@ -15,30 +15,29 @@
 package store // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 
 import (
-	"fmt"
+	"encoding/hex"
 	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const clientService = "client"
 
 func TestStoreUpsertEdge(t *testing.T) {
-	const keyStr = "key"
+	key := NewKey(pcommon.TraceID([16]byte{1, 2, 3}), pcommon.SpanID([8]byte{1, 2, 3}))
 
 	var onCompletedCount int
 	var onExpireCount int
 
-	storeInterface := NewStore(time.Hour, 1, countingCallback(&onCompletedCount), countingCallback(&onExpireCount))
-
-	s := storeInterface.(*store)
+	s := NewStore(time.Hour, 1, countingCallback(&onCompletedCount), countingCallback(&onExpireCount))
 	assert.Equal(t, 0, s.len())
 
 	// Insert first half of an edge
-	isNew, err := s.UpsertEdge(keyStr, func(e *Edge) {
+	isNew, err := s.UpsertEdge(key, func(e *Edge) {
 		e.ClientService = clientService
 	})
 	require.NoError(t, err)
@@ -51,7 +50,7 @@ func TestStoreUpsertEdge(t *testing.T) {
 	assert.Equal(t, 0, onExpireCount)
 
 	// Insert the second half of an edge
-	isNew, err = s.UpsertEdge(keyStr, func(e *Edge) {
+	isNew, err = s.UpsertEdge(key, func(e *Edge) {
 		assert.Equal(t, clientService, e.ClientService)
 		e.ServerService = "server"
 	})
@@ -64,7 +63,7 @@ func TestStoreUpsertEdge(t *testing.T) {
 	assert.Equal(t, 0, onExpireCount)
 
 	// Insert an edge that will immediately expire
-	isNew, err = s.UpsertEdge(keyStr, func(e *Edge) {
+	isNew, err = s.UpsertEdge(key, func(e *Edge) {
 		e.ClientService = clientService
 		e.expiration = time.UnixMicro(0)
 	})
@@ -81,27 +80,27 @@ func TestStoreUpsertEdge(t *testing.T) {
 }
 
 func TestStoreUpsertEdge_errTooManyItems(t *testing.T) {
+	key1 := NewKey(pcommon.TraceID([16]byte{1, 2, 3}), pcommon.SpanID([8]byte{1, 2, 3}))
+	key2 := NewKey(pcommon.TraceID([16]byte{4, 5, 6}), pcommon.SpanID([8]byte{1, 2, 3}))
 	var onCallbackCounter int
 
-	storeInterface := NewStore(time.Hour, 1, countingCallback(&onCallbackCounter), countingCallback(&onCallbackCounter))
-
-	s := storeInterface.(*store)
+	s := NewStore(time.Hour, 1, countingCallback(&onCallbackCounter), countingCallback(&onCallbackCounter))
 	assert.Equal(t, 0, s.len())
 
-	isNew, err := s.UpsertEdge("key-1", func(e *Edge) {
+	isNew, err := s.UpsertEdge(key1, func(e *Edge) {
 		e.ClientService = clientService
 	})
 	require.NoError(t, err)
 	require.Equal(t, true, isNew)
 	assert.Equal(t, 1, s.len())
 
-	_, err = s.UpsertEdge("key-2", func(e *Edge) {
+	_, err = s.UpsertEdge(key2, func(e *Edge) {
 		e.ClientService = clientService
 	})
 	require.ErrorIs(t, err, ErrTooManyItems)
 	assert.Equal(t, 1, s.len())
 
-	isNew, err = s.UpsertEdge("key-1", func(e *Edge) {
+	isNew, err = s.UpsertEdge(key1, func(e *Edge) {
 		e.ClientService = clientService
 	})
 	require.NoError(t, err)
@@ -114,9 +113,9 @@ func TestStoreUpsertEdge_errTooManyItems(t *testing.T) {
 func TestStoreExpire(t *testing.T) {
 	const testSize = 100
 
-	keys := map[string]bool{}
+	keys := map[Key]struct{}{}
 	for i := 0; i < testSize; i++ {
-		keys[fmt.Sprintf("key-%d", i)] = true
+		keys[NewKey(pcommon.TraceID([16]byte{byte(i)}), pcommon.SpanID([8]byte{1, 2, 3}))] = struct{}{}
 	}
 
 	var onCompletedCount int
@@ -127,8 +126,7 @@ func TestStoreExpire(t *testing.T) {
 		assert.Contains(t, keys, e.key)
 	}
 	// New edges are immediately expired
-	storeInterface := NewStore(-time.Second, testSize, onComplete, countingCallback(&onExpireCount))
-	s := storeInterface.(*store)
+	s := NewStore(-time.Second, testSize, onComplete, countingCallback(&onExpireCount))
 
 	for key := range keys {
 		isNew, err := s.UpsertEdge(key, noopCallback)
@@ -142,7 +140,7 @@ func TestStoreExpire(t *testing.T) {
 	assert.Equal(t, testSize, onExpireCount)
 }
 
-func TestStore_concurrency(t *testing.T) {
+func TestStoreConcurrency(t *testing.T) {
 	s := NewStore(10*time.Millisecond, 100000, noopCallback, noopCallback)
 
 	end := make(chan struct{})
@@ -158,16 +156,11 @@ func TestStore_concurrency(t *testing.T) {
 		}
 	}
 
-	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
 	go accessor(func() {
-		key := make([]rune, 6)
-		for i := range key {
-			key[i] = letters[rand.Intn(len(letters))]
-		}
+		key := NewKey(pcommon.TraceID([16]byte{byte(rand.Intn(32))}), pcommon.SpanID([8]byte{1, 2, 3}))
 
-		_, err := s.UpsertEdge(string(key), func(e *Edge) {
-			e.ClientService = string(key)
+		_, err := s.UpsertEdge(key, func(e *Edge) {
+			e.ClientService = hex.EncodeToString(key.tid[:])
 		})
 		assert.NoError(t, err)
 	})

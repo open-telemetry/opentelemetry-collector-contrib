@@ -1,0 +1,11 @@
+  count:
+  count/customize:
+    traces:
+      name: my.span.count
+      description: My span count.
+    metrics:
+      name: my.data_point.count
+      description: My data point count.
+    logs:
+      name: my.log_record.count
+      description: My log record count.

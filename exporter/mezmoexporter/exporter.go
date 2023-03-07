@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
 package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 
 import (
-	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -103,23 +103,21 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 					attrs["hostname"] = resourceHostName.AsString()
 				}
 
-				traceID := log.TraceID().HexString()
-				if traceID != "" {
-					attrs["trace.id"] = traceID
+				if traceID := log.TraceID(); !traceID.IsEmpty() {
+					attrs["trace.id"] = hex.EncodeToString(traceID[:])
 				}
 
-				spanID := log.SpanID().HexString()
-				if spanID != "" {
-					attrs["span.id"] = spanID
+				if spanID := log.SpanID(); !spanID.IsEmpty() {
+					attrs["span.id"] = hex.EncodeToString(spanID[:])
 				}
 
 				log.Attributes().Range(func(k string, v pcommon.Value) bool {
-					attrs[k] = truncateString(v.StringVal(), maxMetaDataSize)
+					attrs[k] = truncateString(v.Str(), maxMetaDataSize)
 					return true
 				})
 
 				s, _ := log.Attributes().Get("appname")
-				app := s.StringVal()
+				app := s.Str()
 
 				tstamp := log.Timestamp().AsTime().UTC().UnixMilli()
 				if tstamp == 0 {
@@ -133,7 +131,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 
 				line := MezmoLogLine{
 					Timestamp: tstamp,
-					Line:      truncateString(log.Body().StringVal(), maxMessageSize),
+					Line:      truncateString(log.Body().Str(), maxMessageSize),
 					App:       truncateString(app, maxAppnameLen),
 					Level:     logLevel,
 					Meta:      attrs,
@@ -180,14 +178,14 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 }
 
 func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {
-	req, _ := http.NewRequest("POST", m.config.IngestURL, bytes.NewBuffer([]byte(post)))
+	req, _ := http.NewRequest("POST", m.config.IngestURL, strings.NewReader(post))
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", m.userAgentString)
-	req.Header.Add("apikey", m.config.IngestKey)
+	req.Header.Add("apikey", string(m.config.IngestKey))
 
 	var res *http.Response
-	if res, errs = http.DefaultClient.Do(req); errs != nil {
+	if res, errs = m.client.Do(req); errs != nil {
 		return fmt.Errorf("failed to POST log to Mezmo: %w", errs)
 	}
 	if res.StatusCode >= 400 {

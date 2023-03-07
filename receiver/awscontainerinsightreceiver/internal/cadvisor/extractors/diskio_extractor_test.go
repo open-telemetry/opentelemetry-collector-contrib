@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package extractors
 
 import (
@@ -28,7 +27,7 @@ func TestDiskIOStats(t *testing.T) {
 
 	result := testutils.LoadContainerInfo(t, "./testdata/PreInfoContainer.json")
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
-	//for eks node-level metrics
+	// for eks node-level metrics
 	containerType := TypeNode
 	extractor := NewDiskIOMetricExtractor(nil)
 
@@ -62,7 +61,7 @@ func TestDiskIOStats(t *testing.T) {
 	AssertContainsTaggedField(t, cMetrics[0], expectedFieldsService, expectedTags)
 	AssertContainsTaggedField(t, cMetrics[1], expectedFieldsServiced, expectedTags)
 
-	//for ecs node-level metrics
+	// for ecs node-level metrics
 	containerType = TypeInstance
 	extractor = NewDiskIOMetricExtractor(nil)
 
@@ -95,7 +94,7 @@ func TestDiskIOStats(t *testing.T) {
 	AssertContainsTaggedField(t, cMetrics[0], expectedFieldsService, expectedTags)
 	AssertContainsTaggedField(t, cMetrics[1], expectedFieldsServiced, expectedTags)
 
-	//for non supported type
+	// for non supported type
 	containerType = TypeContainerDiskIO
 	extractor = NewDiskIOMetricExtractor(nil)
 

@@ -1,6 +1,10 @@
 # AWS Proxy
 
-##
+| Status                   |           |
+|--------------------------|-----------|
+| Stability                | [beta]    |
+| Distributions            | [contrib] |
+
 The AWS proxy accepts requests without any authentication of AWS signatures applied and forwards them to the
 AWS API, applying authentication and signing. This allows applications to avoid needing AWS credentials to access
 a service, instead configuring the AWS exporter and/or proxy in the OpenTelemetry collector and only providing the
@@ -49,3 +53,6 @@ The IAM role used by this proxy when communicating with the AWS service. If non-
 
 ### aws_endpoint (Optional)
 The AWS service endpoint which this proxy forwards requests to. If not set, will default to the AWS X-Ray endpoint.
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

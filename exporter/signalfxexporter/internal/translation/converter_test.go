@@ -16,7 +16,6 @@ package translation
 
 import (
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -29,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
@@ -65,17 +66,17 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initDoublePt := func(doublePt pmetric.NumberDataPoint) {
 		doublePt.SetTimestamp(ts)
-		doublePt.SetDoubleVal(doubleVal)
+		doublePt.SetDoubleValue(doubleVal)
 	}
 
 	initDoublePtWithLabels := func(doublePtWithLabels pmetric.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
-		doublePtWithLabels.Attributes().FromRaw(labelMap)
+		assert.NoError(t, doublePtWithLabels.Attributes().FromRaw(labelMap))
 	}
 
 	initDoublePtWithLongLabels := func(doublePtWithLabels pmetric.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
-		doublePtWithLabels.Attributes().FromRaw(longLabelMap)
+		assert.NoError(t, doublePtWithLabels.Attributes().FromRaw(longLabelMap))
 	}
 
 	differentLabelMap := map[string]interface{}{
@@ -84,17 +85,17 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	}
 	initDoublePtWithDifferentLabels := func(doublePtWithDifferentLabels pmetric.NumberDataPoint) {
 		initDoublePt(doublePtWithDifferentLabels)
-		doublePtWithDifferentLabels.Attributes().FromRaw(differentLabelMap)
+		assert.NoError(t, doublePtWithDifferentLabels.Attributes().FromRaw(differentLabelMap))
 	}
 
 	initInt64Pt := func(int64Pt pmetric.NumberDataPoint) {
 		int64Pt.SetTimestamp(ts)
-		int64Pt.SetIntVal(int64Val)
+		int64Pt.SetIntValue(int64Val)
 	}
 
 	initInt64PtWithLabels := func(int64PtWithLabels pmetric.NumberDataPoint) {
 		initInt64Pt(int64PtWithLabels)
-		int64PtWithLabels.Attributes().FromRaw(labelMap)
+		assert.NoError(t, int64PtWithLabels.Attributes().FromRaw(labelMap))
 	}
 
 	initHistDP := func(histDP pmetric.HistogramDataPoint) {
@@ -103,7 +104,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetSum(100.0)
 		histDP.ExplicitBounds().FromRaw([]float64{1, 2, 4})
 		histDP.BucketCounts().FromRaw([]uint64{4, 2, 3, 7})
-		histDP.Attributes().FromRaw(labelMap)
+		assert.NoError(t, histDP.Attributes().FromRaw(labelMap))
 	}
 	histDP := pmetric.NewHistogramDataPoint()
 	initHistDP(histDP)
@@ -112,7 +113,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetCount(2)
 		histDP.SetSum(10)
 		histDP.SetTimestamp(ts)
-		histDP.Attributes().FromRaw(labelMap)
+		assert.NoError(t, histDP.Attributes().FromRaw(labelMap))
 	}
 	histDPNoBuckets := pmetric.NewHistogramDataPoint()
 	initHistDPNoBuckets(histDPNoBuckets)
@@ -144,28 +145,28 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_double_with_dims")
 					m.SetEmptySum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 					initDoublePt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_int_with_dims")
 					m.SetEmptySum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("delta_double_with_dims")
 					m.SetEmptySum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					initDoublePt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("delta_int_with_dims")
 					m.SetEmptySum().SetIsMonotonic(true)
-					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
@@ -238,10 +239,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("k/n0", "vn0")
-				res.Attributes().PutString("k/n1", "vn1")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("k/n0", "vn0")
+				res.Attributes().PutStr("k/n1", "vn1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(2)
@@ -286,10 +287,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("k/n0", "vn0")
-				res.Attributes().PutString("k/n1", "vn1")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("k/n0", "vn0")
+				res.Attributes().PutStr("k/n1", "vn1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(5)
@@ -349,10 +350,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("k/n0", "vn0")
-				res.Attributes().PutString("k/n1", "vn1")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("k/n0", "vn0")
+				res.Attributes().PutStr("k/n1", "vn1")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(1)
@@ -386,11 +387,11 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("cloud.provider", conventions.AttributeCloudProviderAWS)
-				res.Attributes().PutString("cloud.account.id", "efgh")
-				res.Attributes().PutString("cloud.region", "us-east")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("cloud.provider", conventions.AttributeCloudProviderAWS)
+				res.Attributes().PutStr("cloud.account.id", "efgh")
+				res.Attributes().PutStr("cloud.region", "us-east")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
@@ -418,12 +419,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("cloud.provider", conventions.AttributeCloudProviderAWS)
-				res.Attributes().PutString("cloud.account.id", "efgh")
-				res.Attributes().PutString("cloud.region", "us-east")
-				res.Attributes().PutString("host.id", "abcd")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("cloud.provider", conventions.AttributeCloudProviderAWS)
+				res.Attributes().PutStr("cloud.account.id", "efgh")
+				res.Attributes().PutStr("cloud.region", "us-east")
+				res.Attributes().PutStr("host.id", "abcd")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
@@ -453,10 +454,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("cloud.provider", conventions.AttributeCloudProviderGCP)
-				res.Attributes().PutString("host.id", "abcd")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("cloud.provider", conventions.AttributeCloudProviderGCP)
+				res.Attributes().PutStr("host.id", "abcd")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
@@ -483,11 +484,11 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pmetric.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
-				res.Attributes().PutString("k/r0", "vr0")
-				res.Attributes().PutString("k/r1", "vr1")
-				res.Attributes().PutString("cloud.provider", conventions.AttributeCloudProviderGCP)
-				res.Attributes().PutString("host.id", "abcd")
-				res.Attributes().PutString("cloud.account.id", "efgh")
+				res.Attributes().PutStr("k/r0", "vr0")
+				res.Attributes().PutStr("k/r1", "vr1")
+				res.Attributes().PutStr("cloud.provider", conventions.AttributeCloudProviderGCP)
+				res.Attributes().PutStr("host.id", "abcd")
+				res.Attributes().PutStr("cloud.account.id", "efgh")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
@@ -662,8 +663,8 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetName("metric1")
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetIntVal(123)
-	dp.Attributes().PutString("old.dim", "val1")
+	dp.SetIntValue(123)
+	dp.Attributes().PutStr("old.dim", "val1")
 
 	gaugeType := sfxpb.MetricType_GAUGE
 	expected := []*sfxpb.DataPoint{
@@ -701,8 +702,8 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetName("metric1")
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetIntVal(123)
-	dp.Attributes().PutString("old.dim.with.periods", "val1")
+	dp.SetIntValue(123)
+	dp.Attributes().PutStr("old.dim.with.periods", "val1")
 
 	gaugeType := sfxpb.MetricType_GAUGE
 	expected := []*sfxpb.DataPoint{
@@ -724,6 +725,53 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	require.NoError(t, err)
 	assert.EqualValues(t, expected, c.MetricsToSignalFxV2(md))
 
+}
+
+func TestInvalidNumberOfDimensions(t *testing.T) {
+	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
+	logger := zap.New(observedZapCore)
+
+	md := pmetric.NewMetrics()
+	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("valid")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(123)
+	for i := 0; i < 10; i++ {
+		dp.Attributes().PutStr(fmt.Sprint("dim_key_", i), fmt.Sprint("dim_val_", i))
+	}
+	c, err := NewMetricsConverter(logger, nil, nil, nil, "_-.")
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, len(c.MetricsToSignalFxV2(md)))
+	// No log message should be printed
+	require.Equal(t, 0, observedLogs.Len())
+
+	mdInvalid := pmetric.NewMetrics()
+	mInvalid := mdInvalid.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("invalid")
+	dpInvalid := mInvalid.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(123)
+
+	// SFX datapoint is used for log validation
+	gaugeType := sfxpb.MetricType_GAUGE
+	dpSFX := &sfxpb.DataPoint{
+		MetricType: &gaugeType,
+		Dimensions: make([]*sfxpb.Dimension, 0, 37),
+	}
+	for i := 0; i < 37; i++ {
+		dpInvalid.Attributes().PutStr(fmt.Sprint("dim_key_", i), fmt.Sprint("dim_val_", i))
+		dpSFX.Dimensions = append(dpSFX.Dimensions, &sfxpb.Dimension{
+			Key:   fmt.Sprint("dim_key_", i),
+			Value: fmt.Sprint("dim_val_", i),
+		})
+	}
+	assert.EqualValues(t, 0, len(c.MetricsToSignalFxV2(mdInvalid)))
+	require.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, "dropping datapoint", observedLogs.All()[0].Message)
+	assert.ElementsMatch(t, []zap.Field{
+		{Type: zapcore.StringType, Key: "reason", String: invalidNumberOfDimensions},
+		{Type: zapcore.StringerType, Key: "datapoint", Interface: dpSFX},
+		{Type: zapcore.Int64Type, Key: "number_of_dimensions", Integer: 37},
+	}, observedLogs.All()[0].Context)
 }
 
 func sortDimensions(points []*sfxpb.DataPoint) {
@@ -793,13 +841,12 @@ func TestNewMetricsConverter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewMetricsConverter(zap.NewNop(), nil, tt.excludes, nil, "")
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewMetricsConverter() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewMetricsConverter() got = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

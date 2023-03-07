@@ -18,10 +18,11 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 )
 
-var _ component.Extension = (*ecsObserver)(nil)
+var _ extension.Extension = (*ecsObserver)(nil)
 
 // ecsObserver implements component.ServiceExtension interface.
 type ecsObserver struct {

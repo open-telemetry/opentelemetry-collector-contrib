@@ -25,9 +25,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -48,7 +48,7 @@ type emfExporter struct {
 	// Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
 	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
 	svcStructuredLog       *cwlogs.Client
-	config                 config.Exporter
+	config                 component.Config
 	logger                 *zap.Logger
 
 	metricTranslator metricTranslator
@@ -60,9 +60,9 @@ type emfExporter struct {
 
 // newEmfPusher func creates an EMF Exporter instance with data push callback func
 func newEmfPusher(
-	config config.Exporter,
-	params component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
+	config component.Config,
+	params exporter.CreateSettings,
+) (exporter.Metrics, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
@@ -78,7 +78,7 @@ func newEmfPusher(
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
+	svcStructuredLog := cwlogs.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, session)
 	collectorIdentifier, _ := uuid.NewRandom()
 
 	emfExporter := &emfExporter{
@@ -96,9 +96,9 @@ func newEmfPusher(
 
 // newEmfExporter creates a new exporter using exporterhelper
 func newEmfExporter(
-	config config.Exporter,
-	set component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
+	config component.Config,
+	set exporter.CreateSettings,
+) (exporter.Metrics, error) {
 	exp, err := newEmfPusher(config, set)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		am := rm.Resource().Attributes()
 		if am.Len() > 0 {
 			am.Range(func(k string, v pcommon.Value) bool {
-				labels[k] = v.StringVal()
+				labels[k] = v.Str()
 				return true
 			})
 		}

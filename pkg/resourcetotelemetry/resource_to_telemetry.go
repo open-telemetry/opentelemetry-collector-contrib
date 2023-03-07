@@ -17,8 +17,8 @@ package resourcetotelemetry // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -36,11 +36,11 @@ type Settings struct {
 }
 
 type wrapperMetricsExporter struct {
-	component.MetricsExporter
+	exporter.Metrics
 }
 
 func (wme *wrapperMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return wme.MetricsExporter.ConsumeMetrics(ctx, convertToMetricsAttributes(md))
+	return wme.Metrics.ConsumeMetrics(ctx, convertToMetricsAttributes(md))
 }
 
 func (wme *wrapperMetricsExporter) Capabilities() consumer.Capabilities {
@@ -48,17 +48,18 @@ func (wme *wrapperMetricsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-// WrapMetricsExporter wraps a given component.MetricsExporter and based on the given settings
+// WrapMetricsExporter wraps a given exporter.Metrics and based on the given settings
 // converts incoming resource attributes to metrics attributes.
-func WrapMetricsExporter(set Settings, exporter component.MetricsExporter) component.MetricsExporter {
+func WrapMetricsExporter(set Settings, exporter exporter.Metrics) exporter.Metrics {
 	if !set.Enabled {
 		return exporter
 	}
-	return &wrapperMetricsExporter{MetricsExporter: exporter}
+	return &wrapperMetricsExporter{Metrics: exporter}
 }
 
 func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
-	cloneMd := md.Clone()
+	cloneMd := pmetric.NewMetrics()
+	md.CopyTo(cloneMd)
 	rms := cloneMd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
@@ -77,16 +78,16 @@ func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
 
 // addAttributesToMetric adds additional labels to the given metric
 func addAttributesToMetric(metric pmetric.Metric, labelMap pcommon.Map) {
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		addAttributesToNumberDataPoints(metric.Gauge().DataPoints(), labelMap)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		addAttributesToNumberDataPoints(metric.Sum().DataPoints(), labelMap)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		addAttributesToHistogramDataPoints(metric.Histogram().DataPoints(), labelMap)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		addAttributesToSummaryDataPoints(metric.Summary().DataPoints(), labelMap)
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		addAttributesToExponentialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), labelMap)
 	}
 }

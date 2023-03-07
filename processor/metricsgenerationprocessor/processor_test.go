@@ -21,11 +21,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 type testMetric struct {
@@ -283,13 +282,12 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				Rules:             test.rules,
+				Rules: test.rules,
 			}
 			factory := NewFactory()
 			mgp, err := factory.CreateMetricsProcessor(
 				context.Background(),
-				componenttest.NewNopProcessorCreateSettings(),
+				processortest.NewNopCreateSettings(),
 				cfg,
 				next,
 			)
@@ -319,7 +317,7 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 
 				require.Equal(t, eM.Name(), aM.Name())
 
-				if eM.DataType() == pmetric.MetricDataTypeGauge {
+				if eM.Type() == pmetric.MetricTypeGauge {
 					eDataPoints := eM.Gauge().DataPoints()
 					aDataPoints := aM.Gauge().DataPoints()
 					require.Equal(t, eDataPoints.Len(), aDataPoints.Len())
@@ -327,9 +325,9 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 					for j := 0; j < eDataPoints.Len(); j++ {
 						switch eDataPoints.At(j).ValueType() {
 						case pmetric.NumberDataPointValueTypeDouble:
-							require.Equal(t, eDataPoints.At(j).DoubleVal(), aDataPoints.At(j).DoubleVal())
+							require.Equal(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue())
 						case pmetric.NumberDataPointValueTypeInt:
-							require.Equal(t, eDataPoints.At(j).IntVal(), aDataPoints.At(j).IntVal())
+							require.Equal(t, eDataPoints.At(j).IntValue(), aDataPoints.At(j).IntValue())
 						}
 
 					}
@@ -356,7 +354,7 @@ func generateTestMetrics(tm testMetric) pmetric.Metrics {
 		for _, value := range tm.metricValues[i] {
 			dp := dps.AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
-			dp.SetDoubleVal(value)
+			dp.SetDoubleValue(value)
 		}
 	}
 
@@ -377,7 +375,7 @@ func generateTestMetricsWithIntDatapoint(tm testMetricIntGauge) pmetric.Metrics 
 		for _, value := range tm.metricValues[i] {
 			dp := dps.AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
-			dp.SetIntVal(value)
+			dp.SetIntValue(value)
 		}
 	}
 
@@ -393,7 +391,7 @@ func getOutputForIntGaugeTest() pmetric.Metrics {
 	doubleMetric := ilm.AppendEmpty()
 	doubleMetric.SetName("metric_calculated")
 	neweDoubleDataPoint := doubleMetric.SetEmptyGauge().DataPoints().AppendEmpty()
-	neweDoubleDataPoint.SetDoubleVal(105)
+	neweDoubleDataPoint.SetDoubleValue(105)
 
 	return intGaugeOutputMetrics
 }

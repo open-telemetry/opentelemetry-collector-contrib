@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,7 +65,9 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	client.DefaultTransport().TLSClientConfig = tlsCfg
+	if tlsCfg != nil {
+		client.DefaultTransport().TLSClientConfig = tlsCfg
+	}
 	user := url.UserPassword(vc.cfg.Username, vc.cfg.Password)
 	err = client.Login(ctx, user)
 	if err != nil {
@@ -101,7 +103,7 @@ func (vc *vcenterClient) Clusters(ctx context.Context, datacenter *object.Datace
 	vc.finder = vc.finder.SetDatacenter(datacenter)
 	clusters, err := vc.finder.ClusterComputeResourceList(ctx, "*")
 	if err != nil {
-		return []*object.ClusterComputeResource{}, err
+		return []*object.ClusterComputeResource{}, fmt.Errorf("unable to get cluster lists: %w", err)
 	}
 	return clusters, nil
 }
@@ -118,7 +120,7 @@ func (vc *vcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourceP
 func (vc *vcenterClient) VMs(ctx context.Context) ([]*object.VirtualMachine, error) {
 	vms, err := vc.finder.VirtualMachineList(ctx, "*")
 	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve resource pools: %w", err)
+		return nil, fmt.Errorf("unable to retrieve vms: %w", err)
 	}
 	return vms, err
 }

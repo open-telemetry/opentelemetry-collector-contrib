@@ -34,9 +34,9 @@ func NewInputConfig(operatorID, operatorType string) InputConfig {
 
 // InputConfig provides a basic implementation of an input operator config.
 type InputConfig struct {
-	AttributerConfig `mapstructure:",squash" yaml:",inline"`
-	IdentifierConfig `mapstructure:",squash" yaml:",inline"`
-	WriterConfig     `mapstructure:",squash" yaml:",inline"`
+	AttributerConfig `mapstructure:",squash"`
+	IdentifierConfig `mapstructure:",squash"`
+	WriterConfig     `mapstructure:",squash"`
 }
 
 // Build will build a base producer.

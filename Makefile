@@ -3,6 +3,8 @@ include ./Makefile.Common
 RUN_CONFIG?=local/config.yaml
 CMD?=
 OTEL_VERSION=main
+OTEL_RC_VERSION=main
+OTEL_STABLE_VERSION=main
 
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
@@ -15,7 +17,7 @@ GROUP ?= all
 FOR_GROUP_TARGET=for-$(GROUP)-target
 
 FIND_MOD_ARGS=-type f -name "go.mod"
-TO_MOD_DIR=dirname {} \; | sort | egrep  '^./'
+TO_MOD_DIR=dirname {} \; | sort | grep -E '^./'
 EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path "./exporter/*" -not -path "./extension/*"
 EX_INTERNAL=-not -path "./internal/*"
 
@@ -56,14 +58,14 @@ all-groups:
 	@echo "\nother: $(OTHER_MODS)"
 
 .PHONY: all
-all: install-tools all-common gotest otelcontribcol otelcontribcol-unstable
+all: install-tools all-common goporto multimod-verify gotest otelcontribcol
 
 .PHONY: all-common
 all-common:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="common"
 
 .PHONY: e2e-test
-e2e-test: otelcontribcol otelcontribcol-unstable otelcontribcol-testbed
+e2e-test: otelcontribcol oteltestbedcol
 	$(MAKE) -C testbed run-tests
 
 .PHONY: unit-tests-with-cover
@@ -102,13 +104,9 @@ gofmt:
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
-.PHONY: goimpi
-goimpi:
-	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="impi"
-
 .PHONY: goporto
-goporto:
-	porto -w --include-internal --skip-dirs "^cmd$$" ./
+goporto: $(PORTO)
+	$(PORTO) -w --include-internal --skip-dirs "^cmd$$" ./
 
 .PHONY: for-all
 for-all:
@@ -120,35 +118,16 @@ for-all:
 	 	$${CMD} ); \
 	done
 
-.PHONY: add-tag
-add-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Adding tag ${TAG}"
-	@git tag -a ${TAG} -s -m "Version ${TAG}"
-	@set -e; for dir in $(NONROOT_MODS); do \
-	  (echo Adding tag "$${dir:2}/$${TAG}" && \
-	 	git tag -a "$${dir:2}/$${TAG}" -s -m "Version ${dir:2}/${TAG}" ); \
-	done
-
-.PHONY: push-tag
-push-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Pushing tag ${TAG}"
-	@git push git@github.com:open-telemetry/opentelemetry-collector-contrib.git ${TAG}
-	@set -e; for dir in $(NONROOT_MODS); do \
-	  (echo Pushing tag "$${dir:2}/$${TAG}" && \
-	 	git push git@github.com:open-telemetry/opentelemetry-collector-contrib.git "$${dir:2}/$${TAG}"); \
-	done
-
-.PHONY: delete-tag
-delete-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Deleting tag ${TAG}"
-	@git tag -d ${TAG}
-	@set -e; for dir in $(NONROOT_MODS); do \
-	  (echo Deleting tag "$${dir:2}/$${TAG}" && \
-	 	git tag -d "$${dir:2}/$${TAG}" ); \
-	done
+COMMIT?=HEAD
+MODSET?=contrib-core
+REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
+.PHONY: push-tags
+push-tags: $(MULITMOD) 
+	$(MULITMOD) verify
+	set -e; for tag in `$(MULITMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+		echo "pushing tag $${tag}"; \
+		git push ${REMOTE} $${tag}; \
+	done;
 
 DEPENDABOT_PATH=".github/dependabot.yml"
 .PHONY: gendependabot
@@ -220,25 +199,9 @@ for-other-target: $(OTHER_MODS)
 all-pwd:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="pwd"
 
-TOOLS_MOD_DIR := ./internal/tools
-.PHONY: install-tools
-install-tools:
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/client9/misspell/cmd/misspell
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/google/addlicense
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jstemmer/go-junit-report
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/pavius/impi/cmd/impi
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/checkdoc
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/issuegenerator
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/tools/cmd/goimports
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/multimod
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jcchavezs/porto/cmd/porto
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/crosslink
-
 .PHONY: run
 run:
-	GO111MODULE=on $(GOCMD) run --race ./cmd/otelcontribcol/... --config ${RUN_CONFIG} ${RUN_ARGS}
+	cd ./cmd/otelcontribcol && GO111MODULE=on $(GOCMD) run --race . --config ../../${RUN_CONFIG} ${RUN_ARGS}
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
@@ -262,44 +225,57 @@ generate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
-.PHONY: chlog-install
-chlog-install:
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/chloggen
+.PHONY: mdatagen-test
+mdatagen-test:
+	cd cmd/mdatagen && $(GOCMD) install .
+	cd cmd/mdatagen && $(GOCMD) generate ./...
+	cd cmd/mdatagen && $(GOCMD) test ./...
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
-chlog-new: chlog-install
-	chloggen new -filename $(FILENAME)
+chlog-new: $(CHLOGGEN)
+	$(CHLOGGEN) new --filename $(FILENAME)
 
 .PHONY: chlog-validate
-chlog-validate: chlog-install
-	chloggen validate
+chlog-validate: $(CHLOGGEN)
+	$(CHLOGGEN) validate
 
 .PHONY: chlog-preview
-chlog-preview: chlog-install
-	chloggen update -dry
+chlog-preview: $(CHLOGGEN)
+	$(CHLOGGEN) update --dry
 
 .PHONY: chlog-update
-chlog-update: chlog-install
-	chloggen update -version $(VERSION)
+chlog-update: $(CHLOGGEN)
+	$(CHLOGGEN) update --version $(VERSION)
+
+.PHONY: genotelcontribcol
+genotelcontribcol: $(BUILDER)
+	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
+	$(MAKE) -C cmd/otelcontribcol fmt
+
+.PHONY: otelcontribcolbuilder
+otelcontribcolbuilder: $(BUILDER)
+	file $(BUILDER)
+	mkdir -p ./dist
+	$(BUILDER) --skip-compilation --config ./builder/lumigo-builder-config.yaml
+	cd ./dist/ && GOOS=$(go_os) GOARCH=$(go_arch) $(GOCMD) build -ldflags="-s -w" -trimpath -o "./otelcontribcol_$(go_os)_$(go_arch)"
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
-	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcontribcol
+	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
 
-# Build the Collector executable, including unstable functionality.
-.PHONY: otelcontribcol-unstable
-otelcontribcol-unstable:
-	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_unstable_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),enable_unstable ./cmd/otelcontribcol
+.PHONY: genoteltestbedcol
+genoteltestbedcol: $(BUILDER)
+	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml --output-path cmd/oteltestbedcol
+	$(MAKE) -C cmd/oteltestbedcol fmt
 
 # Build the Collector executable, with only components used in testbed.
-.PHONY: otelcontribcol-testbed
-otelcontribcol-testbed:
-	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_testbed_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),testbed ./cmd/otelcontribcol
+.PHONY: oteltestbedcol
+oteltestbedcol:
+	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
 
 .PHONY: update-dep
 update-dep:
@@ -308,7 +284,7 @@ update-dep:
 
 .PHONY: update-otel
 update-otel:
-	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION)
+	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION) RC_VERSION=$(OTEL_RC_VERSION) STABLE_VERSION=$(OTEL_STABLE_VERSION)
 
 .PHONY: otel-from-tree
 otel-from-tree:
@@ -341,8 +317,8 @@ build-examples:
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
-checkdoc:
-	checkdoc --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
+checkdoc: $(CHECKDOC)
+	$(CHECKDOC) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
 
 .PHONY: all-checklinks
 all-checklinks:
@@ -369,18 +345,24 @@ certs:
 	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
 
 .PHONY: multimod-verify
-multimod-verify: install-tools
+multimod-verify: $(MULITMOD)
 	@echo "Validating versions.yaml"
-	multimod verify
+	$(MULITMOD) verify
 
 .PHONY: multimod-prerelease
-multimod-prerelease: install-tools
-	multimod prerelease -v ./versions.yaml -m contrib-base
+multimod-prerelease: $(MULITMOD)
+	$(MULITMOD) prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
+	$(MAKE) gotidy
+
+.PHONY: multimod-sync
+multimod-sync: $(MULITMOD)
+	$(MULITMOD) sync -a=true -s=true -o ../opentelemetry-collector
+	$(MAKE) gotidy
 
 .PHONY: crosslink
-crosslink: install-tools
+crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
-	crosslink --root=$(shell pwd)
+	$(CROSSLINK) --root=$(shell pwd)
 
 .PHONY: clean
 clean:
@@ -389,30 +371,18 @@ clean:
 	find . -type f -name 'coverage.html' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
+	find . -type f -name 'foresight-test-report.txt' -delete
 
 .PHONY: genconfigdocs
 genconfigdocs:
 	cd cmd/configschema && $(GOCMD) run ./docsgen all
 
-.PHONY: generate-all-labels
-generate-all-labels:
-	$(MAKE) generate-labels TYPE="cmd" COLOR="#483C32"
-	$(MAKE) generate-labels TYPE="pkg" COLOR="#F9DE22"
-	$(MAKE) generate-labels TYPE="extension" COLOR="#FF794D"
-	$(MAKE) generate-labels TYPE="receiver" COLOR="#E91B7B"
-	$(MAKE) generate-labels TYPE="processor" COLOR="#800080"
-	$(MAKE) generate-labels TYPE="exporter" COLOR="#50C878"
-
-.PHONY: generate-labels
-generate-labels:
-	if [ -z $${TYPE+x} ] || [ -z $${COLOR+x} ]; then \
-		echo "Must provide a TYPE and COLOR"; \
-		exit 1; \
-	fi; \
-	echo "Generating labels for $${TYPE}" ; \
-	COMPONENTS=$$(find ./$${TYPE} -type d -maxdepth 1 -mindepth 1 -exec basename \{\} \;); \
-	for comp in $${COMPONENTS}; do \
-		NAME=$${comp//"$${TYPE}"}; \
-		gh label create "$${TYPE}/$${NAME}" -c "$${COLOR}"; \
-	done; \
-	exit 0
+.PHONY: generate-gh-issue-templates
+generate-gh-issue-templates:
+	for FILE in bug_report feature_request other; do \
+		YAML_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml"; \
+		TMP_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml.tmp"; \
+		cat "$${YAML_FILE}" > "$${TMP_FILE}"; \
+	 	FILE="$${TMP_FILE}" ./.github/workflows/scripts/add-component-options.sh > "$${YAML_FILE}"; \
+		rm "$${TMP_FILE}"; \
+	done

@@ -66,9 +66,9 @@ func SkywalkingToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
 		swTagsToInternalResource(span, rs)
 	}
 
-	rs.Attributes().PutString(conventions.AttributeServiceName, segment.GetService())
-	rs.Attributes().PutString(conventions.AttributeServiceInstanceID, segment.GetServiceInstance())
-	rs.Attributes().PutString(AttributeSkywalkingTraceID, segment.GetTraceId())
+	rs.Attributes().PutStr(conventions.AttributeServiceName, segment.GetService())
+	rs.Attributes().PutStr(conventions.AttributeServiceInstanceID, segment.GetServiceInstance())
+	rs.Attributes().PutStr(AttributeSkywalkingTraceID, segment.GetTraceId())
 
 	il := resourceSpan.ScopeSpans().AppendEmpty()
 	swSpansToSpanSlice(segment.GetTraceId(), segment.GetTraceSegmentId(), swSpans, il.Spans())
@@ -92,7 +92,7 @@ func swTagsToInternalResource(span *agentV3.SpanObject, dest pcommon.Resource) {
 	for _, tag := range tags {
 		otKey, ok := otSpanTagsMapping[tag.Key]
 		if ok {
-			attrs.PutString(otKey, tag.Value)
+			attrs.PutStr(otKey, tag.Value)
 		}
 	}
 }
@@ -134,7 +134,7 @@ func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, de
 		attrs.Clear()
 	}
 
-	attrs.PutString(AttributeSkywalkingSegmentID, segmentID)
+	attrs.PutStr(AttributeSkywalkingSegmentID, segmentID)
 	setSwSpanIDToAttributes(span, attrs)
 	setInternalSpanStatus(span, dest.Status())
 
@@ -171,7 +171,7 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest ptrace.SpanL
 		link := dest.AppendEmpty()
 		link.SetTraceID(swTraceIDToTraceID(ref.TraceId))
 		link.SetSpanID(segmentIDToSpanID(ref.ParentTraceSegmentId, uint32(ref.ParentSpanId)))
-		link.TraceStateStruct().FromRaw("")
+		link.TraceState().FromRaw("")
 		kvParis := []*common.KeyStringValuePair{
 			{
 				Key:   AttributeParentService,
@@ -210,7 +210,7 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest ptrace.SpanL
 	}
 }
 
-func setInternalSpanStatus(span *agentV3.SpanObject, dest ptrace.SpanStatus) {
+func setInternalSpanStatus(span *agentV3.SpanObject, dest ptrace.Status) {
 	if span.GetIsError() {
 		dest.SetCode(ptrace.StatusCodeError)
 		dest.SetMessage("ERROR")
@@ -260,7 +260,7 @@ func swKvPairsToInternalAttributes(pairs []*common.KeyStringValuePair, dest pcom
 	}
 
 	for _, pair := range pairs {
-		dest.PutString(pair.Key, pair.Value)
+		dest.PutStr(pair.Key, pair.Value)
 	}
 }
 

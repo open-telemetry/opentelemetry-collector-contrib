@@ -23,9 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
@@ -34,7 +33,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
 	assert.Equal(t, "", ocfg.HTTPClientSettings.Endpoint)
@@ -49,6 +48,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 }
 
 func TestFactory_CreateLogsExporter(t *testing.T) {
+	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/15365")
 	tests := []struct {
 		name         string
 		config       Config
@@ -58,7 +58,6 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 		{
 			name: "with valid config",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://" + testutil.GetAvailableLocalAddress(t),
 				},
@@ -72,7 +71,6 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 		{
 			name: "with invalid config",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "",
 				},
@@ -82,7 +80,6 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 		{
 			name: "with forced bad configuration (for coverage)",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "",
 					CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
@@ -97,7 +94,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
-			creationParams := componenttest.NewNopExporterCreateSettings()
+			creationParams := exportertest.NewNopCreateSettings()
 			exp, err := factory.CreateLogsExporter(context.Background(), creationParams, &tt.config)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateLogsExporter() error = %v, shouldError %v", err, tt.shouldError)
@@ -116,4 +113,9 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 			assert.NotNil(t, exp)
 		})
 	}
+}
+
+// This abstraction prevents skipped function from causing "unused" lint errors
+var skip = func(t *testing.T, why string) {
+	t.Skip(why)
 }

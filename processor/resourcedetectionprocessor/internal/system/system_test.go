@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
@@ -81,7 +81,7 @@ func TestNewDetector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detector, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), tt.cfg)
+			detector, err := NewDetector(processortest.NewNopCreateSettings(), tt.cfg)
 			assert.NotNil(t, detector)
 			assert.NoError(t, err)
 		})
@@ -98,15 +98,13 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)
-	res.Attributes().Sort()
 
-	expected := internal.NewResource(map[string]interface{}{
+	expected := map[string]any{
 		conventions.AttributeHostName: "fqdn",
 		conventions.AttributeOSType:   "darwin",
-	})
-	expected.Attributes().Sort()
+	}
 
-	assert.Equal(t, expected, res)
+	assert.Equal(t, expected, res.Attributes().AsRaw())
 
 }
 
@@ -121,15 +119,13 @@ func TestFallbackHostname(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mdHostname.AssertExpectations(t)
-	res.Attributes().Sort()
 
-	expected := internal.NewResource(map[string]interface{}{
+	expected := map[string]any{
 		conventions.AttributeHostName: "hostname",
 		conventions.AttributeOSType:   "darwin",
-	})
-	expected.Attributes().Sort()
+	}
 
-	assert.Equal(t, expected, res)
+	assert.Equal(t, expected, res.Attributes().AsRaw())
 }
 
 func TestUseHostname(t *testing.T) {
@@ -142,15 +138,13 @@ func TestUseHostname(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mdHostname.AssertExpectations(t)
-	res.Attributes().Sort()
 
-	expected := internal.NewResource(map[string]interface{}{
+	expected := map[string]any{
 		conventions.AttributeHostName: "hostname",
 		conventions.AttributeOSType:   "darwin",
-	})
-	expected.Attributes().Sort()
+	}
 
-	assert.Equal(t, expected, res)
+	assert.Equal(t, expected, res.Attributes().AsRaw())
 }
 
 func TestDetectError(t *testing.T) {

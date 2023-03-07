@@ -394,14 +394,14 @@ func TestOcSameProcessAsParentSpanToInternal(t *testing.T) {
 	v, ok := span.Attributes().Get(occonventions.AttributeSameProcessAsParentSpan)
 	assert.True(t, ok)
 	assert.EqualValues(t, pcommon.ValueTypeBool, v.Type())
-	assert.False(t, v.BoolVal())
+	assert.False(t, v.Bool())
 
 	ocSameProcessAsParentSpanToInternal(wrapperspb.Bool(true), span)
 	assert.Equal(t, 1, span.Attributes().Len())
 	v, ok = span.Attributes().Get(occonventions.AttributeSameProcessAsParentSpan)
 	assert.True(t, ok)
 	assert.EqualValues(t, pcommon.ValueTypeBool, v.Type())
-	assert.True(t, v.BoolVal())
+	assert.True(t, v.Bool())
 }
 
 func BenchmarkSpansWithAttributesOCToInternal(b *testing.B) {

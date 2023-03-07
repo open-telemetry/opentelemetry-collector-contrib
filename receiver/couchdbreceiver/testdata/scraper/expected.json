@@ -26,7 +26,7 @@
                      "description": "The number of open databases.",
                      "name": "couchdb.database.open",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "36",
@@ -41,7 +41,7 @@
                      "description": "The number of database operations.",
                      "name": "couchdb.database.operations",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "38",
@@ -78,7 +78,7 @@
                      "description": "The number of open file descriptors.",
                      "name": "couchdb.file_descriptor.open",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "37",
@@ -93,7 +93,7 @@
                      "description": "The number of bulk requests.",
                      "name": "couchdb.httpd.bulk_requests",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2",
@@ -109,7 +109,7 @@
                      "description": "The number of HTTP requests by method.",
                      "name": "couchdb.httpd.requests",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "3",
@@ -211,7 +211,7 @@
                      "description": "The number of each HTTP status code.",
                      "name": "couchdb.httpd.responses",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "10",
@@ -534,7 +534,7 @@
                      "description": "The number of views read.",
                      "name": "couchdb.httpd.views",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "34",

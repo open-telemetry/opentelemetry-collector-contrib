@@ -16,14 +16,11 @@ package file
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -40,11 +37,8 @@ func newDefaultConfig(tempDir string) *Config {
 	return cfg
 }
 
-func newTestFileOperator(t *testing.T, cfgMod func(*Config), outMod func(*testutil.FakeOutput)) (*Input, chan *entry.Entry, string) {
+func newTestFileOperator(t *testing.T, cfgMod func(*Config)) (*Input, chan *entry.Entry, string) {
 	fakeOutput := testutil.NewFakeOutput(t)
-	if outMod != nil {
-		outMod(fakeOutput)
-	}
 
 	tempDir := t.TempDir()
 
@@ -72,33 +66,11 @@ func openTemp(t testing.TB, tempDir string) *os.File {
 	return openTempWithPattern(t, tempDir, "")
 }
 
-func reopenTemp(t testing.TB, name string) *os.File {
-	return openTempWithPattern(t, filepath.Dir(name), filepath.Base(name))
-}
-
 func openTempWithPattern(t testing.TB, tempDir, pattern string) *os.File {
 	file, err := os.CreateTemp(tempDir, pattern)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = file.Close() })
 	return file
-}
-
-func getRotatingLogger(t testing.TB, tempDir string, maxLines, maxBackups int, copyTruncate, sequential bool) *log.Logger {
-	file, err := os.CreateTemp(tempDir, "")
-	require.NoError(t, err)
-	require.NoError(t, file.Close()) // will be managed by rotator
-
-	rotator := nanojack.Logger{
-		Filename:     file.Name(),
-		MaxLines:     maxLines,
-		MaxBackups:   maxBackups,
-		CopyTruncate: copyTruncate,
-		Sequential:   sequential,
-	}
-
-	t.Cleanup(func() { _ = rotator.Close() })
-
-	return log.New(&rotator, "", 0)
 }
 
 func writeString(t testing.TB, file *os.File, s string) {

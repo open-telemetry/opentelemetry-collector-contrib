@@ -47,7 +47,7 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a uri parser operator.
 type Config struct {
-	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
+	helper.ParserConfig `mapstructure:",squash"`
 }
 
 // Build will build a uri parser operator.

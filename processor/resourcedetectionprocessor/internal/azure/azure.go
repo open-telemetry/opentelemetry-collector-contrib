@@ -17,8 +17,8 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
@@ -40,7 +40,7 @@ type Detector struct {
 }
 
 // NewDetector creates a new Azure metadata detector
-func NewDetector(p component.ProcessorCreateSettings, cfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.CreateSettings, cfg internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{
 		provider: azure.NewProvider(),
 		logger:   p.Logger,
@@ -59,18 +59,18 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return res, "", nil
 	}
 
-	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-	attrs.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
-	attrs.PutString(conventions.AttributeHostName, compute.Name)
-	attrs.PutString(conventions.AttributeCloudRegion, compute.Location)
-	attrs.PutString(conventions.AttributeHostID, compute.VMID)
-	attrs.PutString(conventions.AttributeCloudAccountID, compute.SubscriptionID)
+	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
+	attrs.PutStr(conventions.AttributeHostName, compute.Name)
+	attrs.PutStr(conventions.AttributeCloudRegion, compute.Location)
+	attrs.PutStr(conventions.AttributeHostID, compute.VMID)
+	attrs.PutStr(conventions.AttributeCloudAccountID, compute.SubscriptionID)
 	// Also save compute.Name in "azure.vm.name" as host.id (AttributeHostName) is
 	// used by system detector.
-	attrs.PutString("azure.vm.name", compute.Name)
-	attrs.PutString("azure.vm.size", compute.VMSize)
-	attrs.PutString("azure.vm.scaleset.name", compute.VMScaleSetName)
-	attrs.PutString("azure.resourcegroup.name", compute.ResourceGroupName)
+	attrs.PutStr("azure.vm.name", compute.Name)
+	attrs.PutStr("azure.vm.size", compute.VMSize)
+	attrs.PutStr("azure.vm.scaleset.name", compute.VMScaleSetName)
+	attrs.PutStr("azure.resourcegroup.name", compute.ResourceGroupName)
 
 	return res, conventions.SchemaURL, nil
 }

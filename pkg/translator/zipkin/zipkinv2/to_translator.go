@@ -127,7 +127,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	dest.SetTraceID(idutils.UInt64ToTraceID(zspan.TraceID.High, zspan.TraceID.Low))
 	dest.SetSpanID(idutils.UInt64ToSpanID(uint64(zspan.ID)))
 	if value, ok := tags[tracetranslator.TagW3CTraceState]; ok {
-		dest.TraceStateStruct().FromRaw(value)
+		dest.TraceState().FromRaw(value)
 		delete(tags, tracetranslator.TagW3CTraceState)
 	}
 	parentID := zspan.ParentID
@@ -144,7 +144,6 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	}
 
 	attrs := dest.Attributes()
-	attrs.Clear()
 	attrs.EnsureCapacity(len(tags))
 	if err := zTagsToInternalAttrs(zspan, tags, attrs, parseStringTags); err != nil {
 		return err
@@ -156,7 +155,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	return err
 }
 
-func populateSpanStatus(tags map[string]string, status ptrace.SpanStatus) {
+func populateSpanStatus(tags map[string]string, status ptrace.Status) {
 	if value, ok := tags[conventions.OtelStatusCode]; ok {
 		status.SetCode(ptrace.StatusCode(statusCodeValue[value]))
 		delete(tags, conventions.OtelStatusCode)
@@ -227,7 +226,7 @@ func zTagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 		}
 		link.SetSpanID(rawSpan)
 
-		link.TraceStateStruct().FromRaw(parts[2])
+		link.TraceState().FromRaw(parts[2])
 
 		var jsonStr string
 		if partCnt == 5 {
@@ -293,7 +292,7 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events ptrace.SpanEventSli
 func jsonMapToAttributeMap(attrs map[string]interface{}, dest pcommon.Map) error {
 	for key, val := range attrs {
 		if s, ok := val.(string); ok {
-			dest.PutString(key, s)
+			dest.PutStr(key, s)
 		} else if d, ok := val.(float64); ok {
 			if math.Mod(d, 1.0) == 0.0 {
 				dest.PutInt(key, int64(d))
@@ -311,10 +310,10 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 	parseErr := tagsToAttributeMap(tags, dest, parseStringTags)
 	if zspan.LocalEndpoint != nil {
 		if zspan.LocalEndpoint.IPv4 != nil {
-			dest.PutString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv4.String())
+			dest.PutStr(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv4.String())
 		}
 		if zspan.LocalEndpoint.IPv6 != nil {
-			dest.PutString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv6.String())
+			dest.PutStr(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv6.String())
 		}
 		if zspan.LocalEndpoint.Port > 0 {
 			dest.PutInt(conventions.AttributeNetHostPort, int64(zspan.LocalEndpoint.Port))
@@ -322,13 +321,13 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 	}
 	if zspan.RemoteEndpoint != nil {
 		if zspan.RemoteEndpoint.ServiceName != "" {
-			dest.PutString(conventions.AttributePeerService, zspan.RemoteEndpoint.ServiceName)
+			dest.PutStr(conventions.AttributePeerService, zspan.RemoteEndpoint.ServiceName)
 		}
 		if zspan.RemoteEndpoint.IPv4 != nil {
-			dest.PutString(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv4.String())
+			dest.PutStr(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv4.String())
 		}
 		if zspan.RemoteEndpoint.IPv6 != nil {
-			dest.PutString(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv6.String())
+			dest.PutStr(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv6.String())
 		}
 		if zspan.RemoteEndpoint.Port > 0 {
 			dest.PutInt(conventions.AttributeNetPeerPort, int64(zspan.RemoteEndpoint.Port))
@@ -356,10 +355,10 @@ func tagsToAttributeMap(tags map[string]string, dest pcommon.Map, parseStringTag
 				bValue, _ := strconv.ParseBool(val)
 				dest.PutBool(key, bValue)
 			default:
-				dest.PutString(key, val)
+				dest.PutStr(key, val)
 			}
 		} else {
-			dest.PutString(key, val)
+			dest.PutStr(key, val)
 		}
 	}
 	return parseErr
@@ -371,15 +370,15 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 	}
 
 	if len(tags) == 0 {
-		resource.Attributes().PutString(conventions.AttributeServiceName, localServiceName)
+		resource.Attributes().PutStr(conventions.AttributeServiceName, localServiceName)
 		return
 	}
 
 	snSource := tags[zipkin.TagServiceNameSource]
 	if snSource == "" {
-		resource.Attributes().PutString(conventions.AttributeServiceName, localServiceName)
+		resource.Attributes().PutStr(conventions.AttributeServiceName, localServiceName)
 	} else {
-		resource.Attributes().PutString(snSource, localServiceName)
+		resource.Attributes().PutStr(snSource, localServiceName)
 	}
 	delete(tags, zipkin.TagServiceNameSource)
 
@@ -388,7 +387,7 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 			continue
 		}
 		if value, ok := tags[key]; ok {
-			resource.Attributes().PutString(key, value)
+			resource.Attributes().PutStr(key, value)
 			delete(tags, key)
 		}
 	}

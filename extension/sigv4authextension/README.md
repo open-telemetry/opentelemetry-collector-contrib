@@ -15,6 +15,7 @@ The configuration fields are as follows:
   * `arn`: The Amazon Resource Name (ARN) of a role to assume
   * `session_name`: **Optional**. The name of a role session
   * `sts_region`: The AWS region where STS is used to assumed the configured role
+    * Note that if a role is intended to be assumed, and `sts_region` is not provided, then `sts_region` will default to the value for `region` if `region` is provided
 * `region`: **Optional**. The AWS region for the service you are exporting to for AWS Sigv4. This is differentiated from `sts_region` to handle cross region authentication
     * Note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
     * [List of AWS regions](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html)

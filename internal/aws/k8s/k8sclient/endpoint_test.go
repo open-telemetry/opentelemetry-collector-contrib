@@ -16,7 +16,6 @@ package k8sclient
 
 import (
 	"log"
-	"reflect"
 	"testing"
 	"time"
 
@@ -389,7 +388,7 @@ func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 	}
 	resultMap := client.PodKeyToServiceNames()
 	log.Printf("PodKeyToServiceNames (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 }
 
 func TestEpClient_ServiceNameToPodNum(t *testing.T) {
@@ -405,7 +404,7 @@ func TestEpClient_ServiceNameToPodNum(t *testing.T) {
 	}
 	resultMap := client.ServiceToPodNum()
 	log.Printf("ServiceNameToPodNum (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 	client.shutdown()
 	time.Sleep(2 * time.Millisecond)
 	select {

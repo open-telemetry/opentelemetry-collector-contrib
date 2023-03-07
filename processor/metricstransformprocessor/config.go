@@ -14,10 +14,6 @@
 
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
-import (
-	"go.opentelemetry.io/collector/config"
-)
-
 const (
 	// IncludeFieldName is the mapstructure field name for Include field
 	IncludeFieldName = "include"
@@ -55,7 +51,6 @@ const (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Transform specifies a list of transforms on metrics with each transform focusing on one metric.
 	Transforms []Transform `mapstructure:"transforms"`

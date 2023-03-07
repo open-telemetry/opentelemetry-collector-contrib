@@ -20,16 +20,19 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
@@ -37,11 +40,13 @@ func TestScraper(t *testing.T) {
 	apacheMock := newMockServer(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, component.ValidateConfig(cfg))
 
-	scraper := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
+	require.NoError(t, err)
+	scraper := newApacheScraper(receivertest.NewNopCreateSettings(), cfg, serverName, port)
 
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -50,12 +55,18 @@ func TestScraper(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
+	url, err := url.Parse(apacheMock.URL)
+	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	expectedMetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("apache.server.port", url.Port())
+
+	// The port is random, so we shouldn't check if this value matches.
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), &Config{
+	sc := newApacheScraper(receivertest.NewNopCreateSettings(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.TLSClientSetting{
@@ -64,7 +75,9 @@ func TestScraperFailedStart(t *testing.T) {
 				},
 			},
 		},
-	})
+	},
+		"localhost",
+		"8080")
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
@@ -141,11 +154,13 @@ func TestParseStats(t *testing.T) {
 ReqPerSec: 719.771
 IdleWorkers: 227
 ConnsTotal: 110
+BytesPerSec: 73.12
 		`
 		want := map[string]string{
 			"ReqPerSec":   "719.771",
 			"IdleWorkers": "227",
 			"ConnsTotal":  "110",
+			"BytesPerSec": "73.12",
 		}
 		require.EqualValues(t, want, parseStats(got))
 	})
@@ -153,7 +168,7 @@ ConnsTotal: 110
 
 func TestScraperError(t *testing.T) {
 	t.Run("no client", func(t *testing.T) {
-		sc := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), &Config{})
+		sc := newApacheScraper(receivertest.NewNopCreateSettings(), &Config{}, "", "")
 		sc.httpClient = nil
 
 		_, err := sc.scrape(context.Background())
@@ -172,6 +187,15 @@ Total kBytes: 20910
 BusyWorkers: 13
 IdleWorkers: 227
 ConnsTotal: 110
+CPUChildrenSystem: 0.01
+CPUChildrenUser: 0.02
+CPUSystem: 0.03
+CPUUser: 0.04
+CPULoad: 0.66
+Load1: 0.9
+Load5: 0.4
+Load15: 0.3
+Total Duration: 1501
 Scoreboard: S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................
 `))
 			require.NoError(t, err)

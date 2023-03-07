@@ -1,0 +1,27 @@
+default:
+all_metrics:
+  rabbitmq.consumer.count:
+    enabled: true
+  rabbitmq.message.acknowledged:
+    enabled: true
+  rabbitmq.message.current:
+    enabled: true
+  rabbitmq.message.delivered:
+    enabled: true
+  rabbitmq.message.dropped:
+    enabled: true
+  rabbitmq.message.published:
+    enabled: true
+no_metrics:
+  rabbitmq.consumer.count:
+    enabled: false
+  rabbitmq.message.acknowledged:
+    enabled: false
+  rabbitmq.message.current:
+    enabled: false
+  rabbitmq.message.delivered:
+    enabled: false
+  rabbitmq.message.dropped:
+    enabled: false
+  rabbitmq.message.published:
+    enabled: false

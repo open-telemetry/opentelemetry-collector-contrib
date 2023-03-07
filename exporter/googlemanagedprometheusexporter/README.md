@@ -2,7 +2,7 @@
 
 | Status                   |                       |
 | ------------------------ |-----------------------|
-| Stability                | [alpha](https://github.com/open-telemetry/opentelemetry-collector#alpha) |
+| Stability                | [beta](https://github.com/open-telemetry/opentelemetry-collector#beta) |
 | Supported pipeline types | metrics               |
 | Distributions            | [contrib](https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib)    |
 
@@ -16,7 +16,8 @@ The following configuration options are supported:
 
 - `project` (optional): GCP project identifier.
 - `user_agent` (optional): Override the user agent string sent on requests to Cloud Monitoring (currently only applies to metrics). Specify `{{version}}` to include the application version number. Defaults to `opentelemetry-collector-contrib {{version}}`.
-- `endpoint` (optional): Endpoint where metric data is going to be sent to. Replaces `endpoint`.
+- `metric`(optional): Configuration for sending metrics to Cloud Monitoring.
+  - `endpoint` (optional): Endpoint where metric data is going to be sent to. Replaces `endpoint`.
 - `use_insecure` (optional): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
   - `enabled` (default = true)

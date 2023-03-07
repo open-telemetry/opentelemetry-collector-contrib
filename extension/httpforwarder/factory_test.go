@@ -21,18 +21,18 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
 	expectType := "http_forwarder"
-	require.Equal(t, config.Type(expectType), f.Type())
+	require.Equal(t, component.Type(expectType), f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	require.Equal(t, config.NewComponentID(typeStr), cfg.ID())
 	require.Equal(t, ":6060", cfg.Ingress.Endpoint)
 	require.Equal(t, 10*time.Second, cfg.Egress.Timeout)
 
@@ -63,7 +63,7 @@ func TestFactory(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			e, err := f.CreateExtension(
 				context.Background(),
-				componenttest.NewNopExtensionCreateSettings(),
+				extensiontest.NewNopCreateSettings(),
 				test.config,
 			)
 			if test.wantErr {

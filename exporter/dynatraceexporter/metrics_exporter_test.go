@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -78,7 +79,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intGauge := intGaugeMetric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	nmIntSumMetric := metrics.AppendEmpty()
@@ -86,7 +87,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	nmIntSum := nmIntSumMetric.SetEmptySum()
 	nmIntSumDataPoints := nmIntSum.DataPoints()
 	nmIntSumDataPoint := nmIntSumDataPoints.AppendEmpty()
-	nmIntSumDataPoint.SetIntVal(10)
+	nmIntSumDataPoint.SetIntValue(10)
 	nmIntSumDataPoint.SetTimestamp(testTimestamp)
 
 	mIntSumMetric := metrics.AppendEmpty()
@@ -95,7 +96,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	mIntSum.SetIsMonotonic(true)
 	mIntSumDataPoints := mIntSum.DataPoints()
 	mIntSumDataPoint := mIntSumDataPoints.AppendEmpty()
-	mIntSumDataPoint.SetIntVal(10)
+	mIntSumDataPoint.SetIntValue(10)
 	mIntSumDataPoint.SetTimestamp(testTimestamp)
 
 	doubleGaugeMetric := metrics.AppendEmpty()
@@ -103,7 +104,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleGauge := doubleGaugeMetric.SetEmptyGauge()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
 	doubleGaugeDataPoint := doubleGaugeDataPoints.AppendEmpty()
-	doubleGaugeDataPoint.SetDoubleVal(10.1)
+	doubleGaugeDataPoint.SetDoubleValue(10.1)
 	doubleGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	nmDoubleSumMetric := metrics.AppendEmpty()
@@ -111,7 +112,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	nmDoubleSum := nmDoubleSumMetric.SetEmptySum()
 	nmDoubleSumDataPoints := nmDoubleSum.DataPoints()
 	nmDoubleSumDataPoint := nmDoubleSumDataPoints.AppendEmpty()
-	nmDoubleSumDataPoint.SetDoubleVal(10.1)
+	nmDoubleSumDataPoint.SetDoubleValue(10.1)
 	nmDoubleSumDataPoint.SetTimestamp(testTimestamp)
 
 	mDoubleSumMetric := metrics.AppendEmpty()
@@ -120,7 +121,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	mDoubleSum.SetIsMonotonic(true)
 	mDoubleSumDataPoints := mDoubleSum.DataPoints()
 	mDoubleSumDataPoint := mDoubleSumDataPoints.AppendEmpty()
-	mDoubleSumDataPoint.SetDoubleVal(10.1)
+	mDoubleSumDataPoint.SetDoubleValue(10.1)
 	mDoubleSumDataPoint.SetTimestamp(testTimestamp)
 
 	doubleHistogramMetric := metrics.AppendEmpty()
@@ -133,7 +134,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogramDataPoint.ExplicitBounds().FromRaw([]float64{0, 2, 4, 8})
 	doubleHistogramDataPoint.BucketCounts().FromRaw([]uint64{0, 1, 0, 1, 0})
 	doubleHistogramDataPoint.SetTimestamp(testTimestamp)
-	doubleHistogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	doubleHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 
 	type fields struct {
 		settings component.TelemetrySettings
@@ -198,7 +199,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 func Test_SumMetrics(t *testing.T) {
 	type args struct {
 		monotonic   bool
-		temporality pmetric.MetricAggregationTemporality
+		temporality pmetric.AggregationTemporality
 		valueType   string // either 'double' or 'int'
 	}
 	tests := []struct {
@@ -210,7 +211,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Monotonic Delta sum (int)",
 			args: args{
 				true,
-				pmetric.MetricAggregationTemporalityDelta,
+				pmetric.AggregationTemporalityDelta,
 				"int",
 			},
 			want: []string{
@@ -222,7 +223,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Non-monotonic Delta sum (int)",
 			args: args{
 				false,
-				pmetric.MetricAggregationTemporalityDelta,
+				pmetric.AggregationTemporalityDelta,
 				"int",
 			},
 			want: []string{"nothing sent"},
@@ -231,7 +232,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Monotonic Cumulative sum (int)",
 			args: args{
 				true,
-				pmetric.MetricAggregationTemporalityCumulative,
+				pmetric.AggregationTemporalityCumulative,
 				"int",
 			},
 			want: []string{"prefix.metric_name count,delta=10 1626438600000"},
@@ -240,7 +241,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Non-monotonic Cumulative sum (int)",
 			args: args{
 				false,
-				pmetric.MetricAggregationTemporalityCumulative,
+				pmetric.AggregationTemporalityCumulative,
 				"int",
 			},
 			want: []string{
@@ -252,7 +253,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Monotonic Delta sum (double)",
 			args: args{
 				true,
-				pmetric.MetricAggregationTemporalityDelta,
+				pmetric.AggregationTemporalityDelta,
 				"double",
 			},
 			want: []string{
@@ -264,7 +265,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Non-monotonic Delta sum (double)",
 			args: args{
 				false,
-				pmetric.MetricAggregationTemporalityDelta,
+				pmetric.AggregationTemporalityDelta,
 				"double",
 			},
 			want: []string{"nothing sent"},
@@ -273,7 +274,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Monotonic Cumulative sum (double)",
 			args: args{
 				true,
-				pmetric.MetricAggregationTemporalityCumulative,
+				pmetric.AggregationTemporalityCumulative,
 				"double",
 			},
 			want: []string{"prefix.metric_name count,delta=10.1 1626438600000"},
@@ -282,7 +283,7 @@ func Test_SumMetrics(t *testing.T) {
 			name: "Non-monotonic Cumulative sum (double)",
 			args: args{
 				false,
-				pmetric.MetricAggregationTemporalityCumulative,
+				pmetric.AggregationTemporalityCumulative,
 				"double",
 			},
 			want: []string{
@@ -343,11 +344,11 @@ func Test_SumMetrics(t *testing.T) {
 
 			switch tt.args.valueType {
 			case "int":
-				dataPoint1.SetIntVal(10)
-				dataPoint2.SetIntVal(20)
+				dataPoint1.SetIntValue(10)
+				dataPoint2.SetIntValue(20)
 			case "double":
-				dataPoint1.SetDoubleVal(10.1)
-				dataPoint2.SetDoubleVal(20.2)
+				dataPoint1.SetDoubleValue(10.1)
+				dataPoint2.SetDoubleValue(20.2)
 			default:
 				t.Fatalf("valueType can only be 'int' or 'double' but was '%s'", tt.args.valueType)
 			}
@@ -412,7 +413,7 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	intGauge := metric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	e := &exporter{
@@ -537,6 +538,53 @@ func Test_exporter_send_NotFound(t *testing.T) {
 	}
 }
 
+func Test_exporter_send_TooManyRequests(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte{})
+	}))
+	defer ts.Close()
+
+	e := &exporter{
+		settings: componenttest.NewNopTelemetrySettings(),
+		cfg: &config.Config{
+			APIToken:           "token",
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			Prefix:             "prefix",
+			DefaultDimensions:  map[string]string{},
+		},
+		client: ts.Client(),
+	}
+	err := e.send(context.Background(), []string{""})
+
+	assert.True(t, consumererror.IsPermanent(err), "Expected error to be permanent %v", err)
+	assert.False(t, e.isDisabled, "Expected exporter to not be disabled")
+}
+
+func Test_exporter_send_MiscellaneousErrorCode(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusExpectationFailed)
+		_, _ = w.Write([]byte{})
+	}))
+	defer ts.Close()
+
+	e := &exporter{
+		settings: componenttest.NewNopTelemetrySettings(),
+		cfg: &config.Config{
+			APIToken:           "token",
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			Prefix:             "prefix",
+			DefaultDimensions:  map[string]string{},
+		},
+		client: ts.Client(),
+	}
+	err := e.send(context.Background(), []string{""})
+
+	assert.ErrorContains(t, err, "417 Expectation Failed")
+	assert.True(t, consumererror.IsPermanent(err), "Expected error to be permanent %v", err)
+	assert.False(t, e.isDisabled, "Expected exporter to not be disabled")
+}
+
 func Test_exporter_send_chunking(t *testing.T) {
 	sentChunks := 0
 
@@ -599,7 +647,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	intGauge := intGaugeMetric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 	type fields struct {
 		logger *zap.Logger
@@ -660,7 +708,7 @@ func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
 		},
 	}
 
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
+	exp := newMetricsExporter(exportertest.NewNopCreateSettings(), cfg)
 
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	if err == nil {
@@ -674,7 +722,7 @@ func Test_exporter_new_with_tags(t *testing.T) {
 		DefaultDimensions: map[string]string{"test_tag": "value"},
 	}
 
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
+	exp := newMetricsExporter(exportertest.NewNopCreateSettings(), cfg)
 
 	assert.Equal(t, dimensions.NewNormalizedDimensionList(dimensions.NewDimension("test_tag", "value")), exp.defaultDimensions)
 }
@@ -684,7 +732,7 @@ func Test_exporter_new_with_default_dimensions(t *testing.T) {
 		DefaultDimensions: map[string]string{"test_dimension": "value"},
 	}
 
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
+	exp := newMetricsExporter(exportertest.NewNopCreateSettings(), cfg)
 
 	assert.Equal(t, dimensions.NewNormalizedDimensionList(dimensions.NewDimension("test_dimension", "value")), exp.defaultDimensions)
 }
@@ -695,7 +743,7 @@ func Test_exporter_new_with_default_dimensions_override_tag(t *testing.T) {
 		DefaultDimensions: map[string]string{"from": "default_dimensions"},
 	}
 
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
+	exp := newMetricsExporter(exportertest.NewNopCreateSettings(), cfg)
 
 	assert.Equal(t, dimensions.NewNormalizedDimensionList(dimensions.NewDimension("from", "default_dimensions")), exp.defaultDimensions)
 }
@@ -721,9 +769,9 @@ func Test_LineTooLong(t *testing.T) {
 	intGauge := intGaugeMetric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), &config.Config{DefaultDimensions: dims})
+	exp := newMetricsExporter(exportertest.NewNopCreateSettings(), &config.Config{DefaultDimensions: dims})
 
 	assert.Empty(t, exp.serializeMetrics(md))
 }

@@ -21,8 +21,9 @@ import (
 	"regexp"
 	"strings"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
@@ -31,8 +32,9 @@ import (
 )
 
 var (
-	errUnsetAPIKey = errors.New("api.key is not set")
-	errNoMetadata  = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
+	errUnsetAPIKey   = errors.New("api.key is not set")
+	errNoMetadata    = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
+	errEmptyEndpoint = errors.New("endpoint cannot be empty")
 )
 
 const (
@@ -44,7 +46,7 @@ const (
 type APIConfig struct {
 	// Key is the Datadog API key to associate your Agent's data with your organization.
 	// Create a new API key here: https://app.datadoghq.com/account/settings
-	Key string `mapstructure:"key"`
+	Key configopaque.String `mapstructure:"key"`
 
 	// Site is the site of the Datadog intake to send data to.
 	// The default value is "datadoghq.com".
@@ -242,6 +244,16 @@ type TracesConfig struct {
 	flushInterval float64
 }
 
+// LogsConfig defines logs exporter specific configuration
+type LogsConfig struct {
+	// TCPAddr.Endpoint is the host of the Datadog intake server to send logs to.
+	// If unset, the value is obtained from the Site.
+	confignet.TCPAddr `mapstructure:",squash"`
+
+	// DumpPayloads report whether payloads should be dumped when logging level is debug.
+	DumpPayloads bool `mapstructure:"dump_payloads"`
+}
+
 // TagsConfig defines the tag-related configuration
 // It is embedded in the configuration
 type TagsConfig struct {
@@ -321,7 +333,6 @@ type LimitedHTTPClientSettings struct {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
@@ -339,6 +350,9 @@ type Config struct {
 	// Traces defines the Traces exporter specific configuration
 	Traces TracesConfig `mapstructure:"traces"`
 
+	// Logs defines the Logs exporter specific configuration
+	Logs LogsConfig `mapstructure:"logs"`
+
 	// HostMetadata defines the host metadata specific configuration
 	HostMetadata HostMetadataConfig `mapstructure:"host_metadata"`
 
@@ -352,9 +366,9 @@ type Config struct {
 	OnlyMetadata bool `mapstructure:"only_metadata"`
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
-// Validate the configuration for errors. This is required by config.Exporter.
+// Validate the configuration for errors. This is required by component.Config.
 func (c *Config) Validate() error {
 	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
 		return errNoMetadata
@@ -469,12 +483,12 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 		return err
 	}
 
-	err := configMap.UnmarshalExact(c)
+	err := configMap.Unmarshal(c, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}
 
-	c.API.Key = strings.TrimSpace(c.API.Key)
+	c.API.Key = configopaque.String(strings.TrimSpace(string(c.API.Key)))
 
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {
@@ -483,5 +497,14 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if !configMap.IsSet("traces::endpoint") {
 		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
+	if !configMap.IsSet("logs::endpoint") {
+		c.Logs.TCPAddr.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
+	}
+
+	// Return an error if an endpoint is explicitly set to ""
+	if c.Metrics.TCPAddr.Endpoint == "" || c.Traces.TCPAddr.Endpoint == "" || c.Logs.TCPAddr.Endpoint == "" {
+		return errEmptyEndpoint
+	}
+
 	return nil
 }

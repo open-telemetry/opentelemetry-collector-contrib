@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -30,18 +30,17 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Extension
+		id          component.ID
+		expected    component.Config
 		expectedErr string
 	}{
 		{
-			id:       config.NewComponentID(typeStr),
+			id:       component.NewID(typeStr),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "with-endpoint"),
+			id: component.NewIDWithName(typeStr, "with-endpoint"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://a.valid.url:1234/path",
 				},
@@ -50,15 +49,14 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "with-port-labels"),
+			id: component.NewIDWithName(typeStr, "with-port-labels"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-				PortLabels:        []string{"A_PORT_LABEL", "ANOTHER_PORT_LABEL"},
-				RefreshInterval:   30 * time.Second,
+				PortLabels:      []string{"A_PORT_LABEL", "ANOTHER_PORT_LABEL"},
+				RefreshInterval: 30 * time.Second,
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "invalid"),
+			id:          component.NewIDWithName(typeStr, "invalid"),
 			expectedErr: `failed to parse ecs task metadata endpoint "_:invalid": parse "_:invalid": first path segment in URL cannot contain colon`,
 		},
 	}
@@ -70,12 +68,12 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 			if tt.expectedErr != "" {
-				assert.EqualError(t, cfg.Validate(), tt.expectedErr)
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

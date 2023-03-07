@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -64,6 +64,7 @@ func TestDefaultLogsMarshalers(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
 		"otlp_json",
+		"raw",
 	}
 	marshalers := logsMarshalers()
 	assert.Equal(t, len(expectedEncodings), len(marshalers))
@@ -126,7 +127,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 								"spanId":            "0001020304050607",
 								"parentSpanId":      "08090a0b0c0d0e00",
 								"name":              t.Name(),
-								"kind":              ptrace.SpanKindInternal.String(),
+								"kind":              float64(ptrace.SpanKindInternal),
 								"startTimeUnixNano": fmt.Sprint(now.UnixNano()),
 								"endTimeUnixNano":   fmt.Sprint(now.Add(time.Second).UnixNano()),
 								"status":            map[string]interface{}{},

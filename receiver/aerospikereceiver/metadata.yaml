@@ -3,44 +3,51 @@ name: aerospikereceiver
 resource_attributes:
   aerospike.node.name:
     description: Name of the Aerospike node collected from
+    enabled: true
     type: string
   aerospike.namespace:
     description: Name of the Aerospike namespace
+    enabled: true
     type: string
 
 attributes:
   namespace_component:
-    value: component
+    name_override: component
     description: Individual component of a namespace
+    type: string
     enum:
       - data
       - index
       - set_index
       - secondary_index
   scan_type:
-    value: type
+    name_override: type
     description: Type of scan operation performed on a namespace
+    type: string
     enum:
       - aggregation
       - basic
       - ops_background
       - udf_background
   scan_result:
-    value: result
+    name_override: result
     description: Result of a scan operation performed on a namespace
+    type: string
     enum:
       - abort
       - complete
       - error
   index_type:
-    value: index
+    name_override: index
     description: Type of index the operation was performed on
+    type: string
     enum:
       - primary
       - secondary
   query_type:
-    value: type
+    name_override: type
     description: Type of query operation performed on a namespace
+    type: string
     enum:
       - aggregation
       - basic
@@ -50,24 +57,27 @@ attributes:
       - ops_background
       - udf_background
   query_result:
-    value: result
+    name_override: result
     description: Result of a query operation performed on a namespace
+    type: string
     enum:
       - abort
       - complete
       - error
       - timeout # short_basic queries only
   transaction_type:
-    value: type
+    name_override: type
     description: Type of transaction performed on a namespace
+    type: string
     enum:
       - delete
       - read
       - udf
       - write
   transaction_result:
-    value: result
+    name_override: result
     description: Result of a transaction performed on a namespace
+    type: string
     enum:
       - error
       - filtered_out
@@ -75,15 +85,17 @@ attributes:
       - success
       - timeout
   connection_type:
-    value: type
+    name_override: type
     description: Type of connection to an Aerospike node
+    type: string
     enum:
       - client
       - fabric
       - heartbeat
   connection_op:
-    value: operation
+    name_override: operation
     description: Operation performed with a connection (open or close)
+    type: string
     enum:
       - close
       - open

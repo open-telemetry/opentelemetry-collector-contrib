@@ -2,41 +2,131 @@
 
 # memcachedreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **memcached.bytes** | Current number of bytes used by this server to store items. | By | Gauge(Int) | <ul> </ul> |
-| **memcached.commands** | Commands executed. | {commands} | Sum(Int) | <ul> <li>command</li> </ul> |
-| **memcached.connections.current** | The current number of open connections. | {connections} | Sum(Int) | <ul> </ul> |
-| **memcached.connections.total** | Total number of connections opened since the server started running. | {connections} | Sum(Int) | <ul> </ul> |
-| **memcached.cpu.usage** | Accumulated user and system time. | s | Sum(Double) | <ul> <li>state</li> </ul> |
-| **memcached.current_items** | Number of items currently stored in the cache. | {items} | Sum(Int) | <ul> </ul> |
-| **memcached.evictions** | Cache item evictions. | {evictions} | Sum(Int) | <ul> </ul> |
-| **memcached.network** | Bytes transferred over the network. | by | Sum(Int) | <ul> <li>direction</li> </ul> |
-| **memcached.network.received** | Bytes received over the network. | by | Sum(Int) | <ul> </ul> |
-| **memcached.network.sent** | Bytes sent over the network. | by | Sum(Int) | <ul> </ul> |
-| **memcached.operation_hit_ratio** | Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0. | % | Gauge(Double) | <ul> <li>operation</li> </ul> |
-| **memcached.operations** | Operation counts. | {operations} | Sum(Int) | <ul> <li>type</li> <li>operation</li> </ul> |
-| **memcached.threads** | Number of threads used by the memcached instance. | {threads} | Sum(Int) | <ul> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Metric attributes
+### memcached.bytes
+
+Current number of bytes used by this server to store items.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### memcached.commands
+
+Commands executed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {commands} | Sum | Int | Cumulative | true |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| command | The type of command. | get, set, flush, touch |
-| direction | Direction of data flow. | sent, received |
-| operation | The type of operation. | increment, decrement, get |
-| state | The type of CPU usage. | system, user |
-| type | Result of cache request. | hit, miss |
+| command | The type of command. | Str: ``get``, ``set``, ``flush``, ``touch`` |
+
+### memcached.connections.current
+
+The current number of open connections.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {connections} | Sum | Int | Cumulative | false |
+
+### memcached.connections.total
+
+Total number of connections opened since the server started running.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {connections} | Sum | Int | Cumulative | true |
+
+### memcached.cpu.usage
+
+Accumulated user and system time.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| state | The type of CPU usage. | Str: ``system``, ``user`` |
+
+### memcached.current_items
+
+Number of items currently stored in the cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {items} | Sum | Int | Cumulative | false |
+
+### memcached.evictions
+
+Cache item evictions.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {evictions} | Sum | Int | Cumulative | true |
+
+### memcached.network
+
+Bytes transferred over the network.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| by | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | Direction of data flow. | Str: ``sent``, ``received`` |
+
+### memcached.operation_hit_ratio
+
+Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The type of operation. | Str: ``increment``, ``decrement``, ``get`` |
+
+### memcached.operations
+
+Operation counts.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | Result of cache request. | Str: ``hit``, ``miss`` |
+| operation | The type of operation. | Str: ``increment``, ``decrement``, ``get`` |
+
+### memcached.threads
+
+Number of threads used by the memcached instance.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {threads} | Sum | Int | Cumulative | false |

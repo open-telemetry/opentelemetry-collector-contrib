@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,14 +22,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 func TestCreateMetricsReceiver(t *testing.T) {
 	t.Parallel()
 
-	recv, err := createMetricsReceiver(context.Background(), component.ReceiverCreateSettings{}, &Config{}, &consumertest.MetricsSink{})
+	recv, err := createMetricsReceiver(context.Background(), receiver.CreateSettings{}, &Config{}, &consumertest.MetricsSink{})
 	require.Nil(t, recv)
 	require.ErrorIs(t, err, errReceiverNotSupported)
 }

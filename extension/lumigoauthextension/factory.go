@@ -16,9 +16,10 @@ package lumigoauthextension // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 const (
@@ -26,22 +27,32 @@ const (
 )
 
 // NewFactory creates a factory for the static bearer token Authenticator extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelBeta,
+		component.StabilityLevelStable,
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		Type:  Server,
+		Token: "",
 	}
 }
 
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 	// check if config is a server auth(Htpasswd should be set)
-	return newServerAuthExtension(cfg.(*Config), set.Logger)
+	switch cfg.(*Config).Type {
+	case Default:
+		fallthrough
+	case Server:
+		return newServerAuthExtension(cfg.(*Config), set.Logger)
+	case Client:
+		return newClientAuthExtension(cfg.(*Config), set.Logger)
+	default:
+		return nil, fmt.Errorf("unrecognized type: '%s'", cfg.(*Config).Type)
+	}
 }

@@ -122,18 +122,24 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() {
-	c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
 	})
+	if err != nil {
+		c.logger.Error("error adding event handler to pod informer", zap.Error(err))
+	}
 	go c.informer.Run(c.stopCh)
 
-	c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
 		UpdateFunc: c.handleNamespaceUpdate,
 		DeleteFunc: c.handleNamespaceDelete,
 	})
+	if err != nil {
+		c.logger.Error("error adding event handler to namespace informer", zap.Error(err))
+	}
 	go c.namespaceInformer.Run(c.stopCh)
 }
 
@@ -527,11 +533,11 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	for _, id := range c.getIdentifiersFromAssoc(newPod) {
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
 		// and only replace old pod if scheduled time of new pod is newer or equal.
-		// This should fix the case where scheduler has assigned the same attribtues (like IP address)
+		// This should fix the case where scheduler has assigned the same attributes (like IP address)
 		// to a new pod but update event for the old pod came in later.
 		if p, ok := c.Pods[id]; ok {
 			if pod.Status.StartTime.Before(p.StartTime) {
-				return
+				continue
 			}
 		}
 		c.Pods[id] = newPod

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -87,7 +87,6 @@ type spanWithTimeAndDuration struct {
 }
 
 func newTraceWithSpans(spans []spanWithTimeAndDuration) *TraceData {
-	var traceBatches []ptrace.Traces
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
@@ -100,8 +99,7 @@ func newTraceWithSpans(spans []spanWithTimeAndDuration) *TraceData {
 		span.SetEndTimestamp(pcommon.NewTimestampFromTime(s.StartTime.Add(s.Duration)))
 	}
 
-	traceBatches = append(traceBatches, traces)
 	return &TraceData{
-		ReceivedBatches: traceBatches,
+		ReceivedBatches: traces,
 	}
 }

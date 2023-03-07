@@ -15,8 +15,7 @@
 package attraction // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 
 import (
-	// #nosec
-	"crypto/sha1"
+	"crypto/sha1" // #nosec
 	"encoding/binary"
 	"encoding/hex"
 	"math"
@@ -41,32 +40,32 @@ var (
 func sha1Hasher(attr pcommon.Value) {
 	var val []byte
 	switch attr.Type() {
-	case pcommon.ValueTypeString:
-		val = []byte(attr.StringVal())
+	case pcommon.ValueTypeStr:
+		val = []byte(attr.Str())
 	case pcommon.ValueTypeBool:
-		if attr.BoolVal() {
+		if attr.Bool() {
 			val = byteTrue[:]
 		} else {
 			val = byteFalse[:]
 		}
 	case pcommon.ValueTypeInt:
 		val = make([]byte, int64ByteSize)
-		binary.LittleEndian.PutUint64(val, uint64(attr.IntVal()))
+		binary.LittleEndian.PutUint64(val, uint64(attr.Int()))
 	case pcommon.ValueTypeDouble:
 		val = make([]byte, float64ByteSize)
-		binary.LittleEndian.PutUint64(val, math.Float64bits(attr.DoubleVal()))
+		binary.LittleEndian.PutUint64(val, math.Float64bits(attr.Double()))
 	}
 
 	var hashed string
 	if len(val) > 0 {
 		// #nosec
 		h := sha1.New()
-		h.Write(val) // nolint: errcheck
+		_, _ = h.Write(val)
 		val = h.Sum(nil)
 		hashedBytes := make([]byte, hex.EncodedLen(len(val)))
 		hex.Encode(hashedBytes, val)
 		hashed = string(hashedBytes)
 	}
 
-	attr.SetStringVal(hashed)
+	attr.SetStr(hashed)
 }

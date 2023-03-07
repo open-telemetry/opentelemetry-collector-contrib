@@ -19,16 +19,17 @@ package redisreceiver
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 type testHost struct {
@@ -44,16 +45,31 @@ func (h *testHost) ReportFatalError(err error) {
 var _ component.Host = (*testHost)(nil)
 
 func TestIntegration(t *testing.T) {
-	d := containertest.New(t)
-	c := d.StartImage("docker.io/library/redis:6.0.3", containertest.WithPortReady(6379))
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "docker.io/library/redis:6.0.3",
+		ExposedPorts: []string{"6379/tcp"},
+		WaitingFor:   wait.ForListeningPort("6379/tcp"),
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+
+	mappedPort, err := container.MappedPort(ctx, "6379")
+	require.Nil(t, err)
+
+	hostIP, err := container.Host(ctx)
+	require.Nil(t, err)
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = c.AddrForPort(6379)
+	cfg.Endpoint = fmt.Sprintf("redis://%s:%s", hostIP, mappedPort.Port())
 
 	consumer := new(consumertest.MetricsSink)
 
-	rcvr, err := f.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer)
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, rcvr.Start(context.Background(), &testHost{
 		t: t,

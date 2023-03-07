@@ -1,5 +1,11 @@
 # SQL Query Receiver (Alpha)
 
+| Status                   |           |
+|--------------------------|-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 The SQL Query Receiver uses custom SQL queries to generate metrics from a database connection.
 
 > :construction: This receiver is in **ALPHA**. Behavior, configuration fields, and metric data model are subject to change.
@@ -96,3 +102,6 @@ Refer to the config file [provided](./testdata/oracledb-receiver-config.yaml) fo
 Oracle DB driver to connect and query the same table schema and contents as the example above.
 The Oracle DB driver documentation can be found [here.](https://github.com/sijms/go-ora)
 Another usage example is the `go_ora` example [here.](https://blogs.oracle.com/developers/post/connecting-a-go-application-to-oracle-database)
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

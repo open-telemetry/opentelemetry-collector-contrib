@@ -32,9 +32,6 @@ receivers:
             enabled: true
       load:
       memory:
-        metrics:
-          system.memory.utilization:
-            enabled: true
       network:
       processes:
   # # Comment out this block below to get access to system metrics regarding
@@ -50,6 +47,25 @@ receivers:
   #       scrape_interval: 10s
   #       static_configs:
   #       - targets: ['0.0.0.0:8888']
+
+  # Read more about the filelog receiver here https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver.
+  filelog:
+    include_file_path: true
+    poll_interval: 500ms
+    include:
+      # Logs will be collected from the below file path. Please ensure it is correct or edit as needed.
+      - /var/log/**/*example*/*.log
+     # # It is essential to extract the trace_id and span_id from the logs in order to ensure that logs / traces correlation works.
+     # # For JSON logs, json_parser will parse the body into attributes, while trace_parser will extract the trace_id and span_id.
+     # operators:
+     #  - id : parse_body
+     #    type: json_parser
+     #  - id: trace
+     #    type: trace_parser
+     #    trace_id:
+     #      parse_from: attributes.trace_id
+     #    span_id:
+     #      parse_from: attributes.span_id
 
 # Read more about processors here: https://opentelemetry.io/docs/collector/configuration/#processors
 #
@@ -104,7 +120,7 @@ exporters:
       ## The Datadog API key to associate your Agent's data with your organization.
       ## Create a new API key here: https://app.datadoghq.com/account/settings
       #
-      key: ${DD_API_KEY}
+      key: ${env:DD_API_KEY}
 
       ## @param site - string - optional - default: datadoghq.com
       ## The site of the Datadog intake to send Agent data to.
@@ -255,6 +271,17 @@ exporters:
       #
       # tags: []
 
+    ## @param logs - custom object - optional
+    ## Logs exporter specific configuration.
+    #
+    # logs:
+      ## @param dump_payloads - bool - optional
+      ## If set to true, payloads will be dumped when logging level is set to debug. Please note that
+      ## This may result in an escaping loop if a filelog receiver is watching the collector log output.
+      ## See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16380
+      #
+      # dump_payloads: false
+
 # `service` defines the Collector pipelines, observability settings and extensions.
 service:
   # `pipelines` defines the data pipelines. Multiple data pipelines for a type may be defined.
@@ -269,6 +296,13 @@ service:
     traces:
       # This pipeline has an OTLP receiver, a batch processor and a Datadog exporter.
       receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog]
+
+    # Pipelines starting with `logs` or `logs/` define a logs pipeline.
+    logs:
+      # This pipeline has an OTLP receiver, filelog receiver, a batch processor and a Datadog exporter.
+      receivers: [otlp, filelog]
       processors: [batch]
       exporters: [datadog]
 

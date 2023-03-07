@@ -16,10 +16,13 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"io"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
@@ -29,34 +32,47 @@ const (
 	typeStr = "file"
 	// The stability level of the exporter.
 	stability = component.StabilityLevelAlpha
+
 	// the number of old log files to retain
 	defaultMaxBackups = 100
+
+	// the format of encoded telemetry data
+	formatTypeJSON  = "json"
+	formatTypeProto = "proto"
+
+	// the type of compression codec
+	compressionZSTD = "zstd"
 )
 
 // NewFactory creates a factory for OTLP exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
-		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, stability))
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		Rotation:         Rotation{MaxBackups: defaultMaxBackups},
+		FormatType: formatTypeJSON,
+		Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
 	}
 }
 
 func createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.TracesExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
+	conf := cfg.(*Config)
+	writer, err := buildFileWriter(conf)
+	if err != nil {
+		return nil, err
+	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return newFileExporter(cfg.(*Config))
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -70,11 +86,16 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.MetricsExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
+	conf := cfg.(*Config)
+	writer, err := buildFileWriter(conf)
+	if err != nil {
+		return nil, err
+	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return newFileExporter(cfg.(*Config))
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewMetricsExporter(
 		ctx,
@@ -88,11 +109,16 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.LogsExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Logs, error) {
+	conf := cfg.(*Config)
+	writer, err := buildFileWriter(conf)
+	if err != nil {
+		return nil, err
+	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return newFileExporter(cfg.(*Config))
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewLogsExporter(
 		ctx,
@@ -102,6 +128,37 @@ func createLogsExporter(
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
 	)
+}
+
+func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
+	return &fileExporter{
+		path:             conf.Path,
+		formatType:       conf.FormatType,
+		file:             writer,
+		tracesMarshaler:  tracesMarshalers[conf.FormatType],
+		metricsMarshaler: metricsMarshalers[conf.FormatType],
+		logsMarshaler:    logsMarshalers[conf.FormatType],
+		exporter:         buildExportFunc(conf),
+		compression:      conf.Compression,
+		compressor:       buildCompressor(conf.Compression),
+	}
+}
+
+func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
+	if cfg.Rotation == nil {
+		f, err := os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		if err != nil {
+			return nil, err
+		}
+		return newBufferedWriteCloser(f), nil
+	}
+	return &lumberjack.Logger{
+		Filename:   cfg.Path,
+		MaxSize:    cfg.Rotation.MaxMegabytes,
+		MaxAge:     cfg.Rotation.MaxDays,
+		MaxBackups: cfg.Rotation.MaxBackups,
+		LocalTime:  cfg.Rotation.LocalTime,
+	}, nil
 }
 
 // This is the map of already created File exporters for particular configurations.

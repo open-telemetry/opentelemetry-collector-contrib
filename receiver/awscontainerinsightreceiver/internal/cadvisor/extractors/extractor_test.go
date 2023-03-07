@@ -15,10 +15,10 @@
 package extractors
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -128,8 +128,8 @@ func TestMergeMetrics(t *testing.T) {
 		},
 	}
 	mergedMetrics := MergeMetrics(metrics)
-	assert.Equal(t, 1, len(mergedMetrics))
-	assert.True(t, reflect.DeepEqual(expected.GetTags(), mergedMetrics[0].GetTags()))
-	assert.True(t, reflect.DeepEqual(expected.GetFields(), mergedMetrics[0].GetFields()))
+	require.Len(t, mergedMetrics, 1)
+	assert.Equal(t, expected.GetTags(), mergedMetrics[0].GetTags())
+	assert.Equal(t, expected.GetFields(), mergedMetrics[0].GetFields())
 
 }

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,20 +16,19 @@ package expvarreceiver
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
 
@@ -95,9 +94,7 @@ var (
 )
 
 func newMockServer(tb testing.TB, responseBodyFile string) *httptest.Server {
-	file, err := os.Open(responseBodyFile)
-	assert.NoError(tb, err)
-	fileContents, err := io.ReadAll(file)
+	fileContents, err := os.ReadFile(filepath.Clean(responseBodyFile))
 	require.NoError(tb, err)
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == defaultPath {
@@ -117,7 +114,7 @@ func TestAllMetrics(t *testing.T) {
 	cfg.Endpoint = ms.URL + defaultPath
 	cfg.MetricsConfig = allMetricsEnabled
 
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -127,7 +124,8 @@ func TestAllMetrics(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "metrics", "expected_all_metrics.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestNoMetrics(t *testing.T) {
@@ -136,14 +134,14 @@ func TestNoMetrics(t *testing.T) {
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
 	cfg.MetricsConfig = allMetricsDisabled
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	expectedMetrics := pmetric.NewMetrics() // empty
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestNotFoundResponse(t *testing.T) {
@@ -151,7 +149,7 @@ func TestNotFoundResponse(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + "/nonexistent/path"
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
@@ -163,7 +161,7 @@ func TestBadTypeInReturnedData(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
@@ -175,7 +173,7 @@ func TestJSONParseError(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
@@ -188,12 +186,12 @@ func TestEmptyResponseBodyError(t *testing.T) {
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
 	cfg.MetricsConfig = allMetricsDisabled
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	expectedMetrics := pmetric.NewMetrics() // empty
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, "could not decode response body to JSON: EOF")
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 }

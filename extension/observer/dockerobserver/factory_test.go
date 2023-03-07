@@ -20,22 +20,19 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestValidConfig(t *testing.T) {
-	err := configtest.CheckConfigStruct(createDefaultConfig())
+	err := componenttest.CheckConfigStruct(createDefaultConfig())
 	require.NoError(t, err)
 }
 
 func TestCreateExtension(t *testing.T) {
 	dockerObserver, err := createExtension(
 		context.Background(),
-		componenttest.NewNopExtensionCreateSettings(),
-		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		},
+		extensiontest.NewNopCreateSettings(),
+		&Config{},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, dockerObserver)

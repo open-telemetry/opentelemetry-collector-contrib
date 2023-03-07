@@ -3,21 +3,27 @@ name: vcenterreceiver
 resource_attributes:
   vcenter.cluster.name:
     description: The name of the vCenter Cluster.
+    enabled: true
     type: string
   vcenter.host.name:
     description: The hostname of the vCenter ESXi host.
+    enabled: true
     type: string
   vcenter.resource_pool.name:
     description: The name of the resource pool.
+    enabled: true
     type: string
   vcenter.datastore.name:
     description: The name of the vCenter datastore.
+    enabled: true
     type: string
   vcenter.vm.name:
     description: The name of the virtual machine.
+    enabled: true
     type: string
   vcenter.vm.id:
     description: The instance UUID of the virtual machine.
+    enabled: true
     type: string
 
 attributes:
@@ -35,29 +41,24 @@ attributes:
       - physical
   host_effective:
     type: bool
-    value: effective
+    name_override: effective
     description: Whether the host is effective in the vCenter cluster.
   disk_direction:
-    value: direction
+    name_override: direction
     description: The direction of disk latency.
+    type: string
     enum:
       - read
       - write
-  latency_type:
-    value: type
-    description: The type of disk latency being reported.
-    enum:
-      - kernel
-      - device
   throughput_direction:
-    value: direction
+    name_override: direction
     description: The direction of network throughput.
     type: string
     enum:
       - transmitted
       - received
   vm_count_power_state:
-    value: power_state
+    name_override: power_state
     description: Whether the virtual machines are powered on or off.
     type: string
     enum:
@@ -160,7 +161,6 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: []
-  # produced when receiver.vcenterreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   vcenter.host.disk.throughput:
     enabled: true
     description: Average number of kilobytes read from or written to the disk each second.
@@ -171,27 +171,6 @@ metrics:
       aggregation: cumulative
     attributes: [disk_direction]
     extended_documentation: As measured over the most recent 20s interval. Aggregated disk I/O rate. Requires Performance Level 4.
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.host.disk.throughput.read:
-    enabled: true
-    description: Average number of kilobytes read from the disk each second.
-    unit: "{KiBy/s}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
-    extended_documentation: As measured over the most recent 20s interval. Aggregated disk read rate. Requires Performance Level 4.
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.host.disk.throughput.write:
-    enabled: true
-    description: Average number of kilobytes written to the disk each second.
-    unit: "{KiBy/s}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
-    extended_documentation: As measured over the most recent 20s interval. Aggregated disk write rate. Requires Performance Level 4.
-  # produced when receiver.vcenterreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   vcenter.host.disk.latency.avg:
     enabled: true
     description: The latency of operations to the host system's disk.
@@ -200,22 +179,6 @@ metrics:
       value_type: int
     attributes: [disk_direction]
     extended_documentation: This latency is the sum of the device and kernel read and write latencies. Requires Performance Counter level 2 for metric to populate.
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.host.disk.latency.avg.read:
-    enabled: true
-    description: The latency of reads to the host system's disk.
-    unit: ms
-    gauge:
-      value_type: int
-    extended_documentation: This latency is the sum of the device and kernel read latencies. Requires Performance Counter level 2 for metric to populate.
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.host.disk.latency.avg.write:
-    enabled: true
-    description: The latency of writes to the host system's disk.
-    unit: ms
-    gauge:
-      value_type: int
-    extended_documentation: This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate.
   vcenter.host.disk.latency.max:
     enabled: true
     description: Highest latency value across all disks used by the host.
@@ -240,7 +203,6 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: []
-  # produced when receiver.vcenterreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   vcenter.host.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network by the host.
@@ -251,26 +213,6 @@ metrics:
       aggregation: cumulative
     attributes: [throughput_direction]
     extended_documentation: As measured over the most recent 20s interval.
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.host.network.throughput.receive:
-    enabled: true
-    description: The amount of data that was received over the network by the host.
-    unit: "{KiBy/s}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
-    extended_documentation: As measured over the most recent 20s interval.
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.host.network.throughput.transmit:
-    enabled: true
-    description: The amount of data that was transmitted over the network by the host.
-    unit: "{KiBy/s}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
-    extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.network.usage:
     enabled: true
     description: The sum of the data transmitted and received for all the NIC instances of the host.
@@ -280,7 +222,6 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: []
-  # produced when receiver.vcenterreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   vcenter.host.network.packet.errors:
     enabled: true
     description: The summation of packet errors on the host network.
@@ -291,27 +232,6 @@ metrics:
       aggregation: cumulative
     attributes: [throughput_direction]
     extended_documentation: As measured over the most recent 20s interval.
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.host.network.packet.errors.receive:
-    enabled: true
-    description: The summation of receive packet errors on the host network.
-    unit: "{errors}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
-    extended_documentation: As measured over the most recent 20s interval.
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.host.network.packet.errors.transmit:
-    enabled: true
-    description: The summation of transmit packet errors on the host network.
-    unit: "{errors}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
-    extended_documentation: As measured over the most recent 20s interval.
-  # produced when receiver.vcenterreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   vcenter.host.network.packet.count:
     enabled: true
     description: The number of packets transmitted and received, as measured over the most recent 20s interval.
@@ -321,24 +241,6 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: [throughput_direction]
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.host.network.packet.count.receive:
-    enabled: true
-    description: The number of packets received, as measured over the most recent 20s interval.
-    unit: "{packets/sec}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.host.network.packet.count.transmit:
-    enabled: true
-    description: The number of packets transmitted, as measured over the most recent 20s interval.
-    unit: "{packets/sec}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
   vcenter.resource_pool.memory.usage:
     enabled: true
     description: The usage of the memory by the resource pool.
@@ -378,7 +280,7 @@ metrics:
   vcenter.vm.memory.ballooned:
     enabled: true
     description: The amount of memory that is ballooned due to virtualization.
-    unit: By
+    unit: MiBy
     sum:
       monotonic: false
       value_type: int
@@ -388,6 +290,24 @@ metrics:
     enabled: true
     description: The amount of memory that is used by the virtual machine.
     unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: []
+  vcenter.vm.memory.swapped:
+    enabled: true
+    description: The portion of memory that is granted to this VM from the host's swap space.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: []
+  vcenter.vm.memory.swapped_ssd:
+    enabled: true
+    description: The amount of memory swapped to fast disk device such as SSD.
+    unit: KiBy
     sum:
       monotonic: false
       value_type: int
@@ -409,7 +329,6 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-  # produced when receiver.vcenterreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   vcenter.vm.disk.latency.avg:
     enabled: true
     description: The latency of operations to the virtual machine's disk.
@@ -417,24 +336,6 @@ metrics:
     gauge:
       value_type: int
     attributes: [disk_direction, disk_type]
-    extended_documentation: Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval.
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.vm.disk.latency.avg.read:
-    enabled: true
-    description: The latency of reads to the virtual machine's disk.
-    unit: ms
-    gauge:
-      value_type: int
-    attributes: [disk_type]
-    extended_documentation: Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval.
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.vm.disk.latency.avg.write:
-    enabled: true
-    description: The latency of writes to the virtual machine's disk.
-    unit: ms
-    gauge:
-      value_type: int
-    attributes: [disk_type]
     extended_documentation: Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval.
   vcenter.vm.disk.latency.max:
     enabled: true
@@ -452,7 +353,6 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: []
-  # produced when receiver.vcenterreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   vcenter.vm.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network of the virtual machine.
@@ -463,27 +363,6 @@ metrics:
       aggregation: cumulative
     attributes: [throughput_direction]
     extended_documentation: As measured over the most recent 20s interval.
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.vm.network.throughput.receive:
-    enabled: true
-    description: The amount of data that was received over the network of the virtual machine.
-    unit: By/sec
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
-    extended_documentation: As measured over the most recent 20s interval.
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.vm.network.throughput.transmit:
-    enabled: true
-    description: The amount of data that was transmitted over the network of the virtual machine.
-    unit: By/sec
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
-    extended_documentation: As measured over the most recent 20s interval.
-  # produced when receiver.vcenterreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   vcenter.vm.network.packet.count:
     enabled: true
     description: The amount of packets that was received or transmitted over the instance's network.
@@ -493,24 +372,6 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: [throughput_direction]
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.vm.network.packet.count.receive:
-    enabled: true
-    description: The amount of packets that was received over the instance's network.
-    unit: "{packets/sec}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
-  # produced when receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  vcenter.vm.network.packet.count.transmit:
-    enabled: true
-    description: The amount of packets that was transmitted over the instance's network.
-    unit: "{packets/sec}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation: cumulative
   vcenter.vm.network.usage:
     enabled: true
     description: The network utilization combined transmit and receive rates during an interval.

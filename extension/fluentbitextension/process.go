@@ -84,6 +84,9 @@ func (pm *processManager) Start(ctx context.Context, _ component.Host) error {
 
 // Shutdown is invoked during service shutdown.
 func (pm *processManager) Shutdown(context.Context) error {
+	if pm.cancel == nil {
+		return nil
+	}
 	pm.cancel()
 	t := time.NewTimer(5 * time.Second)
 

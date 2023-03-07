@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -36,7 +37,6 @@ var identityBufferPool = sync.Pool{
 
 type State struct {
 	sync.Mutex
-	Identity  MetricIdentity
 	PrevPoint ValuePoint
 }
 
@@ -44,6 +44,7 @@ type DeltaValue struct {
 	StartTimestamp pcommon.Timestamp
 	FloatValue     float64
 	IntValue       int64
+	HistogramValue *HistogramPoint
 }
 
 func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration) *MetricTracker {
@@ -80,24 +81,10 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	hashableID := b.String()
 	identityBufferPool.Put(b)
 
-	var s interface{}
-	var ok bool
-	if s, ok = t.states.Load(hashableID); !ok {
-		s, ok = t.states.LoadOrStore(hashableID, &State{
-			Identity:  metricID,
-			PrevPoint: metricPoint,
-		})
-	}
-
+	s, ok := t.states.LoadOrStore(hashableID, &State{
+		PrevPoint: metricPoint,
+	})
 	if !ok {
-		if metricID.MetricIsMonotonic {
-			out = DeltaValue{
-				StartTimestamp: metricPoint.ObservedTimestamp,
-				FloatValue:     metricPoint.FloatValue,
-				IntValue:       metricPoint.IntValue,
-			}
-			valid = true
-		}
 		return
 	}
 	valid = true
@@ -108,28 +95,54 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 	out.StartTimestamp = state.PrevPoint.ObservedTimestamp
 
-	if metricID.IsFloatVal() {
-		value := metricPoint.FloatValue
-		prevValue := state.PrevPoint.FloatValue
-		delta := value - prevValue
-
-		// Detect reset on a monotonic counter
-		if metricID.MetricIsMonotonic && value < prevValue {
-			delta = value
+	switch metricID.MetricType {
+	case pmetric.MetricTypeHistogram:
+		value := metricPoint.HistogramValue
+		prevValue := state.PrevPoint.HistogramValue
+		if math.IsNaN(value.Sum) {
+			value.Sum = prevValue.Sum
 		}
 
-		out.FloatValue = delta
-	} else {
-		value := metricPoint.IntValue
-		prevValue := state.PrevPoint.IntValue
-		delta := value - prevValue
-
-		// Detect reset on a monotonic counter
-		if metricID.MetricIsMonotonic && value < prevValue {
-			delta = value
+		if len(value.Buckets) != len(prevValue.Buckets) {
+			valid = false
 		}
 
-		out.IntValue = delta
+		delta := value.Clone()
+
+		// Calculate deltas unless histogram count was reset
+		if valid && delta.Count >= prevValue.Count {
+			delta.Count -= prevValue.Count
+			delta.Sum -= prevValue.Sum
+			for index, prevBucket := range prevValue.Buckets {
+				delta.Buckets[index] -= prevBucket
+			}
+		}
+
+		out.HistogramValue = &delta
+	case pmetric.MetricTypeSum:
+		if metricID.IsFloatVal() {
+			value := metricPoint.FloatValue
+			prevValue := state.PrevPoint.FloatValue
+			delta := value - prevValue
+
+			// Detect reset (non-monotonic sums are not converted)
+			if value < prevValue {
+				delta = value
+			}
+
+			out.FloatValue = delta
+		} else {
+			value := metricPoint.IntValue
+			prevValue := state.PrevPoint.IntValue
+			delta := value - prevValue
+
+			// Detect reset (non-monotonic sums are not converted)
+			if value < prevValue {
+				delta = value
+			}
+
+			out.IntValue = delta
+		}
 	}
 
 	state.PrevPoint = metricPoint

@@ -20,9 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -35,12 +34,12 @@ func (run *mockRunner) start(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 	nextConsumer consumer.Metrics,
-) (component.Receiver, error) {
+) (component.Component, error) {
 	args := run.Called(receiver, discoveredConfig, nextConsumer)
-	return args.Get(0).(component.Receiver), args.Error(1)
+	return args.Get(0).(component.Component), args.Error(1)
 }
 
-func (run *mockRunner) shutdown(rcvr component.Receiver) error {
+func (run *mockRunner) shutdown(rcvr component.Component) error {
 	args := run.Called(rcvr)
 	return args.Error(0)
 }
@@ -50,14 +49,16 @@ var _ runner = (*mockRunner)(nil)
 func TestOnAdd(t *testing.T) {
 	runner := &mockRunner{}
 
-	rcvrCfg := receiverConfig{id: config.NewComponentIDWithName("name", "1"), config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
+	set := receivertest.NewNopCreateSettings()
+	set.ID = component.NewIDWithName("name", "1")
+	rcvrCfg := receiverConfig{id: set.ID, config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {rcvrCfg, "", map[string]interface{}{}, newRuleOrPanic(`type == "port"`)},
 	}
 	handler := &observerHandler{
+		params:                set,
 		config:                cfg,
-		logger:                zap.NewNop(),
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
@@ -81,9 +82,11 @@ func TestOnAdd(t *testing.T) {
 func TestOnRemove(t *testing.T) {
 	runner := &mockRunner{}
 	rcvr := &nopWithEndpointReceiver{}
+	set := receivertest.NewNopCreateSettings()
+	set.ID = component.NewID(typeStr)
 	handler := &observerHandler{
+		params:                set,
 		config:                createDefaultConfig().(*Config),
-		logger:                zap.NewNop(),
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
@@ -100,7 +103,9 @@ func TestOnRemove(t *testing.T) {
 
 func TestOnChange(t *testing.T) {
 	runner := &mockRunner{}
-	rcvrCfg := receiverConfig{id: config.NewComponentIDWithName("name", "1"), config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
+	set := receivertest.NewNopCreateSettings()
+	set.ID = component.NewIDWithName("name", "1")
+	rcvrCfg := receiverConfig{id: set.ID, config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
 	oldRcvr := &nopWithEndpointReceiver{}
 	newRcvr := &nopWithEndpointReceiver{}
 	cfg := createDefaultConfig().(*Config)
@@ -108,8 +113,8 @@ func TestOnChange(t *testing.T) {
 		"name/1": {rcvrCfg, "", map[string]interface{}{}, newRuleOrPanic(`type == "port"`)},
 	}
 	handler := &observerHandler{
+		params:                set,
 		config:                cfg,
-		logger:                zap.NewNop(),
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
@@ -133,24 +138,26 @@ func TestOnChange(t *testing.T) {
 
 func TestDynamicConfig(t *testing.T) {
 	runner := &mockRunner{}
+	set := receivertest.NewNopCreateSettings()
+	set.ID = component.NewIDWithName("name", "1")
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {
-			receiverConfig: receiverConfig{id: config.NewComponentIDWithName("name", "1"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, endpointID: podEndpoint.ID},
+			receiverConfig: receiverConfig{id: set.ID, config: userConfigMap{"endpoint": "`endpoint`:6379"}, endpointID: podEndpoint.ID},
 			Rule:           `type == "pod"`,
 			rule:           newRuleOrPanic("type == \"pod\""),
 		},
 	}
 	handler := &observerHandler{
+		params:                set,
 		config:                cfg,
-		logger:                zap.NewNop(),
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
 	runner.On(
 		"start",
 		receiverConfig{
-			id:         config.NewComponentIDWithName("name", "1"),
+			id:         component.NewIDWithName("name", "1"),
 			config:     userConfigMap{endpointConfigKey: "localhost:6379"},
 			endpointID: podEndpoint.ID,
 		},

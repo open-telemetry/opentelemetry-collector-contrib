@@ -9,7 +9,7 @@
                      "description": "The number of cache operations of the instance.",
                      "name": "mongodb.cache.operations",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -46,7 +46,7 @@
                      "description": "The number of open cursors maintained for clients.",
                      "name": "mongodb.cursor.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -61,7 +61,7 @@
                      "description": "The number of cursors that have timed out.",
                      "name": "mongodb.cursor.timeout.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -76,7 +76,7 @@
                      "description": "The number of existing databases.",
                      "name": "mongodb.database.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -91,7 +91,7 @@
                      "description": "The time the global lock has been held.",
                      "name": "mongodb.global_lock.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "64354",
@@ -107,7 +107,7 @@
                      "description": "The number of bytes received.",
                      "name": "mongodb.network.io.receive",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "3240",
@@ -122,7 +122,7 @@
                      "description": "The number of by transmitted.",
                      "name": "mongodb.network.io.transmit",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "11974",
@@ -137,7 +137,7 @@
                      "description": "The number of requests received by the server.",
                      "name": "mongodb.network.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "28",
@@ -152,7 +152,7 @@
                      "description": "The number of operations executed.",
                      "name": "mongodb.operation.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -241,7 +241,7 @@
                      "description": "The total number of active sessions.",
                      "name": "mongodb.session.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "15",
@@ -269,7 +269,7 @@
                      "description": "The total time spent performing operations.",
                      "name": "mongodb.operation.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "648801",
@@ -380,7 +380,7 @@
                      "description": "The number of collections.",
                      "name": "mongodb.collection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -403,7 +403,7 @@
                      "description": "The number of connections.",
                      "name": "mongodb.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "3",
@@ -470,7 +470,7 @@
                      "description": "The size of the collection. Data compression does not affect this value.",
                      "name": "mongodb.data.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "59",
@@ -493,7 +493,7 @@
                      "description": "The number of document operations executed.",
                      "name": "mongodb.document.operation.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -560,7 +560,7 @@
                      "description": "The number of indexes.",
                      "name": "mongodb.index.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -583,7 +583,7 @@
                      "description": "Sum of the space allocated to all indexes in the database, including free index space.",
                      "name": "mongodb.index.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "20480",
@@ -606,7 +606,7 @@
                      "description": "The amount of memory used.",
                      "name": "mongodb.memory.usage",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "117440512",
@@ -654,7 +654,7 @@
                      "description": "The number of objects.",
                      "name": "mongodb.object.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -677,7 +677,7 @@
                      "description": "The total amount of storage allocated to this collection.",
                      "name": "mongodb.storage.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "20480",
@@ -716,7 +716,7 @@
                      "description": "The number of times an index has been accessed.",
                      "name": "mongodb.index.access.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -767,7 +767,7 @@
                      "description": "The number of collections.",
                      "name": "mongodb.collection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -790,7 +790,7 @@
                      "description": "The number of connections.",
                      "name": "mongodb.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2",
@@ -857,7 +857,7 @@
                      "description": "The size of the collection. Data compression does not affect this value.",
                      "name": "mongodb.data.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -880,7 +880,7 @@
                      "description": "The number of document operations executed.",
                      "name": "mongodb.document.operation.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -947,7 +947,7 @@
                      "description": "The number of indexes.",
                      "name": "mongodb.index.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2",
@@ -970,7 +970,7 @@
                      "description": "Sum of the space allocated to all indexes in the database, including free index space.",
                      "name": "mongodb.index.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "8192",
@@ -993,7 +993,7 @@
                      "description": "The amount of memory used.",
                      "name": "mongodb.memory.usage",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "117440512",
@@ -1041,7 +1041,7 @@
                      "description": "The number of objects.",
                      "name": "mongodb.object.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1064,7 +1064,7 @@
                      "description": "The total amount of storage allocated to this collection.",
                      "name": "mongodb.storage.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4096",
@@ -1103,7 +1103,7 @@
                      "description": "The number of times an index has been accessed.",
                      "name": "mongodb.index.access.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1154,7 +1154,7 @@
                      "description": "The number of collections.",
                      "name": "mongodb.collection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -1177,7 +1177,7 @@
                      "description": "The number of connections.",
                      "name": "mongodb.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2",
@@ -1244,7 +1244,7 @@
                      "description": "The size of the collection. Data compression does not affect this value.",
                      "name": "mongodb.data.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2078",
@@ -1267,7 +1267,7 @@
                      "description": "The number of document operations executed.",
                      "name": "mongodb.document.operation.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1334,7 +1334,7 @@
                      "description": "The number of indexes.",
                      "name": "mongodb.index.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -1357,7 +1357,7 @@
                      "description": "Sum of the space allocated to all indexes in the database, including free index space.",
                      "name": "mongodb.index.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "20480",
@@ -1380,7 +1380,7 @@
                      "description": "The amount of memory used.",
                      "name": "mongodb.memory.usage",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "117440512",
@@ -1428,7 +1428,7 @@
                      "description": "The number of objects.",
                      "name": "mongodb.object.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -1451,7 +1451,7 @@
                      "description": "The total amount of storage allocated to this collection.",
                      "name": "mongodb.storage.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "20480",
@@ -1490,7 +1490,7 @@
                      "description": "The number of times an index has been accessed.",
                      "name": "mongodb.index.access.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1541,7 +1541,7 @@
                      "description": "The number of collections.",
                      "name": "mongodb.collection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -1564,7 +1564,7 @@
                      "description": "The number of connections.",
                      "name": "mongodb.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2",
@@ -1631,7 +1631,7 @@
                      "description": "The size of the collection. Data compression does not affect this value.",
                      "name": "mongodb.data.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1654,7 +1654,7 @@
                      "description": "The number of document operations executed.",
                      "name": "mongodb.document.operation.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1721,7 +1721,7 @@
                      "description": "The number of indexes.",
                      "name": "mongodb.index.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -1744,7 +1744,7 @@
                      "description": "Sum of the space allocated to all indexes in the database, including free index space.",
                      "name": "mongodb.index.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4096",
@@ -1767,7 +1767,7 @@
                      "description": "The amount of memory used.",
                      "name": "mongodb.memory.usage",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1582301184",
@@ -1815,7 +1815,7 @@
                      "description": "The number of objects.",
                      "name": "mongodb.object.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1838,7 +1838,7 @@
                      "description": "The total amount of storage allocated to this collection.",
                      "name": "mongodb.storage.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4096",
@@ -1877,7 +1877,7 @@
                      "description": "The number of times an index has been accessed.",
                      "name": "mongodb.index.access.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",

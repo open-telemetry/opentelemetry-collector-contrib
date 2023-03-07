@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package metadata is responsible for collecting host metadata from different providers
+// such as EC2, ECS, AWS, etc and pushing it to Datadog.
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 
 import (
@@ -27,17 +29,17 @@ import (
 	ec2Attributes "github.com/DataDog/datadog-agent/pkg/otlp/model/attributes/ec2"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes/gcp"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gohai"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 // HostMetadata includes metadata about the host tags,
@@ -105,14 +107,13 @@ type Meta struct {
 // metadataFromAttributes gets metadata info from attributes following
 // OpenTelemetry semantic conventions
 func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
-	return metadataFromAttributesWithRegistry(featuregate.GetRegistry(), attrs)
+	return metadataFromAttributesWithRegistry(HostnamePreviewFeatureGate, attrs)
 }
 
-// metadataFromAttributesWithRegistry passes a registry explicitly to allow easier unit testing.
-func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pcommon.Map) *HostMetadata {
+func metadataFromAttributesWithRegistry(gate *featuregate.Gate, attrs pcommon.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
-	var usePreviewHostnameLogic = registry.IsEnabled(HostnamePreviewFeatureGate)
+	var usePreviewHostnameLogic = gate.IsEnabled()
 	if src, ok := attributes.SourceFromAttributes(attrs, usePreviewHostnameLogic); ok && src.Kind == source.HostnameKind {
 		hm.InternalHostname = src.Identifier
 		hm.Meta.Hostname = src.Identifier
@@ -121,16 +122,16 @@ func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pc
 	// AWS EC2 resource metadata
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
 	switch {
-	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS:
+	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderAWS:
 		ec2HostInfo := ec2Attributes.HostInfoFromAttributes(attrs)
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
-	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP:
+	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderGCP:
 		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
-	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure:
+	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderAzure:
 		azureHostInfo := azure.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
 	}
@@ -138,7 +139,7 @@ func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pc
 	return hm
 }
 
-func fillHostMetadata(params component.ExporterCreateSettings, pcfg PusherConfig, p source.Provider, hm *HostMetadata) {
+func fillHostMetadata(params exporter.CreateSettings, pcfg PusherConfig, p source.Provider, hm *HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
 		if src, err := p.Source(context.TODO()); err == nil && src.Kind == source.HostnameKind {
@@ -169,7 +170,7 @@ func fillHostMetadata(params component.ExporterCreateSettings, pcfg PusherConfig
 	}
 }
 
-func pushMetadata(pcfg PusherConfig, params component.ExporterCreateSettings, metadata *HostMetadata) error {
+func pushMetadata(pcfg PusherConfig, params exporter.CreateSettings, metadata *HostMetadata) error {
 	if metadata.Meta.Hostname == "" {
 		// if the hostname is empty, don't send metadata; we don't need it.
 		params.Logger.Debug("Skipping host metadata since the hostname is empty")
@@ -179,9 +180,9 @@ func pushMetadata(pcfg PusherConfig, params component.ExporterCreateSettings, me
 	path := pcfg.MetricsEndpoint + "/intake"
 	buf, _ := json.Marshal(metadata)
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
-	utils.SetDDHeaders(req.Header, params.BuildInfo, pcfg.APIKey)
-	utils.SetExtraHeaders(req.Header, utils.JSONHeaders)
-	client := utils.NewHTTPClient(pcfg.TimeoutSettings, pcfg.InsecureSkipVerify)
+	clientutil.SetDDHeaders(req.Header, params.BuildInfo, pcfg.APIKey)
+	clientutil.SetExtraHeaders(req.Header, clientutil.JSONHeaders)
+	client := clientutil.NewHTTPClient(pcfg.TimeoutSettings, pcfg.InsecureSkipVerify)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -201,10 +202,10 @@ func pushMetadata(pcfg PusherConfig, params component.ExporterCreateSettings, me
 	return nil
 }
 
-func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCreateSettings, pcfg PusherConfig, hostMetadata *HostMetadata) {
+func pushMetadataWithRetry(retrier *clientutil.Retrier, params exporter.CreateSettings, pcfg PusherConfig, hostMetadata *HostMetadata) {
 	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
-	err := retrier.DoWithRetries(context.Background(), func(context.Context) error {
+	_, err := retrier.DoWithRetries(context.Background(), func(context.Context) error {
 		return pushMetadata(pcfg, params, hostMetadata)
 	})
 
@@ -217,12 +218,12 @@ func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCrea
 }
 
 // Pusher pushes host metadata payloads periodically to Datadog intake
-func Pusher(ctx context.Context, params component.ExporterCreateSettings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map) {
+func Pusher(ctx context.Context, params exporter.CreateSettings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
 	defer params.Logger.Debug("Shut down host metadata routine")
-	retrier := utils.NewRetrier(params.Logger, pcfg.RetrySettings, scrub.NewScrubber())
+	retrier := clientutil.NewRetrier(params.Logger, pcfg.RetrySettings, scrub.NewScrubber())
 
 	// Get host metadata from resources and fill missing info using our exporter.
 	// Currently we only retrieve it once but still send the same payload

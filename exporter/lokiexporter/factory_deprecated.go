@@ -19,18 +19,18 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-func createDefaultLegacyConfig() config.Exporter {
+func createDefaultLegacyConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
 			Timeout:  30 * time.Second,
-			Headers:  map[string]string{},
+			Headers:  map[string]configopaque.String{},
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
@@ -39,7 +39,7 @@ func createDefaultLegacyConfig() config.Exporter {
 	}
 }
 
-func createLegacyLogsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg *Config) (component.LogsExporter, error) {
+func createLegacyLogsExporter(ctx context.Context, set exporter.CreateSettings, cfg *Config) (exporter.Logs, error) {
 	exp := newLegacyExporter(cfg, set.TelemetrySettings)
 
 	return exporterhelper.NewLogsExporter(

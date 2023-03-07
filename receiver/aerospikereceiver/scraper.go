@@ -22,11 +22,12 @@ import (
 	"strconv"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v5"
+	as "github.com/aerospike/aerospike-client-go/v6"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -49,7 +50,7 @@ type clientFactoryFunc func() (Aerospike, error)
 // newAerospikeReceiver creates a new aerospikeReceiver connected to the endpoint provided in cfg
 //
 // If the host or port can't be parsed from endpoint, an error is returned.
-func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) (*aerospikeReceiver, error) {
+func newAerospikeReceiver(params receiver.CreateSettings, cfg *Config, consumer consumer.Metrics) (*aerospikeReceiver, error) {
 	var err error
 	var tlsCfg *tls.Config
 	if cfg.TLS != nil {
@@ -92,7 +93,7 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 				nodeGetterFactory,
 			)
 		},
-		mb: metadata.NewMetricsBuilder(cfg.Metrics, params.BuildInfo),
+		mb: metadata.NewMetricsBuilder(cfg.Metrics, params),
 	}, nil
 }
 

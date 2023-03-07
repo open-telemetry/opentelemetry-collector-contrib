@@ -1,9 +1,12 @@
 # Logs Transform Processor
 
-**Status: experimental**
-NOTE - This processor is experimental, with the intention that its functionality will be reimplemented in the [transform processor](../transformprocessor/README.md) in the future.
+| Status                   |               |
+|--------------------------|---------------|
+| Stability                | [development] |
+| Supported pipeline types | logs          |
+| Distributions            | none          |
 
-Supported pipeline types: logs
+NOTE - This processor is experimental, with the intention that its functionality will be reimplemented in the [transform processor](../transformprocessor/README.md) in the future.
 
 The logs transform processor can be used to apply [log operators](../../pkg/stanza/docs/operators) to logs coming from any receiver.
 Please refer to [config.go](./config.go) for the config spec.
@@ -25,3 +28,5 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
+
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development

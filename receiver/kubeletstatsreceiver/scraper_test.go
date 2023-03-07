@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"k8s.io/client-go/kubernetes"
@@ -62,7 +62,7 @@ func TestScraper(t *testing.T) {
 	}
 	r, err := newKubletScraper(
 		&fakeRestClient{},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		options,
 		metadata.DefaultMetricsSettings(),
 	)
@@ -112,7 +112,7 @@ func TestScraperWithMetadata(t *testing.T) {
 			}
 			r, err := newKubletScraper(
 				&fakeRestClient{},
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				options,
 				metadata.DefaultMetricsSettings(),
 			)
@@ -193,7 +193,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r, err := newKubletScraper(
 				&fakeRestClient{},
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				&scraperOptions{
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 					metricGroupsToCollect: test.metricGroups,
@@ -340,7 +340,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r, err := newKubletScraper(
 				&fakeRestClient{},
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				&scraperOptions{
 					extraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelVolumeType},
 					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
@@ -368,7 +368,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 						continue
 					}
 
-					ev := test.expectedVolumes[claimName.StringVal()]
+					ev := test.expectedVolumes[claimName.Str()]
 					requireExpectedVolume(t, ev, resource)
 
 					// Assert metrics from certain volume claims expected to be missed
@@ -376,7 +376,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 					if test.volumeClaimsToMiss != nil {
 						for c := range test.volumeClaimsToMiss {
 							val, ok := resource.Attributes().Get("k8s.persistentvolumeclaim.name")
-							require.True(t, !ok || val.StringVal() != c)
+							require.True(t, !ok || val.Str() != c)
 						}
 					}
 				}
@@ -398,7 +398,7 @@ func requireExpectedVolume(t *testing.T, ev expectedVolume, resource pcommon.Res
 func requireAttribute(t *testing.T, attr pcommon.Map, key string, value string) {
 	val, ok := attr.Get(key)
 	require.True(t, ok)
-	require.Equal(t, value, val.StringVal())
+	require.Equal(t, value, val.Str())
 
 }
 
@@ -448,7 +448,7 @@ func TestClientErrors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			core, observedLogs := observer.New(zap.ErrorLevel)
 			logger := zap.New(core)
-			settings := componenttest.NewNopReceiverCreateSettings()
+			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = logger
 			options := &scraperOptions{
 				extraMetadataLabels:   test.extraMetadataLabels,

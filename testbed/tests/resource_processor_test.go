@@ -29,13 +29,13 @@ var (
 	mockedConsumedResourceWithType = func() pmetric.Metrics {
 		md := pmetric.NewMetrics()
 		rm := md.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().PutString("opencensus.resourcetype", "host")
-		rm.Resource().Attributes().PutString("label-key", "label-value")
+		rm.Resource().Attributes().PutStr("opencensus.resourcetype", "host")
+		rm.Resource().Attributes().PutStr("label-key", "label-value")
 		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		m.SetName("metric-name")
 		m.SetDescription("metric-description")
 		m.SetUnit("metric-unit")
-		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntVal(0)
+		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(0)
 		return md
 	}()
 
@@ -46,7 +46,7 @@ var (
 		m.SetName("metric-name")
 		m.SetDescription("metric-description")
 		m.SetUnit("metric-unit")
-		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntVal(0)
+		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(0)
 		return md
 	}()
 )
@@ -79,8 +79,8 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 			expectedMetrics: func() pmetric.Metrics {
 				md := pmetric.NewMetrics()
 				rm := md.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().PutString("resource-type", "host")
-				rm.Resource().Attributes().PutString("label-key", "new-label-value")
+				rm.Resource().Attributes().PutStr("label-key", "new-label-value")
+				rm.Resource().Attributes().PutStr("resource-type", "host")
 				return md
 			}(),
 		},
@@ -98,7 +98,7 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 			expectedMetrics: func() pmetric.Metrics {
 				md := pmetric.NewMetrics()
 				rm := md.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().PutString("additional-label-key", "additional-label-value")
+				rm.Resource().Attributes().PutStr("additional-label-key", "additional-label-value")
 				return md
 			}(),
 		},
@@ -171,8 +171,8 @@ func TestMetricResourceProcessor(t *testing.T) {
 
 			expectidMD := test.expectedMetrics
 			require.Equal(t,
-				expectidMD.ResourceMetrics().At(0).Resource().Attributes().Sort(),
-				rm.At(0).Resource().Attributes().Sort(),
+				expectidMD.ResourceMetrics().At(0).Resource().Attributes().AsRaw(),
+				rm.At(0).Resource().Attributes().AsRaw(),
 			)
 		})
 	}

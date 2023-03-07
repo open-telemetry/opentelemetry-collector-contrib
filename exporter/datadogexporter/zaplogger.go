@@ -87,5 +87,5 @@ func (z *zaplogger) Criticalf(format string, params ...interface{}) error {
 
 // Flush implements Logger.
 func (z *zaplogger) Flush() {
-	z.logger.Sync() // nolint:errcheck
+	_ = z.logger.Sync()
 }

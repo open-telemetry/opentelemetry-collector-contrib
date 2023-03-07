@@ -24,12 +24,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 )
 
@@ -42,12 +44,12 @@ func testUDP(t *testing.T, cfg *UDPLogConfig) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	var conn net.Conn
-	conn, err = net.Dial("udp", "0.0.0.0:29018")
+	conn, err = net.Dial("udp", "127.0.0.1:29018")
 	require.NoError(t, err)
 
 	for i := 0; i < numLogs; i++ {
@@ -72,33 +74,32 @@ func testUDP(t *testing.T, cfg *UDPLogConfig) {
 	}
 
 	for i := 0; i < numLogs; i++ {
-		assert.Contains(t, expectedLogs, logs.At(i).Body().StringVal())
+		assert.Contains(t, expectedLogs, logs.At(i).Body().Str())
 	}
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID("udplog")])
+	sub, err := cm.Sub("udplog")
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
 func testdataConfigYaml() *UDPLogConfig {
 	return &UDPLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
-			Operators:        adapter.OperatorConfigs{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: func() udp.Config {
 			c := udp.NewConfig()
-			c.ListenAddress = "0.0.0.0:29018"
+			c.ListenAddress = "127.0.0.1:29018"
 			return *c
 		}(),
 	}
@@ -109,8 +110,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &UDPLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
-			Operators:        adapter.OperatorConfigs{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: func() udp.Config {
 			c := udp.NewConfig()
@@ -118,7 +118,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			return *c
 		}(),
 	}
-	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, sink)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), badCfg, sink)
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }

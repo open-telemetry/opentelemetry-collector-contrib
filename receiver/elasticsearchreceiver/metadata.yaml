@@ -4,50 +4,63 @@ resource_attributes:
   elasticsearch.cluster.name:
     description: The name of the elasticsearch cluster.
     type: string
+    enabled: true
   elasticsearch.node.name:
     description: The name of the elasticsearch node.
     type: string
+    enabled: true
+  elasticsearch.node.version:
+    description: The version of the elasticsearch node.
+    type: string
+    enabled: true
+  elasticsearch.index.name:
+    description: The name of the elasticsearch index.
+    type: string
+    enabled: true
 
 attributes:
   cache_name:
     description: The name of cache.
+    type: string
     enum:
     - fielddata
     - query
-  fs_direction:
-    value: direction
-    description: The direction of filesystem IO.
-    enum:
-    - read
-    - write
   collector_name:
-    value: name
+    name_override: name
     description: The name of the garbage collector.
+    type: string
   memory_pool_name:
-    value: name
+    name_override: name
     description: The name of the JVM memory pool.
+    type: string
   direction:
     description: The direction of network data.
+    type: string
     enum:
     - received
     - sent
   document_state:
-    value: state
+    name_override: state
     description: The state of the document.
+    type: string
     enum:
     - active
     - deleted
   shard_state:
-    value: state
+    name_override: state
     description: The state of the shard.
+    type: string
     enum:
     - active
+    - active_primary
     - relocating
     - initializing
     - unassigned
+    - unassigned_delayed
   operation:
-    value: operation
+    name_override: operation
     description: The type of operation.
+    type: string
     enum:
     - index
     - delete
@@ -62,65 +75,70 @@ attributes:
     - warmer
   thread_pool_name:
     description: The name of the thread pool.
+    type: string
   thread_state:
-    value: state
+    name_override: state
     description: The state of the thread.
+    type: string
     enum:
     - active
     - idle
   task_state:
-    value: state
+    name_override: state
     description: The state of the task.
+    type: string
     enum:
     - rejected
     - completed
   health_status:
-    value: status
+    name_override: status
     description: The health status of the cluster.
+    type: string
     enum:
     - green
     - yellow
     - red
   circuit_breaker_name:
-    value: name
+    name_override: name
     description: The name of circuit breaker.
+    type: string
   memory_state:
-    value: state
+    name_override: state
     description: State of the memory
+    type: string
     enum:
       - free
       - used
-  indexing_memory_state:
-    value: state
-    description: State of the indexing memory
-    enum:
-      - current
-      - total
   cluster_published_difference_state:
-    value: state
+    name_override: state
     description: State of the published differences
+    type: string
     enum:
       - incompatible
       - compatible
   cluster_state_queue_state:
-    value: state
+    name_override: state
     description: State of the published differences
+    type: string
     enum:
       - pending
       - committed
   indexing_pressure_stage:
-    value: stage
+    name_override: stage
     description: Stage of the indexing pressure
+    type: string
     enum:
       - coordinating
       - primary
       - replica
   cluster_state_update_state:
-    value: state
+    name_override: state
     description: State of cluster state update
+    type: string
   cluster_state_update_type:
-    value: type
+    name_override: type
     description: Type of cluster state update
+    type: string
     enum:
       - computation
       - context_construction
@@ -129,14 +147,40 @@ attributes:
       - master_apply
       - notification
   ingest_pipeline_name:
-    value: name
+    name_override: name
     description: Name of the ingest pipeline.
+    type: string
   query_cache_count_type:
-    value: type
+    name_override: type
     description: Type of query cache count
+    type: string
     enum:
       - hit
       - miss
+  index_aggregation_type:
+    name_override: aggregation
+    description: Type of shard aggregation for index statistics
+    type: string
+    enum:
+      - primary_shards
+      - total
+  segments_memory_object_type:
+    name_override: object
+    description: Type of object in segment
+    type: string
+    enum:
+      - term
+      - doc_value
+      - index_writer
+      - fixed_bit_set
+  get_result:
+    name_override: result
+    description: Result of get operation
+    type: string
+    enum:
+      - hit
+      - miss
+
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
   elasticsearch.breaker.memory.estimated:
@@ -165,7 +209,7 @@ metrics:
     attributes: [circuit_breaker_name]
     enabled: true
   elasticsearch.node.cache.memory.usage:
-    description: The size in bytes of the cache.
+    description: The size in bytes of the cache on a node.
     unit: By
     sum:
       monotonic: false
@@ -174,7 +218,7 @@ metrics:
     attributes: [cache_name]
     enabled: true
   elasticsearch.node.cache.evictions:
-    description: The number of evictions from the cache.
+    description: The number of evictions from the cache on a node.
     unit: "{evictions}"
     sum:
       monotonic: true
@@ -191,6 +235,15 @@ metrics:
       value_type: int
     attributes: [ query_cache_count_type ]
     enabled: true
+  elasticsearch.node.cache.size:
+    description: Total amount of memory used for the query cache across all shards assigned to the node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: false
   elasticsearch.node.fs.disk.available:
     description: The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.
     unit: By
@@ -246,7 +299,6 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
-  # produced when receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   elasticsearch.node.cluster.io:
     description: The number of bytes sent and received on the network for internal cluster communication.
     unit: By
@@ -255,26 +307,6 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [direction]
-    enabled: true
-  # produced when receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  elasticsearch.node.cluster.io.received:
-    description: The number of bytes received on the network for internal cluster communication.
-    unit: By
-    sum:
-      monotonic: true
-      aggregation: cumulative
-      value_type: int
-    attributes: []
-    enabled: true
-  # produced when receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  elasticsearch.node.cluster.io.sent:
-    description: The number of bytes sent on the network for internal cluster communication.
-    unit: By
-    sum:
-      monotonic: true
-      aggregation: cumulative
-      value_type: int
-    attributes: []
     enabled: true
   elasticsearch.node.cluster.connections:
     description: The number of open tcp connections for internal cluster communication.
@@ -294,8 +326,15 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
+  elasticsearch.node.operations.current:
+    description: Number of query operations currently running.
+    unit: "{operations}"
+    gauge:
+      value_type: int
+    attributes: [ operation ]
+    enabled: false
   elasticsearch.node.operations.completed:
-    description: The number of operations completed.
+    description: The number of operations completed by a node.
     unit: "{operations}"
     sum:
       monotonic: true
@@ -304,7 +343,7 @@ metrics:
     attributes: [operation]
     enabled: true
   elasticsearch.node.operations.time:
-    description: Time spent on operations.
+    description: Time spent on operations by a node.
     unit: ms
     sum:
       monotonic: true
@@ -312,6 +351,24 @@ metrics:
       value_type: int
     attributes: [operation]
     enabled: true
+  elasticsearch.node.operations.get.completed:
+    description: The number of hits and misses resulting from GET operations.
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [get_result]
+    enabled: false
+  elasticsearch.node.operations.get.time:
+    description: The time spent on hits and misses resulting from GET operations.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [get_result]
+    enabled: false
   elasticsearch.node.shards.size:
     description: The size of the shards assigned to this node.
     unit: By
@@ -452,6 +509,13 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
+  jvm.memory.heap.utilization:
+    description: Fraction of heap memory usage
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: []
+    enabled: false
   jvm.memory.heap.committed:
     description: The amount of memory that is guaranteed to be available for the heap
     unit: By
@@ -669,6 +733,15 @@ metrics:
       value_type: int
     attributes: [ cluster_state_update_state, cluster_state_update_type ]
     enabled: true
+  elasticsearch.cluster.indices.cache.evictions:
+    description: The number of evictions from the cache for indices in cluster.
+    unit: "{evictions}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [cache_name]
+    enabled: false
   elasticsearch.node.ingest.documents:
     description: Total number of documents ingested during the lifetime of this node.
     unit: "{documents}"
@@ -750,3 +823,164 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
+  elasticsearch.node.segments.memory:
+    description: Size of memory for segment object of a node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [segments_memory_object_type]
+    enabled: false
+  # these metrics are from /*/_stats and are index level metrics
+  elasticsearch.index.operations.completed:
+    description: The number of operations completed for an index.
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [operation, index_aggregation_type]
+    enabled: true
+  elasticsearch.index.operations.time:
+    description: Time spent on operations for an index.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [operation, index_aggregation_type]
+    enabled: true
+  elasticsearch.index.shards.size:
+    description: The size of the shards assigned to this index.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: true
+  elasticsearch.index.operations.merge.size:
+    description: The total size of merged segments for an index.
+    unit: By
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.operations.merge.docs_count:
+    description: The total number of documents in merge operations for an index.
+    unit: "{documents}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.segments.count:
+    description: Number of segments of an index.
+    unit: "{segments}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.segments.size:
+    description: Size of segments of an index.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.segments.memory:
+    description: Size of memory for segment object of an index.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type, segments_memory_object_type]
+    enabled: false
+  elasticsearch.index.translog.operations:
+    description: Number of transaction log operations for an index.
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.translog.size:
+    description: Size of the transaction log for an index.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.cache.memory.usage:
+    description: The size in bytes of the cache for an index.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [cache_name, index_aggregation_type]
+    enabled: false
+  elasticsearch.index.cache.size:
+    description: The number of elements of the query cache for an index.
+    unit: 1
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.cache.evictions:
+    description: The number of evictions from the cache for an index.
+    unit: "{evictions}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [cache_name, index_aggregation_type]
+    enabled: false
+  elasticsearch.index.documents:
+    description: The number of documents for an index.
+    unit: "{documents}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [document_state, index_aggregation_type]
+    enabled: false
+  elasticsearch.process.cpu.usage:
+    description: CPU usage in percent.
+    unit: 1.0
+    gauge:
+      value_type: double
+    attributes: [ ]
+    enabled: false
+  elasticsearch.process.cpu.time:
+    description: CPU time used by the process on which the Java virtual machine is running.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: false
+  elasticsearch.process.memory.virtual:
+    description: Size of virtual memory that is guaranteed to be available to the running process.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: false

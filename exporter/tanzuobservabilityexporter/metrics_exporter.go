@@ -20,7 +20,7 @@ import (
 
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -28,8 +28,8 @@ type metricsExporter struct {
 	consumer *metricsConsumer
 }
 
-func createMetricsConsumer(endpoint string, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
-	s, err := senders.NewSender(endpoint,
+func createMetricsConsumer(config MetricsConfig, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
+	s, err := senders.NewSender(config.Endpoint,
 		senders.FlushIntervalSeconds(60),
 		senders.SDKMetricsTags(map[string]string{"otel.metrics.collector_version": otelVersion}),
 	)
@@ -47,13 +47,13 @@ func createMetricsConsumer(endpoint string, settings component.TelemetrySettings
 			newSummaryConsumer(s, settings),
 		},
 		s,
-		true), nil
+		true, config), nil
 }
 
-type metricsConsumerCreator func(endpoint string, settings component.TelemetrySettings, otelVersion string) (
+type metricsConsumerCreator func(config MetricsConfig, settings component.TelemetrySettings, otelVersion string) (
 	*metricsConsumer, error)
 
-func newMetricsExporter(settings component.ExporterCreateSettings, c config.Exporter, creator metricsConsumerCreator) (*metricsExporter, error) {
+func newMetricsExporter(settings exporter.CreateSettings, c component.Config, creator metricsConsumerCreator) (*metricsExporter, error) {
 	cfg, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)
@@ -64,7 +64,7 @@ func newMetricsExporter(settings component.ExporterCreateSettings, c config.Expo
 	if _, _, err := cfg.parseMetricsEndpoint(); err != nil {
 		return nil, fmt.Errorf("failed to parse metrics.endpoint: %w", err)
 	}
-	consumer, err := creator(cfg.Metrics.Endpoint, settings.TelemetrySettings, settings.BuildInfo.Version)
+	consumer, err := creator(cfg.Metrics, settings.TelemetrySettings, settings.BuildInfo.Version)
 	if err != nil {
 		return nil, err
 	}

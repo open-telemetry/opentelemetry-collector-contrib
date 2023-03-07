@@ -1,0 +1,11 @@
+default:
+all_metrics:
+  system.processes.count:
+    enabled: true
+  system.processes.created:
+    enabled: true
+no_metrics:
+  system.processes.count:
+    enabled: false
+  system.processes.created:
+    enabled: false

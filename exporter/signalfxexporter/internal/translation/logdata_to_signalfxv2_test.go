@@ -56,8 +56,8 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		logs := plog.NewLogs()
 		resourceLogs := logs.ResourceLogs()
 		resourceLog := resourceLogs.AppendEmpty()
-		resourceLog.Resource().Attributes().PutString("k0", "should use ILL attr value instead")
-		resourceLog.Resource().Attributes().PutString("k3", "v3")
+		resourceLog.Resource().Attributes().PutStr("k0", "should use ILL attr value instead")
+		resourceLog.Resource().Attributes().PutStr("k3", "v3")
 		resourceLog.Resource().Attributes().PutInt("k4", 123)
 
 		ilLogs := resourceLog.ScopeLogs()
@@ -67,20 +67,17 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		l.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
 
-		attrs.PutString("k0", "v0")
-		attrs.PutString("k1", "v1")
-		attrs.PutString("k2", "v2")
+		attrs.PutStr("k0", "v0")
+		attrs.PutStr("k1", "v1")
+		attrs.PutStr("k2", "v2")
 		attrs.PutInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
-		attrs.PutString("com.splunk.signalfx.event_type", "shutdown")
+		attrs.PutStr("com.splunk.signalfx.event_type", "shutdown")
 
 		propMap := attrs.PutEmptyMap("com.splunk.signalfx.event_properties")
-		propMap.PutString("env", "prod")
+		propMap.PutStr("env", "prod")
 		propMap.PutBool("isActive", true)
 		propMap.PutInt("rack", 5)
 		propMap.PutDouble("temp", 40.5)
-		propMap.Sort()
-
-		l.Attributes().Sort()
 
 		return logs
 	}
@@ -131,9 +128,6 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 			resource := tt.logData.ResourceLogs().At(0).Resource()
 			logSlice := tt.logData.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 			events, dropped := LogRecordSliceToSignalFxV2(zap.NewNop(), logSlice, resource.Attributes())
-			for i := 0; i < logSlice.Len(); i++ {
-				logSlice.At(i).Attributes().Sort()
-			}
 
 			for k := range events {
 				sort.Slice(events[k].Properties, func(i, j int) bool {

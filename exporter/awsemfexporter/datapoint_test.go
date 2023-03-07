@@ -59,6 +59,20 @@ func generateTestIntGauge(name string) *metricspb.Metric {
 	}
 }
 
+func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, logStreamName, instrumentationLibraryName string, metricType pmetric.MetricType) cWMetricMetadata {
+	return cWMetricMetadata{
+		receiver: prometheusReceiver,
+		groupedMetricMetadata: groupedMetricMetadata{
+			namespace:      namespace,
+			timestampMs:    timestamp,
+			logGroup:       logGroup,
+			logStream:      logStreamName,
+			metricDataType: metricType,
+		},
+		instrumentationLibraryName: instrumentationLibraryName,
+	}
+}
+
 func generateTestDoubleGauge(name string) *metricspb.Metric {
 	return &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
@@ -295,15 +309,14 @@ func TestIntDataPointSliceAt(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			testDPS := pmetric.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
-			testDP.SetIntVal(tc.value.(int64))
-			testDP.Attributes().PutString("label", "value")
+			testDP.SetIntValue(tc.value.(int64))
+			testDP.Attributes().PutStr("label", "value")
 
 			dps := numberDataPointSlice{
 				instrLibName,
 				deltaMetricMetadata{
 					tc.adjustToDelta,
 					"foo",
-					0,
 					"namespace",
 					"log-group",
 					"log-stream",
@@ -365,15 +378,14 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			testDPS := pmetric.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
-			testDP.SetDoubleVal(tc.value.(float64))
-			testDP.Attributes().PutString("label1", "value1")
+			testDP.SetDoubleValue(tc.value.(float64))
+			testDP.Attributes().PutStr("label1", "value1")
 
 			dps := numberDataPointSlice{
 				instrLibName,
 				deltaMetricMetadata{
 					tc.adjustToDelta,
 					"foo",
-					0,
 					"namespace",
 					"log-group",
 					"log-stream",
@@ -400,7 +412,7 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	testDP.SetSum(17.13)
 	testDP.BucketCounts().FromRaw([]uint64{1, 2, 3})
 	testDP.ExplicitBounds().FromRaw([]float64{1, 2, 3})
-	testDP.Attributes().PutString("label1", "value1")
+	testDP.Attributes().PutStr("label1", "value1")
 
 	dps := histogramDataPointSlice{
 		instrLibName,
@@ -432,7 +444,7 @@ func TestHistogramDataPointSliceAtWithMinMax(t *testing.T) {
 	testDP.SetSum(17.13)
 	testDP.SetMin(10)
 	testDP.SetMax(30)
-	testDP.Attributes().PutString("label1", "value1")
+	testDP.Attributes().PutStr("label1", "value1")
 
 	dps := histogramDataPointSlice{
 		instrLibName,
@@ -464,7 +476,7 @@ func TestHistogramDataPointSliceAtWithoutMinMax(t *testing.T) {
 	testDP := testDPS.AppendEmpty()
 	testDP.SetCount(uint64(17))
 	testDP.SetSum(17.13)
-	testDP.Attributes().PutString("label1", "value1")
+	testDP.Attributes().PutStr("label1", "value1")
 
 	dps := histogramDataPointSlice{
 		instrLibName,
@@ -493,7 +505,6 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	metadataTimeStamp := time.Now().UnixNano() / int64(time.Millisecond)
 
 	testCases := []struct {
 		testName           string
@@ -531,14 +542,13 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			testQuantileValue = testDP.QuantileValues().AppendEmpty()
 			testQuantileValue.SetQuantile(100)
 			testQuantileValue.SetValue(float64(5))
-			testDP.Attributes().PutString("label1", "value1")
+			testDP.Attributes().PutStr("label1", "value1")
 
 			dps := summaryDataPointSlice{
 				instrLibName,
 				deltaMetricMetadata{
 					true,
 					"foo",
-					metadataTimeStamp,
 					"namespace",
 					"log-group",
 					"log-stream",
@@ -582,11 +592,11 @@ func TestCreateLabels(t *testing.T) {
 		"c": "C",
 	}
 	labelsMap := pcommon.NewMap()
-	labelsMap.FromRaw(map[string]interface{}{
+	assert.NoError(t, labelsMap.FromRaw(map[string]interface{}{
 		"a": "A",
 		"b": "B",
 		"c": "C",
-	})
+	}))
 
 	labels := createLabels(labelsMap, noInstrumentationLibraryName)
 	assert.Equal(t, expectedLabels, labels)
@@ -611,7 +621,6 @@ func TestGetDataPoints(t *testing.T) {
 	dmm := deltaMetricMetadata{
 		false,
 		"foo",
-		metadata.timestampMs,
 		"namespace",
 		"log-group",
 		"log-stream",
@@ -619,7 +628,6 @@ func TestGetDataPoints(t *testing.T) {
 	cumulativeDmm := deltaMetricMetadata{
 		true,
 		"foo",
-		metadata.timestampMs,
 		"namespace",
 		"log-group",
 		"log-stream",
@@ -732,9 +740,9 @@ func TestGetDataPoints(t *testing.T) {
 				dp := convertedDPS.NumberDataPointSlice.At(0)
 				switch dp.ValueType() {
 				case pmetric.NumberDataPointValueTypeDouble:
-					assert.Equal(t, 0.1, dp.DoubleVal())
+					assert.Equal(t, 0.1, dp.DoubleValue())
 				case pmetric.NumberDataPointValueTypeInt:
-					assert.Equal(t, int64(1), dp.IntVal())
+					assert.Equal(t, int64(1), dp.IntValue())
 				}
 				assert.Equal(t, expectedAttributes, dp.Attributes().AsRaw())
 			case histogramDataPointSlice:
@@ -776,7 +784,7 @@ func TestGetDataPoints(t *testing.T) {
 			{
 				Entry: zapcore.Entry{Level: zap.WarnLevel, Message: "Unhandled metric data type."},
 				Context: []zapcore.Field{
-					zap.String("DataType", "None"),
+					zap.String("DataType", "Empty"),
 					zap.String("Name", "foo"),
 					zap.String("Unit", "Count"),
 				},
@@ -844,9 +852,8 @@ func TestIntDataPointSlice_At(t *testing.T) {
 				deltaMetricMetadata:        tt.fields.deltaMetricMetadata,
 				NumberDataPointSlice:       tt.fields.NumberDataPointSlice,
 			}
-			if got, _ := dps.At(tt.args.i); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("At() = %v, want %v", got, tt.want)
-			}
+			got, _ := dps.At(tt.args.i)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

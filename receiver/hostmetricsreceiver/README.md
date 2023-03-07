@@ -12,12 +12,13 @@ deployed as an agent.
 
 ## Getting Started
 
-The collection interval and the categories of metrics to be scraped can be
+The collection interval, root path, and the categories of metrics to be scraped can be
 configured:
 
 ```yaml
 hostmetrics:
   collection_interval: <duration> # default = 1m
+  root_path: <string>
   scrapers:
     <scraper1>:
     <scraper2>:
@@ -26,17 +27,27 @@ hostmetrics:
 
 The available scrapers are:
 
-| Scraper    | Supported OSs                | Description                                            |
-| ---------- | ---------------------------- | ------------------------------------------------------ |
-| cpu        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
-| disk       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
-| load       | All                          | CPU load metrics                                       |
-| filesystem | All                          | File System utilization metrics                        |
-| memory     | All                          | Memory utilization metrics                             |
-| network    | All                          | Network interface I/O metrics & TCP connection metrics |
-| paging     | All                          | Paging/Swap space utilization and I/O metrics          |
-| processes  | Linux                        | Process count metrics                                  |
-| process    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
+| Scraper      | Supported OSs                | Description                                            |
+| ------------ | ---------------------------- | ------------------------------------------------------ |
+| [cpu]        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
+| [disk]       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
+| [load]       | All                          | CPU load metrics                                       |
+| [filesystem] | All                          | File System utilization metrics                        |
+| [memory]     | All                          | Memory utilization metrics                             |
+| [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
+| [paging]     | All                          | Paging/Swap space utilization and I/O metrics          |
+| [processes]  | Linux                        | Process count metrics                                  |
+| [process]    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
+
+[cpu]: ./internal/scraper/cpuscraper/documentation.md
+[disk]: ./internal/scraper/diskscraper/documentation.md
+[filesystem]: ./internal/scraper/filesystemscraper/documentation.md
+[load]: ./internal/scraper/loadscraper/documentation.md
+[memory]: ./internal/scraper/memoryscraper/documentation.md
+[network]: ./internal/scraper/networkscraper/documentation.md
+[paging]: ./internal/scraper/pagingscraper/documentation.md
+[processes]: ./internal/scraper/processesscraper/documentation.md
+[process]: ./internal/scraper/processscraper/documentation.md
 
 ### Notes
 
@@ -131,94 +142,88 @@ service:
       receivers: [hostmetrics, hostmetrics/disk]
 ```
 
-### Feature gate configurations
+### Collecting host metrics from inside a container (Linux only)
 
-#### Transition from metrics with "direction" attribute
+Host metrics are collected from the Linux system directories on the filesystem.
+You likely want to collect metrics about the host system and not the container.
+This is achievable by following these steps: 
 
-There is a proposal to change some host metrics from being reported with a `direction` attribute to being
-reported with the direction included in the metric name.
+#### 1. Bind mount the host filesystem
 
-- `disk` scraper metrics:
-  - `system.disk.io` will become:
-    - `system.disk.io.read`
-    - `system.disk.io.write`
-  - `system.disk.operations` will become:
-    - `system.disk.operations.read`
-    - `system.disk.operations.write`
-  - `system.disk.operation_time` will become:
-    - `system.disk.operation_time.read`
-    - `system.disk.operation_time.write`
-  - `system.disk.merged` will become:
-    - `system.disk.merged.read`
-    - `system.disk.merged.write`
-- `network` scraper metrics:
-  - `system.network.dropped` will become:
-    - `system.network.dropped.receive`
-    - `system.network.dropped.transmit`
-  - `system.network.errors` will become:
-    - `system.network.errors.receive`
-    - `system.network.errors.transmit`
-  - `system.network.io` will become:
-    - `system.network.io.receive`
-    - `system.network.io.transmit`
-  - `system.network.packets` will become:
-    - `system.network.packets.receive`
-    - `system.network.packets.transmit`
-- `paging` scraper metrics:
-  - `system.paging.operations` will become:
-    - `system.paging.operations.page_in`
-    - `system.paging.operations.page_out`
-- `process` scraper metrics:
-  - `process.disk.io` will become:
-    - `process.disk.io.read`
-    - `process.disk.io.write`
+The simplest configuration is to mount the entire host filesystem when running 
+the container. e.g. `docker run -v /:/hostfs ...`.
 
-The following feature gates control the transition process:
+You can also choose which parts of the host filesystem to mount, if you know 
+exactly what you'll need. e.g. `docker run -v /proc:/hostfs/proc`.
 
-- **receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without
-  `direction` attribute are emitted by the receiver.
-- **receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with 
-  `direction`
-  attribute are emitted by the receiver.
+#### 2. Configure `root_path`
 
-##### Transition schedule:
+Configure `root_path` so the hostmetrics receiver knows where the root filesystem is.
+Note: if running multiple instances of the host metrics receiver, they must all have
+the same `root_path`.
 
-The final decision on the transition is not finalized yet. The transition is on hold until
-https://github.com/open-telemetry/opentelemetry-specification/issues/2726 is resolved.
-
-##### Usage:
-
-To enable the new metrics without `direction` attribute and disable the deprecated metrics, run OTel Collector with the 
-following arguments:
-
-```sh
-otelcol --feature-gates=-receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute,+receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute
+Example:
+```yaml
+receivers:
+  hostmetrics:
+    root_path: /hostfs
 ```
 
-It's also possible to emit both the deprecated and the new metrics:
+## Resource attributes
 
-```sh
-otelcol --feature-gates=+receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute,+receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute
+Currently, the hostmetrics receiver does not set any Resource attributes on the exported metrics. However, if you want to set Resource attributes, you can provide them via environment variables via the [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#environment-variable) processor. For example, you can add the following resource attributes to adhere to [Resource Semantic Conventions](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/):
+
+```
+export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service.namespace=<the namespace of your service>,service.instance.id=<uuid of the instance>"
 ```
 
-If both feature gates are enabled, each particular metric can be disabled with the user settings, for example:
+## Deprecations
+
+### Transition to process memory metric names aligned with OpenTelemetry specification
+
+The Host Metrics receiver has been emitting the following process memory metrics:
+
+- [process.memory.physical_usage] for the amount of physical memory used by the process,
+- [process.memory.virtual_usage] for the amount of virtual memory used by the process.
+
+This is in conflict with the OpenTelemetry specification,
+which defines [process.memory.usage] and [process.memory.virtual] as the names for these metrics.
+
+To align the emitted metric names with the OpenTelemetry specification,
+the following process will be followed to phase out the old metrics:
+
+- Until and including `v0.63.0`, only the old metrics `process.memory.physical_usage` and `process.memory.virtual_usage` are emitted.
+  You can use the [Metrics Transform processor][metricstransformprocessor_docs] to rename them.
+- Between `v0.64.0` and `v0.68.0`, the new metrics are introduced as optional (disabled by default) and the old metrics are marked as deprecated.
+  Only the old metrics are emitted by default.
+- Between `v0.69.0` and `v0.71.0`, the new metrics are enabled and the old metrics are disabled by default.
+- In `v0.72.0` and up, the old metrics are removed.
+
+To change the enabled state for the specific metrics, use the standard configuration options that are available for all metrics.
+
+Here's an example configuration to disable the old metrics and enable the new metrics:
 
 ```yaml
 receivers:
   hostmetrics:
     scrapers:
-      paging:
+      process:
         metrics:
-          system.paging.operations:
+          process.memory.physical_usage:
             enabled: false
+          process.memory.virtual_usage:
+            enabled: false
+          process.memory.usage:
+            enabled: true
+          process.memory.virtual:
+            enabled: true
 ```
-
-##### More information:
-
-- https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11815
-- https://github.com/open-telemetry/opentelemetry-specification/pull/2617
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
-
+[process.memory.physical_usage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.63.0/receiver/hostmetricsreceiver/internal/scraper/processscraper/metadata.yaml#L61
+[process.memory.virtual_usage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.63.0/receiver/hostmetricsreceiver/internal/scraper/processscraper/metadata.yaml#L70
+[process.memory.usage]: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.14.0/specification/metrics/semantic_conventions/process-metrics.md?plain=1#L38
+[process.memory.virtual]: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.14.0/specification/metrics/semantic_conventions/process-metrics.md?plain=1#L39
+[metricstransformprocessor_docs]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.63.0/processor/metricstransformprocessor/README.md

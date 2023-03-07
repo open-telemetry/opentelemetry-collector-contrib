@@ -1,6 +1,6 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
+// Licensed under the Apache License, ClusterMetadata 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
@@ -26,31 +26,71 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
 
 const fullExpectedMetricsPath = "./testdata/expected_metrics/full.json"
-const fullExpectedMetricsWithoutDirectionPath = "./testdata/expected_metrics/fullWithoutDirection.json"
 const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.json"
 const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.json"
+
+func TestMain(m *testing.M) {
+	// Enable the feature gates before all tests to avoid flaky tests.
+	_ = featuregate.GlobalRegistry().Set(emitNodeVersionAttr.ID(), true)
+	code := m.Run()
+	os.Exit(code)
+}
 
 func TestScraper(t *testing.T) {
 	t.Parallel()
 
-	sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
+	config := createDefaultConfig().(*Config)
+
+	config.Metrics.ElasticsearchNodeOperationsGetCompleted.Enabled = true
+	config.Metrics.ElasticsearchNodeOperationsGetTime.Enabled = true
+	config.Metrics.ElasticsearchNodeSegmentsMemory.Enabled = true
+
+	config.Metrics.JvmMemoryHeapUtilization.Enabled = true
+
+	config.Metrics.ElasticsearchNodeOperationsCurrent.Enabled = true
+
+	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
+	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
+	config.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true
+	config.Metrics.ElasticsearchIndexSegmentsSize.Enabled = true
+	config.Metrics.ElasticsearchIndexSegmentsMemory.Enabled = true
+	config.Metrics.ElasticsearchIndexTranslogOperations.Enabled = true
+	config.Metrics.ElasticsearchIndexTranslogSize.Enabled = true
+	config.Metrics.ElasticsearchIndexCacheMemoryUsage.Enabled = true
+	config.Metrics.ElasticsearchIndexCacheSize.Enabled = true
+	config.Metrics.ElasticsearchIndexCacheEvictions.Enabled = true
+	config.Metrics.ElasticsearchIndexDocuments.Enabled = true
+
+	config.Metrics.ElasticsearchClusterIndicesCacheEvictions.Enabled = true
+
+	config.Metrics.ElasticsearchNodeCacheSize.Enabled = true
+	config.Metrics.ElasticsearchProcessCPUUsage.Enabled = true
+	config.Metrics.ElasticsearchProcessCPUTime.Enabled = true
+	config.Metrics.ElasticsearchProcessMemoryVirtual.Enabled = true
+
+	sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), config)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	mockClient := mocks.MockElasticsearchClient{}
-	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+	mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
+	mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
+	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 	sc.client = &mockClient
 
@@ -60,33 +100,8 @@ func TestScraper(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
-}
-
-func TestScraperMetricsWithoutDirection(t *testing.T) {
-	t.Parallel()
-
-	sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
-	sc.emitMetricsWithDirectionAttribute = false
-	sc.emitMetricsWithoutDirectionAttribute = true
-
-	err := sc.start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-
-	mockClient := mocks.MockElasticsearchClient{}
-	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
-	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
-	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
-
-	sc.client = &mockClient
-
-	expectedMetrics, err := golden.ReadMetrics(fullExpectedMetricsWithoutDirectionPath)
-	require.NoError(t, err)
-
-	actualMetrics, err := sc.scrape(context.Background())
-	require.NoError(t, err)
-
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperSkipClusterMetrics(t *testing.T) {
@@ -95,15 +110,18 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	conf := createDefaultConfig().(*Config)
 	conf.SkipClusterMetrics = true
 
-	sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), conf)
+	sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), conf)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	mockClient := mocks.MockElasticsearchClient{}
-	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+	mockClient.On("ClusterStats", mock.Anything, []string{}).Return(clusterStats(t), nil)
+	mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
+	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 	sc.client = &mockClient
 
@@ -113,7 +131,8 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperNoNodesMetrics(t *testing.T) {
@@ -122,15 +141,18 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	conf := createDefaultConfig().(*Config)
 	conf.Nodes = []string{}
 
-	sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), conf)
+	sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), conf)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	mockClient := mocks.MockElasticsearchClient{}
-	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+	mockClient.On("ClusterStats", mock.Anything, []string{}).Return(clusterStats(t), nil)
+	mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{}).Return(nodeStats(t), nil)
+	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
 	sc.client = &mockClient
 
@@ -140,7 +162,8 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperFailedStart(t *testing.T) {
@@ -160,7 +183,7 @@ func TestScraperFailedStart(t *testing.T) {
 	conf.Username = "dev"
 	conf.Password = "dev"
 
-	sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), conf)
+	sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), conf)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -179,11 +202,14 @@ func TestScrapingError(t *testing.T) {
 				err404 := errors.New("expected status 200 but got 404")
 
 				mockClient := mocks.MockElasticsearchClient{}
-				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+				mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+				mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err404)
 				mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
-				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -203,11 +229,14 @@ func TestScrapingError(t *testing.T) {
 				err404 := errors.New("expected status 200 but got 404")
 
 				mockClient := mocks.MockElasticsearchClient{}
-				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+				mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+				mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
+				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
-				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -220,7 +249,7 @@ func TestScrapingError(t *testing.T) {
 			},
 		},
 		{
-			desc: "Both node stats and cluster health fails",
+			desc: "Node stats, index stats, cluster stats and cluster health fails",
 			run: func(t *testing.T) {
 				t.Parallel()
 
@@ -228,11 +257,14 @@ func TestScrapingError(t *testing.T) {
 				err500 := errors.New("expected status 200 but got 500")
 
 				mockClient := mocks.MockElasticsearchClient{}
-				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+				mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+				mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
+				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(nil, err404)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 
-				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -246,18 +278,21 @@ func TestScrapingError(t *testing.T) {
 			},
 		},
 		{
-			desc: "Version is invalid, node stats and cluster health succeed",
+			desc: "ClusterMetadata is invalid, node stats and cluster health succeed",
 			run: func(t *testing.T) {
 				t.Parallel()
 
 				err404 := errors.New("expected status 200 but got 404")
 
 				mockClient := mocks.MockElasticsearchClient{}
-				mockClient.On("Version", mock.Anything).Return(nil, err404)
+				mockClient.On("ClusterMetadata", mock.Anything).Return(nil, err404)
+				mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
-				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -269,7 +304,7 @@ func TestScrapingError(t *testing.T) {
 			},
 		},
 		{
-			desc: "Version, node stats and cluster health fails",
+			desc: "ClusterMetadata, node stats, index stats, cluster stats and cluster health fail",
 			run: func(t *testing.T) {
 				t.Parallel()
 
@@ -277,11 +312,14 @@ func TestScrapingError(t *testing.T) {
 				err500 := errors.New("expected status 200 but got 500")
 
 				mockClient := mocks.MockElasticsearchClient{}
-				mockClient.On("Version", mock.Anything).Return(nil, err404)
+				mockClient.On("ClusterMetadata", mock.Anything).Return(nil, err404)
+				mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(nil, err500)
+				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 
-				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -303,11 +341,14 @@ func TestScrapingError(t *testing.T) {
 				ch.Status = "pink"
 
 				mockClient := mocks.MockElasticsearchClient{}
-				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
+				mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+				mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(ch, nil)
+				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
-				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -335,8 +376,27 @@ func clusterHealth(t *testing.T) *model.ClusterHealth {
 	return &clusterHealth
 }
 
-func nodeStats(t *testing.T) *model.NodeStats {
+func clusterStats(t *testing.T) *model.ClusterStats {
+	statsJSON, err := os.ReadFile("./testdata/sample_payloads/cluster.json")
+	require.NoError(t, err)
+
+	clusterStats := model.ClusterStats{}
+	require.NoError(t, json.Unmarshal(statsJSON, &clusterStats))
+
+	return &clusterStats
+}
+
+func nodes(t *testing.T) *model.Nodes {
 	nodeJSON, err := os.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	require.NoError(t, err)
+
+	nodes := model.Nodes{}
+	require.NoError(t, json.Unmarshal(nodeJSON, &nodes))
+	return &nodes
+}
+
+func nodeStats(t *testing.T) *model.NodeStats {
+	nodeJSON, err := os.ReadFile("./testdata/sample_payloads/nodes_stats_linux.json")
 	require.NoError(t, err)
 
 	nodeStats := model.NodeStats{}
@@ -344,11 +404,20 @@ func nodeStats(t *testing.T) *model.NodeStats {
 	return &nodeStats
 }
 
-func versionNumber(t *testing.T) *model.VersionResponse {
-	versionJSON, err := os.ReadFile("./testdata/sample_payloads/version.json")
+func indexStats(t *testing.T) *model.IndexStats {
+	indexJSON, err := os.ReadFile("./testdata/sample_payloads/indices.json")
 	require.NoError(t, err)
 
-	versionResponse := model.VersionResponse{}
-	require.NoError(t, json.Unmarshal(versionJSON, &versionResponse))
-	return &versionResponse
+	indexStats := model.IndexStats{}
+	require.NoError(t, json.Unmarshal(indexJSON, &indexStats))
+	return &indexStats
+}
+
+func clusterMetadata(t *testing.T) *model.ClusterMetadataResponse {
+	metadataJSON, err := os.ReadFile("./testdata/sample_payloads/metadata.json")
+	require.NoError(t, err)
+
+	metadataResponse := model.ClusterMetadataResponse{}
+	require.NoError(t, json.Unmarshal(metadataJSON, &metadataResponse))
+	return &metadataResponse
 }

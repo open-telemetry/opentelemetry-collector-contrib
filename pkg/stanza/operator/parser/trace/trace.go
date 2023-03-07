@@ -45,8 +45,8 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a trace parser operator.
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash"           yaml:",inline"`
-	helper.TraceParser       `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	helper.TraceParser       `mapstructure:",omitempty,squash"`
 }
 
 // Build will build a trace parser operator.
