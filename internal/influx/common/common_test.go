@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,26 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package influxdbexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
+package common
 
 import (
-	"go.uber.org/zap"
+	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx/common"
+	"github.com/stretchr/testify/assert"
 )
 
-type zapInfluxLogger struct {
-	*zap.SugaredLogger
-}
-
-func newZapInfluxLogger(logger *zap.Logger) common.Logger {
-	return &common.ErrorLogger{
-		Logger: &zapInfluxLogger{
-			logger.Sugar(),
-		},
-	}
-}
-
-func (l zapInfluxLogger) Debug(msg string, kv ...interface{}) {
-	l.SugaredLogger.Debugw(msg, kv...)
+func TestResourceNamespace(t *testing.T) {
+	assert.False(t, ResourceNamespace.MatchString("foo"))
+	assert.False(t, ResourceNamespace.MatchString("foo.bar"))
+	assert.True(t, ResourceNamespace.MatchString("service.name"))
+	assert.False(t, ResourceNamespace.MatchString("service.foo"))
+	assert.True(t, ResourceNamespace.MatchString("faas.instance"))
+	assert.False(t, ResourceNamespace.MatchString("faas.execution"))
 }

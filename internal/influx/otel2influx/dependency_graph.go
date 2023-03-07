@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,26 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package influxdbexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
+package otel2influx // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx/otel2influx"
 
 import (
-	"go.uber.org/zap"
+	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx/common"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type zapInfluxLogger struct {
-	*zap.SugaredLogger
-}
-
-func newZapInfluxLogger(logger *zap.Logger) common.Logger {
-	return &common.ErrorLogger{
-		Logger: &zapInfluxLogger{
-			logger.Sugar(),
-		},
-	}
-}
-
-func (l zapInfluxLogger) Debug(msg string, kv ...interface{}) {
-	l.SugaredLogger.Debugw(msg, kv...)
+type DependencyGraph interface {
+	Start(ctx context.Context, host component.Host) error
+	ReportSpan(ctx context.Context, span ptrace.Span, resource pcommon.Resource)
+	Shutdown(ctx context.Context) error
 }

@@ -339,6 +339,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver => ../../receiver/googlecloudspannerreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../../receiver/prometheusreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter => ../../exporter/sapmexporter
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx => ../../internal/influx
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ../../internal/kubelet
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver => ../../receiver/sqlserverreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver => ../../receiver/skywalkingreceiver
