@@ -66,7 +66,10 @@ func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Bu
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
 	stsClient := sts.New(sess, awsConfig)
-	accountCall, _ := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	accountCall, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		logger.Error("stsClient: Error getting caller identity.", zap.Error(err))
+	}
 	accountId := accountCall.Account
 	return newCloudWatchLogClient(client, logRetention, tags, *accountId, *awsConfig.Region, logger)
 }

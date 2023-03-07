@@ -16,6 +16,7 @@ package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelem
 
 import (
 	"errors"
+	"regexp"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -45,6 +46,11 @@ type Config struct {
 	// LogRetention is the option to set the log retention policy for the CloudWatch Log Group. Defaults to Never Expire if not specified or set to 0
 	// Possible values are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653
 	LogRetention int64 `mapstructure:"log_retention"`
+
+	// Tags is the option to set tags for the CloudWatch Log Group.  If specified, please add add at least 1 and at most 50 tags.  Input is a string to string map like so: { 'key': 'value' }
+	// Keys must be between 1-128 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$
+	// Values must be between 1-256 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$
+	Tags map[string]*string `mapstructure:"tags"`
 
 	// QueueSettings is a subset of exporterhelper.QueueSettings,
 	// because only QueueSize is user-settable due to how AWS CloudWatch API works
@@ -80,6 +86,10 @@ func (config *Config) Validate() error {
 	if !isValidRetentionValue(config.LogRetention) {
 		return errors.New("invalid value for retention policy.  Please make sure to use the following values: 0 (Never Expire), 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653")
 	}
+	tagInputReturnVal := isValidTagsInput(config.Tags)
+	if tagInputReturnVal != "Valid" {
+		return errors.New(tagInputReturnVal)
+	}
 	return nil
 }
 
@@ -112,6 +122,31 @@ func isValidRetentionValue(input int64) bool {
 		return true
 	}
 	return false
+}
+
+// Check if the tags input is valid
+func isValidTagsInput(input map[string]*string) string {
+	if len(input) > 50 || len(input) < 1 {
+		return "invalid amount of items. Please input at least 1 and at most 50 tags."
+	}
+	validKeyPattern := regexp.MustCompile(`^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`)
+	validValuePattern := regexp.MustCompile(`^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
+	for key, value := range input {
+		if !validKeyPattern.MatchString(key) {
+			return "key - " + key + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`
+		}
+		if !validValuePattern.MatchString(*value) {
+			return "value - " + *value + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`
+		}
+		if len(key) < 1 || len(key) > 128 {
+			return "key - " + key + " has an invalid length. Please use keys with a length of 1 to 128 characters"
+		}
+		if len(*value) < 1 || len(*value) > 256 {
+			return "value - " + *value + " has an invalid length. Please use values with a length of 1 to 256 characters"
+		}
+	}
+
+	return "Valid"
 }
 
 func (config *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
