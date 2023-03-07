@@ -763,7 +763,7 @@ func newConnectorImp(
 		logger:          logger,
 		config:          Config{AggregationTemporality: temporality, Histogram: HistogramConfig{Unit: defaultUnit}},
 		metricsConsumer: mcon,
-		unit:            units[defaultUnit],
+		unitDivider:     unitDividers[defaultUnit],
 		startTimestamp:  pcommon.NewTimestampFromTime(time.Now()),
 		histograms:      histograms(),
 		sums:            metrics.NewSumMetrics(),
@@ -967,7 +967,7 @@ func TestConnector_durationsToUnits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
-			got := durationsToUnits(tt.input, units[tt.unit])
+			got := durationsToUnits(tt.input, unitDividers[tt.unit])
 			assert.Equal(t, tt.want, got)
 		})
 	}

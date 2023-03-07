@@ -50,7 +50,7 @@ const (
 	defaultUnit = "ms"
 )
 
-var units = map[string]int64{
+var unitDividers = map[string]int64{
 	"s":  time.Second.Nanoseconds(),
 	"ms": time.Millisecond.Nanoseconds(),
 }
@@ -73,7 +73,7 @@ type connectorImp struct {
 	sums       metrics.SumMetrics
 
 	// unit divider, used to convert nanoseconds to milliseconds or seconds
-	unit int64
+	unitDivider int64
 
 	keyBuf *bytes.Buffer
 
@@ -117,7 +117,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		return nil, err
 	}
 
-	unit := units[cfg.Histogram.Unit]
+	unitDivider := unitDividers[cfg.Histogram.Unit]
 	var histograms metrics.HistogramMetrics
 	if cfg.Histogram.Exponential != nil {
 		maxSize := cfg.Histogram.Exponential.MaxSize
@@ -131,10 +131,10 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		if cfg.LatencyHistogramBuckets != nil {
 			logger.Warn("latency_histogram_buckets is deprecated. " +
 				"Use `histogram: explicit: buckets` to set histogram buckets")
-			bounds = durationsToUnits(cfg.LatencyHistogramBuckets, unit)
+			bounds = durationsToUnits(cfg.LatencyHistogramBuckets, unitDivider)
 		}
 		if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
-			bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unit)
+			bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider)
 		}
 		histograms = metrics.NewExplicitHistogramMetrics(bounds)
 	}
@@ -145,7 +145,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
 		histograms:            histograms,
 		sums:                  metrics.NewSumMetrics(),
-		unit:                  unit,
+		unitDivider:           unitDivider,
 		dimensions:            newDimensions(cfg.Dimensions),
 		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
@@ -295,7 +295,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				startTime := span.StartTimestamp()
 				endTime := span.EndTimestamp()
 				if endTime > startTime {
-					latency = float64(endTime-startTime) / float64(p.unit)
+					latency = float64(endTime-startTime) / float64(p.unitDivider)
 				}
 				key := p.buildKey(serviceName, span, p.dimensions, resourceAttr)
 
