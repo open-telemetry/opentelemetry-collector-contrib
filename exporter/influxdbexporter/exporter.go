@@ -18,8 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/influxdata/influxdb-observability/common"
-	"github.com/influxdata/influxdb-observability/otel2influx"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -27,6 +25,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx/otel2influx"
 )
 
 type tracesExporter struct {

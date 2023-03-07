@@ -94,6 +94,7 @@ body:
       - internal/core
       - internal/docker
       - internal/filter
+      - internal/influx
       - internal/k8sconfig
       - internal/kubelet
       - internal/metadataproviders
