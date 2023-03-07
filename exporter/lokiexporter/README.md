@@ -34,25 +34,18 @@ processors:
   attributes:
     actions:
       - action: insert
-        key: event_domain
-        from_attribute: event.domain
-      - action: insert
         key: loki.attribute.labels
-        value: event_domain
+        value: event.domain
 
   resource:
     attributes:
       - action: insert
-        key: service_name
-        from_attribute: service.name
-      - action: insert
         key: loki.resource.labels
-        value: service_name
+        value: service.name
 ```
 
-Currently, Loki does not support labels with dots.
-That’s why to add Loki label based on `event.domain` OTLP attribute we need to specify two actions. The first one inserts a new attribute `event_domain` from the OTLP attribute `event.domain`. The second one is a hint for Loki, specifying that the `event_domain` attribute should be placed as a Loki label.
-The same approach is applicable to placing Loki labels from resource attribute `service.name`.
+Currently, Loki does not support label names with dots. 
+That's why lokiexporter normalizes label names to follow Prometheus label names standard before sending requests to Loki.
 
 Default labels:
 - `job=service.namespace/service.name`
@@ -98,10 +91,7 @@ processors:
     attributes:
     - action: insert
       key: loki.tenant
-      value: host_name
-    - action: insert
-      key: host_name
-      from_attribute: host.name
+      value: host.name
 ```
 
 In this case the value of the `host.name` resource attribute is used to group logs
