@@ -5,3 +5,6 @@ cloudflare:
   endpoint: 0.0.0.0:12345
   secret: 1234567890abcdef1234567890abcdef
   timestamp_field: EdgeStartTimestamp
+  field_attribute_map:
+    ClientIP: http_request.client_ip
+    ClientRequestURI: http_request.uri

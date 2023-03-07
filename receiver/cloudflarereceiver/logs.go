@@ -228,9 +228,29 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]inte
 
 		if v, ok := log["EdgeResponseStatus"]; ok {
 			if intV, ok := v.(int); ok {
-				sev := severityFromAPI(intV)
+				sev := severityFromStatusCode(intV)
 				logRecord.SetSeverityNumber(sev)
 				logRecord.SetSeverityText(sev.String())
+			}
+		}
+
+		attrs := logRecord.Attributes()
+		for field, attribute := range l.cfg.FieldAttributeMap {
+			if v, ok := log[field]; ok {
+				switch v := v.(type) {
+				case string:
+					attrs.PutStr(attribute, v)
+				case int:
+					attrs.PutInt(attribute, int64(v))
+				case int64:
+					attrs.PutInt(attribute, v)
+				case float64:
+					attrs.PutDouble(attribute, v)
+				case bool:
+					attrs.PutBool(attribute, v)
+				default:
+					l.logger.Warn("unable to translate field to attribute, unsupported type", zap.String("field", field), zap.Any("value", v), zap.String("type", fmt.Sprintf("%T", v)))
+				}
 			}
 		}
 
@@ -240,8 +260,8 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]inte
 	return pLogs
 }
 
-// severityFromAPI translates HTTP status code to OpenTelemetry severity number.
-func severityFromAPI(statusCode int) plog.SeverityNumber {
+// severityFromStatusCode translates HTTP status code to OpenTelemetry severity number.
+func severityFromStatusCode(statusCode int) plog.SeverityNumber {
 	switch {
 	case statusCode < 300:
 		return plog.SeverityNumberInfo

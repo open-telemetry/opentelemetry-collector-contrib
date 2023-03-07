@@ -47,6 +47,7 @@ const (
 )
 
 var testPayloads = []string{
+	"all_fields",
 	"multiple_log_payload",
 }
 
@@ -73,6 +74,9 @@ func TestReceiverTLS(t *testing.T) {
 						},
 					},
 					TimestampField: "EdgeStartTimestamp",
+					FieldAttributeMap: map[string]string{
+						"ClientIP": "http_request.client_ip",
+					},
 				},
 				sink,
 			)
@@ -113,6 +117,11 @@ func TestReceiverTLS(t *testing.T) {
 			}, 2*time.Second, 10*time.Millisecond)
 
 			logs := sink.AllLogs()[0]
+
+			marshaler := plog.JSONMarshaler{}
+			b, err := marshaler.MarshalLogs(logs)
+			require.NoError(t, err)
+			os.WriteFile(filepath.Join("testdata", "processed", fmt.Sprintf("%s.json", payloadName)), b, 0644)
 
 			expectedLogs, err := readLogs(filepath.Join("testdata", "processed", fmt.Sprintf("%s.json", payloadName)))
 			require.NoError(t, err)

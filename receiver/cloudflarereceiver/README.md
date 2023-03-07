@@ -15,21 +15,28 @@ To successfully operate this receiver, you must follow these steps in order:
 1. Receive a properly CA signed SSL certificate for use on the collector host.
 2. Configure the receiver using the previously acquired SSL certificate, and then start the collector.
 3. Create a LogPush HTTP destination job following the [directions](https://developers.cloudflare.com/logs/get-started/enable-destinations/http/) provided by Cloudflare. When the job is created, it will attempt to validate the connection to the receiver.
-   - If you've configured the receiver with a `secret` to validate requests, ensure you add the value to the `destination_conf` parameter of the LogPush job by adding its value as a query parameter under the `header_X-CF-Secret` parameter. For example, `"destination_conf": "https://example.com?header_X-CF-Secret=abcd1234"`.
-4. If the LogPush job creates successfully, the receiver is correctly configured and the LogPush job will send it metrics. If not, the most likely issue is with the SSL configuration, check both the LogPush API response and the receiver's logs for more details.
+    - If you've configured the receiver with a `secret` to validate requests, ensure you add the value to the `destination_conf` parameter of the LogPush job by adding its value as a query parameter under the `header_X-CF-Secret` parameter. For example, `"destination_conf": "https://example.com?header_X-CF-Secret=abcd1234"`.
+    - If you want the receiver to parse one of the fields as the log record's timestamp (`EdgeStartTimestamp` is the default), the timestamp should be formatted RFC3339. This is not the default format, and must be explicitly specified in your job config.
+      - If using the deprecated `logpull_options` parameter to configure your job, this can be explicitly specified by adding `&timestamps=rfc3339` to the `logpull_options` string when creating your LogPush job.
+      - If using the `output_options` parameter to configure your job, this can be explicitly specified by setting the `timestamp_format` field of `output_options` to `"rfc3339"`
+    - The receiver expects the uploaded logs to be in `ndjson` format with no template, prefix, suffix, or delimiter changes based on the options in `output_options`. The only [settings](https://developers.cloudflare.com/logs/reference/log-output-options/#output-types) supported by this receiver in `output_options` are `field_names`, `CVE-2021-44228`, and `sample_rate`.
+4. If the LogPush job creates successfully, the receiver is correctly configured and the LogPush job was able to send it a "test" message. The LogPush job will now send it log messages as long as it was created with `enabled` as `true`. If the job failed to create the most likely issue is with the SSL configuration, check both the LogPush API response and the receiver's logs for more details.
 
 ## Configuration
 
 - `tls` (Cloudflare requires TLS, and self-signed will not be sufficient)
     - `cert_file` 
-       - Be sure to append your CA certificate to the server's certificate
+       - You may need to append your CA certificate to the server's certificate, if it is not a CA known to the LogPush API.
     - `key_file`
 - `endpoint` 
   - The endpoint on which the receiver will await requests from Cloudflare
 - `secret`
   - If this value is set, the receiver expects to see it in any valid requests under the `X-CF-Secret` header
 - `timestamp_field` (default: `EdgeStartTimestamp`)
-    - This receiver was built with the `http_requests` dataset in mind, but should be able to support any Cloudflare dataset. If using another dataset, you will need to set the `timestamp_field` appropriately in order to have the log record be associated with the correct timestamp.
+  - This receiver was built with the Cloudflare `http_requests` dataset in mind, but should be able to support any Cloudflare dataset. If using another dataset, you will need to set the `timestamp_field` appropriately in order to have the log record be associated with the correct timestamp.
+- `field_attribute_map`
+  - This parameter allows the receiver to be configured to set log record attributes based on fields found in the log message. The fields are not removed from the log message when set in this way. Only string, boolean, integer or float fields can be mapped using this parameter.
+  
 
 ### Example:
 
@@ -42,6 +49,9 @@ receivers:
     endpoint: 0.0.0.0:12345
     secret: 1234567890abcdef1234567890abcdef
     timestamp_field: EdgeStartTimestamp
+    field_attribute_map:
+      ClientIP: http_request.client_ip
+      ClientRequestURI: http_request.uri
 ```
 
 
