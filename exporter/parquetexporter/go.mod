@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parque
 go 1.19
 
 require (
-	go.opentelemetry.io/collector/component v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/component v0.72.1-0.20230307004959-b5ebe7696019
 	go.opentelemetry.io/collector/exporter v0.0.0-20230303211526-ec5d71fec2da
-	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230306190955-966865880707
+	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230307004959-b5ebe7696019
 )
 
 require (
@@ -22,13 +22,13 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.72.1-0.20230306190955-966865880707 // indirect
-	go.opentelemetry.io/collector/confmap v0.72.1-0.20230306190955-966865880707 // indirect
-	go.opentelemetry.io/collector/consumer v0.72.1-0.20230306190955-966865880707 // indirect
-	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector v0.72.1-0.20230307004959-b5ebe7696019 // indirect
+	go.opentelemetry.io/collector/confmap v0.72.1-0.20230307004959-b5ebe7696019 // indirect
+	go.opentelemetry.io/collector/consumer v0.72.1-0.20230307004959-b5ebe7696019 // indirect
+	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230307004959-b5ebe7696019 // indirect
 	go.opentelemetry.io/collector/receiver v0.0.0-20230302200458-4071a47d0ee3 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
-	go.opentelemetry.io/otel/metric v0.36.0 // indirect
+	go.opentelemetry.io/otel/metric v0.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
