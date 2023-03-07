@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "full"),
 			expected: &Config{
-				Endpoint:         "clickhouse://127.0.0.1:9000",
+				Endpoint:         defaultEndpoint,
 				Database:         "otel",
 				Username:         "foo",
 				Password:         "bar",
