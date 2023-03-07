@@ -76,6 +76,7 @@ jobs:
           - processor
           - exporter
           - extension
+          - connector
           - internal
           - other
     runs-on: ubuntu-latest
@@ -200,6 +201,7 @@ jobs:
           - processor
           - exporter
           - extension
+          - connector
           - internal
           - other
     runs-on: ubuntu-latest

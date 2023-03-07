@@ -289,7 +289,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
-					generateProtoChildSpanWithErrorTags(),
+					generateProtoChildSpan(),
 				},
 			},
 			err: nil,
@@ -389,25 +389,6 @@ func generateJProtoSpanWithEventAttribute() *model.Span {
 			VStr:  "must-be-used-instead-of-event-name",
 		},
 	}
-	return span
-}
-
-// generateProtoChildSpanWithErrorTags generates a jaeger span to be used in
-// internal->jaeger translation test. It supposed to be the same as generateProtoChildSpan
-// that used in jaeger->internal, but jaeger->internal translation infers status code from http status if
-// status.code is not set, so the pipeline jaeger->internal->jaeger adds two more tags as the result in that case.
-func generateProtoChildSpanWithErrorTags() *model.Span {
-	span := generateProtoChildSpan()
-	span.Tags = append(span.Tags, model.KeyValue{
-		Key:   conventions.OtelStatusCode,
-		VType: model.ValueType_STRING,
-		VStr:  statusError,
-	})
-	span.Tags = append(span.Tags, model.KeyValue{
-		Key:   tracetranslator.TagError,
-		VBool: true,
-		VType: model.ValueType_BOOL,
-	})
 	return span
 }
 

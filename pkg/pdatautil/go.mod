@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector/pdata v1.0.0-rc6
+	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230306190955-966865880707
 )
 
 require (

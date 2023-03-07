@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestType(t *testing.T) {
@@ -39,7 +41,9 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, cfg, &Config{})
+	assert.Equal(t, cfg, &Config{
+		ErrorMode: ottl.PropagateError,
+	})
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 

@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
 
 	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
@@ -84,7 +84,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		region = strings.ToLower(infra.Status.PlatformStatus.Azure.CloudName)
 	case "gcp":
 		provider = conventions.AttributeCloudProviderGCP
-		platform = conventions.AttributeCloudPlatformGoogleCloudOpenshift
+		platform = conventions.AttributeCloudPlatformGCPOpenshift
 		region = strings.ToLower(infra.Status.PlatformStatus.GCP.Region)
 	case "ibmcloud":
 		provider = conventions.AttributeCloudProviderIbmCloud

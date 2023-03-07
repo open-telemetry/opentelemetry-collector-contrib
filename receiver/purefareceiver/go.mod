@@ -5,13 +5,14 @@ go 1.19
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.72.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.72.0
-	github.com/prometheus/common v0.40.0
+	github.com/prometheus/common v0.41.0
 	github.com/prometheus/prometheus v0.42.1-0.20230210113933-af1d9e01c7e4
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.72.0
-	go.opentelemetry.io/collector/component v0.72.0
-	go.opentelemetry.io/collector/confmap v0.72.0
-	go.opentelemetry.io/collector/consumer v0.72.0
+	go.opentelemetry.io/collector v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/component v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/confmap v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/consumer v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/receiver v0.0.0-20230303004618-4a6ebc82b8e3
 )
 
 require (
@@ -124,13 +125,14 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.72.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc6 // indirect
-	go.opentelemetry.io/collector/semconv v0.72.0 // indirect
+	go.opentelemetry.io/collector/exporter v0.0.0-20230303211526-ec5d71fec2da // indirect
+	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/semconv v0.72.1-0.20230306190955-966865880707 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.39.0 // indirect
-	go.opentelemetry.io/otel v1.13.0 // indirect
+	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect
-	go.opentelemetry.io/otel/trace v1.13.0 // indirect
+	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
@@ -140,7 +142,7 @@ require (
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.5.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.3.0 // indirect

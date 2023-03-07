@@ -25,15 +25,17 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.72.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.72.0
-	go.opentelemetry.io/collector/component v0.72.0
-	go.opentelemetry.io/collector/confmap v0.72.0
-	go.opentelemetry.io/collector/consumer v0.72.0
-	go.opentelemetry.io/collector/featuregate v0.72.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc6
-	go.opentelemetry.io/collector/processor/batchprocessor v0.72.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.0
-	go.opentelemetry.io/collector/semconv v0.72.0
+	go.opentelemetry.io/collector v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/component v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/confmap v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/consumer v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/exporter v0.0.0-20230303211526-ec5d71fec2da
+	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/pdata v1.0.0-rc6.0.20230306190955-966865880707
+	go.opentelemetry.io/collector/processor/batchprocessor v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/receiver v0.0.0-20230303004618-4a6ebc82b8e3
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector/semconv v0.72.1-0.20230306190955-966865880707
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.28.1
@@ -87,7 +89,6 @@ require (
 	github.com/go-openapi/swag v0.19.14 // indirect
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -144,12 +145,12 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
-	github.com/prometheus/common v0.40.0 // indirect
+	github.com/prometheus/common v0.41.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rs/cors v1.8.3 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.23.1 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.2 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
@@ -162,16 +163,16 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.39.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.14.0 // indirect
-	go.opentelemetry.io/otel v1.13.0 // indirect
+	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.36.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.13.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.14.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.36.0 // indirect
-	go.opentelemetry.io/otel/trace v1.13.0 // indirect
+	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.5.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
@@ -224,3 +225,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ..
 
 // see https://github.com/DataDog/agent-payload/issues/218
 exclude github.com/DataDog/agent-payload/v5 v5.0.59
+
+// openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
+replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
+
+// It appears that the v0.2.0 tag was modified.  Replacing with v0.2.1
+replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1

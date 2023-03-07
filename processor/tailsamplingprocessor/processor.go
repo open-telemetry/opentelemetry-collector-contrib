@@ -152,7 +152,7 @@ func getSharedPolicyEvaluator(logger *zap.Logger, cfg *sharedPolicyCfg) (samplin
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
 	case SpanCount:
 		spCfg := cfg.SpanCountCfg
-		return sampling.NewSpanCount(logger, spCfg.MinSpans), nil
+		return sampling.NewSpanCount(logger, spCfg.MinSpans, spCfg.MaxSpans), nil
 	case TraceState:
 		tsfCfg := cfg.TraceStateCfg
 		return sampling.NewTraceStateFilter(logger, tsfCfg.Key, tsfCfg.Values), nil
