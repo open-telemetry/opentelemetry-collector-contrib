@@ -18,12 +18,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/influxdata/influxdb-observability/common"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx/common"
 )
 
 // NewFactory creates a factory for Jaeger Thrift over HTTP exporter.

@@ -4,9 +4,8 @@ go 1.19
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0
-	github.com/influxdata/influxdb-observability/common v0.3.1
-	github.com/influxdata/influxdb-observability/otel2influx v0.3.1
 	github.com/influxdata/line-protocol/v2 v2.2.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx v0.72.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.72.1-0.20230306190955-966865880707
 	go.opentelemetry.io/collector/component v0.72.1-0.20230306190955-966865880707
@@ -61,3 +60,5 @@ require (
 )
 
 retract v0.65.0
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx => ../../internal/influx
