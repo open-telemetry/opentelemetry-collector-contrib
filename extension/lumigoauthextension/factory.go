@@ -16,6 +16,7 @@ package lumigoauthextension // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -36,9 +37,22 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		Type:  Server,
+		Token: "",
+	}
 }
 
 func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
-	return newServerAuthExtension(cfg.(*Config), set.Logger)
+	// check if config is a server auth(Htpasswd should be set)
+	switch cfg.(*Config).Type {
+	case Default:
+		fallthrough
+	case Server:
+		return newServerAuthExtension(cfg.(*Config), set.Logger)
+	case Client:
+		return newClientAuthExtension(cfg.(*Config), set.Logger)
+	default:
+		return nil, fmt.Errorf("unrecognized type: '%s'", cfg.(*Config).Type)
+	}
 }

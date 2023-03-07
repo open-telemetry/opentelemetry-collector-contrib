@@ -1,0 +1,22 @@
+extensions:
+  lumigoauth:
+    token: ciao
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  otlphttp/lumigo:
+    endpoint: https://ga-otlp.lumigo-tracer-edge.golumigo.com
+    auth:
+      authenticator: lumigoauth
+
+service:
+  extensions: [lumigoauth]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [otlphttp/lumigo]

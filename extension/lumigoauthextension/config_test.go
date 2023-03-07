@@ -22,7 +22,18 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-func TestLoadConfig(t *testing.T) {
-	_, err := confmaptest.LoadConf(filepath.Join("testdata", "valid_config.yml"))
+func TestLoadConfigExporterNoToken(t *testing.T) {
+	_, err := confmaptest.LoadConf(filepath.Join("testdata", "valid_config_exporter_no_token.yml"))
+	require.NoError(t, err)
+
+}
+
+func TestLoadConfigExporterWithToken(t *testing.T) {
+	_, err := confmaptest.LoadConf(filepath.Join("testdata", "valid_config_exporter_with_token.yml"))
+	require.NoError(t, err)
+}
+
+func TestLoadConfigReceiver(t *testing.T) {
+	_, err := confmaptest.LoadConf(filepath.Join("testdata", "valid_config_receiver.yml"))
 	require.NoError(t, err)
 }

@@ -7,7 +7,10 @@ receivers:
 processors:
   nop:
 exporters:
-  nop:
+  otlphttp/lumigo:
+    endpoint: https://ga-otlp.lumigo-tracer-edge.golumigo.com
+    auth:
+      authenticator: lumigoauth
 
 service:
   extensions: [lumigoauth]
@@ -15,4 +18,4 @@ service:
     traces:
       receivers: [nop]
       processors: [nop]
-      exporters: [nop]
+      exporters: [otlphttp/lumigo]

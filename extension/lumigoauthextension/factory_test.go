@@ -15,15 +15,41 @@
 package lumigoauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	expected := &Config{}
+	expected := &Config{
+		Token: "",
+		Type:  Server,
+	}
 	actual := createDefaultConfig()
 	assert.Equal(t, expected, createDefaultConfig())
 	assert.NoError(t, componenttest.CheckConfigStruct(actual))
+}
+
+func TestClientAuth(t *testing.T) {
+	cfg := &Config{
+		Token: "",
+		Type:  Client,
+	}
+	extension, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	assert.IsType(t, auth.NewClient(), extension)
+	assert.NoError(t, err)
+}
+
+func TestServerAuth(t *testing.T) {
+	cfg := &Config{
+		Token: "",
+		Type:  Server,
+	}
+	extension, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	assert.IsType(t, auth.NewServer(), extension)
+	assert.NoError(t, err)
 }
