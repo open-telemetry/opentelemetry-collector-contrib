@@ -89,17 +89,25 @@ Queries the Docker daemon to retrieve the following resource attributes from the
 You need to mount the Docker socket (`/var/run/docker.sock` on Linux) to contact the Docker daemon.
 Docker detection does not work on macOS.
 
-### Heroku dyno id
-
-In a Heroku application, the [dyno id](https://devcenter.heroku.com/articles/dyno-metadata) is the identifier of the virtualized environment ("dyno") where the application runs.
-
-
 Example:
 
 ```yaml
 processors:
   resourcedetection/docker:
     detectors: [env, docker]
+    timeout: 2s
+    override: false
+```
+
+### Heroku dyno id
+
+In a Heroku application, the [dyno id](https://devcenter.heroku.com/articles/dyno-metadata) is the identifier of the virtualized environment ("dyno") where the application runs.
+
+
+```yaml
+processors:
+  resourcedetection/heroku:
+    detectors: [env, heroku]
     timeout: 2s
     override: false
 ```
