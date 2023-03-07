@@ -274,6 +274,7 @@ Connection options:
 - `password` (default = ): The authentication password.
 - `ttl_days` (default = 0): The data time-to-live in days, 0 means no ttl.
 - `database` (default = otel): The database name.
+- `connection_params` (default = {}). Params is the extra connection parameters with map format.
 
 ClickHouse tables:
 
