@@ -181,8 +181,8 @@ func TestTracesSource(t *testing.T) {
 	// body found in data.
 	getHostTagsV2 := func(data []byte) (host string, tags []string) {
 		buf := bytes.NewBuffer(data)
-		reader, err := gzip.NewReader(buf)
-		assert.NoError(err)
+		reader, derr := gzip.NewReader(buf)
+		assert.NoError(derr)
 		dec := json.NewDecoder(reader)
 		var p datadogV2.MetricPayload
 		assert.NoError(dec.Decode(&p))
