@@ -126,18 +126,20 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 	return requests
 }
 
+// PushEntry is Loki log entry enriched with labels and tenant
 type PushEntry struct {
 	Entry  *push.Entry
 	Labels model.LabelSet
 	Tenant string
 }
 
+// LogToLokiEntry converts LogRecord into Loki log entry enriched with labels and tenant
 func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.InstrumentationScope) (*PushEntry, error) {
-	// similarly, we may remove attributes, so change only our version
+	// we may remove attributes, so change only our version
 	log := plog.NewLogRecord()
 	lr.CopyTo(log)
 
-	// we may remove attributes, so we make a copy and change our version
+	// similarly, we may remove attributes, so we make a copy and change our version
 	resource := pcommon.NewResource()
 	rl.CopyTo(resource)
 
@@ -145,8 +147,6 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 	addLogLevelAttributeAndHint(log)
 
 	format := getFormatFromFormatHint(log.Attributes(), resource.Attributes())
-
-	// resolve tenant and get/create a push request group
 	tenant := getTenantFromTenantHint(log.Attributes(), resource.Attributes())
 
 	mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
