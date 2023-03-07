@@ -200,6 +200,7 @@ func (m *metricReceiver) pollForMetrics(ctx context.Context, r []namedRequest, s
 		}
 	default:
 		filters := m.request(&startTime, &endTime)
+		var ret []types.MetricDataResult
 		for idx := range filters {
 			paginator := cloudwatch.NewGetMetricDataPaginator(m.client, &filters[idx])
 			for paginator.HasMorePages() {
@@ -208,8 +209,9 @@ func (m *metricReceiver) pollForMetrics(ctx context.Context, r []namedRequest, s
 					m.logger.Error("unable to retrieve metric data from cloudwatch", zap.Error(err))
 					break
 				}
+				ret = append(ret, output.MetricDataResults...)
 				observedTime := pcommon.NewTimestampFromTime(time.Now())
-				metrics := m.parseMetrics(observedTime, output, r)
+				metrics := m.parseMetrics(observedTime, ret, r)
 				if metrics.MetricCount() > 0 {
 					if err = m.consumer.ConsumeMetrics(ctx, metrics); err != nil {
 						m.logger.Error("unable to consume logs", zap.Error(err))
@@ -222,9 +224,9 @@ func (m *metricReceiver) pollForMetrics(ctx context.Context, r []namedRequest, s
 	return nil
 }
 
-func (m *metricReceiver) parseMetrics(observedTime pcommon.Timestamp, output *cloudwatch.GetMetricDataOutput, r []namedRequest) pmetric.Metrics {
+func (m *metricReceiver) parseMetrics(observedTime pcommon.Timestamp, output []types.MetricDataResult, r []namedRequest) pmetric.Metrics {
 	md := pmetric.NewMetrics()
-	for idx, metric := range output.MetricDataResults {
+	for idx, metric := range output {
 		if len(metric.Timestamps) < 1 {
 			m.logger.Error("no timestamps received from cloudwatch")
 			continue
@@ -238,7 +240,9 @@ func (m *metricReceiver) parseMetrics(observedTime pcommon.Timestamp, output *cl
 		resourceAttributes.PutStr("aws.region", m.region)
 		resourceAttributes.PutStr("cloudwatch.metric.namespace", r[idx].Namespace)
 		resourceAttributes.PutStr("cloudwatch.metric.name", r[idx].MetricName)
+		rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	}
+	m.logger.Debug(" ", zap.Any("", md))
 	return md
 }
 
