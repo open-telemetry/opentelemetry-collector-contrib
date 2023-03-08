@@ -263,8 +263,8 @@ The following settings are required:
 
 - `endpoint` (no default): The ClickHouse server address, support multi host with port, for example:
   - tcp protocol `tcp://addr1:port,tcp://addr2:port` or TLS `tcp://addr1:port,addr2:port?secure=true`
-  - http protocol `http://addr1:port,http://addr2:port` or https `https://addr1:port,https://addr2:port`
-  - clickhouse protocol `clickhouse://addr1:port,clickhouse://addr2:port` or TLS `clickhouse://addr1:port,clickhouse://addr2:port?secure=true`
+  - http protocol `http://addr1:port,addr2:port` or https `https://addr1:port,addr2:port`
+  - clickhouse protocol `clickhouse://addr1:port,addr2:port` or TLS `clickhouse://addr1:port,addr2:port?secure=true`
 
 Many other ClickHouse specific options can be configured through query parameters e.g. `addr?dial_timeout=5s&compress=lz4`. For a full list of options see the [ClickHouse driver documentation](https://github.com/ClickHouse/clickhouse-go/blob/b2f9409ba1c7bb239a4f6553a6da347f3f5f1330/clickhouse_options.go#L174)
 
