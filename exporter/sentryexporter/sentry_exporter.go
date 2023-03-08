@@ -81,7 +81,7 @@ var canonicalCodesGrpcMap = map[string]sentry.SpanStatus{
 
 // SentryExporter defines the Sentry Exporter.
 type SentryExporter struct {
-	transport transport
+	transport   transport
 	environment string
 }
 
@@ -495,7 +495,7 @@ func CreateSentryExporter(config *Config, set exporter.CreateSettings) (exporter
 	transport.Configure(clientOptions)
 
 	s := &SentryExporter{
-		transport: transport,
+		transport:   transport,
 		environment: config.Environment,
 	}
 
