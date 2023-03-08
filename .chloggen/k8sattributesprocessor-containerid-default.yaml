@@ -1,0 +1,4 @@
+change_type: breaking
+component: k8sattributesprocessor
+note: Remove `container.id` as default metadata given possible ambiguity matching a container run to a container ID
+issues: [16432]

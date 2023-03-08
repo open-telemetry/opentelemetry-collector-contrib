@@ -1,5 +1,5 @@
-github.com/aws/aws-sdk-go v1.44.210 h1:/cqRMHSSgzLEKILIDGwhaX2hiIpyRurw7MRy6aaSufg=
-github.com/aws/aws-sdk-go v1.44.210/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
+github.com/aws/aws-sdk-go v1.44.215 h1:K3KERfO6MaV349idub2w1u1H0R0KSkED0LshPnaAn3Q=
+github.com/aws/aws-sdk-go v1.44.215/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/benbjohnson/clock v1.3.0 h1:ip6w0uFQkncKQ979AypyG0ER7mqUSBdKLOgAle/AT8A=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -30,10 +30,10 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ8=
 github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-go.opentelemetry.io/collector v0.72.1-0.20230306190955-966865880707 h1:5Kbq7qwa3zmHl49tz7GdpV9Y6vsqueMNa5hzxPUlAQU=
-go.opentelemetry.io/collector v0.72.1-0.20230306190955-966865880707/go.mod h1:mipGzL7Jo3jLN//EqYbjEr7vJjuR1zY879r9VDbst6c=
-go.opentelemetry.io/collector/featuregate v0.72.1-0.20230306190955-966865880707 h1:uz6RNCbQx1hA8ZYOLA6r6BmK+XjQIhL5Ep5dp5ZBqsM=
-go.opentelemetry.io/collector/featuregate v0.72.1-0.20230306190955-966865880707/go.mod h1:oIrO4ysPfThwkYKoNlgpHjDU/TgS9kIv2OI74pDUkp4=
+go.opentelemetry.io/collector v0.73.0 h1:oEBFtf5WcXiIPGXcjOM5gSQ3GNh/3d6pHf0IThhGmfw=
+go.opentelemetry.io/collector v0.73.0/go.mod h1:DtfQzKUyi/4ZAoUOC2e0acSdqP4BswnrMcRjnV0Nkxc=
+go.opentelemetry.io/collector/featuregate v0.73.0 h1:hpHKXmRiJqMLefIzXwIuqDo9df2HcI/66IAKLo+g7nc=
+go.opentelemetry.io/collector/featuregate v0.73.0/go.mod h1:oIrO4ysPfThwkYKoNlgpHjDU/TgS9kIv2OI74pDUkp4=
 go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=
 go.uber.org/atomic v1.10.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=
 go.uber.org/goleak v1.1.11 h1:wy28qYRKZgnJTxGxvye5/wgWr1EKjmUDGYox5mGlRlI=
