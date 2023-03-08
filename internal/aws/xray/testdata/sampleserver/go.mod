@@ -6,7 +6,7 @@ require github.com/aws/aws-xray-sdk-go v1.8.0
 
 require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
-	github.com/aws/aws-sdk-go v1.44.215 // indirect
+	github.com/aws/aws-sdk-go v1.44.216 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.16.0 // indirect
