@@ -45,17 +45,17 @@ type Client struct {
 	svc          cloudwatchlogsiface.CloudWatchLogsAPI
 	logRetention int64
 	tags         map[string]*string
-	accountId    string
+	accountID    string
 	region       string
 	logger       *zap.Logger
 }
 
 // Create a log client based on the actual cloudwatch logs client.
-func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, tags map[string]*string, accountId string, region string, logger *zap.Logger) *Client {
+func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, tags map[string]*string, accountID string, region string, logger *zap.Logger) *Client {
 	logClient := &Client{svc: svc,
 		logRetention: logRetention,
 		tags:         tags,
-		accountId:    accountId,
+		accountID:    accountID,
 		region:       region,
 		logger:       logger}
 	return logClient
@@ -75,8 +75,8 @@ func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Bu
 	if err != nil {
 		return newCloudWatchLogClient(client, logRetention, tags, "", region, logger)
 	}
-	accountId := accountCall.Account
-	return newCloudWatchLogClient(client, logRetention, tags, *accountId, region, logger)
+	accountID := accountCall.Account
+	return newCloudWatchLogClient(client, logRetention, tags, *accountID, region, logger)
 }
 
 // PutLogEvents mainly handles different possible error could be returned from server side, and retries them
@@ -187,7 +187,7 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 						}
 					}
 				}
-				logGroupArn := "arn:aws:logs:" + client.region + ":" + client.accountId + ":log-group:" + *logGroup
+				logGroupArn := "arn:aws:logs:" + client.region + ":" + client.accountID + ":log-group:" + *logGroup
 				if client.tags != nil && len(client.tags) > 0 {
 					_, err = client.svc.TagResource(&cloudwatchlogs.TagResourceInput{ResourceArn: &logGroupArn, Tags: client.tags})
 					if err != nil {
