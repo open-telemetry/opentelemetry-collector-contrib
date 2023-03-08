@@ -6,6 +6,7 @@ on:
 
 jobs:
   CodeQL-Build:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     env:
       # Force CodeQL to run the extraction on the files compiled by our custom
