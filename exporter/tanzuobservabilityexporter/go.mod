@@ -66,7 +66,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.73.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.73.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.73.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.39.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.14.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.37.0 // indirect
