@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/Shopify/sarama v1.38.1
-	github.com/aws/aws-sdk-go v1.44.210
+	github.com/aws/aws-sdk-go v1.44.215
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.41.0
@@ -24,7 +24,7 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.18.0 // indirect
+	github.com/apache/thrift v0.18.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eapache/go-resiliency v1.3.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230111030713-bf00bc1b83b6 // indirect
@@ -66,7 +66,7 @@ require (
 	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/grpc v1.53.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
