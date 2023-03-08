@@ -25,22 +25,22 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/otelcol"
 )
 
 // inProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
 // same process as the test executor.
 type inProcessCollector struct {
-	factories  component.Factories
+	factories  otelcol.Factories
 	configStr  string
-	svc        *service.Collector
+	svc        *otelcol.Collector
 	stopped    bool
 	configFile string
 	wg         sync.WaitGroup
 }
 
 // NewInProcessCollector creates a new inProcessCollector using the supplied component factories.
-func NewInProcessCollector(factories component.Factories) OtelcolRunner {
+func NewInProcessCollector(factories otelcol.Factories) OtelcolRunner {
 	return &inProcessCollector{
 		factories: factories,
 	}
@@ -69,8 +69,8 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	ipp.configFile = confFile.Name()
 
 	fmp := fileprovider.New()
-	configProvider, err := service.NewConfigProvider(
-		service.ConfigProviderSettings{
+	configProvider, err := otelcol.NewConfigProvider(
+		otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:      []string{ipp.configFile},
 				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
@@ -80,14 +80,14 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 		return err
 	}
 
-	settings := service.CollectorSettings{
+	settings := otelcol.CollectorSettings{
 		BuildInfo:             component.NewDefaultBuildInfo(),
 		Factories:             ipp.factories,
 		ConfigProvider:        configProvider,
 		SkipSettingGRPCLogger: true,
 	}
 
-	ipp.svc, err = service.New(settings)
+	ipp.svc, err = otelcol.NewCollector(settings)
 	if err != nil {
 		return err
 	}
@@ -103,9 +103,9 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 
 	for {
 		switch state := ipp.svc.GetState(); state {
-		case service.StateStarting:
+		case otelcol.StateStarting:
 			time.Sleep(time.Second)
-		case service.StateRunning:
+		case otelcol.StateRunning:
 			return nil
 		default:
 			return fmt.Errorf("unable to start, otelcol state is %d", state)

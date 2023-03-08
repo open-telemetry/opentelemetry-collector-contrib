@@ -15,7 +15,6 @@
 package k8sclient
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
@@ -69,7 +68,7 @@ func TestJobClient_JobToCronJob(t *testing.T) {
 		"job-7f8459d648": time.Now().Add(-24 * time.Hour),
 	}
 	resultMap := client.JobToCronJob()
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }

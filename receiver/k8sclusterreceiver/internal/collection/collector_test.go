@@ -26,7 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
-	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
@@ -44,28 +45,28 @@ var allPodMetadata = func(metadata map[string]string) map[string]string {
 func TestDataCollectorSyncMetadata(t *testing.T) {
 	tests := []struct {
 		name          string
-		metadataStore *metadataStore
+		metadataStore *metadata.Store
 		resource      interface{}
-		want          map[metadata.ResourceID]*KubernetesMetadata
+		want          map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata
 	}{
 		{
 			name:          "Pod and container metadata simple case",
-			metadataStore: &metadataStore{},
-			resource: newPodWithContainer(
+			metadataStore: &metadata.Store{},
+			resource: testutils.NewPodWithContainer(
 				"0",
-				podSpecWithContainer("container-name"),
-				podStatusWithContainer("container-name", "container-id"),
+				testutils.NewPodSpecWithContainer("container-name"),
+				testutils.NewPodStatusWithContainer("container-name", "container-id"),
 			),
-			want: map[metadata.ResourceID]*KubernetesMetadata{
-				metadata.ResourceID("test-pod-0-uid"): {
-					resourceIDKey: "k8s.pod.uid",
-					resourceID:    "test-pod-0-uid",
-					metadata:      commonPodMetadata,
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
+					ResourceIDKey: "k8s.pod.uid",
+					ResourceID:    "test-pod-0-uid",
+					Metadata:      commonPodMetadata,
 				},
-				metadata.ResourceID("container-id"): {
-					resourceIDKey: "container.id",
-					resourceID:    "container-id",
-					metadata: map[string]string{
+				experimentalmetricmetadata.ResourceID("container-id"): {
+					ResourceIDKey: "container.id",
+					ResourceID:    "container-id",
+					Metadata: map[string]string{
 						"container.status": "running",
 					},
 				},
@@ -73,35 +74,35 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 		},
 		{
 			name:          "Empty container id skips container resource",
-			metadataStore: &metadataStore{},
-			resource: newPodWithContainer(
+			metadataStore: &metadata.Store{},
+			resource: testutils.NewPodWithContainer(
 				"0",
-				podSpecWithContainer("container-name"),
-				podStatusWithContainer("container-name", ""),
+				testutils.NewPodSpecWithContainer("container-name"),
+				testutils.NewPodStatusWithContainer("container-name", ""),
 			),
-			want: map[metadata.ResourceID]*KubernetesMetadata{
-				metadata.ResourceID("test-pod-0-uid"): {
-					resourceIDKey: "k8s.pod.uid",
-					resourceID:    "test-pod-0-uid",
-					metadata:      commonPodMetadata,
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
+					ResourceIDKey: "k8s.pod.uid",
+					ResourceID:    "test-pod-0-uid",
+					Metadata:      commonPodMetadata,
 				},
 			},
 		},
 		{
 			name:          "Pod with Owner Reference",
-			metadataStore: &metadataStore{},
-			resource: withOwnerReferences([]v1.OwnerReference{
+			metadataStore: &metadata.Store{},
+			resource: testutils.WithOwnerReferences([]v1.OwnerReference{
 				{
 					Kind: "StatefulSet",
 					Name: "test-statefulset-0",
 					UID:  "test-statefulset-0-uid",
 				},
-			}, newPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{})),
-			want: map[metadata.ResourceID]*KubernetesMetadata{
-				metadata.ResourceID("test-pod-0-uid"): {
-					resourceIDKey: "k8s.pod.uid",
-					resourceID:    "test-pod-0-uid",
-					metadata: allPodMetadata(map[string]string{
+			}, testutils.NewPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{})),
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
+					ResourceIDKey: "k8s.pod.uid",
+					ResourceID:    "test-pod-0-uid",
+					Metadata: allPodMetadata(map[string]string{
 						"k8s.workload.kind":    "StatefulSet",
 						"k8s.workload.name":    "test-statefulset-0",
 						"k8s.statefulset.name": "test-statefulset-0",
@@ -112,8 +113,8 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 		},
 		{
 			name: "Pod with Service metadata",
-			metadataStore: &metadataStore{
-				services: &testutils.MockStore{
+			metadataStore: &metadata.Store{
+				Services: &testutils.MockStore{
 					Cache: map[string]interface{}{
 						"test-namespace/test-service": &corev1.Service{
 							ObjectMeta: v1.ObjectMeta{
@@ -132,13 +133,13 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			},
 			resource: podWithAdditionalLabels(
 				map[string]string{"k8s-app": "my-app"},
-				newPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{}),
+				testutils.NewPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{}),
 			),
-			want: map[metadata.ResourceID]*KubernetesMetadata{
-				metadata.ResourceID("test-pod-0-uid"): {
-					resourceIDKey: "k8s.pod.uid",
-					resourceID:    "test-pod-0-uid",
-					metadata: allPodMetadata(map[string]string{
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
+					ResourceIDKey: "k8s.pod.uid",
+					ResourceID:    "test-pod-0-uid",
+					Metadata: allPodMetadata(map[string]string{
 						"k8s.service.test-service": "",
 						"k8s-app":                  "my-app",
 					}),
@@ -147,13 +148,13 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 		},
 		{
 			name:          "Daemonset simple case",
-			metadataStore: &metadataStore{},
-			resource:      newDaemonset("1"),
-			want: map[metadata.ResourceID]*KubernetesMetadata{
-				metadata.ResourceID("test-daemonset-1-uid"): {
-					resourceIDKey: "k8s.daemonset.uid",
-					resourceID:    "test-daemonset-1-uid",
-					metadata: map[string]string{
+			metadataStore: &metadata.Store{},
+			resource:      testutils.NewDaemonset("1"),
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-daemonset-1-uid"): {
+					ResourceIDKey: "k8s.daemonset.uid",
+					ResourceID:    "test-daemonset-1-uid",
+					Metadata: map[string]string{
 						"k8s.workload.kind":            "DaemonSet",
 						"k8s.workload.name":            "test-daemonset-1",
 						"daemonset.creation_timestamp": "0001-01-01T00:00:00Z",
@@ -163,13 +164,13 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 		},
 		{
 			name:          "Deployment simple case",
-			metadataStore: &metadataStore{},
-			resource:      newDeployment("1"),
-			want: map[metadata.ResourceID]*KubernetesMetadata{
-				metadata.ResourceID("test-deployment-1-uid"): {
-					resourceIDKey: "k8s.deployment.uid",
-					resourceID:    "test-deployment-1-uid",
-					metadata: map[string]string{
+			metadataStore: &metadata.Store{},
+			resource:      testutils.NewDeployment("1"),
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-deployment-1-uid"): {
+					ResourceIDKey: "k8s.deployment.uid",
+					ResourceID:    "test-deployment-1-uid",
+					Metadata: map[string]string{
 						"k8s.workload.kind":             "Deployment",
 						"k8s.workload.name":             "test-deployment-1",
 						"k8s.deployment.name":           "test-deployment-1",
@@ -180,13 +181,13 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 		},
 		{
 			name:          "HPA simple case",
-			metadataStore: &metadataStore{},
-			resource:      newHPA("1"),
-			want: map[metadata.ResourceID]*KubernetesMetadata{
-				metadata.ResourceID("test-hpa-1-uid"): {
-					resourceIDKey: "k8s.hpa.uid",
-					resourceID:    "test-hpa-1-uid",
-					metadata: map[string]string{
+			metadataStore: &metadata.Store{},
+			resource:      testutils.NewHPA("1"),
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-hpa-1-uid"): {
+					ResourceIDKey: "k8s.hpa.uid",
+					ResourceID:    "test-hpa-1-uid",
+					Metadata: map[string]string{
 						"k8s.workload.kind":      "HPA",
 						"k8s.workload.name":      "test-hpa-1",
 						"hpa.creation_timestamp": "0001-01-01T00:00:00Z",
@@ -196,13 +197,13 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 		},
 		{
 			name:          "Job simple case",
-			metadataStore: &metadataStore{},
-			resource:      newJob("1"),
-			want: map[metadata.ResourceID]*KubernetesMetadata{
-				metadata.ResourceID("test-job-1-uid"): {
-					resourceIDKey: "k8s.job.uid",
-					resourceID:    "test-job-1-uid",
-					metadata: map[string]string{
+			metadataStore: &metadata.Store{},
+			resource:      testutils.NewJob("1"),
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-job-1-uid"): {
+					ResourceIDKey: "k8s.job.uid",
+					ResourceID:    "test-job-1-uid",
+					Metadata: map[string]string{
 						"foo":                    "bar",
 						"foo1":                   "",
 						"k8s.workload.kind":      "Job",
@@ -214,13 +215,13 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 		},
 		{
 			name:          "Node simple case",
-			metadataStore: &metadataStore{},
-			resource:      newNode("1"),
-			want: map[metadata.ResourceID]*KubernetesMetadata{
-				metadata.ResourceID("test-node-1-uid"): {
-					resourceIDKey: "k8s.node.uid",
-					resourceID:    "test-node-1-uid",
-					metadata: map[string]string{
+			metadataStore: &metadata.Store{},
+			resource:      testutils.NewNode("1"),
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-node-1-uid"): {
+					ResourceIDKey: "k8s.node.uid",
+					ResourceID:    "test-node-1-uid",
+					Metadata: map[string]string{
 						"foo":                     "bar",
 						"foo1":                    "",
 						"k8s.node.name":           "test-node-1",
@@ -231,13 +232,13 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 		},
 		{
 			name:          "ReplicaSet simple case",
-			metadataStore: &metadataStore{},
-			resource:      newReplicaSet("1"),
-			want: map[metadata.ResourceID]*KubernetesMetadata{
-				metadata.ResourceID("test-replicaset-1-uid"): {
-					resourceIDKey: "k8s.replicaset.uid",
-					resourceID:    "test-replicaset-1-uid",
-					metadata: map[string]string{
+			metadataStore: &metadata.Store{},
+			resource:      testutils.NewReplicaSet("1"),
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-replicaset-1-uid"): {
+					ResourceIDKey: "k8s.replicaset.uid",
+					ResourceID:    "test-replicaset-1-uid",
+					Metadata: map[string]string{
 						"foo":                           "bar",
 						"foo1":                          "",
 						"k8s.workload.kind":             "ReplicaSet",
@@ -249,7 +250,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 		},
 		{
 			name:          "ReplicationController simple case",
-			metadataStore: &metadataStore{},
+			metadataStore: &metadata.Store{},
 			resource: &corev1.ReplicationController{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "test-replicationcontroller-1",
@@ -257,11 +258,11 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 					UID:       types.UID("test-replicationcontroller-1-uid"),
 				},
 			},
-			want: map[metadata.ResourceID]*KubernetesMetadata{
-				metadata.ResourceID("test-replicationcontroller-1-uid"): {
-					resourceIDKey: "k8s.replicationcontroller.uid",
-					resourceID:    "test-replicationcontroller-1-uid",
-					metadata: map[string]string{
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-replicationcontroller-1-uid"): {
+					ResourceIDKey: "k8s.replicationcontroller.uid",
+					ResourceID:    "test-replicationcontroller-1-uid",
+					Metadata: map[string]string{
 						"k8s.workload.kind":                        "ReplicationController",
 						"k8s.workload.name":                        "test-replicationcontroller-1",
 						"replicationcontroller.creation_timestamp": "0001-01-01T00:00:00Z",
@@ -291,4 +292,16 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			}
 		})
 	}
+}
+
+func podWithAdditionalLabels(labels map[string]string, pod *corev1.Pod) interface{} {
+	if pod.Labels == nil {
+		pod.Labels = make(map[string]string, len(labels))
+	}
+
+	for k, v := range labels {
+		pod.Labels[k] = v
+	}
+
+	return pod
 }

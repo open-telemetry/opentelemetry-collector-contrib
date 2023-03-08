@@ -22,6 +22,18 @@
                         }
                     },
                     {
+                        "key": "mongodbatlas.org.id",
+                        "value": {
+                            "stringValue": "test-org-id"
+                        }
+                    },
+                    {
+                        "key": "mongodbatlas.project.name",
+                        "value": {
+                            "stringValue": "test-project"
+                        }
+                    },
+                    {
                         "key": "mongodbatlas.replica_set.name",
                         "value": {
                             "stringValue": "REDACTED-shard-0"
@@ -171,6 +183,18 @@
                         "key": "mongodbatlas.cluster.name",
                         "value": {
                             "stringValue": "Cluster0"
+                        }
+                    },
+                    {
+                        "key": "mongodbatlas.org.id",
+                        "value": {
+                            "stringValue": "test-org-id"
+                        }
+                    },
+                    {
+                        "key": "mongodbatlas.project.name",
+                        "value": {
+                            "stringValue": "test-project"
                         }
                     },
                     {

@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -29,7 +29,7 @@ func TestFactoryCreatedExtensionIsEndpointsLister(t *testing.T) {
 	cfg := etoFactory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "http://localhost:1234/mock/endpoint"
 
-	eto, err := etoFactory.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	eto, err := etoFactory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, eto)
 	require.Implements(t, (*observer.EndpointsLister)(nil), eto)

@@ -57,6 +57,7 @@ type Config struct {
 	MaxReads           int           `mapstructure:"max_reads,omitempty"`
 	StartAt            string        `mapstructure:"start_at,omitempty"`
 	PollInterval       time.Duration `mapstructure:"poll_interval,omitempty"`
+	Raw                bool          `mapstructure:"raw,omitempty"`
 }
 
 // Build will build a windows event log operator.
@@ -85,6 +86,7 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		maxReads:      c.MaxReads,
 		startAt:       c.StartAt,
 		pollInterval:  c.PollInterval,
+		raw:           c.Raw,
 	}, nil
 }
 
@@ -97,6 +99,7 @@ type Input struct {
 	channel      string
 	maxReads     int
 	startAt      string
+	raw          bool
 	pollInterval time.Duration
 	persister    operator.Persister
 	cancel       context.CancelFunc
@@ -201,6 +204,15 @@ func (e *Input) read(ctx context.Context) int {
 
 // processEvent will process and send an event retrieved from windows event log.
 func (e *Input) processEvent(ctx context.Context, event Event) {
+	if e.raw {
+		rawEvent, err := event.RenderRaw(e.buffer)
+		if err != nil {
+			e.Errorf("Failed to render raw event: %s", err)
+			return
+		}
+		e.sendEventRaw(ctx, rawEvent)
+		return
+	}
 	simpleEvent, err := event.RenderSimple(e.buffer)
 	if err != nil {
 		e.Errorf("Failed to render simple event: %s", err)
@@ -236,6 +248,19 @@ func (e *Input) sendEvent(ctx context.Context, eventXML EventXML) {
 
 	entry.Timestamp = eventXML.parseTimestamp()
 	entry.Severity = eventXML.parseRenderedSeverity()
+	e.Write(ctx, entry)
+}
+
+func (e *Input) sendEventRaw(ctx context.Context, eventRaw EventRaw) {
+	body := eventRaw.parseBody()
+	entry, err := e.NewEntry(body)
+	if err != nil {
+		e.Errorf("Failed to create entry: %s", err)
+		return
+	}
+
+	entry.Timestamp = eventRaw.parseTimestamp()
+	entry.Severity = eventRaw.parseRenderedSeverity()
 	e.Write(ctx, entry)
 }
 

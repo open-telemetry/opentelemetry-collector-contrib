@@ -32,7 +32,6 @@ import (
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 	"gopkg.in/yaml.v2"
 )
@@ -48,10 +47,9 @@ const (
 
 // Config defines configuration for Prometheus receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	PrometheusConfig        *promconfig.Config       `mapstructure:"-"`
-	BufferPeriod            time.Duration            `mapstructure:"buffer_period"`
-	BufferCount             int                      `mapstructure:"buffer_count"`
+	PrometheusConfig *promconfig.Config `mapstructure:"-"`
+	BufferPeriod     time.Duration      `mapstructure:"buffer_period"`
+	BufferCount      int                `mapstructure:"buffer_count"`
 	// UseStartTimeMetric enables retrieving the start time of all counter metrics
 	// from the process_start_time_seconds metric. This is only correct if all counters on that endpoint
 	// started after the process start time, and the process is the only actor exporting the metric after
@@ -80,7 +78,7 @@ type targetAllocator struct {
 	HTTPSDConfig      *promHTTP.SDConfig `mapstructure:"-"`
 }
 
-var _ component.ReceiverConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 func checkFile(fn string) error {

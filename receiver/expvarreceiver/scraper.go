@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
@@ -37,16 +38,16 @@ type expVar struct {
 
 type expVarScraper struct {
 	cfg    *Config
-	set    *component.ReceiverCreateSettings
+	set    *receiver.CreateSettings
 	client *http.Client
 	mb     *metadata.MetricsBuilder
 }
 
-func newExpVarScraper(cfg *Config, set component.ReceiverCreateSettings) *expVarScraper {
+func newExpVarScraper(cfg *Config, set receiver.CreateSettings) *expVarScraper {
 	return &expVarScraper{
 		cfg: cfg,
 		set: &set,
-		mb:  metadata.NewMetricsBuilder(cfg.MetricsConfig, set.BuildInfo),
+		mb:  metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, set),
 	}
 }
 

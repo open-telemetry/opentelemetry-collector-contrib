@@ -30,13 +30,38 @@ fi
 
 main () {
     CUR_DIRECTORY=$(dirname "$0")
-    JSON=$(gh pr view "${PR}" --json "files,author")
+    # Reviews may have comments that need to be cleaned up for jq,
+    # so restrict output to only printable characters and ensure escape
+    # sequences are removed.
+    # The latestReviews key only returns the latest review for each reviewer,
+    # cutting out any other reviews. We use that instead of requestedReviews
+    # since we need to get the list of users eligible for requesting another
+    # review. The GitHub CLI does not offer a list of all reviewers, which
+    # is only available through the API. To cut down on API calls to GitHub,
+    # we use the latest reviews to determine which users to filter out.
+    JSON=$(gh pr view "${PR}" --json "files,author,latestReviews" | tr -dc '[:print:]' | sed -E 's/\\[a-z]//g')
     AUTHOR=$(printf "${JSON}"| jq -r '.author.login')
     FILES=$(printf "${JSON}"| jq -r '.files[].path')
-    COMPONENTS=$(grep -oE '^[a-z]+/[a-z/]+ ' < .github/CODEOWNERS)
+    REVIEW_LOGINS=$(printf "${JSON}"| jq -r '.latestReviews[].author.login')
+    COMPONENTS=$(bash "${CUR_DIRECTORY}/get-components.sh")
     REVIEWERS=""
     LABELS=""
     declare -A PROCESSED_COMPONENTS
+    declare -A REVIEWED
+
+    for REVIEWER in ${REVIEW_LOGINS}; do
+        # GitHub adds "app/" in front of user logins. The API docs don't make
+        # it clear what this means or whether it will always be present. The
+        # '/' character isn't a valid character for usernames, so this won't
+        # replace characters within a username.
+        REVIEWED["@${REVIEWER//app\//}"]=true
+    done
+
+    if [[ -v REVIEWED[@] ]]; then
+        echo "Users that have already reviewed this PR and will not have another review requested:" "${!REVIEWED[@]}"
+    else
+        echo "This PR has not yet been reviewed, all code owners are eligible for a review request"
+    fi
 
     for COMPONENT in ${COMPONENTS}; do
         # Files will be in alphabetical order and there are many files to
@@ -63,7 +88,10 @@ main () {
             OWNERS=$(COMPONENT="${COMPONENT}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
 
             for OWNER in ${OWNERS}; do
-                if [[ "${OWNER}" = "@${AUTHOR}" ]]; then
+                # Users that leave reviews are removed from the "requested reviewers"
+                # list and are eligible to have another review requested. We only want
+                # to request a review once, so remove them from the list.
+                if [[ -v REVIEWED["${OWNER}"] || "${OWNER}" = "@${AUTHOR}" ]]; then
                     continue
                 fi
 
@@ -74,19 +102,23 @@ main () {
             done
 
             # Convert the CODEOWNERS entry to a label
-            COMPONENT_CLEAN=$(echo "${COMPONENT}" | sed -E 's%/$%%')
-            TYPE=$(echo "${COMPONENT_CLEAN}" | cut -f1 -d '/' )
-            NAME=$(echo "${COMPONENT_CLEAN}" | cut -f2- -d '/' | sed -E "s%${TYPE}\$%%")
+            COMPONENT_NAME=$(echo "${COMPONENT}" | sed -E 's%^(.+)/(.+)\1%\1/\2%')
+
+            if (( "${#COMPONENT_NAME}" > 50 )); then
+                echo "'${COMPONENT_NAME}' exceeds GitHub's 50-character limit on labels, skipping adding label"
+                continue
+            fi
 
             if [[ -n "${LABELS}" ]]; then
                 LABELS+=","
             fi
-            LABELS+="${TYPE}/${NAME}"
+            LABELS+="${COMPONENT_NAME}"
         done
     done
 
     if [[ -n "${LABELS}" ]]; then
-        gh pr edit "${PR}" --add-label "${LABELS}" || echo "Failed to add labels to #${PR}"
+        echo "Adding labels: ${LABELS}"
+        gh pr edit "${PR}" --add-label "${LABELS}" || echo "Failed to add labels"
     else
         echo "No labels found"
     fi
@@ -102,18 +134,20 @@ main () {
     # The GitHub API validates that authors are not requested to review, but
     # accepts duplicate logins and logins that are already reviewers.
     if [[ -n "${REVIEWERS}" ]]; then
+        echo "Requesting review from ${REVIEWERS}"
         curl \
-            --fail \
             -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
             -d "{\"reviewers\":[${REVIEWERS}]}" \
             | jq ".message" \
-            || echo "Failed to add reviewers to #${PR}"
+            || echo "jq was unable to parse GitHub's response"
     else
         echo "No code owners found"
     fi
 }
 
+# We don't want this workflow to ever fail and block a PR,
+# so ensure all errors are caught.
 main || echo "Failed to run $0"

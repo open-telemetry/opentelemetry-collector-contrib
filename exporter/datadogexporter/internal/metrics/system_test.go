@@ -19,131 +19,113 @@ import (
 	"math"
 	"testing"
 
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/zorkian/go-datadog-api.v2"
 )
 
 func TestCopyMetric(t *testing.T) {
 	sptr := func(s string) *string { return &s }
-	dptr := func(d int) *int { return &d }
-	dp := func(a, b float64) datadog.DataPoint { return datadog.DataPoint{&a, &b} }
+	dp := func(a int64, b float64) datadogV2.MetricPoint {
+		return datadogV2.MetricPoint{
+			Timestamp: datadog.PtrInt64(a),
+			Value:     datadog.PtrFloat64(b),
+		}
+	}
+
+	var unspecified = datadogV2.METRICINTAKETYPE_UNSPECIFIED
+	var gauge = datadogV2.METRICINTAKETYPE_GAUGE
 
 	t.Run("renaming", func(t *testing.T) {
-		require.EqualValues(t, copySystemMetric(datadog.Metric{
-			Metric:   sptr("oldname"),
-			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
-			Type:     sptr("oldtype"),
-			Host:     sptr("oldhost"),
-			Tags:     []string{"x", "y", "z"},
-			Unit:     sptr("oldunit"),
-			Interval: dptr(3),
-		}, "newname", 1), datadog.Metric{
-			Metric:   sptr("newname"),
-			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
-			Type:     sptr("gauge"),
-			Host:     sptr("oldhost"),
-			Tags:     []string{"x", "y", "z"},
-			Unit:     sptr("oldunit"),
-			Interval: dptr(1),
+		require.EqualValues(t, copySystemMetric(datadogV2.MetricSeries{
+			Metric:    "oldname",
+			Points:    []datadogV2.MetricPoint{dp(1, 2), dp(3, 4)},
+			Type:      &unspecified,
+			Resources: []datadogV2.MetricResource{{Name: sptr("oldhost"), Type: sptr("host")}},
+			Tags:      []string{"x", "y", "z"},
+			Unit:      sptr("oldunit"),
+		}, "newname", 1), datadogV2.MetricSeries{
+			Metric:    "newname",
+			Points:    []datadogV2.MetricPoint{dp(1, 2), dp(3, 4)},
+			Type:      &gauge,
+			Resources: []datadogV2.MetricResource{{Name: sptr("oldhost"), Type: sptr("host")}},
+			Tags:      []string{"x", "y", "z"},
+			Unit:      sptr("oldunit"),
 		})
 
-		require.EqualValues(t, copySystemMetric(datadog.Metric{
-			Metric:   sptr("oldname"),
-			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
-			Type:     sptr("oldtype"),
-			Host:     sptr("oldhost"),
-			Tags:     []string{"x", "y", "z"},
-			Unit:     sptr("oldunit"),
-			Interval: dptr(3),
-		}, "", 1), datadog.Metric{
-			Metric:   sptr(""),
-			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
-			Type:     sptr("gauge"),
-			Host:     sptr("oldhost"),
-			Tags:     []string{"x", "y", "z"},
-			Unit:     sptr("oldunit"),
-			Interval: dptr(1),
+		require.EqualValues(t, copySystemMetric(datadogV2.MetricSeries{
+			Metric:    "oldname",
+			Points:    []datadogV2.MetricPoint{dp(1, 2), dp(3, 4)},
+			Type:      &unspecified,
+			Resources: []datadogV2.MetricResource{{Name: sptr("oldhost"), Type: sptr("host")}},
+			Tags:      []string{"x", "y", "z"},
+			Unit:      sptr("oldunit"),
+		}, "", 1), datadogV2.MetricSeries{
+			Metric:    "",
+			Points:    []datadogV2.MetricPoint{dp(1, 2), dp(3, 4)},
+			Type:      &gauge,
+			Resources: []datadogV2.MetricResource{{Name: sptr("oldhost"), Type: sptr("host")}},
+			Tags:      []string{"x", "y", "z"},
+			Unit:      sptr("oldunit"),
 		})
 
-		require.EqualValues(t, copySystemMetric(datadog.Metric{
-			Metric:   nil,
-			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
-			Type:     sptr("oldtype"),
-			Host:     sptr("oldhost"),
-			Tags:     []string{"x", "y", "z"},
-			Unit:     sptr("oldunit"),
-			Interval: dptr(3),
-		}, "", 1), datadog.Metric{
-			Metric:   sptr(""),
-			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
-			Type:     sptr("gauge"),
-			Host:     sptr("oldhost"),
-			Tags:     []string{"x", "y", "z"},
-			Unit:     sptr("oldunit"),
-			Interval: dptr(1),
-		})
-	})
-
-	t.Run("interval", func(t *testing.T) {
-		require.EqualValues(t, copySystemMetric(datadog.Metric{
-			Metric:   nil,
-			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
-			Type:     sptr("oldtype"),
-			Host:     sptr("oldhost"),
-			Tags:     []string{"x", "y", "z"},
-			Unit:     sptr("oldunit"),
-			Interval: dptr(3),
-		}, "", 1), datadog.Metric{
-			Metric:   sptr(""),
-			Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
-			Type:     sptr("gauge"),
-			Host:     sptr("oldhost"),
-			Tags:     []string{"x", "y", "z"},
-			Unit:     sptr("oldunit"),
-			Interval: dptr(1),
+		require.EqualValues(t, copySystemMetric(datadogV2.MetricSeries{
+			Metric:    "",
+			Points:    []datadogV2.MetricPoint{dp(1, 2), dp(3, 4)},
+			Type:      &unspecified,
+			Resources: []datadogV2.MetricResource{{Name: sptr("oldhost"), Type: sptr("host")}},
+			Tags:      []string{"x", "y", "z"},
+			Unit:      sptr("oldunit"),
+		}, "", 1), datadogV2.MetricSeries{
+			Metric:    "",
+			Points:    []datadogV2.MetricPoint{dp(1, 2), dp(3, 4)},
+			Type:      &gauge,
+			Resources: []datadogV2.MetricResource{{Name: sptr("oldhost"), Type: sptr("host")}},
+			Tags:      []string{"x", "y", "z"},
+			Unit:      sptr("oldunit"),
 		})
 	})
 
 	t.Run("division", func(t *testing.T) {
 		for _, tt := range []struct {
-			in, out []datadog.DataPoint
+			in, out []datadogV2.MetricPoint
 			div     float64
 		}{
 			{
-				in:  []datadog.DataPoint{dp(0, 0), dp(1, 20)},
+				in:  []datadogV2.MetricPoint{dp(0, 0), dp(1, 20)},
 				div: 0,
-				out: []datadog.DataPoint{dp(0, 0), dp(1, 20)},
+				out: []datadogV2.MetricPoint{dp(0, 0), dp(1, 20)},
 			},
 			{
-				in:  []datadog.DataPoint{dp(0, 0), dp(1, 20)},
+				in:  []datadogV2.MetricPoint{dp(0, 0), dp(1, 20)},
 				div: 1,
-				out: []datadog.DataPoint{dp(0, 0), dp(1, 20)},
+				out: []datadogV2.MetricPoint{dp(0, 0), dp(1, 20)},
 			},
 			{
-				in:  []datadog.DataPoint{dp(1.1, 0), {}},
+				in:  []datadogV2.MetricPoint{dp(1, 0), {}},
 				div: 2,
-				out: []datadog.DataPoint{dp(1.1, 0), {}},
+				out: []datadogV2.MetricPoint{dp(1, 0), {}},
 			},
 			{
-				in:  []datadog.DataPoint{dp(0, 0), dp(1, 20)},
+				in:  []datadogV2.MetricPoint{dp(0, 0), dp(1, 20)},
 				div: 10,
-				out: []datadog.DataPoint{dp(0, 0), dp(1, 2)},
+				out: []datadogV2.MetricPoint{dp(0, 0), dp(1, 2)},
 			},
 			{
-				in:  []datadog.DataPoint{dp(1.1, 0), dp(55.5, math.MaxFloat64)},
+				in:  []datadogV2.MetricPoint{dp(1, 0), dp(55, math.MaxFloat64)},
 				div: 1024 * 1024.5,
-				out: []datadog.DataPoint{dp(1.1, 0), dp(55.5, 1.713577063947272e+302)},
+				out: []datadogV2.MetricPoint{dp(1, 0), dp(55, 1.713577063947272e+302)},
 			},
 			{
-				in:  []datadog.DataPoint{dp(1.1, 0), dp(55.5, 20)},
+				in:  []datadogV2.MetricPoint{dp(1, 0), dp(55, 20)},
 				div: math.MaxFloat64,
-				out: []datadog.DataPoint{dp(1.1, 0), dp(55.5, 1.1125369292536009e-307)},
+				out: []datadogV2.MetricPoint{dp(1, 0), dp(55, 1.1125369292536009e-307)},
 			},
 		} {
 			t.Run(fmt.Sprintf("%.0f", tt.div), func(t *testing.T) {
 				require.EqualValues(t,
-					copySystemMetric(datadog.Metric{Points: tt.in}, "", tt.div),
-					datadog.Metric{Metric: sptr(""), Type: sptr("gauge"), Points: tt.out, Interval: dptr(1)},
+					copySystemMetric(datadogV2.MetricSeries{Points: tt.in}, "", tt.div),
+					datadogV2.MetricSeries{Metric: "", Type: &gauge, Points: tt.out},
 				)
 			})
 		}
@@ -151,289 +133,283 @@ func TestCopyMetric(t *testing.T) {
 }
 
 func TestExtractSystemMetrics(t *testing.T) {
-	sptr := func(s string) *string { return &s }
-	dptr := func(d int) *int { return &d }
-	dp := func(a, b float64) datadog.DataPoint { return datadog.DataPoint{&a, &b} }
+	dp := func(a int64, b float64) datadogV2.MetricPoint {
+		return datadogV2.MetricPoint{
+			Timestamp: datadog.PtrInt64(a),
+			Value:     datadog.PtrFloat64(b),
+		}
+	}
+
+	var gauge = datadogV2.METRICINTAKETYPE_GAUGE
 
 	for _, tt := range []struct {
-		in  datadog.Metric
-		out []datadog.Metric
+		in  datadogV2.MetricSeries
+		out []datadogV2.MetricSeries
 	}{
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.cpu.load_average.1m"),
-				Points: []datadog.DataPoint{dp(1, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.cpu.load_average.1m",
+				Points: []datadogV2.MetricPoint{dp(1, 2), dp(3, 4)},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.load.1"),
-				Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.load.1",
+				Points: []datadogV2.MetricPoint{dp(1, 2), dp(3, 4)},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.cpu.load_average.5m"),
-				Points: []datadog.DataPoint{dp(1, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.cpu.load_average.5m",
+				Points: []datadogV2.MetricPoint{dp(1, 2), dp(3, 4)},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.load.5"),
-				Points:   []datadog.DataPoint{dp(1, 2), dp(3, 4)},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.load.5",
+				Points: []datadogV2.MetricPoint{dp(1, 2), dp(3, 4)},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.cpu.load_average.15m"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.cpu.load_average.15m",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.load.15"),
-				Points:   []datadog.DataPoint{dp(2, 2), dp(3, 4)},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.load.15",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.cpu.utilization"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.cpu.utilization",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"state:idle"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.cpu.idle"),
-				Points:   []datadog.DataPoint{dp(2, 200), dp(3, 400)},
-				Interval: dptr(1),
-				Tags:     []string{"state:idle"},
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.cpu.idle",
+				Points: []datadogV2.MetricPoint{dp(2, 200), dp(3, 400)},
+				Tags:   []string{"state:idle"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.cpu.utilization"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.cpu.utilization",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"state:user"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.cpu.user"),
-				Points:   []datadog.DataPoint{dp(2, 200), dp(3, 400)},
-				Interval: dptr(1),
-				Tags:     []string{"state:user"},
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.cpu.user",
+				Points: []datadogV2.MetricPoint{dp(2, 200), dp(3, 400)},
+				Tags:   []string{"state:user"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.cpu.utilization"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.cpu.utilization",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"state:system"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.cpu.system"),
-				Points:   []datadog.DataPoint{dp(2, 200), dp(3, 400)},
-				Interval: dptr(1),
-				Tags:     []string{"state:system"},
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.cpu.system",
+				Points: []datadogV2.MetricPoint{dp(2, 200), dp(3, 400)},
+				Tags:   []string{"state:system"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.cpu.utilization"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.cpu.utilization",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"state:wait"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.cpu.iowait"),
-				Points:   []datadog.DataPoint{dp(2, 200), dp(3, 400)},
-				Interval: dptr(1),
-				Tags:     []string{"state:wait"},
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.cpu.iowait",
+				Points: []datadogV2.MetricPoint{dp(2, 200), dp(3, 400)},
+				Tags:   []string{"state:wait"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.cpu.utilization"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.cpu.utilization",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"state:steal"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.cpu.stolen"),
-				Points:   []datadog.DataPoint{dp(2, 200), dp(3, 400)},
-				Tags:     []string{"state:steal"},
-				Type:     sptr("gauge"),
-				Interval: dptr(1),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.cpu.stolen",
+				Points: []datadogV2.MetricPoint{dp(2, 200), dp(3, 400)},
+				Tags:   []string{"state:steal"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.memory.usage"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.memory.usage",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"state:other"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.mem.total"),
-				Points:   []datadog.DataPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
-				Tags:     []string{"state:other"},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.mem.total",
+				Points: []datadogV2.MetricPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
+				Tags:   []string{"state:other"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.memory.usage"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.memory.usage",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"state:free"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.mem.total"),
-				Points:   []datadog.DataPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
-				Tags:     []string{"state:free"},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.mem.total",
+				Points: []datadogV2.MetricPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
+				Tags:   []string{"state:free"},
+				Type:   &gauge,
 			}, {
-				Metric:   sptr("system.mem.usable"),
-				Points:   []datadog.DataPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
-				Tags:     []string{"state:free"},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+				Metric: "system.mem.usable",
+				Points: []datadogV2.MetricPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
+				Tags:   []string{"state:free"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.memory.usage"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.memory.usage",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"state:cached"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.mem.total"),
-				Points:   []datadog.DataPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
-				Tags:     []string{"state:cached"},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.mem.total",
+				Points: []datadogV2.MetricPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
+				Tags:   []string{"state:cached"},
+				Type:   &gauge,
 			}, {
-				Metric:   sptr("system.mem.usable"),
-				Points:   []datadog.DataPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
-				Tags:     []string{"state:cached"},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+				Metric: "system.mem.usable",
+				Points: []datadogV2.MetricPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
+				Tags:   []string{"state:cached"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.memory.usage"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.memory.usage",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"state:buffered"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.mem.total"),
-				Points:   []datadog.DataPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
-				Tags:     []string{"state:buffered"},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.mem.total",
+				Points: []datadogV2.MetricPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
+				Tags:   []string{"state:buffered"},
+				Type:   &gauge,
 			}, {
-				Metric:   sptr("system.mem.usable"),
-				Points:   []datadog.DataPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
-				Tags:     []string{"state:buffered"},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+				Metric: "system.mem.usable",
+				Points: []datadogV2.MetricPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
+				Tags:   []string{"state:buffered"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.network.io"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.network.io",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"direction:receive"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.net.bytes_rcvd"),
-				Points:   []datadog.DataPoint{dp(2, 2), dp(3, 4)},
-				Tags:     []string{"direction:receive"},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.net.bytes_rcvd",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
+				Tags:   []string{"direction:receive"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.network.io"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.network.io",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"direction:transmit"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.net.bytes_sent"),
-				Points:   []datadog.DataPoint{dp(2, 2), dp(3, 4)},
-				Tags:     []string{"direction:transmit"},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.net.bytes_sent",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
+				Tags:   []string{"direction:transmit"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.paging.usage"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.paging.usage",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"state:free"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.swap.free"),
-				Points:   []datadog.DataPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
-				Tags:     []string{"state:free"},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.swap.free",
+				Points: []datadogV2.MetricPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
+				Tags:   []string{"state:free"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.paging.usage"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.paging.usage",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 				Tags:   []string{"state:used"},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.swap.used"),
-				Points:   []datadog.DataPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
-				Tags:     []string{"state:used"},
-				Interval: dptr(1),
-				Type:     sptr("gauge"),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.swap.used",
+				Points: []datadogV2.MetricPoint{dp(2, 1.9073486328125e-06), dp(3, 3.814697265625e-06)},
+				Tags:   []string{"state:used"},
+				Type:   &gauge,
 			}},
 		},
 		{
-			in: datadog.Metric{
-				Metric: sptr("system.filesystem.utilization"),
-				Points: []datadog.DataPoint{dp(2, 2), dp(3, 4)},
+			in: datadogV2.MetricSeries{
+				Metric: "system.filesystem.utilization",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
 			},
-			out: []datadog.Metric{{
-				Metric:   sptr("system.disk.in_use"),
-				Points:   []datadog.DataPoint{dp(2, 2), dp(3, 4)},
-				Type:     sptr("gauge"),
-				Interval: dptr(1),
+			out: []datadogV2.MetricSeries{{
+				Metric: "system.disk.in_use",
+				Points: []datadogV2.MetricPoint{dp(2, 2), dp(3, 4)},
+				Type:   &gauge,
 			}},
 		},
 	} {
 		t.Run("", func(t *testing.T) {
 			out := extractSystemMetrics(tt.in)
-			require.EqualValues(t, tt.out, out, fmt.Sprintf("%s[%#v]", *tt.in.Metric, tt.in.Tags))
+			require.EqualValues(t, tt.out, out, fmt.Sprintf("%s[%#v]", tt.in.Metric, tt.in.Tags))
 		})
 	}
 }
 
 func TestPrepareSystemMetrics(t *testing.T) {
-	m := func(name string, tags []string, points ...float64) datadog.Metric {
-		met := datadog.Metric{
-			Metric: &name,
+	var gauge = datadogV2.METRICINTAKETYPE_GAUGE
+
+	m := func(name string, tags []string, points ...float64) datadogV2.MetricSeries {
+		met := datadogV2.MetricSeries{
+			Metric: name,
 			Tags:   tags,
 		}
 		if len(points)%2 != 0 {
 			t.Fatal("Number of data point arguments passed to function must be even.")
 		}
-		met.Points = make([]datadog.DataPoint, 0, len(points)/2)
+		met.Points = make([]datadogV2.MetricPoint, 0, len(points)/2)
 		for i := 0; i < len(points); i += 2 {
-			met.Points = append(met.Points, datadog.DataPoint{&points[i], &points[i+1]})
+			ts := int64(points[i])
+			val := points[i+1]
+			met.Points = append(met.Points, datadogV2.MetricPoint{Timestamp: datadog.PtrInt64(ts), Value: datadog.PtrFloat64(val)})
 		}
 		return met
 	}
-	fptr := func(d float64) *float64 { return &d }
-	dptr := func(d int) *int { return &d }
-	sptr := func(s string) *string { return &s }
-	require.EqualValues(t, PrepareSystemMetrics([]datadog.Metric{
+
+	dp := func(a int64, b float64) datadogV2.MetricPoint {
+		return datadogV2.MetricPoint{
+			Timestamp: datadog.PtrInt64(a),
+			Value:     datadog.PtrFloat64(b),
+		}
+	}
+
+	require.EqualValues(t, PrepareSystemMetrics([]datadogV2.MetricSeries{
 		m("system.metric.1", nil, 0.1, 0.2),
 		m("system.metric.2", nil, 0.3, 0.4),
 		m("process.metric.1", nil, 0.5, 0.6),
@@ -457,252 +433,232 @@ func TestPrepareSystemMetrics(t *testing.T) {
 		m("system.paging.usage", []string{"state:free"}, 1, 4.37, 2, 5.22),
 		m("system.paging.usage", []string{"state:used"}, 1, 4.3, 2, 8.22),
 		m("system.filesystem.utilization", nil, 1, 4.3, 2, 5.5, 3, 12.1),
-	}), []datadog.Metric{
+	}), []datadogV2.MetricSeries{
 		{
-			Metric: sptr("otel.system.metric.1"),
-			Points: []datadog.DataPoint{{fptr(0.1), fptr(0.2)}},
+			Metric: "otel.system.metric.1",
+			Points: []datadogV2.MetricPoint{dp(0, 0.2)},
 		},
 		{
-			Metric: sptr("otel.system.metric.2"),
-			Points: []datadog.DataPoint{{fptr(0.3), fptr(0.4)}},
+			Metric: "otel.system.metric.2",
+			Points: []datadogV2.MetricPoint{dp(0, 0.4)},
 		},
 		{
-			Metric: sptr("otel.process.metric.1"),
-			Points: []datadog.DataPoint{{fptr(0.5), fptr(0.6)}},
+			Metric: "otel.process.metric.1",
+			Points: []datadogV2.MetricPoint{dp(0, 0.6)},
 		},
 		{
-			Metric: sptr("otel.process.metric.2"),
-			Points: []datadog.DataPoint{{fptr(0.7), fptr(0.8)}},
+			Metric: "otel.process.metric.2",
+			Points: []datadogV2.MetricPoint{dp(0, 0.8)},
 		},
 		{
-			Metric: sptr("otel.system.cpu.load_average.1m"),
-			Points: []datadog.DataPoint{{fptr(1), fptr(2)}},
+			Metric: "otel.system.cpu.load_average.1m",
+			Points: []datadogV2.MetricPoint{dp(1, 2)},
 		},
 		{
-			Metric: sptr("otel.system.cpu.load_average.5m"),
-			Points: []datadog.DataPoint{{fptr(3), fptr(4)}},
+			Metric: "otel.system.cpu.load_average.5m",
+			Points: []datadogV2.MetricPoint{dp(3, 4)},
 		},
 		{
-			Metric: sptr("otel.system.cpu.load_average.15m"),
-			Points: []datadog.DataPoint{{fptr(5), fptr(6)}},
+			Metric: "otel.system.cpu.load_average.15m",
+			Points: []datadogV2.MetricPoint{dp(5, 6)},
 		},
 		{
-			Metric: sptr("otel.system.cpu.utilization"),
-			Points: []datadog.DataPoint{{fptr(0.15), fptr(0.17)}},
+			Metric: "otel.system.cpu.utilization",
+			Points: []datadogV2.MetricPoint{dp(0, 0.17)},
 			Tags:   []string{"state:idle"},
 		},
 		{
-			Metric: sptr("otel.system.cpu.utilization"),
-			Points: []datadog.DataPoint{{fptr(0.18), fptr(0.19)}},
+			Metric: "otel.system.cpu.utilization",
+			Points: []datadogV2.MetricPoint{dp(0, 0.19)},
 			Tags:   []string{"state:user"},
 		},
 		{
-			Metric: sptr("otel.system.cpu.utilization"),
-			Points: []datadog.DataPoint{{fptr(0.2), fptr(0.21)}},
+			Metric: "otel.system.cpu.utilization",
+			Points: []datadogV2.MetricPoint{dp(0, 0.21)},
 			Tags:   []string{"state:system"},
 		},
 		{
-			Metric: sptr("otel.system.cpu.utilization"),
-			Points: []datadog.DataPoint{{fptr(0.22), fptr(0.23)}},
+			Metric: "otel.system.cpu.utilization",
+			Points: []datadogV2.MetricPoint{dp(0, 0.23)},
 			Tags:   []string{"state:wait"}},
 		{
-			Metric: sptr("otel.system.cpu.utilization"),
-			Points: []datadog.DataPoint{{fptr(0.24), fptr(0.25)}},
+			Metric: "otel.system.cpu.utilization",
+			Points: []datadogV2.MetricPoint{dp(0, 0.25)},
 			Tags:   []string{"state:steal"},
 		},
 		{
-			Metric: sptr("otel.system.cpu.utilization"),
-			Points: []datadog.DataPoint{{fptr(0.26), fptr(0.27)}},
-			Tags:   []string{"state:other"}},
-		{
-			Metric: sptr("otel.system.memory.usage"),
-			Points: []datadog.DataPoint{{fptr(1), fptr(0.3)}},
-		},
-		{
-			Metric: sptr("otel.system.memory.usage"),
-			Points: []datadog.DataPoint{{fptr(1), fptr(1.35)}},
+			Metric: "otel.system.cpu.utilization",
+			Points: []datadogV2.MetricPoint{dp(0, 0.27)},
 			Tags:   []string{"state:other"},
 		},
 		{
-			Metric: sptr("otel.system.memory.usage"),
-			Points: []datadog.DataPoint{{fptr(1), fptr(1.3)}},
+			Metric: "otel.system.memory.usage",
+			Points: []datadogV2.MetricPoint{dp(1, 0.3)},
+		},
+		{
+			Metric: "otel.system.memory.usage",
+			Points: []datadogV2.MetricPoint{dp(1, 1.35)},
+			Tags:   []string{"state:other"},
+		},
+		{
+			Metric: "otel.system.memory.usage",
+			Points: []datadogV2.MetricPoint{dp(1, 1.3)},
 			Tags:   []string{"state:free"},
 		},
 		{
-			Metric: sptr("otel.system.memory.usage"),
-			Points: []datadog.DataPoint{{fptr(1), fptr(1.35)}},
+			Metric: "otel.system.memory.usage",
+			Points: []datadogV2.MetricPoint{dp(1, 1.35)},
 			Tags:   []string{"state:cached"},
 		},
 		{
-			Metric: sptr("otel.system.memory.usage"),
-			Points: []datadog.DataPoint{{fptr(1), fptr(1.37)}, {fptr(2), fptr(2.22)}},
+			Metric: "otel.system.memory.usage",
+			Points: []datadogV2.MetricPoint{dp(1, 1.37), dp(2, 2.22)},
 			Tags:   []string{"state:buffered"},
 		},
 		{
-			Metric: sptr("otel.system.network.io"),
-			Points: []datadog.DataPoint{{fptr(1), fptr(2.37)}, {fptr(2), fptr(3.22)}},
+			Metric: "otel.system.network.io",
+			Points: []datadogV2.MetricPoint{dp(1, 2.37), dp(2, 3.22)},
 			Tags:   []string{"direction:receive"},
 		},
 		{
-			Metric: sptr("otel.system.network.io"),
-			Points: []datadog.DataPoint{{fptr(1), fptr(4.37)}, {fptr(2), fptr(5.22)}},
+			Metric: "otel.system.network.io",
+			Points: []datadogV2.MetricPoint{dp(1, 4.37), dp(2, 5.22)},
 			Tags:   []string{"direction:transmit"},
 		},
 		{
-			Metric: sptr("otel.system.paging.usage"),
-			Points: []datadog.DataPoint{{fptr(1), fptr(4.37)}, {fptr(2), fptr(5.22)}},
+			Metric: "otel.system.paging.usage",
+			Points: []datadogV2.MetricPoint{dp(1, 4.37), dp(2, 5.22)},
 			Tags:   []string{"state:free"},
 		},
 		{
-			Metric: sptr("otel.system.paging.usage"),
-			Points: []datadog.DataPoint{{fptr(1), fptr(4.3)}, {fptr(2), fptr(8.22)}},
+			Metric: "otel.system.paging.usage",
+			Points: []datadogV2.MetricPoint{dp(1, 4.3), dp(2, 8.22)},
 			Tags:   []string{"state:used"},
 		},
 		{
-			Metric: sptr("otel.system.filesystem.utilization"),
-			Points: []datadog.DataPoint{{fptr(1), fptr(4.3)}, {fptr(2), fptr(5.5)}, {fptr(3), fptr(12.1)}},
+			Metric: "otel.system.filesystem.utilization",
+			Points: []datadogV2.MetricPoint{dp(1, 4.3), dp(2, 5.5), dp(3, 12.1)},
 		},
 		{
-			Metric:   sptr("system.load.1"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(2)}},
-			Type:     sptr("gauge"),
-			Interval: dptr(1),
+			Metric: "system.load.1",
+			Points: []datadogV2.MetricPoint{dp(1, 2)},
+			Type:   &gauge,
 		},
 		{
-			Metric:   sptr("system.load.5"),
-			Points:   []datadog.DataPoint{{fptr(3), fptr(4)}},
-			Type:     sptr("gauge"),
-			Interval: dptr(1),
+			Metric: "system.load.5",
+			Points: []datadogV2.MetricPoint{dp(3, 4)},
+			Type:   &gauge,
 		},
 		{
-			Metric:   sptr("system.load.15"),
-			Points:   []datadog.DataPoint{{fptr(5), fptr(6)}},
-			Type:     sptr("gauge"),
-			Interval: dptr(1),
+			Metric: "system.load.15",
+			Points: []datadogV2.MetricPoint{dp(5, 6)},
+			Type:   &gauge,
 		},
 		{
-			Metric:   sptr("system.cpu.idle"),
-			Points:   []datadog.DataPoint{{fptr(0.15), fptr(17)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:idle"},
-			Interval: dptr(1),
+			Metric: "system.cpu.idle",
+			Points: []datadogV2.MetricPoint{dp(0, 17)},
+			Type:   &gauge,
+			Tags:   []string{"state:idle"},
 		},
 		{
-			Metric:   sptr("system.cpu.user"),
-			Points:   []datadog.DataPoint{{fptr(0.18), fptr(19)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:user"},
-			Interval: dptr(1),
+			Metric: "system.cpu.user",
+			Points: []datadogV2.MetricPoint{dp(0, 19)},
+			Type:   &gauge,
+			Tags:   []string{"state:user"},
 		},
 		{
-			Metric:   sptr("system.cpu.system"),
-			Points:   []datadog.DataPoint{{fptr(0.2), fptr(21)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:system"},
-			Interval: dptr(1),
+			Metric: "system.cpu.system",
+			Points: []datadogV2.MetricPoint{dp(0, 21)},
+			Type:   &gauge,
+			Tags:   []string{"state:system"},
 		},
 		{
-			Metric:   sptr("system.cpu.iowait"),
-			Points:   []datadog.DataPoint{{fptr(0.22), fptr(23)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:wait"},
-			Interval: dptr(1),
+			Metric: "system.cpu.iowait",
+			Points: []datadogV2.MetricPoint{dp(0, 23)},
+			Type:   &gauge,
+			Tags:   []string{"state:wait"},
 		},
 		{
-			Metric:   sptr("system.cpu.stolen"),
-			Points:   []datadog.DataPoint{{fptr(0.24), fptr(25)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:steal"},
-			Interval: dptr(1),
+			Metric: "system.cpu.stolen",
+			Points: []datadogV2.MetricPoint{dp(0, 25)},
+			Type:   &gauge,
+			Tags:   []string{"state:steal"},
 		},
 		{
-			Metric:   sptr("system.mem.total"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(2.86102294921875e-07)}},
-			Type:     sptr("gauge"),
-			Interval: dptr(1),
+			Metric: "system.mem.total",
+			Points: []datadogV2.MetricPoint{dp(1, 2.86102294921875e-07)},
+			Type:   &gauge,
 		},
 		{
-			Metric:   sptr("system.mem.total"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(1.2874603271484376e-06)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:other"},
-			Interval: dptr(1),
+			Metric: "system.mem.total",
+			Points: []datadogV2.MetricPoint{dp(1, 1.2874603271484376e-06)},
+			Type:   &gauge,
+			Tags:   []string{"state:other"},
 		},
 		{
-			Metric:   sptr("system.mem.total"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(1.239776611328125e-06)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:free"},
-			Interval: dptr(1),
+			Metric: "system.mem.total",
+			Points: []datadogV2.MetricPoint{dp(1, 1.239776611328125e-06)},
+			Type:   &gauge,
+			Tags:   []string{"state:free"},
 		},
 		{
-			Metric:   sptr("system.mem.usable"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(1.239776611328125e-06)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:free"},
-			Interval: dptr(1),
+			Metric: "system.mem.usable",
+			Points: []datadogV2.MetricPoint{dp(1, 1.239776611328125e-06)},
+			Type:   &gauge,
+			Tags:   []string{"state:free"},
 		},
 		{
-			Metric:   sptr("system.mem.total"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(1.2874603271484376e-06)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:cached"},
-			Interval: dptr(1),
+			Metric: "system.mem.total",
+			Points: []datadogV2.MetricPoint{dp(1, 1.2874603271484376e-06)},
+			Type:   &gauge,
+			Tags:   []string{"state:cached"},
 		},
 		{
-			Metric:   sptr("system.mem.usable"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(1.2874603271484376e-06)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:cached"},
-			Interval: dptr(1),
+			Metric: "system.mem.usable",
+			Points: []datadogV2.MetricPoint{dp(1, 1.2874603271484376e-06)},
+			Type:   &gauge,
+			Tags:   []string{"state:cached"},
 		},
 		{
-			Metric:   sptr("system.mem.total"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(1.3065338134765626e-06)}, {fptr(2), fptr(2.117156982421875e-06)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:buffered"},
-			Interval: dptr(1),
+			Metric: "system.mem.total",
+			Points: []datadogV2.MetricPoint{dp(1, 1.3065338134765626e-06), dp(2, 2.117156982421875e-06)},
+			Type:   &gauge,
+			Tags:   []string{"state:buffered"},
 		},
 		{
-			Metric:   sptr("system.mem.usable"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(1.3065338134765626e-06)}, {fptr(2), fptr(2.117156982421875e-06)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:buffered"},
-			Interval: dptr(1),
+			Metric: "system.mem.usable",
+			Points: []datadogV2.MetricPoint{dp(1, 1.3065338134765626e-06), dp(2, 2.117156982421875e-06)},
+			Type:   &gauge,
+			Tags:   []string{"state:buffered"},
 		},
 		{
-			Metric:   sptr("system.net.bytes_rcvd"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(2.37)}, {fptr(2), fptr(3.22)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"direction:receive"},
-			Interval: dptr(1),
+			Metric: "system.net.bytes_rcvd",
+			Points: []datadogV2.MetricPoint{dp(1, 2.37), dp(2, 3.22)},
+			Type:   &gauge,
+			Tags:   []string{"direction:receive"},
 		},
 		{
-			Metric:   sptr("system.net.bytes_sent"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(4.37)}, {fptr(2), fptr(5.22)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"direction:transmit"},
-			Interval: dptr(1),
+			Metric: "system.net.bytes_sent",
+			Points: []datadogV2.MetricPoint{dp(1, 4.37), dp(2, 5.22)},
+			Type:   &gauge,
+			Tags:   []string{"direction:transmit"},
 		},
 		{
-			Metric:   sptr("system.swap.free"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(4.37 / 1024 / 1024)}, {fptr(2), fptr(5.22 / 1024 / 1024)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:free"},
-			Interval: dptr(1),
+			Metric: "system.swap.free",
+			Points: []datadogV2.MetricPoint{dp(1, 4.37/1024/1024), dp(2, 5.22/1024/1024)},
+			Type:   &gauge,
+			Tags:   []string{"state:free"},
 		},
 		{
-			Metric:   sptr("system.swap.used"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(4.3 / 1024 / 1024)}, {fptr(2), fptr(8.22 / 1024 / 1024)}},
-			Type:     sptr("gauge"),
-			Tags:     []string{"state:used"},
-			Interval: dptr(1),
+			Metric: "system.swap.used",
+			Points: []datadogV2.MetricPoint{dp(1, 4.3/1024/1024), dp(2, 8.22/1024/1024)},
+			Type:   &gauge,
+			Tags:   []string{"state:used"},
 		},
 		{
-			Metric:   sptr("system.disk.in_use"),
-			Points:   []datadog.DataPoint{{fptr(1), fptr(4.3)}, {fptr(2), fptr(5.5)}, {fptr(3), fptr(12.1)}},
-			Type:     sptr("gauge"),
-			Interval: dptr(1),
+			Metric: "system.disk.in_use",
+			Points: []datadogV2.MetricPoint{dp(1, 4.3), dp(2, 5.5), dp(3, 12.1)},
+			Type:   &gauge,
 		},
 	})
 }

@@ -2,106 +2,641 @@
 
 # saphanareceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **saphana.alert.count** | Number of current alerts. | {alerts} | Sum(Int) | <ul> <li>alert_rating</li> </ul> |
-| **saphana.backup.latest** | The age of the latest backup by start time. | s | Gauge(Int) | <ul> </ul> |
-| **saphana.column.memory.used** | The memory used in all columns. | By | Sum(Int) | <ul> <li>column_memory_type</li> <li>column_memory_subtype</li> </ul> |
-| **saphana.component.memory.used** | The memory used in components. | By | Sum(Int) | <ul> <li>component</li> </ul> |
-| **saphana.connection.count** | The number of current connections. | {connections} | Sum(Int) | <ul> <li>connection_status</li> </ul> |
-| **saphana.cpu.used** | Total CPU time spent. | ms | Sum(Int) | <ul> <li>cpu_type</li> </ul> |
-| **saphana.disk.size.current** | The disk size. | By | Sum(Int) | <ul> <li>path</li> <li>disk_usage_type</li> <li>disk_state_used_free</li> </ul> |
-| **saphana.host.memory.current** | The amount of physical memory on the host. | By | Sum(Int) | <ul> <li>memory_state_used_free</li> </ul> |
-| **saphana.host.swap.current** | The amount of swap space on the host. | By | Sum(Int) | <ul> <li>host_swap_state</li> </ul> |
-| **saphana.instance.code_size** | The instance code size, including shared libraries of SAP HANA processes. | By | Sum(Int) | <ul> </ul> |
-| **saphana.instance.memory.current** | The size of the memory pool for all SAP HANA processes. | By | Sum(Int) | <ul> <li>memory_state_used_free</li> </ul> |
-| **saphana.instance.memory.shared.allocated** | The shared memory size of SAP HANA processes. | By | Sum(Int) | <ul> </ul> |
-| **saphana.instance.memory.used.peak** | The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value). | By | Sum(Int) | <ul> </ul> |
-| **saphana.license.expiration.time** | The amount of time remaining before license expiration. | s | Gauge(Int) | <ul> <li>system</li> <li>product</li> </ul> |
-| **saphana.license.limit** | The allowed product usage as specified by the license (for example, main memory). | {licenses} | Sum(Int) | <ul> <li>system</li> <li>product</li> </ul> |
-| **saphana.license.peak** | The peak product usage value during last 13 months, measured periodically. | {licenses} | Sum(Int) | <ul> <li>system</li> <li>product</li> </ul> |
-| **saphana.network.request.average_time** | The average response time calculated over recent requests | ms | Gauge(Double) | <ul> </ul> |
-| **saphana.network.request.count** | The number of active and pending service requests. | {requests} | Sum(Int) | <ul> <li>active_pending_request_state</li> </ul> |
-| **saphana.network.request.finished.count** | The number of service requests that have completed. | {requests} | Sum(Int) | <ul> <li>internal_external_request_type</li> </ul> |
-| **saphana.replication.average_time** | The average amount of time consumed replicating a log. | us | Gauge(Double) | <ul> <li>primary_host</li> <li>secondary_host</li> <li>port</li> <li>replication_mode</li> </ul> |
-| **saphana.replication.backlog.size** | The current replication backlog size. | By | Sum(Int) | <ul> <li>primary_host</li> <li>secondary_host</li> <li>port</li> <li>replication_mode</li> </ul> |
-| **saphana.replication.backlog.time** | The current replication backlog. | us | Sum(Int) | <ul> <li>primary_host</li> <li>secondary_host</li> <li>port</li> <li>replication_mode</li> </ul> |
-| **saphana.row_store.memory.used** | The used memory for all row tables. | By | Sum(Int) | <ul> <li>row_memory_type</li> </ul> |
-| **saphana.schema.memory.used.current** | The memory size for all tables in schema. | By | Sum(Int) | <ul> <li>schema</li> <li>schema_memory_type</li> </ul> |
-| **saphana.schema.memory.used.max** | The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included). | By | Sum(Int) | <ul> <li>schema</li> </ul> |
-| **saphana.schema.operation.count** | The number of operations done on all tables in schema. | {operations} | Sum(Int) | <ul> <li>schema</li> <li>schema_operation_type</li> </ul> |
-| **saphana.schema.record.compressed.count** | The number of entries in main during the last optimize compression run for all tables in schema. | {records} | Sum(Int) | <ul> <li>schema</li> </ul> |
-| **saphana.schema.record.count** | The number of records for all tables in schema. | {records} | Sum(Int) | <ul> <li>schema</li> <li>schema_record_type</li> </ul> |
-| **saphana.service.code_size** | The service code size, including shared libraries. | By | Sum(Int) | <ul> <li>service</li> </ul> |
-| **saphana.service.count** | The number of services in a given status. | {services} | Sum(Int) | <ul> <li>service_status</li> </ul> |
-| **saphana.service.memory.compactors.allocated** | The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage. | By | Sum(Int) | <ul> <li>service</li> </ul> |
-| **saphana.service.memory.compactors.freeable** | The memory that can be freed during a memory shortage. | By | Sum(Int) | <ul> <li>service</li> </ul> |
-| **saphana.service.memory.effective_limit** | The effective maximum memory pool size, calculated considering the pool sizes of other processes. | By | Sum(Int) | <ul> <li>service</li> </ul> |
-| **saphana.service.memory.heap.current** | The size of the heap portion of the memory pool. | By | Sum(Int) | <ul> <li>service</li> <li>memory_state_used_free</li> </ul> |
-| **saphana.service.memory.limit** | The configured maximum memory pool size. | By | Sum(Int) | <ul> <li>service</li> </ul> |
-| **saphana.service.memory.shared.current** | The size of the shared portion of the memory pool. | By | Sum(Int) | <ul> <li>service</li> <li>memory_state_used_free</li> </ul> |
-| **saphana.service.memory.used** | The used memory from the operating system perspective. | By | Sum(Int) | <ul> <li>service</li> <li>service_memory_used_type</li> </ul> |
-| **saphana.service.stack_size** | The service stack size. | By | Sum(Int) | <ul> <li>service</li> </ul> |
-| **saphana.service.thread.count** | The number of service threads in a given status. | {threads} | Sum(Int) | <ul> <li>thread_status</li> </ul> |
-| **saphana.transaction.blocked** | The number of transactions waiting for a lock. | {transactions} | Sum(Int) | <ul> </ul> |
-| **saphana.transaction.count** | The number of transactions. | {transactions} | Sum(Int) | <ul> <li>transaction_type</li> </ul> |
-| **saphana.uptime** | The uptime of the database. | s | Sum(Int) | <ul> <li>system</li> <li>database</li> </ul> |
-| **saphana.volume.operation.count** | The number of operations executed. | {operations} | Sum(Int) | <ul> <li>path</li> <li>disk_usage_type</li> <li>volume_operation_type</li> </ul> |
-| **saphana.volume.operation.size** | The size of operations executed. | By | Sum(Int) | <ul> <li>path</li> <li>disk_usage_type</li> <li>volume_operation_type</li> </ul> |
-| **saphana.volume.operation.time** | The time spent executing operations. | ms | Sum(Int) | <ul> <li>path</li> <li>disk_usage_type</li> <li>volume_operation_type</li> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Resource attributes
+### saphana.alert.count
 
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| db.system | The type of database system. | Str |
-| saphana.host | The SAP HANA host. | Str |
+Number of current alerts.
 
-## Metric attributes
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {alerts} | Sum | Int | Cumulative | false |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| active_pending_request_state (state) | The state of network request. | active, pending |
-| alert_rating (rating) | The alert rating. |  |
-| column_memory_subtype (subtype) | The subtype of column store memory. | data, dict, index, misc |
-| column_memory_type (type) | The type of column store memory. | main, delta |
-| component | The SAP HANA component. |  |
-| connection_status (status) | The connection status. | running, idle, queueing |
-| cpu_type (type) | The type of cpu. | user, system, io_wait, idle |
-| database | The SAP HANA database. |  |
-| disk_state_used_free (state) | The state of the disk storage. | used, free |
-| disk_usage_type (usage_type) | The SAP HANA disk & volume usage type. |  |
-| host_swap_state (state) | The state of swap data. | used, free |
-| internal_external_request_type (type) | The type of network request. | internal, external |
-| memory_state_used_free (state) | The state of memory. | used, free |
-| path | The SAP HANA disk path. |  |
-| port | The SAP HANA port. |  |
-| primary_host (primary) | The primary SAP HANA host in replication. |  |
-| product | The SAP HANA product. |  |
-| replication_mode (mode) | The replication mode. |  |
-| row_memory_type (type) | The type of row store memory. | fixed, variable |
-| schema | The SAP HANA schema. |  |
-| schema_memory_type (type) | The type of schema memory. | main, delta, history_main, history_delta |
-| schema_operation_type (type) | The type of operation. | read, write, merge |
-| schema_record_type (type) | The type of schema record. | main, delta, history_main, history_delta |
-| secondary_host (secondary) | The secondary SAP HANA host in replication. |  |
-| service | The SAP HANA service. |  |
-| service_memory_used_type (type) | The type of service memory. | logical, physical |
-| service_status (status) | The status of services. | active, inactive |
-| system | The SAP HANA system. |  |
-| thread_status (status) | The status of threads. | active, inactive |
-| transaction_type (type) | The transaction type. | update, commit, rollback |
-| volume_operation_type (type) | The type of operation. | read, write |
+| rating | The alert rating. | Any Str |
+
+### saphana.backup.latest
+
+The age of the latest backup by start time.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+### saphana.column.memory.used
+
+The memory used in all columns.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The type of column store memory. | Str: ``main``, ``delta`` |
+| subtype | The subtype of column store memory. | Str: ``data``, ``dict``, ``index``, ``misc`` |
+
+### saphana.component.memory.used
+
+The memory used in components.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| component | The SAP HANA component. | Any Str |
+
+### saphana.connection.count
+
+The number of current connections.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {connections} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| status | The connection status. | Str: ``running``, ``idle``, ``queueing`` |
+
+### saphana.cpu.used
+
+Total CPU time spent.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ms | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The type of cpu. | Str: ``user``, ``system``, ``io_wait``, ``idle`` |
+
+### saphana.disk.size.current
+
+The disk size.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| path | The SAP HANA disk path. | Any Str |
+| usage_type | The SAP HANA disk & volume usage type. | Any Str |
+| state | The state of the disk storage. | Str: ``used``, ``free`` |
+
+### saphana.host.memory.current
+
+The amount of physical memory on the host.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| state | The state of memory. | Str: ``used``, ``free`` |
+
+### saphana.host.swap.current
+
+The amount of swap space on the host.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| state | The state of swap data. | Str: ``used``, ``free`` |
+
+### saphana.instance.code_size
+
+The instance code size, including shared libraries of SAP HANA processes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### saphana.instance.memory.current
+
+The size of the memory pool for all SAP HANA processes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| state | The state of memory. | Str: ``used``, ``free`` |
+
+### saphana.instance.memory.shared.allocated
+
+The shared memory size of SAP HANA processes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### saphana.instance.memory.used.peak
+
+The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### saphana.license.expiration.time
+
+The amount of time remaining before license expiration.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| system | The SAP HANA system. | Any Str |
+| product | The SAP HANA product. | Any Str |
+
+### saphana.license.limit
+
+The allowed product usage as specified by the license (for example, main memory).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {licenses} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| system | The SAP HANA system. | Any Str |
+| product | The SAP HANA product. | Any Str |
+
+### saphana.license.peak
+
+The peak product usage value during last 13 months, measured periodically.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {licenses} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| system | The SAP HANA system. | Any Str |
+| product | The SAP HANA product. | Any Str |
+
+### saphana.network.request.average_time
+
+The average response time calculated over recent requests
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+### saphana.network.request.count
+
+The number of active and pending service requests.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| state | The state of network request. | Str: ``active``, ``pending`` |
+
+### saphana.network.request.finished.count
+
+The number of service requests that have completed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The type of network request. | Str: ``internal``, ``external`` |
+
+### saphana.replication.average_time
+
+The average amount of time consumed replicating a log.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| us | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| primary | The primary SAP HANA host in replication. | Any Str |
+| secondary | The secondary SAP HANA host in replication. | Any Str |
+| port | The SAP HANA port. | Any Str |
+| mode | The replication mode. | Any Str |
+
+### saphana.replication.backlog.size
+
+The current replication backlog size.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| primary | The primary SAP HANA host in replication. | Any Str |
+| secondary | The secondary SAP HANA host in replication. | Any Str |
+| port | The SAP HANA port. | Any Str |
+| mode | The replication mode. | Any Str |
+
+### saphana.replication.backlog.time
+
+The current replication backlog.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| us | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| primary | The primary SAP HANA host in replication. | Any Str |
+| secondary | The secondary SAP HANA host in replication. | Any Str |
+| port | The SAP HANA port. | Any Str |
+| mode | The replication mode. | Any Str |
+
+### saphana.row_store.memory.used
+
+The used memory for all row tables.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The type of row store memory. | Str: ``fixed``, ``variable`` |
+
+### saphana.schema.memory.used.current
+
+The memory size for all tables in schema.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema | The SAP HANA schema. | Any Str |
+| type | The type of schema memory. | Str: ``main``, ``delta``, ``history_main``, ``history_delta`` |
+
+### saphana.schema.memory.used.max
+
+The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema | The SAP HANA schema. | Any Str |
+
+### saphana.schema.operation.count
+
+The number of operations done on all tables in schema.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema | The SAP HANA schema. | Any Str |
+| type | The type of operation. | Str: ``read``, ``write``, ``merge`` |
+
+### saphana.schema.record.compressed.count
+
+The number of entries in main during the last optimize compression run for all tables in schema.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {records} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema | The SAP HANA schema. | Any Str |
+
+### saphana.schema.record.count
+
+The number of records for all tables in schema.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {records} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema | The SAP HANA schema. | Any Str |
+| type | The type of schema record. | Str: ``main``, ``delta``, ``history_main``, ``history_delta`` |
+
+### saphana.service.code_size
+
+The service code size, including shared libraries.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| service | The SAP HANA service. | Any Str |
+
+### saphana.service.count
+
+The number of services in a given status.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {services} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| status | The status of services. | Str: ``active``, ``inactive`` |
+
+### saphana.service.memory.compactors.allocated
+
+The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| service | The SAP HANA service. | Any Str |
+
+### saphana.service.memory.compactors.freeable
+
+The memory that can be freed during a memory shortage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| service | The SAP HANA service. | Any Str |
+
+### saphana.service.memory.effective_limit
+
+The effective maximum memory pool size, calculated considering the pool sizes of other processes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| service | The SAP HANA service. | Any Str |
+
+### saphana.service.memory.heap.current
+
+The size of the heap portion of the memory pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| service | The SAP HANA service. | Any Str |
+| state | The state of memory. | Str: ``used``, ``free`` |
+
+### saphana.service.memory.limit
+
+The configured maximum memory pool size.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| service | The SAP HANA service. | Any Str |
+
+### saphana.service.memory.shared.current
+
+The size of the shared portion of the memory pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| service | The SAP HANA service. | Any Str |
+| state | The state of memory. | Str: ``used``, ``free`` |
+
+### saphana.service.memory.used
+
+The used memory from the operating system perspective.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| service | The SAP HANA service. | Any Str |
+| type | The type of service memory. | Str: ``logical``, ``physical`` |
+
+### saphana.service.stack_size
+
+The service stack size.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| service | The SAP HANA service. | Any Str |
+
+### saphana.service.thread.count
+
+The number of service threads in a given status.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {threads} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| status | The status of threads. | Str: ``active``, ``inactive`` |
+
+### saphana.transaction.blocked
+
+The number of transactions waiting for a lock.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {transactions} | Sum | Int | Cumulative | false |
+
+### saphana.transaction.count
+
+The number of transactions.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {transactions} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The transaction type. | Str: ``update``, ``commit``, ``rollback`` |
+
+### saphana.uptime
+
+The uptime of the database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| system | The SAP HANA system. | Any Str |
+| database | The SAP HANA database. | Any Str |
+
+### saphana.volume.operation.count
+
+The number of operations executed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| path | The SAP HANA disk path. | Any Str |
+| usage_type | The SAP HANA disk & volume usage type. | Any Str |
+| type | The type of operation. | Str: ``read``, ``write`` |
+
+### saphana.volume.operation.size
+
+The size of operations executed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| path | The SAP HANA disk path. | Any Str |
+| usage_type | The SAP HANA disk & volume usage type. | Any Str |
+| type | The type of operation. | Str: ``read``, ``write`` |
+
+### saphana.volume.operation.time
+
+The time spent executing operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ms | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| path | The SAP HANA disk path. | Any Str |
+| usage_type | The SAP HANA disk & volume usage type. | Any Str |
+| type | The type of operation. | Str: ``read``, ``write`` |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| db.system | The type of database system. | Any Str | true |
+| saphana.host | The SAP HANA host. | Any Str | true |

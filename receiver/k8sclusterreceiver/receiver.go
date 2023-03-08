@@ -17,12 +17,12 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -31,13 +31,13 @@ const (
 	defaultInitialSyncTimeout = 10 * time.Minute
 )
 
-var _ component.MetricsReceiver = (*kubernetesReceiver)(nil)
+var _ receiver.Metrics = (*kubernetesReceiver)(nil)
 
 type kubernetesReceiver struct {
 	resourceWatcher *resourceWatcher
 
 	config   *Config
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	consumer consumer.Metrics
 	cancel   context.CancelFunc
 	obsrecv  *obsreport.Receiver
@@ -73,7 +73,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 			if errors.Is(timedContextForInitialSync.Err(), context.DeadlineExceeded) {
 				kr.resourceWatcher.initialSyncTimedOut.Store(true)
 				kr.settings.Logger.Error("Timed out waiting for initial cache sync.")
-				host.ReportFatalError(fmt.Errorf("failed to start receiver: %v", kr.config.ID()))
+				host.ReportFatalError(errors.New("failed to start receiver"))
 				return
 			}
 		}
@@ -98,6 +98,9 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 }
 
 func (kr *kubernetesReceiver) Shutdown(context.Context) error {
+	if kr.cancel == nil {
+		return nil
+	}
 	kr.cancel()
 	return nil
 }
@@ -114,11 +117,11 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 }
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
-func newReceiver(_ context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig, consumer consumer.Metrics) (component.MetricsReceiver, error) {
+func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             cfg.ID(),
+		ReceiverID:             set.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: set,
 	})

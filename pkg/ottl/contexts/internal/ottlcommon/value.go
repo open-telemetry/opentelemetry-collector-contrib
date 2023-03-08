@@ -51,41 +51,42 @@ func SetValue(value pcommon.Value, val interface{}) {
 	case []byte:
 		value.SetEmptyBytes().FromRaw(v)
 	case []string:
-		value.Slice().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
+		value.SetEmptySlice().EnsureCapacity(len(v))
 		for _, str := range v {
 			value.Slice().AppendEmpty().SetStr(str)
 		}
 	case []bool:
-		value.Slice().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
+		value.SetEmptySlice().EnsureCapacity(len(v))
 		for _, b := range v {
 			value.Slice().AppendEmpty().SetBool(b)
 		}
 	case []int64:
-		value.Slice().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
+		value.SetEmptySlice().EnsureCapacity(len(v))
 		for _, i := range v {
 			value.Slice().AppendEmpty().SetInt(i)
 		}
 	case []float64:
-		value.Slice().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
+		value.SetEmptySlice().EnsureCapacity(len(v))
 		for _, f := range v {
 			value.Slice().AppendEmpty().SetDouble(f)
 		}
 	case [][]byte:
-		value.Slice().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
+		value.SetEmptySlice().EnsureCapacity(len(v))
 		for _, b := range v {
 			value.Slice().AppendEmpty().SetEmptyBytes().FromRaw(b)
 		}
-	default:
-		// TODO(anuraaga): Support set of map type.
+	case []any:
+		value.SetEmptySlice().EnsureCapacity(len(v))
+		for _, a := range v {
+			pval := value.Slice().AppendEmpty()
+			SetValue(pval, a)
+		}
+	case pcommon.Map:
+		v.CopyTo(value.SetEmptyMap())
+	case map[string]interface{}:
+		value.SetEmptyMap()
+		for mk, mv := range v {
+			SetMapValue(value.Map(), mk, mv)
+		}
 	}
 }

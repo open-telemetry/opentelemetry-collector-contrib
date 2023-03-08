@@ -20,7 +20,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
 
@@ -33,6 +32,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestStart(t *testing.T) {
@@ -79,7 +80,7 @@ func TestPrefixedConfig(t *testing.T) {
 	logs := sink.AllLogs()[0]
 	expected, err := readLogs(filepath.Join("testdata", "processed", "prefixed.json"))
 	require.NoError(t, err)
-	require.NoError(t, compareLogs(expected, logs))
+	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
 }
 
 func TestPrefixedNamedStreamsConfig(t *testing.T) {
@@ -111,7 +112,7 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 	logs := sink.AllLogs()[0]
 	expected, err := readLogs(filepath.Join("testdata", "processed", "prefixed.json"))
 	require.NoError(t, err)
-	require.NoError(t, compareLogs(expected, logs))
+	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
 }
 
 func TestDiscovery(t *testing.T) {
@@ -176,6 +177,48 @@ func TestShutdownWhileCollecting(t *testing.T) {
 	require.NoError(t, alertRcvr.Shutdown(context.Background()))
 }
 
+func TestAutodiscoverLimit(t *testing.T) {
+	mc := &mockClient{}
+
+	logGroups := []*cloudwatchlogs.LogGroup{}
+	for i := 0; i <= 100; i++ {
+		logGroups = append(logGroups, &cloudwatchlogs.LogGroup{
+			LogGroupName: aws.String(fmt.Sprintf("test log group: %d", i)),
+		})
+	}
+	token := "token"
+	mc.On("DescribeLogGroupsWithContext", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: logGroups[:50],
+			NextToken: &token,
+		}, nil).Once()
+
+	mc.On("DescribeLogGroupsWithContext", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: logGroups[50:],
+			NextToken: nil,
+		}, nil)
+
+	numGroups := 100
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Prefix: "/aws/",
+			Limit:  numGroups,
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	alertRcvr.client = mc
+
+	grs, err := alertRcvr.discoverGroups(context.Background(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	require.Len(t, grs, cfg.Logs.Groups.AutodiscoverConfig.Limit)
+}
+
 func defaultMockClient() client {
 	mc := &mockClient{}
 	mc.On("DescribeLogGroupsWithContext", mock.Anything, mock.Anything, mock.Anything).Return(
@@ -201,150 +244,6 @@ func defaultMockClient() client {
 			NextToken: nil,
 		}, nil)
 	return mc
-}
-
-func compareLogs(expected, actual plog.Logs) error {
-	if expected.ResourceLogs().Len() != actual.ResourceLogs().Len() {
-		return fmt.Errorf("amount of ResourceLogs between Logs are not equal (expected: %d, actual: %d)",
-			expected.ResourceLogs().Len(),
-			actual.ResourceLogs().Len())
-	}
-
-	for i := 0; i < expected.ResourceLogs().Len(); i++ {
-		err := compareResourceLogs(expected.ResourceLogs().At(i), actual.ResourceLogs().At(i))
-		if err != nil {
-			return fmt.Errorf("resource logs at index %d: %w", i, err)
-		}
-	}
-	return nil
-}
-
-func compareResourceLogs(expected, actual plog.ResourceLogs) error {
-	if expected.SchemaUrl() != actual.SchemaUrl() {
-		return fmt.Errorf("resource logs SchemaUrl doesn't match (expected: %s, actual: %s)",
-			expected.SchemaUrl(),
-			actual.SchemaUrl())
-	}
-
-	if !reflect.DeepEqual(expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw()) {
-		return fmt.Errorf("resource logs Attributes doesn't match (expected: %+v, actual: %+v)",
-			expected.Resource().Attributes().AsRaw(),
-			actual.Resource().Attributes().AsRaw())
-	}
-
-	if expected.Resource().DroppedAttributesCount() != actual.Resource().DroppedAttributesCount() {
-		return fmt.Errorf("resource logs DroppedAttributesCount doesn't match (expected: %d, actual: %d)",
-			expected.Resource().DroppedAttributesCount(),
-			actual.Resource().DroppedAttributesCount())
-	}
-
-	if expected.ScopeLogs().Len() != actual.ScopeLogs().Len() {
-		return fmt.Errorf("amount of ScopeLogs between ResourceLogs are not equal (expected: %d, actual: %d)",
-			expected.ScopeLogs().Len(),
-			actual.ScopeLogs().Len())
-	}
-
-	for i := 0; i < expected.ScopeLogs().Len(); i++ {
-		err := compareScopeLogs(expected.ScopeLogs().At(i), actual.ScopeLogs().At(i))
-		if err != nil {
-			return fmt.Errorf("scope logs at index %d: %w", i, err)
-		}
-	}
-
-	return nil
-}
-
-func compareScopeLogs(expected, actual plog.ScopeLogs) error {
-	if expected.SchemaUrl() != actual.SchemaUrl() {
-		return fmt.Errorf("log scope SchemaUrl doesn't match (expected: %s, actual: %s)",
-			expected.SchemaUrl(),
-			actual.SchemaUrl())
-	}
-
-	if expected.Scope().Name() != actual.Scope().Name() {
-		return fmt.Errorf("log scope Name doesn't match (expected: %s, actual: %s)",
-			expected.Scope().Name(),
-			actual.Scope().Name())
-	}
-
-	if expected.Scope().Version() != actual.Scope().Version() {
-		return fmt.Errorf("log scope Version doesn't match (expected: %s, actual: %s)",
-			expected.Scope().Version(),
-			actual.Scope().Version())
-	}
-
-	if expected.LogRecords().Len() != actual.LogRecords().Len() {
-		return fmt.Errorf("amount of log records between ScopeLogs are not equal (expected: %d, actual: %d)",
-			expected.LogRecords().Len(),
-			actual.LogRecords().Len())
-	}
-
-	for i := 0; i < expected.LogRecords().Len(); i++ {
-		err := compareLogRecord(expected.LogRecords().At(i), actual.LogRecords().At(i))
-		if err != nil {
-			return fmt.Errorf("log record at index %d: %w", i, err)
-		}
-	}
-
-	return nil
-}
-
-func compareLogRecord(expected, actual plog.LogRecord) error {
-	if expected.Flags() != actual.Flags() {
-		return fmt.Errorf("log record Flags doesn't match (expected: %d, actual: %d)",
-			expected.Flags(),
-			actual.Flags())
-	}
-
-	if expected.DroppedAttributesCount() != actual.DroppedAttributesCount() {
-		return fmt.Errorf("log record DroppedAttributesCount doesn't match (expected: %d, actual: %d)",
-			expected.DroppedAttributesCount(),
-			actual.DroppedAttributesCount())
-	}
-
-	if expected.Timestamp() != actual.Timestamp() {
-		return fmt.Errorf("log record Timestamp doesn't match (expected: %d, actual: %d)",
-			expected.Timestamp(),
-			actual.Timestamp())
-	}
-
-	if expected.SeverityNumber() != actual.SeverityNumber() {
-		return fmt.Errorf("log record SeverityNumber doesn't match (expected: %d, actual: %d)",
-			expected.SeverityNumber(),
-			actual.SeverityNumber())
-	}
-
-	if expected.SeverityText() != actual.SeverityText() {
-		return fmt.Errorf("log record SeverityText doesn't match (expected: %s, actual: %s)",
-			expected.SeverityText(),
-			actual.SeverityText())
-	}
-
-	if expected.TraceID() != actual.TraceID() {
-		return fmt.Errorf("log record TraceID doesn't match (expected: %d, actual: %d)",
-			expected.TraceID(),
-			actual.TraceID())
-	}
-
-	if expected.SpanID() != actual.SpanID() {
-		return fmt.Errorf("log record SpanID doesn't match (expected: %d, actual: %d)",
-			expected.SpanID(),
-			actual.SpanID())
-	}
-
-	if !expected.Body().Equal(actual.Body()) {
-		return fmt.Errorf("log record Body doesn't match (expected: %s, actual: %s)",
-			expected.Body().AsString(),
-			actual.Body().AsString())
-	}
-
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		return fmt.Errorf("log record Attributes doesn't match (expected: %#v, actual: %#v)",
-			expected.Attributes().AsRaw(),
-			actual.Attributes().AsRaw())
-	}
-
-	return nil
 }
 
 var (

@@ -23,6 +23,14 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/cmd/otelcontribcol"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/cmd/oteltestbedcol"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/cmd/telemetrygen"
     schedule:
       interval: "weekly"
@@ -32,6 +40,18 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/confmap/provider/s3provider"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/connector/countconnector"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/connector/servicegraphconnector"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/connector/spanmetricsconnector"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -115,10 +135,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/exporter/humioexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/exporter/influxdbexporter"
     schedule:
       interval: "weekly"
@@ -140,6 +156,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/loadbalancingexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/logicmonitorexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -224,10 +244,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/extension/bearertokenauthextension"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/extension/fluentbitextension"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -343,6 +359,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/filter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/k8sconfig"
     schedule:
       interval: "weekly"
@@ -352,10 +372,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/internal/metadataproviders"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/internal/scrapertest"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -384,6 +400,14 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/pkg/ottl"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/pdatatest"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/pdatautil"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -432,6 +456,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/processor/cumulativetodeltaprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/datadogprocessor"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -574,6 +602,10 @@ updates:
     directory: "/receiver/couchdbreceiver"
     schedule:
       interval: "weekly"
+ - package-ecosystem: "gomod"
+    directory: "/receiver/datadogreceiver"
+    schedule:
+      interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/dockerstatsreceiver"
     schedule:
@@ -608,6 +640,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/googlecloudspannerreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/haproxyreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -715,7 +751,19 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/promtailreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/pulsarreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/purefareceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/purefbreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -828,5 +876,9 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/testbed/mockdatareceivers/mockawsxrayreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/testbed/mockdatasenders/mockdatadogagentexporter"
     schedule:
       interval: "weekly"

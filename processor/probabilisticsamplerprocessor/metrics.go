@@ -28,6 +28,7 @@ var (
 	tagSampledKey, _ = tag.NewKey("sampled")
 
 	statCountTracesSampled = stats.Int64("count_traces_sampled", "Count of traces that were sampled or not", stats.UnitDimensionless)
+	statCountLogsSampled   = stats.Int64("count_logs_sampled", "Count of logs that were sampled or not", stats.UnitDimensionless)
 )
 
 // SamplingProcessorMetricViews return the metrics views according to given telemetry level.
@@ -44,8 +45,16 @@ func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 		TagKeys:     sampledTagKeys,
 		Aggregation: view.Sum(),
 	}
+	countLogsSampledView := &view.View{
+		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statCountLogsSampled.Name()),
+		Measure:     statCountLogsSampled,
+		Description: statCountLogsSampled.Description(),
+		TagKeys:     sampledTagKeys,
+		Aggregation: view.Sum(),
+	}
 
 	return []*view.View{
 		countTracesSampledView,
+		countLogsSampledView,
 	}
 }

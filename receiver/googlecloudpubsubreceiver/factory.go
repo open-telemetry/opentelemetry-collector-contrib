@@ -19,9 +19,9 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -31,16 +31,16 @@ const (
 	reportFormatProtobuf = "protobuf"
 )
 
-func NewFactory() component.ReceiverFactory {
+func NewFactory() receiver.Factory {
 	f := &pubsubReceiverFactory{
 		receivers: make(map[*Config]*pubsubReceiver),
 	}
-	return component.NewReceiverFactory(
+	return receiver.NewFactory(
 		typeStr,
 		f.CreateDefaultConfig,
-		component.WithTracesReceiver(f.CreateTracesReceiver, stability),
-		component.WithMetricsReceiver(f.CreateMetricsReceiver, stability),
-		component.WithLogsReceiver(f.CreateLogsReceiver, stability),
+		receiver.WithTraces(f.CreateTracesReceiver, stability),
+		receiver.WithMetrics(f.CreateMetricsReceiver, stability),
+		receiver.WithLogs(f.CreateLogsReceiver, stability),
 	)
 }
 
@@ -48,20 +48,18 @@ type pubsubReceiverFactory struct {
 	receivers map[*Config]*pubsubReceiver
 }
 
-func (factory *pubsubReceiverFactory) CreateDefaultConfig() component.ReceiverConfig {
-	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-	}
+func (factory *pubsubReceiverFactory) CreateDefaultConfig() component.Config {
+	return &Config{}
 }
 
-func (factory *pubsubReceiverFactory) ensureReceiver(params component.ReceiverCreateSettings, config component.ReceiverConfig) (*pubsubReceiver, error) {
+func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.CreateSettings, config component.Config) (*pubsubReceiver, error) {
 	receiver := factory.receivers[config.(*Config)]
 	if receiver != nil {
 		return receiver, nil
 	}
 	rconfig := config.(*Config)
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             config.ID(),
+		ReceiverID:             params.ID,
 		Transport:              reportTransport,
 		ReceiverCreateSettings: params,
 	})
@@ -80,9 +78,9 @@ func (factory *pubsubReceiverFactory) ensureReceiver(params component.ReceiverCr
 
 func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
-	consumer consumer.Traces) (component.TracesReceiver, error) {
+	params receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Traces) (receiver.Traces, error) {
 
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer
@@ -101,9 +99,9 @@ func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 
 func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
-	consumer consumer.Metrics) (component.MetricsReceiver, error) {
+	params receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Metrics) (receiver.Metrics, error) {
 
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer
@@ -122,9 +120,9 @@ func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 
 func (factory *pubsubReceiverFactory) CreateLogsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
-	consumer consumer.Logs) (component.LogsReceiver, error) {
+	params receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Logs) (receiver.Logs, error) {
 
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer

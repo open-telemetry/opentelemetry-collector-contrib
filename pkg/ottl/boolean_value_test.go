@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -81,11 +80,11 @@ func comparisonHelper(left any, right any, op string) *comparison {
 }
 
 func Test_newComparisonEvaluator(t *testing.T) {
-	p := NewParser(
+	p, _ := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
-		testParseEnum,
 		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	var tests = []struct {
@@ -132,11 +131,11 @@ func Test_newComparisonEvaluator(t *testing.T) {
 }
 
 func Test_newConditionEvaluator_invalid(t *testing.T) {
-	p := NewParser(
+	p, _ := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	tests := []struct {
@@ -165,11 +164,11 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 }
 
 func Test_newBooleanExpressionEvaluator(t *testing.T) {
-	p := NewParser(
+	p, _ := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	tests := []struct {
@@ -345,6 +344,108 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 										},
 									},
 								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{"i", true,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation:  ottltest.Strp("not"),
+						ConstExpr: booleanp(false),
+					},
+				},
+			},
+		},
+		{"j", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation:  ottltest.Strp("not"),
+						ConstExpr: booleanp(true),
+					},
+				},
+			},
+		},
+		{"k", true,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation: ottltest.Strp("not"),
+						Comparison: &comparison{
+							Left: value{
+								String: ottltest.Strp("test"),
+							},
+							Op: EQ,
+							Right: value{
+								String: ottltest.Strp("not test"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{"l", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: booleanp(true),
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								Negation: ottltest.Strp("not"),
+								SubExpr: &booleanExpression{
+									Left: &term{
+										Left: &booleanValue{
+											ConstExpr: booleanp(true),
+										},
+									},
+									Right: []*opOrTerm{
+										{
+											Operator: "or",
+											Term: &term{
+												Left: &booleanValue{
+													ConstExpr: booleanp(false),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{"m", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation:  ottltest.Strp("not"),
+						ConstExpr: booleanp(true),
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								Negation:  ottltest.Strp("not"),
+								ConstExpr: booleanp(false),
+							},
+						},
+					},
+				},
+				Right: []*opOrTerm{
+					{
+						Operator: "or",
+						Term: &term{
+							Left: &booleanValue{
+								Negation:  ottltest.Strp("not"),
+								ConstExpr: booleanp(true),
 							},
 						},
 					},

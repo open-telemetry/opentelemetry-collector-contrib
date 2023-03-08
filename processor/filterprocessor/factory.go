@@ -18,9 +18,11 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 const (
@@ -33,29 +35,29 @@ const (
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Filter processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsProcessor(createMetricsProcessor, stability),
-		component.WithLogsProcessor(createLogsProcessor, stability),
-		component.WithTracesProcessor(createTracesProcessor, stability),
+		processor.WithMetrics(createMetricsProcessor, stability),
+		processor.WithLogs(createLogsProcessor, stability),
+		processor.WithTraces(createTracesProcessor, stability),
 	)
 }
 
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
+		ErrorMode: ottl.PropagateError,
 	}
 }
 
 func createMetricsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
-	fp, err := newFilterMetricProcessor(set.Logger, cfg.(*Config))
+) (processor.Metrics, error) {
+	fp, err := newFilterMetricProcessor(set.TelemetrySettings, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -70,11 +72,11 @@ func createMetricsProcessor(
 
 func createLogsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
-	fp, err := newFilterLogsProcessor(set.Logger, cfg.(*Config))
+) (processor.Logs, error) {
+	fp, err := newFilterLogsProcessor(set.TelemetrySettings, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -83,17 +85,17 @@ func createLogsProcessor(
 		set,
 		cfg,
 		nextConsumer,
-		fp.ProcessLogs,
+		fp.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createTracesProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesProcessor, error) {
-	fp, err := newFilterSpansProcessor(set.Logger, cfg.(*Config))
+) (processor.Traces, error) {
+	fp, err := newFilterSpansProcessor(set.TelemetrySettings, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}

@@ -45,6 +45,14 @@ func TestRecordMetrics(t *testing.T) {
 			metrics.recordReceiverStatus(receiverStateTerminated)
 		}, metrics.views.receiverStatus, metrics.stats.receiverStatus, 3, int(receiverStateTerminated)},
 		{metrics.recordNeedUpgrade, metrics.views.needUpgrade, metrics.stats.needUpgrade, 3, 1},
+		{func() {
+			metrics.recordFlowControlStatus(flowControlStateControlled)
+		}, metrics.views.flowControlStatus, metrics.stats.flowControlStatus, 3, 1},
+		{func() {
+			metrics.recordFlowControlRecentRetries(5)
+		}, metrics.views.flowControlRecentRetries, metrics.stats.flowControlRecentRetries, 3, 5},
+		{metrics.recordFlowControlTotal, metrics.views.flowControlTotal, metrics.stats.flowControlTotal, 3, 3},
+		{metrics.recordFlowControlSingleSuccess, metrics.views.flowControlSingleSuccess, metrics.stats.flowControlSingleSuccess, 3, 3},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.m.Name(), func(t *testing.T) {

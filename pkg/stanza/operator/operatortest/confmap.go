@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -53,7 +52,7 @@ func (c ConfigUnmarshalTests) Run(t *testing.T) {
 			require.NotZero(t, len(testConfMap.AllKeys()), fmt.Sprintf("config not found: '%s'", tc.Name))
 
 			cfg := newAnyOpConfig(c.DefaultConfig)
-			err = component.UnmarshalReceiverConfig(testConfMap, cfg)
+			err = component.UnmarshalConfig(testConfMap, cfg)
 
 			if tc.ExpectErr {
 				require.Error(t, err)
@@ -66,14 +65,12 @@ func (c ConfigUnmarshalTests) Run(t *testing.T) {
 }
 
 type anyOpConfig struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	Operator                operator.Config `mapstructure:"operator"`
+	Operator operator.Config `mapstructure:"operator"`
 }
 
 func newAnyOpConfig(opCfg operator.Builder) *anyOpConfig {
 	return &anyOpConfig{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID("any_op")),
-		Operator:         operator.Config{Builder: opCfg},
+		Operator: operator.Config{Builder: opCfg},
 	}
 }
 

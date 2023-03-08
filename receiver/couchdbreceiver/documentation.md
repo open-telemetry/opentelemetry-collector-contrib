@@ -2,41 +2,106 @@
 
 # couchdbreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **couchdb.average_request_time** | The average duration of a served request. | ms | Gauge(Double) | <ul> </ul> |
-| **couchdb.database.open** | The number of open databases. | {databases} | Sum(Int) | <ul> </ul> |
-| **couchdb.database.operations** | The number of database operations. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
-| **couchdb.file_descriptor.open** | The number of open file descriptors. | {files} | Sum(Int) | <ul> </ul> |
-| **couchdb.httpd.bulk_requests** | The number of bulk requests. | {requests} | Sum(Int) | <ul> </ul> |
-| **couchdb.httpd.requests** | The number of HTTP requests by method. | {requests} | Sum(Int) | <ul> <li>http.method</li> </ul> |
-| **couchdb.httpd.responses** | The number of each HTTP status code. | {responses} | Sum(Int) | <ul> <li>http.status_code</li> </ul> |
-| **couchdb.httpd.views** | The number of views read. | {views} | Sum(Int) | <ul> <li>view</li> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Resource attributes
+### couchdb.average_request_time
 
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| couchdb.node.name | The name of the node. | Str |
+The average duration of a served request.
 
-## Metric attributes
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+### couchdb.database.open
+
+The number of open databases.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {databases} | Sum | Int | Cumulative | false |
+
+### couchdb.database.operations
+
+The number of database operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| http.method | An HTTP request method. | COPY, DELETE, GET, HEAD, OPTIONS, POST, PUT |
-| http.status_code | An HTTP status code. |  |
-| operation | The operation type. | writes, reads |
-| view | The view type. | temporary_view_reads, view_reads |
+| operation | The operation type. | Str: ``writes``, ``reads`` |
+
+### couchdb.file_descriptor.open
+
+The number of open file descriptors.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {files} | Sum | Int | Cumulative | false |
+
+### couchdb.httpd.bulk_requests
+
+The number of bulk requests.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | true |
+
+### couchdb.httpd.requests
+
+The number of HTTP requests by method.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| http.method | An HTTP request method. | Str: ``COPY``, ``DELETE``, ``GET``, ``HEAD``, ``OPTIONS``, ``POST``, ``PUT`` |
+
+### couchdb.httpd.responses
+
+The number of each HTTP status code.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {responses} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| http.status_code | An HTTP status code. | Any Str |
+
+### couchdb.httpd.views
+
+The number of views read.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {views} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| view | The view type. | Str: ``temporary_view_reads``, ``view_reads`` |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| couchdb.node.name | The name of the node. | Any Str | true |

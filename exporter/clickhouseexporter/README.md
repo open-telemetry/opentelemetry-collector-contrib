@@ -1,12 +1,12 @@
 # ClickHouse Exporter
 
-| Status                   |              |
-| ------------------------ |--------------|
-| Stability                | [alpha]      |
-| Supported pipeline types | traces, logs |
-| Distributions            | [contrib]    |
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [alpha]               |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | [contrib]             |
 
-This exporter supports sending OpenTelemetry logs and spans to [ClickHouse](https://clickhouse.com/). 
+This exporter supports sending OpenTelemetry data to [ClickHouse](https://clickhouse.com/). 
 > ClickHouse is an open-source, high performance columnar OLAP database management system for real-time analytics using
 > SQL.
 > Throughput can be measured in rows per second or megabytes per second.
@@ -214,6 +214,40 @@ WHERE ServiceName = 'clickhouse-exporter'
 Limit 100;
 ```
 
+### Metrics
+
+Metrics data is stored in different clickhouse tables depending on their types. The tables will have a suffix to
+distinguish which type of metrics data is stored.
+
+| Metrics Type          | Metrics Table          |
+| --------------------- | ---------------------- |
+| sum                   | _sum                   |
+| gauge                 | _gauge                 |
+| histogram             | _histogram             |
+| exponential histogram | _exponential_histogram |
+| summary               | _summary               |
+
+Before you make a metrics query, you need to know the type of metric you wish to use. If your metrics come from
+Prometheus(or someone else uses OpenMetrics protocol), you also need to know the
+[compatibility](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/compatibility/prometheus_and_openmetrics.md#prometheus-and-openmetrics-compatibility)
+between Prometheus(OpenMetrics) and OTLP Metrics.
+
+- Find a sum metrics with name
+```clickhouse
+select TimeUnix,MetricName,Attributes,Value from otel_metrics_sum
+where MetricName='calls_total' limit 100
+```
+
+- Find a sum metrics with name, attribute.
+```clickhouse
+select TimeUnix,MetricName,Attributes,Value from otel_metrics_sum
+where MetricName='calls_total' and Attributes['service_name']='featureflagservice'
+limit 100
+```
+
+The OTLP Metrics [define two type value for one datapoint](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L358),
+clickhouse only use one value of float64 to store them.
+
 ## Performance Guide
 
 A single clickhouse instance with 32 CPU cores and 128 GB RAM can handle around 20 TB (20 Billion) logs per day,
@@ -227,19 +261,20 @@ around 40k/s logs entry per CPU cores, add more collector node can increase line
 
 The following settings are required:
 
-- `dsn` (no default): The ClickHouse server DSN (Data Source Name), for
-  example `tcp://user:password@127.0.0.1:9000/default`
-  For tcp protocol reference: [ClickHouse/clickhouse-go#dsn](https://github.com/ClickHouse/clickhouse-go#dsn).
-  For http protocol
-  reference: [ClickHouse/clickhouse-go#http-support-experimental](https://github.com/ClickHouse/clickhouse-go/tree/main#http-support-experimental)
-  .
+- `endpoint` (no default): The ClickHouse server endpoint, support multi host, for example:
+  tcp protocol `tcp://ip1:port,ip2:port`
+  http protocol `http://ip:port,ip2:port`
 
 The following settings can be optionally configured:
 
-- `ttl_days` (default= 0): The data time-to-live in days, 0 means no ttl.
+- `username` (default = ): The authentication username.
+- `password` (default = ): The authentication password.
+- `ttl_days` (default = 0): The data time-to-live in days, 0 means no ttl.
 - `database` (default = otel): The database name.
+- `connection_params` (default = {}). Params is the extra connection parameters with map format. for example compression/dial_timeout.
 - `logs_table_name` (default = otel_logs): The table name for logs.
 - `traces_table_name` (default = otel_traces): The table name for traces.
+- `metrics_table_name` (default = otel_metrics): The table name for metrics.
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
     - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping data.
@@ -262,10 +297,12 @@ processors:
     send_batch_size: 100000
 exporters:
   clickhouse:
-    dsn: tcp://127.0.0.1:9000/otel
+    endpoint: tcp://127.0.0.1:9000
+    database: otel
     ttl_days: 3
     logs_table: otel_logs
     traces_table: otel_traces
+    metrics_table: otel_metrics
     timeout: 5s
     retry_on_failure:
       enabled: true
@@ -374,6 +411,188 @@ FROM otel.otel_traces
 WHERE TraceId != ''
 GROUP BY TraceId;
 ```
+
+### Metrics
+
+#### Gauge
+
+```clickhouse
+CREATE TABLE IF NOT EXISTS otel.otel_metrics_gauge (
+    ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ResourceSchemaUrl String CODEC(ZSTD(1)),
+    ScopeName String CODEC(ZSTD(1)),
+    ScopeVersion String CODEC(ZSTD(1)),
+    ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
+    ScopeSchemaUrl String CODEC(ZSTD(1)),
+    MetricName String CODEC(ZSTD(1)),
+    MetricDescription String CODEC(ZSTD(1)),
+    MetricUnit String CODEC(ZSTD(1)),
+    Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+    TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+    Value Float64 CODEC(ZSTD(1)),
+    Flags UInt32 CODEC(ZSTD(1)),
+    Exemplars Nested (
+		FilteredAttributes Map(LowCardinality(String), String),
+		TimeUnix DateTime64(9),
+		Value Float64,
+		SpanId String,
+		TraceId String
+    ) CODEC(ZSTD(1))
+) ENGINE MergeTree()
+TTL toDateTime(TimeUnix) + toIntervalDay(3)
+PARTITION BY toDate(TimeUnix)
+ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
+```
+
+#### Sum
+
+```clickhouse
+CREATE TABLE IF NOT EXISTS otel.otel_metrics_sum (
+    ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ResourceSchemaUrl String CODEC(ZSTD(1)),
+    ScopeName String CODEC(ZSTD(1)),
+    ScopeVersion String CODEC(ZSTD(1)),
+    ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
+    ScopeSchemaUrl String CODEC(ZSTD(1)),
+    MetricName String CODEC(ZSTD(1)),
+    MetricDescription String CODEC(ZSTD(1)),
+    MetricUnit String CODEC(ZSTD(1)),
+    Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+	StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+	TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+	Value Float64 CODEC(ZSTD(1)),
+	Flags UInt32  CODEC(ZSTD(1)),
+    Exemplars Nested (
+		FilteredAttributes Map(LowCardinality(String), String),
+		TimeUnix DateTime64(9),
+		Value Float64,
+		SpanId String,
+		TraceId String
+    ) CODEC(ZSTD(1)),
+    AggTemp Int32 CODEC(ZSTD(1)),
+	IsMonotonic Boolean CODEC(Delta, ZSTD(1))
+) ENGINE MergeTree()
+TTL toDateTime(TimeUnix) + toIntervalDay(3)
+PARTITION BY toDate(TimeUnix)
+ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
+```
+
+#### Histogram
+
+```clickhouse
+CREATE TABLE IF NOT EXISTS otel.otel_metrics_histogram (
+    ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ResourceSchemaUrl String CODEC(ZSTD(1)),
+    ScopeName String CODEC(ZSTD(1)),
+    ScopeVersion String CODEC(ZSTD(1)),
+    ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
+    ScopeSchemaUrl String CODEC(ZSTD(1)),
+    MetricName String CODEC(ZSTD(1)),
+    MetricDescription String CODEC(ZSTD(1)),
+    MetricUnit String CODEC(ZSTD(1)),
+    Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+	StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+	TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+    Count Int64 CODEC(Delta, ZSTD(1)),
+    Sum Float64 CODEC(ZSTD(1)),
+    BucketCounts Array(UInt64) CODEC(ZSTD(1)),
+    ExplicitBounds Array(Float64) CODEC(ZSTD(1)),
+	Exemplars Nested (
+		FilteredAttributes Map(LowCardinality(String), String),
+		TimeUnix DateTime64(9),
+		Value Float64,
+		SpanId String,
+		TraceId String
+    ) CODEC(ZSTD(1)),
+    Flags UInt32 CODEC(ZSTD(1)),
+    Min Float64 CODEC(ZSTD(1)),
+    Max Float64 CODEC(ZSTD(1))
+) ENGINE MergeTree()
+TTL toDateTime(TimeUnix) + toIntervalDay(3)
+PARTITION BY toDate(TimeUnix)
+ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
+```
+
+#### Exponential histogram
+
+```clickhouse
+CREATE TABLE IF NOT EXISTS otel.otel_metrics_exponential_histogram (
+    ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ResourceSchemaUrl String CODEC(ZSTD(1)),
+    ScopeName String CODEC(ZSTD(1)),
+    ScopeVersion String CODEC(ZSTD(1)),
+    ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
+    ScopeSchemaUrl String CODEC(ZSTD(1)),
+    MetricName String CODEC(ZSTD(1)),
+    MetricDescription String CODEC(ZSTD(1)),
+    MetricUnit String CODEC(ZSTD(1)),
+    Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+	StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+	TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+    Count Int64 CODEC(Delta, ZSTD(1)),
+    Sum Float64 CODEC(ZSTD(1)),
+    Scale Int32 CODEC(ZSTD(1)),
+    ZeroCount UInt64 CODEC(ZSTD(1)),
+	PositiveOffset Int32 CODEC(ZSTD(1)),
+	PositiveBucketCounts Array(UInt64) CODEC(ZSTD(1)),
+	NegativeOffset Int32 CODEC(ZSTD(1)),
+	NegativeBucketCounts Array(UInt64) CODEC(ZSTD(1)),
+	Exemplars Nested (
+		FilteredAttributes Map(LowCardinality(String), String),
+		TimeUnix DateTime64(9),
+		Value Float64,
+		SpanId String,
+		TraceId String
+    ) CODEC(ZSTD(1)),
+    Flags UInt32  CODEC(ZSTD(1)),
+    Min Float64 CODEC(ZSTD(1)),
+    Max Float64 CODEC(ZSTD(1))
+) ENGINE MergeTree()
+TTL toDateTime(TimeUnix) + toIntervalDay(3)
+PARTITION BY toDate(TimeUnix)
+ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
+```
+
+#### Summary
+
+```clickhouse
+CREATE TABLE IF NOT EXISTS otel.otel_metrics_summary (
+    ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ResourceSchemaUrl String CODEC(ZSTD(1)),
+    ScopeName String CODEC(ZSTD(1)),
+    ScopeVersion String CODEC(ZSTD(1)),
+    ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
+    ScopeSchemaUrl String CODEC(ZSTD(1)),
+    MetricName String CODEC(ZSTD(1)),
+    MetricDescription String CODEC(ZSTD(1)),
+    MetricUnit String CODEC(ZSTD(1)),
+    Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+	StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+	TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+    Count UInt64 CODEC(Delta, ZSTD(1)),
+    Sum Float64 CODEC(ZSTD(1)),
+    ValueAtQuantiles Nested(
+		Quantile Float64,
+		Value Float64
+	) CODEC(ZSTD(1)),
+    Flags UInt32  CODEC(ZSTD(1))
+) ENGINE MergeTree()
+TTL toDateTime(TimeUnix) + toIntervalDay(3)
+PARTITION BY toDate(TimeUnix)
+ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
+```
+
 
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 

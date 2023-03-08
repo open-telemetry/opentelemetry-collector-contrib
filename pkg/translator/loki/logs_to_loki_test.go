@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/grafana/loki/pkg/logproto"
+	"github.com/grafana/loki/pkg/push"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -52,11 +52,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}(),
 			expected: map[string]PushRequest{
 				"1": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP", tenant.id="1"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -65,11 +65,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					},
 				},
 				"2": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP", tenant.id="2"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -104,11 +104,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}(),
 			expected: map[string]PushRequest{
 				"11": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP", tenant.id="11"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -117,11 +117,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					},
 				},
 				"12": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP", tenant.id="12"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -147,11 +147,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}(),
 			expected: map[string]PushRequest{
 				"": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -190,11 +190,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}(),
 			expected: map[string]PushRequest{
 				"21": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP", tenant.id="21"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -203,11 +203,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					},
 				},
 				"22": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP", tenant.id="22"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -340,7 +340,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			}
 
 			if len(tt.res) > 0 {
-				ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tt.res)
+				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tt.res))
 			}
 
 			rlogs := ld.ResourceLogs()
@@ -351,7 +351,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 					for k := 0; k < logs.Len(); k++ {
 						log := logs.At(k)
 						if len(tt.attrs) > 0 {
-							log.Attributes().FromRaw(tt.attrs)
+							assert.NoError(t, log.Attributes().FromRaw(tt.attrs))
 						}
 						for k, v := range tt.hints {
 							log.Attributes().PutStr(k, fmt.Sprintf("%v", v))
@@ -382,14 +382,15 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 
 func TestLogsToLoki(t *testing.T) {
 	testCases := []struct {
-		desc           string
-		hints          map[string]interface{}
-		attrs          map[string]interface{}
-		res            map[string]interface{}
-		severity       plog.SeverityNumber
-		levelAttribute string
-		expectedLabel  string
-		expectedLines  []string
+		desc                 string
+		hints                map[string]interface{}
+		attrs                map[string]interface{}
+		res                  map[string]interface{}
+		severity             plog.SeverityNumber
+		instrumentationScope *instrumentationScope
+		levelAttribute       string
+		expectedLabel        string
+		expectedLines        []string
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
@@ -461,6 +462,89 @@ func TestLogsToLoki(t *testing.T) {
 				`{"traceid":"01020304050600000000000000000000"}`,
 			},
 		},
+		{
+			desc: "with instrumentation_scope contains name",
+			instrumentationScope: &instrumentationScope{
+				Name: "example-name",
+			},
+			expectedLabel: `{exporter="OTLP"}`,
+			expectedLines: []string{
+				`{"traceid":"01020304000000000000000000000000","instrumentation_scope":{"name":"example-name"}}`,
+				`{"traceid":"01020304050000000000000000000000","instrumentation_scope":{"name":"example-name"}}`,
+				`{"traceid":"01020304050600000000000000000000","instrumentation_scope":{"name":"example-name"}}`,
+			},
+		},
+		{
+			desc: "with instrumentation_scope contains name and version",
+			instrumentationScope: &instrumentationScope{
+				Name:    "example-name",
+				Version: "v1",
+			},
+			expectedLabel: `{exporter="OTLP"}`,
+			expectedLines: []string{
+				`{"traceid":"01020304000000000000000000000000","instrumentation_scope":{"name":"example-name","version":"v1"}}`,
+				`{"traceid":"01020304050000000000000000000000","instrumentation_scope":{"name":"example-name","version":"v1"}}`,
+				`{"traceid":"01020304050600000000000000000000","instrumentation_scope":{"name":"example-name","version":"v1"}}`,
+			},
+		},
+		{
+			desc: "with instrumentation_scope contains only version",
+			instrumentationScope: &instrumentationScope{
+				Version: "v1",
+			},
+			expectedLabel: `{exporter="OTLP"}`,
+			expectedLines: []string{
+				`{"traceid":"01020304000000000000000000000000"}`,
+				`{"traceid":"01020304050000000000000000000000"}`,
+				`{"traceid":"01020304050600000000000000000000"}`,
+			},
+		},
+		{
+			desc: "with instrumentation_scope contains name and with logfmt format",
+			instrumentationScope: &instrumentationScope{
+				Name: "example-name",
+			},
+			hints: map[string]interface{}{
+				hintFormat: formatLogfmt,
+			},
+			expectedLabel: `{exporter="OTLP"}`,
+			expectedLines: []string{
+				`traceID=01020304000000000000000000000000 instrumentation_scope_name=example-name`,
+				`traceID=01020304050000000000000000000000 instrumentation_scope_name=example-name`,
+				`traceID=01020304050600000000000000000000 instrumentation_scope_name=example-name`,
+			},
+		},
+		{
+			desc: "with instrumentation_scope contains name and version with logfmt format",
+			instrumentationScope: &instrumentationScope{
+				Name:    "example-name",
+				Version: "v1",
+			},
+			hints: map[string]interface{}{
+				hintFormat: formatLogfmt,
+			},
+			expectedLabel: `{exporter="OTLP"}`,
+			expectedLines: []string{
+				`traceID=01020304000000000000000000000000 instrumentation_scope_name=example-name instrumentation_scope_version=v1`,
+				`traceID=01020304050000000000000000000000 instrumentation_scope_name=example-name instrumentation_scope_version=v1`,
+				`traceID=01020304050600000000000000000000 instrumentation_scope_name=example-name instrumentation_scope_version=v1`,
+			},
+		},
+		{
+			desc: "with instrumentation_scope contains only version with logfmt format",
+			instrumentationScope: &instrumentationScope{
+				Version: "v1",
+			},
+			hints: map[string]interface{}{
+				hintFormat: formatLogfmt,
+			},
+			expectedLabel: `{exporter="OTLP"}`,
+			expectedLines: []string{
+				`traceID=01020304000000000000000000000000`,
+				`traceID=01020304050000000000000000000000`,
+				`traceID=01020304050600000000000000000000`,
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
@@ -480,17 +564,22 @@ func TestLogsToLoki(t *testing.T) {
 
 			// copy the attributes from the test case to the log entry
 			if len(tC.attrs) > 0 {
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().FromRaw(tC.attrs)
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().FromRaw(tC.attrs)
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().FromRaw(tC.attrs)
+				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().FromRaw(tC.attrs))
+				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().FromRaw(tC.attrs))
+				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().FromRaw(tC.attrs))
 			}
 			if len(tC.res) > 0 {
-				ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tC.res)
+				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tC.res))
 			}
 			if len(tC.levelAttribute) > 0 {
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr(levelAttributeName, tC.levelAttribute)
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr(levelAttributeName, tC.levelAttribute)
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().PutStr(levelAttributeName, tC.levelAttribute)
+			}
+
+			if tC.instrumentationScope != nil {
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope().SetName(tC.instrumentationScope.Name)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope().SetVersion(tC.instrumentationScope.Version)
 			}
 
 			// we can't use copy here, as the value (Value) will be used as string lookup later, so, we need to convert it to string now

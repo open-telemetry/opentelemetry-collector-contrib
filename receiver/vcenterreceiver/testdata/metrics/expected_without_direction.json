@@ -1653,7 +1653,7 @@
                         {
                             "name": "vcenter.vm.memory.ballooned",
                             "description": "The amount of memory that is ballooned due to virtualization.",
-                            "unit": "By",
+                            "unit": "MiBy",
                             "sum": {
                                 "dataPoints": [
                                     {
@@ -1675,6 +1675,36 @@
                                         "startTimeUnixNano": "1653335619966318000",
                                         "timeUnixNano": "1653335619974183000",
                                         "asInt": "163"
+                                    }
+                                ],
+                                "aggregationTemporality": 2
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.memory.swapped_ssd",
+                            "description": "The amount of memory swapped to fast disk device such as SSD.",
+                            "unit": "KiBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1653335619966318000",
+                                        "timeUnixNano": "1653335619974183000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": 2
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.memory.swapped",
+                            "description": "The portion of memory that is granted to this VM from the host's swap space.",
+                            "unit": "MiBy",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1653335619966318000",
+                                        "timeUnixNano": "1653335619974183000",
+                                        "asInt": "0"
                                     }
                                 ],
                                 "aggregationTemporality": 2

@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 const (
@@ -28,8 +28,8 @@ const (
 )
 
 // NewFactory should be called to create a factory with default values.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -37,9 +37,8 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		Endpoint:          "unix:///var/run/docker.sock",
 		Timeout:           5 * time.Second,
 		CacheSyncInterval: 60 * time.Minute,
@@ -49,9 +48,9 @@ func createDefaultConfig() component.ExtensionConfig {
 
 func createExtension(
 	_ context.Context,
-	settings component.ExtensionCreateSettings,
-	cfg component.ExtensionConfig,
-) (component.Extension, error) {
+	settings extension.CreateSettings,
+	cfg component.Config,
+) (extension.Extension, error) {
 	config := cfg.(*Config)
 	return newObserver(settings.Logger, config)
 }

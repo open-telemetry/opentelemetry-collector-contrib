@@ -19,9 +19,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -35,15 +37,15 @@ const (
 )
 
 // NewFactory creates a new Prometheus Remote Write exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter, stability))
+		exporter.WithMetrics(createMetricsExporter, stability))
 }
 
-func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings,
-	cfg component.ExporterConfig) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
+	cfg component.Config) (exporter.Metrics, error) {
 
 	prwCfg, ok := cfg.(*Config)
 	if !ok {
@@ -82,17 +84,18 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 	return resourcetotelemetry.WrapMetricsExporter(prwCfg.ResourceToTelemetrySettings, exporter), nil
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "",
-		ExternalLabels:   map[string]string{},
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+		Namespace:       "",
+		ExternalLabels:  map[string]string{},
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 50 * time.Millisecond,
-			MaxInterval:     200 * time.Millisecond,
-			MaxElapsedTime:  1 * time.Minute,
+			Enabled:             true,
+			InitialInterval:     50 * time.Millisecond,
+			MaxInterval:         200 * time.Millisecond,
+			MaxElapsedTime:      1 * time.Minute,
+			RandomizationFactor: backoff.DefaultRandomizationFactor,
+			Multiplier:          backoff.DefaultMultiplier,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
@@ -100,7 +103,7 @@ func createDefaultConfig() component.ExporterConfig {
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
 			Timeout:         exporterhelper.NewDefaultTimeoutSettings().Timeout,
-			Headers:         map[string]string{},
+			Headers:         map[string]configopaque.String{},
 		},
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
@@ -110,6 +113,9 @@ func createDefaultConfig() component.ExporterConfig {
 		},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
+		},
+		CreatedMetric: &CreatedMetric{
+			Enabled: false,
 		},
 	}
 }

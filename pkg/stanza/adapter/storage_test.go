@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	rcvr "go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 )
@@ -31,9 +32,9 @@ func TestStorage(t *testing.T) {
 
 	storageExt := storagetest.NewFileBackedStorageExtension("test", t.TempDir())
 	host := storagetest.NewStorageHost().
-		WithExtension(storageExt.ID(), storageExt)
+		WithExtension(storageExt.ID, storageExt)
 
-	id := storageExt.ID()
+	id := storageExt.ID
 	r := createReceiver(t, id)
 	require.NoError(t, r.Start(ctx, host))
 
@@ -75,7 +76,7 @@ func TestStorage(t *testing.T) {
 
 func TestFindCorrectStorageExtension(t *testing.T) {
 	correctStoragedExt := storagetest.NewInMemoryStorageExtension("want")
-	id := correctStoragedExt.ID()
+	id := correctStoragedExt.ID
 	r := createReceiver(t, id)
 	host := storagetest.NewStorageHost().
 		WithNonStorageExtension("one").
@@ -104,7 +105,7 @@ func TestFailOnMissingStorageExtension(t *testing.T) {
 
 func TestFailOnNonStorageExtension(t *testing.T) {
 	nonStorageExt := storagetest.NewNonStorageExtension("non")
-	id := nonStorageExt.ID()
+	id := nonStorageExt.ID
 	r := createReceiver(t, id)
 	host := storagetest.NewStorageHost().
 		WithExtension(id, nonStorageExt)
@@ -115,11 +116,11 @@ func TestFailOnNonStorageExtension(t *testing.T) {
 }
 
 func createReceiver(t *testing.T, storageID component.ID) *receiver {
-	params := component.ReceiverCreateSettings{
+	params := rcvr.CreateSettings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
 
-	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
 	logsReceiver, err := factory.CreateLogsReceiver(
 		context.Background(),

@@ -21,9 +21,10 @@ import (
 
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
@@ -34,27 +35,29 @@ type appendable struct {
 	startTimeMetricRegex *regexp.Regexp
 	externalLabels       labels.Labels
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	obsrecv  *obsreport.Receiver
+	registry *featuregate.Registry
 }
 
 // NewAppendable returns a storage.Appendable instance that emits metrics to the sink.
 func NewAppendable(
 	sink consumer.Metrics,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	gcInterval time.Duration,
 	useStartTimeMetric bool,
 	startTimeMetricRegex *regexp.Regexp,
-	receiverID component.ID,
-	externalLabels labels.Labels) (storage.Appendable, error) {
+	useCreatedMetric bool,
+	externalLabels labels.Labels,
+	registry *featuregate.Registry) (storage.Appendable, error) {
 	var metricAdjuster MetricsAdjuster
 	if !useStartTimeMetric {
-		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval)
+		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval, useCreatedMetric)
 	} else {
 		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex)
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport, ReceiverCreateSettings: set})
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: set.ID, Transport: transport, ReceiverCreateSettings: set})
 	if err != nil {
 		return nil, err
 	}
@@ -67,9 +70,10 @@ func NewAppendable(
 		startTimeMetricRegex: startTimeMetricRegex,
 		externalLabels:       externalLabels,
 		obsrecv:              obsrecv,
+		registry:             registry,
 	}, nil
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv)
+	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.registry)
 }

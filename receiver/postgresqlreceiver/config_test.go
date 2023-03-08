@@ -111,7 +111,7 @@ func TestValidate(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			tC.defaultConfigModifier(cfg)
-			actual := cfg.Validate()
+			actual := component.ValidateConfig(cfg)
 			require.Equal(t, tC.expected, actual)
 		})
 	}
@@ -127,12 +127,12 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("postgresql", func(t *testing.T) {
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
 		expected.Username = "otel"
-		expected.Password = "$POSTGRESQL_PASSWORD"
+		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 
 		require.Equal(t, expected, cfg)
 	})
@@ -140,13 +140,13 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("postgresql/all", func(t *testing.T) {
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "all").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
 		expected.NetAddr.Transport = "tcp"
 		expected.Username = "otel"
-		expected.Password = "$POSTGRESQL_PASSWORD"
+		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
 		expected.CollectionInterval = 10 * time.Second
 		expected.TLSClientSetting = configtls.TLSClientSetting{

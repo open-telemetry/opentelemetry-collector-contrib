@@ -2,28 +2,50 @@
 
 # nginxreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **nginx.connections_accepted** | The total number of accepted client connections | connections | Sum(Int) | <ul> </ul> |
-| **nginx.connections_current** | The current number of nginx connections by state | connections | Gauge(Int) | <ul> <li>state</li> </ul> |
-| **nginx.connections_handled** | The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit). | connections | Sum(Int) | <ul> </ul> |
-| **nginx.requests** | Total number of requests made to the server since it started | requests | Sum(Int) | <ul> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Metric attributes
+### nginx.connections_accepted
+
+The total number of accepted client connections
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| connections | Sum | Int | Cumulative | true |
+
+### nginx.connections_current
+
+The current number of nginx connections by state
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| connections | Gauge | Int |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| state | The state of a connection | active, reading, writing, waiting |
+| state | The state of a connection | Str: ``active``, ``reading``, ``writing``, ``waiting`` |
+
+### nginx.connections_handled
+
+The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| connections | Sum | Int | Cumulative | true |
+
+### nginx.requests
+
+Total number of requests made to the server since it started
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| requests | Sum | Int | Cumulative | true |

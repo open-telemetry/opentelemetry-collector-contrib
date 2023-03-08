@@ -3,16 +3,19 @@ name: riakreceiver
 resource_attributes:
   riak.node.name:
     description: The name this node uses to identify itself.
+    enabled: true
     type: string
 
 attributes:
   request:
     description: The request operation type.
+    type: string
     enum:
       - put
       - get
   operation:
     description: The operation type for index operations.
+    type: string
     enum:
       - read
       - write

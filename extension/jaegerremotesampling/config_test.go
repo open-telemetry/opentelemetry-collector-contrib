@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -34,12 +33,11 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ExtensionConfig
+		expected component.Config
 	}{
 		{
 			id: component.NewID(typeStr),
 			expected: &Config{
-				ExtensionSettings:  config.NewExtensionSettings(component.NewID(typeStr)),
 				HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
 				GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
 					Endpoint:  ":14250",
@@ -55,7 +53,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "1"),
 			expected: &Config{
-				ExtensionSettings:  config.NewExtensionSettings(component.NewID(typeStr)),
 				HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
 				GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
 					Endpoint:  ":14250",
@@ -76,8 +73,8 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
-			assert.NoError(t, cfg.Validate())
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

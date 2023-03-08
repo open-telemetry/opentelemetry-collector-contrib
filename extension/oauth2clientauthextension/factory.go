@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/auth"
 )
 
 const (
@@ -28,8 +28,8 @@ const (
 )
 
 // NewFactory creates a factory for the OIDC Authenticator extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -37,20 +37,18 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
-	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
+func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 	ca, err := newClientAuthenticator(cfg.(*Config), set.Logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return configauth.NewClientAuthenticator(
-		configauth.WithClientRoundTripper(ca.roundTripper),
-		configauth.WithPerRPCCredentials(ca.perRPCCredentials),
+	return auth.NewClient(
+		auth.WithClientRoundTripper(ca.roundTripper),
+		auth.WithClientPerRPCCredentials(ca.perRPCCredentials),
 	), nil
 }

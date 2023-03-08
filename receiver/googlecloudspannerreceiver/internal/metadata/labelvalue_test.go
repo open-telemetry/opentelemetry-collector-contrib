@@ -199,6 +199,9 @@ func TestByteSliceLabelValue(t *testing.T) {
 
 	assert.True(t, exists)
 	assert.Equal(t, stringValue, attributeValue.Str())
+
+	labelValue.ModifyValue(labelName)
+	assert.Equal(t, labelName, labelValue.Value())
 }
 
 func TestLockRequestSliceLabelValue(t *testing.T) {

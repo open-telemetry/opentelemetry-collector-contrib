@@ -22,9 +22,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestType(t *testing.T) {
@@ -38,9 +38,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, cfg, &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		IngestURL:        defaultIngestURL,
-		IngestKey:        "",
+		IngestURL: defaultIngestURL,
+		IngestKey: "",
 
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: 5 * time.Second,
@@ -53,12 +52,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestIngestUrlMustConform(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.IngestURL = "https://example.com:8088/services/collector"
+	cfg.IngestURL = "/collector"
 	cfg.IngestKey = "1234-1234"
 
-	params := componenttest.NewNopExporterCreateSettings()
-	_, err := createLogsExporter(context.Background(), params, cfg)
-	assert.Error(t, err, `"ingest_url" must end with "/otel/ingest/rest"`)
+	assert.Error(t, cfg.Validate(), `"ingest_url" must contain a valid host`)
 }
 
 func TestCreateLogsExporter(t *testing.T) {
@@ -66,41 +63,13 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg.IngestURL = "https://example.com:8088/otel/ingest/rest"
 	cfg.IngestKey = "1234-1234"
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateLogsExporterNoConfig(t *testing.T) {
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, nil)
 	assert.Error(t, err)
-}
-
-func TestCreateLogsExporterInvalidEndpoint(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.IngestURL = "urn:something:12345"
-	params := componenttest.NewNopExporterCreateSettings()
-	_, err := createLogsExporter(context.Background(), params, cfg)
-	assert.Error(t, err)
-}
-
-func TestCreateInstanceViaFactory(t *testing.T) {
-	factory := NewFactory()
-
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.IngestURL = "https://example.com:8088/otel/ingest/rest"
-	cfg.IngestKey = "1234-1234"
-	params := componenttest.NewNopExporterCreateSettings()
-	exp, err := factory.CreateLogsExporter(context.Background(), params, cfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, exp)
-	assert.NoError(t, exp.Shutdown(context.Background()))
-
-	// Set values that don't have a valid default.
-	cfg.IngestURL = "https://example.com"
-	cfg.IngestKey = "testToken"
-	exp, err = factory.CreateLogsExporter(context.Background(), params, cfg)
-	assert.Error(t, err)
-	assert.Nil(t, exp)
 }

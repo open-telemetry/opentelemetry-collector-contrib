@@ -8,4 +8,4 @@ for i in "${!TESTS[@]}"; do
     MATRIX+="{\"test\":\"$curr\"},"
 done
 MATRIX+="]}"
-echo "::set-output name=stabilitytest_matrix::$MATRIX"
+echo "stabilitytest_matrix=$MATRIX" >> $GITHUB_OUTPUT

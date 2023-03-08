@@ -19,7 +19,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -41,33 +41,32 @@ const (
 )
 
 // Creates a factory for the ADX Exporter
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
-		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, stability),
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability),
 	)
 }
 
 // Create default configurations
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Database:         otelDb,
-		MetricTable:      defaultMetricTable,
-		LogTable:         defaultLogTable,
-		TraceTable:       defaultTraceTable,
-		IngestionType:    queuedIngestTest,
+		Database:      otelDb,
+		MetricTable:   defaultMetricTable,
+		LogTable:      defaultLogTable,
+		TraceTable:    defaultTraceTable,
+		IngestionType: queuedIngestTest,
 	}
 }
 
 func createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	config component.ExporterConfig,
-) (component.MetricsExporter, error) {
+	set exporter.CreateSettings,
+	config component.Config,
+) (exporter.Metrics, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
@@ -98,9 +97,9 @@ func createMetricsExporter(
 
 func createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	config component.ExporterConfig,
-) (component.TracesExporter, error) {
+	set exporter.CreateSettings,
+	config component.Config,
+) (exporter.Traces, error) {
 	adxCfg := config.(*Config)
 	setDefaultIngestionType(adxCfg, set.Logger)
 
@@ -128,9 +127,9 @@ func createTracesExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	config component.ExporterConfig,
-) (exp component.LogsExporter, err error) {
+	set exporter.CreateSettings,
+	config component.Config,
+) (exp exporter.Logs, err error) {
 	adxCfg := config.(*Config)
 	setDefaultIngestionType(adxCfg, set.Logger)
 

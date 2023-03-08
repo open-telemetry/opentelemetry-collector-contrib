@@ -27,9 +27,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"golang.org/x/sys/windows/svc/eventlog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	assert.Equal(t, createTestConfig(), cfg)
 }
 
@@ -70,7 +70,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		new(consumertest.LogsSink),
 	)
@@ -80,7 +80,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 func TestReadWindowsEventLogger(t *testing.T) {
 	ctx := context.Background()
 	factory := NewFactory()
-	createSettings := componenttest.NewNopReceiverCreateSettings()
+	createSettings := receivertest.NewNopCreateSettings()
 	cfg := createTestConfig()
 	sink := new(consumertest.LogsSink)
 
@@ -136,8 +136,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 func createTestConfig() *WindowsLogConfig {
 	return &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-			Operators:        []operator.Config{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: func() windows.Config {
 			c := windows.NewConfig()

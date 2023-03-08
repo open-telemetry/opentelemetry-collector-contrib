@@ -32,9 +32,32 @@ var (
 // splunkHecToLogData transforms splunk events into logs
 func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, error) {
 	ld := plog.NewLogs()
-	rl := ld.ResourceLogs().AppendEmpty()
-	sl := rl.ScopeLogs().AppendEmpty()
+	scopeLogsMap := make(map[[4]string]plog.ScopeLogs)
 	for _, event := range events {
+		key := [4]string{event.Host, event.Source, event.SourceType, event.Index}
+		var sl plog.ScopeLogs
+		var found bool
+		if sl, found = scopeLogsMap[key]; !found {
+			rl := ld.ResourceLogs().AppendEmpty()
+			sl = rl.ScopeLogs().AppendEmpty()
+			scopeLogsMap[key] = sl
+			if event.Host != "" {
+				rl.Resource().Attributes().PutStr(config.HecToOtelAttrs.Host, event.Host)
+			}
+			if event.Source != "" {
+				rl.Resource().Attributes().PutStr(config.HecToOtelAttrs.Source, event.Source)
+			}
+			if event.SourceType != "" {
+				rl.Resource().Attributes().PutStr(config.HecToOtelAttrs.SourceType, event.SourceType)
+			}
+			if event.Index != "" {
+				rl.Resource().Attributes().PutStr(config.HecToOtelAttrs.Index, event.Index)
+			}
+			if resourceCustomizer != nil {
+				resourceCustomizer(rl.Resource())
+			}
+		}
+
 		// The SourceType field is the most logical "name" of the event.
 		logRecord := sl.LogRecords().AppendEmpty()
 		if err := convertToValue(logger, event.Event, logRecord.Body()); err != nil {
@@ -59,22 +82,6 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 			if err != nil {
 				return ld, err
 			}
-		}
-
-		if event.Host != "" {
-			logRecord.Attributes().PutStr(config.HecToOtelAttrs.Host, event.Host)
-		}
-		if event.Source != "" {
-			logRecord.Attributes().PutStr(config.HecToOtelAttrs.Source, event.Source)
-		}
-		if event.SourceType != "" {
-			logRecord.Attributes().PutStr(config.HecToOtelAttrs.SourceType, event.SourceType)
-		}
-		if event.Index != "" {
-			logRecord.Attributes().PutStr(config.HecToOtelAttrs.Index, event.Index)
-		}
-		if resourceCustomizer != nil {
-			resourceCustomizer(rl.Resource())
 		}
 	}
 

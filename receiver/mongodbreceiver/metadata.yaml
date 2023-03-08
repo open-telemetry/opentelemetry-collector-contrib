@@ -3,21 +3,26 @@ name: mongodbreceiver
 resource_attributes:
   database:
     description: The name of a database.
+    enabled: true
     type: string
 
 attributes:
   database:
     description: The name of a database.
+    type: string
   collection:
     description: The name of a collection.
+    type: string
   memory_type:
-    value: type
+    name_override: type
     description: The type of memory used.
+    type: string
     enum:
       - resident
       - virtual
   operation:
     description: The MongoDB operation being counted.
+    type: string
     enum:
       - insert
       - query
@@ -25,20 +30,31 @@ attributes:
       - delete
       - getmore
       - command
+  operation_latency:
+    name_override: operation
+    description: The MongoDB operation with regards to latency
+    type: string
+    enum:
+      - read
+      - write
+      - command
   connection_type:
-    value: type
+    name_override: type
     description: The status of the connection.
+    type: string
     enum:
       - active
       - available
       - current
   type:
     description: The result of a cache request.
+    type: string
     enum:
       - hit
       - miss
   lock_type:
     description: The Resource over which the Lock controls access
+    type: string
     enum:
       - parallel_batch_write_mode
       - replication_state_transition
@@ -50,6 +66,7 @@ attributes:
       - oplog
   lock_mode:
     description: The mode of Lock which denotes the degree of access
+    type: string
     enum:
       - shared
       - exclusive
@@ -147,6 +164,13 @@ metrics:
       value_type: int
       monotonic: false
     attributes: [database]
+  mongodb.operation.latency.time:
+    description: The latency of operations.
+    unit: us
+    enabled: false
+    gauge:
+      value_type: int
+    attributes: [ operation_latency ]
   mongodb.operation.count:
     description: The number of operations executed.
     unit: "{operations}"
@@ -156,6 +180,15 @@ metrics:
       value_type: int
       monotonic: true
     attributes: [operation]
+  mongodb.operation.repl.count:
+    description: The number of replicated operations executed.
+    unit: "{operations}"
+    enabled: false
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: true
+    attributes: [ operation ]
   mongodb.storage.size:
     description: The total amount of storage allocated to this collection.
     extended_documentation: If collection data is compressed it reflects the compressed size. 
@@ -292,3 +325,22 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [database, lock_type, lock_mode]
+  mongodb.health:
+    enabled: false
+    description: The health status of the server.
+    extended_documentation:
+      A value of '1' indicates healthy.
+      A value of '0' indicates unhealthy.
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [ ]
+  mongodb.uptime:
+    enabled: false
+    description: The amount of time that the server has been running.
+    unit: ms
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ ]

@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -30,7 +31,7 @@ import (
 
 type brokerScraper struct {
 	client       sarama.Client
-	settings     component.ReceiverCreateSettings
+	settings     receiver.CreateSettings
 	config       Config
 	saramaConfig *sarama.Config
 	mb           *metadata.MetricsBuilder
@@ -41,7 +42,7 @@ func (s *brokerScraper) Name() string {
 }
 
 func (s *brokerScraper) start(_ context.Context, _ component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo)
+	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
 }
 
@@ -69,7 +70,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
-	settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
+	settings receiver.CreateSettings) (scraperhelper.Scraper, error) {
 	s := brokerScraper{
 		settings:     settings,
 		config:       cfg,

@@ -16,7 +16,6 @@ package kube
 
 import (
 	"fmt"
-	"reflect"
 	"regexp"
 	"testing"
 	"time"
@@ -28,8 +27,6 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -539,6 +536,7 @@ func TestExtractionRules(t *testing.T) {
 		},
 		Spec: api_v1.PodSpec{
 			NodeName: "node1",
+			Hostname: "host1",
 		},
 		Status: api_v1.PodStatus{
 			PodIP: "1.1.1.1",
@@ -636,18 +634,20 @@ func TestExtractionRules(t *testing.T) {
 	}, {
 		name: "metadata",
 		rules: ExtractionRules{
-			Deployment: true,
-			Namespace:  true,
-			PodName:    true,
-			PodUID:     true,
-			Node:       true,
-			StartTime:  true,
+			Deployment:  true,
+			Namespace:   true,
+			PodName:     true,
+			PodUID:      true,
+			PodHostName: true,
+			Node:        true,
+			StartTime:   true,
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
 			"k8s.namespace.name":  "ns1",
 			"k8s.node.name":       "node1",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
+			"k8s.pod.hostname":    "host1",
 			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			"k8s.pod.start_time":  pod.GetCreationTimestamp().String(),
 		},
@@ -1234,46 +1234,28 @@ func Test_extractField(t *testing.T) {
 	}
 }
 
-func Test_selectorsFromFilters(t *testing.T) {
+func TestErrorSelectorsFromFilters(t *testing.T) {
 	tests := []struct {
 		name    string
 		filters Filters
-		wantL   labels.Selector
-		wantF   fields.Selector
-		wantErr bool
 	}{
 		{
-			"label/invalid-op",
-			Filters{
+			name: "label/invalid-op",
+			filters: Filters{
 				Labels: []FieldFilter{{Op: "invalid-op"}},
 			},
-			nil,
-			nil,
-			true,
 		},
 		{
-			"fields/invalid-op",
-			Filters{
+			name: "fields/invalid-op",
+			filters: Filters{
 				Fields: []FieldFilter{{Op: selection.Exists}},
 			},
-			nil,
-			nil,
-			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := selectorsFromFilters(tt.filters)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("selectorsFromFilters() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.wantL) {
-				t.Errorf("selectorsFromFilters() got = %v, want %v", got, tt.wantL)
-			}
-			if !reflect.DeepEqual(got1, tt.wantF) {
-				t.Errorf("selectorsFromFilters() got1 = %v, want %v", got1, tt.wantF)
-			}
+			_, _, err := selectorsFromFilters(tt.filters)
+			assert.Error(t, err)
 		})
 	}
 }

@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -30,16 +31,16 @@ var errConfigNotActiveDirectory = fmt.Errorf("config is not valid for the '%s' r
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
-	rConf component.ReceiverConfig,
+	params receiver.CreateSettings,
+	rConf component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	c, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotActiveDirectory
 	}
 
-	adds := newActiveDirectoryDSScraper(c.Metrics, params)
+	adds := newActiveDirectoryDSScraper(c.MetricsBuilderConfig, params)
 	scraper, err := scraperhelper.NewScraper(
 		typeStr,
 		adds.scrape,

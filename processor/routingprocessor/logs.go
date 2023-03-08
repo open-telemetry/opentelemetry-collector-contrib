@@ -19,8 +19,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -28,27 +30,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
-var _ component.LogsProcessor = (*logProcessor)(nil)
+var _ processor.Logs = (*logProcessor)(nil)
 
 type logProcessor struct {
 	logger *zap.Logger
 	config *Config
 
 	extractor extractor
-	router    router[component.LogsExporter, ottllog.TransformContext]
+	router    router[exporter.Logs, ottllog.TransformContext]
 }
 
-func newLogProcessor(settings component.TelemetrySettings, config component.ProcessorConfig) *logProcessor {
+func newLogProcessor(settings component.TelemetrySettings, config component.Config) *logProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
+
+	logParser, _ := ottllog.NewParser(common.Functions[ottllog.TransformContext](), settings)
 
 	return &logProcessor{
 		logger: settings.Logger,
 		config: cfg,
-		router: newRouter[component.LogsExporter, ottllog.TransformContext](
+		router: newRouter[exporter.Logs, ottllog.TransformContext](
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottllog.NewParser(common.Functions[ottllog.TransformContext](), settings),
+			logParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
@@ -78,7 +82,7 @@ func (p *logProcessor) ConsumeLogs(ctx context.Context, l plog.Logs) error {
 }
 
 type logsGroup struct {
-	exporters []component.LogsExporter
+	exporters []exporter.Logs
 	logs      plog.Logs
 }
 
@@ -127,7 +131,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 func (p *logProcessor) group(
 	key string,
 	groups map[string]logsGroup,
-	exporters []component.LogsExporter,
+	exporters []exporter.Logs,
 	spans plog.ResourceLogs,
 ) {
 	group, ok := groups[key]

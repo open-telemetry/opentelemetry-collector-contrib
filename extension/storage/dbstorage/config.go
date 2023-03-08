@@ -15,24 +15,21 @@
 package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 
 import (
-	"fmt"
-
-	"go.opentelemetry.io/collector/config"
+	"errors"
 )
 
 // Config defines configuration for dbstorage extension.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
-	DriverName               string `mapstructure:"driver,omitempty"`
-	DataSource               string `mapstructure:"datasource,omitempty"`
+	DriverName string `mapstructure:"driver,omitempty"`
+	DataSource string `mapstructure:"datasource,omitempty"`
 }
 
 func (cfg *Config) Validate() error {
 	if cfg.DataSource == "" {
-		return fmt.Errorf(fmt.Sprintf("missing datasource for %s", cfg.ID()))
+		return errors.New("missing datasource")
 	}
 	if cfg.DriverName == "" {
-		return fmt.Errorf(fmt.Sprintf("missing driver name for %s", cfg.ID()))
+		return errors.New("missing driver name")
 	}
 
 	return nil

@@ -46,7 +46,7 @@ receivers:
     hosts:
       - endpoint: localhost:27017
     username: otel
-    password: $MONGODB_PASSWORD
+    password: ${env:MONGODB_PASSWORD}
     collection_interval: 60s
     tls:
       insecure: true

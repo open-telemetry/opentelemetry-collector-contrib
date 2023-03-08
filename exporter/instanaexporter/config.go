@@ -20,22 +20,20 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 // Config defines configuration for the Instana exporter
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
 	Endpoint string `mapstructure:"endpoint"`
 
-	AgentKey string `mapstructure:"agent_key"`
+	AgentKey configopaque.String `mapstructure:"agent_key"`
 
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 }
 
-var _ component.ExporterConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
@@ -48,8 +46,8 @@ func (cfg *Config) Validate() error {
 		return errors.New("no Instana agent key set")
 	}
 
-	if !(strings.HasPrefix(cfg.Endpoint, "http://") || strings.HasPrefix(cfg.Endpoint, "https://")) {
-		return errors.New("endpoint must start with http:// or https://")
+	if !strings.HasPrefix(cfg.Endpoint, "https://") {
+		return errors.New("endpoint must start with https://")
 	}
 	_, err := url.Parse(cfg.Endpoint)
 	if err != nil {

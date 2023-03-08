@@ -68,7 +68,7 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 	return &clientAuthenticator{
 		clientCredentials: &clientcredentials.Config{
 			ClientID:       cfg.ClientID,
-			ClientSecret:   cfg.ClientSecret,
+			ClientSecret:   string(cfg.ClientSecret),
 			TokenURL:       cfg.TokenURL,
 			Scopes:         cfg.Scopes,
 			EndpointParams: cfg.EndpointParams,

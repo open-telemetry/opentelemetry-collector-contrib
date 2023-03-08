@@ -30,6 +30,14 @@ func (e BoolExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return e.boolExpressionEvaluator(ctx, tCtx)
 }
 
+//nolint:unparam
+func not[K any](original BoolExpr[K]) (BoolExpr[K], error) {
+	return BoolExpr[K]{func(ctx context.Context, tCtx K) (bool, error) {
+		result, err := original.Eval(ctx, tCtx)
+		return !result, err
+	}}, nil
+}
+
 func alwaysTrue[K any](context.Context, K) (bool, error) {
 	return true, nil
 }
@@ -144,21 +152,32 @@ func (p *Parser[K]) newBooleanValueEvaluator(value *booleanValue) (BoolExpr[K], 
 	if value == nil {
 		return BoolExpr[K]{alwaysTrue[K]}, nil
 	}
+
+	var boolExpr BoolExpr[K]
+	var err error
 	switch {
 	case value.Comparison != nil:
-		comparison, err := p.newComparisonEvaluator(value.Comparison)
+		boolExpr, err = p.newComparisonEvaluator(value.Comparison)
 		if err != nil {
 			return BoolExpr[K]{}, err
 		}
-		return comparison, nil
 	case value.ConstExpr != nil:
 		if *value.ConstExpr {
-			return BoolExpr[K]{alwaysTrue[K]}, nil
+			boolExpr = BoolExpr[K]{alwaysTrue[K]}
+		} else {
+			boolExpr = BoolExpr[K]{alwaysFalse[K]}
 		}
-		return BoolExpr[K]{alwaysFalse[K]}, nil
 	case value.SubExpr != nil:
-		return p.newBoolExpr(value.SubExpr)
+		boolExpr, err = p.newBoolExpr(value.SubExpr)
+		if err != nil {
+			return BoolExpr[K]{}, err
+		}
+	default:
+		return BoolExpr[K]{}, fmt.Errorf("unhandled boolean operation %v", value)
 	}
 
-	return BoolExpr[K]{}, fmt.Errorf("unhandled boolean operation %v", value)
+	if value.Negation != nil {
+		return not(boolExpr)
+	}
+	return boolExpr, nil
 }

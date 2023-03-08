@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -34,16 +33,15 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "log").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, cfg, &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Endpoints:        []string{"http://localhost:9200"},
-		CloudID:          "TRNMxjXlNJEt",
-		Index:            "my_log_index",
-		LogsIndex:        "logs-generic-default",
-		TracesIndex:      "traces-generic-default",
-		Pipeline:         "mypipeline",
+		Endpoints:   []string{"http://localhost:9200"},
+		CloudID:     "TRNMxjXlNJEt",
+		Index:       "my_log_index",
+		LogsIndex:   "logs-generic-default",
+		TracesIndex: "traces-generic-default",
+		Pipeline:    "mypipeline",
 		HTTPClientSettings: HTTPClientSettings{
 			Authentication: AuthenticationSettings{
 				User:     "elastic",
@@ -86,7 +84,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ExporterConfig
+		expected component.Config
 	}{
 		{
 			id:       component.NewIDWithName(typeStr, ""),
@@ -95,13 +93,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "trace"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Endpoints:        []string{"https://elastic.example.com:9200"},
-				CloudID:          "TRNMxjXlNJEt",
-				Index:            "",
-				LogsIndex:        "logs-generic-default",
-				TracesIndex:      "trace_index",
-				Pipeline:         "mypipeline",
+				Endpoints:   []string{"https://elastic.example.com:9200"},
+				CloudID:     "TRNMxjXlNJEt",
+				Index:       "",
+				LogsIndex:   "logs-generic-default",
+				TracesIndex: "trace_index",
+				Pipeline:    "mypipeline",
 				HTTPClientSettings: HTTPClientSettings{
 					Authentication: AuthenticationSettings{
 						User:     "elastic",
@@ -135,13 +132,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "log"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Endpoints:        []string{"http://localhost:9200"},
-				CloudID:          "TRNMxjXlNJEt",
-				Index:            "",
-				LogsIndex:        "my_log_index",
-				TracesIndex:      "traces-generic-default",
-				Pipeline:         "mypipeline",
+				Endpoints:   []string{"http://localhost:9200"},
+				CloudID:     "TRNMxjXlNJEt",
+				Index:       "",
+				LogsIndex:   "my_log_index",
+				TracesIndex: "traces-generic-default",
+				Pipeline:    "mypipeline",
 				HTTPClientSettings: HTTPClientSettings{
 					Authentication: AuthenticationSettings{
 						User:     "elastic",
@@ -181,9 +177,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

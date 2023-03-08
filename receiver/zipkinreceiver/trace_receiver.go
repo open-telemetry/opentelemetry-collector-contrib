@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
@@ -46,7 +47,6 @@ var errNextConsumerRespBody = []byte(`"Internal Server Error"`)
 // zipkinReceiver type is used to handle spans received in the Zipkin format.
 type zipkinReceiver struct {
 	nextConsumer consumer.Traces
-	id           component.ID
 
 	shutdownWG sync.WaitGroup
 	server     *http.Server
@@ -58,14 +58,14 @@ type zipkinReceiver struct {
 	protobufUnmarshaler      ptrace.Unmarshaler
 	protobufDebugUnmarshaler ptrace.Unmarshaler
 
-	settings  component.ReceiverCreateSettings
+	settings  receiver.CreateSettings
 	obsrecvrs map[string]*obsreport.Receiver
 }
 
 var _ http.Handler = (*zipkinReceiver)(nil)
 
 // newReceiver creates a new zipkinReceiver reference.
-func newReceiver(config *Config, nextConsumer consumer.Traces, settings component.ReceiverCreateSettings) (*zipkinReceiver, error) {
+func newReceiver(config *Config, nextConsumer consumer.Traces, settings receiver.CreateSettings) (*zipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -74,7 +74,7 @@ func newReceiver(config *Config, nextConsumer consumer.Traces, settings componen
 	obsrecvrs := make(map[string]*obsreport.Receiver)
 	for _, transport := range transports {
 		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
+			ReceiverID:             settings.ID,
 			Transport:              transport,
 			ReceiverCreateSettings: settings,
 		})
@@ -86,7 +86,6 @@ func newReceiver(config *Config, nextConsumer consumer.Traces, settings componen
 
 	zr := &zipkinReceiver{
 		nextConsumer:             nextConsumer,
-		id:                       config.ID(),
 		config:                   config,
 		v1ThriftUnmarshaler:      zipkinv1.NewThriftTracesUnmarshaler(),
 		v1JSONUnmarshaler:        zipkinv1.NewJSONTracesUnmarshaler(config.ParseStringTags),
@@ -162,7 +161,10 @@ func (zr *zipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs ptr
 // giving it a chance to perform any necessary clean-up and shutting down
 // its HTTP server.
 func (zr *zipkinReceiver) Shutdown(context.Context) error {
-	err := zr.server.Close()
+	var err error
+	if zr.server != nil {
+		err = zr.server.Close()
+	}
 	zr.shutdownWG.Wait()
 	return err
 }

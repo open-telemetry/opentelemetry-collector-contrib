@@ -43,16 +43,16 @@ type GetSetter[K any] interface {
 }
 
 type StandardGetSetter[K any] struct {
-	Getter func(ctx context.Context, tCx K) (interface{}, error)
-	Setter func(ctx context.Context, tCx K, val interface{}) error
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Setter func(ctx context.Context, tCtx K, val interface{}) error
 }
 
-func (path StandardGetSetter[K]) Get(ctx context.Context, tCx K) (interface{}, error) {
-	return path.Getter(ctx, tCx)
+func (path StandardGetSetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
+	return path.Getter(ctx, tCtx)
 }
 
-func (path StandardGetSetter[K]) Set(ctx context.Context, tCx K, val interface{}) error {
-	return path.Setter(ctx, tCx, val)
+func (path StandardGetSetter[K]) Set(ctx context.Context, tCtx K, val interface{}) error {
+	return path.Setter(ctx, tCtx, val)
 }
 
 type literal[K any] struct {
@@ -69,6 +69,52 @@ type exprGetter[K any] struct {
 
 func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 	return g.expr.Eval(ctx, tCtx)
+}
+
+type listGetter[K any] struct {
+	slice []Getter[K]
+}
+
+func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
+	evaluated := make([]any, len(l.slice))
+
+	for i, v := range l.slice {
+		val, err := v.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		evaluated[i] = val
+	}
+
+	return evaluated, nil
+}
+
+type StringGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (string, error)
+}
+
+type IntGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (int64, error)
+}
+
+type StandardTypeGetter[K any, T any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+func (g StandardTypeGetter[K, T]) Get(ctx context.Context, tCtx K) (T, error) {
+	var v T
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return v, err
+	}
+	if val == nil {
+		return v, fmt.Errorf("expected %T but got nil", v)
+	}
+	v, ok := val.(T)
+	if !ok {
+		return v, fmt.Errorf("expected %T but got %T", v, val)
+	}
+	return v, nil
 }
 
 func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
@@ -104,8 +150,11 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 		if eL.Path != nil {
 			return p.pathParser(eL.Path)
 		}
-		if eL.Invocation != nil {
-			call, err := p.newFunctionCall(*eL.Invocation)
+		if eL.Converter != nil {
+			call, err := p.newFunctionCall(invocation{
+				Function:  eL.Converter.Function,
+				Arguments: eL.Converter.Arguments,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -113,6 +162,18 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 				expr: call,
 			}, nil
 		}
+	}
+
+	if val.List != nil {
+		lg := listGetter[K]{slice: make([]Getter[K], len(val.List.Values))}
+		for i, v := range val.List.Values {
+			getter, err := p.newGetter(v)
+			if err != nil {
+				return nil, err
+			}
+			lg.slice[i] = getter
+		}
+		return &lg, nil
 	}
 
 	if val.MathExpression == nil {

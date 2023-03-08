@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
 
@@ -40,7 +40,7 @@ type ResourceDetectorConfig interface {
 	GetConfigFromType(DetectorType) DetectorConfig
 }
 
-type DetectorFactory func(component.ProcessorCreateSettings, DetectorConfig) (Detector, error)
+type DetectorFactory func(processor.CreateSettings, DetectorConfig) (Detector, error)
 
 type ResourceProviderFactory struct {
 	// detectors holds all possible detector types.
@@ -52,7 +52,7 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 }
 
 func (f *ResourceProviderFactory) CreateResourceProvider(
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	timeout time.Duration,
 	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
@@ -73,7 +73,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	return provider, nil
 }
 
-func (f *ResourceProviderFactory) getDetectors(params component.ProcessorCreateSettings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]Detector, error) {
+func (f *ResourceProviderFactory) getDetectors(params processor.CreateSettings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]Detector, error) {
 	detectors := make([]Detector, 0, len(detectorTypes))
 	for _, detectorType := range detectorTypes {
 		detectorFactory, ok := f.detectors[detectorType]
@@ -147,50 +147,13 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 
 	droppedAttributes := filterAttributes(res.Attributes(), p.attributesToKeep)
 
-	p.logger.Info("detected resource information", zap.Any("resource", AttributesToMap(res.Attributes())))
+	p.logger.Info("detected resource information", zap.Any("resource", res.Attributes().AsRaw()))
 	if len(droppedAttributes) > 0 {
 		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
 	}
 
 	p.detectedResource.resource = res
 	p.detectedResource.schemaURL = mergedSchemaURL
-}
-
-func AttributesToMap(am pcommon.Map) map[string]interface{} {
-	mp := make(map[string]interface{}, am.Len())
-	am.Range(func(k string, v pcommon.Value) bool {
-		mp[k] = UnwrapAttribute(v)
-		return true
-	})
-	return mp
-}
-
-func UnwrapAttribute(v pcommon.Value) interface{} {
-	switch v.Type() {
-	case pcommon.ValueTypeBool:
-		return v.Bool()
-	case pcommon.ValueTypeInt:
-		return v.Int()
-	case pcommon.ValueTypeDouble:
-		return v.Double()
-	case pcommon.ValueTypeStr:
-		return v.Str()
-	case pcommon.ValueTypeSlice:
-		return getSerializableArray(v.Slice())
-	case pcommon.ValueTypeMap:
-		return AttributesToMap(v.Map())
-	default:
-		return nil
-	}
-}
-
-func getSerializableArray(inArr pcommon.Slice) []interface{} {
-	var outArr []interface{}
-	for i := 0; i < inArr.Len(); i++ {
-		outArr = append(outArr, UnwrapAttribute(inArr.At(i)))
-	}
-
-	return outArr
 }
 
 func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {

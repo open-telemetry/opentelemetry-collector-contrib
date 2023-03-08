@@ -3,11 +3,13 @@ name: redisreceiver
 resource_attributes:
   redis.version:
     description: Redis server's version.
+    enabled: true
     type: string
     
 attributes:
   state:
     description: Redis CPU usage state
+    type: string
     # Redis versions < 6.0 have:
     #   used_cpu_sys: System CPU consumed by the Redis server, which is the sum of system CPU consumed by all threads of the server process (main thread and background threads)
     #   used_cpu_user: User CPU consumed by the Redis server, which is the sum of user CPU consumed by all threads of the server process (main thread and background threads)
@@ -25,13 +27,16 @@ attributes:
       - user_main_thread 
   db:
     description: Redis database identifier
+    type: string
   role:
     description: Redis node's role
+    type: string
     enum:
       - replica
       - primary
   cmd:
     description: Redis command name
+    type: string
 
 metrics:
   redis.maxmemory:

@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -27,7 +26,6 @@ import (
 
 // Config defines configuration for Remote Write exporter.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
@@ -52,6 +50,14 @@ type Config struct {
 
 	// TargetInfo allows customizing the target_info metric
 	TargetInfo *TargetInfo `mapstructure:"target_info,omitempty"`
+
+	// CreatedMetric allows customizing creation of _created metrics
+	CreatedMetric *CreatedMetric `mapstructure:"export_created_metric,omitempty"`
+}
+
+type CreatedMetric struct {
+	// Enabled if true the _created metrics could be exported
+	Enabled bool `mapstructure:"enabled"`
 }
 
 type TargetInfo struct {
@@ -76,7 +82,7 @@ type RemoteWriteQueue struct {
 
 // TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.
 
-var _ component.ExporterConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
@@ -95,6 +101,11 @@ func (cfg *Config) Validate() error {
 	if cfg.TargetInfo == nil {
 		cfg.TargetInfo = &TargetInfo{
 			Enabled: true,
+		}
+	}
+	if cfg.CreatedMetric == nil {
+		cfg.CreatedMetric = &CreatedMetric{
+			Enabled: false,
 		}
 	}
 	return nil

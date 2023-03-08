@@ -26,20 +26,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"k8s.io/client-go/rest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 type prometheusReceiverWrapper struct {
-	params            component.ReceiverCreateSettings
+	params            receiver.CreateSettings
 	config            *Config
 	consumer          consumer.Metrics
-	prometheusRecever component.MetricsReceiver
+	prometheusRecever receiver.Metrics
 }
 
 // new returns a prometheusReceiverWrapper
-func new(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
+func new(params receiver.CreateSettings, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
 	return &prometheusReceiverWrapper{params: params, config: cfg, consumer: consumer}
 }
 
@@ -62,7 +63,7 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 }
 
 // Deprecated: [v0.55.0] Use getPrometheusConfig instead.
-func getPrometheusConfigWrapper(cfg *Config, params component.ReceiverCreateSettings) (*prometheusreceiver.Config, error) {
+func getPrometheusConfigWrapper(cfg *Config, params receiver.CreateSettings) (*prometheusreceiver.Config, error) {
 	if cfg.TLSEnabled {
 		params.Logger.Warn("the `tls_config` and 'tls_enabled' settings are deprecated, please use `tls` instead")
 		cfg.HTTPClientSettings.TLSSetting = configtls.TLSClientSetting{
@@ -147,5 +148,8 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 // Shutdown stops the underlying Prometheus receiver.
 func (prw *prometheusReceiverWrapper) Shutdown(ctx context.Context) error {
+	if prw.prometheusRecever == nil {
+		return nil
+	}
 	return prw.prometheusRecever.Shutdown(ctx)
 }

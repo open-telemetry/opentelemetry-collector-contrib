@@ -28,8 +28,8 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
@@ -52,7 +52,7 @@ const (
 )
 
 type prometheusExecReceiver struct {
-	params   component.ReceiverCreateSettings
+	params   receiver.CreateSettings
 	config   *Config
 	consumer consumer.Metrics
 
@@ -64,7 +64,7 @@ type prometheusExecReceiver struct {
 	port             int
 
 	// Underlying receiver data
-	prometheusReceiver component.MetricsReceiver
+	prometheusReceiver receiver.Metrics
 
 	// Shutdown channel
 	shutdownCh chan struct{}
@@ -76,12 +76,9 @@ type runResult struct {
 }
 
 // newPromExecReceiver returns a prometheusExecReceiver
-func newPromExecReceiver(params component.ReceiverCreateSettings, config *Config, consumer consumer.Metrics) (*prometheusExecReceiver, error) {
-	if config.SubprocessConfig.Command == "" {
-		return nil, fmt.Errorf("no command to execute entered in config file for %v", config.ID())
-	}
+func newPromExecReceiver(params receiver.CreateSettings, config *Config, consumer consumer.Metrics) *prometheusExecReceiver {
 	subprocessConfig := getSubprocessConfig(config)
-	promReceiverConfig := getPromReceiverConfig(config)
+	promReceiverConfig := getPromReceiverConfig(params.ID, config)
 
 	return &prometheusExecReceiver{
 		params:             params,
@@ -90,21 +87,21 @@ func newPromExecReceiver(params component.ReceiverCreateSettings, config *Config
 		subprocessConfig:   subprocessConfig,
 		promReceiverConfig: promReceiverConfig,
 		port:               config.Port,
-	}, nil
+	}
 }
 
 // getPromReceiverConfig returns the Prometheus receiver config
-func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
+func getPromReceiverConfig(id component.ID, cfg *Config) *prometheusreceiver.Config {
 	scrapeConfig := &promconfig.ScrapeConfig{}
 
 	scrapeConfig.ScrapeInterval = model.Duration(cfg.ScrapeInterval)
 	scrapeConfig.ScrapeTimeout = model.Duration(cfg.ScrapeTimeout)
 	scrapeConfig.Scheme = "http"
 	scrapeConfig.MetricsPath = defaultMetricsPath
-	jobName := cfg.ID().Name()
+	jobName := id.Name()
 	if jobName == "" {
 		// Fallback to type if no name
-		jobName = string(cfg.ID().Type())
+		jobName = string(id.Type())
 	}
 	scrapeConfig.JobName = jobName
 	scrapeConfig.HonorLabels = false
@@ -122,7 +119,6 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 	}
 
 	return &prometheusreceiver.Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, cfg.ID().Name())),
 		PrometheusConfig: &promconfig.Config{
 			ScrapeConfigs: []*promconfig.ScrapeConfig{scrapeConfig},
 		},
@@ -182,7 +178,7 @@ func (per *prometheusExecReceiver) manageProcess(ctx context.Context, host compo
 }
 
 // createAndStartReceiver will create the underlying Prometheus receiver and generate a random port if one is needed, then start it
-func (per *prometheusExecReceiver) createAndStartReceiver(ctx context.Context, host component.Host) (component.MetricsReceiver, error) {
+func (per *prometheusExecReceiver) createAndStartReceiver(ctx context.Context, host component.Host) (receiver.Metrics, error) {
 	currentPort := per.port
 
 	// Generate a port if none was specified
@@ -306,6 +302,9 @@ func getDelay(elapsed time.Duration, healthyProcessDuration time.Duration, crash
 
 // Shutdown stops the underlying Prometheus receiver.
 func (per *prometheusExecReceiver) Shutdown(ctx context.Context) error {
+	if per.shutdownCh == nil {
+		return nil
+	}
 	close(per.shutdownCh)
 	return nil
 }

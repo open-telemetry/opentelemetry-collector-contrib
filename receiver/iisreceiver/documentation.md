@@ -2,44 +2,133 @@
 
 # iisreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **iis.connection.active** | Number of active connections. | {connections} | Sum(Int) | <ul> </ul> |
-| **iis.connection.anonymous** | Number of connections established anonymously. | {connections} | Sum(Int) | <ul> </ul> |
-| **iis.connection.attempt.count** | Total number of attempts to connect to the server. | {attempts} | Sum(Int) | <ul> </ul> |
-| **iis.network.blocked** | Number of bytes blocked due to bandwidth throttling. | By | Sum(Int) | <ul> </ul> |
-| **iis.network.file.count** | Number of transmitted files. | {files} | Sum(Int) | <ul> <li>direction</li> </ul> |
-| **iis.network.io** | Total amount of bytes sent and received. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
-| **iis.request.count** | Total number of requests of a given type. | {requests} | Sum(Int) | <ul> <li>request</li> </ul> |
-| **iis.request.queue.age.max** | Age of oldest request in the queue. | ms | Gauge(Int) | <ul> </ul> |
-| **iis.request.queue.count** | Current number of requests in the queue. | {requests} | Sum(Int) | <ul> </ul> |
-| **iis.request.rejected** | Total number of requests rejected. | {requests} | Sum(Int) | <ul> </ul> |
-| **iis.thread.active** | Current number of active threads. | {threads} | Sum(Int) | <ul> </ul> |
-| **iis.uptime** | The amount of time the server has been up. | s | Gauge(Int) | <ul> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Resource attributes
+### iis.connection.active
 
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| iis.application_pool | The application pool, which is associated with worker processes of one or more applications. | Str |
-| iis.site | The site of the web server. | Str |
+Number of active connections.
 
-## Metric attributes
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {connections} | Sum | Int | Cumulative | false |
+
+### iis.connection.anonymous
+
+Number of connections established anonymously.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {connections} | Sum | Int | Cumulative | true |
+
+### iis.connection.attempt.count
+
+Total number of attempts to connect to the server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {attempts} | Sum | Int | Cumulative | true |
+
+### iis.network.blocked
+
+Number of bytes blocked due to bandwidth throttling.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+### iis.network.file.count
+
+Number of transmitted files.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {files} | Sum | Int | Cumulative | true |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| direction (direction) | The direction data is moving. | sent, received |
-| request (request) | The type of request sent by a client. | delete, get, head, options, post, put, trace |
+| direction | The direction data is moving. | Str: ``sent``, ``received`` |
+
+### iis.network.io
+
+Total amount of bytes sent and received.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction data is moving. | Str: ``sent``, ``received`` |
+
+### iis.request.count
+
+Total number of requests of a given type.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| request | The type of request sent by a client. | Str: ``delete``, ``get``, ``head``, ``options``, ``post``, ``put``, ``trace`` |
+
+### iis.request.queue.age.max
+
+Age of oldest request in the queue.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+### iis.request.queue.count
+
+Current number of requests in the queue.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | false |
+
+### iis.request.rejected
+
+Total number of requests rejected.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | true |
+
+### iis.thread.active
+
+Current number of active threads.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {threads} | Sum | Int | Cumulative | false |
+
+### iis.uptime
+
+The amount of time the server has been up.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| iis.application_pool | The application pool, which is associated with worker processes of one or more applications. | Any Str | true |
+| iis.site | The site of the web server. | Any Str | true |

@@ -21,8 +21,8 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 )
 
 const (
@@ -44,23 +44,22 @@ var (
 )
 
 // NewFactory returns a new factory for the Filter processor.
-func NewFactory() component.ProcessorFactory {
+func NewFactory() processor.Factory {
 	// TODO: find a more appropriate way to get this done, as we are swallowing the error here
 	_ = view.Register(MetricViews()...)
 
-	return component.NewProcessorFactory(
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, stability))
+		processor.WithTraces(createTracesProcessor, stability))
 }
 
 // createDefaultConfig creates the default configuration for the processor.
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		NumTraces:         defaultNumTraces,
-		NumWorkers:        defaultNumWorkers,
-		WaitDuration:      defaultWaitDuration,
+		NumTraces:    defaultNumTraces,
+		NumWorkers:   defaultNumWorkers,
+		WaitDuration: defaultWaitDuration,
 
 		// not supported for now
 		DiscardOrphans: defaultDiscardOrphans,
@@ -71,9 +70,9 @@ func createDefaultConfig() component.ProcessorConfig {
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	_ context.Context,
-	params component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
-	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+	params processor.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Traces) (processor.Traces, error) {
 
 	oCfg := cfg.(*Config)
 

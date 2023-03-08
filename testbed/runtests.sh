@@ -2,6 +2,8 @@
 
 set -e
 
+GOJUNITREPORTCMD=${GOJUNIT:-go-junit-report}
+
 TESTS_DIR=${TESTS_DIR:-tests}
 
 cd ${TESTS_DIR}
@@ -14,11 +16,11 @@ TEST_COLORIZE="${SED} 's/PASS/${PASS_COLOR}/' | ${SED} 's/FAIL/${FAIL_COLOR}/'"
 
 mkdir -p results/junit
 
-RUN_TESTBED=1 go test -v ${TEST_ARGS} 2>&1 | tee results/testoutput.log | bash -c "${TEST_COLORIZE}"
+RUN_TESTBED=1 go test -v ${TEST_ARGS} 2>&1 | tee -a results/testoutput.log ./foresight-test-report.txt | bash -c "${TEST_COLORIZE}"
 
 testStatus=${PIPESTATUS[0]}
 
-go-junit-report < results/testoutput.log > results/junit/results.xml
+${GOJUNITREPORTCMD} < results/testoutput.log > results/junit/results.xml
 
 bash -c "cat results/TESTRESULTS.md | ${TEST_COLORIZE}"
 

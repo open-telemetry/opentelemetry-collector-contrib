@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -40,9 +40,8 @@ const (
 
 var defaultNodeConditionsToReport = []string{"Ready"}
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings:           config.NewReceiverSettings(component.NewID(typeStr)),
 		Distribution:               defaultDistribution,
 		CollectionInterval:         defaultCollectionInterval,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
@@ -53,9 +52,9 @@ func createDefaultConfig() component.ReceiverConfig {
 }
 
 // NewFactory creates a factory for k8s_cluster receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(newReceiver, stability))
+		receiver.WithMetrics(newReceiver, stability))
 }

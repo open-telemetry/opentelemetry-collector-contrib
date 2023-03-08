@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"k8s.io/client-go/kubernetes"
@@ -62,9 +62,9 @@ func TestScraper(t *testing.T) {
 	}
 	r, err := newKubletScraper(
 		&fakeRestClient{},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		options,
-		metadata.DefaultMetricsSettings(),
+		metadata.DefaultMetricsBuilderConfig(),
 	)
 	require.NoError(t, err)
 
@@ -112,9 +112,9 @@ func TestScraperWithMetadata(t *testing.T) {
 			}
 			r, err := newKubletScraper(
 				&fakeRestClient{},
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				options,
-				metadata.DefaultMetricsSettings(),
+				metadata.DefaultMetricsBuilderConfig(),
 			)
 			require.NoError(t, err)
 
@@ -193,12 +193,12 @@ func TestScraperWithMetricGroups(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r, err := newKubletScraper(
 				&fakeRestClient{},
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				&scraperOptions{
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 					metricGroupsToCollect: test.metricGroups,
 				},
-				metadata.DefaultMetricsSettings(),
+				metadata.DefaultMetricsBuilderConfig(),
 			)
 			require.NoError(t, err)
 
@@ -340,7 +340,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r, err := newKubletScraper(
 				&fakeRestClient{},
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				&scraperOptions{
 					extraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelVolumeType},
 					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
@@ -348,7 +348,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 					},
 					k8sAPIClient: test.k8sAPIClient,
 				},
-				metadata.DefaultMetricsSettings(),
+				metadata.DefaultMetricsBuilderConfig(),
 			)
 			require.NoError(t, err)
 
@@ -448,7 +448,7 @@ func TestClientErrors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			core, observedLogs := observer.New(zap.ErrorLevel)
 			logger := zap.New(core)
-			settings := componenttest.NewNopReceiverCreateSettings()
+			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = logger
 			options := &scraperOptions{
 				extraMetadataLabels:   test.extraMetadataLabels,
@@ -461,7 +461,7 @@ func TestClientErrors(t *testing.T) {
 				},
 				settings,
 				options,
-				metadata.DefaultMetricsSettings(),
+				metadata.DefaultMetricsBuilderConfig(),
 			)
 			require.NoError(t, err)
 

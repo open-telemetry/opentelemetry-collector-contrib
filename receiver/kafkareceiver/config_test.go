@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -37,18 +36,17 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id          component.ID
-		expected    component.ReceiverConfig
+		expected    component.Config
 		expectedErr error
 	}{
 		{
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				Topic:            "spans",
-				Encoding:         "otlp_proto",
-				Brokers:          []string{"foo:123", "bar:456"},
-				ClientID:         "otel-collector",
-				GroupID:          "otel-collector",
+				Topic:    "spans",
+				Encoding: "otlp_proto",
+				Brokers:  []string{"foo:123", "bar:456"},
+				ClientID: "otel-collector",
+				GroupID:  "otel-collector",
 				Authentication: kafkaexporter.Authentication{
 					TLS: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -75,12 +73,11 @@ func TestLoadConfig(t *testing.T) {
 
 			id: component.NewIDWithName(typeStr, "logs"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				Topic:            "logs",
-				Encoding:         "direct",
-				Brokers:          []string{"coffee:123", "foobar:456"},
-				ClientID:         "otel-collector",
-				GroupID:          "otel-collector",
+				Topic:    "logs",
+				Encoding: "direct",
+				Brokers:  []string{"coffee:123", "foobar:456"},
+				ClientID: "otel-collector",
+				GroupID:  "otel-collector",
 				Authentication: kafkaexporter.Authentication{
 					TLS: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -112,9 +109,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

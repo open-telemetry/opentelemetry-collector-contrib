@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -39,10 +38,9 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "with-all-options").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
 		Prefetch: []string{
 			"https://opentelemetry.io/schemas/1.9.0",
@@ -95,6 +93,6 @@ func TestConfigurationValidation(t *testing.T) {
 			Targets: tc.target,
 		}
 
-		assert.ErrorIs(t, cfg.Validate(), tc.expectError, tc.scenario)
+		assert.ErrorIs(t, component.ValidateConfig(cfg), tc.expectError, tc.scenario)
 	}
 }

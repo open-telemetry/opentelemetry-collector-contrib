@@ -20,7 +20,7 @@ package perfcounters // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 // MockPerfCounterScraperError is an implementation of PerfCounterScraper that returns

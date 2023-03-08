@@ -34,17 +34,23 @@ processors:
   attributes:
     actions:
     - action: insert
+      key: event_domain
+      from_attribute: event.domain
+    - action: insert
       key: loki.attribute.labels
-      value: http.status_code
+      value: event_domain
 
   resource:
     attributes:
     - action: insert
-      key: loki.attribute.labels
-      value: http.status
+      key: service_name
+      from_attribute: service.name
+    - action: insert
+      key: service_namespace
+      from_attribute: service.namespace
     - action: insert
       key: loki.resource.labels
-      value: host.name, pod.name
+      value: service_name, service_namespace
 
 extensions:
 
@@ -60,27 +66,55 @@ service:
 The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample
 configurations [here](./testdata/config.yaml).
 
+More information on how to send logs to Grafana Loki using the OpenTelemetry Collector could be found [here](https://grafana.com/docs/opentelemetry/collector/send-logs-to-loki/)
 ## Labels
 
 The Loki exporter can convert OTLP resource and log attributes into Loki labels, which are indexed. For that, you need to configure
 hints, specifying which attributes should be placed as labels. The hints are themselves attributes and will be ignored when
-exporting to Loki. The following example uses the `attributes` processor to hint the Loki exporter to set the `http.status_code` 
-attribute as label and the `resource` processor to give a hint to the Loki exporter to set the `pod.name` as label.
+exporting to Loki. The following example uses the `attributes` processor to hint the Loki exporter to set the `event.domain` 
+attribute as label and the `resource` processor to give a hint to the Loki exporter to set the `service.name` as label.
 
 ```yaml
 processors:
   attributes:
     actions:
-    - action: insert
-      key: loki.attribute.labels
-      value: http.status_code
+      - action: insert
+        key: event_domain
+        from_attribute: event.domain
+      - action: insert
+        key: loki.attribute.labels
+        value: event_domain
 
   resource:
     attributes:
-    - action: insert
-      key: loki.resource.labels
-      value: pod.name
+      - action: insert
+        key: service_name
+        from_attribute: service.name
+      - action: insert
+        key: loki.resource.labels
+        value: service_name
 ```
+
+Currently, Loki does not support labels with dots. 
+That’s why to add Loki label based on `event.domain` OTLP attribute we need to specify two actions. The first one inserts a new attribute `event_domain` from the OTLP attribute `event.domain`. The second one is a hint for Loki, specifying that the `event_domain` attribute should be placed as a Loki label.
+The same approach is applicable to placing Loki labels from resource attribute `service.name`.
+
+Default labels:
+- `job=service.namespace/service.name`
+- `instance=service.instance.id`
+- `exporter=OTLP`
+
+`exporter=OTLP` is always set.
+
+If `service.name` and `service.namespace` are present then `job=service.namespace/service.name` is set
+
+If `service.name` is present and `service.namespace` is not present then `job=service.name` is set
+
+If `service.name` is not present and `service.namespace` is present then `job` label is not set
+
+If `service.instance.id` is present then `instance=service.instance.id` is set
+
+If `service.instance.id` is not present then `instance` label is not set
 
 ## Tenant information
 
@@ -104,7 +138,10 @@ processors:
     attributes:
     - action: insert
       key: loki.tenant
-      value: host.name
+      value: host_name
+    - action: insert
+      key: host_name
+      from_attribute: host.name
 ```
 
 In this case the value of the `host.name` resource attribute is used to group logs

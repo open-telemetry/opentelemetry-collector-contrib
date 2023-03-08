@@ -18,10 +18,12 @@ import (
 	"context"
 	"errors"
 
+	promconfig "github.com/prometheus/prometheus/config"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // This file implements config for Prometheus receiver.
@@ -31,27 +33,36 @@ const (
 	stability = component.StabilityLevelBeta
 )
 
+var useCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.UseCreatedMetric",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
+		" retrieve the start time for Summary, Histogram and Sum metrics from _created metric"),
+)
+
 var errRenamingDisallowed = errors.New("metric renaming using metric_relabel_configs is disallowed")
 
 // NewFactory creates a new Prometheus receiver factory.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
+		PrometheusConfig: &promconfig.Config{
+			GlobalConfig: promconfig.DefaultGlobalConfig,
+		},
 	}
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	set receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
-	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer), nil
+) (receiver.Metrics, error) {
+	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer, featuregate.GlobalRegistry()), nil
 }

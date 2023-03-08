@@ -38,13 +38,11 @@ func initMetricAttributes1(dest pcommon.Map) {
 func initMetricAttributes12(dest pcommon.Map) {
 	dest.PutStr(TestLabelKey1, TestLabelValue1)
 	dest.PutStr(TestLabelKey2, TestLabelValue2)
-	dest.Sort()
 }
 
 func initMetricAttributes13(dest pcommon.Map) {
 	dest.PutStr(TestLabelKey1, TestLabelValue1)
 	dest.PutStr(TestLabelKey3, TestLabelValue3)
-	dest.Sort()
 }
 
 func initMetricAttributes2(dest pcommon.Map) {

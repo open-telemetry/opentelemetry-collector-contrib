@@ -20,27 +20,15 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
 )
 
-// setPdataFeatureGateForTest changes the pdata feature gate during a test.
-// usage: defer SetPdataFeatureGateForTest(true)()
-func setPdataFeatureGateForTest(t testing.TB, enabled bool) func() {
-	originalValue := featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate)
-	require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{pdataExporterFeatureGate: enabled}))
-	return func() {
-		require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{pdataExporterFeatureGate: originalValue}))
-	}
-}
-
 func TestLoadConfig(t *testing.T) {
-	defer setPdataFeatureGateForTest(t, true)()
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -48,23 +36,25 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, sanitize(cfg.(*Config)), sanitize(factory.CreateDefaultConfig().(*Config)))
 
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "customname").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	assert.Equal(t, sanitize(cfg.(*Config)),
+	assert.Equal(t,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 20 * time.Second,
 			},
 			Config: collector.Config{
 				ProjectID: "my-project",
 				UserAgent: "opentelemetry-collector-contrib {{version}}",
+				LogConfig: collector.LogConfig{
+					ServiceResourceLabels: true,
+				},
 				MetricConfig: collector.MetricConfig{
 					Prefix:                           "prefix",
 					SkipCreateMetricDescriptor:       true,
@@ -85,17 +75,20 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 			RetrySettings: exporterhelper.RetrySettings{
-				Enabled:         true,
-				InitialInterval: 10 * time.Second,
-				MaxInterval:     1 * time.Minute,
-				MaxElapsedTime:  10 * time.Minute,
+				Enabled:             true,
+				InitialInterval:     10 * time.Second,
+				MaxInterval:         1 * time.Minute,
+				MaxElapsedTime:      10 * time.Minute,
+				RandomizationFactor: backoff.DefaultRandomizationFactor,
+				Multiplier:          backoff.DefaultMultiplier,
 			},
 			QueueSettings: exporterhelper.QueueSettings{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
 			},
-		})
+		},
+		sanitize(cfg.(*Config)))
 }
 
 func sanitize(cfg *Config) *Config {

@@ -1,7 +1,7 @@
 vcenter:
   endpoint: http://vcsa.host.localnet
   username: otelu
-  password: $VCENTER_PASSWORD
+  password: ${env:VCENTER_PASSWORD}
   collection_interval: 5m
   metrics:
     vcenter.host.cpu.utilization:

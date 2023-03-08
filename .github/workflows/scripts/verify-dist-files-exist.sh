@@ -9,9 +9,10 @@ files=(
     dist/otel-contrib-collector_*_amd64.deb
     dist/otel-contrib-collector-*.x86_64.rpm
     dist/otel-contrib-collector_*_arm64.deb
+    dist/otel-contrib-collector-*.ppc64le.rpm
     dist/otel-contrib-collector_*_ppc64le.deb
-    dist/otel-contrib-collector_*_ppc64le.rpm
-    dist/otel-contrib-collector-*amd64.msi
+    # skip. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10113
+    # dist/otel-contrib-collector-*amd64.msi
 
 );
 for f in "${files[@]}"
@@ -19,8 +20,8 @@ do
     if [[ ! -f $f ]]
     then
         echo "$f does not exist."
-        echo "::set-output name=passed::false"
-        exit 0
+        echo "passed=false" >> $GITHUB_OUTPUT
+        exit 1
     fi
 done
-echo "::set-output name=passed::true"
+echo "passed=true" >> $GITHUB_OUTPUT

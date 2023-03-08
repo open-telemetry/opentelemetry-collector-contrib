@@ -19,11 +19,9 @@ import (
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
 	// Configure the service URL for the Pulsar service.
 	Endpoint string `mapstructure:"endpoint"`
 	// The topic of pulsar to consume logs,metrics,traces. (default = "otlp_traces" for traces,
@@ -74,7 +72,7 @@ type OAuth2 struct {
 	Audience  string `mapstructure:"audience"`
 }
 
-var _ component.ReceiverConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {

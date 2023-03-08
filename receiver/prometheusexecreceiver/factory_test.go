@@ -25,9 +25,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -35,8 +35,8 @@ import (
 
 func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	var (
-		traceReceiver  component.TracesReceiver
-		metricReceiver component.MetricsReceiver
+		traceReceiver  receiver.Traces
+		metricReceiver receiver.Metrics
 	)
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -44,36 +44,36 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewID(typeStr).String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
 	// Test CreateTracesReceiver
-	traceReceiver, err = factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	traceReceiver, err = factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 
 	assert.Equal(t, nil, traceReceiver)
 	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 
-	// Test CreateMetricsReceiver error because of lack of command
-	_, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
-	assert.NotNil(t, err)
+	// Test error because of lack of command
+	assert.Error(t, component.ValidateConfig(cfg))
 
 	// Test CreateMetricsReceiver
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "test").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
-	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	set := receivertest.NewNopCreateSettings()
+	set.ID = component.NewID(typeStr)
+	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
 	assert.Equal(t, nil, err)
 
 	wantPer := &prometheusExecReceiver{
-		params:   componenttest.NewNopReceiverCreateSettings(),
+		params:   set,
 		config:   cfg.(*Config),
 		consumer: nil,
 		promReceiverConfig: &prometheusreceiver.Config{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			PrometheusConfig: &promconfig.Config{
 				ScrapeConfigs: []*promconfig.ScrapeConfig{
 					{

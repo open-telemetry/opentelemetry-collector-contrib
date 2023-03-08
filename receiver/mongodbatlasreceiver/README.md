@@ -24,7 +24,7 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
 - `public_key` (required for metrics, logs, or alerts in `poll` mode)
 - `private_key` (required for metrics, logs, or alerts in `poll` mode)
 - `granularity` (default `PT1M` - See [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/reference/api/process-measurements/))
-- `storage` configure the component ID of a storage extension. If specified, alerts `poll` mode will utilize the extension to ensure alerts are not duplicated after a collector restart.
+- `storage` (optional) The component ID of a storage extension which can be used when polling for `alerts` or `events` . The storage extension prevents duplication of data after a collector restart by remembering which data were previously collected.
 - `retry_on_failure`
   - `enabled` (default true)
   - `initial_interval` (default 5s)
@@ -55,6 +55,17 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
     - `collect_audit_logs` (default false)
     - `include_clusters` (default empty)
     - `exclude_clusters` (default empty)
+- `events`
+  - `projects`
+    - `name` Name of the Project to discover events from
+  - `poll_interval` (default `1m`)
+    - How often the receiver will poll the Events API for new events.
+  - `page_size` (default `100`)
+    - This is the number of events that will be processed per request to the MongoDB Atlas API.
+  - `max_pages` (default `25`)
+    - This will limit how many pages of events the receiver will request from the MongoDB Atlas API for each project.
+  - `types` (defaults to all types of events)
+    - This is a list of [event types](https://www.mongodb.com/docs/atlas/reference/api/events-orgs-get-all/#event-type-values) that the receiver will request from the API. If specified, the receiver will collect only the indicated types of events.
 
 Examples:
 
@@ -63,8 +74,8 @@ Receive metrics:
 ```yaml
 receivers:
   mongodbatlas:
-    public_key: ${MONGODB_ATLAS_PUBLIC_KEY}
-    private_key: ${MONGODB_ATLAS_PRIVATE_KEY}
+    public_key: ${env:MONGODB_ATLAS_PUBLIC_KEY}
+    private_key: ${env:MONGODB_ATLAS_PRIVATE_KEY}
 ```
 
 Listen for alerts (default mode):
@@ -97,6 +108,7 @@ receivers:
 ```
 
 Receive logs:
+
 ```yaml
 receivers:
   mongodbatlas:
@@ -105,6 +117,21 @@ receivers:
       projects: 
         - name: "project 1"
           collect_audit_logs: true
+```
+
+Receive events:
+
+```yaml
+receivers:
+  mongodbatlas:
+    events:
+      projects:
+        - name: "project 1"
+      poll_interval: 1m
+      page_size: 100
+      max_pages: 25
+    # use of a storage extension is recommended to reduce chance of duplicated events
+    storage: file_storage
 ```
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta

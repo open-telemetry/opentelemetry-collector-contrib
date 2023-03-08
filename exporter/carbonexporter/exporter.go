@@ -16,29 +16,17 @@ package carbonexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // newCarbonExporter returns a new Carbon exporter.
-func newCarbonExporter(cfg *Config, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
-	// Resolve TCP address just to ensure that it is a valid one. It is better
-	// to fail here than at when the exporter is started.
-	if _, err := net.ResolveTCPAddr("tcp", cfg.Endpoint); err != nil {
-		return nil, fmt.Errorf("%v exporter has an invalid TCP endpoint: %w", cfg.ID(), err)
-	}
-
-	// Negative timeouts are not acceptable, since all sends will fail.
-	if cfg.Timeout < 0 {
-		return nil, fmt.Errorf("%v exporter requires a positive timeout", cfg.ID())
-	}
-
+func newCarbonExporter(cfg *Config, set exporter.CreateSettings) (exporter.Metrics, error) {
 	sender := carbonSender{
 		connPool: newTCPConnPool(cfg.Endpoint, cfg.Timeout),
 	}

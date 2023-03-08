@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 )
@@ -42,19 +43,19 @@ func TestNewReceiver(t *testing.T) {
 		},
 	}
 	nextConsumer := consumertest.NewNop()
-	mr, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), config, nextConsumer, nil)
+	mr, err := newReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, nextConsumer, nil)
 
 	assert.NotNil(t, mr)
 	assert.Nil(t, err)
 }
 
 func TestNewReceiverErrors(t *testing.T) {
-	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{}, consumertest.NewNop(), nil)
+	r, err := newReceiver(context.Background(), receivertest.NewNopCreateSettings(), &Config{}, consumertest.NewNop(), nil)
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.Endpoint must be specified", err.Error())
 
-	r, err = newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Endpoint: "someEndpoint"}, consumertest.NewNop(), nil)
+	r, err = newReceiver(context.Background(), receivertest.NewNopCreateSettings(), &Config{Endpoint: "someEndpoint"}, consumertest.NewNop(), nil)
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.CollectionInterval must be specified", err.Error())
@@ -67,7 +68,7 @@ func TestScraperLoop(t *testing.T) {
 	client := make(mockClient)
 	consumer := make(mockConsumer)
 
-	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer, client.factory)
+	r, err := newReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumer, client.factory)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 

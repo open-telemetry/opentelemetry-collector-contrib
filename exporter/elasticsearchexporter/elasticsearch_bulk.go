@@ -109,8 +109,8 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		Addresses: config.Endpoints,
 		CloudID:   config.CloudID,
 		Username:  config.Authentication.User,
-		Password:  config.Authentication.Password,
-		APIKey:    config.Authentication.APIKey,
+		Password:  string(config.Authentication.Password),
+		APIKey:    string(config.Authentication.APIKey),
 		Header:    headers,
 
 		// configure retry behavior

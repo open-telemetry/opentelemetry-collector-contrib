@@ -23,15 +23,16 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 var errReceiverNotSupported = fmt.Errorf("The '%s' receiver is only supported on Windows", typeStr)
 
 func createMetricsReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateSettings,
-	_ component.ReceiverConfig,
+	_ receiver.CreateSettings,
+	_ component.Config,
 	_ consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	return nil, errReceiverNotSupported
 }

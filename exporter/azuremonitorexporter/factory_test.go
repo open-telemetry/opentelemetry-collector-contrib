@@ -19,20 +19,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 // An inappropriate config
 type badConfig struct {
-	config.ExporterSettings `mapstructure:",squash"`
 }
 
 func TestCreateTracesExporterUsingSpecificTransportChannel(t *testing.T) {
 	// mock transport channel creation
 	f := factory{tChannel: &mockTransportChannel{}}
 	ctx := context.Background()
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	exporter, err := f.createTracesExporter(ctx, params, createDefaultConfig())
 	assert.NotNil(t, exporter)
 	assert.Nil(t, err)
@@ -43,7 +41,7 @@ func TestCreateTracesExporterUsingDefaultTransportChannel(t *testing.T) {
 	f := factory{}
 	assert.Nil(t, f.tChannel)
 	ctx := context.Background()
-	exporter, err := f.createTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), createDefaultConfig())
+	exporter, err := f.createTracesExporter(ctx, exportertest.NewNopCreateSettings(), createDefaultConfig())
 	assert.NotNil(t, exporter)
 	assert.Nil(t, err)
 	assert.NotNil(t, f.tChannel)
@@ -54,7 +52,7 @@ func TestCreateTracesExporterUsingBadConfig(t *testing.T) {
 	f := factory{}
 	assert.Nil(t, f.tChannel)
 	ctx := context.Background()
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 
 	badConfig := &badConfig{}
 

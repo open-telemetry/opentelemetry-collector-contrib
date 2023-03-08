@@ -21,22 +21,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
 	testcases := []struct {
 		configPath string
-		expected   component.ProcessorConfig
+		id         component.ID
+		expected   component.Config
 	}{
 		{
 			configPath: "config_traces.yaml",
+			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"otlp"},
-				AttributeSource:   "context",
-				FromAttribute:     "X-Tenant",
+				DefaultExporters: []string{"otlp"},
+				AttributeSource:  "context",
+				FromAttribute:    "X-Tenant",
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -51,11 +51,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configPath: "config_metrics.yaml",
+			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"logging/default"},
-				AttributeSource:   "context",
-				FromAttribute:     "X-Custom-Metrics-Header",
+				DefaultExporters: []string{"logging/default"},
+				AttributeSource:  "context",
+				FromAttribute:    "X-Custom-Metrics-Header",
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -70,11 +70,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configPath: "config_logs.yaml",
+			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"logging/default"},
-				AttributeSource:   "context",
-				FromAttribute:     "X-Custom-Logs-Header",
+				DefaultExporters: []string{"logging/default"},
+				AttributeSource:  "context",
+				FromAttribute:    "X-Custom-Logs-Header",
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -83,6 +83,38 @@ func TestLoadConfig(t *testing.T) {
 					{
 						Value:     "globex",
 						Exporters: []string{"logging/globex"},
+					},
+				},
+			},
+		},
+		{
+			configPath: "config.yaml",
+			id:         component.NewIDWithName(typeStr, ""),
+			expected: &Config{
+				DefaultExporters: []string{"jaeger"},
+				AttributeSource:  resourceAttributeSource,
+				FromAttribute:    "X-Tenant",
+				Table: []RoutingTableItem{
+					{
+						Value:     "acme",
+						Exporters: []string{"otlp/traces"},
+					},
+				},
+			},
+		},
+		{
+			configPath: "config.yaml",
+			id:         component.NewIDWithName(typeStr, "ottl"),
+			expected: &Config{
+				DefaultExporters: []string{"jaeger"},
+				Table: []RoutingTableItem{
+					{
+						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"acme\"",
+						Exporters: []string{"jaeger/acme"},
+					},
+					{
+						Statement: "delete_key(resource.attributes, \"X-Tenant\") where IsMatch(resource.attributes[\"X-Tenant\"], \".*corp\") == true",
+						Exporters: []string{"jaeger/ecorp"},
 					},
 				},
 			},
@@ -97,11 +129,11 @@ func TestLoadConfig(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
-			sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -110,7 +142,7 @@ func TestLoadConfig(t *testing.T) {
 func TestValidateConfig(t *testing.T) {
 	tests := []struct {
 		name   string
-		config component.ProcessorConfig
+		config component.Config
 		error  string
 	}{
 		{
@@ -160,7 +192,7 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualError(t, tt.config.Validate(), tt.error)
+			assert.EqualError(t, component.ValidateConfig(tt.config), tt.error)
 		})
 	}
 }

@@ -16,17 +16,16 @@ package attributesprocessor // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterlog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
 )
 
 const (
@@ -39,74 +38,57 @@ const (
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Attributes processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, stability),
-		component.WithLogsProcessor(createLogsProcessor, stability),
-		component.WithMetricsProcessor(createMetricsProcessor, stability))
+		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithLogs(createLogsProcessor, stability),
+		processor.WithMetrics(createMetricsProcessor, stability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
-func createDefaultConfig() component.ProcessorConfig {
-	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
 func createTracesProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
-	if len(oCfg.Actions) == 0 {
-		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
-	}
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
+		return nil, err
 	}
-	include, err := filterspan.NewMatcher(oCfg.Include)
+	skipExpr, err := filterspan.NewSkipExpr(&oCfg.MatchConfig)
 	if err != nil {
 		return nil, err
 	}
-	exclude, err := filterspan.NewMatcher(oCfg.Exclude)
-	if err != nil {
-		return nil, err
-	}
-
 	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,
 		nextConsumer,
-		newSpanAttributesProcessor(set.Logger, attrProc, include, exclude).processTraces,
+		newSpanAttributesProcessor(set.Logger, attrProc, skipExpr).processTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createLogsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
-	if len(oCfg.Actions) == 0 {
-		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
-	}
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
-	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
-	}
-
-	include, err := filterlog.NewMatcher(oCfg.Include)
 	if err != nil {
 		return nil, err
 	}
-	exclude, err := filterlog.NewMatcher(oCfg.Exclude)
+
+	skipExpr, err := filterlog.NewSkipExpr(&oCfg.MatchConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -116,33 +98,27 @@ func createLogsProcessor(
 		set,
 		cfg,
 		nextConsumer,
-		newLogAttributesProcessor(set.Logger, attrProc, include, exclude).processLogs,
+		newLogAttributesProcessor(set.Logger, attrProc, skipExpr).processLogs,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createMetricsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 
 	oCfg := cfg.(*Config)
-	if len(oCfg.Actions) == 0 {
-		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
-	}
-
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
-	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
-	}
-
-	include, err := filtermetric.NewMatcher(filtermetric.CreateMatchPropertiesFromDefault(oCfg.Include))
 	if err != nil {
 		return nil, err
 	}
 
-	exclude, err := filtermetric.NewMatcher(filtermetric.CreateMatchPropertiesFromDefault(oCfg.Exclude))
+	skipExpr, err := filtermetric.NewSkipExpr(
+		filtermetric.CreateMatchPropertiesFromDefault(oCfg.Include),
+		filtermetric.CreateMatchPropertiesFromDefault(oCfg.Exclude),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +128,6 @@ func createMetricsProcessor(
 		set,
 		cfg,
 		nextConsumer,
-		newMetricAttributesProcessor(set.Logger, attrProc, include, exclude).processMetrics,
+		newMetricAttributesProcessor(set.Logger, attrProc, skipExpr).processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }

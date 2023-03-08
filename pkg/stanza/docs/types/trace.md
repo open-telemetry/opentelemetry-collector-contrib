@@ -22,7 +22,7 @@ If a `trace` block is specified, the parser operator will perform the trace pars
 
 ```yaml
 - type: regex_parser
-  regexp: '^TraceID=(?P<trace_id>\S*) SpanID=(?P<span_id>\S*) TraceFlags=(?P<trace_flags>\d*)'
+  regex: '^TraceID=(?P<trace_id>\S*) SpanID=(?P<span_id>\S*) TraceFlags=(?P<trace_flags>\d*)'
   trace:
     trace_id:
       parse_from: attributes.trace_id

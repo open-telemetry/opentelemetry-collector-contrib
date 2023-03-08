@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
+# Note that there is a 50-character limit on labels, so some components may
+# not have a corresponding label.
 
 set -euo pipefail
 
@@ -32,15 +34,18 @@ COLORS["testbed"]="#336600"
 
 FALLBACK_COLOR="#999966"
 
-# Match only components with a type and name, i.e. no top-level
-# directories.
-COMPONENTS=$(grep -oE '^[a-z]+/[a-z/]+ ' < .github/CODEOWNERS)
+CUR_DIRECTORY=$(dirname "$0")
+COMPONENTS=$(sh "${CUR_DIRECTORY}/get-components.sh")
 
 for COMPONENT in ${COMPONENTS}; do
-		COMPONENT=$(echo "${COMPONENT}" | sed -E 's%/$%%')
-		TYPE=$(echo "${COMPONENT}" | cut -f1 -d '/' )
-		NAME=$(echo "${COMPONENT}" | cut -f2- -d '/' | sed -E "s%${TYPE}\$%%")
+    TYPE=$(echo "${COMPONENT}" | cut -f1 -d '/' )
+    LABEL_NAME=$(echo "${COMPONENT}" | sed -E 's%^(.+)/(.+)\1%\1/\2%')
 
-		gh label create "${TYPE}/${NAME}" -c "${COLORS["${TYPE}"]:-${FALLBACK_COLOR}}" --force
+    if (( "${#LABEL_NAME}" > 50 )); then
+        echo "'${LABEL_NAME}' exceeds GitHubs 50-character limit on labels, skipping"
+        continue
+    fi
+
+    gh label create "${LABEL_NAME}" -c "${COLORS["${TYPE}"]:-${FALLBACK_COLOR}}" --force
 done
 

@@ -19,11 +19,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -36,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ExporterConfig
+		expected component.Config
 	}{
 		{
 			id:       component.NewIDWithName(typeStr, ""),
@@ -45,11 +46,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "withsettings"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 					Timeout:  500 * time.Millisecond,
-					Headers:  map[string]string{"User-Agent": "OpenTelemetry -> Influx"},
+					Headers:  map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Influx"},
 				},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
@@ -57,10 +57,12 @@ func TestLoadConfig(t *testing.T) {
 					QueueSize:    10,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 1 * time.Second,
-					MaxInterval:     3 * time.Second,
-					MaxElapsedTime:  10 * time.Second,
+					Enabled:             true,
+					InitialInterval:     1 * time.Second,
+					MaxInterval:         3 * time.Second,
+					MaxElapsedTime:      10 * time.Second,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				Org:           "my-org",
 				Bucket:        "my-bucket",
@@ -77,9 +79,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

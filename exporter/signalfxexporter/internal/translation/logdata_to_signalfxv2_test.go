@@ -78,9 +78,6 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		propMap.PutBool("isActive", true)
 		propMap.PutInt("rack", 5)
 		propMap.PutDouble("temp", 40.5)
-		propMap.Sort()
-
-		l.Attributes().Sort()
 
 		return logs
 	}
@@ -131,9 +128,6 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 			resource := tt.logData.ResourceLogs().At(0).Resource()
 			logSlice := tt.logData.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 			events, dropped := LogRecordSliceToSignalFxV2(zap.NewNop(), logSlice, resource.Attributes())
-			for i := 0; i < logSlice.Len(); i++ {
-				logSlice.At(i).Attributes().Sort()
-			}
 
 			for k := range events {
 				sort.Slice(events[k].Properties, func(i, j int) bool {

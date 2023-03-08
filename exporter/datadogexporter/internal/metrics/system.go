@@ -17,7 +17,16 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"strings"
 
-	"gopkg.in/zorkian/go-datadog-api.v2"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+)
+
+const (
+	// divMebibytes specifies the number of bytes in a mebibyte.
+	divMebibytes = 1024 * 1024
+	// divPercentage specifies the division necessary for converting fractions to percentages.
+	divPercentage = 0.01
+	// otelNamespacePrefix specifies the namespace used for OpenTelemetry host metrics.
+	otelNamespacePrefix = "otel."
 )
 
 // copySystemMetric copies the metric from src by giving it a new name. If div differs from 1, it scales all
@@ -25,40 +34,31 @@ import (
 //
 // Warning: this is not a deep copy. Only some fields are fully copied, others remain shared. This is intentional.
 // Do not alter the returned metric (or the source one) after copying.
-func copySystemMetric(src datadog.Metric, name string, div float64) datadog.Metric {
+func copySystemMetric(src datadogV2.MetricSeries, name string, div float64) datadogV2.MetricSeries {
 	cp := src
-	cp.Metric = &name
-	i := 1
-	cp.Interval = &i
-	t := "gauge"
-	cp.Type = &t
+	cp.Metric = name
+	// No need to set cp.Interval if cp.Type is gauge.
+	cp.Type = datadogV2.METRICINTAKETYPE_GAUGE.Ptr()
 	if div == 0 || div == 1 || len(src.Points) == 0 {
 		// division by 0 or 1 should not have an impact
 		return cp
 	}
-	cp.Points = make([]datadog.DataPoint, len(src.Points))
+	cp.Points = make([]datadogV2.MetricPoint, len(src.Points))
 	for i, dp := range src.Points {
-		cp.Points[i][0] = dp[0]
-		if dp[1] != nil {
-			newdp := *dp[1] / div
-			cp.Points[i][1] = &newdp
+		cp.Points[i].Timestamp = dp.Timestamp
+		if dp.Value != nil {
+			newdp := *dp.Value / div
+			cp.Points[i].Value = &newdp
 		}
 	}
 	return cp
 }
 
-const (
-	// divMebibytes specifies the number of bytes in a mebibyte.
-	divMebibytes = 1024 * 1024
-	// divPercentage specifies the division necessary for converting fractions to percentages.
-	divPercentage = 0.01
-)
-
 // extractSystemMetrics takes an OpenTelemetry metric m and extracts Datadog system metrics from it,
 // if m is a valid system metric. The boolean argument reports whether any system metrics were extractd.
-func extractSystemMetrics(m datadog.Metric) []datadog.Metric {
-	var series []datadog.Metric
-	switch *m.Metric {
+func extractSystemMetrics(m datadogV2.MetricSeries) []datadogV2.MetricSeries {
+	var series []datadogV2.MetricSeries
+	switch m.Metric {
 	case "system.cpu.load_average.1m":
 		series = append(series, copySystemMetric(m, "system.load.1", 1))
 	case "system.cpu.load_average.5m":
@@ -112,24 +112,21 @@ func extractSystemMetrics(m datadog.Metric) []datadog.Metric {
 	return series
 }
 
-// otelNamespacePrefix specifies the namespace used for OpenTelemetry host metrics.
-const otelNamespacePrefix = "otel."
-
 // PrepareSystemMetrics prepends system hosts metrics with the otel.* prefix to identify
 // them as part of the Datadog OpenTelemetry Integration. It also extracts Datadog compatible
 // system metrics and returns the full set of metrics to be used.
-func PrepareSystemMetrics(ms []datadog.Metric) []datadog.Metric {
+func PrepareSystemMetrics(ms []datadogV2.MetricSeries) []datadogV2.MetricSeries {
 	series := ms
 	for i, m := range ms {
-		if !strings.HasPrefix(*m.Metric, "system.") &&
-			!strings.HasPrefix(*m.Metric, "process.") {
+		if !strings.HasPrefix(m.Metric, "system.") &&
+			!strings.HasPrefix(m.Metric, "process.") {
 			// not a system metric
 			continue
 		}
 		series = append(series, extractSystemMetrics(m)...)
 		// all existing system metrics need to be prepended
-		newname := otelNamespacePrefix + *m.Metric
-		series[i].Metric = &newname
+		newname := otelNamespacePrefix + m.Metric
+		series[i].Metric = newname
 	}
 	return series
 }

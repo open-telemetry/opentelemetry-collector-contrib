@@ -22,8 +22,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -58,7 +59,7 @@ func verifyPushMetricsData(t *testing.T, errorOnSend bool) error {
 }
 
 func createMockMetricsExporter(
-	sender *mockMetricSender) (component.MetricsExporter, error) {
+	sender *mockMetricSender) (exporter.Metrics, error) {
 	exporterConfig := createDefaultConfig()
 	tobsConfig := exporterConfig.(*Config)
 	tobsConfig.Metrics.Endpoint = "http://localhost:2878"
@@ -74,13 +75,13 @@ func createMockMetricsExporter(
 		), nil
 	}
 
-	exp, err := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), exporterConfig, creator)
+	exp, err := newMetricsExporter(exportertest.NewNopCreateSettings(), exporterConfig, creator)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		exporterConfig,
 		exp.pushMetricsData,
 		exporterhelper.WithShutdown(exp.shutdown),

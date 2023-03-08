@@ -19,14 +19,12 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Google Cloud Managed Service for Prometheus exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
-	GMPConfig               `mapstructure:",squash"`
+	GMPConfig `mapstructure:",squash"`
 
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -71,9 +69,6 @@ func (c *GMPConfig) toCollectorConfig() collector.Config {
 }
 
 func (cfg *Config) Validate() error {
-	if err := cfg.ExporterSettings.Validate(); err != nil {
-		return fmt.Errorf("exporter settings are invalid :%w", err)
-	}
 	if err := collector.ValidateConfig(cfg.toCollectorConfig()); err != nil {
 		return fmt.Errorf("exporter settings are invalid :%w", err)
 	}

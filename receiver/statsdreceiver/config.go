@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/lightstep/go-expohisto/structure"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/multierr"
 
@@ -28,15 +27,14 @@ import (
 
 // Config defines configuration for StatsD receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	NetAddr                 confignet.NetAddr                `mapstructure:",squash"`
-	AggregationInterval     time.Duration                    `mapstructure:"aggregation_interval"`
-	EnableMetricType        bool                             `mapstructure:"enable_metric_type"`
-	IsMonotonicCounter      bool                             `mapstructure:"is_monotonic_counter"`
-	TimerHistogramMapping   []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
+	NetAddr               confignet.NetAddr                `mapstructure:",squash"`
+	AggregationInterval   time.Duration                    `mapstructure:"aggregation_interval"`
+	EnableMetricType      bool                             `mapstructure:"enable_metric_type"`
+	IsMonotonicCounter    bool                             `mapstructure:"is_monotonic_counter"`
+	TimerHistogramMapping []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
 }
 
-func (c *Config) validate() error {
+func (c *Config) Validate() error {
 	var errs error
 
 	if c.AggregationInterval <= 0 {

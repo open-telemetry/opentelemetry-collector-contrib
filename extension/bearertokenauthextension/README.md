@@ -6,7 +6,7 @@
 | Distributions            | [contrib]            |
 
 
-This extension implements `configauth.ClientAuthenticator` and can be used in both http and gRPC receivers inside the `auth` settings, as a means to embed a static token for every RPC call that will be made.
+This extension implements `configauth.ClientAuthenticator` and can be used in both http and gRPC exporters inside the `auth` settings, as a means to embed a static token for every RPC call that will be made.
 
 The authenticator type has to be set to `bearertokenauth`.
 

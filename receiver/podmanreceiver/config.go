@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-var _ component.ReceiverConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`

@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -41,7 +42,7 @@ func SchemaHandler(t *testing.T) func(wr http.ResponseWriter, r *http.Request) {
 }
 
 func newTestTransformer(t *testing.T) *transformer {
-	trans, err := newTransformer(context.Background(), newDefaultConfiguration(), component.ProcessorCreateSettings{
+	trans, err := newTransformer(context.Background(), newDefaultConfiguration(), processor.CreateSettings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zaptest.NewLogger(t),
 		},

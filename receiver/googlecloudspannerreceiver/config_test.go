@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -39,17 +38,17 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t,
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				CollectionInterval: 120 * time.Second,
 			},
-			TopMetricsQueryMaxRows: 10,
-			BackfillEnabled:        true,
-			CardinalityTotalLimit:  200000,
+			TopMetricsQueryMaxRows:            10,
+			BackfillEnabled:                   true,
+			CardinalityTotalLimit:             200000,
+			HideTopnLockstatsRowrangestartkey: true,
 			Projects: []Project{
 				{
 					ID:                "spanner project 1",
@@ -186,7 +185,6 @@ func TestValidateConfig(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cfg := &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: testCase.collectionInterval,
 				},
 				TopMetricsQueryMaxRows: testCase.topMetricsQueryMaxRows,
@@ -194,7 +192,7 @@ func TestValidateConfig(t *testing.T) {
 				Projects:               testCase.projects,
 			}
 
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 
 			if testCase.requireError {
 				require.Error(t, err)

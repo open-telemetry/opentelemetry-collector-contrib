@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -49,8 +50,8 @@ type watcherRecorder struct {
 type curriedRecorder func(*metadata.MetricsBuilder, pcommon.Timestamp)
 
 // newSqlServerScraper returns a new sqlServerScraper.
-func newSqlServerScraper(params component.ReceiverCreateSettings, cfg *Config) *sqlServerScraper {
-	metricsBuilder := metadata.NewMetricsBuilder(cfg.Metrics, params.BuildInfo)
+func newSqlServerScraper(params receiver.CreateSettings, cfg *Config) *sqlServerScraper {
+	metricsBuilder := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params)
 	return &sqlServerScraper{logger: params.Logger, config: cfg, metricsBuilder: metricsBuilder}
 }
 

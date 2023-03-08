@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // Factory for awscontainerinsightreceiver
@@ -48,17 +48,16 @@ const (
 )
 
 // NewFactory creates a factory for AWS container insight receiver
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
 // createDefaultConfig returns a default config for the receiver.
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings:          config.NewReceiverSettings(component.NewID(typeStr)),
 		CollectionInterval:        defaultCollectionInterval,
 		ContainerOrchestrator:     defaultContainerOrchestrator,
 		TagService:                defaultTagService,
@@ -70,10 +69,10 @@ func createDefaultConfig() component.ReceiverConfig {
 // CreateMetricsReceiver creates an AWS Container Insight receiver.
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	baseCfg component.ReceiverConfig,
+	params receiver.CreateSettings,
+	baseCfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 
 	rCfg := baseCfg.(*Config)
 	return newAWSContainerInsightReceiver(params.TelemetrySettings, rCfg, consumer)

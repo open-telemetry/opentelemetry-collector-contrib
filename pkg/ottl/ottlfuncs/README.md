@@ -2,20 +2,21 @@
 
 The following functions are intended to be used in implementations of the OpenTelemetry Transformation Language that interact with otel data via the collector's internal data model, [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata). These functions may make assumptions about the types of the data returned by Paths.
 
-Factory Functions
-- [Concat](#concat)
-- [Int](#int)
-- [IsMatch](#ismatch)
-- [SpanID](#spanid)
-- [Split](#split)
-- [TraceID](#traceid)
-- [ConvertCase](#convertcase)
+## Functions
 
-Functions
+Functions are the way that components that use OTTL transform telemetry.
+
+Functions:
+- Are allowed to transform telemetry.  When a Function is invoked the expectation is that the underlying telemetry is modified in some way.
+- May have side effects.  Some Functions may generate telemetry and add it to the telemetry payload to be processed in this batch.
+- May return values.  Although not common, Functions may return values, but they do not have to.
+
+List of available Functions:
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_keys](#keep_keys)
 - [limit](#limit)
+- [merge_maps](#merge_maps)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
 - [replace_match](#replace_match)
@@ -23,7 +24,27 @@ Functions
 - [set](#set)
 - [truncate_all](#truncate_all)
 
-## Concat
+## Converters
+
+Converters are functions that help translate between the OTTL grammar and the underlying pdata structure.
+They manipulate the OTTL grammar value into a form that will make working with the telemetry easier or more efficient.
+
+Converters:
+- Are pure functions.  They should never change the underlying telemetry and the same inputs should always result in the same output.
+- Always return something.
+
+List of available Converters:
+- [Concat](#concat)
+- [ConvertCase](#convertcase)
+- [Int](#int)
+- [IsMatch](#ismatch)
+- [ParseJSON](#ParseJSON)
+- [SpanID](#spanid)
+- [Split](#split)
+- [TraceID](#traceid)
+- [Substring](#substring)
+
+### Concat
 
 `Concat(values[], delimiter)`
 
@@ -43,7 +64,30 @@ Examples:
 
 - `Concat(["HTTP method is: ", attributes["http.method"]], "")`
 
-## Int
+### ConvertCase
+
+`ConvertCase(target, toCase)`
+
+The `ConvertCase` factory function converts the `target` string into the desired case `toCase`.
+
+`target` is a string. `toCase` is a string.
+
+If the `target` is not a string or does not exist, the `ConvertCase` factory function will return `nil`.
+
+`toCase` can be:
+
+- `lower`: Converts the `target` string to lowercase (e.g. `MY_METRIC` to `my_metric`)
+- `upper`: Converts the `target` string to uppercase (e.g. `my_metric` to `MY_METRIC`)
+- `snake`: Converts the `target` string to snakecase (e.g. `myMetric` to `my_metric`)
+- `camel`: Converts the `target` string to camelcase (e.g. `my_metric` to `MyMetric`)
+
+If `toCase` is any value other than the options above, the `ConvertCase` factory function will return an error during collector startup.
+
+Examples:
+
+- `ConvertCase(metric.name, "snake")`
+
+### Int
 
 `Int(value)`
 
@@ -68,7 +112,7 @@ Examples:
 
 - `Int("2.0")`
 
-## IsMatch
+### IsMatch
 
 `IsMatch(target, pattern)`
 
@@ -76,7 +120,9 @@ The `IsMatch` factory function returns true if the `target` matches the regex `p
 
 `target` is either a path expression to a telemetry field to retrieve or a literal string. `pattern` is a regexp pattern.
 
-The function matches the target against the pattern, returning true if the match is successful and false otherwise. If target is nil or not a string false is always returned.
+The function matches the target against the pattern, returning true if the match is successful and false otherwise.
+If target is a boolean, int, or float it will be converted to a string.
+If target is nil or not a string, boolean, int, or float false is always returned.
 
 Examples:
 
@@ -85,7 +131,37 @@ Examples:
 
 - `IsMatch("string", ".*ring")`
 
-## SpanID
+### ParseJSON
+
+`ParseJSON(target)`
+
+The `ParseJSON` factory function returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
+
+`target` is a Getter that returns a string. This string should be in json format.
+
+Unmarshalling is done using [jsoniter](https://github.com/json-iterator/go).
+Each JSON type is converted into a `pdata.Value` using the following map:
+
+```
+JSON boolean -> bool
+JSON number  -> float64
+JSON string  -> string
+JSON null    -> nil
+JSON arrays  -> pdata.SliceValue
+JSON objects -> map[string]any
+```
+
+Examples:
+
+- `ParseJSON("{\"attr\":true}")`
+
+
+- `ParseJSON(attributes["kubernetes"])`
+
+
+- `ParseJSON(body)`
+
+### SpanID
 
 `SpanID(bytes)`
 
@@ -97,7 +173,7 @@ Examples:
 
 - `SpanID(0x0000000000000000)`
 
-## Split
+### Split
 
 `Split(target, delimiter)`
 
@@ -111,7 +187,7 @@ Examples:
 
 - ```Split("A|B|C", "|")```
 
-## TraceID
+### TraceID
 
 `TraceID(bytes)`
 
@@ -123,30 +199,21 @@ Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
 
-## ConvertCase
+### Substring
 
-`ConvertCase(target, toCase)`
+`Substring(target, start, length)`
 
-The `ConvertCase` factory function converts the `target` string into the desired case `toCase`.
+The `Substring` Converter returns a substring from the given start index to the specified length.
 
-`target` is a string. `toCase` is a string.
+`target` is a string. `start` and `length` are `int64`.
 
-If the `target` is not a string or does not exist, the `ConvertCase` factory function will return `nil`.
-
-`toCase` can be:
-
-- `lower`: Converts the `target` string to lowercase (e.g. `MY_METRIC` to `my_metric`)
-- `upper`: Converts the `target` string to uppercase (e.g. `my_metric` to `MY_METRIC`)
-- `snake`: Converts the `target` string to snakecase (e.g. `myMetric` to `my_metric`)
-- `camel`: Converts the `target` string to camelcase (e.g. `my_metric` to `MyMetric`)
-
-If `toCase` is any value other than the options above, the `ConvertCase` factory function will return an error during collector startup.
+The `Substring` Converter will return `nil` if the given parameters are invalid, e.x. `target` is not a string, or the start/length exceed the length of the `target` string.
 
 Examples:
 
-- `ConvertCase(metric.name, "snake")`
+- `Substring("123456789", 0, 3)`
 
-## delete_key
+### delete_key
 
 `delete_key(target, key)`
 
@@ -163,7 +230,7 @@ Examples:
 
 - `delete_key(resource.attributes, "http.request.header.authorization")`
 
-## delete_matching_keys
+### delete_matching_keys
 
 `delete_matching_keys(target, pattern)`
 
@@ -180,7 +247,7 @@ Examples:
 
 - `delete_key(resource.attributes, "http.request.header.authorization")`
 
-## keep_keys
+### keep_keys
 
 `keep_keys(target, keys[])`
 
@@ -197,7 +264,7 @@ Examples:
 
 - `keep_keys(resource.attributes, ["http.method", "http.route", "http.url"])`
 
-## limit
+### limit
 
 `limit(target, limit, priority_keys[])`
 
@@ -220,7 +287,32 @@ Examples:
 
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
 
-## replace_all_matches
+### merge_maps
+
+`merge_maps(target, source, strategy)`
+
+The `merge_maps` function merges the source map into the target map using the supplied strategy to handle conflicts.
+
+`target` is a `pdata.Map` type field. `source` is a `pdata.Map` type field. `strategy` is a string that must be one of `insert`, `update`, or `upsert`.
+
+If strategy is:
+- `insert`: Insert the value from `source` into `target` where the key does not already exist.
+- `update`: Update the entry in `target` with the value from `source` where the key does exist.
+- `upsert`: Performs insert or update. Insert the value from `source` into `target` where the key does not already exist and update the entry in `target` with the value from `source` where the key does exist.
+
+`merge_maps` is a special case of the [`set` function](#set). If you need to completely override `target`, use `set` instead.
+
+Examples:
+
+- `merge_maps(attributes, ParseJSON(body), "upsert")`
+
+
+- `merge_maps(attributes, ParseJSON(attributes["kubernetes"]), "update")`
+
+
+- `merge_maps(attributes, resource.attributes, "insert")`
+
+### replace_all_matches
 
 `replace_all_matches(target, pattern, replacement)`
 
@@ -234,7 +326,7 @@ Examples:
 
 - `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
 
-## replace_all_patterns
+### replace_all_patterns
 
 `replace_all_patterns(target, mode, regex, replacement)`
 
@@ -246,12 +338,19 @@ The `replace_all_patterns` function replaces any segments in a string value or k
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
 Examples:
 
 - `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
+- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
 
-## replace_pattern
+Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
+environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
+If using OTTL outside of collector configuration, `$` should not be escaped and a literal `$` can be entered using `$$`.
+
+### replace_pattern
 
 `replace_pattern(target, regex, replacement)`
 
@@ -261,12 +360,18 @@ The `replace_pattern` function allows replacing all string sections that match a
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
 Examples:
 
 - `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
+- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
 
+Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
+environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
+If using OTTL outside of collector configuration, `$` should not be escaped and a literal `$` can be entered using `$$`.
 
-## replace_match
+### replace_match
 
 `replace_match(target, pattern, replacement)`
 
@@ -280,7 +385,7 @@ Examples:
 
 - `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
 
-## set
+### set
 
 `set(target, value)`
 
@@ -303,7 +408,7 @@ Examples:
 
 - `set(attributes["source"], trace_state["source"])`
 
-## truncate_all
+### truncate_all
 
 `truncate_all(target, limit)`
 
@@ -320,3 +425,12 @@ Examples:
 
 - `truncate_all(resource.attributes, 50)`
 
+## Function syntax
+
+Functions should be named and formatted according to the following standards.
+- Function names MUST start with a verb unless it is a Factory that creates a new type.
+- Factory functions MUST be UpperCamelCase.
+- Function names that contain multiple words MUST separate those words with `_`.
+- Functions that interact with multiple items MUST have plurality in the name.  Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
+- Functions that interact with a single item MUST NOT have plurality in the name.  If a function would interact with multiple items due to a condition, like `where`, it is still considered singular.  Ex: `set`, `delete`, `replace_match`.
+- Functions that change a specific target MUST set the target as the first parameter.

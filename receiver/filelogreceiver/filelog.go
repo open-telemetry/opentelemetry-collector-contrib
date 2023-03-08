@@ -16,7 +16,7 @@ package filelogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -25,11 +25,11 @@ import (
 
 const (
 	typeStr   = "filelog"
-	stability = component.StabilityLevelAlpha
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for filelog receiver
-func NewFactory() component.ReceiverFactory {
+func NewFactory() receiver.Factory {
 	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
@@ -43,21 +43,20 @@ func (f ReceiverType) Type() component.Type {
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() component.ReceiverConfig {
+func (f ReceiverType) CreateDefaultConfig() component.Config {
 	return createDefaultConfig()
 }
 func createDefaultConfig() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-			Operators:        []operator.Config{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: *file.NewConfig(),
 	}
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg component.ReceiverConfig) adapter.BaseConfig {
+func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*FileLogConfig).BaseConfig
 }
 
@@ -68,6 +67,6 @@ type FileLogConfig struct {
 }
 
 // InputConfig unmarshals the input operator
-func (f ReceiverType) InputConfig(cfg component.ReceiverConfig) operator.Config {
+func (f ReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(&cfg.(*FileLogConfig).InputConfig)
 }

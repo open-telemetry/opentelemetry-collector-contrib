@@ -24,7 +24,6 @@ import (
 	"net/http/httptest"
 	"net/textproto"
 	"net/url"
-	"reflect"
 	"testing"
 	"time"
 
@@ -38,10 +37,11 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
@@ -72,12 +72,12 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				rl.Resource().Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
 					"mongodbatlas.group.id":        "some-group-id",
 					"mongodbatlas.alert.config.id": "123",
-				})
+				}))
 
-				lr.Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
 					"created":      "2022-06-03T22:30:31Z",
 					"message":      "Some event happened",
 					"event.domain": "mongodbatlas",
@@ -85,7 +85,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 					"updated":      "2022-06-03T22:30:31Z",
 					"status":       "STATUS",
 					"id":           "some-id",
-				})
+				}))
 
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 31, 0, time.UTC)))
@@ -129,14 +129,14 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				rl.Resource().Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
 					"mongodbatlas.group.id":         "some-group-id",
 					"mongodbatlas.alert.config.id":  "123",
 					"mongodbatlas.cluster.name":     "cluster-name",
 					"mongodbatlas.replica_set.name": "replica-set",
-				})
+				}))
 
-				lr.Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
 					"acknowledgement.comment":  "Scheduled maintenance",
 					"acknowledgement.until":    "2022-06-03T22:32:34Z",
 					"acknowledgement.username": "devops",
@@ -156,7 +156,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 					"type_name":                "type-name",
 					"updated":                  "2022-06-03T22:30:35Z",
 					"user_alias":               "user-alias",
-				})
+				}))
 
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 35, 0, time.UTC)))
@@ -179,7 +179,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, logs)
-				require.NoError(t, compareLogs(tc.expectedLogs(tc.payload), logs))
+				require.NoError(t, plogtest.CompareLogs(tc.expectedLogs(tc.payload), logs))
 			}
 		})
 	}
@@ -411,13 +411,9 @@ func TestHandleRequest(t *testing.T) {
 				consumer = &consumertest.LogsSink{}
 			}
 
-			ar, err := newAlertsReceiver(zaptest.NewLogger(t),
-				&Config{
-					Alerts: AlertConfig{
-						Secret: "some_secret",
-					},
-				}, consumer)
-
+			set := receivertest.NewNopCreateSettings()
+			set.Logger = zaptest.NewLogger(t)
+			ar, err := newAlertsReceiver(set, &Config{Alerts: AlertConfig{Secret: "some_secret"}}, consumer)
 			require.NoError(t, err, "Failed to create alerts receiver")
 
 			rec := httptest.NewRecorder()
@@ -436,154 +432,11 @@ func TestHandleRequest(t *testing.T) {
 	}
 }
 
-func compareLogs(expected, actual plog.Logs) error {
-	if expected.ResourceLogs().Len() != actual.ResourceLogs().Len() {
-		return fmt.Errorf("amount of ResourceLogs between Logs are not equal (expected: %d, actual: %d)",
-			expected.ResourceLogs().Len(),
-			actual.ResourceLogs().Len())
-	}
-
-	for i := 0; i < expected.ResourceLogs().Len(); i++ {
-		err := compareResourceLogs(expected.ResourceLogs().At(i), actual.ResourceLogs().At(i))
-		if err != nil {
-			return fmt.Errorf("resource logs at index %d: %w", i, err)
-		}
-	}
-
-	return nil
-}
-
-func compareResourceLogs(expected, actual plog.ResourceLogs) error {
-	if expected.SchemaUrl() != actual.SchemaUrl() {
-		return fmt.Errorf("resource logs SchemaUrl doesn't match (expected: %s, actual: %s)",
-			expected.SchemaUrl(),
-			actual.SchemaUrl())
-	}
-
-	if !reflect.DeepEqual(expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw()) {
-		return fmt.Errorf("resource logs Attributes doesn't match (expected: %+v, actual: %+v)",
-			expected.Resource().Attributes().AsRaw(),
-			actual.Resource().Attributes().AsRaw())
-	}
-
-	if expected.Resource().DroppedAttributesCount() != actual.Resource().DroppedAttributesCount() {
-		return fmt.Errorf("resource logs DroppedAttributesCount doesn't match (expected: %d, actual: %d)",
-			expected.Resource().DroppedAttributesCount(),
-			actual.Resource().DroppedAttributesCount())
-	}
-
-	if expected.ScopeLogs().Len() != actual.ScopeLogs().Len() {
-		return fmt.Errorf("amount of ScopeLogs between ResourceLogs are not equal (expected: %d, actual: %d)",
-			expected.ScopeLogs().Len(),
-			actual.ScopeLogs().Len())
-	}
-
-	for i := 0; i < expected.ScopeLogs().Len(); i++ {
-		err := compareScopeLogs(expected.ScopeLogs().At(i), actual.ScopeLogs().At(i))
-		if err != nil {
-			return fmt.Errorf("scope logs at index %d: %w", i, err)
-		}
-	}
-
-	return nil
-}
-
-func compareScopeLogs(expected, actual plog.ScopeLogs) error {
-	if expected.SchemaUrl() != actual.SchemaUrl() {
-		return fmt.Errorf("log scope SchemaUrl doesn't match (expected: %s, actual: %s)",
-			expected.SchemaUrl(),
-			actual.SchemaUrl())
-	}
-
-	if expected.Scope().Name() != actual.Scope().Name() {
-		return fmt.Errorf("log scope Name doesn't match (expected: %s, actual: %s)",
-			expected.Scope().Name(),
-			actual.Scope().Name())
-	}
-
-	if expected.Scope().Version() != actual.Scope().Version() {
-		return fmt.Errorf("log scope Version doesn't match (expected: %s, actual: %s)",
-			expected.Scope().Version(),
-			actual.Scope().Version())
-	}
-
-	if expected.LogRecords().Len() != actual.LogRecords().Len() {
-		return fmt.Errorf("amount of log records between ScopeLogs are not equal (expected: %d, actual: %d)",
-			expected.LogRecords().Len(),
-			actual.LogRecords().Len())
-	}
-
-	for i := 0; i < expected.LogRecords().Len(); i++ {
-		err := compareLogRecord(expected.LogRecords().At(i), actual.LogRecords().At(i))
-		if err != nil {
-			return fmt.Errorf("log record at index %d: %w", i, err)
-		}
-	}
-
-	return nil
-}
-
-func compareLogRecord(expected, actual plog.LogRecord) error {
-	if expected.Flags() != actual.Flags() {
-		return fmt.Errorf("log record Flags doesn't match (expected: %d, actual: %d)",
-			expected.Flags(),
-			actual.Flags())
-	}
-
-	if expected.DroppedAttributesCount() != actual.DroppedAttributesCount() {
-		return fmt.Errorf("log record DroppedAttributesCount doesn't match (expected: %d, actual: %d)",
-			expected.DroppedAttributesCount(),
-			actual.DroppedAttributesCount())
-	}
-
-	if expected.Timestamp() != actual.Timestamp() {
-		return fmt.Errorf("log record Timestamp doesn't match (expected: %d, actual: %d)",
-			expected.Timestamp(),
-			actual.Timestamp())
-	}
-
-	if expected.SeverityNumber() != actual.SeverityNumber() {
-		return fmt.Errorf("log record SeverityNumber doesn't match (expected: %d, actual: %d)",
-			expected.SeverityNumber(),
-			actual.SeverityNumber())
-	}
-
-	if expected.SeverityText() != actual.SeverityText() {
-		return fmt.Errorf("log record SeverityText doesn't match (expected: %s, actual: %s)",
-			expected.SeverityText(),
-			actual.SeverityText())
-	}
-
-	if expected.TraceID() != actual.TraceID() {
-		return fmt.Errorf("log record TraceID doesn't match (expected: %d, actual: %d)",
-			expected.TraceID(),
-			actual.TraceID())
-	}
-
-	if expected.SpanID() != actual.SpanID() {
-		return fmt.Errorf("log record SpanID doesn't match (expected: %d, actual: %d)",
-			expected.SpanID(),
-			actual.SpanID())
-	}
-
-	if !expected.Body().Equal(actual.Body()) {
-		return fmt.Errorf("log record Body doesn't match (expected: %s, actual: %s)",
-			expected.Body().AsString(),
-			actual.Body().AsString())
-	}
-
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		return fmt.Errorf("log record Attributes doesn't match (expected: %#v, actual: %#v)",
-			expected.Attributes().AsRaw(),
-			actual.Attributes().AsRaw())
-	}
-
-	return nil
-}
-
 const (
 	testAlertID         = "633335c99998645b1803c60b"
 	testGroupID         = "5bc762b579358e3332046e6a"
+	testAlertConfigID   = "REDACTED-alert"
+	testOrgID           = "test-org-id"
 	testProjectID       = "test-project-id"
 	testProjectName     = "test-project"
 	testMetricName      = "metric-name"
@@ -631,6 +484,18 @@ func TestAlertsRetrieval(t *testing.T) {
 					"type_name":    testTypeName,
 				}
 				validateAttributes(t, expectedStringAttributes, logs)
+				expectedResourceAttributes := map[string]string{
+					"mongodbatlas.group.id":        testGroupID,
+					"mongodbatlas.alert.config.id": testAlertConfigID,
+					"mongodbatlas.project.name":    testProjectName,
+					"mongodbatlas.org.id":          testOrgID,
+				}
+				ra := logs.ResourceLogs().At(0).Resource().Attributes()
+				for k, v := range expectedResourceAttributes {
+					value, ok := ra.Get(k)
+					require.True(t, ok)
+					require.Equal(t, v, value)
+				}
 			},
 		},
 		{
@@ -685,7 +550,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				tc := &mockAlertsClient{}
 				tc.On("GetProject", mock.Anything, mock.Anything).Return(&mongodbatlas.Project{
 					ID:    testProjectID,
-					OrgID: "test-org-id",
+					OrgID: testOrgID,
 					Name:  testProjectName,
 					Links: []*mongodbatlas.Link{},
 				}, nil)
@@ -731,7 +596,7 @@ func TestAlertsRetrieval(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			logSink := &consumertest.LogsSink{}
-			alertsRcvr, err := newAlertsReceiver(zap.NewNop(), tc.config(), logSink)
+			alertsRcvr, err := newAlertsReceiver(receivertest.NewNopCreateSettings(), tc.config(), logSink)
 			require.NoError(t, err)
 			alertsRcvr.client = tc.client()
 
@@ -752,7 +617,7 @@ func TestAlertsRetrieval(t *testing.T) {
 
 func TestAlertPollingExclusions(t *testing.T) {
 	logSink := &consumertest.LogsSink{}
-	alertsRcvr, err := newAlertsReceiver(zap.NewNop(), &Config{
+	alertsRcvr, err := newAlertsReceiver(receivertest.NewNopCreateSettings(), &Config{
 		Alerts: AlertConfig{
 			Enabled: true,
 			Mode:    alertModePoll,
@@ -784,7 +649,7 @@ func testClient() *mockAlertsClient {
 	ac := &mockAlertsClient{}
 	ac.On("GetProject", mock.Anything, mock.Anything).Return(&mongodbatlas.Project{
 		ID:    testProjectID,
-		OrgID: "test-org-id",
+		OrgID: testOrgID,
 		Name:  testProjectName,
 		Links: []*mongodbatlas.Link{},
 	}, nil)

@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -33,7 +34,7 @@ func TestNewReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	client := fake.NewSimpleClientset()
 	r, err := newReceiver(
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		rCfg,
 		consumertest.NewNop(),
 		client,
@@ -46,7 +47,7 @@ func TestNewReceiver(t *testing.T) {
 
 	rCfg.Namespaces = []string{"test", "another_test"}
 	r1, err := newReceiver(
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		rCfg,
 		consumertest.NewNop(),
 		client,
@@ -63,7 +64,7 @@ func TestHandleEvent(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	sink := new(consumertest.LogsSink)
 	r, err := newReceiver(
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		rCfg,
 		sink,
 		client,
@@ -83,7 +84,7 @@ func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	sink := new(consumertest.LogsSink)
 	r, err := newReceiver(
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		rCfg,
 		sink,
 		client,
@@ -120,7 +121,7 @@ func TestAllowEvent(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	client := fake.NewSimpleClientset()
 	r, err := newReceiver(
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		rCfg,
 		consumertest.NewNop(),
 		client,

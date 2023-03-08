@@ -23,24 +23,24 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 )
 
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
+	creationParams := processortest.NewNopCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		DefaultExporters:  []string{"otlp"},
-		FromAttribute:     "X-Tenant",
+		DefaultExporters: []string{"otlp"},
+		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -73,38 +73,35 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 
 func TestFailOnEmptyConfiguration(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig()
-	assert.ErrorIs(t, cfg.Validate(), errNoTableItems)
+	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoTableItems)
 }
 
 func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	// prepare
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		DefaultExporters:  []string{"otlp"},
-		FromAttribute:     "X-Tenant",
+		DefaultExporters: []string{"otlp"},
+		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value: "acme",
 			},
 		},
 	}
-	assert.ErrorIs(t, cfg.Validate(), errNoExporters)
+	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoExporters)
 }
 
 func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		DefaultExporters:  []string{"otlp"},
-		FromAttribute:     "X-Tenant",
-		Table:             []RoutingTableItem{},
+		DefaultExporters: []string{"otlp"},
+		FromAttribute:    "X-Tenant",
+		Table:            []RoutingTableItem{},
 	}
-	assert.ErrorIs(t, cfg.Validate(), errNoTableItems)
+	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoTableItems)
 }
 
 func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		DefaultExporters:  []string{"otlp"},
+		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -112,17 +109,16 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 			},
 		},
 	}
-	assert.ErrorIs(t, cfg.Validate(), errNoMissingFromAttribute)
+	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoMissingFromAttribute)
 }
 
 func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
+	creationParams := processortest.NewNopCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		DefaultExporters:  []string{"otlp"},
-		FromAttribute:     "X-Tenant",
+		DefaultExporters: []string{"otlp"},
+		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -132,7 +128,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	}
 	mp := &mockProcessor{}
 
-	next, err := processorhelper.NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop(), mp.processTraces)
+	next, err := processorhelper.NewTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
@@ -144,42 +140,27 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 }
 
 func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T) {
-	// prepare
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	processorFactory := NewFactory()
-	factories.Processors[typeStr] = processorFactory
-
 	otlpExporterFactory := otlpexporter.NewFactory()
-	factories.Exporters["otlp"] = otlpExporterFactory
-
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
 	}
 
-	otlpTracesExporter, err := otlpExporterFactory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
+	otlpTracesExporter, err := otlpExporterFactory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
+	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeTraces: {
-					component.NewID("otlp/traces"): otlpTracesExporter,
-				},
-				component.DataTypeMetrics: {
-					component.NewID("otlp/metrics"): otlpMetricsExporter,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp/traces"): otlpTracesExporter,
 		},
-	}
+		component.DataTypeMetrics: {
+			component.NewID("otlp/metrics"): otlpMetricsExporter,
+		},
+	})
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -187,11 +168,11 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 	for k := range cm.ToStringMap() {
 		// Check if all processor variations that are defined in test config can be actually created
 		t.Run(k, func(t *testing.T) {
-			cfg := factories.Processors[typeStr].CreateDefaultConfig()
+			cfg := createDefaultConfig()
 
 			sub, err := cm.Sub(k)
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, cfg)
 			err = exp.Start(context.Background(), host)
@@ -205,11 +186,10 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 func TestShutdown(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
+	creationParams := processortest.NewNopCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		DefaultExporters:  []string{"otlp"},
-		FromAttribute:     "X-Tenant",
+		DefaultExporters: []string{"otlp"},
+		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -237,14 +217,18 @@ func (mp *mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.T
 
 type mockHost struct {
 	component.Host
-	GetExportersFunc func() map[component.DataType]map[component.ID]component.Exporter
+	exps map[component.DataType]map[component.ID]component.Component
 }
 
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
-	if m.GetExportersFunc != nil {
-		return m.GetExportersFunc()
+func newMockHost(exps map[component.DataType]map[component.ID]component.Component) component.Host {
+	return &mockHost{
+		Host: componenttest.NewNopHost(),
+		exps: exps,
 	}
-	return m.Host.GetExporters()
+}
+
+func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return m.exps
 }
 
 type mockComponent struct {

@@ -6,6 +6,9 @@ solace/primary:
       password: otel01$
   queue: queue://#trace-profile123
   max_unacknowledged: 1234
+  flow_control:
+    delayed_retry:
+      delay: 1s
 
 solace/backup:
   auth:

@@ -137,11 +137,11 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Username = "otelu"
-	expected.Password = "$BIGIP_PASSWORD"
+	expected.Password = "${env:BIGIP_PASSWORD}"
 	expected.TLSSetting.InsecureSkipVerify = true
 
 	require.Equal(t, expected, cfg)

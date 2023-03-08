@@ -16,6 +16,7 @@ package prometheusexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -302,11 +303,13 @@ func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcomm
 	b.WriteString(metric.Type().String())
 	b.WriteString("*" + ilmName)
 	b.WriteString("*" + metric.Name())
-	attributes.Sort().Range(func(k string, v pcommon.Value) bool {
-		b.WriteString("*" + k + "*" + v.AsString())
+	attrs := make([]string, 0, attributes.Len())
+	attributes.Range(func(k string, v pcommon.Value) bool {
+		attrs = append(attrs, k+"*"+v.AsString())
 		return true
 	})
-
+	sort.Strings(attrs)
+	b.WriteString("*" + strings.Join(attrs, "*"))
 	if job, ok := extractJob(resourceAttrs); ok {
 		b.WriteString("*" + model.JobLabel + "*" + job)
 	}

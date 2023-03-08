@@ -2,7 +2,7 @@
 
 | Status                   |           |
 |--------------------------|-----------|
-| Stability                | [alpha]   |
+| Stability                | [beta]   |
 | Supported pipeline types | traces    |
 | Distributions            | [contrib] |
 
@@ -47,6 +47,9 @@ The configuration parameters are:
     - username (The username to use; required for sasl_xauth2 authentication)
     - bearer (The bearer token in plain text; required for sasl_xauth2 authentication)
   - sasl_external (SASL External required to be used for TLS client cert authentication. When this authentication type is chosen then tls cert_file and key_file are required)
+- flow_control (Configures the behaviour to use when temporary errors are encountered from the next component)
+  - delayed_retry (Default flow control strategy. Sets the flow control strategy to delayed retry which will wait before trying to push the message to the next component again)
+    - delay (The delay, e.g. 10ms, to wait before retrying. Default is 10ms)
 
 ### Examples:
 Simple single node configuration with SASL plain authentication (TLS enabled by default)
@@ -92,5 +95,5 @@ service:
       receivers: [solace/primary,solace/backup]
 ```
 
-[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

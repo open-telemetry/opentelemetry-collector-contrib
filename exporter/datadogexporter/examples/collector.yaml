@@ -120,7 +120,7 @@ exporters:
       ## The Datadog API key to associate your Agent's data with your organization.
       ## Create a new API key here: https://app.datadoghq.com/account/settings
       #
-      key: ${DD_API_KEY}
+      key: ${env:DD_API_KEY}
 
       ## @param site - string - optional - default: datadoghq.com
       ## The site of the Datadog intake to send Agent data to.
@@ -270,6 +270,17 @@ exporters:
       ## To attach tags to telemetry signals regardless of the host, use a processor instead.
       #
       # tags: []
+
+    ## @param logs - custom object - optional
+    ## Logs exporter specific configuration.
+    #
+    # logs:
+      ## @param dump_payloads - bool - optional
+      ## If set to true, payloads will be dumped when logging level is set to debug. Please note that
+      ## This may result in an escaping loop if a filelog receiver is watching the collector log output.
+      ## See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16380
+      #
+      # dump_payloads: false
 
 # `service` defines the Collector pipelines, observability settings and extensions.
 service:

@@ -32,8 +32,9 @@ import (
 
 // Validate entire unmarshal flow
 func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
-	validTopicVersion := "_telemetry/broker/trace/receive/v1"
-	invalidTopicVersion := "_telemetry/broker/trace/receive/v2"
+	validReceiveTopicVersion := "_telemetry/broker/trace/receive/v1"
+	invalidReceiveTopicVersion := "_telemetry/broker/trace/receive/v2"
+	invalidTelemetryTopic := "_telemetry/broker/trace/somethingNew"
 	invalidTopicString := "some unknown topic string that won't be valid"
 
 	tests := []struct {
@@ -49,23 +50,32 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					To: &invalidTopicString,
 				},
 			},
-			err: errUnknownTraceMessgeType,
+			err: errUnknownTopic,
 		},
 		{
 			name: "Bad Topic Version",
 			message: &inboundMessage{
 				Properties: &amqp.MessageProperties{
-					To: &invalidTopicVersion,
+					To: &invalidReceiveTopicVersion,
 				},
 			},
-			err: errUnknownTraceMessgeVersion,
+			err: errUpgradeRequired,
+		},
+		{
+			name: "Unknown Telemetry Topic",
+			message: &inboundMessage{
+				Properties: &amqp.MessageProperties{
+					To: &invalidTelemetryTopic,
+				},
+			},
+			err: errUpgradeRequired,
 		},
 		{
 			name: "No Message Properties",
 			message: &inboundMessage{
 				Properties: nil,
 			},
-			err: errUnknownTraceMessgeType,
+			err: errUnknownTopic,
 		},
 		{
 			name: "No Topic String",
@@ -74,14 +84,14 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					To: nil,
 				},
 			},
-			err: errUnknownTraceMessgeType,
+			err: errUnknownTopic,
 		},
 		{
 			name: "Empty Message Data",
 			message: &amqp.Message{
 				Data: [][]byte{{}},
 				Properties: &amqp.MessageProperties{
-					To: &validTopicVersion,
+					To: &validReceiveTopicVersion,
 				},
 			},
 			err: errEmptyPayload,
@@ -91,7 +101,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			message: &amqp.Message{
 				Data: [][]byte{{1, 2, 3, 4, 5}},
 				Properties: &amqp.MessageProperties{
-					To: &validTopicVersion,
+					To: &validReceiveTopicVersion,
 				},
 			},
 			err: errors.New("cannot parse invalid wire-format data"),
@@ -178,7 +188,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					return validData
 				}()},
 				Properties: &amqp.MessageProperties{
-					To: &validTopicVersion,
+					To: &validReceiveTopicVersion,
 				},
 			},
 			want: func() *ptrace.Traces {
@@ -261,7 +271,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				require.Equal(t, 1, traces.ResourceSpans().Len())
 				expectedResource := tt.want.ResourceSpans().At(0)
 				resource := traces.ResourceSpans().At(0)
-				assert.Equal(t, expectedResource.Resource().Attributes().Sort(), resource.Resource().Attributes().Sort())
+				assert.Equal(t, expectedResource.Resource().Attributes().AsRaw(), resource.Resource().Attributes().AsRaw())
 				require.Equal(t, 1, resource.ScopeSpans().Len())
 				expectedInstrumentation := expectedResource.ScopeSpans().At(0)
 				instrumentation := resource.ScopeSpans().At(0)
@@ -396,6 +406,8 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 		applicationMessageID = "someMessageID"
 		correlationID        = "someConversationID"
 		replyToTopic         = "someReplyToTopic"
+		baggageString        = `someKey=someVal;someProp=someOtherThing,someOtherKey=someOtherVal;someProp=NewProp123;someOtherProp=AnotherProp192`
+		invalidBaggageString = `someKey"=someVal;someProp=someOtherThing`
 		priority             = uint32(1)
 		ttl                  = int64(86000)
 	)
@@ -433,6 +445,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				PeerPort:                            12345,
 				BrokerReceiveTimeUnixNano:           1357924680,
 				DroppedApplicationMessageProperties: false,
+				Baggage:                             &baggageString,
 				UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
 					"special_key": {
 						Value: &model_v1.SpanData_UserPropertyValue_BoolValue{
@@ -467,6 +480,10 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.solace.user_properties.special_key":            true,
 				"messaging.solace.broker_receive_time_unix_nano":          int64(1357924680),
 				"messaging.solace.dropped_application_message_properties": false,
+				"messaging.solace.message.baggage.someKey":                "someVal",
+				"messaging.solace.message.baggage_metadata.someKey":       "someProp=someOtherThing",
+				"messaging.solace.message.baggage.someOtherKey":           `someOtherVal`,
+				"messaging.solace.message.baggage_metadata.someOtherKey":  "someProp=NewProp123;someOtherProp=AnotherProp192",
 			},
 		},
 		{
@@ -531,6 +548,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				PeerPort:                            12345,
 				BrokerReceiveTimeUnixNano:           1357924680,
 				DroppedApplicationMessageProperties: true,
+				Baggage:                             &invalidBaggageString,
 				UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
 					"special_key": nil,
 				},
@@ -552,7 +570,8 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.solace.broker_receive_time_unix_nano":          int64(1357924680),
 				"messaging.solace.dropped_application_message_properties": true,
 			},
-			expectedUnmarshallingErrors: 3,
+			// Invalid delivery mode, missing IPs, invalid baggage string
+			expectedUnmarshallingErrors: 4,
 		},
 	}
 	for _, tt := range tests {
@@ -820,17 +839,22 @@ func TestUnmarshallerEvents(t *testing.T) {
 }
 
 func compareSpans(t *testing.T, expected, actual ptrace.Span) {
-	assert.Equal(t, expected.Attributes().Sort(), actual.Attributes().Sort())
+	assert.Equal(t, expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
 	require.Equal(t, expected.Events().Len(), actual.Events().Len())
 	for i := 0; i < expected.Events().Len(); i++ {
 		lessFunc := func(a, b ptrace.SpanEvent) bool {
 			return a.Name() < b.Name() // choose any comparison here
 		}
-		expectedEvent := expected.Events().Sort(lessFunc).At(i)
-		actualEvent := actual.Events().Sort(lessFunc).At(i)
+		ee := expected.Events()
+		ee.Sort(lessFunc)
+		expectedEvent := ee.At(i)
+
+		ae := actual.Events()
+		ae.Sort(lessFunc)
+		actualEvent := ae.At(i)
 		assert.Equal(t, expectedEvent.Name(), actualEvent.Name())
 		assert.Equal(t, expectedEvent.Timestamp(), actualEvent.Timestamp())
-		assert.Equal(t, expectedEvent.Attributes().Sort(), actualEvent.Attributes().Sort())
+		assert.Equal(t, expectedEvent.Attributes().AsRaw(), actualEvent.Attributes().AsRaw())
 	}
 }
 
@@ -894,6 +918,62 @@ func TestUnmarshallerRGMID(t *testing.T) {
 			actual := u.rgmidToString(tt.in)
 			assert.Equal(t, tt.expected, actual)
 			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.numErr)
+		})
+	}
+}
+
+func TestUnmarshallerBaggageString(t *testing.T) {
+	testCases := []struct {
+		name     string
+		baggage  string
+		expected func(pcommon.Map)
+		errStr   string
+	}{
+		{
+			name:    "Valid baggage",
+			baggage: `someKey=someVal`,
+			expected: func(m pcommon.Map) {
+				assert.NoError(t, m.FromRaw(map[string]interface{}{
+					"messaging.solace.message.baggage.someKey": "someVal",
+				}))
+			},
+		},
+		{
+			name:    "Valid baggage with properties",
+			baggage: `someKey=someVal;someProp=someOtherThing,someOtherKey=someOtherVal;someProp=NewProp123;someOtherProp=AnotherProp192`,
+			expected: func(m pcommon.Map) {
+				assert.NoError(t, m.FromRaw(map[string]interface{}{
+					"messaging.solace.message.baggage.someKey":               "someVal",
+					"messaging.solace.message.baggage_metadata.someKey":      "someProp=someOtherThing",
+					"messaging.solace.message.baggage.someOtherKey":          `someOtherVal`,
+					"messaging.solace.message.baggage_metadata.someOtherKey": "someProp=NewProp123;someOtherProp=AnotherProp192",
+				}))
+			},
+		},
+		{
+			name:    "Invalid baggage",
+			baggage: `someKey"=someVal;someProp=someOtherThing`,
+			errStr:  "invalid key",
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(fmt.Sprintf("%T", testCase.name), func(t *testing.T) {
+			actual := pcommon.NewMap()
+			u := newTestV1Unmarshaller(t)
+			err := u.unmarshalBaggage(actual, testCase.baggage)
+			if testCase.errStr == "" {
+				assert.Nil(t, err)
+			} else {
+				assert.ErrorContains(t, err, testCase.errStr)
+			}
+			if testCase.expected != nil {
+				expected := pcommon.NewMap()
+				testCase.expected(expected)
+				assert.Equal(t, expected.AsRaw(), actual.AsRaw())
+			} else {
+				// assert we didn't add anything if we don't have a result map
+				assert.Equal(t, 0, actual.Len())
+			}
 		})
 	}
 }
@@ -1031,7 +1111,7 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 		},
 	}
 
-	unmarshaller := &solaceMessageUnmarshallerV1{
+	unmarshaller := &brokerTraceReceiveUnmarshallerV1{
 		logger: zap.NewNop(),
 	}
 	for _, testCase := range testCases {
@@ -1059,7 +1139,7 @@ func TestSolaceMessageUnmarshallerV1InsertUserPropertyUnsupportedType(t *testing
 	validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, 1)
 }
 
-func newTestV1Unmarshaller(t *testing.T) *solaceMessageUnmarshallerV1 {
+func newTestV1Unmarshaller(t *testing.T) *brokerTraceReceiveUnmarshallerV1 {
 	m := newTestMetrics(t)
-	return &solaceMessageUnmarshallerV1{zap.NewNop(), m}
+	return &brokerTraceReceiveUnmarshallerV1{zap.NewNop(), m}
 }

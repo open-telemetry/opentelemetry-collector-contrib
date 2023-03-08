@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -50,7 +51,7 @@ const (
 	responseErrInternalServerError    = "Internal Server Error"
 	responseErrUnsupportedMetricEvent = "Unsupported metric event"
 	responseErrUnsupportedLogEvent    = "Unsupported log event"
-
+	responseErrHandlingIndexedFields  = `{"text":"Error in handling indexed fields","code":15,"invalid-event-number":%d}`
 	// Centralizing some HTTP and related string constants.
 	gzipEncoding              = "gzip"
 	httpContentEncodingHeader = "Content-Encoding"
@@ -73,9 +74,9 @@ var (
 	errUnsupportedLogEvent    = initJSONResponse(responseErrUnsupportedLogEvent)
 )
 
-// splunkReceiver implements the component.MetricsReceiver for Splunk HEC metric protocol.
+// splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
 type splunkReceiver struct {
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	config          *Config
 	logsConsumer    consumer.Logs
 	metricsConsumer consumer.Metrics
@@ -85,14 +86,14 @@ type splunkReceiver struct {
 	gzipReaderPool  *sync.Pool
 }
 
-var _ component.MetricsReceiver = (*splunkReceiver)(nil)
+var _ receiver.Metrics = (*splunkReceiver)(nil)
 
 // newMetricsReceiver creates the Splunk HEC receiver with the given configuration.
 func newMetricsReceiver(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextMetricsConsumer
 	}
@@ -107,7 +108,7 @@ func newMetricsReceiver(
 	}
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             config.ID(),
+		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
@@ -134,10 +135,10 @@ func newMetricsReceiver(
 
 // newLogsReceiver creates the Splunk HEC receiver with the given configuration.
 func newLogsReceiver(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextLogsConsumer
 	}
@@ -151,7 +152,7 @@ func newLogsReceiver(
 	}
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             config.ID(),
+		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
@@ -194,6 +195,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	mx := mux.NewRouter()
+	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
 	if r.logsConsumer != nil {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}
@@ -339,6 +341,13 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, len(events), err)
 			return
 		}
+
+		for _, v := range msg.Fields {
+			if !isFlatJSONField(v) {
+				r.failRequest(ctx, resp, http.StatusBadRequest, []byte(fmt.Sprintf(responseErrHandlingIndexedFields, len(events))), len(events), nil)
+				return
+			}
+		}
 		if msg.IsMetric() {
 			if r.metricsConsumer == nil {
 				r.failRequest(ctx, resp, http.StatusBadRequest, errUnsupportedMetricEvent, len(events), err)
@@ -444,6 +453,10 @@ func (r *splunkReceiver) failRequest(
 	}
 }
 
+func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
+	writer.WriteHeader(200)
+}
+
 func initJSONResponse(s string) []byte {
 	respBody, err := jsoniter.Marshal(s)
 	if err != nil {
@@ -451,4 +464,19 @@ func initJSONResponse(s string) []byte {
 		panic(err)
 	}
 	return respBody
+}
+
+func isFlatJSONField(field interface{}) bool {
+	switch value := field.(type) {
+	case map[string]interface{}:
+		return false
+	case []interface{}:
+		for _, v := range value {
+			switch v.(type) {
+			case map[string]interface{}, []interface{}:
+				return false
+			}
+		}
+	}
+	return true
 }

@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -36,13 +35,13 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	factory := NewFactory()
-	metricCfg := metadata.DefaultMetricsSettings()
-	metricCfg.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
-	metricCfg.ProcessRuntimeMemstatsMallocs.Enabled = false
+	metricCfg := metadata.DefaultMetricsBuilderConfig()
+	metricCfg.Metrics.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
+	metricCfg.Metrics.ProcessRuntimeMemstatsMallocs.Enabled = false
 
 	tests := []struct {
 		id           component.ID
-		expected     component.ReceiverConfig
+		expected     component.Config
 		errorMessage string
 	}{
 		{
@@ -53,14 +52,13 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "custom"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 30 * time.Second,
 				},
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8000/custom/path",
 					Timeout:  time.Second * 5,
 				},
-				MetricsConfig: metricCfg,
+				MetricsBuilderConfig: metricCfg,
 			},
 		},
 		{
@@ -87,14 +85,14 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(config.ReceiverSettings{}, metadata.MetricSettings{})); diff != "" {
+			assert.NoError(t, component.ValidateConfig(cfg))
+			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

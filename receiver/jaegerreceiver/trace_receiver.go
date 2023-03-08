@@ -31,7 +31,6 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
-	"github.com/jaegertracing/jaeger/cmd/collector/app/handler"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/pkg/metrics"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
@@ -45,6 +44,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
 
@@ -78,7 +78,7 @@ type jReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 
 	grpcObsrecv *obsreport.Receiver
 	httpObsrecv *obsreport.Receiver
@@ -107,7 +107,7 @@ func newJaegerReceiver(
 	id component.ID,
 	config *configuration,
 	nextConsumer consumer.Traces,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 ) (*jReceiver, error) {
 	grpcObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             id,
@@ -330,7 +330,7 @@ func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *http
 	r.Body.Close()
 	if err != nil {
 		return nil, &httpError{
-			handler.UnableToReadBodyErrFormat,
+			fmt.Sprintf("Unable to process request body: %v", err),
 			http.StatusInternalServerError,
 		}
 	}
@@ -353,7 +353,7 @@ func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *http
 	batch := &jaeger.Batch{}
 	if err = tdes.Read(r.Context(), batch, bodyBytes); err != nil {
 		return nil, &httpError{
-			fmt.Sprintf(handler.UnableToReadBodyErrFormat, err),
+			fmt.Sprintf("Unable to process request body: %v", err),
 			http.StatusBadRequest,
 		}
 	}

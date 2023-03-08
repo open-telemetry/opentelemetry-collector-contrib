@@ -20,9 +20,9 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 )
 
 const (
@@ -35,30 +35,41 @@ const (
 var onceMetrics sync.Once
 
 // NewFactory returns a new factory for the Probabilistic sampler processor.
-func NewFactory() component.ProcessorFactory {
+func NewFactory() processor.Factory {
 	onceMetrics.Do(func() {
 		// TODO: Handle this err
 		_ = view.Register(SamplingProcessorMetricViews(configtelemetry.LevelNormal)...)
 	})
 
-	return component.NewProcessorFactory(
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, stability))
+		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithLogs(createLogsProcessor, component.StabilityLevelAlpha))
 }
 
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
+		AttributeSource: defaultAttributeSource,
 	}
 }
 
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	return newTracesProcessor(ctx, set, cfg.(*Config), nextConsumer)
+}
+
+// createLogsProcessor creates a log processor based on this config.
+func createLogsProcessor(
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (processor.Logs, error) {
+	return newLogsProcessor(ctx, set, nextConsumer, cfg.(*Config))
 }

@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
@@ -36,16 +35,15 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id          component.ID
-		expected    component.ReceiverConfig
+		expected    component.Config
 		expectedErr error
 	}{
 		{
 			id: component.NewIDWithName(typeStr, "test"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				ScrapeInterval:   60 * time.Second,
-				ScrapeTimeout:    10 * time.Second,
-				Port:             9104,
+				ScrapeInterval: 60 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "mysqld_exporter",
 					Env:     []subprocessmanager.EnvConfig{},
@@ -55,9 +53,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "test2"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				ScrapeInterval:   90 * time.Second,
-				ScrapeTimeout:    10 * time.Second,
+				ScrapeInterval: 90 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "postgres_exporter",
 					Env:     []subprocessmanager.EnvConfig{},
@@ -67,10 +64,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "end_to_end_test/1"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				ScrapeInterval:   1 * time.Second,
-				ScrapeTimeout:    1 * time.Second,
-				Port:             9999,
+				ScrapeInterval: 1 * time.Second,
+				ScrapeTimeout:  1 * time.Second,
+				Port:           9999,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
 					Env: []subprocessmanager.EnvConfig{
@@ -89,9 +85,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "end_to_end_test/2"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				ScrapeInterval:   1 * time.Second,
-				ScrapeTimeout:    1 * time.Second,
+				ScrapeInterval: 1 * time.Second,
+				ScrapeTimeout:  1 * time.Second,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
 					Env:     []subprocessmanager.EnvConfig{},
@@ -107,9 +102,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

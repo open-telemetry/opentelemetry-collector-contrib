@@ -20,8 +20,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -33,7 +34,7 @@ func TestType(t *testing.T) {
 
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
-	err := factory.CreateDefaultConfig().Validate()
+	err := component.ValidateConfig(factory.CreateDefaultConfig())
 	// default does not endpoint
 	require.ErrorContains(t, err, "no manager endpoint was specified")
 }
@@ -42,7 +43,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 10 * time.Second,
@@ -57,8 +58,8 @@ func TestCreateMetricsReceiverNotNSX(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
-		componenttest.NewNopReceiverFactory().CreateDefaultConfig(),
+		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopFactory().CreateDefaultConfig(),
 		consumertest.NewNop(),
 	)
 	require.Error(t, err)
