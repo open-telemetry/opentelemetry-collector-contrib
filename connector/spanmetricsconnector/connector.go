@@ -50,9 +50,13 @@ const (
 	defaultUnit = "ms"
 )
 
-var unitDividers = map[string]int64{
-	"s":  time.Second.Nanoseconds(),
-	"ms": time.Millisecond.Nanoseconds(),
+var unitDividers = map[string]func() int64{
+	"s": func() int64 {
+		return time.Second.Nanoseconds()
+	},
+	"ms": func() int64 {
+		return time.Millisecond.Nanoseconds()
+	},
 }
 
 type connectorImp struct {
@@ -131,10 +135,10 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		if cfg.LatencyHistogramBuckets != nil {
 			logger.Warn("latency_histogram_buckets is deprecated. " +
 				"Use `histogram: explicit: buckets` to set histogram buckets")
-			bounds = durationsToUnits(cfg.LatencyHistogramBuckets, unitDivider)
+			bounds = durationsToUnits(cfg.LatencyHistogramBuckets, unitDivider())
 		}
 		if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
-			bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider)
+			bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider())
 		}
 		histograms = metrics.NewExplicitHistogramMetrics(bounds)
 	}
@@ -145,7 +149,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
 		histograms:            histograms,
 		sums:                  metrics.NewSumMetrics(),
-		unitDivider:           unitDivider,
+		unitDivider:           unitDivider(),
 		dimensions:            newDimensions(cfg.Dimensions),
 		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
