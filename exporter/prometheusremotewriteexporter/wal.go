@@ -361,7 +361,7 @@ func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq 
 			}
 
 			// Now increment the WAL's read index.
-			prwe.rWALIndex.Add(uint64(1))
+			prwe.rWALIndex.Add(1)
 
 			return req, nil
 		}
