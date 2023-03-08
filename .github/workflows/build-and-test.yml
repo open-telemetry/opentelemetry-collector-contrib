@@ -700,7 +700,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: collector-binaries
-          path: ./bin/
+          path: ./artifacts/
       - name: Verify Distribution Files Exist
         id: check
         run: ./.github/workflows/scripts/verify-release-artifacts-exist.sh
@@ -709,7 +709,7 @@ jobs:
         run: ./.github/workflows/scripts/set_release_tag.sh
       - name: Create Github Release
         run: |
-          ./.tools/ghr -t $GITHUB_TOKEN -u $GITHUB_REPOSITORY_OWNER -r opentelemetry-collector-contrib --replace $RELEASE_TAG
+          ./.tools/ghr -t $GITHUB_TOKEN -u $GITHUB_REPOSITORY_OWNER -r opentelemetry-collector-contrib --replace $RELEASE_TAG ./artifacts/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
