@@ -56,6 +56,7 @@ CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report 
 BUILDER             := $(TOOLS_BIN_DIR)/builder
+GHR                 := $(TOOLS_BIN_DIR)/ghr
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
