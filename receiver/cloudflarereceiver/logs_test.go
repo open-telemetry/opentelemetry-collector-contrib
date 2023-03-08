@@ -63,9 +63,9 @@ func TestPayloadToLogRecord(t *testing.T) {
 				for idx, line := range strings.Split(payload, "\n") {
 					lr := scopeLogs.AppendEmpty()
 
-					lr.Attributes().FromRaw(map[string]interface{}{
+					require.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
 						"http_request.client_ip": fmt.Sprintf("89.163.253.%d", 200+idx),
-					})
+					}))
 
 					lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 					ts, _ := time.Parse(time.RFC3339, "2023-03-03T05:29:05Z")
@@ -92,9 +92,9 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				lr.Attributes().FromRaw(map[string]interface{}{
+				require.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
 					"http_request.client_ip": "47.35.104.49",
-				})
+				}))
 
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 				ts, _ := time.Parse(time.RFC3339, "2023-03-03T05:29:06Z")
@@ -147,7 +147,7 @@ func payloadToExpectedBody(t *testing.T, payload string, lr plog.LogRecord) {
 	var body map[string]interface{}
 	err := json.Unmarshal([]byte(payload), &body)
 	require.NoError(t, err)
-	lr.Body().SetEmptyMap().FromRaw(body)
+	require.NoError(t, lr.Body().SetEmptyMap().FromRaw(body))
 }
 
 func TestSeverityParsing(t *testing.T) {
@@ -334,7 +334,10 @@ func TestHandleRequest(t *testing.T) {
 func gzippedMessage(message string) string {
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)
-	w.Write([]byte(message))
+	_, err := w.Write([]byte(message))
+	if err != nil {
+		panic(err)
+	}
 	w.Close()
 	return b.String()
 }

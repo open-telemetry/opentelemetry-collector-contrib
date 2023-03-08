@@ -74,8 +74,7 @@ func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.
 }
 
 func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
-	go l.startListening(ctx, host)
-	return nil
+	return l.startListening(ctx, host)
 }
 
 func (l *logsReceiver) Shutdown(ctx context.Context) error {
@@ -140,7 +139,6 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 	}
 
 	var payload []byte
-	var err error
 	if req.Header.Get("Content-Encoding") == "gzip" {
 		reader, err := gzip.NewReader(req.Body)
 		if err != nil {
@@ -157,6 +155,7 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 			return
 		}
 	} else {
+		var err error
 		payload, err = io.ReadAll(req.Body)
 		if err != nil {
 			rw.WriteHeader(http.StatusUnprocessableEntity)
@@ -267,7 +266,10 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]inte
 			}
 		}
 
-		logRecord.Body().SetEmptyMap().FromRaw(log)
+		err := logRecord.Body().SetEmptyMap().FromRaw(log)
+		if err != nil {
+			l.logger.Warn("unable to set body", zap.Error(err))
+		}
 	}
 
 	return pLogs
