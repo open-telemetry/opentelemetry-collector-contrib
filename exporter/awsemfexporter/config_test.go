@@ -16,6 +16,7 @@ package awsemfexporter
 
 import (
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -177,6 +178,138 @@ func TestRetentionValidateWrong(t *testing.T) {
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 		logger:                      zap.NewNop(),
 	}
-	assert.Error(t, wrongcfg.Validate())
+	assert.Error(t, component.ValidateConfig(wrongcfg))
 
+}
+
+func TestTagsValidateCorrect(t *testing.T) {
+	avalue := "avalue"
+	cfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		Tags:                        map[string]*string{"akey": &avalue},
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.NoError(t, component.ValidateConfig(cfg))
+
+}
+
+func TestTagsValidateTooManyTags(t *testing.T) {
+	m := make(map[string]*string)
+	avalue := "avalue"
+	for i := 0; i < 51; i++ {
+		m[strconv.Itoa(i)] = &avalue
+	}
+	wrongcfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		Tags:                        m,
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.EqualError(t, component.ValidateConfig(wrongcfg), "invalid amount of items. Please input at most 50 tags.")
+}
+
+func TestTagsValidateWrongKeyRegex(t *testing.T) {
+	avalue := "avalue"
+	wrongcfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		Tags:                        map[string]*string{"***": &avalue},
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.EqualError(t, component.ValidateConfig(wrongcfg), "key - *** does not follow the regex pattern"+`^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`)
+}
+
+func TestTagsValidateWrongValueRegex(t *testing.T) {
+	avalue := "***"
+	wrongcfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		Tags:                        map[string]*string{"akey": &avalue},
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.EqualError(t, component.ValidateConfig(wrongcfg), "value - "+avalue+" does not follow the regex pattern"+`^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
+}
+
+func TestTagsValidateKeyTooShort(t *testing.T) {
+	avalue := "avalue"
+	wrongcfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		Tags:                        map[string]*string{"": &avalue},
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.EqualError(t, component.ValidateConfig(wrongcfg), "key -  has an invalid length. Please use keys with a length of 1 to 128 characters")
+}
+
+func TestTagsValidateKeyTooLong(t *testing.T) {
+	avalue := "avalue"
+	akey := ""
+	for i := 0; i < 129; i++ {
+		akey += "a"
+	}
+	wrongcfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		Tags:                        map[string]*string{akey: &avalue},
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.Error(t, component.ValidateConfig(wrongcfg), "key - "+akey+" has an invalid length. Please use keys with a length of 1 to 128 characters")
+}
+
+func TestTagsValidateValueTooShort(t *testing.T) {
+	avalue := ""
+	wrongcfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		Tags:                        map[string]*string{"akey": &avalue},
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.Error(t, component.ValidateConfig(wrongcfg), "value - "+avalue+" has an invalid length. Please use keys with a length of 1 to 256 characters")
+}
+
+func TestTagsValidateValueTooLong(t *testing.T) {
+	avalue := ""
+	for i := 0; i < 257; i++ {
+		avalue += "a"
+	}
+	wrongcfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		Tags:                        map[string]*string{"akey": &avalue},
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.Error(t, component.ValidateConfig(wrongcfg), "value - "+avalue+" has an invalid length. Please use keys with a length of 1 to 256 characters")
 }

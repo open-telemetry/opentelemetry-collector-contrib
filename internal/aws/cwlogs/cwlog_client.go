@@ -183,7 +183,7 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 					}
 				}
 				logGroupArn := "arn:aws:logs:" + client.region + ":" + client.accountId + ":log-group:" + *logGroup
-				if client.tags != nil {
+				if len(client.tags) > 0 {
 					_, err = client.svc.TagResource(&cloudwatchlogs.TagResourceInput{ResourceArn: &logGroupArn, Tags: client.tags})
 					if err != nil {
 						var awsErr awserr.Error
