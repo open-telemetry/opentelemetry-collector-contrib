@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Exporters), 3)
+	assert.Equal(t, len(cfg.Exporters), 4)
 
 	r0 := cfg.Exporters[component.NewID(metadata.Type)].(*Config)
 	assert.Equal(t, r0, factory.CreateDefaultConfig().(*Config))
@@ -63,4 +63,12 @@ func TestLoadConfig(t *testing.T) {
 	r2Expected := factory.CreateDefaultConfig().(*Config)
 	r2Expected.GMPConfig.MetricConfig.Prefix = "my-metric-domain.com"
 	assert.Equal(t, r2, r2Expected)
+
+	r3 := cfg.Exporters[component.NewIDWithName(typeStr, "clientconfig")].(*Config)
+	r3Expected := factory.CreateDefaultConfig().(*Config)
+	r3Expected.GMPConfig.MetricConfig.ClientConfig.Compression = "gzip"
+	r3Expected.GMPConfig.MetricConfig.ClientConfig.Endpoint = "foobar"
+	r3Expected.GMPConfig.MetricConfig.ClientConfig.UseInsecure = true
+	r3Expected.GMPConfig.MetricConfig.ClientConfig.GRPCPoolSize = 1
+	assert.Equal(t, r3, r3Expected)
 }

@@ -177,6 +177,7 @@ The following configuration options are supported:
   - `prefix` (default = `workload.googleapis.com`): The prefix to add to metrics.
   - `endpoint` (default = monitoring.googleapis.com): Endpoint where metric data is going to be sent to.
   - `use_insecure` (default = false): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
+  - `grpc_pool_size` (optional): Set the size of the connection pool in the GCP client.
   - `known_domains` (default = [googleapis.com, kubernetes.io, istio.io, knative.dev]): If a metric belongs to one of these domains it does not get a prefix.
   - `skip_create_descriptor` (default = false): If set to true, do not send metric descriptors to GCM.
   - `instrumentation_library_labels` (default = true): If true, set the instrumentation_source and instrumentation_version labels.
@@ -197,12 +198,14 @@ The following configuration options are supported:
 - `trace` (optional): Configuration for sending traces to Cloud Trace.
   - `endpoint` (default = cloudtrace.googleapis.com): Endpoint where trace data is going to be sent to.
   - `use_insecure` (default = false): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "". Replaces `use_insecure`.
+  - `grpc_pool_size` (optional): Set the size of the connection pool in the GCP client.
   - `attribute_mappings` (optional): AttributeMappings determines how to map from OpenTelemetry attribute keys to Google Cloud Trace keys.  By default, it changes http and service keys so that they appear more prominently in the UI.
     - `key`: Key is the OpenTelemetry attribute key
     - `replacement`: Replacement is the attribute sent to Google Cloud Trace
 - `log` (optional): Configuration for sending metrics to Cloud Logging.
   - `endpoint` (default = logging.googleapis.com): Endpoint where log data is going to be sent to. D
   - `use_insecure` (default = false): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
+  - `grpc_pool_size` (optional): Set the size of the connection pool in the GCP client.
   - `default_log_name` (optional): Defines a default name for log entries. If left unset, and a log entry does not have the `gcp.log_name` attribute set, the exporter will return an error processing that entry.
   - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in log labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
     - `prefix`: Match resource keys by prefix.

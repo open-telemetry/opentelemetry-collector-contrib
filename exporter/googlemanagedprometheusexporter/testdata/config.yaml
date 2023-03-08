@@ -22,6 +22,12 @@ exporters:
   googlemanagedprometheus/customprefix:
     metric:
       prefix: my-metric-domain.com
+  googlemanagedprometheus/clientconfig:
+    metric:
+      compression: gzip
+      endpoint: "foobar"
+      use_insecure: true
+      grpc_pool_size: 1
 
 
 service:

@@ -22,8 +22,11 @@ The following configuration options are supported:
 - `project` (optional): GCP project identifier.
 - `user_agent` (optional): Override the user agent string sent on requests to Cloud Monitoring (currently only applies to metrics). Specify `{{version}}` to include the application version number. Defaults to `opentelemetry-collector-contrib {{version}}`.
 - `metric`(optional): Configuration for sending metrics to Cloud Monitoring.
+  - `prefix` (default = `prometheus.googleapis.com`): Configure the prefix of metrics sent to GoogleManagedPrometheus. Changing this prefix is not recommended, as it may cause metrics to not be queryable with promql in the Cloud Monitoring UI.
   - `endpoint` (optional): Endpoint where metric data is going to be sent to. Replaces `endpoint`.
-- `use_insecure` (optional): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
+  - `use_insecure` (optional): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
+  - `compression` (optional): Enable gzip compression for gRPC requests (valid vlaues: `gzip`).
+  - `grpc_pool_size` (optional): Set the size of the connection pool in the GCP client.
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
   - `enabled` (default = false)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
