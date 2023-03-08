@@ -414,7 +414,7 @@ func (cp *childProcessCollector) checkAllowedResourceUsage() error {
 	if cp.resourceSpec.ExpectedMaxRAM != 0 && cp.ramMiBCur.Load() > cp.resourceSpec.ExpectedMaxRAM {
 		formattedCurRAM := strconv.FormatUint(uint64(cp.ramMiBCur.Load()), 10)
 		errMsg = fmt.Sprintf("RAM consumption is %s MiB, max expected is %d MiB",
-			formmatedCurRAM, cp.resourceSpec.ExpectedMaxRAM)
+			formattedCurRAM, cp.resourceSpec.ExpectedMaxRAM)
 	}
 
 	if errMsg == "" {
