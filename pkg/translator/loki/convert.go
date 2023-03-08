@@ -174,7 +174,7 @@ func convertLogToLogfmtEntry(lr plog.LogRecord, res pcommon.Resource, scope pcom
 func convertLogToLogRawEntry(lr plog.LogRecord) (*push.Entry, error) {
 	return &push.Entry{
 		Timestamp: timestampFromLogRecord(lr),
-		Line:      lr.Body().Str(),
+		Line:      lr.Body().AsString(),
 	}, nil
 }
 
