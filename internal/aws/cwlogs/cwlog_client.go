@@ -17,6 +17,7 @@ package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -65,13 +66,17 @@ func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Bu
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
+	region := ""
+	if !reflect.ValueOf(awsConfig.Region).IsNil() {
+		region = *awsConfig.Region
+	}
 	stsClient := sts.New(sess, awsConfig)
 	accountCall, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
-		logger.Error("stsClient: Error getting caller identity.", zap.Error(err))
+		return newCloudWatchLogClient(client, logRetention, tags, "", region, logger)
 	}
 	accountId := accountCall.Account
-	return newCloudWatchLogClient(client, logRetention, tags, *accountId, *awsConfig.Region, logger)
+	return newCloudWatchLogClient(client, logRetention, tags, *accountId, region, logger)
 }
 
 // PutLogEvents mainly handles different possible error could be returned from server side, and retries them
@@ -183,12 +188,12 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 					}
 				}
 				logGroupArn := "arn:aws:logs:" + client.region + ":" + client.accountId + ":log-group:" + *logGroup
-				if len(client.tags) > 0 {
+				if client.tags != nil && len(client.tags) > 0 {
 					_, err = client.svc.TagResource(&cloudwatchlogs.TagResourceInput{ResourceArn: &logGroupArn, Tags: client.tags})
 					if err != nil {
 						var awsErr awserr.Error
 						if errors.As(err, &awsErr) {
-							client.logger.Debug("CreateLogStream / CreateLogGroup has errors related to the tags.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.Error(e))
+							client.logger.Debug("CreateLogStream / CreateLogGroup has errors related to the tags.  Please check the log group ARN.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.String("LogGroupArn", logGroupArn), zap.Error(e))
 							return token, err
 						}
 					}

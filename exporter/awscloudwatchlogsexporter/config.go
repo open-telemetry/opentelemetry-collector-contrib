@@ -126,23 +126,23 @@ func isValidRetentionValue(input int64) bool {
 
 // Check if the tags input is valid
 func isValidTagsInput(input map[string]*string) string {
-	if len(input) > 50 || len(input) < 1 {
-		return "invalid amount of items. Please input at least 1 and at most 50 tags."
+	if len(input) > 50 {
+		return "invalid amount of items. Please input at most 50 tags."
 	}
 	validKeyPattern := regexp.MustCompile(`^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`)
 	validValuePattern := regexp.MustCompile(`^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
 	for key, value := range input {
-		if !validKeyPattern.MatchString(key) {
-			return "key - " + key + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`
-		}
-		if !validValuePattern.MatchString(*value) {
-			return "value - " + *value + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`
-		}
 		if len(key) < 1 || len(key) > 128 {
 			return "key - " + key + " has an invalid length. Please use keys with a length of 1 to 128 characters"
 		}
 		if len(*value) < 1 || len(*value) > 256 {
 			return "value - " + *value + " has an invalid length. Please use values with a length of 1 to 256 characters"
+		}
+		if !validKeyPattern.MatchString(key) {
+			return "key - " + key + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`
+		}
+		if !validValuePattern.MatchString(*value) {
+			return "value - " + *value + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`
 		}
 	}
 
