@@ -15,9 +15,9 @@
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
 import (
-	"github.com/grafana/loki/pkg/push"
 	"testing"
 
+	"github.com/grafana/loki/pkg/push"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -290,6 +290,7 @@ func TestGetNestedAttribute(t *testing.T) {
 
 func TestConvertLogToLogRawEntry(t *testing.T) {
 	log, _, _ := exampleLog()
+	log.SetTimestamp(pcommon.NewTimestampFromTime(timeNow()))
 
 	expectedLogEntry := &push.Entry{
 		Timestamp: timestampFromLogRecord(log),
