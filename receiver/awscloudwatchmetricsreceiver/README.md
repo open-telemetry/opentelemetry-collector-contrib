@@ -22,7 +22,6 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 | `profile`       | *optional* | string | The AWS profile used to authenticate, if none is specified the default is chosen from the list of profiles  |
 | `IMDSEndpoint`  | *optional* | string | The IMDS endpoint to authenticate to AWS  |                                                                                                                                 
 | `poll_interval`   | `default=1m` | duration   | The duration waiting in between requests | 
-| `nill_to_zero`          | `default=false` | duration               | Whether to send 0 if CloudWatch returns nodata. By default returns NaN
 | `metrics`          | *optional* | `Metrics` | Configuration for metrics ingestion of this receiver    |
 
 ### Metrics Parameters
@@ -79,6 +78,36 @@ awscloudwatchmetrics:
 
 ## Sample Configs
 
+
+```yaml
+receivers:
+  awscloudwatchmetrics:
+    region: eu-west-1
+    poll_interval: 10m
+    metrics:
+      named:
+        - namespace: "AWS/EC2"
+          metric_name: "CPUUtilization"
+          period: "5m"
+          aws_aggregation: "Sum"
+          dimensions:
+            - Name: "InstanceId"
+              Value: "i-035e091c31292427a"
+
+processors:
+
+exporters:
+  logging:
+    verbosity: detailed
+
+service:
+  pipelines:
+    metrics:
+      receivers: [awscloudwatchmetrics]
+      processors: []
+      exporters: [logging]
+```
+
 ## AWS Costs
 
 This receiver uses the [GetMetricData](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_GetMetricData.html) API call, this call is *not* in the AWS free tier. Please refer to [Amazon's pricing](https://aws.amazon.com/cloudwatch/pricing/) for further information about expected costs. For `us-east-1`, the current pricing is $0.01 per 1,000 metrics requested as of February 2023.
@@ -87,3 +116,30 @@ This receiver uses the [GetMetricData](https://docs.aws.amazon.com/AmazonCloudWa
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [Issue]:https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/15667
+
+## Troubleshooting / Debugging
+
+## My metrics are intermittent / not receing any metrics
+
+Try a bigger `poll_interval`. CloudWatch returns no data if the period of the metric, by default for AWS supplied metrics, it's 300 seconds (5 minutes). Try out a period of 600 seconds and a poll interval of 600 seconds.
+
+## Help, I'm getting IAM permission denied
+
+Make sure your IAM role/user has the required permissions:
+
+```yaml
+"cloudwatch:GetMetricData",
+"cloudwatch:GetMetricStatistics",
+"cloudwatch:ListMetrics"
+```
+
+The following IAM permissions are required for transit gateways to work:
+
+```
+"ec2:DescribeTags",
+"ec2:DescribeInstances",
+"ec2:DescribeRegions",
+"ec2:DescribeTransitGateway*"
+```
+
+
