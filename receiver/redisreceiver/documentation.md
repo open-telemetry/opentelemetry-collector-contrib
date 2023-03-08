@@ -330,6 +330,6 @@ Redis node's role
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| redis.version | Redis server's version. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| redis.version | Redis server's version. | Any Str | true |

@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -44,7 +45,7 @@ func TestCreateProcessor(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	params := componenttest.NewNopProcessorCreateSettings()
+	params := processortest.NewNopCreateSettings()
 	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")

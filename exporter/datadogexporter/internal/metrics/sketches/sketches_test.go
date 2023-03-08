@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
-	"github.com/DataDog/datadog-agent/pkg/quantile"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/quantile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

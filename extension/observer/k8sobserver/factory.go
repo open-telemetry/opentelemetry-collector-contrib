@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -42,10 +41,9 @@ func NewFactory() extension.Factory {
 // CreateDefaultConfig creates the default configuration for the extension.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
-		ObservePods:       true,
-		ObserveNodes:      false,
+		APIConfig:    k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		ObservePods:  true,
+		ObserveNodes: false,
 	}
 }
 

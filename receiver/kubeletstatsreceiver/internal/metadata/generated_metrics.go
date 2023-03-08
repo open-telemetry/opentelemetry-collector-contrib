@@ -16,12 +16,7 @@ import (
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -32,7 +27,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -208,6 +203,80 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		K8sVolumeInodesUsed: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesSettings provides settings for kubeletstatsreceiver metrics.
+type ResourceAttributesSettings struct {
+	AwsVolumeID                  ResourceAttributeSettings `mapstructure:"aws.volume.id"`
+	ContainerID                  ResourceAttributeSettings `mapstructure:"container.id"`
+	FsType                       ResourceAttributeSettings `mapstructure:"fs.type"`
+	GcePdName                    ResourceAttributeSettings `mapstructure:"gce.pd.name"`
+	GlusterfsEndpointsName       ResourceAttributeSettings `mapstructure:"glusterfs.endpoints.name"`
+	GlusterfsPath                ResourceAttributeSettings `mapstructure:"glusterfs.path"`
+	K8sContainerName             ResourceAttributeSettings `mapstructure:"k8s.container.name"`
+	K8sNamespaceName             ResourceAttributeSettings `mapstructure:"k8s.namespace.name"`
+	K8sNodeName                  ResourceAttributeSettings `mapstructure:"k8s.node.name"`
+	K8sPersistentvolumeclaimName ResourceAttributeSettings `mapstructure:"k8s.persistentvolumeclaim.name"`
+	K8sPodName                   ResourceAttributeSettings `mapstructure:"k8s.pod.name"`
+	K8sPodUID                    ResourceAttributeSettings `mapstructure:"k8s.pod.uid"`
+	K8sVolumeName                ResourceAttributeSettings `mapstructure:"k8s.volume.name"`
+	K8sVolumeType                ResourceAttributeSettings `mapstructure:"k8s.volume.type"`
+	Partition                    ResourceAttributeSettings `mapstructure:"partition"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		AwsVolumeID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		FsType: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		GcePdName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		GlusterfsEndpointsName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		GlusterfsPath: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sContainerName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sNamespaceName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sNodeName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sPersistentvolumeclaimName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sPodName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sPodUID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sVolumeName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sVolumeType: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		Partition: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -2323,6 +2392,12 @@ func newMetricK8sVolumeInodesUsed(settings MetricSettings) metricK8sVolumeInodes
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -2331,6 +2406,7 @@ type MetricsBuilder struct {
 	resourceCapacity                     int                 // maximum observed number of resource attributes.
 	metricsBuffer                        pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                            component.BuildInfo // contains version information
+	resourceAttributesSettings           ResourceAttributesSettings
 	metricContainerCPUTime               metricContainerCPUTime
 	metricContainerCPUUtilization        metricContainerCPUUtilization
 	metricContainerFilesystemAvailable   metricContainerFilesystemAvailable
@@ -2385,53 +2461,68 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                        pmetric.NewMetrics(),
 		buildInfo:                            settings.BuildInfo,
-		metricContainerCPUTime:               newMetricContainerCPUTime(ms.ContainerCPUTime),
-		metricContainerCPUUtilization:        newMetricContainerCPUUtilization(ms.ContainerCPUUtilization),
-		metricContainerFilesystemAvailable:   newMetricContainerFilesystemAvailable(ms.ContainerFilesystemAvailable),
-		metricContainerFilesystemCapacity:    newMetricContainerFilesystemCapacity(ms.ContainerFilesystemCapacity),
-		metricContainerFilesystemUsage:       newMetricContainerFilesystemUsage(ms.ContainerFilesystemUsage),
-		metricContainerMemoryAvailable:       newMetricContainerMemoryAvailable(ms.ContainerMemoryAvailable),
-		metricContainerMemoryMajorPageFaults: newMetricContainerMemoryMajorPageFaults(ms.ContainerMemoryMajorPageFaults),
-		metricContainerMemoryPageFaults:      newMetricContainerMemoryPageFaults(ms.ContainerMemoryPageFaults),
-		metricContainerMemoryRss:             newMetricContainerMemoryRss(ms.ContainerMemoryRss),
-		metricContainerMemoryUsage:           newMetricContainerMemoryUsage(ms.ContainerMemoryUsage),
-		metricContainerMemoryWorkingSet:      newMetricContainerMemoryWorkingSet(ms.ContainerMemoryWorkingSet),
-		metricK8sNodeCPUTime:                 newMetricK8sNodeCPUTime(ms.K8sNodeCPUTime),
-		metricK8sNodeCPUUtilization:          newMetricK8sNodeCPUUtilization(ms.K8sNodeCPUUtilization),
-		metricK8sNodeFilesystemAvailable:     newMetricK8sNodeFilesystemAvailable(ms.K8sNodeFilesystemAvailable),
-		metricK8sNodeFilesystemCapacity:      newMetricK8sNodeFilesystemCapacity(ms.K8sNodeFilesystemCapacity),
-		metricK8sNodeFilesystemUsage:         newMetricK8sNodeFilesystemUsage(ms.K8sNodeFilesystemUsage),
-		metricK8sNodeMemoryAvailable:         newMetricK8sNodeMemoryAvailable(ms.K8sNodeMemoryAvailable),
-		metricK8sNodeMemoryMajorPageFaults:   newMetricK8sNodeMemoryMajorPageFaults(ms.K8sNodeMemoryMajorPageFaults),
-		metricK8sNodeMemoryPageFaults:        newMetricK8sNodeMemoryPageFaults(ms.K8sNodeMemoryPageFaults),
-		metricK8sNodeMemoryRss:               newMetricK8sNodeMemoryRss(ms.K8sNodeMemoryRss),
-		metricK8sNodeMemoryUsage:             newMetricK8sNodeMemoryUsage(ms.K8sNodeMemoryUsage),
-		metricK8sNodeMemoryWorkingSet:        newMetricK8sNodeMemoryWorkingSet(ms.K8sNodeMemoryWorkingSet),
-		metricK8sNodeNetworkErrors:           newMetricK8sNodeNetworkErrors(ms.K8sNodeNetworkErrors),
-		metricK8sNodeNetworkIo:               newMetricK8sNodeNetworkIo(ms.K8sNodeNetworkIo),
-		metricK8sPodCPUTime:                  newMetricK8sPodCPUTime(ms.K8sPodCPUTime),
-		metricK8sPodCPUUtilization:           newMetricK8sPodCPUUtilization(ms.K8sPodCPUUtilization),
-		metricK8sPodFilesystemAvailable:      newMetricK8sPodFilesystemAvailable(ms.K8sPodFilesystemAvailable),
-		metricK8sPodFilesystemCapacity:       newMetricK8sPodFilesystemCapacity(ms.K8sPodFilesystemCapacity),
-		metricK8sPodFilesystemUsage:          newMetricK8sPodFilesystemUsage(ms.K8sPodFilesystemUsage),
-		metricK8sPodMemoryAvailable:          newMetricK8sPodMemoryAvailable(ms.K8sPodMemoryAvailable),
-		metricK8sPodMemoryMajorPageFaults:    newMetricK8sPodMemoryMajorPageFaults(ms.K8sPodMemoryMajorPageFaults),
-		metricK8sPodMemoryPageFaults:         newMetricK8sPodMemoryPageFaults(ms.K8sPodMemoryPageFaults),
-		metricK8sPodMemoryRss:                newMetricK8sPodMemoryRss(ms.K8sPodMemoryRss),
-		metricK8sPodMemoryUsage:              newMetricK8sPodMemoryUsage(ms.K8sPodMemoryUsage),
-		metricK8sPodMemoryWorkingSet:         newMetricK8sPodMemoryWorkingSet(ms.K8sPodMemoryWorkingSet),
-		metricK8sPodNetworkErrors:            newMetricK8sPodNetworkErrors(ms.K8sPodNetworkErrors),
-		metricK8sPodNetworkIo:                newMetricK8sPodNetworkIo(ms.K8sPodNetworkIo),
-		metricK8sVolumeAvailable:             newMetricK8sVolumeAvailable(ms.K8sVolumeAvailable),
-		metricK8sVolumeCapacity:              newMetricK8sVolumeCapacity(ms.K8sVolumeCapacity),
-		metricK8sVolumeInodes:                newMetricK8sVolumeInodes(ms.K8sVolumeInodes),
-		metricK8sVolumeInodesFree:            newMetricK8sVolumeInodesFree(ms.K8sVolumeInodesFree),
-		metricK8sVolumeInodesUsed:            newMetricK8sVolumeInodesUsed(ms.K8sVolumeInodesUsed),
+		resourceAttributesSettings:           mbc.ResourceAttributes,
+		metricContainerCPUTime:               newMetricContainerCPUTime(mbc.Metrics.ContainerCPUTime),
+		metricContainerCPUUtilization:        newMetricContainerCPUUtilization(mbc.Metrics.ContainerCPUUtilization),
+		metricContainerFilesystemAvailable:   newMetricContainerFilesystemAvailable(mbc.Metrics.ContainerFilesystemAvailable),
+		metricContainerFilesystemCapacity:    newMetricContainerFilesystemCapacity(mbc.Metrics.ContainerFilesystemCapacity),
+		metricContainerFilesystemUsage:       newMetricContainerFilesystemUsage(mbc.Metrics.ContainerFilesystemUsage),
+		metricContainerMemoryAvailable:       newMetricContainerMemoryAvailable(mbc.Metrics.ContainerMemoryAvailable),
+		metricContainerMemoryMajorPageFaults: newMetricContainerMemoryMajorPageFaults(mbc.Metrics.ContainerMemoryMajorPageFaults),
+		metricContainerMemoryPageFaults:      newMetricContainerMemoryPageFaults(mbc.Metrics.ContainerMemoryPageFaults),
+		metricContainerMemoryRss:             newMetricContainerMemoryRss(mbc.Metrics.ContainerMemoryRss),
+		metricContainerMemoryUsage:           newMetricContainerMemoryUsage(mbc.Metrics.ContainerMemoryUsage),
+		metricContainerMemoryWorkingSet:      newMetricContainerMemoryWorkingSet(mbc.Metrics.ContainerMemoryWorkingSet),
+		metricK8sNodeCPUTime:                 newMetricK8sNodeCPUTime(mbc.Metrics.K8sNodeCPUTime),
+		metricK8sNodeCPUUtilization:          newMetricK8sNodeCPUUtilization(mbc.Metrics.K8sNodeCPUUtilization),
+		metricK8sNodeFilesystemAvailable:     newMetricK8sNodeFilesystemAvailable(mbc.Metrics.K8sNodeFilesystemAvailable),
+		metricK8sNodeFilesystemCapacity:      newMetricK8sNodeFilesystemCapacity(mbc.Metrics.K8sNodeFilesystemCapacity),
+		metricK8sNodeFilesystemUsage:         newMetricK8sNodeFilesystemUsage(mbc.Metrics.K8sNodeFilesystemUsage),
+		metricK8sNodeMemoryAvailable:         newMetricK8sNodeMemoryAvailable(mbc.Metrics.K8sNodeMemoryAvailable),
+		metricK8sNodeMemoryMajorPageFaults:   newMetricK8sNodeMemoryMajorPageFaults(mbc.Metrics.K8sNodeMemoryMajorPageFaults),
+		metricK8sNodeMemoryPageFaults:        newMetricK8sNodeMemoryPageFaults(mbc.Metrics.K8sNodeMemoryPageFaults),
+		metricK8sNodeMemoryRss:               newMetricK8sNodeMemoryRss(mbc.Metrics.K8sNodeMemoryRss),
+		metricK8sNodeMemoryUsage:             newMetricK8sNodeMemoryUsage(mbc.Metrics.K8sNodeMemoryUsage),
+		metricK8sNodeMemoryWorkingSet:        newMetricK8sNodeMemoryWorkingSet(mbc.Metrics.K8sNodeMemoryWorkingSet),
+		metricK8sNodeNetworkErrors:           newMetricK8sNodeNetworkErrors(mbc.Metrics.K8sNodeNetworkErrors),
+		metricK8sNodeNetworkIo:               newMetricK8sNodeNetworkIo(mbc.Metrics.K8sNodeNetworkIo),
+		metricK8sPodCPUTime:                  newMetricK8sPodCPUTime(mbc.Metrics.K8sPodCPUTime),
+		metricK8sPodCPUUtilization:           newMetricK8sPodCPUUtilization(mbc.Metrics.K8sPodCPUUtilization),
+		metricK8sPodFilesystemAvailable:      newMetricK8sPodFilesystemAvailable(mbc.Metrics.K8sPodFilesystemAvailable),
+		metricK8sPodFilesystemCapacity:       newMetricK8sPodFilesystemCapacity(mbc.Metrics.K8sPodFilesystemCapacity),
+		metricK8sPodFilesystemUsage:          newMetricK8sPodFilesystemUsage(mbc.Metrics.K8sPodFilesystemUsage),
+		metricK8sPodMemoryAvailable:          newMetricK8sPodMemoryAvailable(mbc.Metrics.K8sPodMemoryAvailable),
+		metricK8sPodMemoryMajorPageFaults:    newMetricK8sPodMemoryMajorPageFaults(mbc.Metrics.K8sPodMemoryMajorPageFaults),
+		metricK8sPodMemoryPageFaults:         newMetricK8sPodMemoryPageFaults(mbc.Metrics.K8sPodMemoryPageFaults),
+		metricK8sPodMemoryRss:                newMetricK8sPodMemoryRss(mbc.Metrics.K8sPodMemoryRss),
+		metricK8sPodMemoryUsage:              newMetricK8sPodMemoryUsage(mbc.Metrics.K8sPodMemoryUsage),
+		metricK8sPodMemoryWorkingSet:         newMetricK8sPodMemoryWorkingSet(mbc.Metrics.K8sPodMemoryWorkingSet),
+		metricK8sPodNetworkErrors:            newMetricK8sPodNetworkErrors(mbc.Metrics.K8sPodNetworkErrors),
+		metricK8sPodNetworkIo:                newMetricK8sPodNetworkIo(mbc.Metrics.K8sPodNetworkIo),
+		metricK8sVolumeAvailable:             newMetricK8sVolumeAvailable(mbc.Metrics.K8sVolumeAvailable),
+		metricK8sVolumeCapacity:              newMetricK8sVolumeCapacity(mbc.Metrics.K8sVolumeCapacity),
+		metricK8sVolumeInodes:                newMetricK8sVolumeInodes(mbc.Metrics.K8sVolumeInodes),
+		metricK8sVolumeInodesFree:            newMetricK8sVolumeInodesFree(mbc.Metrics.K8sVolumeInodesFree),
+		metricK8sVolumeInodesUsed:            newMetricK8sVolumeInodesUsed(mbc.Metrics.K8sVolumeInodesUsed),
 	}
 	for _, op := range options {
 		op(mb)
@@ -2450,117 +2541,147 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithAwsVolumeID sets provided value as "aws.volume.id" attribute for current resource.
 func WithAwsVolumeID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("aws.volume.id", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.AwsVolumeID.Enabled {
+			rm.Resource().Attributes().PutStr("aws.volume.id", val)
+		}
 	}
 }
 
 // WithContainerID sets provided value as "container.id" attribute for current resource.
 func WithContainerID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("container.id", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerID.Enabled {
+			rm.Resource().Attributes().PutStr("container.id", val)
+		}
 	}
 }
 
 // WithFsType sets provided value as "fs.type" attribute for current resource.
 func WithFsType(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("fs.type", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.FsType.Enabled {
+			rm.Resource().Attributes().PutStr("fs.type", val)
+		}
 	}
 }
 
 // WithGcePdName sets provided value as "gce.pd.name" attribute for current resource.
 func WithGcePdName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("gce.pd.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.GcePdName.Enabled {
+			rm.Resource().Attributes().PutStr("gce.pd.name", val)
+		}
 	}
 }
 
 // WithGlusterfsEndpointsName sets provided value as "glusterfs.endpoints.name" attribute for current resource.
 func WithGlusterfsEndpointsName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("glusterfs.endpoints.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.GlusterfsEndpointsName.Enabled {
+			rm.Resource().Attributes().PutStr("glusterfs.endpoints.name", val)
+		}
 	}
 }
 
 // WithGlusterfsPath sets provided value as "glusterfs.path" attribute for current resource.
 func WithGlusterfsPath(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("glusterfs.path", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.GlusterfsPath.Enabled {
+			rm.Resource().Attributes().PutStr("glusterfs.path", val)
+		}
 	}
 }
 
 // WithK8sContainerName sets provided value as "k8s.container.name" attribute for current resource.
 func WithK8sContainerName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.container.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sContainerName.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.container.name", val)
+		}
 	}
 }
 
 // WithK8sNamespaceName sets provided value as "k8s.namespace.name" attribute for current resource.
 func WithK8sNamespaceName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.namespace.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sNamespaceName.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.namespace.name", val)
+		}
 	}
 }
 
 // WithK8sNodeName sets provided value as "k8s.node.name" attribute for current resource.
 func WithK8sNodeName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.node.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sNodeName.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.node.name", val)
+		}
 	}
 }
 
 // WithK8sPersistentvolumeclaimName sets provided value as "k8s.persistentvolumeclaim.name" attribute for current resource.
 func WithK8sPersistentvolumeclaimName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.persistentvolumeclaim.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sPersistentvolumeclaimName.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.persistentvolumeclaim.name", val)
+		}
 	}
 }
 
 // WithK8sPodName sets provided value as "k8s.pod.name" attribute for current resource.
 func WithK8sPodName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.pod.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sPodName.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.pod.name", val)
+		}
 	}
 }
 
 // WithK8sPodUID sets provided value as "k8s.pod.uid" attribute for current resource.
 func WithK8sPodUID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.pod.uid", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sPodUID.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.pod.uid", val)
+		}
 	}
 }
 
 // WithK8sVolumeName sets provided value as "k8s.volume.name" attribute for current resource.
 func WithK8sVolumeName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.volume.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sVolumeName.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.volume.name", val)
+		}
 	}
 }
 
 // WithK8sVolumeType sets provided value as "k8s.volume.type" attribute for current resource.
 func WithK8sVolumeType(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.volume.type", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sVolumeType.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.volume.type", val)
+		}
 	}
 }
 
 // WithPartition sets provided value as "partition" attribute for current resource.
 func WithPartition(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("partition", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.Partition.Enabled {
+			rm.Resource().Attributes().PutStr("partition", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -2631,8 +2752,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sVolumeInodes.emit(ils.Metrics())
 	mb.metricK8sVolumeInodesFree.emit(ils.Metrics())
 	mb.metricK8sVolumeInodesUsed.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -2645,8 +2767,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

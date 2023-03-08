@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -125,7 +124,6 @@ func TestFileLogsReceiver(t *testing.T) {
 
 func testdataConfigYamlAsMap() *Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Config: fileconsumer.Config{
 			IncludeFileName:         true,
 			IncludeFilePath:         false,
@@ -156,4 +154,61 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, testdataConfigYamlAsMap(), cfg)
+}
+
+func TestFileMixedSignals(t *testing.T) {
+	tempFolder := t.TempDir()
+	factory := NewFactory()
+	cfg := createDefaultConfig().(*Config)
+	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.Config.StartAt = "beginning"
+	cs := receivertest.NewNopCreateSettings()
+	ms := new(consumertest.MetricsSink)
+	mr, err := factory.CreateMetricsReceiver(context.Background(), cs, cfg, ms)
+	assert.NoError(t, err)
+	err = mr.Start(context.Background(), nil)
+	assert.NoError(t, err)
+	ts := new(consumertest.TracesSink)
+	tr, err := factory.CreateTracesReceiver(context.Background(), cs, cfg, ts)
+	assert.NoError(t, err)
+	err = tr.Start(context.Background(), nil)
+	assert.NoError(t, err)
+	ls := new(consumertest.LogsSink)
+	lr, err := factory.CreateLogsReceiver(context.Background(), cs, cfg, ls)
+	assert.NoError(t, err)
+	err = lr.Start(context.Background(), nil)
+	assert.NoError(t, err)
+
+	md := testdata.GenerateMetricsManyMetricsSameResource(5)
+	marshaler := &pmetric.JSONMarshaler{}
+	b, err := marshaler.MarshalMetrics(md)
+	assert.NoError(t, err)
+	td := testdata.GenerateTracesTwoSpansSameResource()
+	tmarshaler := &ptrace.JSONMarshaler{}
+	b2, err := tmarshaler.MarshalTraces(td)
+	assert.NoError(t, err)
+	ld := testdata.GenerateLogsManyLogRecordsSameResource(5)
+	lmarshaler := &plog.JSONMarshaler{}
+	b3, err := lmarshaler.MarshalLogs(ld)
+	assert.NoError(t, err)
+	b = append(b, '\n')
+	b = append(b, b2...)
+	b = append(b, '\n')
+	b = append(b, b3...)
+	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
+	assert.NoError(t, err)
+	time.Sleep(1 * time.Second)
+
+	require.Len(t, ms.AllMetrics(), 1)
+	assert.EqualValues(t, md, ms.AllMetrics()[0])
+	require.Len(t, ts.AllTraces(), 1)
+	assert.EqualValues(t, td, ts.AllTraces()[0])
+	require.Len(t, ls.AllLogs(), 1)
+	assert.EqualValues(t, ld, ls.AllLogs()[0])
+	err = mr.Shutdown(context.Background())
+	assert.NoError(t, err)
+	err = tr.Shutdown(context.Background())
+	assert.NoError(t, err)
+	err = lr.Shutdown(context.Background())
+	assert.NoError(t, err)
 }

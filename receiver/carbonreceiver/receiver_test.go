@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -60,7 +59,6 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "zero_value_parser",
 			args: args{
 				config: Config{
-					ReceiverSettings: defaultConfig.ReceiverSettings,
 					NetAddr: confignet.NetAddr{
 						Endpoint:  defaultConfig.Endpoint,
 						Transport: defaultConfig.Transport,
@@ -80,36 +78,15 @@ func Test_carbonreceiver_New(t *testing.T) {
 		{
 			name: "empty_endpoint",
 			args: args{
-				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				},
+				config:       Config{},
 				nextConsumer: consumertest.NewNop(),
 			},
 			wantErr: errEmptyEndpoint,
 		},
 		{
-			name: "invalid_transport",
-			args: args{
-				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, "invalid_transport_rcv")),
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "localhost:2003",
-						Transport: "unknown_transp",
-					},
-					Parser: &protocol.Config{
-						Type:   "plaintext",
-						Config: &protocol.PlaintextConfig{},
-					},
-				},
-				nextConsumer: consumertest.NewNop(),
-			},
-			wantErr: errors.New("unsupported transport \"unknown_transp\""),
-		},
-		{
 			name: "regex_parser",
 			args: args{
 				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:2003",
 						Transport: "tcp",
@@ -128,11 +105,52 @@ func Test_carbonreceiver_New(t *testing.T) {
 				nextConsumer: consumertest.NewNop(),
 			},
 		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			assert.Equal(t, tt.wantErr, err)
+			if err == nil {
+				require.NotNil(t, got)
+				assert.NoError(t, got.Shutdown(context.Background()))
+			} else {
+				assert.Nil(t, got)
+			}
+		})
+	}
+}
+
+func Test_carbonreceiver_Start(t *testing.T) {
+	type args struct {
+		config       Config
+		nextConsumer consumer.Metrics
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr error
+	}{
+		{
+			name: "invalid_transport",
+			args: args{
+				config: Config{
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:2003",
+						Transport: "unknown_transp",
+					},
+					Parser: &protocol.Config{
+						Type:   "plaintext",
+						Config: &protocol.PlaintextConfig{},
+					},
+				},
+				nextConsumer: consumertest.NewNop(),
+			},
+			wantErr: errors.New("unsupported transport \"unknown_transp\""),
+		},
 		{
 			name: "negative_tcp_idle_timeout",
 			args: args{
 				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:2003",
 						Transport: "tcp",
@@ -151,13 +169,10 @@ func Test_carbonreceiver_New(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			require.NoError(t, err)
+			err = got.Start(context.Background(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantErr, err)
-			if err == nil {
-				require.NotNil(t, got)
-				assert.NoError(t, got.Shutdown(context.Background()))
-			} else {
-				assert.Nil(t, got)
-			}
+			assert.NoError(t, got.Shutdown(context.Background()))
 		})
 	}
 }

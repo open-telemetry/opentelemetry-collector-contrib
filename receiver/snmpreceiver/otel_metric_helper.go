@@ -86,6 +86,8 @@ type otelMetricHelper struct {
 	metricsByResource map[string]map[string]*pmetric.Metric
 	// This is the ResourceMetricsSlice that will contain all newly created resources and metrics
 	resourceMetricsSlice pmetric.ResourceMetricsSlice
+	// This is the start timestamp that should be added to all cumulative sum data points
+	dataPointStartTime pcommon.Timestamp
 	// This is the timestamp that should be added to all created data points
 	dataPointTime pcommon.Timestamp
 	// This is used so that we can put the proper version on the scope metrics
@@ -93,13 +95,14 @@ type otelMetricHelper struct {
 }
 
 // newOtelMetricHelper returns a new otelMetricHelper with an initialized master Metrics
-func newOTELMetricHelper(settings receiver.CreateSettings) *otelMetricHelper {
+func newOTELMetricHelper(settings receiver.CreateSettings, scraperStartTime pcommon.Timestamp) *otelMetricHelper {
 	metrics := pmetric.NewMetrics()
 	omh := otelMetricHelper{
 		metrics:              metrics,
 		resourceMetricsSlice: metrics.ResourceMetrics(),
 		resourcesByKey:       map[string]*pmetric.ResourceMetrics{},
 		metricsByResource:    map[string]map[string]*pmetric.Metric{},
+		dataPointStartTime:   scraperStartTime,
 		dataPointTime:        pcommon.NewTimestampFromTime(time.Now()),
 		settings:             settings,
 	}
@@ -174,19 +177,20 @@ func (h *otelMetricHelper) addMetricDataPoint(resourceKey string, metricName str
 		return nil, fmt.Errorf("cannot retrieve datapoints from metric '%s' as it does not currently exist", metricName)
 	}
 
-	var dps pmetric.NumberDataPointSlice
+	var dp pmetric.NumberDataPoint
 	var valueType string
 	if metricCfg.Gauge != nil {
-		dps = metric.Gauge().DataPoints()
+		dp = metric.Gauge().DataPoints().AppendEmpty()
 		valueType = metricCfg.Gauge.ValueType
 	} else {
-		dps = metric.Sum().DataPoints()
+		dp = metric.Sum().DataPoints().AppendEmpty()
+		dp.SetStartTimestamp(h.dataPointStartTime)
 		valueType = metricCfg.Sum.ValueType
 	}
 
 	// Creates a data point based on the SNMP data
-	dp := dps.AppendEmpty()
 	dp.SetTimestamp(h.dataPointTime)
+
 	// Not explicitly checking these casts as this should be made safe in the client
 	switch data.valueType {
 	case floatVal:

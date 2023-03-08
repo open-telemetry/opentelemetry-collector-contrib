@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -48,10 +48,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "2"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://jaeger.example.com/api/traces",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"added-entry": "added value",
 						"dot.test":    "test",
 					},
@@ -83,16 +82,13 @@ func TestValidateConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			name: "empty_url",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-			},
+			name:         "empty_url",
+			config:       &Config{},
 			errorMessage: "invalid \"endpoint\": parse \"\": empty url",
 		},
 		{
 			name: "invalid_url",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: ".example:123",
 				},
@@ -102,7 +98,6 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "example.com:123",
 					Timeout:  -2 * time.Second,

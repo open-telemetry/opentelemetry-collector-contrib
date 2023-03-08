@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
@@ -39,25 +38,21 @@ func NewFactory() exp.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		// Traces GRPC client
 		Traces: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
-			Headers:  map[string]string{},
 		},
 		Metrics: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
-			Headers:  map[string]string{},
 			// Default to gzip compression
 			Compression:     configcompression.Gzip,
 			WriteBufferSize: 512 * 1024,
 		},
 		Logs: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
-			Headers:  map[string]string{},
 		},
 		PrivateKey: "",
 		AppName:    "",

@@ -302,6 +302,35 @@ func getHistogramMetricEmptyDataPoint(name string, attributes pcommon.Map, ts ui
 	return metric
 }
 
+func getExpHistogramMetric(
+	name string,
+	attributes pcommon.Map,
+	ts uint64,
+	sum *float64,
+	count uint64,
+	offset int32,
+	bucketCounts []uint64,
+) pmetric.Metric {
+	metric := pmetric.NewMetric()
+	metric.SetName(name)
+	metric.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	dp := metric.ExponentialHistogram().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+	}
+	dp.SetCount(count)
+
+	if sum != nil {
+		dp.SetSum(*sum)
+	}
+	dp.Positive().SetOffset(offset)
+	dp.Positive().BucketCounts().FromRaw(bucketCounts)
+	attributes.CopyTo(dp.Attributes())
+
+	dp.SetTimestamp(pcommon.Timestamp(ts))
+	return metric
+}
+
 func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum *float64, count uint64, bounds []float64,
 	buckets []uint64) pmetric.Metric {
 	metric := pmetric.NewMetric()

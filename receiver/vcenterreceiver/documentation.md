@@ -391,11 +391,11 @@ As measured over the most recent 20s interval.
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcenter.cluster.name | The name of the vCenter Cluster. | Any Str |
-| vcenter.datastore.name | The name of the vCenter datastore. | Any Str |
-| vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str |
-| vcenter.resource_pool.name | The name of the resource pool. | Any Str |
-| vcenter.vm.id | The instance UUID of the virtual machine. | Any Str |
-| vcenter.vm.name | The name of the virtual machine. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| vcenter.cluster.name | The name of the vCenter Cluster. | Any Str | true |
+| vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
+| vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
+| vcenter.resource_pool.name | The name of the resource pool. | Any Str | true |
+| vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
+| vcenter.vm.name | The name of the virtual machine. | Any Str | true |

@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -75,7 +74,6 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 		config:   cfg.(*Config),
 		consumer: nil,
 		promReceiverConfig: &prometheusreceiver.Config{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			PrometheusConfig: &promconfig.Config{
 				ScrapeConfigs: []*promconfig.ScrapeConfig{
 					{

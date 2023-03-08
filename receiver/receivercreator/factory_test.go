@@ -41,4 +41,9 @@ func TestCreateReceiver(t *testing.T) {
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
+
+	lReceiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, nil)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
+	assert.Nil(t, lReceiver)
 }

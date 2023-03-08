@@ -83,11 +83,11 @@ metrics:
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
 {{- range $attributeName, $attribute := .ResourceAttributes }}
 | {{ $attributeName }} | {{ $attribute.Description }} |
-{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.Enabled }} |
 {{- end }}
 
 {{- end }}

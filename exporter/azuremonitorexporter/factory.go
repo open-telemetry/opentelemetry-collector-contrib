@@ -21,7 +21,6 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
 )
@@ -45,7 +44,8 @@ func NewFactory() exporter.Factory {
 		typeStr,
 		createDefaultConfig,
 		exporter.WithTraces(f.createTracesExporter, stability),
-		exporter.WithLogs(f.createLogsExporter, stability))
+		exporter.WithLogs(f.createLogsExporter, stability),
+		exporter.WithMetrics(f.createMetricsExporter, stability))
 }
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
@@ -55,7 +55,6 @@ type factory struct {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings:  config.NewExporterSettings(component.NewID(typeStr)),
 		Endpoint:          defaultEndpoint,
 		MaxBatchSize:      1024,
 		MaxBatchInterval:  10 * time.Second,
@@ -93,6 +92,21 @@ func (f *factory) createLogsExporter(
 	return newLogsExporter(exporterConfig, tc, set)
 }
 
+func (f *factory) createMetricsExporter(
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
+	exporterConfig, ok := cfg.(*Config)
+
+	if !ok {
+		return nil, errUnexpectedConfigurationType
+	}
+
+	tc := f.getTransportChannel(exporterConfig, set.Logger)
+	return newMetricsExporter(exporterConfig, tc, set)
+}
+
 // Configures the transport channel.
 // This method is not thread-safe
 func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger) transportChannel {
@@ -100,7 +114,7 @@ func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger
 	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
 	// This default channel handles batching, appropriate retries, and is backed by memory.
 	if f.tChannel == nil {
-		telemetryConfiguration := appinsights.NewTelemetryConfiguration(exporterConfig.InstrumentationKey)
+		telemetryConfiguration := appinsights.NewTelemetryConfiguration(string(exporterConfig.InstrumentationKey))
 		telemetryConfiguration.EndpointUrl = exporterConfig.Endpoint
 		telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize
 		telemetryConfiguration.MaxBatchInterval = exporterConfig.MaxBatchInterval

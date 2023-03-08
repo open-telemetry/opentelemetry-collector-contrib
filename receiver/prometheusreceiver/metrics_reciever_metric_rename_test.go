@@ -59,7 +59,7 @@ func TestMetricRenaming(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GetRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -102,7 +102,7 @@ func TestMetricRenamingKeepAction(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GetRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -241,7 +241,7 @@ func TestLabelRenaming(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GetRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -367,7 +367,7 @@ func TestLabelRenamingKeepAction(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GetRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{

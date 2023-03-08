@@ -3,6 +3,7 @@ name: mongodbreceiver
 resource_attributes:
   database:
     description: The name of a database.
+    enabled: true
     type: string
 
 attributes:
@@ -28,6 +29,14 @@ attributes:
       - update
       - delete
       - getmore
+      - command
+  operation_latency:
+    name_override: operation
+    description: The MongoDB operation with regards to latency
+    type: string
+    enum:
+      - read
+      - write
       - command
   connection_type:
     name_override: type
@@ -155,6 +164,13 @@ metrics:
       value_type: int
       monotonic: false
     attributes: [database]
+  mongodb.operation.latency.time:
+    description: The latency of operations.
+    unit: us
+    enabled: false
+    gauge:
+      value_type: int
+    attributes: [ operation_latency ]
   mongodb.operation.count:
     description: The number of operations executed.
     unit: "{operations}"
@@ -164,6 +180,15 @@ metrics:
       value_type: int
       monotonic: true
     attributes: [operation]
+  mongodb.operation.repl.count:
+    description: The number of replicated operations executed.
+    unit: "{operations}"
+    enabled: false
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: true
+    attributes: [ operation ]
   mongodb.storage.size:
     description: The total amount of storage allocated to this collection.
     extended_documentation: If collection data is compressed it reflects the compressed size. 
@@ -300,3 +325,22 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [database, lock_type, lock_mode]
+  mongodb.health:
+    enabled: false
+    description: The health status of the server.
+    extended_documentation:
+      A value of '1' indicates healthy.
+      A value of '0' indicates unhealthy.
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [ ]
+  mongodb.uptime:
+    enabled: false
+    description: The amount of time that the server has been running.
+    unit: ms
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ ]

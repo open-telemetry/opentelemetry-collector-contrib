@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"golang.org/x/oauth2"
 
@@ -68,7 +69,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 
-	require.Equal(t, "opentelemetry-collector-contrib 0.0.0", cfg.Headers["User-Agent"])
+	require.Equal(t, configopaque.String("opentelemetry-collector-contrib 0.0.0"), cfg.Headers["User-Agent"])
 }
 
 func TestFactory_CreateMetricsExporterInvalidConfig(t *testing.T) {
@@ -99,7 +100,7 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 
-	require.Equal(t, "opentelemetry-collector-contrib 0.0.0", cfg.Headers["User-Agent"])
+	require.Equal(t, configopaque.String("opentelemetry-collector-contrib 0.0.0"), cfg.Headers["User-Agent"])
 }
 
 func Test_Factory_CreateTracesExporterInvalidConfig(t *testing.T) {
@@ -130,7 +131,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 
-	require.Equal(t, "opentelemetry-collector-contrib 0.0.0", cfg.Headers["User-Agent"])
+	require.Equal(t, configopaque.String("opentelemetry-collector-contrib 0.0.0"), cfg.Headers["User-Agent"])
 }
 
 func TestFactory_CreateLogsExporterInvalidConfig(t *testing.T) {

@@ -119,6 +119,9 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 }
 
 func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
+	if jmx.subprocess == nil {
+		return nil
+	}
 	jmx.logger.Debug("Shutting down JMX Receiver")
 	subprocessErr := jmx.subprocess.Shutdown(ctx)
 	otlpErr := jmx.otlpReceiver.Shutdown(ctx)

@@ -15,13 +15,13 @@
 package purefareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
 
 // This file implements Factory for Array scraper.
+
 import (
 	"context"
 	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -42,11 +42,14 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{},
 		Settings: &Settings{
 			ReloadIntervals: &ReloadIntervals{
-				Array: 15 * time.Second,
+				Array:       15 * time.Second,
+				Hosts:       15 * time.Second,
+				Directories: 15 * time.Second,
+				Pods:        15 * time.Second,
+				Volumes:     15 * time.Second,
 			},
 		},
 	}

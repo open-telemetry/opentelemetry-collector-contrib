@@ -2,7 +2,7 @@
 
 | Status                   |                       |
 | ------------------------ |-----------------------|
-| Stability                | [alpha](https://github.com/open-telemetry/opentelemetry-collector#alpha) |
+| Stability                | [beta](https://github.com/open-telemetry/opentelemetry-collector#beta) |
 | Supported pipeline types | metrics               |
 | Distributions            | [contrib](https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib)    |
 
@@ -20,7 +20,7 @@ The following configuration options are supported:
   - `endpoint` (optional): Endpoint where metric data is going to be sent to. Replaces `endpoint`.
 - `use_insecure` (optional): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
-  - `enabled` (default = true)
+  - `enabled` (default = false)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
   - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
   - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
@@ -63,16 +63,6 @@ receivers:
                 - action: labelmap
                 regex: __meta_kubernetes_pod_label_(.+)
 processors:
-    # groupbyattrs promotes labels from metrics to resources, allowing them to
-    # be added to the prometheus_target monitored resource.
-    # This allows exporters which monitor multiple namespaces, such as
-    # kube-state-metrics, to override the namespace in the resource by setting
-    # metric labels.
-    groupbyattrs:
-      keys:
-        - namespace
-        - cluster
-        - location
     batch:
         # batch metrics before sending to reduce API usage
         send_batch_max_size: 200
@@ -87,6 +77,25 @@ processors:
         # detect cluster name and location
         detectors: [gcp]
         timeout: 10s
+    transform:
+      # "location", "cluster", "namespace", "job", "instance", and "project_id" are reserved, and 
+      # metrics containing these labels will be rejected.  Prefix them with exported_ to prevent this.
+      metric_statements:
+      - context: datapoint
+        statements:
+        - set(attributes["exported_location"], attributes["location"])
+        - delete_key(attributes, "location")
+        - set(attributes["exported_cluster"], attributes["cluster"])
+        - delete_key(attributes, "cluster")
+        - set(attributes["exported_namespace"], attributes["namespace"])
+        - delete_key(attributes, "namespace")
+        - set(attributes["exported_job"], attributes["job"])
+        - delete_key(attributes, "job")
+        - set(attributes["exported_instance"], attributes["instance"])
+        - delete_key(attributes, "instance")
+        - set(attributes["exported_project_id"], attributes["project_id"])
+        - delete_key(attributes, "project_id")
+
 exporters:
     googlemanagedprometheus:
 
@@ -94,7 +103,7 @@ service:
   pipelines:
     metrics:
       receivers: [prometheus]
-      processors: [groupbyattrs, batch, memory_limiter, resourcedetection]
+      processors: [batch, memory_limiter, transform, resourcedetection]
       exporters: [googlemanagedprometheus]
 ```
 
@@ -109,9 +118,9 @@ need to ensure the prometheus_target resource uniquely identifies the source of
 metrics. The exporter uses the following resource attributes to determine
 monitored resource:
 
-* location: [`location` (see `groupbyattrs` config above), `cloud.availability_zone`, `cloud.region`]
-* cluster: [`cluster` (see `groupbyattrs` config above), `k8s.cluster.name`]
-* namespace: [`namespace` (see `groupbyattrs` config above), `k8s.namespace.name`]
+* location: [`location`, `cloud.availability_zone`, `cloud.region`]
+* cluster: [`cluster`, `k8s.cluster.name`]
+* namespace: [`namespace`, `k8s.namespace.name`]
 * job: [`service.name` + `service.namespace`]
 * instance: [`service.instance.id`]
 
@@ -120,8 +129,48 @@ In the configuration above, `cloud.availability_zone`, `cloud.region`, and
 the `gcp` detector. The prometheus receiver sets `service.name` to the
 configured `job_name`, and `service.instance.id` is set to the scrape target's
 `instance`. The prometheus receiver sets `k8s.namespace.name` when using
-`role: pod`.  The `groupbyattrs` processor promotes `location`, `cluster`, and
-`namespace` labels on metrics to resource labels, which allows overriding (e.g.
-using prometheus metric_relabel_configs) the attributes discovered by other
-receivers or processors. This is useful when metric exporters already have
-`location`, `cluster`, or `namespace` labels, such as Kube-state-metrics.
+`role: pod`.
+
+### Manually Setting location, cluster, or namespace
+
+In GMP, the above attributes are used to identify the `prometheus_target`
+monitored resource. As such, it is recommended to avoid writing metric or resource labels
+that match these keys. Doing so can cause errors when exporting metrics to
+GMP or when trying to query from GMP. So, the recommended way to set them
+is with the [resourcedetection processor](../../processor/resourcedetectionprocessor).
+
+If you still need to set `location`, `cluster`, or `namespace` labels
+(such as when running in non-GCP environments), you can do so with the
+[resource processor](../../processor/resourceprocessor) like so:
+
+```yaml
+processors:
+  resource:
+    attributes:
+    - key: "location"
+      value: "us-east-1"
+      action: upsert
+```
+
+### Setting cluster, location or namespace using metric labels
+
+This example copies the `location` metric attribute to a new `exported_location`
+attribute, then deletes the original `location`. It is recommended to use the `exported_*`
+prefix, which is consistent with GMP's behavior.
+
+You can also use the [groupbyattrs processor](../../processor/groupbyattrsprocessor)
+to move metric labels to resource labels. This is useful in situations
+where, for example, an exporter monitors multiple namespaces (with
+each namespace exported as a metric label). One such example is kube-state-metrics.
+
+Using `groupbyattrs` will promote that label to a resource label and 
+associate those metrics with the new resource. For example:
+
+```yaml
+processors:
+  groupbyattrs:
+    keys:
+    - namespace
+    - cluster
+    - location
+```

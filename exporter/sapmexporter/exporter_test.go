@@ -26,8 +26,6 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -37,7 +35,6 @@ import (
 
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(component.NewIDWithName(typeStr, "customname")),
 		Endpoint:           "test-endpoint",
 		AccessToken:        "abcd1234",
 		NumWorkers:         3,
@@ -54,14 +51,6 @@ func TestCreateTracesExporter(t *testing.T) {
 	assert.NotNil(t, te, "failed to create trace exporter")
 
 	assert.NoError(t, te.Shutdown(context.Background()), "trace exporter shutdown failed")
-}
-
-func TestCreateTracesExporterWithInvalidConfig(t *testing.T) {
-	cfg := &Config{}
-	params := exportertest.NewNopCreateSettings()
-	te, err := newSAPMTracesExporter(cfg, params)
-	require.Error(t, err)
-	assert.Nil(t, te)
 }
 
 func buildTestTraces(setTokenLabel bool) (traces ptrace.Traces) {

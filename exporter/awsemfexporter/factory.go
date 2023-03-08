@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -42,14 +42,14 @@ func NewFactory() exporter.Factory {
 // CreateDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings:      config.NewExporterSettings(component.NewID(typeStr)),
-		AWSSessionSettings:    awsutil.CreateDefaultSessionConfig(),
-		LogGroupName:          "",
-		LogStreamName:         "",
-		Namespace:             "",
-		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
-		OutputDestination:     "cloudwatch",
-		logger:                nil,
+		AWSSessionSettings:              awsutil.CreateDefaultSessionConfig(),
+		LogGroupName:                    "",
+		LogStreamName:                   "",
+		Namespace:                       "",
+		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
+		RetainInitialValueOfDeltaMetric: false,
+		OutputDestination:               "cloudwatch",
+		logger:                          zap.NewNop(),
 	}
 }
 

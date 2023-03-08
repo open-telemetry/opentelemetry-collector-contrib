@@ -18,8 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 var (
@@ -31,7 +29,6 @@ var (
 
 // Config defines configuration for the Routing processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// DefaultExporters contains the list of exporters to use when a more specific record can't be found in the routing table.
 	// Optional.

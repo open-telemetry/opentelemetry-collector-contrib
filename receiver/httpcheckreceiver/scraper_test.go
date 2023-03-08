@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func newMockServer(t *testing.T, responseCode int) *httptest.Server {
@@ -99,7 +99,7 @@ func TestScaperScrape(t *testing.T) {
 		expectedMetricGen func(t *testing.T) pmetric.Metrics
 		expectedErr       error
 		endpoint          string
-		compareOptions    []comparetest.CompareOption
+		compareOptions    []pmetrictest.CompareMetricsOption
 	}{
 		{
 			desc:             "Successful Collection",
@@ -111,9 +111,12 @@ func TestScaperScrape(t *testing.T) {
 				return expectedMetrics
 			},
 			expectedErr: nil,
-			compareOptions: []comparetest.CompareOption{
-				comparetest.IgnoreMetricAttributeValue("http.url"),
-				comparetest.IgnoreMetricValues("httpcheck.duration"),
+			compareOptions: []pmetrictest.CompareMetricsOption{
+				pmetrictest.IgnoreMetricAttributeValue("http.url"),
+				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
 			},
 		},
 		{
@@ -126,9 +129,12 @@ func TestScaperScrape(t *testing.T) {
 				return expectedMetrics
 			},
 			expectedErr: nil,
-			compareOptions: []comparetest.CompareOption{
-				comparetest.IgnoreMetricAttributeValue("http.url"),
-				comparetest.IgnoreMetricValues("httpcheck.duration"),
+			compareOptions: []pmetrictest.CompareMetricsOption{
+				pmetrictest.IgnoreMetricAttributeValue("http.url"),
+				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
 			},
 		},
 		{
@@ -141,9 +147,12 @@ func TestScaperScrape(t *testing.T) {
 				return expectedMetrics
 			},
 			expectedErr: nil,
-			compareOptions: []comparetest.CompareOption{
-				comparetest.IgnoreMetricValues("httpcheck.duration"),
-				comparetest.IgnoreMetricAttributeValue("error.message"),
+			compareOptions: []pmetrictest.CompareMetricsOption{
+				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
+				pmetrictest.IgnoreMetricAttributeValue("error.message"),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
 			},
 		},
 	}
@@ -170,7 +179,7 @@ func TestScaperScrape(t *testing.T) {
 
 			expectedMetrics := tc.expectedMetricGen(t)
 
-			require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, tc.compareOptions...))
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, tc.compareOptions...))
 		})
 	}
 }
@@ -179,6 +188,6 @@ func TestNilClient(t *testing.T) {
 	scraper := newScraper(createDefaultConfig().(*Config), receivertest.NewNopCreateSettings())
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, errClientNotInit.Error())
-	require.NoError(t, comparetest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
 
 }

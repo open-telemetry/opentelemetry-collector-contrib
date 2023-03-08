@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver"
@@ -40,7 +39,6 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 		JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 		CollectionInterval: 10 * time.Second,
 		OTLPExporterConfig: otlpExporterConfig{
@@ -59,8 +57,5 @@ func createReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	jmxConfig := cfg.(*Config)
-	if err := jmxConfig.Validate(); err != nil {
-		return nil, err
-	}
 	return newJMXMetricReceiver(params, jmxConfig, consumer), nil
 }

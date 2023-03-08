@@ -65,6 +65,7 @@ The following settings can be optionally configured:
 - `aggregation_temporality`: Defines the aggregation temporality of the generated metrics. 
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
   - Default: `AGGREGATION_TEMPORALITY_CUMULATIVE`
+- `namespace`: Defines the namespace of the generated metrics. If `namespace` provided, generated metric name will be added `namespace.` prefix.
 
 ## Examples
 

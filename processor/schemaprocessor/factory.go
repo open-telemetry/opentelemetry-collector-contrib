@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -39,28 +39,27 @@ type factory struct{}
 // with the default values being used throughout it
 func newDefaultConfiguration() component.Config {
 	return &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
 	}
 }
 
-func NewFactory() component.ProcessorFactory {
+func NewFactory() processor.Factory {
 	f := &factory{}
-	return component.NewProcessorFactory(
+	return processor.NewFactory(
 		typeStr,
 		newDefaultConfiguration,
-		component.WithLogsProcessor(f.createLogsProcessor, stability),
-		component.WithMetricsProcessor(f.createMetricsProcessor, stability),
-		component.WithTracesProcessor(f.createTracesProcessor, stability),
+		processor.WithLogs(f.createLogsProcessor, stability),
+		processor.WithMetrics(f.createMetricsProcessor, stability),
+		processor.WithTraces(f.createTracesProcessor, stability),
 	)
 }
 
 func (f factory) createLogsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	next consumer.Logs,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	transformer, err := newTransformer(ctx, cfg, set)
 	if err != nil {
 		return nil, err
@@ -78,10 +77,10 @@ func (f factory) createLogsProcessor(
 
 func (f factory) createMetricsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	next consumer.Metrics,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	transformer, err := newTransformer(ctx, cfg, set)
 	if err != nil {
 		return nil, err
@@ -99,10 +98,10 @@ func (f factory) createMetricsProcessor(
 
 func (f factory) createTracesProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	next consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	transformer, err := newTransformer(ctx, cfg, set)
 	if err != nil {
 		return nil, err

@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -109,9 +109,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "apitoken"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "https://company.logicmonitor.com/rest",
 				},
@@ -124,12 +123,11 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "bearertoken"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "https://company.logicmonitor.com/rest",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"Authorization": "Bearer <token>",
 					},
 				},

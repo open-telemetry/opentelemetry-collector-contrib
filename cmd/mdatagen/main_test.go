@@ -100,7 +100,7 @@ func Test_run(t *testing.T) {
 
 // TestGenerated verifies that the internal/metadata API is generated correctly.
 func TestGenerated(t *testing.T) {
-	mb := md.NewMetricsBuilder(md.DefaultMetricsSettings(), receivertest.NewNopCreateSettings())
+	mb := md.NewMetricsBuilder(md.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
 	m := mb.Emit()
 	require.Equal(t, 0, m.ResourceMetrics().Len())
 }

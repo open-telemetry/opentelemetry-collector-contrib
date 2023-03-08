@@ -31,8 +31,8 @@ The code snippet below shows how your configuration file should look like:
 
 exporters:
   instana:
-    endpoint: ${INSTANA_ENDPOINT_URL}
-    agent_key: ${INSTANA_AGENT_KEY}
+    endpoint: ${env:INSTANA_ENDPOINT_URL}
+    agent_key: ${env:INSTANA_AGENT_KEY}
 
 [...]
 
@@ -59,8 +59,8 @@ exporters:
   logging:
     loglevel: debug
   instana:
-    endpoint: ${INSTANA_ENDPOINT_URL}
-    agent_key: ${INSTANA_AGENT_KEY}
+    endpoint: ${env:INSTANA_ENDPOINT_URL}
+    agent_key: ${env:INSTANA_AGENT_KEY}
     tls:
       ca_file: someCA.pem # Optional. Certificate authority file for Instana backend connection.
 

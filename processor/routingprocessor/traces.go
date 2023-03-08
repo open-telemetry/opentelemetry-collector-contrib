@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -29,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
-var _ component.TracesProcessor = (*tracesProcessor)(nil)
+var _ processor.Traces = (*tracesProcessor)(nil)
 
 type tracesProcessor struct {
 	logger *zap.Logger
@@ -42,6 +43,8 @@ type tracesProcessor struct {
 func newTracesProcessor(settings component.TelemetrySettings, config component.Config) *tracesProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
+	spanParser, _ := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings)
+
 	return &tracesProcessor{
 		logger: settings.Logger,
 		config: cfg,
@@ -49,7 +52,7 @@ func newTracesProcessor(settings component.TelemetrySettings, config component.C
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings),
+			spanParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}

@@ -18,13 +18,10 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for docker observer
 type Config struct {
-	config.ExtensionSettings `mapstructure:"-"`
 
 	// The URL of the docker server.  Default is "unix:///var/run/docker.sock"
 	Endpoint string `mapstructure:"endpoint"`

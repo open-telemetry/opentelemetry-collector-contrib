@@ -53,7 +53,6 @@ func TestDetect(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)
-	res.Attributes().Sort()
 
 	expected := map[string]any{
 		conventions.AttributeHostName: "hostname",

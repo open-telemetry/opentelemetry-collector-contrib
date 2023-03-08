@@ -23,7 +23,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -162,8 +161,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "default",
 			expectedConfig: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				Region:           "us-west-1",
+				Region: "us-west-1",
 				Logs: &LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -178,8 +176,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "prefix-log-group-autodiscover",
 			expectedConfig: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				Region:           "us-west-1",
+				Region: "us-west-1",
 				Logs: &LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -195,8 +192,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "autodiscover-filter-streams",
 			expectedConfig: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				Region:           "us-west-1",
+				Region: "us-west-1",
 				Logs: &LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -214,8 +210,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "autodiscover-filter-streams",
 			expectedConfig: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				Region:           "us-west-1",
+				Region: "us-west-1",
 				Logs: &LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -233,9 +228,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "named-prefix",
 			expectedConfig: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				Profile:          "my-profile",
-				Region:           "us-west-1",
+				Profile: "my-profile",
+				Region:  "us-west-1",
 				Logs: &LogsConfig{
 					PollInterval:        5 * time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -250,9 +244,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "named-prefix-with-streams",
 			expectedConfig: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				Profile:          "my-profile",
-				Region:           "us-west-1",
+				Profile: "my-profile",
+				Region:  "us-west-1",
 				Logs: &LogsConfig{
 					PollInterval:        5 * time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,

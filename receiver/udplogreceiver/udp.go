@@ -16,7 +16,6 @@ package udplogreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -47,8 +46,7 @@ func (f ReceiverType) Type() component.Type {
 func (f ReceiverType) CreateDefaultConfig() component.Config {
 	return &UDPLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-			Operators:        []operator.Config{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: *udp.NewConfig(),
 	}

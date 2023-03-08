@@ -31,7 +31,7 @@ Default: ""
 Determines how to transform the Event Hub messages into OpenTelemetry logs. See the "Format"
 section below for details.
 
-Default: "raw"
+Default: "azure"
 
 ### Example Configuration
 

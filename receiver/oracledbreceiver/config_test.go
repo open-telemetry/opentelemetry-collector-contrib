@@ -26,7 +26,7 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	cfg := CreateDefaultConfig().(*Config)
+	cfg := createDefaultConfig().(*Config)
 	assert.Equal(t, 10*time.Second, cfg.ScraperControllerSettings.CollectionInterval)
 }
 
@@ -35,12 +35,12 @@ func TestParseConfig(t *testing.T) {
 	require.NoError(t, err)
 	sub, err := cm.Sub("oracledb")
 	require.NoError(t, err)
-	cfg := CreateDefaultConfig().(*Config)
+	cfg := createDefaultConfig().(*Config)
 
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	assert.Equal(t, "oracle://otel:password@localhost:51521/XE", cfg.DataSource)
-	settings := cfg.MetricsSettings
+	settings := cfg.MetricsBuilderConfig.Metrics
 	assert.False(t, settings.OracledbTablespaceSizeUsage.Enabled)
 	assert.False(t, settings.OracledbExchangeDeadlocks.Enabled)
 }

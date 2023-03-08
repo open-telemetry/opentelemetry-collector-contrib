@@ -20,7 +20,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -39,7 +38,6 @@ type MetricsConfig struct {
 
 // Config defines configuration options for the exporter.
 type Config struct {
-	config.ExporterSettings      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 

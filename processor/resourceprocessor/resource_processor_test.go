@@ -20,21 +20,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 var (
 	cfg = &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		AttributesActions: []attraction.ActionKeyValue{
 			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
 			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
@@ -83,7 +83,6 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 		{
 			name: "config_attributes_replacement",
 			config: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				AttributesActions: []attraction.ActionKeyValue{
 					{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
 					{Key: "k8s-cluster", Action: attraction.DELETE},
@@ -104,7 +103,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			ttn := new(consumertest.TracesSink)
 
 			factory := NewFactory()
-			rtp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, ttn)
+			rtp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.config, ttn)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
@@ -114,12 +113,11 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			require.NoError(t, err)
 			traces := ttn.AllTraces()
 			require.Len(t, traces, 1)
-			traces[0].ResourceSpans().At(0).Resource().Attributes().Sort()
-			assert.EqualValues(t, wantTraceData, traces[0])
+			assert.NoError(t, ptracetest.CompareTraces(wantTraceData, traces[0]))
 
 			// Test metrics consumer
 			tmn := new(consumertest.MetricsSink)
-			rmp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, tmn)
+			rmp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.config, tmn)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
@@ -129,12 +127,11 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			require.NoError(t, err)
 			metrics := tmn.AllMetrics()
 			require.Len(t, metrics, 1)
-			metrics[0].ResourceMetrics().At(0).Resource().Attributes().Sort()
-			assert.EqualValues(t, wantMetricData, metrics[0])
+			assert.NoError(t, pmetrictest.CompareMetrics(wantMetricData, metrics[0]))
 
 			// Test logs consumer
 			tln := new(consumertest.LogsSink)
-			rlp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, tln)
+			rlp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
@@ -144,8 +141,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			require.NoError(t, err)
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
-			logs[0].ResourceLogs().At(0).Resource().Attributes().Sort()
-			assert.EqualValues(t, wantLogData, logs[0])
+			assert.NoError(t, plogtest.CompareLogs(wantLogData, logs[0]))
 		})
 	}
 }
@@ -159,7 +155,6 @@ func generateTraceData(attributes map[string]string) ptrace.Traces {
 	for k, v := range attributes {
 		resource.Attributes().PutStr(k, v)
 	}
-	resource.Attributes().Sort()
 	return td
 }
 
@@ -172,7 +167,6 @@ func generateMetricData(attributes map[string]string) pmetric.Metrics {
 	for k, v := range attributes {
 		resource.Attributes().PutStr(k, v)
 	}
-	resource.Attributes().Sort()
 	return md
 }
 
@@ -185,6 +179,5 @@ func generateLogData(attributes map[string]string) plog.Logs {
 	for k, v := range attributes {
 		resource.Attributes().PutStr(k, v)
 	}
-	resource.Attributes().Sort()
 	return ld
 }

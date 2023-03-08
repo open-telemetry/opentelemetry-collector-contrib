@@ -23,7 +23,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"text/template"
 )
@@ -48,18 +47,18 @@ func run(ymlPath string) error {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}
 
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		return errors.New("unable to determine filename")
-	}
-	tmplDir := filepath.Join(filepath.Dir(filename), "templates")
+	tmplDir := "templates"
 
 	codeDir := filepath.Join(ymlDir, "internal", "metadata")
-	if err = os.MkdirAll(codeDir, 0700); err != nil {
+	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
 	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),
 		filepath.Join(codeDir, "generated_metrics.go"), md); err != nil {
+		return err
+	}
+	if err = generateFile(filepath.Join(tmplDir, "testdata", "config.yaml.tmpl"),
+		filepath.Join(codeDir, "testdata", "config.yaml"), md); err != nil {
 		return err
 	}
 	if err = generateFile(filepath.Join(tmplDir, "metrics_test.go.tmpl"),
@@ -99,7 +98,12 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 					return false
 				},
 				"stringsJoin": strings.Join,
-			}).ParseFiles(tmplFile))
+				"inc":         func(i int) int { return i + 1 },
+				// ParseFS delegates the parsing of the files to `Glob`
+				// which uses the `\` as a special character.
+				// Meaning on windows based machines, the `\` needs to be replaced
+				// with a `/` for it to find the file.
+			}).ParseFS(templateFS, strings.ReplaceAll(tmplFile, "\\", "/")))
 
 	buf := bytes.Buffer{}
 
@@ -107,27 +111,23 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 		return fmt.Errorf("failed executing template: %w", err)
 	}
 
-	result := buf.Bytes()
-
-	if strings.HasSuffix(outputFile, ".go") {
-		var err error
-		result, err = format.Source(buf.Bytes())
-		if err != nil {
-			errstr := strings.Builder{}
-			_, _ = fmt.Fprintf(&errstr, "failed formatting source: %v", err)
-			errstr.WriteString("--- BEGIN SOURCE ---")
-			errstr.Write(buf.Bytes())
-			errstr.WriteString("--- END SOURCE ---")
-			return errors.New(errstr.String())
-		}
-	}
-
 	if err := os.Remove(outputFile); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("unable to remove genererated file %q: %w", outputFile, err)
 	}
+
+	result := buf.Bytes()
+	var formatErr error
+	if strings.HasSuffix(outputFile, ".go") {
+		if formatted, err := format.Source(buf.Bytes()); err == nil {
+			result = formatted
+		} else {
+			formatErr = fmt.Errorf("failed formatting %s:%w", outputFile, err)
+		}
+	}
+
 	if err := os.WriteFile(outputFile, result, 0600); err != nil {
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 
-	return nil
+	return formatErr
 }

@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Endpoint = "localhost:3306"
 	expected.Username = "otel"
-	expected.Password = "$MYSQL_PASSWORD"
+	expected.Password = "${env:MYSQL_PASSWORD}"
 	expected.Database = "otel"
 	expected.CollectionInterval = 10 * time.Second
 

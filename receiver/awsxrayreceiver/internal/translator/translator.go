@@ -199,6 +199,8 @@ func populateResource(seg *awsxray.Segment, rs pcommon.Resource) {
 	attrs.Clear()
 	attrs.EnsureCapacity(initAttrCapacity)
 
+	addString(seg.Name, conventions.AttributeServiceName, attrs)
+
 	addAWSToResource(seg.AWS, attrs)
 	addSdkToResource(seg, attrs)
 	if seg.Service != nil {

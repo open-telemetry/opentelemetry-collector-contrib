@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -42,20 +41,18 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "own-node-only"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-				Node:              "node-1",
-				APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-				ObservePods:       true,
+				Node:        "node-1",
+				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+				ObservePods: true,
 			},
 		},
 		{
 			id: component.NewIDWithName(typeStr, "observe-all"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-				Node:              "",
-				APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
-				ObservePods:       true,
-				ObserveNodes:      true,
+				Node:         "",
+				APIConfig:    k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
+				ObservePods:  true,
+				ObserveNodes: true,
 			},
 		},
 		{

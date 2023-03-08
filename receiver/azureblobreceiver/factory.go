@@ -19,7 +19,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -57,9 +56,8 @@ func NewFactory() receiver.Factory {
 
 func (f *blobReceiverFactory) createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-		Logs:             LogsConfig{ContainerName: logsContainerName},
-		Traces:           TracesConfig{ContainerName: tracesContainerName},
+		Logs:   LogsConfig{ContainerName: logsContainerName},
+		Traces: TracesConfig{ContainerName: tracesContainerName},
 	}
 }
 

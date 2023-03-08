@@ -20,14 +20,10 @@ import (
 	"io/fs"
 	"os"
 	"time"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for file storage extension.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
-
 	Directory string        `mapstructure:"directory,omitempty"`
 	Timeout   time.Duration `mapstructure:"timeout,omitempty"`
 

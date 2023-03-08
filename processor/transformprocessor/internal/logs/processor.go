@@ -20,31 +20,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
 	contexts []consumer.Logs
-	// Deprecated.  Use contexts instead
-	statements []*ottl.Statement[ottllog.TransformContext]
+	logger   *zap.Logger
 }
 
-func NewProcessor(statements []string, contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
-	if len(statements) > 0 {
-		ottlp := ottllog.NewParser(LogFunctions(), settings)
-		parsedStatements, err := ottlp.ParseStatements(statements)
-		if err != nil {
-			return nil, err
-		}
-		return &Processor{
-			statements: parsedStatements,
-		}, nil
-	}
-
-	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(LogFunctions()))
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings) (*Processor, error) {
+	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(LogFunctions()), common.WithLogErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
@@ -60,33 +48,16 @@ func NewProcessor(statements []string, contextStatements []common.ContextStateme
 
 	return &Processor{
 		contexts: contexts,
+		logger:   settings.Logger,
 	}, nil
 }
 
 func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
-	if len(p.statements) > 0 {
-		for i := 0; i < ld.ResourceLogs().Len(); i++ {
-			rlogs := ld.ResourceLogs().At(i)
-			for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
-				slogs := rlogs.ScopeLogs().At(j)
-				logs := slogs.LogRecords()
-				for k := 0; k < logs.Len(); k++ {
-					tCtx := ottllog.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
-					for _, statement := range p.statements {
-						_, _, err := statement.Execute(ctx, tCtx)
-						if err != nil {
-							return ld, err
-						}
-					}
-				}
-			}
-		}
-	} else {
-		for _, c := range p.contexts {
-			err := c.ConsumeLogs(ctx, ld)
-			if err != nil {
-				return ld, err
-			}
+	for _, c := range p.contexts {
+		err := c.ConsumeLogs(ctx, ld)
+		if err != nil {
+			p.logger.Error("failed processing logs", zap.Error(err))
+			return ld, err
 		}
 	}
 	return ld, nil

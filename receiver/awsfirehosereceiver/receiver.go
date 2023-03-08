@@ -148,6 +148,9 @@ func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error
 // giving it a chance to perform any necessary clean-up and
 // shutting down its HTTP server.
 func (fmr *firehoseReceiver) Shutdown(context.Context) error {
+	if fmr.server == nil {
+		return nil
+	}
 	err := fmr.server.Close()
 	fmr.shutdownWG.Wait()
 	return err

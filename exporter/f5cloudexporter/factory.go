@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"golang.org/x/oauth2"
@@ -106,8 +106,6 @@ func (f *f5cloudFactory) CreateDefaultConfig() component.Config {
 		},
 	}
 
-	cfg.ExporterSettings = config.NewExporterSettings(component.NewID(typeStr))
-
 	cfg.Headers["User-Agent"] = "opentelemetry-collector-contrib {{version}}"
 
 	cfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
@@ -133,5 +131,5 @@ func getTokenSourceFromConfig(config *Config) (oauth2.TokenSource, error) {
 }
 
 func fillUserAgent(cfg *Config, version string) {
-	cfg.Headers["User-Agent"] = strings.ReplaceAll(cfg.Headers["User-Agent"], "{{version}}", version)
+	cfg.Headers["User-Agent"] = configopaque.String(strings.ReplaceAll(string(cfg.Headers["User-Agent"]), "{{version}}", version))
 }

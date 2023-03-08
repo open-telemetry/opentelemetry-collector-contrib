@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -50,14 +51,14 @@ func TestToPrometheusConfig(t *testing.T) {
 	interval := 15 * time.Second
 	cfgs := []ScraperConfig{
 		{
-			Address: "gse-array01",
+			Address: "array01",
 			Auth: configauth.Authentication{
 				AuthenticatorID: component.NewIDWithName("bearertokenauth", "array01"),
 			},
 		},
 	}
 
-	scraper := NewScraper(context.Background(), "hosts", endpoint, cfgs, interval)
+	scraper := NewScraper(context.Background(), "hosts", endpoint, cfgs, interval, model.LabelSet{})
 
 	// test
 	scCfgs, err := scraper.ToPrometheusReceiverConfig(host, prFactory)
@@ -66,9 +67,9 @@ func TestToPrometheusConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, scCfgs, 1)
 	assert.EqualValues(t, "the-token", scCfgs[0].HTTPClientConfig.BearerToken)
-	assert.Equal(t, "gse-array01", scCfgs[0].Params.Get("endpoint"))
+	assert.Equal(t, "array01", scCfgs[0].Params.Get("endpoint"))
 	assert.Equal(t, "/metrics/hosts", scCfgs[0].MetricsPath)
-	assert.Equal(t, "purefa/hosts/gse-array01", scCfgs[0].JobName)
+	assert.Equal(t, "purefa/hosts/array01", scCfgs[0].JobName)
 	assert.EqualValues(t, interval, scCfgs[0].ScrapeTimeout)
 	assert.EqualValues(t, interval, scCfgs[0].ScrapeInterval)
 }

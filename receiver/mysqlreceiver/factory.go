@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -43,7 +42,6 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
 		AllowNativePasswords: true,
@@ -52,7 +50,7 @@ func createDefaultConfig() component.Config {
 			Endpoint:  "localhost:3306",
 			Transport: "tcp",
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		StatementEvents: StatementEventsConfig{
 			DigestTextLimit: defaultStatementEventsDigestTextLimit,
 			Limit:           defaultStatementEventsLimit,

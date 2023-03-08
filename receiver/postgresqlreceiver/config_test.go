@@ -132,7 +132,7 @@ func TestLoadConfig(t *testing.T) {
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
 		expected.Username = "otel"
-		expected.Password = "$POSTGRESQL_PASSWORD"
+		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 
 		require.Equal(t, expected, cfg)
 	})
@@ -146,7 +146,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.Endpoint = "localhost:5432"
 		expected.NetAddr.Transport = "tcp"
 		expected.Username = "otel"
-		expected.Password = "$POSTGRESQL_PASSWORD"
+		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
 		expected.CollectionInterval = 10 * time.Second
 		expected.TLSClientSetting = configtls.TLSClientSetting{

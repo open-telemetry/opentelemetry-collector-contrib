@@ -53,10 +53,6 @@ func (se *sapmExporter) Shutdown(context.Context) error {
 }
 
 func newSAPMExporter(cfg *Config, params exporter.CreateSettings) (sapmExporter, error) {
-	err := cfg.validate()
-	if err != nil {
-		return sapmExporter{}, err
-	}
 
 	client, err := sapmclient.New(cfg.clientOptions()...)
 	if err != nil {

@@ -29,8 +29,6 @@ import (
 
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -70,8 +68,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
 	exporterCfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: ":8787",
 		},
@@ -111,7 +108,6 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	receiverCreateSet := receivertest.NewNopCreateSettings()
 	rcvCfg := &prometheusreceiver.Config{
 		PrometheusConfig: receiverConfig,
-		ReceiverSettings: config.NewReceiverSettings(component.NewID("prometheus")),
 	}
 	// 3.5 Create the Prometheus receiver and pass in the previously created Prometheus exporter.
 	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateSet, rcvCfg, exporter)

@@ -5,8 +5,8 @@ list-tests:
 	RUN_TESTBED=1 $(GOTEST) -v ./tests --test.list '.*' | grep "^Test"
 
 .PHONY: run-tests
-run-tests:
-	./runtests.sh
+run-tests: $(GOJUNIT)
+	GOJUNIT=$(GOJUNIT) ./runtests.sh
 
 .PHONY: list-loadtest-tests
 list-loadtest-tests:
@@ -25,13 +25,13 @@ list-correctness-metrics-tests:
 	RUN_TESTBED=1 $(GOTEST) -v ./correctnesstests/metrics --test.list '.*' | grep "^Test"
 
 .PHONY: run-correctness-metrics-tests
-run-correctness-metrics-tests:
-	TESTS_DIR=correctnesstests/metrics ./runtests.sh
+run-correctness-metrics-tests: $(GOJUNIT)
+	TESTS_DIR=correctnesstests/metrics GOJUNIT=$(GOJUNIT) ./runtests.sh
 
 .PHONY: list-correctness-traces-tests
 list-correctness-traces-tests:
 	RUN_TESTBED=1 $(GOTEST) -v ./correctnesstests/traces --test.list '.*' | grep "^Test"
 
 .PHONY: run-correctness-traces-tests
-run-correctness-traces-tests:
-	TESTS_DIR=correctnesstests/traces ./runtests.sh
+run-correctness-traces-tests: $(GOJUNIT)
+	TESTS_DIR=correctnesstests/traces GOJUNIT=$(GOJUNIT) ./runtests.sh

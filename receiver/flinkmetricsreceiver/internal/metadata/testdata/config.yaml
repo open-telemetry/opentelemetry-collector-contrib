@@ -1,0 +1,147 @@
+default:
+all_set:
+  metrics:
+    flink.job.checkpoint.count:
+      enabled: true
+    flink.job.checkpoint.in_progress:
+      enabled: true
+    flink.job.last_checkpoint.size:
+      enabled: true
+    flink.job.last_checkpoint.time:
+      enabled: true
+    flink.job.restart.count:
+      enabled: true
+    flink.jvm.class_loader.classes_loaded:
+      enabled: true
+    flink.jvm.cpu.load:
+      enabled: true
+    flink.jvm.cpu.time:
+      enabled: true
+    flink.jvm.gc.collections.count:
+      enabled: true
+    flink.jvm.gc.collections.time:
+      enabled: true
+    flink.jvm.memory.direct.total_capacity:
+      enabled: true
+    flink.jvm.memory.direct.used:
+      enabled: true
+    flink.jvm.memory.heap.committed:
+      enabled: true
+    flink.jvm.memory.heap.max:
+      enabled: true
+    flink.jvm.memory.heap.used:
+      enabled: true
+    flink.jvm.memory.mapped.total_capacity:
+      enabled: true
+    flink.jvm.memory.mapped.used:
+      enabled: true
+    flink.jvm.memory.metaspace.committed:
+      enabled: true
+    flink.jvm.memory.metaspace.max:
+      enabled: true
+    flink.jvm.memory.metaspace.used:
+      enabled: true
+    flink.jvm.memory.nonheap.committed:
+      enabled: true
+    flink.jvm.memory.nonheap.max:
+      enabled: true
+    flink.jvm.memory.nonheap.used:
+      enabled: true
+    flink.jvm.threads.count:
+      enabled: true
+    flink.memory.managed.total:
+      enabled: true
+    flink.memory.managed.used:
+      enabled: true
+    flink.operator.record.count:
+      enabled: true
+    flink.operator.watermark.output:
+      enabled: true
+    flink.task.record.count:
+      enabled: true
+  resource_attributes:
+    flink.job.name:
+      enabled: true
+    flink.resource.type:
+      enabled: true
+    flink.subtask.index:
+      enabled: true
+    flink.task.name:
+      enabled: true
+    flink.taskmanager.id:
+      enabled: true
+    host.name:
+      enabled: true
+none_set:
+  metrics:
+    flink.job.checkpoint.count:
+      enabled: false
+    flink.job.checkpoint.in_progress:
+      enabled: false
+    flink.job.last_checkpoint.size:
+      enabled: false
+    flink.job.last_checkpoint.time:
+      enabled: false
+    flink.job.restart.count:
+      enabled: false
+    flink.jvm.class_loader.classes_loaded:
+      enabled: false
+    flink.jvm.cpu.load:
+      enabled: false
+    flink.jvm.cpu.time:
+      enabled: false
+    flink.jvm.gc.collections.count:
+      enabled: false
+    flink.jvm.gc.collections.time:
+      enabled: false
+    flink.jvm.memory.direct.total_capacity:
+      enabled: false
+    flink.jvm.memory.direct.used:
+      enabled: false
+    flink.jvm.memory.heap.committed:
+      enabled: false
+    flink.jvm.memory.heap.max:
+      enabled: false
+    flink.jvm.memory.heap.used:
+      enabled: false
+    flink.jvm.memory.mapped.total_capacity:
+      enabled: false
+    flink.jvm.memory.mapped.used:
+      enabled: false
+    flink.jvm.memory.metaspace.committed:
+      enabled: false
+    flink.jvm.memory.metaspace.max:
+      enabled: false
+    flink.jvm.memory.metaspace.used:
+      enabled: false
+    flink.jvm.memory.nonheap.committed:
+      enabled: false
+    flink.jvm.memory.nonheap.max:
+      enabled: false
+    flink.jvm.memory.nonheap.used:
+      enabled: false
+    flink.jvm.threads.count:
+      enabled: false
+    flink.memory.managed.total:
+      enabled: false
+    flink.memory.managed.used:
+      enabled: false
+    flink.operator.record.count:
+      enabled: false
+    flink.operator.watermark.output:
+      enabled: false
+    flink.task.record.count:
+      enabled: false
+  resource_attributes:
+    flink.job.name:
+      enabled: false
+    flink.resource.type:
+      enabled: false
+    flink.subtask.index:
+      enabled: false
+    flink.task.name:
+      enabled: false
+    flink.taskmanager.id:
+      enabled: false
+    host.name:
+      enabled: false

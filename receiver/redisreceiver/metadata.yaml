@@ -3,6 +3,7 @@ name: redisreceiver
 resource_attributes:
   redis.version:
     description: Redis server's version.
+    enabled: true
     type: string
     
 attributes:

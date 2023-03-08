@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -43,7 +42,6 @@ var defaultNodeConditionsToReport = []string{"Ready"}
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings:           config.NewReceiverSettings(component.NewID(typeStr)),
 		Distribution:               defaultDistribution,
 		CollectionInterval:         defaultCollectionInterval,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,

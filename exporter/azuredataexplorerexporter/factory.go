@@ -19,7 +19,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -55,12 +54,11 @@ func NewFactory() exporter.Factory {
 // Create default configurations
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Database:         otelDb,
-		MetricTable:      defaultMetricTable,
-		LogTable:         defaultLogTable,
-		TraceTable:       defaultTraceTable,
-		IngestionType:    queuedIngestTest,
+		Database:      otelDb,
+		MetricTable:   defaultMetricTable,
+		LogTable:      defaultLogTable,
+		TraceTable:    defaultTraceTable,
+		IngestionType: queuedIngestTest,
 	}
 }
 

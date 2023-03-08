@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 )
@@ -39,9 +38,7 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
 func createLogsReceiver(
@@ -52,5 +49,5 @@ func createLogsReceiver(
 ) (receiver.Logs, error) {
 
 	rCfg := cfg.(*Config)
-	return newFluentReceiver(params.Logger, rCfg, consumer)
+	return newFluentReceiver(params, rCfg, consumer)
 }

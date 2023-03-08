@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -43,7 +42,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "collection_interval_settings"),
 			expected: &Config{
-				ReceiverSettings:      config.NewReceiverSettings(component.NewID(typeStr)),
 				CollectionInterval:    60 * time.Second,
 				ContainerOrchestrator: "eks",
 				TagService:            true,

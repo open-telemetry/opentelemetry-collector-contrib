@@ -180,6 +180,6 @@ Number of users connected to the SQL Server.
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| sqlserver.database.name | The name of the SQL Server database. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| sqlserver.database.name | The name of the SQL Server database. | Any Str | true |

@@ -19,7 +19,7 @@ The following settings can be optionally configured:
 
 - `include`: List of metrics names or patterns to convert to delta.
 - `exclude`: List of metrics names or patterns to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.**
-- `max_stale`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
+- `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
 
 If neither include nor exclude are supplied, no filtering is applied.
 

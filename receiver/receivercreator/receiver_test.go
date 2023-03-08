@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	zapObserver "go.uber.org/zap/zaptest/observer"
@@ -72,7 +73,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	factories, _ := componenttest.NopFactories()
+	factories, _ := otelcoltest.NopFactories()
 	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory

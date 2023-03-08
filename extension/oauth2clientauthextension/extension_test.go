@@ -130,7 +130,7 @@ func TestOAuthClientSettings(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, test.settings.Scopes, rc.clientCredentials.Scopes)
 			assert.Equal(t, test.settings.TokenURL, rc.clientCredentials.TokenURL)
-			assert.Equal(t, test.settings.ClientSecret, rc.clientCredentials.ClientSecret)
+			assert.EqualValues(t, test.settings.ClientSecret, rc.clientCredentials.ClientSecret)
 			assert.Equal(t, test.settings.ClientID, rc.clientCredentials.ClientID)
 			assert.Equal(t, test.settings.Timeout, rc.client.Timeout)
 			assert.Equal(t, test.settings.EndpointParams, rc.clientCredentials.EndpointParams)

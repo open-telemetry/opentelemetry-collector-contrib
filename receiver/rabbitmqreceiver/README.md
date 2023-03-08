@@ -36,7 +36,7 @@ receivers:
   rabbitmq:
     endpoint: http://localhost:15672
     username: otelu
-    password: $RABBITMQ_PASSWORD
+    password: ${env:RABBITMQ_PASSWORD}
     collection_interval: 10s
 ```
 

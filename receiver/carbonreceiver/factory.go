@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -33,7 +32,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "carbon"
 	// The stability level of the receiver.
-	stability = component.StabilityLevelStable
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for Carbon receiver.
@@ -46,7 +45,6 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:2003",
 			Transport: "tcp",

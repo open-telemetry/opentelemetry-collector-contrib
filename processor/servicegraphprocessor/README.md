@@ -6,8 +6,6 @@
 | Supported pipeline types | traces    |
 | Distributions            | [contrib] |
 
-> note: The labels of service graph metrics emitted by this processor have a breaking change, the previous labels set will deprecate in the next release, refer [Edge loss attributes from client-side or server-side](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16002)
-
 The service graphs processor is a traces processor that builds a map representing the interrelationships between various services in a system.
 The processor will analyse trace data and generate metrics describing the relationship between the services.
 These metrics can be used by data visualization apps (e.g. Grafana) to draw a service graph.
@@ -138,6 +136,10 @@ service:
       processors: []
       exporters: [prometheus/servicegraph]
 ```
+
+## Features and Feature-Gates
+
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

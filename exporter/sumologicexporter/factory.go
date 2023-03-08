@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -46,7 +45,6 @@ func createDefaultConfig() component.Config {
 	qs.Enabled = false
 
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 
 		CompressEncoding:   DefaultCompressEncoding,
 		MaxRequestBodySize: DefaultMaxRequestBodySize,

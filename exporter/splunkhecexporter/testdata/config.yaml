@@ -9,6 +9,8 @@ splunk_hec/allsettings:
   index: "metrics"
   log_data_enabled: true
   profiling_data_enabled: true
+  use_multi_metric_format: false
+  export_raw: true
   tls:
     insecure_skip_verify: false
     ca_file: ""

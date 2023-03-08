@@ -51,65 +51,103 @@ var queryResponses = map[string][]metricRow{
 }
 
 func TestScraper_Scrape(t *testing.T) {
-	metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings())
 
-	scrpr := scraper{
-		logger:         zap.NewNop(),
-		metricsBuilder: metricsBuilder,
-		dbProviderFunc: func() (*sql.DB, error) {
-			return nil, nil
-		},
-		clientProviderFunc: func(db *sql.DB, s string, logger *zap.Logger) dbClient {
-			return &fakeDbClient{
-				Responses: [][]metricRow{
-					queryResponses[s],
-				},
-			}
-		},
-		id:              component.ID{},
-		metricsSettings: metadata.DefaultMetricsSettings(),
-	}
-	err := scrpr.start(context.Background(), componenttest.NewNopHost())
-	defer func() {
-		assert.NoError(t, scrpr.shutdown(context.Background()))
-	}()
-	require.NoError(t, err)
-	m, err := scrpr.scrape(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, 16, m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
-}
-
-func TestPartial_InvalidScrape(t *testing.T) {
-	metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings())
-
-	scrpr := scraper{
-		logger:         zap.NewNop(),
-		metricsBuilder: metricsBuilder,
-		dbProviderFunc: func() (*sql.DB, error) {
-			return nil, nil
-		},
-		clientProviderFunc: func(db *sql.DB, s string, logger *zap.Logger) dbClient {
-			if s == tablespaceUsageSQL {
-				return &fakeDbClient{Responses: [][]metricRow{
-					{
-						{},
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid",
+			dbclientFn: func(db *sql.DB, s string, logger *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{
+						queryResponses[s],
 					},
-				}}
-			}
-			return &fakeDbClient{Responses: [][]metricRow{
-				queryResponses[s],
-			}}
+				}
+			},
 		},
-		id:              component.ID{},
-		metricsSettings: metadata.DefaultMetricsSettings(),
+		{
+			name: "bad tablespace usage",
+			dbclientFn: func(db *sql.DB, s string, logger *zap.Logger) dbClient {
+				if s == tablespaceUsageSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{
+							{},
+						},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{
+					queryResponses[s],
+				}}
+			},
+			errWanted: `failed to parse int64 for OracledbTablespaceSizeUsage, value was : strconv.ParseInt: parsing "": invalid syntax`,
+		},
+		{
+			name: "no limit on tablespace",
+			dbclientFn: func(db *sql.DB, s string, logger *zap.Logger) dbClient {
+				if s == tablespaceMaxSpaceSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{
+							{"TABLESPACE_NAME": "SYS", "VALUE": "1024"},
+							{"TABLESPACE_NAME": "FOO", "VALUE": ""},
+						},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{
+					queryResponses[s],
+				}}
+			},
+		},
+		{
+			name: "bad value on tablespace",
+			dbclientFn: func(db *sql.DB, s string, logger *zap.Logger) dbClient {
+				if s == tablespaceMaxSpaceSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{
+							{"TABLESPACE_NAME": "SYS", "VALUE": "1024"},
+							{"TABLESPACE_NAME": "FOO", "VALUE": "ert"},
+						},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{
+					queryResponses[s],
+				}}
+			},
+			errWanted: `failed to parse int64 for OracledbTablespaceSizeLimit, value was ert: strconv.ParseInt: parsing "ert": invalid syntax`,
+		},
 	}
-	err := scrpr.start(context.Background(), componenttest.NewNopHost())
-	defer func() {
-		assert.NoError(t, scrpr.shutdown(context.Background()))
-	}()
-	require.NoError(t, err)
-	_, err = scrpr.scrape(context.Background())
-	require.Error(t, err)
-	require.True(t, scrapererror.IsPartialScrapeError(err))
-	require.EqualError(t, err, `failed to parse int64 for OracledbTablespaceSizeUsage, value was : strconv.ParseInt: parsing "": invalid syntax`)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+
+			scrpr := scraper{
+				logger:         zap.NewNop(),
+				metricsBuilder: metricsBuilder,
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:   test.dbclientFn,
+				id:                   component.ID{},
+				metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			}
+			err := scrpr.start(context.Background(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(context.Background()))
+			}()
+			require.NoError(t, err)
+			m, err := scrpr.scrape(context.Background())
+			if test.errWanted != "" {
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.EqualError(t, err, test.errWanted)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, 16, m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+			}
+			name, ok := m.ResourceMetrics().At(0).Resource().Attributes().Get("oracledb.instance.name")
+			assert.True(t, ok)
+			assert.Equal(t, "", name.Str())
+		})
+	}
+
 }

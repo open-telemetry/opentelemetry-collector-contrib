@@ -17,6 +17,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 
@@ -57,6 +58,7 @@ type metricGroup struct {
 	hasCount     bool
 	sum          float64
 	hasSum       bool
+	created      float64
 	value        float64
 	complexValue []*dataPoint
 	exemplars    pmetric.ExemplarSlice
@@ -112,6 +114,9 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		if i != len(mg.complexValue)-1 {
 			// not need to add +inf as OTLP assumes it
 			bounds[i] = mg.complexValue[i].boundary
+		} else if mg.complexValue[i].boundary != math.Inf(1) {
+			// This histogram is missing the +Inf bucket, and isn't a complete prometheus histogram.
+			return
 		}
 		adjustedCount := mg.complexValue[i].value
 		// Buckets still need to be sent to know to set them as stale,
@@ -141,7 +146,12 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
-	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+	if mg.created != 0 {
+		point.SetStartTimestamp(timestampFromFloat64(mg.created))
+	} else {
+		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+		point.SetStartTimestamp(tsNanos)
+	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
 	mg.setExemplars(point.Exemplars())
@@ -196,7 +206,12 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
 	point.SetTimestamp(tsNanos)
-	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+	if mg.created != 0 {
+		point.SetStartTimestamp(timestampFromFloat64(mg.created))
+	} else {
+		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+		point.SetStartTimestamp(tsNanos)
+	}
 	populateAttributes(pmetric.MetricTypeSummary, mg.ls, point.Attributes())
 }
 
@@ -205,7 +220,12 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 	point := dest.AppendEmpty()
 	// gauge/undefined types have no start time.
 	if mg.mtype == pmetric.MetricTypeSum {
-		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+		if mg.created != 0 {
+			point.SetStartTimestamp(timestampFromFloat64(mg.created))
+		} else {
+			// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+			point.SetStartTimestamp(tsNanos)
+		}
 	}
 	point.SetTimestamp(tsNanos)
 	if value.IsStaleNaN(mg.value) {
@@ -268,12 +288,20 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.ts = t
 			mg.count = v
 			mg.hasCount = true
+		case strings.HasSuffix(metricName, metricSuffixCreated):
+			mg.created = v
 		default:
 			boundary, err := getBoundary(mf.mtype, ls)
 			if err != nil {
 				return err
 			}
 			mg.complexValue = append(mg.complexValue, &dataPoint{value: v, boundary: boundary})
+		}
+	case pmetric.MetricTypeSum:
+		if strings.HasSuffix(metricName, metricSuffixCreated) {
+			mg.created = v
+		} else {
+			mg.value = v
 		}
 	default:
 		mg.value = v

@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -193,7 +194,7 @@ func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 func TestReceiverLifecycle(t *testing.T) {
 	receiver, messagingService, _ := newReceiver(t)
 	dialCalled := make(chan struct{})
-	messagingService.dialFunc = func() error {
+	messagingService.dialFunc = func(context.Context) error {
 		validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateConnecting)
 		validateMetric(t, receiver.metrics.views.flowControlStatus, flowControlStateClear)
 		close(dialCalled)
@@ -241,7 +242,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 		}
 		return msgService
 	}
-	msgService.dialFunc = func() error {
+	msgService.dialFunc = func(context.Context) error {
 		dialCalled++
 		if dialCalled == expectedAttempts {
 			close(dialDone)
@@ -285,9 +286,9 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 	unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
 		return ptrace.Traces{}, errUpgradeRequired
 	}
-	msgService.dialFunc = func() error {
+	msgService.dialFunc = func(context.Context) error {
 		// after we receive an unmarshalling version error, we should not call dial again
-		msgService.dialFunc = func() error {
+		msgService.dialFunc = func(context.Context) error {
 			t.Error("did not expect dial to be called again")
 			return nil
 		}
@@ -352,6 +353,11 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			receiver, messagingService, unmarshaller := newReceiver(t)
 			delay := 5 * time.Millisecond
+			// Increase delay on windows due to tick granularity
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17197
+			if runtime.GOOS == "windows" {
+				delay = 500 * time.Millisecond
+			}
 			receiver.config.Flow.DelayedRetry.Delay = delay
 			var err error
 			// we want to return an error at first, then set the next consumer to a noop consumer
@@ -455,7 +461,7 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 	receiver, messagingService, unmarshaller := newReceiver(t)
 	// we won't wait 10 seconds since we will interrupt well before
-	retryInterval := 2 * time.Millisecond
+	retryInterval := 20 * time.Millisecond
 	var retryCount int64 = 5
 	receiver.config.Flow.DelayedRetry.Delay = retryInterval
 	var err error
@@ -550,16 +556,16 @@ func validateReceiverMetrics(t *testing.T, receiver *solaceTracesReceiver, recei
 }
 
 type mockMessagingService struct {
-	dialFunc           func() error
+	dialFunc           func(ctx context.Context) error
 	closeFunc          func(ctx context.Context)
 	receiveMessageFunc func(ctx context.Context) (*inboundMessage, error)
 	ackFunc            func(ctx context.Context, msg *inboundMessage) error
 	nackFunc           func(ctx context.Context, msg *inboundMessage) error
 }
 
-func (m *mockMessagingService) dial() error {
+func (m *mockMessagingService) dial(ctx context.Context) error {
 	if m.dialFunc != nil {
-		return m.dialFunc()
+		return m.dialFunc(ctx)
 	}
 	panic("did not expect dial to be called")
 }

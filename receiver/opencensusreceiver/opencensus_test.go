@@ -40,7 +40,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -101,7 +100,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
           }
        ]
     }`)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(traceJSON))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(traceJSON))
 	require.NoError(t, err, "Error creating trace POST request: %v", err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -198,7 +197,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 }
 
 func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
-	req, err := http.NewRequest("OPTIONS", url, nil)
+	req, err := http.NewRequest(http.MethodOptions, url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
 	req.Header.Set("Access-Control-Request-Method", "POST")
@@ -415,7 +414,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				testTel, err := obsreporttest.SetupTelemetryWithID(exporter.receiverID)
+				testTel, err := obsreporttest.SetupTelemetry(exporter.receiverID)
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, testTel.Shutdown(context.Background()))
@@ -566,7 +565,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				testTel, err := obsreporttest.SetupTelemetryWithID(exporter.receiverID)
+				testTel, err := obsreporttest.SetupTelemetry(exporter.receiverID)
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, testTel.Shutdown(context.Background()))
@@ -612,7 +611,6 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 func TestInvalidTLSCredentials(t *testing.T) {
 	cfg := Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{

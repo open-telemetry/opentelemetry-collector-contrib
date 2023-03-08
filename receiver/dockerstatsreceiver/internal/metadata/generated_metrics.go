@@ -17,12 +17,7 @@ import (
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -33,7 +28,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -294,6 +289,40 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		ContainerNetworkIoUsageTxPackets: MetricSettings{
 			Enabled: false,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesSettings provides settings for dockerstatsreceiver metrics.
+type ResourceAttributesSettings struct {
+	ContainerHostname  ResourceAttributeSettings `mapstructure:"container.hostname"`
+	ContainerID        ResourceAttributeSettings `mapstructure:"container.id"`
+	ContainerImageName ResourceAttributeSettings `mapstructure:"container.image.name"`
+	ContainerName      ResourceAttributeSettings `mapstructure:"container.name"`
+	ContainerRuntime   ResourceAttributeSettings `mapstructure:"container.runtime"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		ContainerHostname: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerImageName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerRuntime: ResourceAttributeSettings{
+			Enabled: true,
 		},
 	}
 }
@@ -3557,6 +3586,12 @@ func newMetricContainerNetworkIoUsageTxPackets(settings MetricSettings) metricCo
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -3565,6 +3600,7 @@ type MetricsBuilder struct {
 	resourceCapacity                                 int                 // maximum observed number of resource attributes.
 	metricsBuffer                                    pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                        component.BuildInfo // contains version information
+	resourceAttributesSettings                       ResourceAttributesSettings
 	metricContainerBlockioIoMergedRecursive          metricContainerBlockioIoMergedRecursive
 	metricContainerBlockioIoQueuedRecursive          metricContainerBlockioIoQueuedRecursive
 	metricContainerBlockioIoServiceBytesRecursive    metricContainerBlockioIoServiceBytesRecursive
@@ -3640,74 +3676,89 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                           pmetric.NewMetrics(),
-		buildInfo:                               settings.BuildInfo,
-		metricContainerBlockioIoMergedRecursive: newMetricContainerBlockioIoMergedRecursive(ms.ContainerBlockioIoMergedRecursive),
-		metricContainerBlockioIoQueuedRecursive: newMetricContainerBlockioIoQueuedRecursive(ms.ContainerBlockioIoQueuedRecursive),
-		metricContainerBlockioIoServiceBytesRecursive:    newMetricContainerBlockioIoServiceBytesRecursive(ms.ContainerBlockioIoServiceBytesRecursive),
-		metricContainerBlockioIoServiceTimeRecursive:     newMetricContainerBlockioIoServiceTimeRecursive(ms.ContainerBlockioIoServiceTimeRecursive),
-		metricContainerBlockioIoServicedRecursive:        newMetricContainerBlockioIoServicedRecursive(ms.ContainerBlockioIoServicedRecursive),
-		metricContainerBlockioIoTimeRecursive:            newMetricContainerBlockioIoTimeRecursive(ms.ContainerBlockioIoTimeRecursive),
-		metricContainerBlockioIoWaitTimeRecursive:        newMetricContainerBlockioIoWaitTimeRecursive(ms.ContainerBlockioIoWaitTimeRecursive),
-		metricContainerBlockioSectorsRecursive:           newMetricContainerBlockioSectorsRecursive(ms.ContainerBlockioSectorsRecursive),
-		metricContainerCPUPercent:                        newMetricContainerCPUPercent(ms.ContainerCPUPercent),
-		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(ms.ContainerCPUThrottlingDataPeriods),
-		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(ms.ContainerCPUThrottlingDataThrottledPeriods),
-		metricContainerCPUThrottlingDataThrottledTime:    newMetricContainerCPUThrottlingDataThrottledTime(ms.ContainerCPUThrottlingDataThrottledTime),
-		metricContainerCPUUsageKernelmode:                newMetricContainerCPUUsageKernelmode(ms.ContainerCPUUsageKernelmode),
-		metricContainerCPUUsagePercpu:                    newMetricContainerCPUUsagePercpu(ms.ContainerCPUUsagePercpu),
-		metricContainerCPUUsageSystem:                    newMetricContainerCPUUsageSystem(ms.ContainerCPUUsageSystem),
-		metricContainerCPUUsageTotal:                     newMetricContainerCPUUsageTotal(ms.ContainerCPUUsageTotal),
-		metricContainerCPUUsageUsermode:                  newMetricContainerCPUUsageUsermode(ms.ContainerCPUUsageUsermode),
-		metricContainerMemoryActiveAnon:                  newMetricContainerMemoryActiveAnon(ms.ContainerMemoryActiveAnon),
-		metricContainerMemoryActiveFile:                  newMetricContainerMemoryActiveFile(ms.ContainerMemoryActiveFile),
-		metricContainerMemoryCache:                       newMetricContainerMemoryCache(ms.ContainerMemoryCache),
-		metricContainerMemoryDirty:                       newMetricContainerMemoryDirty(ms.ContainerMemoryDirty),
-		metricContainerMemoryHierarchicalMemoryLimit:     newMetricContainerMemoryHierarchicalMemoryLimit(ms.ContainerMemoryHierarchicalMemoryLimit),
-		metricContainerMemoryHierarchicalMemswLimit:      newMetricContainerMemoryHierarchicalMemswLimit(ms.ContainerMemoryHierarchicalMemswLimit),
-		metricContainerMemoryInactiveAnon:                newMetricContainerMemoryInactiveAnon(ms.ContainerMemoryInactiveAnon),
-		metricContainerMemoryInactiveFile:                newMetricContainerMemoryInactiveFile(ms.ContainerMemoryInactiveFile),
-		metricContainerMemoryMappedFile:                  newMetricContainerMemoryMappedFile(ms.ContainerMemoryMappedFile),
-		metricContainerMemoryPercent:                     newMetricContainerMemoryPercent(ms.ContainerMemoryPercent),
-		metricContainerMemoryPgfault:                     newMetricContainerMemoryPgfault(ms.ContainerMemoryPgfault),
-		metricContainerMemoryPgmajfault:                  newMetricContainerMemoryPgmajfault(ms.ContainerMemoryPgmajfault),
-		metricContainerMemoryPgpgin:                      newMetricContainerMemoryPgpgin(ms.ContainerMemoryPgpgin),
-		metricContainerMemoryPgpgout:                     newMetricContainerMemoryPgpgout(ms.ContainerMemoryPgpgout),
-		metricContainerMemoryRss:                         newMetricContainerMemoryRss(ms.ContainerMemoryRss),
-		metricContainerMemoryRssHuge:                     newMetricContainerMemoryRssHuge(ms.ContainerMemoryRssHuge),
-		metricContainerMemorySwap:                        newMetricContainerMemorySwap(ms.ContainerMemorySwap),
-		metricContainerMemoryTotalActiveAnon:             newMetricContainerMemoryTotalActiveAnon(ms.ContainerMemoryTotalActiveAnon),
-		metricContainerMemoryTotalActiveFile:             newMetricContainerMemoryTotalActiveFile(ms.ContainerMemoryTotalActiveFile),
-		metricContainerMemoryTotalCache:                  newMetricContainerMemoryTotalCache(ms.ContainerMemoryTotalCache),
-		metricContainerMemoryTotalDirty:                  newMetricContainerMemoryTotalDirty(ms.ContainerMemoryTotalDirty),
-		metricContainerMemoryTotalInactiveAnon:           newMetricContainerMemoryTotalInactiveAnon(ms.ContainerMemoryTotalInactiveAnon),
-		metricContainerMemoryTotalInactiveFile:           newMetricContainerMemoryTotalInactiveFile(ms.ContainerMemoryTotalInactiveFile),
-		metricContainerMemoryTotalMappedFile:             newMetricContainerMemoryTotalMappedFile(ms.ContainerMemoryTotalMappedFile),
-		metricContainerMemoryTotalPgfault:                newMetricContainerMemoryTotalPgfault(ms.ContainerMemoryTotalPgfault),
-		metricContainerMemoryTotalPgmajfault:             newMetricContainerMemoryTotalPgmajfault(ms.ContainerMemoryTotalPgmajfault),
-		metricContainerMemoryTotalPgpgin:                 newMetricContainerMemoryTotalPgpgin(ms.ContainerMemoryTotalPgpgin),
-		metricContainerMemoryTotalPgpgout:                newMetricContainerMemoryTotalPgpgout(ms.ContainerMemoryTotalPgpgout),
-		metricContainerMemoryTotalRss:                    newMetricContainerMemoryTotalRss(ms.ContainerMemoryTotalRss),
-		metricContainerMemoryTotalRssHuge:                newMetricContainerMemoryTotalRssHuge(ms.ContainerMemoryTotalRssHuge),
-		metricContainerMemoryTotalSwap:                   newMetricContainerMemoryTotalSwap(ms.ContainerMemoryTotalSwap),
-		metricContainerMemoryTotalUnevictable:            newMetricContainerMemoryTotalUnevictable(ms.ContainerMemoryTotalUnevictable),
-		metricContainerMemoryTotalWriteback:              newMetricContainerMemoryTotalWriteback(ms.ContainerMemoryTotalWriteback),
-		metricContainerMemoryUnevictable:                 newMetricContainerMemoryUnevictable(ms.ContainerMemoryUnevictable),
-		metricContainerMemoryUsageLimit:                  newMetricContainerMemoryUsageLimit(ms.ContainerMemoryUsageLimit),
-		metricContainerMemoryUsageMax:                    newMetricContainerMemoryUsageMax(ms.ContainerMemoryUsageMax),
-		metricContainerMemoryUsageTotal:                  newMetricContainerMemoryUsageTotal(ms.ContainerMemoryUsageTotal),
-		metricContainerMemoryWriteback:                   newMetricContainerMemoryWriteback(ms.ContainerMemoryWriteback),
-		metricContainerNetworkIoUsageRxBytes:             newMetricContainerNetworkIoUsageRxBytes(ms.ContainerNetworkIoUsageRxBytes),
-		metricContainerNetworkIoUsageRxDropped:           newMetricContainerNetworkIoUsageRxDropped(ms.ContainerNetworkIoUsageRxDropped),
-		metricContainerNetworkIoUsageRxErrors:            newMetricContainerNetworkIoUsageRxErrors(ms.ContainerNetworkIoUsageRxErrors),
-		metricContainerNetworkIoUsageRxPackets:           newMetricContainerNetworkIoUsageRxPackets(ms.ContainerNetworkIoUsageRxPackets),
-		metricContainerNetworkIoUsageTxBytes:             newMetricContainerNetworkIoUsageTxBytes(ms.ContainerNetworkIoUsageTxBytes),
-		metricContainerNetworkIoUsageTxDropped:           newMetricContainerNetworkIoUsageTxDropped(ms.ContainerNetworkIoUsageTxDropped),
-		metricContainerNetworkIoUsageTxErrors:            newMetricContainerNetworkIoUsageTxErrors(ms.ContainerNetworkIoUsageTxErrors),
-		metricContainerNetworkIoUsageTxPackets:           newMetricContainerNetworkIoUsageTxPackets(ms.ContainerNetworkIoUsageTxPackets),
+		startTime:                                        pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                                    pmetric.NewMetrics(),
+		buildInfo:                                        settings.BuildInfo,
+		resourceAttributesSettings:                       mbc.ResourceAttributes,
+		metricContainerBlockioIoMergedRecursive:          newMetricContainerBlockioIoMergedRecursive(mbc.Metrics.ContainerBlockioIoMergedRecursive),
+		metricContainerBlockioIoQueuedRecursive:          newMetricContainerBlockioIoQueuedRecursive(mbc.Metrics.ContainerBlockioIoQueuedRecursive),
+		metricContainerBlockioIoServiceBytesRecursive:    newMetricContainerBlockioIoServiceBytesRecursive(mbc.Metrics.ContainerBlockioIoServiceBytesRecursive),
+		metricContainerBlockioIoServiceTimeRecursive:     newMetricContainerBlockioIoServiceTimeRecursive(mbc.Metrics.ContainerBlockioIoServiceTimeRecursive),
+		metricContainerBlockioIoServicedRecursive:        newMetricContainerBlockioIoServicedRecursive(mbc.Metrics.ContainerBlockioIoServicedRecursive),
+		metricContainerBlockioIoTimeRecursive:            newMetricContainerBlockioIoTimeRecursive(mbc.Metrics.ContainerBlockioIoTimeRecursive),
+		metricContainerBlockioIoWaitTimeRecursive:        newMetricContainerBlockioIoWaitTimeRecursive(mbc.Metrics.ContainerBlockioIoWaitTimeRecursive),
+		metricContainerBlockioSectorsRecursive:           newMetricContainerBlockioSectorsRecursive(mbc.Metrics.ContainerBlockioSectorsRecursive),
+		metricContainerCPUPercent:                        newMetricContainerCPUPercent(mbc.Metrics.ContainerCPUPercent),
+		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(mbc.Metrics.ContainerCPUThrottlingDataPeriods),
+		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(mbc.Metrics.ContainerCPUThrottlingDataThrottledPeriods),
+		metricContainerCPUThrottlingDataThrottledTime:    newMetricContainerCPUThrottlingDataThrottledTime(mbc.Metrics.ContainerCPUThrottlingDataThrottledTime),
+		metricContainerCPUUsageKernelmode:                newMetricContainerCPUUsageKernelmode(mbc.Metrics.ContainerCPUUsageKernelmode),
+		metricContainerCPUUsagePercpu:                    newMetricContainerCPUUsagePercpu(mbc.Metrics.ContainerCPUUsagePercpu),
+		metricContainerCPUUsageSystem:                    newMetricContainerCPUUsageSystem(mbc.Metrics.ContainerCPUUsageSystem),
+		metricContainerCPUUsageTotal:                     newMetricContainerCPUUsageTotal(mbc.Metrics.ContainerCPUUsageTotal),
+		metricContainerCPUUsageUsermode:                  newMetricContainerCPUUsageUsermode(mbc.Metrics.ContainerCPUUsageUsermode),
+		metricContainerMemoryActiveAnon:                  newMetricContainerMemoryActiveAnon(mbc.Metrics.ContainerMemoryActiveAnon),
+		metricContainerMemoryActiveFile:                  newMetricContainerMemoryActiveFile(mbc.Metrics.ContainerMemoryActiveFile),
+		metricContainerMemoryCache:                       newMetricContainerMemoryCache(mbc.Metrics.ContainerMemoryCache),
+		metricContainerMemoryDirty:                       newMetricContainerMemoryDirty(mbc.Metrics.ContainerMemoryDirty),
+		metricContainerMemoryHierarchicalMemoryLimit:     newMetricContainerMemoryHierarchicalMemoryLimit(mbc.Metrics.ContainerMemoryHierarchicalMemoryLimit),
+		metricContainerMemoryHierarchicalMemswLimit:      newMetricContainerMemoryHierarchicalMemswLimit(mbc.Metrics.ContainerMemoryHierarchicalMemswLimit),
+		metricContainerMemoryInactiveAnon:                newMetricContainerMemoryInactiveAnon(mbc.Metrics.ContainerMemoryInactiveAnon),
+		metricContainerMemoryInactiveFile:                newMetricContainerMemoryInactiveFile(mbc.Metrics.ContainerMemoryInactiveFile),
+		metricContainerMemoryMappedFile:                  newMetricContainerMemoryMappedFile(mbc.Metrics.ContainerMemoryMappedFile),
+		metricContainerMemoryPercent:                     newMetricContainerMemoryPercent(mbc.Metrics.ContainerMemoryPercent),
+		metricContainerMemoryPgfault:                     newMetricContainerMemoryPgfault(mbc.Metrics.ContainerMemoryPgfault),
+		metricContainerMemoryPgmajfault:                  newMetricContainerMemoryPgmajfault(mbc.Metrics.ContainerMemoryPgmajfault),
+		metricContainerMemoryPgpgin:                      newMetricContainerMemoryPgpgin(mbc.Metrics.ContainerMemoryPgpgin),
+		metricContainerMemoryPgpgout:                     newMetricContainerMemoryPgpgout(mbc.Metrics.ContainerMemoryPgpgout),
+		metricContainerMemoryRss:                         newMetricContainerMemoryRss(mbc.Metrics.ContainerMemoryRss),
+		metricContainerMemoryRssHuge:                     newMetricContainerMemoryRssHuge(mbc.Metrics.ContainerMemoryRssHuge),
+		metricContainerMemorySwap:                        newMetricContainerMemorySwap(mbc.Metrics.ContainerMemorySwap),
+		metricContainerMemoryTotalActiveAnon:             newMetricContainerMemoryTotalActiveAnon(mbc.Metrics.ContainerMemoryTotalActiveAnon),
+		metricContainerMemoryTotalActiveFile:             newMetricContainerMemoryTotalActiveFile(mbc.Metrics.ContainerMemoryTotalActiveFile),
+		metricContainerMemoryTotalCache:                  newMetricContainerMemoryTotalCache(mbc.Metrics.ContainerMemoryTotalCache),
+		metricContainerMemoryTotalDirty:                  newMetricContainerMemoryTotalDirty(mbc.Metrics.ContainerMemoryTotalDirty),
+		metricContainerMemoryTotalInactiveAnon:           newMetricContainerMemoryTotalInactiveAnon(mbc.Metrics.ContainerMemoryTotalInactiveAnon),
+		metricContainerMemoryTotalInactiveFile:           newMetricContainerMemoryTotalInactiveFile(mbc.Metrics.ContainerMemoryTotalInactiveFile),
+		metricContainerMemoryTotalMappedFile:             newMetricContainerMemoryTotalMappedFile(mbc.Metrics.ContainerMemoryTotalMappedFile),
+		metricContainerMemoryTotalPgfault:                newMetricContainerMemoryTotalPgfault(mbc.Metrics.ContainerMemoryTotalPgfault),
+		metricContainerMemoryTotalPgmajfault:             newMetricContainerMemoryTotalPgmajfault(mbc.Metrics.ContainerMemoryTotalPgmajfault),
+		metricContainerMemoryTotalPgpgin:                 newMetricContainerMemoryTotalPgpgin(mbc.Metrics.ContainerMemoryTotalPgpgin),
+		metricContainerMemoryTotalPgpgout:                newMetricContainerMemoryTotalPgpgout(mbc.Metrics.ContainerMemoryTotalPgpgout),
+		metricContainerMemoryTotalRss:                    newMetricContainerMemoryTotalRss(mbc.Metrics.ContainerMemoryTotalRss),
+		metricContainerMemoryTotalRssHuge:                newMetricContainerMemoryTotalRssHuge(mbc.Metrics.ContainerMemoryTotalRssHuge),
+		metricContainerMemoryTotalSwap:                   newMetricContainerMemoryTotalSwap(mbc.Metrics.ContainerMemoryTotalSwap),
+		metricContainerMemoryTotalUnevictable:            newMetricContainerMemoryTotalUnevictable(mbc.Metrics.ContainerMemoryTotalUnevictable),
+		metricContainerMemoryTotalWriteback:              newMetricContainerMemoryTotalWriteback(mbc.Metrics.ContainerMemoryTotalWriteback),
+		metricContainerMemoryUnevictable:                 newMetricContainerMemoryUnevictable(mbc.Metrics.ContainerMemoryUnevictable),
+		metricContainerMemoryUsageLimit:                  newMetricContainerMemoryUsageLimit(mbc.Metrics.ContainerMemoryUsageLimit),
+		metricContainerMemoryUsageMax:                    newMetricContainerMemoryUsageMax(mbc.Metrics.ContainerMemoryUsageMax),
+		metricContainerMemoryUsageTotal:                  newMetricContainerMemoryUsageTotal(mbc.Metrics.ContainerMemoryUsageTotal),
+		metricContainerMemoryWriteback:                   newMetricContainerMemoryWriteback(mbc.Metrics.ContainerMemoryWriteback),
+		metricContainerNetworkIoUsageRxBytes:             newMetricContainerNetworkIoUsageRxBytes(mbc.Metrics.ContainerNetworkIoUsageRxBytes),
+		metricContainerNetworkIoUsageRxDropped:           newMetricContainerNetworkIoUsageRxDropped(mbc.Metrics.ContainerNetworkIoUsageRxDropped),
+		metricContainerNetworkIoUsageRxErrors:            newMetricContainerNetworkIoUsageRxErrors(mbc.Metrics.ContainerNetworkIoUsageRxErrors),
+		metricContainerNetworkIoUsageRxPackets:           newMetricContainerNetworkIoUsageRxPackets(mbc.Metrics.ContainerNetworkIoUsageRxPackets),
+		metricContainerNetworkIoUsageTxBytes:             newMetricContainerNetworkIoUsageTxBytes(mbc.Metrics.ContainerNetworkIoUsageTxBytes),
+		metricContainerNetworkIoUsageTxDropped:           newMetricContainerNetworkIoUsageTxDropped(mbc.Metrics.ContainerNetworkIoUsageTxDropped),
+		metricContainerNetworkIoUsageTxErrors:            newMetricContainerNetworkIoUsageTxErrors(mbc.Metrics.ContainerNetworkIoUsageTxErrors),
+		metricContainerNetworkIoUsageTxPackets:           newMetricContainerNetworkIoUsageTxPackets(mbc.Metrics.ContainerNetworkIoUsageTxPackets),
 	}
 	for _, op := range options {
 		op(mb)
@@ -3726,47 +3777,57 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithContainerHostname sets provided value as "container.hostname" attribute for current resource.
 func WithContainerHostname(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("container.hostname", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerHostname.Enabled {
+			rm.Resource().Attributes().PutStr("container.hostname", val)
+		}
 	}
 }
 
 // WithContainerID sets provided value as "container.id" attribute for current resource.
 func WithContainerID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("container.id", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerID.Enabled {
+			rm.Resource().Attributes().PutStr("container.id", val)
+		}
 	}
 }
 
 // WithContainerImageName sets provided value as "container.image.name" attribute for current resource.
 func WithContainerImageName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("container.image.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerImageName.Enabled {
+			rm.Resource().Attributes().PutStr("container.image.name", val)
+		}
 	}
 }
 
 // WithContainerName sets provided value as "container.name" attribute for current resource.
 func WithContainerName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("container.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerName.Enabled {
+			rm.Resource().Attributes().PutStr("container.name", val)
+		}
 	}
 }
 
 // WithContainerRuntime sets provided value as "container.runtime" attribute for current resource.
 func WithContainerRuntime(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("container.runtime", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerRuntime.Enabled {
+			rm.Resource().Attributes().PutStr("container.runtime", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -3859,8 +3920,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerNetworkIoUsageTxDropped.emit(ils.Metrics())
 	mb.metricContainerNetworkIoUsageTxErrors.emit(ils.Metrics())
 	mb.metricContainerNetworkIoUsageTxPackets.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -3873,8 +3935,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

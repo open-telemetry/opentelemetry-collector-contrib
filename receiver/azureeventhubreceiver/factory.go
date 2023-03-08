@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
@@ -40,7 +39,7 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))}
+	return &Config{}
 }
 
 func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, cfg component.Config, logs consumer.Logs) (receiver.Logs, error) {
@@ -61,7 +60,7 @@ func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, cfg
 	case rawLogFormat:
 		converter = newRawConverter(settings)
 	default:
-		converter = newRawConverter(settings)
+		converter = newAzureLogFormatConverter(settings)
 	}
 
 	return &client{

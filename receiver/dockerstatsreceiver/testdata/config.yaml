@@ -13,7 +13,6 @@ docker_stats/allsettings:
   excluded_images:
     - undesired-container
     - another-*-container
-  provide_per_core_cpu_metrics: true
   metrics:
     container.cpu.usage.system:
       enabled: false

@@ -102,8 +102,7 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 
 	le, ok := exp.(exporter.Logs)
 	if !ok {
-		expectType := (*exporter.Logs)(nil)
-		return fmt.Errorf("unable to export logs, unexpected exporter type: expected %T but got %T", expectType, exp)
+		return fmt.Errorf("unable to export logs, unexpected exporter type: expected exporter.Logs but got %T", exp)
 	}
 
 	start := time.Now()

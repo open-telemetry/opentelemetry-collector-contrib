@@ -19,17 +19,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
-	expected := &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-	}
+	expected := &Config{}
 
 	// test
 	cfg := createDefaultConfig()

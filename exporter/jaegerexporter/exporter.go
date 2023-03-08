@@ -77,11 +77,14 @@ func newProtoGRPCSender(cfg *Config, set exporter.CreateSettings) *protoGRPCSend
 	s := &protoGRPCSender{
 		name:                      set.ID.String(),
 		settings:                  set.TelemetrySettings,
-		metadata:                  metadata.New(cfg.GRPCClientSettings.Headers),
+		metadata:                  metadata.New(nil),
 		waitForReady:              cfg.WaitForReady,
 		connStateReporterInterval: time.Second,
 		stopCh:                    make(chan struct{}),
 		clientSettings:            &cfg.GRPCClientSettings,
+	}
+	for k, v := range cfg.GRPCClientSettings.Headers {
+		s.metadata.Set(k, string(v))
 	}
 	s.AddStateChangeCallback(s.onStateChange)
 	return s

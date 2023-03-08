@@ -18,16 +18,16 @@ import (
 	"context"
 	"sync"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
@@ -45,13 +45,26 @@ type logsExporter struct {
 func newLogsExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*logsExporter, error) {
 	// create Datadog client
 	// validation endpoint is provided by Metrics
-	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+	errchan := make(chan error)
+	if isMetricExportV2Enabled() {
+		apiClient := clientutil.CreateAPIClient(
+			params.BuildInfo,
+			cfg.Metrics.TCPAddr.Endpoint,
+			cfg.TimeoutSettings,
+			cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
+		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
+	} else {
+		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
+		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
+	}
 	// validate the apiKey
-	if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
-		return nil, err
+	if cfg.API.FailOnInvalidKey {
+		if err := <-errchan; err != nil {
+			return nil, err
+		}
 	}
 
-	s := logs.NewSender(cfg.Logs.TCPAddr.Endpoint, params.Logger, cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, cfg.Logs.DumpPayloads, cfg.API.Key)
+	s := logs.NewSender(cfg.Logs.TCPAddr.Endpoint, params.Logger, cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, cfg.Logs.DumpPayloads, string(cfg.API.Key))
 
 	return &logsExporter{
 		params:         params,
@@ -77,7 +90,7 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 			if ld.ResourceLogs().Len() > 0 {
 				attrs = ld.ResourceLogs().At(0).Resource().Attributes()
 			}
-			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
+			go hostmetadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
 	}
 

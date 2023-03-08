@@ -67,7 +67,7 @@ func SplitTraces(batch ptrace.Traces) []ptrace.Traces {
 	return result
 }
 
-// SplitLogs returns one plog.Logs for each trace in the given plog.Logs input. Each of the resulting plog.Logs contains exactly one trace.
+// SplitLogs returns one plog.Logs for each trace in the given plog.Logs input. Each of the resulting plog.Logs contains exactly one log.
 func SplitLogs(batch plog.Logs) []plog.Logs {
 	// for each log in the resource logs, we group them into batches of rl/sl/traceID.
 	// if the same traceID exists in different sl, they land in different batches.

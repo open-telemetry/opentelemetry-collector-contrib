@@ -18,12 +18,7 @@ import (
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -34,7 +29,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -98,6 +93,28 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		AerospikeNodeQueryTracked: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesSettings provides settings for aerospikereceiver metrics.
+type ResourceAttributesSettings struct {
+	AerospikeNamespace ResourceAttributeSettings `mapstructure:"aerospike.namespace"`
+	AerospikeNodeName  ResourceAttributeSettings `mapstructure:"aerospike.node.name"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		AerospikeNamespace: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		AerospikeNodeName: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -1160,6 +1177,12 @@ func newMetricAerospikeNodeQueryTracked(settings MetricSettings) metricAerospike
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1168,6 +1191,7 @@ type MetricsBuilder struct {
 	resourceCapacity                                        int                 // maximum observed number of resource attributes.
 	metricsBuffer                                           pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                               component.BuildInfo // contains version information
+	resourceAttributesSettings                              ResourceAttributesSettings
 	metricAerospikeNamespaceDiskAvailable                   metricAerospikeNamespaceDiskAvailable
 	metricAerospikeNamespaceGeojsonRegionQueryCells         metricAerospikeNamespaceGeojsonRegionQueryCells
 	metricAerospikeNamespaceGeojsonRegionQueryFalsePositive metricAerospikeNamespaceGeojsonRegionQueryFalsePositive
@@ -1194,25 +1218,40 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                         pmetric.NewMetrics(),
 		buildInfo:                             settings.BuildInfo,
-		metricAerospikeNamespaceDiskAvailable: newMetricAerospikeNamespaceDiskAvailable(ms.AerospikeNamespaceDiskAvailable),
-		metricAerospikeNamespaceGeojsonRegionQueryCells:         newMetricAerospikeNamespaceGeojsonRegionQueryCells(ms.AerospikeNamespaceGeojsonRegionQueryCells),
-		metricAerospikeNamespaceGeojsonRegionQueryFalsePositive: newMetricAerospikeNamespaceGeojsonRegionQueryFalsePositive(ms.AerospikeNamespaceGeojsonRegionQueryFalsePositive),
-		metricAerospikeNamespaceGeojsonRegionQueryPoints:        newMetricAerospikeNamespaceGeojsonRegionQueryPoints(ms.AerospikeNamespaceGeojsonRegionQueryPoints),
-		metricAerospikeNamespaceGeojsonRegionQueryRequests:      newMetricAerospikeNamespaceGeojsonRegionQueryRequests(ms.AerospikeNamespaceGeojsonRegionQueryRequests),
-		metricAerospikeNamespaceMemoryFree:                      newMetricAerospikeNamespaceMemoryFree(ms.AerospikeNamespaceMemoryFree),
-		metricAerospikeNamespaceMemoryUsage:                     newMetricAerospikeNamespaceMemoryUsage(ms.AerospikeNamespaceMemoryUsage),
-		metricAerospikeNamespaceQueryCount:                      newMetricAerospikeNamespaceQueryCount(ms.AerospikeNamespaceQueryCount),
-		metricAerospikeNamespaceScanCount:                       newMetricAerospikeNamespaceScanCount(ms.AerospikeNamespaceScanCount),
-		metricAerospikeNamespaceTransactionCount:                newMetricAerospikeNamespaceTransactionCount(ms.AerospikeNamespaceTransactionCount),
-		metricAerospikeNodeConnectionCount:                      newMetricAerospikeNodeConnectionCount(ms.AerospikeNodeConnectionCount),
-		metricAerospikeNodeConnectionOpen:                       newMetricAerospikeNodeConnectionOpen(ms.AerospikeNodeConnectionOpen),
-		metricAerospikeNodeMemoryFree:                           newMetricAerospikeNodeMemoryFree(ms.AerospikeNodeMemoryFree),
-		metricAerospikeNodeQueryTracked:                         newMetricAerospikeNodeQueryTracked(ms.AerospikeNodeQueryTracked),
+		resourceAttributesSettings:            mbc.ResourceAttributes,
+		metricAerospikeNamespaceDiskAvailable: newMetricAerospikeNamespaceDiskAvailable(mbc.Metrics.AerospikeNamespaceDiskAvailable),
+		metricAerospikeNamespaceGeojsonRegionQueryCells:         newMetricAerospikeNamespaceGeojsonRegionQueryCells(mbc.Metrics.AerospikeNamespaceGeojsonRegionQueryCells),
+		metricAerospikeNamespaceGeojsonRegionQueryFalsePositive: newMetricAerospikeNamespaceGeojsonRegionQueryFalsePositive(mbc.Metrics.AerospikeNamespaceGeojsonRegionQueryFalsePositive),
+		metricAerospikeNamespaceGeojsonRegionQueryPoints:        newMetricAerospikeNamespaceGeojsonRegionQueryPoints(mbc.Metrics.AerospikeNamespaceGeojsonRegionQueryPoints),
+		metricAerospikeNamespaceGeojsonRegionQueryRequests:      newMetricAerospikeNamespaceGeojsonRegionQueryRequests(mbc.Metrics.AerospikeNamespaceGeojsonRegionQueryRequests),
+		metricAerospikeNamespaceMemoryFree:                      newMetricAerospikeNamespaceMemoryFree(mbc.Metrics.AerospikeNamespaceMemoryFree),
+		metricAerospikeNamespaceMemoryUsage:                     newMetricAerospikeNamespaceMemoryUsage(mbc.Metrics.AerospikeNamespaceMemoryUsage),
+		metricAerospikeNamespaceQueryCount:                      newMetricAerospikeNamespaceQueryCount(mbc.Metrics.AerospikeNamespaceQueryCount),
+		metricAerospikeNamespaceScanCount:                       newMetricAerospikeNamespaceScanCount(mbc.Metrics.AerospikeNamespaceScanCount),
+		metricAerospikeNamespaceTransactionCount:                newMetricAerospikeNamespaceTransactionCount(mbc.Metrics.AerospikeNamespaceTransactionCount),
+		metricAerospikeNodeConnectionCount:                      newMetricAerospikeNodeConnectionCount(mbc.Metrics.AerospikeNodeConnectionCount),
+		metricAerospikeNodeConnectionOpen:                       newMetricAerospikeNodeConnectionOpen(mbc.Metrics.AerospikeNodeConnectionOpen),
+		metricAerospikeNodeMemoryFree:                           newMetricAerospikeNodeMemoryFree(mbc.Metrics.AerospikeNodeMemoryFree),
+		metricAerospikeNodeQueryTracked:                         newMetricAerospikeNodeQueryTracked(mbc.Metrics.AerospikeNodeQueryTracked),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1231,26 +1270,30 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithAerospikeNamespace sets provided value as "aerospike.namespace" attribute for current resource.
 func WithAerospikeNamespace(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("aerospike.namespace", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.AerospikeNamespace.Enabled {
+			rm.Resource().Attributes().PutStr("aerospike.namespace", val)
+		}
 	}
 }
 
 // WithAerospikeNodeName sets provided value as "aerospike.node.name" attribute for current resource.
 func WithAerospikeNodeName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("aerospike.node.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.AerospikeNodeName.Enabled {
+			rm.Resource().Attributes().PutStr("aerospike.node.name", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1293,8 +1336,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricAerospikeNodeConnectionOpen.emit(ils.Metrics())
 	mb.metricAerospikeNodeMemoryFree.emit(ils.Metrics())
 	mb.metricAerospikeNodeQueryTracked.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -1307,8 +1351,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

@@ -120,5 +120,8 @@ func (rc *receiverCreator) Shutdown(context.Context) error {
 	for _, observable := range rc.observables {
 		observable.Unsubscribe(rc.observerHandler)
 	}
+	if rc.observerHandler == nil {
+		return nil
+	}
 	return rc.observerHandler.shutdown()
 }

@@ -7,7 +7,7 @@ prometheus:
         selectors:
         - role: pod
           # only scrape data from pods running on the same node as collector
-          field: "spec.nodeName=$NODE_NAME"
+          field: "spec.nodeName=${NODE_NAME}"
       relabel_configs:
       # scrape pods annotated with "prometheus.io/scrape: true"
       - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]

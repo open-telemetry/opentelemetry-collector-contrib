@@ -34,8 +34,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestNewMongodbScraper(t *testing.T) {
@@ -94,6 +94,17 @@ var (
 				"failed to collect metric mongodb.memory.usage with attribute(s) virtual, fakedatabase: could not find key for metric",
 				"failed to collect metric mongodb.index.access.count with attribute(s) fakedatabase, orders: could not find key for index access metric",
 				"failed to collect metric mongodb.index.access.count with attribute(s) fakedatabase, products: could not find key for index access metric",
+				"failed to collect metric mongodb.operation.latency.time with attribute(s) command: could not find key for metric",
+				"failed to collect metric mongodb.operation.latency.time with attribute(s) read: could not find key for metric",
+				"failed to collect metric mongodb.operation.latency.time with attribute(s) write: could not find key for metric",
+				"failed to collect metric mongodb.operation.repl.count with attribute(s) command: could not find key for metric",
+				"failed to collect metric mongodb.operation.repl.count with attribute(s) delete: could not find key for metric",
+				"failed to collect metric mongodb.operation.repl.count with attribute(s) getmore: could not find key for metric",
+				"failed to collect metric mongodb.operation.repl.count with attribute(s) insert: could not find key for metric",
+				"failed to collect metric mongodb.operation.repl.count with attribute(s) query: could not find key for metric",
+				"failed to collect metric mongodb.operation.repl.count with attribute(s) update: could not find key for metric",
+				"failed to collect metric mongodb.health: could not find key for metric",
+				"failed to collect metric mongodb.uptime: could not find key for metric",
 			}, "; "))
 	errAllClientFailedFetch = errors.New(
 		strings.Join(
@@ -280,7 +291,14 @@ func TestScraperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
+			scraperCfg := createDefaultConfig().(*Config)
+			// Enable any metrics set to `false` by default
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbOperationLatencyTime.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbOperationReplCount.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbUptime.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbHealth.Enabled = true
+
+			scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), scraperCfg)
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
 			if tc.expectedErr == nil {
@@ -307,8 +325,8 @@ func TestScraperScrape(t *testing.T) {
 			}
 			expectedMetrics := tc.expectedMetricGen(t)
 
-			err = comparetest.CompareMetrics(expectedMetrics, actualMetrics)
-			require.NoError(t, err)
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
 }

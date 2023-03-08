@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
@@ -45,7 +44,6 @@ type MessageMarking struct {
 
 // Config defines configuration for Kafka receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`
 	// Kafka protocol version

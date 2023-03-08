@@ -30,7 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -70,8 +69,7 @@ func TestStart(t *testing.T) {
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			cfg := &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				RecordType:       defaultRecordType,
+				RecordType: defaultRecordType,
 			}
 			ctx := context.TODO()
 			r := testFirehoseReceiver(cfg, nil)
@@ -89,8 +87,7 @@ func TestStart(t *testing.T) {
 			require.NoError(t, listener.Close())
 		})
 		cfg := &Config{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-			RecordType:       defaultRecordType,
+			RecordType: defaultRecordType,
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: listener.Addr().String(),
 			},
@@ -109,9 +106,8 @@ func TestFirehoseRequest(t *testing.T) {
 	defaultConsumer := newNopFirehoseConsumer(http.StatusOK, nil)
 	firehoseConsumerErr := errors.New("firehose consumer error")
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-		RecordType:       defaultRecordType,
-		AccessKey:        testFirehoseAccessKey,
+		RecordType: defaultRecordType,
+		AccessKey:  testFirehoseAccessKey,
 	}
 	var noRecords []firehoseRecord
 	testCases := map[string]struct {

@@ -19,11 +19,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/loki/pkg/push"
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki/logproto"
 )
 
 const (
@@ -38,10 +37,17 @@ const (
 	formatLogfmt string = "logfmt"
 )
 
-var defaultExporterLabels = model.LabelSet{"exporter": "OTLP"}
-
 func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model.LabelSet {
-	out := defaultExporterLabels
+	out := model.LabelSet{"exporter": "OTLP"}
+
+	// Map service.namespace + service.name to job
+	if job, ok := extractJob(resAttrs); ok {
+		out[model.JobLabel] = model.LabelValue(job)
+	}
+	// Map service.instance.id to instance
+	if instance, ok := extractInstance(resAttrs); ok {
+		out[model.InstanceLabel] = model.LabelValue(instance)
+	}
 
 	if resourcesToLabel, found := resAttrs.Get(hintResources); found {
 		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
@@ -82,13 +88,34 @@ func convertAttributesToLabels(attributes pcommon.Map, attrsToSelect pcommon.Val
 	attrs := parseAttributeNames(attrsToSelect)
 	for _, attr := range attrs {
 		attr = strings.TrimSpace(attr)
-		av, ok := attributes.Get(attr) // do we need to trim this?
+
+		av, ok := attributes.Get(attr)
+		if !ok {
+			// couldn't find the attribute under the given name directly
+			// perhaps it's a nested attribute?
+			av, ok = getNestedAttribute(attr, attributes) // shadows the OK from above on purpose
+		}
+
 		if ok {
 			out[model.LabelName(attr)] = model.LabelValue(av.AsString())
 		}
 	}
 
 	return out
+}
+
+func getNestedAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
+	left, right, _ := strings.Cut(attr, ".")
+	av, ok := attributes.Get(left)
+	if !ok {
+		return pcommon.Value{}, false
+	}
+
+	if len(right) == 0 {
+		return av, ok
+	}
+
+	return getNestedAttribute(right, av.Map())
 }
 
 func parseAttributeNames(attrsToSelect pcommon.Value) []string {
@@ -121,34 +148,34 @@ func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
 	})
 }
 
-func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
-	line, err := Encode(lr, res)
+func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*push.Entry, error) {
+	line, err := Encode(lr, res, scope)
 	if err != nil {
 		return nil, err
 	}
-	return &logproto.Entry{
+	return &push.Entry{
 		Timestamp: timestampFromLogRecord(lr),
 		Line:      line,
 	}, nil
 }
 
-func convertLogToLogfmtEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
-	line, err := EncodeLogfmt(lr, res)
+func convertLogToLogfmtEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*push.Entry, error) {
+	line, err := EncodeLogfmt(lr, res, scope)
 	if err != nil {
 		return nil, err
 	}
-	return &logproto.Entry{
+	return &push.Entry{
 		Timestamp: timestampFromLogRecord(lr),
 		Line:      line,
 	}, nil
 }
 
-func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format string) (*logproto.Entry, error) {
+func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format string, scope pcommon.InstrumentationScope) (*push.Entry, error) {
 	switch format {
 	case formatJSON:
-		return convertLogToJSONEntry(lr, res)
+		return convertLogToJSONEntry(lr, res, scope)
 	case formatLogfmt:
-		return convertLogToLogfmtEntry(lr, res)
+		return convertLogToLogfmtEntry(lr, res, scope)
 	default:
 		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s", format, formatJSON, formatLogfmt)
 	}

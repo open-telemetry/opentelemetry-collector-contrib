@@ -68,6 +68,9 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 }
 
 func (kp *kubernetesprocessor) Shutdown(context.Context) error {
+	if kp.kc == nil {
+		return nil
+	}
 	if !kp.passthroughMode {
 		kp.kc.Stop()
 	}
@@ -167,17 +170,28 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		}
 	}
 
+	runID := -1
 	runIDAttr, ok := attrs.Get(conventions.AttributeK8SContainerRestartCount)
 	if ok {
-		runID, err := intFromAttribute(runIDAttr)
-		if err == nil {
-			if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
-				if _, found := attrs.Get(conventions.AttributeContainerID); !found {
-					attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
-				}
-			}
-		} else {
+		containerRunID, err := intFromAttribute(runIDAttr)
+		if err != nil {
 			kp.logger.Debug(err.Error())
+		} else {
+			runID = containerRunID
+		}
+	} else {
+		// take the highest runID (restart count) which represents the currently running container in most cases
+		for containerRunID := range containerSpec.Statuses {
+			if containerRunID > runID {
+				runID = containerRunID
+			}
+		}
+	}
+	if runID != -1 {
+		if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
+			if _, found := attrs.Get(conventions.AttributeContainerID); !found {
+				attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
+			}
 		}
 	}
 }

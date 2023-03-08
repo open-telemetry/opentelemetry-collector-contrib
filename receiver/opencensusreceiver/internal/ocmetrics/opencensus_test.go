@@ -47,7 +47,7 @@ import (
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("opencensus"))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("opencensus"))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -80,7 +80,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 // accept nodes from downstream sources, but if a node isn't specified in
 // an exportMetrics request, assume it is from the last received and non-nil node.
 func TestExportMultiplexing(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("opencensus"))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("opencensus"))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -199,7 +199,7 @@ func TestExportMultiplexing(t *testing.T) {
 // The first message without a Node MUST be rejected and teardown the connection.
 // See https://github.com/census-instrumentation/opencensus-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("opencensus"))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("opencensus"))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -276,7 +276,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 // See https://github.com/census-instrumentation/opencensus-service/issues/51
 func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	// This test used to be flaky on Windows. Skip if errors pop up again
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("opencensus"))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("opencensus"))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))

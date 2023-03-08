@@ -51,7 +51,7 @@ func (v *traceVisitor) visit(
 	}
 
 	for _, envelope := range envelopes {
-		envelope.IKey = v.exporter.config.InstrumentationKey
+		envelope.IKey = string(v.exporter.config.InstrumentationKey)
 
 		// This is a fire and forget operation
 		v.exporter.transportChannel.Send(envelope)

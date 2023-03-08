@@ -15,7 +15,6 @@
 package components // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 
 import (
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -23,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/otelcol"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
@@ -46,13 +47,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
@@ -74,7 +75,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
@@ -89,6 +89,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
@@ -113,6 +114,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
@@ -120,6 +122,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
@@ -129,6 +132,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
@@ -157,6 +161,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
@@ -171,6 +176,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
@@ -183,9 +189,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 )
 
-func Components() (component.Factories, error) {
+func Components() (otelcol.Factories, error) {
 	var err error
-	factories := component.Factories{}
+	factories := otelcol.Factories{}
 	extensions := []extension.Factory{
 		asapauthextension.NewFactory(),
 		awsproxy.NewFactory(),
@@ -195,7 +201,6 @@ func Components() (component.Factories, error) {
 		dbstorage.NewFactory(),
 		ecstaskobserver.NewFactory(),
 		filestorage.NewFactory(),
-		fluentbitextension.NewFactory(),
 		headerssetterextension.NewFactory(),
 		healthcheckextension.NewFactory(),
 		hostobserver.NewFactory(),
@@ -209,7 +214,7 @@ func Components() (component.Factories, error) {
 	}
 	factories.Extensions, err = extension.MakeFactoryMap(extensions...)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	receivers := []receiver.Factory{
@@ -221,6 +226,7 @@ func Components() (component.Factories, error) {
 		awsfirehosereceiver.NewFactory(),
 		awscloudwatchreceiver.NewFactory(),
 		awsxrayreceiver.NewFactory(),
+		azureblobreceiver.NewFactory(),
 		azureeventhubreceiver.NewFactory(),
 		bigipreceiver.NewFactory(),
 		carbonreceiver.NewFactory(),
@@ -228,6 +234,7 @@ func Components() (component.Factories, error) {
 		cloudfoundryreceiver.NewFactory(),
 		collectdreceiver.NewFactory(),
 		couchdbreceiver.NewFactory(),
+		datadogreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
 		dotnetdiagnosticsreceiver.NewFactory(),
 		elasticsearchreceiver.NewFactory(),
@@ -237,6 +244,7 @@ func Components() (component.Factories, error) {
 		fluentforwardreceiver.NewFactory(),
 		googlecloudspannerreceiver.NewFactory(),
 		googlecloudpubsubreceiver.NewFactory(),
+		haproxyreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		httpcheckreceiver.NewFactory(),
 		influxdbreceiver.NewFactory(),
@@ -264,9 +272,9 @@ func Components() (component.Factories, error) {
 		postgresqlreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
-		// promtailreceiver.NewFactory(),
 		pulsarreceiver.NewFactory(),
 		purefareceiver.NewFactory(),
+		purefbreceiver.NewFactory(),
 		rabbitmqreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 		redisreceiver.NewFactory(),
@@ -281,6 +289,7 @@ func Components() (component.Factories, error) {
 		splunkhecreceiver.NewFactory(),
 		sqlqueryreceiver.NewFactory(),
 		sqlserverreceiver.NewFactory(),
+		sshcheckreceiver.NewFactory(),
 		statsdreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),
 		windowseventlogreceiver.NewFactory(),
@@ -294,7 +303,7 @@ func Components() (component.Factories, error) {
 	}
 	factories.Receivers, err = receiver.MakeFactoryMap(receivers...)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	exporters := []exporter.Factory{
@@ -316,7 +325,6 @@ func Components() (component.Factories, error) {
 		googlecloudexporter.NewFactory(),
 		googlemanagedprometheusexporter.NewFactory(),
 		googlecloudpubsubexporter.NewFactory(),
-		humioexporter.NewFactory(),
 		influxdbexporter.NewFactory(),
 		instanaexporter.NewFactory(),
 		jaegerexporter.NewFactory(),
@@ -324,6 +332,7 @@ func Components() (component.Factories, error) {
 		kafkaexporter.NewFactory(),
 		loadbalancingexporter.NewFactory(),
 		loggingexporter.NewFactory(),
+		logicmonitorexporter.NewFactory(),
 		logzioexporter.NewFactory(),
 		lokiexporter.NewFactory(),
 		mezmoexporter.NewFactory(),
@@ -346,10 +355,10 @@ func Components() (component.Factories, error) {
 	}
 	factories.Exporters, err = exporter.MakeFactoryMap(exporters...)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
-	processors := []component.ProcessorFactory{
+	processors := []processor.Factory{
 		attributesprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
@@ -368,12 +377,13 @@ func Components() (component.Factories, error) {
 		spanmetricsprocessor.NewFactory(),
 		spanprocessor.NewFactory(),
 		cumulativetodeltaprocessor.NewFactory(),
+		datadogprocessor.NewFactory(),
 		deltatorateprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
 	}
-	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
+	factories.Processors, err = processor.MakeFactoryMap(processors...)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	return factories, nil

@@ -33,8 +33,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
@@ -44,7 +44,7 @@ func TestEndtoEnd_ESX(t *testing.T) {
 			TLSClientSetting: configtls.TLSClientSetting{
 				Insecure: true,
 			},
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		}
 		s := session.NewManager(c)
 
@@ -77,7 +77,7 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		goldenPath := filepath.Join("testdata", "metrics", "integration-metrics.json")
 		expectedMetrics, err := golden.ReadMetrics(goldenPath)
 		require.NoError(t, err)
-		require.NoError(t, comparetest.CompareMetrics(expectedMetrics, metrics, comparetest.IgnoreMetricValues()))
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreMetricValues()))
 
 		err = scraper.Shutdown(ctx)
 		require.NoError(t, err)

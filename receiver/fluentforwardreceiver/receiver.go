@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
@@ -38,18 +39,25 @@ type fluentReceiver struct {
 	cancel    context.CancelFunc
 }
 
-func newFluentReceiver(logger *zap.Logger, conf *Config, next consumer.Logs) (receiver.Logs, error) {
+func newFluentReceiver(set receiver.CreateSettings, conf *Config, next consumer.Logs) (receiver.Logs, error) {
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             set.ID,
+		Transport:              "http",
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
 	eventCh := make(chan Event, eventChannelLength)
+	collector := newCollector(eventCh, next, set.Logger, obsrecv)
 
-	collector := newCollector(eventCh, next, logger)
-
-	server := newServer(eventCh, logger)
+	server := newServer(eventCh, set.Logger)
 
 	return &fluentReceiver{
 		collector: collector,
 		server:    server,
 		conf:      conf,
-		logger:    logger,
+		logger:    set.Logger,
 	}, nil
 }
 
@@ -89,6 +97,9 @@ func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
 }
 
 func (r *fluentReceiver) Shutdown(context.Context) error {
+	if r.listener == nil {
+		return nil
+	}
 	r.listener.Close()
 	r.cancel()
 	return nil

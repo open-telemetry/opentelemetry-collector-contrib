@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -57,9 +56,8 @@ func logDeprecation(logger *zap.Logger) {
 // createDefaultConfig returns a default config
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-		ScrapeInterval:   defaultCollectionInterval,
-		ScrapeTimeout:    defaultTimeoutInterval,
+		ScrapeInterval: defaultCollectionInterval,
+		ScrapeTimeout:  defaultTimeoutInterval,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Env: []subprocessmanager.EnvConfig{},
 		},

@@ -1,3 +1,15 @@
+[Dynatrace](https://www.dynatrace.com/integrations/opentelemetry/) can receive OpenTelemetry metrics in the following ways:
+
+- Using OTLP/HTTP (OpenTelemetry Protocol) metrics exporter (recommended)
+- Using Dynatrace OpenTelemetry metrics exporter described below
+
+More information on exporting metrics to Dynatrace can be found in the
+[Dynatrace documentation for OpenTelemetry metrics](https://www.dynatrace.com/support/help/shortlink/opentelemetry-metrics).
+
+For ingesting traces (spans) into Dynatrace, use the generic OTLP/HTTP exporter shipped with the Collector.  
+More information on exporting traces to Dynatrace can be found in the
+[Dynatrace documentation for OpenTelemetry traces](https://www.dynatrace.com/support/help/extend-dynatrace/opentelemetry/opentelemetry-traces/opentelemetry-ingest).
+
 # Dynatrace Exporter
 
 | Status                   |                  |
@@ -6,15 +18,8 @@
 | Supported pipeline types | metrics          |
 | Distributions            | [contrib], [AWS] |
 
-The [Dynatrace](https://www.dynatrace.com/integrations/opentelemetry/) metrics exporter exports metrics to the [Metrics API v2](https://www.dynatrace.com/support/help/dynatrace-api/environment-api/metric-v2/post-ingest-metrics/)
+The Dynatrace metrics exporter exports metrics to the [Metrics API v2](https://www.dynatrace.com/support/help/dynatrace-api/environment-api/metric-v2/post-ingest-metrics/)
 using the [metrics ingestion protocol](https://www.dynatrace.com/support/help/how-to-use-dynatrace/metrics/metric-ingestion/metric-ingestion-protocol/).
-This enables Dynatrace to receive metrics collected by the OpenTelemetry Collector.  
-More information on exporting metrics to Dynatrace can be found in the
-[Dynatrace documentation for OpenTelemetry metrics](https://www.dynatrace.com/support/help/shortlink/opentelemetry-metrics).
-
-For ingesting traces (spans) into Dynatrace, use the generic OTLP/HTTP exporter shipped with the Collector.  
-More information on exporting traces to Dynatrace can be found in the
-[Dynatrace documentation for OpenTelemetry traces](https://www.dynatrace.com/support/help/extend-dynatrace/opentelemetry/opentelemetry-traces/opentelemetry-ingest).
 
 > The requests sent to Dynatrace are authenticated using an API token mechanism documented [here](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/).  
 > Please review the Collector's [security

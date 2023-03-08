@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -42,7 +41,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
 		Prefetch: []string{
 			"https://opentelemetry.io/schemas/1.9.0",

@@ -34,8 +34,8 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
@@ -223,7 +223,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.TCPAddr.Endpoint = localAddr
 			if tt.metricsSettings != nil {
-				cfg.Metrics = tt.metricsSettings()
+				cfg.MetricsBuilderConfig.Metrics = tt.metricsSettings()
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)
@@ -270,7 +270,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 
-			require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
 }

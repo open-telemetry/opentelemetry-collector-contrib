@@ -176,7 +176,10 @@ type NodeStatsNodesInfoIndices struct {
 	QueryCache         BasicCacheInfo      `json:"query_cache"`
 	FieldDataCache     BasicCacheInfo      `json:"fielddata"`
 	TranslogStats      TranslogStats       `json:"translog"`
+	RequestCacheStats  RequestCacheStats   `json:"request_cache"`
 	SegmentsStats      SegmentsStats       `json:"segments"`
+	SharedStats        SharedStats         `json:"shard_stats"`
+	Mappings           MappingsStats       `json:"mappings"`
 }
 
 type SegmentsStats struct {
@@ -188,10 +191,26 @@ type SegmentsStats struct {
 	FixedBitSetMemoryInBy    int64 `json:"fixed_bit_set_memory_in_bytes"`
 }
 
+type SharedStats struct {
+	TotalCount int64 `json:"total_count"`
+}
+
+type MappingsStats struct {
+	TotalCount                 int64 `json:"total_count"`
+	TotalEstimatedOverheadInBy int64 `json:"total_estimated_overhead_in_bytes"`
+}
+
 type TranslogStats struct {
 	Operations                int64 `json:"operations"`
 	SizeInBy                  int64 `json:"size_in_bytes"`
 	UncommittedOperationsInBy int64 `json:"uncommitted_size_in_bytes"`
+}
+
+type RequestCacheStats struct {
+	MemorySizeInBy int64 `json:"memory_size_in_bytes"`
+	Evictions      int64 `json:"evictions"`
+	HitCount       int64 `json:"hit_count"`
+	MissCount      int64 `json:"miss_count"`
 }
 
 type StoreInfo struct {
@@ -228,6 +247,7 @@ type GetOperation struct {
 }
 
 type SearchOperations struct {
+	QueryCurrent    int64 `json:"query_current"`
 	QueryTotal      int64 `json:"query_total"`
 	QueryTimeInMs   int64 `json:"query_time_in_millis"`
 	FetchTotal      int64 `json:"fetch_total"`
@@ -315,7 +335,20 @@ type ThreadPoolStats struct {
 }
 
 type ProcessStats struct {
-	OpenFileDescriptorsCount int64 `json:"open_file_descriptors"`
+	OpenFileDescriptorsCount int64              `json:"open_file_descriptors"`
+	MaxFileDescriptorsCount  int64              `json:"max_file_descriptors_count"`
+	CPU                      ProcessCPUStats    `json:"cpu"`
+	Memory                   ProcessMemoryStats `json:"mem"`
+}
+
+type ProcessCPUStats struct {
+	Percent   int64 `json:"percent"`
+	TotalInMs int64 `json:"total_in_millis"`
+}
+
+type ProcessMemoryStats struct {
+	TotalVirtual     int64 `json:"total_virtual"`
+	TotalVirtualInBy int64 `json:"total_virtual_in_bytes"`
 }
 
 type TransportStats struct {

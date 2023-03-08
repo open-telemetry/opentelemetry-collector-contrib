@@ -218,7 +218,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}
 	expected.Username = "otel"
-	expected.Password = "$MONGO_PASSWORD"
+	expected.Password = "${env:MONGO_PASSWORD}"
 	expected.CollectionInterval = time.Minute
 
 	require.Equal(t, expected, cfg)

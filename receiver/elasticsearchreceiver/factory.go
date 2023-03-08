@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -48,16 +47,15 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: defaultCollectionInterval,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultHTTPClientTimeout,
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
-		Nodes:   []string{"_all"},
-		Indices: []string{"_all"},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Nodes:                []string{"_all"},
+		Indices:              []string{"_all"},
 	}
 }
 

@@ -16,13 +16,14 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"context"
+	"strconv"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 )
@@ -38,7 +39,7 @@ type logSamplerProcessor struct {
 
 // newLogsProcessor returns a processor.LogsProcessor that will perform head sampling according to the given
 // configuration.
-func newLogsProcessor(ctx context.Context, set component.ProcessorCreateSettings, nextConsumer consumer.Logs, cfg *Config) (component.LogsProcessor, error) {
+func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
 
 	lsp := &logSamplerProcessor{
 		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
@@ -89,21 +90,12 @@ func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (
 					}
 				}
 
-				sampled := hash(lidBytes, lsp.hashSeed)&bitMaskHashBuckets < priority
-				var err error
-				if sampled {
-					err = stats.RecordWithTags(
-						ctx,
-						[]tag.Mutator{tag.Upsert(tagPolicyKey, tagPolicyValue), tag.Upsert(tagSampledKey, "true")},
-						statCountLogsSampled.M(int64(1)),
-					)
-				} else {
-					err = stats.RecordWithTags(
-						ctx,
-						[]tag.Mutator{tag.Upsert(tagPolicyKey, tagPolicyValue), tag.Upsert(tagSampledKey, "false")},
-						statCountLogsSampled.M(int64(1)),
-					)
-				}
+				sampled := computeHash(lidBytes, lsp.hashSeed)&bitMaskHashBuckets < priority
+				var err error = stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Upsert(tagPolicyKey, tagPolicyValue), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
+					statCountLogsSampled.M(int64(1)),
+				)
 				if err != nil {
 					lsp.logger.Error(err.Error())
 				}

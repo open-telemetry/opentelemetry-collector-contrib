@@ -18,8 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -28,7 +26,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "logicmonitor"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a LogicMonitor exporter factory
@@ -36,59 +34,27 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability),
 		exporter.WithLogs(createLogsExporter, stability),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 	}
 }
 
-func createTracesExporter(
-	ctx context.Context,
-	set exporter.CreateSettings,
-	c component.Config,
-) (exporter.Traces, error) {
-	cfg := c.(*Config)
-	// TODO: Lines commented out until implementation is available
-	// lmexpCfg, err := newTracesExporter(cfg, set)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	var pushConvertedTraces consumer.ConsumeTracesFunc
-
-	return exporterhelper.NewTracesExporter(
-		ctx,
-		set,
-		cfg,
-		// TODO: Lines commented out until implementation is available
-		// lmexpCfg.pushTraces,
-		pushConvertedTraces,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithQueue(cfg.QueueSettings))
-}
-
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
-	// TODO: Lines commented out until implementation is available
-	// lmexpCfg, err := newLogsExporter(cfg, set.Logger)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	lmLogExp := newLogsExporter(cfg, set)
 	c := cfg.(*Config)
-	var pushConvertedLogs consumer.ConsumeLogsFunc
+
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
-		// TODO: Lines commented out until implementation is available
-		// lmexpCfg.PushLogData,
-		pushConvertedLogs,
+		lmLogExp.PushLogData,
+		exporterhelper.WithStart(lmLogExp.start),
 		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
 	)

@@ -18,9 +18,6 @@ import (
 	"fmt"
 	"os"
 	"time"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 const (
@@ -31,7 +28,6 @@ const (
 )
 
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
 
 	// ClusterName is the target ECS cluster name for service discovery.
 	ClusterName string `mapstructure:"cluster_name" yaml:"cluster_name"`
@@ -83,12 +79,11 @@ func (c *Config) Validate() error {
 // DefaultConfig only applies docker label
 func DefaultConfig() Config {
 	return Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-		ClusterName:       "default",
-		ClusterRegion:     os.Getenv(awsRegionEnvKey),
-		ResultFile:        "/etc/ecs_sd_targets.yaml",
-		RefreshInterval:   defaultRefreshInterval,
-		JobLabelName:      defaultJobLabelName,
+		ClusterName:     "default",
+		ClusterRegion:   os.Getenv(awsRegionEnvKey),
+		ResultFile:      "/etc/ecs_sd_targets.yaml",
+		RefreshInterval: defaultRefreshInterval,
+		JobLabelName:    defaultJobLabelName,
 		DockerLabels: []DockerLabelConfig{
 			{
 				PortLabel: defaultDockerLabelMatcherPortLabel,
@@ -101,12 +96,11 @@ func DefaultConfig() Config {
 // It can be used to validate if the struct tags like mapstructure, yaml are working properly.
 func exampleConfig() *Config {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-		ClusterName:       "ecs-sd-test-1",
-		ClusterRegion:     "us-west-2",
-		ResultFile:        "/etc/ecs_sd_targets.yaml",
-		RefreshInterval:   15 * time.Second,
-		JobLabelName:      defaultJobLabelName,
+		ClusterName:     "ecs-sd-test-1",
+		ClusterRegion:   "us-west-2",
+		ResultFile:      "/etc/ecs_sd_targets.yaml",
+		RefreshInterval: 15 * time.Second,
+		JobLabelName:    defaultJobLabelName,
 		Services: []ServiceConfig{
 			{
 				NamePattern: "^retail-.*$",

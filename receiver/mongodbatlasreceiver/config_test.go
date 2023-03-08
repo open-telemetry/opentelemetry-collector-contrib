@@ -15,10 +15,16 @@
 package mongodbatlasreceiver
 
 import (
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 func TestValidate(t *testing.T) {
@@ -223,6 +229,15 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errPageSizeIncorrect.Error(),
 		},
+		{
+			name: "Invalid events config - no projects",
+			input: Config{
+				Events: &EventsConfig{
+					Projects: []*ProjectConfig{},
+				},
+			},
+			expectedErr: errNoProjects.Error(),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -236,4 +251,54 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
+	expected.PrivateKey = "my-private-key"
+	expected.PublicKey = "my-public-key"
+	expected.Logs = LogConfig{
+		Enabled: true,
+		Projects: []*ProjectConfig{
+			{
+				Name: "Project 0",
+			},
+		},
+	}
+	expected.Alerts = AlertConfig{
+		Enabled: true,
+		Mode:    alertModePoll,
+		Projects: []*ProjectConfig{
+			{
+				Name:            "Project 0",
+				IncludeClusters: []string{"Cluster0"},
+			},
+		},
+		PageSize:     defaultAlertsPageSize,
+		MaxPages:     defaultAlertsMaxPages,
+		PollInterval: time.Minute,
+	}
+
+	expected.Events = &EventsConfig{
+		Projects: []*ProjectConfig{
+			{
+				Name: "Project 0",
+			},
+		},
+		PollInterval: time.Minute,
+		MaxPages:     defaultEventsMaxPages,
+		PageSize:     defaultEventsPageSize,
+	}
+	require.Equal(t, expected, cfg)
 }

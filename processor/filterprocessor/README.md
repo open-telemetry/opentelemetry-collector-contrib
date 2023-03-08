@@ -52,8 +52,8 @@ For metrics:
 - `match_type`: `strict`|`regexp`|`expr`
 - `metric_names`: (only for a `match_type` of `strict` or `regexp`) list of strings
   or re2 regex patterns
-- `expressions`: (only for a `match_type` of `expr`) list of expr expressions
-  (see "Using an 'expr' match_type" below)
+- `expressions`: (only for a `match_type` of `expr`) list of `expr` expressions
+  (see "Using an `expr` match_type" below)
 - `resource_attributes`: ResourceAttributes defines a list of possible resource
   attributes to match metrics against.
   A match occurs if any resource attribute matches all expressions in this given list.
@@ -62,7 +62,7 @@ This processor uses [re2 regex][re2_regex] for regex syntax.
 
 [re2_regex]: https://github.com/google/re2/wiki/Syntax
 
-More details can found at [include/exclude metrics](../attributesprocessor/README.md#includeexclude-filtering).
+More details can be found at [include/exclude metrics](../attributesprocessor/README.md#includeexclude-filtering).
 
 Examples:
 
@@ -76,8 +76,8 @@ processors:
           - prefix/.*
           - prefix_.*
         resource_attributes:
-          - Key: container.name
-            Value: app_container_1
+          - key: container.name
+            value: app_container_1
       exclude:
         match_type: strict
         metric_names:
@@ -88,36 +88,41 @@ processors:
       include:
         match_type: strict
         resource_attributes:
-          - Key: host.name
-            Value: just_this_one_hostname
-    logs/regexp:
+          - key: host.name
+            value: just_this_one_hostname
+  filter/regexp:
+    logs:
       include:
         match_type: regexp
         resource_attributes:
-          - Key: host.name
-            Value: prefix.*
-    logs/regexp_record:
+          - key: host.name
+            value: prefix.*
+  filter/regexp_record:
+    logs:
       include:
         match_type: regexp
         record_attributes:
-          - Key: record_attr
-            Value: prefix_.*
-    # Filter on severity text field
-    logs/severity_text:
+          - key: record_attr
+            value: prefix_.*
+  # Filter on severity text field
+  filter/severity_text:
+    logs:
       include:
         match_type: regexp
         severity_texts:
         - INFO[2-4]?
         - WARN[2-4]?
         - ERROR[2-4]?
-    # Filter out logs below INFO (no DEBUG or TRACE level logs),
-    # retaining logs with undefined severity
-    logs/severity_number:
+  # Filter out logs below INFO (no DEBUG or TRACE level logs),
+  # retaining logs with undefined severity
+  filter/severity_number:
+    logs:
       include:
         severity_number:
           min: "INFO"
           match_undefined: true
-    logs/bodies:
+  filter/bodies:
+    logs:
       include:
         match_type: regexp
         bodies:
@@ -127,12 +132,12 @@ processors:
 Refer to the config files in [testdata](./testdata) for detailed
 examples on using the processor.
 
-## Using an 'expr' match_type
+## Using an "expr" match_type
 
-In addition to matching metric names with the 'strict' or 'regexp' match types, the filter processor
+In addition to matching metric names with the `strict` or `regexp` match types, the filter processor
 supports matching entire `Metric`s using the [expr](https://github.com/antonmedv/expr) expression engine.
 
-The 'expr' filter evaluates the supplied boolean expressions _per datapoint_ on a metric, and returns a result
+The `expr` filter evaluates the supplied boolean expressions _per datapoint_ on a metric, and returns a result
 for the entire metric. If any datapoint evaluates to true then the entire metric evaluates to true, otherwise
 false.
 
@@ -167,12 +172,12 @@ with a label of 'my_label="abc123"'.
 
 ### Support for multiple expressions
 
-As with "strict" and "regexp", multiple "expr" `expressions` are allowed.
+As with `strict` and `regexp`, multiple `expr` expressions are allowed.
 
 For example, the following two filters have the same effect: they filter out metrics named "system.cpu.time" and
 "system.disk.io". 
 
-```
+```yaml
 processors:
   filter/expr:
     metrics:
@@ -190,7 +195,7 @@ processors:
           - system.disk.io
 ```
 
-The expressions are effectively ORed per datapoint. So for the above 'expr' configuration, given a datapoint, if its
+The expressions are effectively ORed per datapoint. So for the above `expr` configuration, given a datapoint, if its
 parent Metric's name is "system.cpu.time" or "system.disk.io" then there's a match. The conditions are tested against
 all the datapoints in a Metric until there's a match, in which case the entire Metric is considered a match, and in
 the above example the Metric will be excluded. If after testing all the datapoints in a Metric against all the
@@ -204,7 +209,7 @@ Following example will include only the metrics coming from `app_container_1` (t
 
 ```yaml
 processors:
-  filter:
+  filter/resource_attributes_include:
     metrics:
       include:
         match_type: strict
@@ -212,15 +217,15 @@ processors:
           - hello_world
           - hello/world
         resource_attributes:
-          - Key: container.name
-            Value: app_container_1
+          - key: container.name
+            value: app_container_1
 ```
 
 Following example will exclude all the metrics coming from `app_container_1` (the value for `container.name` resource attribute is `app_container_1`). 
 
 ```yaml
 processors:
-  filter:
+  filter/resource_attributes_exclude:
     metrics:
       exclude:
         match_type: strict
@@ -228,15 +233,15 @@ processors:
           - hello_world
           - hello/world
         resource_attributes:
-          - Key: container.name
-            Value: app_container_1
+          - key: container.name
+            value: app_container_1
 ```
 
 We can also use `regexp` to filter metrics using resource attributes. Following example will include only the metrics coming from `app_container_1` or `app_container_2` (the value for `container.name` resource attribute is either `app_container_1` or `app_container_2`). 
 
 ```yaml
 processors:
-  filter:
+  filter/resource_attributes_regexp:
     metrics:
       exclude:
         match_type: regexp
@@ -244,8 +249,8 @@ processors:
           - hello_world
           - hello/world
         resource_attributes:
-          - Key: container.name
-            Value: (app_container_1|app_container_1)
+          - key: container.name
+            value: (app_container_1|app_container_1)
 ```
 
 In case the no metric names are provided, `matric_names` being empty, the filtering is only done at resource level.
@@ -262,7 +267,7 @@ non-empty value for a valid configuration.
 
 ```yaml
 processors:
-  filter:
+  filter/spans:
     spans:
       include:
         match_type: strict
@@ -277,14 +282,14 @@ processors:
           - hello_world
           - hello/world
         attributes:
-          - Key: container.name
-            Value: (app_container_1|app_container_2)
+          - key: container.name
+            value: (app_container_1|app_container_2)
         libraries:
-          - Name: opentelemetry
-            Version: 0.0-beta
+          - name: opentelemetry
+            version: 0.0-beta
         resources:
-          - Key: container.host
-            Value: (localhost|127.0.0.1)
+          - key: container.host
+            value: (localhost|127.0.0.1)
 ```
 
 ## OTTL
@@ -305,8 +310,6 @@ See the table below for details on each context and the fields it exposes.
 The OTTL allows the use of `and`, `or`, and `()` in conditions.
 See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md#boolean-expressions) for more details.
 
-The filter processor has access to all the [factory functions of the OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions) 
-
 For conditions that apply to the same signal, such as spans and span events, if the "higher" level telemetry matches a condition and is dropped, the "lower" level condition will not be checked.
 This means that if a span is dropped but a span event condition was defined, the span event condition will not be checked.
 The same relationship applies to metrics and datapoints.
@@ -314,11 +317,53 @@ The same relationship applies to metrics and datapoints.
 If all span events for a span are dropped, the span will be left intact.
 If all datapoints for a metric are dropped, the metric will also be dropped.
 
+The filter processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing an OTTL condition.
+
+| error_mode            | description                                                                                                                |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------|
+| ignore                | The processor ignores errors returned by conditions and continues on to the next condition.  This is the recommended mode. |
+| propagate             | The processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.        |
+
+If not specified, `propagate` will be used.
+
+### OTTL Functions
+
+The filter processor has access to all the [factory functions of the OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions)
+
+In addition, the processor defines a few of its own functions:
+
+**Metrics only functions**
+- [HasAttrKeyOnDatapoint](#HasAttrKeyOnDatapoint)
+- [HasAttrOnDatapoint](#HasAttrOnDatapoint)
+
+#### HasAttrKeyOnDatapoint
+
+`HasAttrKeyOnDatapoint(key)`
+
+Returns `true` if the given key appears in the attribute map of any datapoint on a metric.
+`key` must be a string.
+
+Examples:
+
+- `HasAttrKeyOnDatapoint("http.method")`
+
+#### HasAttrOnDatapoint
+
+`HasAttrOnDatapoint(key, value)`
+
+Returns `true` if the given key and value appears in the attribute map of any datapoint on a metric.
+`key` and `value` must both be strings.
+
+Examples:
+
+- `HasAttrOnDatapoint("http.method", "GET")`
+
 ### OTTL Examples
 
 ```yaml
 processors:
-  filter:
+  filter/ottl:
+    error_mode: ignore
     traces:
       span:
         - 'attributes["container.name"] == "app_container_1"'
@@ -329,7 +374,7 @@ processors:
         - 'IsMatch(name, ".*grpc.*") == true'
     metrics:
       metric:
-          - 'name == "my.metric" and attributes["my_label"] == "abc123"'
+          - 'name == "my.metric" and resource.attributes["my_label"] == "abc123"'
           - 'type == METRIC_DATA_TYPE_HISTOGRAM'
       datapoint:
           - 'metric.type == METRIC_DATA_TYPE_SUMMARY'

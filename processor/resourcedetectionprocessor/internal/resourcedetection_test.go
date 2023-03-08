@@ -26,9 +26,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 )
 
@@ -105,14 +105,14 @@ func TestDetect(t *testing.T) {
 				md.On("Detect").Return(res, nil)
 
 				mockDetectorType := DetectorType(fmt.Sprintf("mockdetector%v", i))
-				mockDetectors[mockDetectorType] = func(component.ProcessorCreateSettings, DetectorConfig) (Detector, error) {
+				mockDetectors[mockDetectorType] = func(processor.CreateSettings, DetectorConfig) (Detector, error) {
 					return md, nil
 				}
 				mockDetectorTypes = append(mockDetectorTypes, mockDetectorType)
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(processortest.NewNopCreateSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, _, err := p.Get(context.Background(), http.DefaultClient)
@@ -126,18 +126,18 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
 func TestDetectResource_DetectoryFactoryError(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{
-		mockDetectorKey: func(component.ProcessorCreateSettings, DetectorConfig) (Detector, error) {
+		mockDetectorKey: func(processor.CreateSettings, DetectorConfig) (Detector, error) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
@@ -221,25 +221,19 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md3 := NewMockParallelDetector()
 	md3.On("Detect").Return(pcommon.NewResource(), errors.New("an error"))
 
-	expectedResource := pcommon.NewResource()
-	require.NoError(t, expectedResource.Attributes().FromRaw(map[string]interface{}{"a": "1", "b": "2", "c": "3"}))
-	expectedResource.Attributes().Sort()
+	expectedResourceAttrs := map[string]interface{}{"a": "1", "b": "2", "c": "3"}
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2, md3)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
-	var m sync.Mutex
 	wg.Add(iterations)
 	for i := 0; i < iterations; i++ {
 		go func() {
 			defer wg.Done()
 			detected, _, err := p.Get(context.Background(), http.DefaultClient)
 			require.NoError(t, err)
-			m.Lock()
-			detected.Attributes().Sort()
-			m.Unlock()
-			assert.Equal(t, expectedResource, detected)
+			assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 		}()
 	}
 

@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -43,9 +42,8 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-		Region:            "region",
-		Service:           "service",
+		Region:  "region",
+		Service: "service",
 		AssumeRole: AssumeRole{
 			SessionName: "role_session_name",
 			STSRegion:   "region",

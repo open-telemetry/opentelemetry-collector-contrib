@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -42,7 +41,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 10 * time.Second,
 				},
 				APIVersion: defaultAPIVersion,
@@ -54,7 +52,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "all"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 2 * time.Second,
 				},
 				APIVersion: defaultAPIVersion,

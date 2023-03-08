@@ -81,9 +81,6 @@ func newLogzioTracesExporter(config *Config, set exporter.CreateSettings) (expor
 	if err != nil {
 		return nil, err
 	}
-	if err = config.Validate(); err != nil {
-		return nil, err
-	}
 	exporter.config.HTTPClientSettings.Endpoint, err = generateEndpoint(config)
 	if err != nil {
 		return nil, err
@@ -104,9 +101,6 @@ func newLogzioTracesExporter(config *Config, set exporter.CreateSettings) (expor
 func newLogzioLogsExporter(config *Config, set exporter.CreateSettings) (exporter.Logs, error) {
 	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
-		return nil, err
-	}
-	if err = config.Validate(); err != nil {
 		return nil, err
 	}
 	exporter.config.HTTPClientSettings.Endpoint, err = generateEndpoint(config)
@@ -146,7 +140,7 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 			logRecords := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logRecords.Len(); k++ {
 				log := logRecords.At(k)
-				jsonLog := convertLogRecordToJSON(log, resource, exporter.logger)
+				jsonLog := convertLogRecordToJSON(log, resource)
 				logzioLog, err := json.Marshal(jsonLog)
 				if err != nil {
 					return err

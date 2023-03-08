@@ -10,16 +10,17 @@ Tails and parses logs from windows event log API using the [opentelemetry-log-co
 
 ### Configuration Fields
 
-| Field           | Default                  | Description                                                                                                                    |
-| ---             | ---                      | ---                                                                                                                            |
-| `channel`       | required                 | The windows event log channel to monitor                                                                                       |
-| `max_reads`     | 100                      | The maximum number of records read into memory, before beginning a new batch                                                   |
-| `start_at`      | `end`                    | On first startup, where to start reading logs from the API. Options are `beginning` or `end`                                   |
-| `poll_interval` | 1s                       | The interval at which the channel is checked for new log entries. This check begins again after all new bodies have been read. |
-| `attributes`    | {}                       | A map of `key: value` pairs to add to the entry's attributes. |
-| `resource`      | {}                       | A map of `key: value` pairs to add to the entry's resource. |
-| `operators`            | []               | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details |
-| `storage`       | none             | The ID of a storage extension to be used to store bookmarks. Bookmarks allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage bookmarks in memory only. |
+| Field           | Default  | Description                                                                                                                                                                                                                                    |
+|-----------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `channel`       | required | The windows event log channel to monitor                                                                                                                                                                                                       |
+| `max_reads`     | 100      | The maximum number of records read into memory, before beginning a new batch                                                                                                                                                                   |
+| `start_at`      | `end`    | On first startup, where to start reading logs from the API. Options are `beginning` or `end`                                                                                                                                                   |
+| `poll_interval` | 1s       | The interval at which the channel is checked for new log entries. This check begins again after all new bodies have been read.                                                                                                                 |
+| `attributes`    | {}       | A map of `key: value` pairs to add to the entry's attributes.                                                                                                                                                                                  |
+| `resource`      | {}       | A map of `key: value` pairs to add to the entry's resource.                                                                                                                                                                                    |
+| `operators`     | []       | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details                                                            |
+| `raw`           | false    | If true, the windows events are not processed and sent as XML.                                                                                                                                                                                 |
+| `storage`       | none     | The ID of a storage extension to be used to store bookmarks. Bookmarks allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage bookmarks in memory only. |
 
 ### Operators
 

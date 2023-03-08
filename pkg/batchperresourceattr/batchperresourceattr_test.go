@@ -43,6 +43,19 @@ func TestSplitTracesOneResourceSpans(t *testing.T) {
 	assert.Equal(t, inBatch, outBatches[0])
 }
 
+func TestOriginalResourceSpansUnchanged(t *testing.T) {
+	inBatch := ptrace.NewTraces()
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "1")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "1")
+
+	sink := new(consumertest.TracesSink)
+	bpr := NewBatchPerResourceTraces("attr_key", sink)
+	assert.NoError(t, bpr.ConsumeTraces(context.Background(), inBatch))
+	outBatches := sink.AllTraces()
+	require.Len(t, outBatches, 1)
+	assert.Equal(t, inBatch, outBatches[0])
+}
+
 func TestSplitTracesReturnError(t *testing.T) {
 	inBatch := ptrace.NewTraces()
 	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "1")
@@ -111,6 +124,19 @@ func TestSplitMetricsOneResourceMetrics(t *testing.T) {
 	assert.Equal(t, expected, outBatches[0])
 }
 
+func TestOriginalResourceMetricsUnchanged(t *testing.T) {
+	inBatch := pmetric.NewMetrics()
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "1")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "1")
+
+	sink := new(consumertest.MetricsSink)
+	bpr := NewBatchPerResourceMetrics("attr_key", sink)
+	assert.NoError(t, bpr.ConsumeMetrics(context.Background(), inBatch))
+	outBatches := sink.AllMetrics()
+	require.Len(t, outBatches, 1)
+	assert.Equal(t, inBatch, outBatches[0])
+}
+
 func TestSplitMetricsReturnError(t *testing.T) {
 	inBatch := pmetric.NewMetrics()
 	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "1")
@@ -177,6 +203,19 @@ func TestSplitLogsOneResourceLogs(t *testing.T) {
 	outBatches := sink.AllLogs()
 	require.Len(t, outBatches, 1)
 	assert.Equal(t, expected, outBatches[0])
+}
+
+func TestOriginalResourceLogsUnchanged(t *testing.T) {
+	inBatch := plog.NewLogs()
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "1")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "1")
+
+	sink := new(consumertest.LogsSink)
+	bpr := NewBatchPerResourceLogs("attr_key", sink)
+	assert.NoError(t, bpr.ConsumeLogs(context.Background(), inBatch))
+	outBatches := sink.AllLogs()
+	require.Len(t, outBatches, 1)
+	assert.Equal(t, inBatch, outBatches[0])
 }
 
 func TestSplitLogsReturnError(t *testing.T) {

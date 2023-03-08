@@ -18,14 +18,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/grafana/loki/pkg/push"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki/logproto"
 )
 
 type PushRequest struct {
-	*logproto.PushRequest
+	*push.PushRequest
 	Report *PushReport
 }
 
@@ -66,6 +65,7 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).LogRecords()
+			scope := ills.At(j).Scope()
 			for k := 0; k < logs.Len(); k++ {
 
 				// similarly, we may remove attributes, so change only our version
@@ -85,7 +85,7 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 				if !ok {
 					group = pushRequestGroup{
 						report:  &PushReport{},
-						streams: make(map[string]*logproto.Stream),
+						streams: make(map[string]*push.Stream),
 					}
 					groups[tenant] = group
 				}
@@ -99,7 +99,7 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 				// create the stream name based on the labels
 				labels := mergedLabels.String()
-				entry, err := convertLogToLokiEntry(log, resource, format)
+				entry, err := convertLogToLokiEntry(log, resource, format, scope)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					group.report.Errors = append(group.report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
@@ -114,9 +114,9 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 					continue
 				}
 
-				group.streams[labels] = &logproto.Stream{
+				group.streams[labels] = &push.Stream{
 					Labels:  labels,
-					Entries: []logproto.Entry{*entry},
+					Entries: []push.Entry{*entry},
 				}
 			}
 		}
@@ -124,8 +124,8 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 	requests := make(map[string]PushRequest)
 	for tenant, g := range groups {
-		pr := &logproto.PushRequest{
-			Streams: make([]logproto.Stream, len(g.streams)),
+		pr := &push.PushRequest{
+			Streams: make([]push.Stream, len(g.streams)),
 		}
 
 		i := 0
@@ -177,7 +177,7 @@ func getTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) stri
 }
 
 type pushRequestGroup struct {
-	streams map[string]*logproto.Stream
+	streams map[string]*push.Stream
 	report  *PushReport
 }
 
@@ -196,15 +196,16 @@ type pushRequestGroup struct {
 // to make this decision, as it includes all of the errors that were encountered,
 // as well as the number of items dropped and submitted.
 // Deprecated: [v0.62.0] will be removed after v0.63.0. Use LogsToLokiRequests instead.
-func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
+func LogsToLoki(ld plog.Logs) (*push.PushRequest, *PushReport) {
 	report := &PushReport{}
 
-	streams := make(map[string]*logproto.Stream)
+	streams := make(map[string]*push.Stream)
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).ScopeLogs()
 
 		for j := 0; j < ills.Len(); j++ {
+			scope := ills.At(j).Scope()
 			logs := ills.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 
@@ -229,7 +230,7 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 				// create the stream name based on the labels
 				labels := mergedLabels.String()
 
-				entry, err := convertLogToLokiEntry(log, resource, format)
+				entry, err := convertLogToLokiEntry(log, resource, format, scope)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					report.Errors = append(report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
@@ -244,16 +245,16 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 					continue
 				}
 
-				streams[labels] = &logproto.Stream{
+				streams[labels] = &push.Stream{
 					Labels:  labels,
-					Entries: []logproto.Entry{*entry},
+					Entries: []push.Entry{*entry},
 				}
 			}
 		}
 	}
 
-	pr := &logproto.PushRequest{
-		Streams: make([]logproto.Stream, len(streams)),
+	pr := &push.PushRequest{
+		Streams: make([]push.Stream, len(streams)),
 	}
 
 	i := 0

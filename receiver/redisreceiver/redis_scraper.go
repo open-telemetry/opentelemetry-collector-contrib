@@ -34,6 +34,7 @@ import (
 // Runs intermittently, fetching info from Redis, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
 type redisScraper struct {
+	client   client
 	redisSvc *redisSvc
 	settings component.TelemetrySettings
 	mb       *metadata.MetricsBuilder
@@ -58,11 +59,23 @@ func newRedisScraper(cfg *Config, settings receiver.CreateSettings) (scraperhelp
 
 func newRedisScraperWithClient(client client, settings receiver.CreateSettings, cfg *Config) (scraperhelper.Scraper, error) {
 	rs := &redisScraper{
+		client:   client,
 		redisSvc: newRedisSvc(client),
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
-	return scraperhelper.NewScraper(typeStr, rs.Scrape)
+	return scraperhelper.NewScraper(
+		typeStr,
+		rs.Scrape,
+		scraperhelper.WithShutdown(rs.shutdown),
+	)
+}
+
+func (rs *redisScraper) shutdown(context.Context) error {
+	if rs.client != nil {
+		return rs.client.close()
+	}
+	return nil
 }
 
 // Scrape is called periodically, querying Redis and building Metrics to send to

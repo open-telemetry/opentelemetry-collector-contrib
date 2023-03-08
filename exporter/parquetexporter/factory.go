@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -31,8 +30,7 @@ const (
 )
 
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
-	Path                    string `mapstructure:"path"`
+	Path string `mapstructure:"path"`
 }
 
 // NewFactory creates a factory for the Parquet exporter.
@@ -46,9 +44,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
 func createTracesExporter(

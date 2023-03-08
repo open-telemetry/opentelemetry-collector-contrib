@@ -18,20 +18,16 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"time"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
 type Config struct {
-	config.ReceiverSettings                 `mapstructure:",squash"`
 	DataSource                              string `mapstructure:"datasource"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	MetricsSettings                         metadata.MetricsSettings `mapstructure:"metrics"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 }
 
 func (c Config) Validate() error {
@@ -42,14 +38,4 @@ func (c Config) Validate() error {
 		return fmt.Errorf("'datasource' is invalid: %w", err)
 	}
 	return nil
-}
-
-func CreateDefaultConfig() component.Config {
-	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
-			CollectionInterval: 10 * time.Second,
-		},
-		MetricsSettings: metadata.DefaultMetricsSettings(),
-	}
 }

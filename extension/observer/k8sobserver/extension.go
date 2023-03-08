@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/tools/cache"
@@ -57,14 +58,18 @@ func (k *k8sObserver) Start(ctx context.Context, host component.Host) error {
 		if k.podListerWatcher != nil {
 			k.telemetry.Logger.Debug("creating and starting pod informer")
 			podInformer := cache.NewSharedInformer(k.podListerWatcher, &v1.Pod{}, 0)
-			podInformer.AddEventHandler(k.handler)
+			if _, err := podInformer.AddEventHandler(k.handler); err != nil {
+				k.telemetry.Logger.Error("error adding event handler to pod informer", zap.Error(err))
+			}
 			go podInformer.Run(k.stop)
 		}
 		if k.nodeListerWatcher != nil {
 			k.telemetry.Logger.Debug("creating and starting node informer")
 			nodeInformer := cache.NewSharedInformer(k.nodeListerWatcher, &v1.Node{}, 0)
 			go nodeInformer.Run(k.stop)
-			nodeInformer.AddEventHandler(k.handler)
+			if _, err := nodeInformer.AddEventHandler(k.handler); err != nil {
+				k.telemetry.Logger.Error("error adding event handler to node informer", zap.Error(err))
+			}
 		}
 	})
 	return nil

@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -34,7 +33,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "signalfx"
 	// The stability level of the receiver.
-	stability = component.StabilityLevelStable
+	stability = component.StabilityLevelBeta
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":9943"
@@ -51,7 +50,6 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -75,19 +73,6 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 	return int(port), nil
 }
 
-// verify that the configured port is not 0
-func (rCfg *Config) validate() error {
-	if rCfg.Endpoint == "" {
-		return errEmptyEndpoint
-	}
-
-	_, err := extractPortFromEndpoint(rCfg.Endpoint)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
@@ -97,14 +82,10 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
 
-	err := rCfg.validate()
-	if err != nil {
-		return nil, err
-	}
-
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
+		var err error
 		r, err = newReceiver(params, *rCfg)
 		if err != nil {
 			return nil, err
@@ -127,14 +108,10 @@ func createLogsReceiver(
 ) (receiver.Logs, error) {
 	rCfg := cfg.(*Config)
 
-	err := rCfg.validate()
-	if err != nil {
-		return nil, err
-	}
-
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
+		var err error
 		r, err = newReceiver(params, *rCfg)
 		if err != nil {
 			return nil, err

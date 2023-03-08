@@ -36,7 +36,7 @@ type ScraperType string
 
 const (
 	ScraperTypeArray       ScraperType = "array"
-	ScraperTypeHost        ScraperType = "host"
+	ScraperTypeHosts       ScraperType = "hosts"
 	ScraperTypeDirectories ScraperType = "directories"
 	ScraperTypePods        ScraperType = "pods"
 	ScraperTypeVolumes     ScraperType = "volumes"
@@ -47,6 +47,7 @@ type scraper struct {
 	endpoint       string
 	configs        []ScraperConfig
 	scrapeInterval time.Duration
+	labels         model.LabelSet
 }
 
 func NewScraper(ctx context.Context,
@@ -54,12 +55,14 @@ func NewScraper(ctx context.Context,
 	endpoint string,
 	configs []ScraperConfig,
 	scrapeInterval time.Duration,
+	labels model.LabelSet,
 ) Scraper {
 	return &scraper{
 		scraperType:    scraperType,
 		endpoint:       endpoint,
 		configs:        configs,
 		scrapeInterval: scrapeInterval,
+		labels:         labels,
 	}
 }
 
@@ -80,6 +83,9 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact receiver.
 		httpConfig := configutil.HTTPClientConfig{}
 		httpConfig.BearerToken = configutil.Secret(bearerToken)
 
+		labels := h.labels
+		labels["fa_array_name"] = model.LabelValue(arr.Address)
+
 		scrapeConfig := &config.ScrapeConfig{
 			HTTPClientConfig: httpConfig,
 			ScrapeInterval:   model.Duration(h.scrapeInterval),
@@ -98,6 +104,7 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact receiver.
 						Targets: []model.LabelSet{
 							{model.AddressLabel: model.LabelValue(u.Host)},
 						},
+						Labels: labels,
 					},
 				},
 			},

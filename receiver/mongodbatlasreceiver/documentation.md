@@ -961,14 +961,14 @@ Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| mongodb_atlas.db.name | Name of the Database | Any Str |
-| mongodb_atlas.disk.partition | Name of a disk partition | Any Str |
-| mongodb_atlas.host.name | Hostname of the process | Any Str |
-| mongodb_atlas.org_name | Organization Name | Any Str |
-| mongodb_atlas.process.id | ID of the process | Any Str |
-| mongodb_atlas.process.port | Port process is bound to | Any Str |
-| mongodb_atlas.process.type_name | Process type | Any Str |
-| mongodb_atlas.project.id | Project ID | Any Str |
-| mongodb_atlas.project.name | Project Name | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| mongodb_atlas.db.name | Name of the Database | Any Str | true |
+| mongodb_atlas.disk.partition | Name of a disk partition | Any Str | true |
+| mongodb_atlas.host.name | Hostname of the process | Any Str | true |
+| mongodb_atlas.org_name | Organization Name | Any Str | true |
+| mongodb_atlas.process.id | ID of the process | Any Str | true |
+| mongodb_atlas.process.port | Port process is bound to | Any Str | true |
+| mongodb_atlas.process.type_name | Process type | Any Str | true |
+| mongodb_atlas.project.id | Project ID | Any Str | true |
+| mongodb_atlas.project.name | Project Name | Any Str | true |

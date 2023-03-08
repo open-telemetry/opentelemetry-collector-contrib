@@ -32,31 +32,13 @@ import (
 func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (pmetric.Metrics, int) {
 	numDroppedTimeSeries := 0
 	md := pmetric.NewMetrics()
-
+	scopeMetricsMap := make(map[[4]string]pmetric.ScopeMetrics)
 	for _, event := range events {
-		resourceMetrics := pmetric.NewResourceMetrics()
-		if resourceCustomizer != nil {
-			resourceCustomizer(resourceMetrics.Resource())
-		}
-		attrs := resourceMetrics.Resource().Attributes()
-		if event.Host != "" {
-			attrs.PutStr(config.HecToOtelAttrs.Host, event.Host)
-		}
-		if event.Source != "" {
-			attrs.PutStr(config.HecToOtelAttrs.Source, event.Source)
-		}
-		if event.SourceType != "" {
-			attrs.PutStr(config.HecToOtelAttrs.SourceType, event.SourceType)
-		}
-		if event.Index != "" {
-			attrs.PutStr(config.HecToOtelAttrs.Index, event.Index)
-		}
-
 		values := event.GetMetricValues()
 
 		labels := buildAttributes(event.Fields)
 
-		metrics := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics()
+		metrics := pmetric.NewMetricSlice()
 		for metricName, metricValue := range values {
 			pointTimestamp := convertTimestamp(event.Time)
 			metric := pmetric.NewMetric()
@@ -83,10 +65,35 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 			}
 		}
 
-		if metrics.Len() > 0 {
-			tgt := md.ResourceMetrics().AppendEmpty()
-			resourceMetrics.CopyTo(tgt)
+		if metrics.Len() == 0 {
+			continue
 		}
+		key := [4]string{event.Host, event.Source, event.SourceType, event.Index}
+		var sm pmetric.ScopeMetrics
+		var found bool
+		if sm, found = scopeMetricsMap[key]; !found {
+			resourceMetrics := md.ResourceMetrics().AppendEmpty()
+			sm = resourceMetrics.ScopeMetrics().AppendEmpty()
+			scopeMetricsMap[key] = sm
+
+			attrs := resourceMetrics.Resource().Attributes()
+			if event.Host != "" {
+				attrs.PutStr(config.HecToOtelAttrs.Host, event.Host)
+			}
+			if event.Source != "" {
+				attrs.PutStr(config.HecToOtelAttrs.Source, event.Source)
+			}
+			if event.SourceType != "" {
+				attrs.PutStr(config.HecToOtelAttrs.SourceType, event.SourceType)
+			}
+			if event.Index != "" {
+				attrs.PutStr(config.HecToOtelAttrs.Index, event.Index)
+			}
+			if resourceCustomizer != nil {
+				resourceCustomizer(resourceMetrics.Resource())
+			}
+		}
+		metrics.MoveAndAppendTo(sm.Metrics())
 	}
 
 	return md, numDroppedTimeSeries

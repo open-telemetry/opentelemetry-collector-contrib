@@ -143,6 +143,10 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 
 // Shutdown is invoked during service shutdown
 func (r *receiver) Shutdown(ctx context.Context) error {
+	if r.cancel == nil {
+		return nil
+	}
+
 	r.logger.Info("Stopping stanza receiver")
 	pipelineErr := r.pipe.Stop()
 	r.converter.Stop()

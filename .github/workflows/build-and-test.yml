@@ -52,7 +52,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
   check-codeowners:
@@ -60,7 +60,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Check Code Owner Existence
         run: ./.github/workflows/scripts/check-codeowners.sh check_code_owner_existence
       - name: Check Component Existence
@@ -76,6 +76,7 @@ jobs:
           - processor
           - exporter
           - extension
+          - connector
           - internal
           - other
     runs-on: ubuntu-latest
@@ -114,7 +115,7 @@ jobs:
       - name: Lint
         run: make -j2 golint GROUP=${{ matrix.group }}
   lint:
-    if: ${{ always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-latest
     needs: [setup-environment, lint-matrix]
     steps:
@@ -172,12 +173,22 @@ jobs:
         run: |
           make gotidy
           git diff --exit-code || (echo 'go.mod/go.sum deps changes detected, please run "make gotidy" and commit the changes in this PR.' && exit 1)
+      - name: Gen genotelcontribcol
+        run: |
+          make genotelcontribcol
+          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make genotelcontribcol" and commit the changes in this PR.' && exit 1)
+      - name: Gen genoteltestbedcol
+        run: |
+          make genoteltestbedcol
+          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make genoteltestbedcol" and commit the changes in this PR.' && exit 1)
       - name: CodeGen
         run: |
           make -j2 generate
           git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
-      - name: Impi
-        run: make -j2 goimpi
+      - name: Check gendependabot
+        run: |
+          make -j2 gendependabot
+          git diff --exit-code ':!*go.sum' || (echo 'dependabot.yml is out of date, please run "make gendependabot" and commit the changes in this PR.' && exit 1)
       - name: MultimodVerify
         run: make multimod-verify
       - name: Components dropdown in issue templates
@@ -187,13 +198,14 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        go-version: [1.19, 1.18]
+        go-version: ["1.20", 1.19] # 1.20 is interpreted as 1.2 without quotes
         group:
           - receiver-0
           - receiver-1
           - processor
           - exporter
           - extension
+          - connector
           - internal
           - other
     runs-on: ubuntu-latest
@@ -241,10 +253,10 @@ jobs:
           test_path: |
             ./**/foresight-test*.txt
   unittest:
-    if: ${{ always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
     strategy:
       matrix:
-        go-version: [1.19, 1.18]
+        go-version: ["1.20", 1.19] # 1.20 is interpreted as 1.2 without quotes
     runs-on: ubuntu-latest
     needs: [setup-environment, unittest-matrix]
     steps:
@@ -563,6 +575,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: collector-binaries
+          path: ./bin/
       - name: Download Packages
         uses: actions/download-artifact@v3
         with:
@@ -653,34 +666,12 @@ jobs:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
       - name: Checkout Repo
         uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
-      - name: Mkdir bin and dist
-        run: |
-          mkdir bin/ dist/
-      - name: Cache Go
-        id: go-cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh
       - name: Create Github Release
         run: |
-          mkdir -p dist/
-          ghr -t $GITHUB_TOKEN -u open-telemetry -r opentelemetry-collector-contrib --replace $RELEASE_TAG dist/
+          gh release create $RELEASE_TAG -t $RELEASE_TAG -n "The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/$RELEASE_TAG), be sure to check the release notes there as well."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}

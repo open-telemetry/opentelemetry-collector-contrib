@@ -103,7 +103,7 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	})
 	require.Nil(t, err)
 	defer func() {
-		err := container.Terminate(ctx)
+		err = container.Terminate(ctx)
 		require.Nil(t, err)
 	}()
 	require.NotNil(t, container)
@@ -124,7 +124,7 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	tcDockerClient, _, _, err := testcontainers.NewDockerClient()
 	require.Nil(t, err)
 
-	tcDockerClient.ContainerRename(context.Background(), container.GetContainerID(), "nginx-updated")
+	require.NoError(t, tcDockerClient.ContainerRename(context.Background(), container.GetContainerID(), "nginx-updated"))
 
 	require.Eventually(t, func() bool { return mn.ChangeCount() == 1 }, 3*time.Second, 10*time.Millisecond)
 	require.Equal(t, 1, mn.AddCount())

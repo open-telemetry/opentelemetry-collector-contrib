@@ -24,16 +24,16 @@ List of available Functions:
 - [set](#set)
 - [truncate_all](#truncate_all)
 
-## Factory Functions
+## Converters
 
-Factory Functions are functions that help translate between the OTTL grammar and the underlying pdata structure.
+Converters are functions that help translate between the OTTL grammar and the underlying pdata structure.
 They manipulate the OTTL grammar value into a form that will make working with the telemetry easier or more efficient.
 
-Factory Functions:
+Converters:
 - Are pure functions.  They should never change the underlying telemetry and the same inputs should always result in the same output.
-- Always return something.  
+- Always return something.
 
-List of available Factory Functions:
+List of available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [Int](#int)
@@ -42,6 +42,7 @@ List of available Factory Functions:
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
+- [Substring](#substring)
 
 ### Concat
 
@@ -198,6 +199,20 @@ Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
 
+### Substring
+
+`Substring(target, start, length)`
+
+The `Substring` Converter returns a substring from the given start index to the specified length.
+
+`target` is a string. `start` and `length` are `int64`.
+
+The `Substring` Converter will return `nil` if the given parameters are invalid, e.x. `target` is not a string, or the start/length exceed the length of the `target` string.
+
+Examples:
+
+- `Substring("123456789", 0, 3)`
+
 ### delete_key
 
 `delete_key(target, key)`
@@ -323,10 +338,17 @@ The `replace_all_patterns` function replaces any segments in a string value or k
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
 Examples:
 
 - `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
+- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
+
+Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
+environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
+If using OTTL outside of collector configuration, `$` should not be escaped and a literal `$` can be entered using `$$`.
 
 ### replace_pattern
 
@@ -338,10 +360,16 @@ The `replace_pattern` function allows replacing all string sections that match a
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
 Examples:
 
 - `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
+- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
 
+Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
+environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
+If using OTTL outside of collector configuration, `$` should not be escaped and a literal `$` can be entered using `$$`.
 
 ### replace_match
 

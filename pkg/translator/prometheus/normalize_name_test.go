@@ -151,7 +151,8 @@ func TestOtelReceivers(t *testing.T) {
 
 func TestTrimPromSuffixes(t *testing.T) {
 	registry := featuregate.NewRegistry()
-	require.NoError(t, registry.RegisterID(normalizeNameGateID, featuregate.StageBeta))
+	_, err := registry.Register(normalizeNameGate.ID(), featuregate.StageBeta)
+	require.NoError(t, err)
 	normalizer := NewNormalizer(registry)
 
 	assert.Equal(t, "active_directory_ds_replication_network_io", normalizer.TrimPromSuffixes("active_directory_ds_replication_network_io_bytes_total", pmetric.MetricTypeSum, "bytes"))
@@ -235,7 +236,7 @@ func TestRemoveItem(t *testing.T) {
 
 func TestBuildPromCompliantNameWithNormalize(t *testing.T) {
 
-	defer testutil.SetFeatureGateForTest(t, normalizeNameGateID, true)()
+	defer testutil.SetFeatureGateForTest(t, normalizeNameGate, true)()
 	require.Equal(t, "system_io_bytes_total", BuildPromCompliantName(createCounter("system.io", "By"), ""))
 	require.Equal(t, "system_network_io_bytes_total", BuildPromCompliantName(createCounter("network.io", "By"), "system"))
 	require.Equal(t, "_3_14_digits", BuildPromCompliantName(createGauge("3.14 digits", ""), ""))
@@ -247,7 +248,7 @@ func TestBuildPromCompliantNameWithNormalize(t *testing.T) {
 
 func TestBuildPromCompliantNameWithoutNormalize(t *testing.T) {
 
-	defer testutil.SetFeatureGateForTest(t, normalizeNameGateID, false)()
+	defer testutil.SetFeatureGateForTest(t, normalizeNameGate, false)()
 	require.Equal(t, "system_io", BuildPromCompliantName(createCounter("system.io", "By"), ""))
 	require.Equal(t, "system_network_io", BuildPromCompliantName(createCounter("network.io", "By"), "system"))
 	require.Equal(t, "system_network_I_O", BuildPromCompliantName(createCounter("network (I/O)", "By"), "system"))

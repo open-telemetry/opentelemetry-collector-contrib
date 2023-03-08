@@ -18,13 +18,12 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -52,7 +51,6 @@ func NewFactory() receiver.Factory {
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -75,14 +73,17 @@ func createMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
+	var err error
+	var recv receiver.Metrics
 	rCfg := cfg.(*Config)
-
-	if rCfg.Path != "" {
-		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		recv, err = newMetricsReceiver(params, *rCfg, consumer)
+		return recv
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	return newMetricsReceiver(params, *rCfg, consumer)
+	return r, nil
 }
 
 // createLogsReceiver creates a logs receiver based on provided config.
@@ -92,12 +93,17 @@ func createLogsReceiver(
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
-
+	var err error
+	var recv receiver.Logs
 	rCfg := cfg.(*Config)
-
-	if rCfg.Path != "" {
-		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		recv, err = newLogsReceiver(params, *rCfg, consumer)
+		return recv
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	return newLogsReceiver(params, *rCfg, consumer)
+	return r, nil
 }
+
+var receivers = sharedcomponent.NewSharedComponents()

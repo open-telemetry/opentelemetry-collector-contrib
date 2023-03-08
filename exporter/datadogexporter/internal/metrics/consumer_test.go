@@ -18,10 +18,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -38,11 +38,11 @@ func (t testProvider) Source(context.Context) (source.Source, error) {
 	return source.Source{Kind: source.HostnameKind, Identifier: string(t)}, nil
 }
 
-func newTranslator(t *testing.T, logger *zap.Logger) *translator.Translator {
-	tr, err := translator.New(logger,
-		translator.WithHistogramMode(translator.HistogramModeDistributions),
-		translator.WithNumberMode(translator.NumberModeCumulativeToDelta),
-		translator.WithFallbackSourceProvider(testProvider("fallbackHostname")),
+func newTranslator(t *testing.T, logger *zap.Logger) *metrics.Translator {
+	tr, err := metrics.NewTranslator(logger,
+		metrics.WithHistogramMode(metrics.HistogramModeDistributions),
+		metrics.WithNumberMode(metrics.NumberModeCumulativeToDelta),
+		metrics.WithFallbackSourceProvider(testProvider("fallbackHostname")),
 	)
 	require.NoError(t, err)
 	return tr
@@ -70,13 +70,13 @@ func TestRunningMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := context.Background()
-	consumer := NewZorkianConsumer()
+	consumer := NewConsumer()
 	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	var runningHostnames []string
 	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}) {
-		if metric.Host != nil {
-			runningHostnames = append(runningHostnames, *metric.Host)
+		for _, res := range metric.Resources {
+			runningHostnames = append(runningHostnames, *res.Name)
 		}
 	}
 
@@ -84,7 +84,6 @@ func TestRunningMetrics(t *testing.T) {
 		runningHostnames,
 		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-2"},
 	)
-
 }
 
 func TestTagsMetrics(t *testing.T) {
@@ -114,7 +113,7 @@ func TestTagsMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := context.Background()
-	consumer := NewZorkianConsumer()
+	consumer := NewConsumer()
 	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
@@ -122,8 +121,8 @@ func TestTagsMetrics(t *testing.T) {
 	var runningHostnames []string
 	for _, metric := range runningMetrics {
 		runningTags = append(runningTags, metric.Tags...)
-		if metric.Host != nil {
-			runningHostnames = append(runningHostnames, *metric.Host)
+		for _, res := range metric.Resources {
+			runningHostnames = append(runningHostnames, *res.Name)
 		}
 	}
 
@@ -133,7 +132,7 @@ func TestTagsMetrics(t *testing.T) {
 }
 
 func TestConsumeAPMStats(t *testing.T) {
-	c := NewZorkianConsumer()
+	c := NewConsumer()
 	for _, sp := range testutil.StatsPayloads {
 		c.ConsumeAPMStats(sp)
 	}

@@ -31,7 +31,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/receiver"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -52,14 +52,14 @@ func (h *testHost) ReportFatalError(err error) {
 
 var _ component.Host = (*testHost)(nil)
 
-func factory() (receiver.Factory, *Config) {
+func factory() (rcvr.Factory, *Config) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
 	config.CollectionInterval = 1 * time.Second
 	return f, config
 }
 
-func paramsAndContext(t *testing.T) (receiver.CreateSettings, context.Context, context.CancelFunc) {
+func paramsAndContext(t *testing.T) (rcvr.CreateSettings, context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
 	settings := receivertest.NewNopCreateSettings()
@@ -114,7 +114,6 @@ func TestAllMetricsIntegration(t *testing.T) {
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
-	config.ProvidePerCoreCPUMetrics = true
 
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()

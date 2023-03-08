@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package testutil contains the test util functions
 package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 
 import (
@@ -22,8 +23,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/sketches-go/ddsketch"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -44,16 +45,26 @@ type DatadogServer struct {
 	MetadataChan chan []byte
 }
 
+/* #nosec G101 -- This is a false positive, these are API endpoints rather than credentials */
+const (
+	ValidateAPIKeyEndpoint = "/api/v1/validate"
+	MetricV1Endpoint       = "/api/v1/series"
+	MetricV2Endpoint       = "/api/v2/series"
+	SketchesMetricEndpoint = "/api/beta/sketches"
+	MetadataEndpoint       = "/intake"
+)
+
 // DatadogServerMock mocks a Datadog backend server
 func DatadogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogServer {
 	metadataChan := make(chan []byte)
 	mux := http.NewServeMux()
 
 	handlers := map[string]http.HandlerFunc{
-		"/api/v1/validate": validateAPIKeyEndpoint,
-		"/api/v1/series":   metricsEndpoint,
-		"/intake":          newMetadataEndpoint(metadataChan),
-		"/":                func(w http.ResponseWriter, r *http.Request) {},
+		ValidateAPIKeyEndpoint: validateAPIKeyEndpoint,
+		MetricV1Endpoint:       metricsEndpoint,
+		MetricV2Endpoint:       metricsV2Endpoint,
+		MetadataEndpoint:       newMetadataEndpoint(metadataChan),
+		"/":                    func(w http.ResponseWriter, r *http.Request) {},
 	}
 	for _, f := range overwriteHandlerFuncs {
 		p, hf := f()
@@ -124,6 +135,18 @@ type metricsResponse struct {
 }
 
 func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
+	res := metricsResponse{Status: "ok"}
+	resJSON, _ := json.Marshal(res)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	_, err := w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func metricsV2Endpoint(w http.ResponseWriter, r *http.Request) {
 	res := metricsResponse{Status: "ok"}
 	resJSON, _ := json.Marshal(res)
 

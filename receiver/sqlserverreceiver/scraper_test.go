@@ -29,8 +29,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
@@ -145,6 +145,6 @@ func TestScrape(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(goldenScrapePath)
 	require.NoError(t, err)
 
-	err = comparetest.CompareMetrics(expectedMetrics, scrapeData)
-	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapeData,
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }

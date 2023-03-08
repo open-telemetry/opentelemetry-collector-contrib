@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -48,10 +47,9 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		Encoding: Encoding{
 			Name:        defaultEncoding,
 			Compression: defaultCompression,
@@ -74,7 +72,8 @@ func NewTracesExporter(ctx context.Context, params exporter.CreateSettings, conf
 		ctx,
 		params,
 		conf,
-		exp.ConsumeTraces,
+		exp.consumeTraces,
+		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
 		exporterhelper.WithQueue(c.QueueSettings),
@@ -91,7 +90,8 @@ func NewMetricsExporter(ctx context.Context, params exporter.CreateSettings, con
 		ctx,
 		params,
 		c,
-		exp.ConsumeMetrics,
+		exp.consumeMetrics,
+		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
 		exporterhelper.WithQueue(c.QueueSettings),
@@ -108,7 +108,8 @@ func NewLogsExporter(ctx context.Context, params exporter.CreateSettings, conf c
 		ctx,
 		params,
 		c,
-		exp.ConsumeLogs,
+		exp.consumeLogs,
+		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
 		exporterhelper.WithQueue(c.QueueSettings),

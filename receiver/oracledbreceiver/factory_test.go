@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -40,4 +41,8 @@ func TestNewFactory(t *testing.T) {
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
+}
+func TestGetInstanceName(t *testing.T) {
+	instanceName := getInstanceName("oracle://example.com:1521/mydb")
+	assert.Equal(t, "example.com:1521/mydb", instanceName)
 }

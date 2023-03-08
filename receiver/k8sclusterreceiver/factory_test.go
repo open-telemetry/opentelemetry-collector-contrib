@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/client-go/kubernetes"
@@ -42,7 +41,6 @@ func TestFactory(t *testing.T) {
 	require.True(t, ok)
 
 	require.Equal(t, &Config{
-		ReceiverSettings:           config.NewReceiverSettings(component.NewID(typeStr)),
 		Distribution:               distributionKubernetes,
 		CollectionInterval:         10 * time.Second,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
@@ -53,7 +51,7 @@ func TestFactory(t *testing.T) {
 
 	r, err := f.CreateTracesReceiver(
 		context.Background(), receivertest.NewNopCreateSettings(),
-		&config.ReceiverSettings{}, consumertest.NewNop(),
+		cfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
 	require.Nil(t, r)

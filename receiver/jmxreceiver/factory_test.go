@@ -25,23 +25,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-func TestWithInvalidConfig(t *testing.T) {
-	f := NewFactory()
-	assert.Equal(t, component.Type("jmx"), f.Type())
-
-	cfg := f.CreateDefaultConfig()
-	require.NotNil(t, cfg)
-
-	r, err := f.CreateMetricsReceiver(
-		context.Background(),
-		receivertest.NewNopCreateSettings(),
-		cfg, consumertest.NewNop(),
-	)
-	require.Error(t, err)
-	assert.Equal(t, "missing required field(s): `endpoint`, `target_system`", err.Error())
-	require.Nil(t, r)
-}
-
 func TestWithValidConfig(t *testing.T) {
 	mockJarVersions()
 	defer unmockJarVersions()

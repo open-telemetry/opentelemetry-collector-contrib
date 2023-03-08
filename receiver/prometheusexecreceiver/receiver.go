@@ -28,7 +28,6 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -120,7 +119,6 @@ func getPromReceiverConfig(id component.ID, cfg *Config) *prometheusreceiver.Con
 	}
 
 	return &prometheusreceiver.Config{
-		ReceiverSettings: config.NewReceiverSettings(id),
 		PrometheusConfig: &promconfig.Config{
 			ScrapeConfigs: []*promconfig.ScrapeConfig{scrapeConfig},
 		},
@@ -304,6 +302,9 @@ func getDelay(elapsed time.Duration, healthyProcessDuration time.Duration, crash
 
 // Shutdown stops the underlying Prometheus receiver.
 func (per *prometheusExecReceiver) Shutdown(ctx context.Context) error {
+	if per.shutdownCh == nil {
+		return nil
+	}
 	close(per.shutdownCh)
 	return nil
 }

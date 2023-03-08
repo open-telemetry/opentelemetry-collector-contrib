@@ -28,6 +28,7 @@ import (
 	"testing"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -409,8 +410,8 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	lr.SetTimestamp(pcommon.Timestamp(int64(sec * 1e9)))
 
 	lr.Body().SetStr("foo")
-	lr.Attributes().PutStr("com.splunk.sourcetype", "custom:sourcetype")
-	lr.Attributes().PutStr("com.splunk.index", "myindex")
+	rl.Resource().Attributes().PutStr("com.splunk.sourcetype", "custom:sourcetype")
+	rl.Resource().Attributes().PutStr("com.splunk.index", "myindex")
 	want := logs
 
 	t.Log("Sending Splunk HEC data Request")
@@ -1002,6 +1003,77 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, respBytes, 0)
 	assert.Equal(t, 200, resp.StatusCode)
+}
+
+func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
+	tests := []struct {
+		name    string
+		field   interface{}
+		success bool
+	}{
+		{
+			name:    "map",
+			field:   map[string]interface{}{},
+			success: false,
+		},
+		{
+			name:    "flat_array",
+			field:   []interface{}{1, 2, 3},
+			success: true,
+		},
+		{
+			name:    "nested_array",
+			field:   []interface{}{1, []interface{}{1, 2}},
+			success: false,
+		},
+		{
+			name: "array_of_map",
+			field: []interface{}{
+				map[string]interface{}{
+					"key": "value",
+				},
+			},
+			success: false,
+		},
+		{
+			name:    "int",
+			field:   int(0),
+			success: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := createDefaultConfig().(*Config)
+			sink := new(consumertest.LogsSink)
+			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			assert.NoError(t, err)
+
+			r := rcv.(*splunkReceiver)
+			assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, r.Shutdown(context.Background()))
+			}()
+			currentTime := float64(time.Now().UnixNano()) / 1e6
+			event := buildSplunkHecMsg(currentTime, 3)
+			event.Fields["nested_map"] = tt.field
+			msgBytes, err := jsoniter.Marshal(event)
+			require.NoError(t, err)
+			req := httptest.NewRequest("POST", "http://localhost/services/collector", bytes.NewReader(msgBytes))
+
+			w := httptest.NewRecorder()
+			r.handleReq(w, req)
+
+			if tt.success {
+				assert.Equal(t, http.StatusOK, w.Code)
+				assert.Equal(t, 1, sink.LogRecordCount())
+			} else {
+				assert.Equal(t, http.StatusBadRequest, w.Code)
+				assert.Equal(t, fmt.Sprintf(responseErrHandlingIndexedFields, 0), w.Body.String())
+			}
+
+		})
+	}
 }
 
 func BenchmarkHandleReq(b *testing.B) {

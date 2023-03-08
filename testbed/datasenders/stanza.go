@@ -30,9 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-// TODO: Extract common bits from FileLogWriter and NewFluentBitFileLogWriter
-// and generalize as FileLogWriter.
-
 type FileLogWriter struct {
 	file *os.File
 }

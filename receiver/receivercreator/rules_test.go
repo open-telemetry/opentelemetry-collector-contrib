@@ -23,14 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-func newRuleOrPanic(s string) rule {
-	r, err := newRule(s)
-	if err != nil {
-		panic(err)
-	}
-	return r
-}
-
 func Test_ruleEval(t *testing.T) {
 	type args struct {
 		ruleStr  string

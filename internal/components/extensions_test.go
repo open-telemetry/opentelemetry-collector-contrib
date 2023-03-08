@@ -20,6 +20,7 @@ package components
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -37,7 +38,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
@@ -155,14 +155,6 @@ func TestDefaultExtensions(t *testing.T) {
 			skipLifecycle: true, // Requires EC2 metadata service to be running
 		},
 		{
-			extension: "fluentbit",
-			getConfigFn: func() component.Config {
-				cfg := extFactories["fluentbit"].CreateDefaultConfig().(*fluentbitextension.Config)
-				cfg.TCPEndpoint = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
 			extension: "http_forwarder",
 			getConfigFn: func() component.Config {
 				cfg := extFactories["http_forwarder"].CreateDefaultConfig().(*httpforwarder.Config)
@@ -229,12 +221,12 @@ func TestDefaultExtensions(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, tt.extension, factory.Type())
 
-			if tt.skipLifecycle {
-				t.Skip("Skipping lifecycle test for ", tt.extension)
-				return
+			verifyExtensionShutdown(t, factory, tt.getConfigFn)
+
+			if !tt.skipLifecycle {
+				verifyExtensionLifecycle(t, factory, tt.getConfigFn)
 			}
 
-			verifyExtensionLifecycle(t, factory, tt.getConfigFn)
 		})
 	}
 }
@@ -265,6 +257,28 @@ func verifyExtensionLifecycle(t *testing.T, factory extension.Factory, getConfig
 	require.NoError(t, err)
 	require.NoError(t, secondExt.Start(ctx, host))
 	require.NoError(t, secondExt.Shutdown(ctx))
+}
+
+// verifyExtensionShutdown is used to test if an extension type can be shutdown without being started first.
+func verifyExtensionShutdown(tb testing.TB, factory extension.Factory, getConfigFn getExtensionConfigFn) {
+	ctx := context.Background()
+	extCreateSet := extensiontest.NewNopCreateSettings()
+
+	if getConfigFn == nil {
+		getConfigFn = factory.CreateDefaultConfig
+	}
+
+	e, err := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
+	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		return
+	}
+	if e == nil {
+		return
+	}
+
+	assert.NotPanics(tb, func() {
+		assert.NoError(tb, e.Shutdown(ctx))
+	})
 }
 
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.

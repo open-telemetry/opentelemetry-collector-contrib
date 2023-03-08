@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -125,17 +124,15 @@ func TestConfigBuilderFunctions(t *testing.T) {
 			name: "no command",
 			id:   component.NewID(typeStr),
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				ScrapeInterval:   60 * time.Second,
-				ScrapeTimeout:    10 * time.Second,
-				Port:             9104,
+				ScrapeInterval: 60 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "",
 					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{
@@ -168,10 +165,9 @@ func TestConfigBuilderFunctions(t *testing.T) {
 			name: "normal config",
 			id:   component.NewIDWithName(typeStr, "mysqld"),
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, "mysqld")),
-				ScrapeInterval:   90 * time.Second,
-				ScrapeTimeout:    10 * time.Second,
-				Port:             9104,
+				ScrapeInterval: 90 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "mysqld_exporter",
 					Env: []subprocessmanager.EnvConfig{
@@ -183,7 +179,6 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, "mysqld")),
 				PrometheusConfig: &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{
@@ -222,9 +217,8 @@ func TestConfigBuilderFunctions(t *testing.T) {
 			name: "lots of defaults",
 			id:   component.NewIDWithName(typeStr, "postgres/test"),
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, "postgres/test")),
-				ScrapeInterval:   60 * time.Second,
-				ScrapeTimeout:    10 * time.Second,
+				ScrapeInterval: 60 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "postgres_exporter",
 					Env: []subprocessmanager.EnvConfig{
@@ -236,7 +230,6 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, "postgres/test")),
 				PrometheusConfig: &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{

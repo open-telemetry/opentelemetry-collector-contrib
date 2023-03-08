@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension"
 )
@@ -38,12 +37,11 @@ func NewFactory() extension.Factory {
 		typeStr,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelUnmaintained)
+		component.StabilityLevelBeta)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		Ingress: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},

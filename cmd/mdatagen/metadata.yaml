@@ -8,11 +8,18 @@ resource_attributes:
   string.resource.attr:
     description: Resource attribute with any string value.
     type: string
+    enabled: true
 
   string.enum.resource.attr:
     description: Resource attribute with a known set of string values.
     type: string
     enum: [one, two]
+    enabled: true
+
+  optional.resource.attr:
+    description: Explicitly disabled ResourceAttribute.
+    type: string
+    enabled: false
 
 attributes:
   string_attr:
@@ -37,13 +44,15 @@ metrics:
   default.metric:
     enabled: true
     description: Monotonic cumulative sum int metric enabled by default.
-    extended_documentation: Additional information.
+    extended_documentation: The metric will be become optional soon.
     unit: s
     sum:
       value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [string_attr, overridden_int_attr, enum_attr]
+    warnings:
+      if_enabled_not_set: This metric will be disabled by default soon.
 
   optional.metric:
     enabled: false
@@ -52,5 +61,17 @@ metrics:
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr]
+    warnings:
+      if_configured: This metric is deprecated and will be removed soon.
+
+  default.metric.to_be_removed:
+    enabled: true
+    description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
+    extended_documentation: The metric will be will be removed soon.
+    unit: s
+    sum:
+      value_type: double
+      monotonic: false
+      aggregation: delta
     warnings:
       if_enabled: This metric is deprecated and will be removed soon.

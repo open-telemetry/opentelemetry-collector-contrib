@@ -119,7 +119,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10596")
 
 	receiverID := component.NewID("TestSegmentsPassedToConsumer")
-	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
@@ -150,7 +150,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 
 func TestTranslatorErrorsOut(t *testing.T) {
 	receiverID := component.NewID("TestTranslatorErrorsOut")
-	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
@@ -177,7 +177,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 
 func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	receiverID := component.NewID("TestSegmentsConsumerErrorsOut")
-	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
@@ -206,7 +206,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 }
 
 func TestPollerCloseError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("TestPollerCloseError"))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("TestPollerCloseError"))
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
@@ -223,7 +223,7 @@ func TestPollerCloseError(t *testing.T) {
 }
 
 func TestProxyCloseError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("TestPollerCloseError"))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("TestPollerCloseError"))
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
@@ -240,7 +240,7 @@ func TestProxyCloseError(t *testing.T) {
 }
 
 func TestBothPollerAndProxyCloseError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("TestBothPollerAndProxyCloseError"))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("TestBothPollerAndProxyCloseError"))
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))

@@ -20,7 +20,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/featuregate"
@@ -30,19 +29,17 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "googlecloud"
 	// The stability level of the exporter.
-	stability                = component.StabilityLevelBeta
-	defaultTimeout           = 12 * time.Second // Consistent with Cloud Monitoring's timeout
-	pdataExporterFeatureGate = "exporter.googlecloud.OTLPDirect"
+	stability      = component.StabilityLevelBeta
+	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 )
 
-func init() {
-	featuregate.GetRegistry().MustRegisterID(
-		pdataExporterFeatureGate,
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7132"),
-	)
-}
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"exporter.googlecloud.OTLPDirect",
+	featuregate.StageStable,
+	featuregate.WithRegisterDescription("When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7132"),
+	featuregate.WithRegisterRemovalVersion("v0.69.0"),
+)
 
 // NewFactory creates a factory for the googlecloud exporter
 func NewFactory() exporter.Factory {
@@ -57,21 +54,13 @@ func NewFactory() exporter.Factory {
 
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
-	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
-		return &LegacyConfig{
-			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-			TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-			UserAgent:        "opentelemetry-collector-contrib {{version}}",
-		}
-	}
+	retrySettings := exporterhelper.NewDefaultRetrySettings()
+	retrySettings.Enabled = false
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		Config:           collector.DefaultConfig(),
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		RetrySettings:   retrySettings,
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		Config:          collector.DefaultConfig(),
 	}
 }
 
@@ -79,12 +68,7 @@ func createLogsExporter(
 	ctx context.Context,
 	params exporter.CreateSettings,
 	cfg component.Config) (exporter.Logs, error) {
-	var eCfg *Config
-	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
-		eCfg = toNewConfig(cfg.(*LegacyConfig))
-	} else {
-		eCfg = cfg.(*Config)
-	}
+	eCfg := cfg.(*Config)
 	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger)
 	if err != nil {
 		return nil, err
@@ -107,12 +91,7 @@ func createTracesExporter(
 	ctx context.Context,
 	params exporter.CreateSettings,
 	cfg component.Config) (exporter.Traces, error) {
-	var eCfg *Config
-	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
-		eCfg = toNewConfig(cfg.(*LegacyConfig))
-	} else {
-		eCfg = cfg.(*Config)
-	}
+	eCfg := cfg.(*Config)
 	tExp, err := collector.NewGoogleCloudTracesExporter(ctx, eCfg.Config, params.BuildInfo.Version, eCfg.Timeout)
 	if err != nil {
 		return nil, err
@@ -135,10 +114,6 @@ func createMetricsExporter(
 	ctx context.Context,
 	params exporter.CreateSettings,
 	cfg component.Config) (exporter.Metrics, error) {
-	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
-		eCfg := cfg.(*LegacyConfig)
-		return newLegacyGoogleCloudMetricsExporter(eCfg, params)
-	}
 	eCfg := cfg.(*Config)
 	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.BuildInfo.Version, eCfg.Timeout)
 	if err != nil {

@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -41,7 +40,6 @@ func createDefaultConfig() component.Config {
 	// in the X-Ray daemon:
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(awsxray.TypeStr)),
 		// X-Ray daemon defaults to 127.0.0.1:2000 but
 		// the default in OT is 0.0.0.0.
 		NetAddr: confignet.NetAddr{

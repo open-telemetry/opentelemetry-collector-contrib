@@ -21,6 +21,7 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -61,9 +62,9 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) (err erro
 
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	if e.config.Logs.Headers == nil {
-		e.config.Logs.Headers = make(map[string]string)
+		e.config.Logs.Headers = make(map[string]configopaque.String)
 	}
-	e.config.Logs.Headers["Authorization"] = "Bearer " + e.config.PrivateKey
+	e.config.Logs.Headers["Authorization"] = configopaque.String("Bearer " + string(e.config.PrivateKey))
 
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Logs.WaitForReady),
@@ -82,28 +83,22 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	for i := 0; i < rss.Len(); i++ {
 		resourceLog := rss.At(i)
 		appName, subsystem := e.config.getMetadataFromResource(resourceLog.Resource())
-
-		ld := plog.NewLogs()
-		newRss := ld.ResourceLogs().AppendEmpty()
-		resourceLog.CopyTo(newRss)
-
-		req := plogotlp.NewExportRequestFromLogs(ld)
-		_, err := e.logExporter.Export(e.enhanceContext(ctx, appName, subsystem), req, e.callOptions...)
-		if err != nil {
-			return processError(err)
-		}
+		resourceLog.Resource().Attributes().PutStr(cxAppNameAttrName, appName)
+		resourceLog.Resource().Attributes().PutStr(cxSubsystemNameAttrName, subsystem)
 	}
+
+	_, err := e.logExporter.Export(e.enhanceContext(ctx), plogotlp.NewExportRequestFromLogs(ld), e.callOptions...)
+	if err != nil {
+		return processError(err)
+	}
+
 	return nil
 }
 
-func (e *logsExporter) enhanceContext(ctx context.Context, appName, subSystemName string) context.Context {
-	headers := make(map[string]string)
+func (e *logsExporter) enhanceContext(ctx context.Context) context.Context {
+	md := metadata.New(nil)
 	for k, v := range e.config.Logs.Headers {
-		headers[k] = v
+		md.Set(k, string(v))
 	}
-
-	headers["CX-Application-Name"] = appName
-	headers["CX-Subsystem-Name"] = subSystemName
-
-	return metadata.NewOutgoingContext(ctx, metadata.New(headers))
+	return metadata.NewOutgoingContext(ctx, md)
 }

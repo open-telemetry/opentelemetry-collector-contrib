@@ -21,9 +21,10 @@ package hostmetadata
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/sys/unix"
 )
 
@@ -74,15 +75,13 @@ func TestFillOSSpecificData(t *testing.T) {
 			syscallUname = tt.args.syscallUname
 			t.Setenv("HOST_ETC", tt.args.etc)
 			in := &hostOS{}
-			if err := fillPlatformSpecificOSData(in); err != nil {
-				if !tt.wantErr {
-					t.Errorf("fillPlatformSpecificOSData returned an error %v", err)
-				}
+			err := fillPlatformSpecificOSData(in)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if !reflect.DeepEqual(in, tt.want) {
-				t.Errorf("fillPlatformSpecificOSData() = %v, want %v", in, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, in)
 		})
 		syscallUname = unix.Uname
 	}
@@ -127,15 +126,13 @@ func TestFillPlatformSpecificCPUData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			syscallUname = tt.args.syscallUname
 			in := &hostCPU{}
-			if err := fillPlatformSpecificCPUData(in); err != nil {
-				if !tt.wantErr {
-					t.Errorf("fillPlatformSpecificCPUData returned an error %v", err)
-				}
+			err := fillPlatformSpecificCPUData(in)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if !reflect.DeepEqual(in, tt.want) {
-				t.Errorf("fillPlatformSpecificCPUData() = %v, want %v", in, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, in)
 		})
 		syscallUname = unix.Uname
 	}

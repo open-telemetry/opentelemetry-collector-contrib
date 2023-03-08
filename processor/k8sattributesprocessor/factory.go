@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -41,58 +41,57 @@ var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 var defaultExcludes = ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}}
 
 // NewFactory returns a new factory for the k8s processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, stability),
-		component.WithMetricsProcessor(createMetricsProcessor, stability),
-		component.WithLogsProcessor(createLogsProcessor, stability),
+		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithMetrics(createMetricsProcessor, stability),
+		processor.WithLogs(createLogsProcessor, stability),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
-		Exclude:           defaultExcludes,
+		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		Exclude:   defaultExcludes,
 	}
 }
 
 func createTracesProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	cfg component.Config,
 	next consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	return createTracesProcessorWithOptions(ctx, params, cfg, next)
 }
 
 func createLogsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	cfg component.Config,
 	nextLogsConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	return createLogsProcessorWithOptions(ctx, params, cfg, nextLogsConsumer)
 }
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	cfg component.Config,
 	nextMetricsConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	return createMetricsProcessorWithOptions(ctx, params, cfg, nextMetricsConsumer)
 }
 
 func createTracesProcessorWithOptions(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	next consumer.Traces,
 	options ...option,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	kp, err := createKubernetesProcessor(set, cfg, options...)
 	if err != nil {
 		return nil, err
@@ -111,11 +110,11 @@ func createTracesProcessorWithOptions(
 
 func createMetricsProcessorWithOptions(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextMetricsConsumer consumer.Metrics,
 	options ...option,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	kp, err := createKubernetesProcessor(set, cfg, options...)
 	if err != nil {
 		return nil, err
@@ -134,11 +133,11 @@ func createMetricsProcessorWithOptions(
 
 func createLogsProcessorWithOptions(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextLogsConsumer consumer.Logs,
 	options ...option,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	kp, err := createKubernetesProcessor(set, cfg, options...)
 	if err != nil {
 		return nil, err
@@ -156,7 +155,7 @@ func createLogsProcessorWithOptions(
 }
 
 func createKubernetesProcessor(
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	cfg component.Config,
 	options ...option,
 ) (*kubernetesprocessor, error) {

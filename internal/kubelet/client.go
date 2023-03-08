@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -238,9 +239,12 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 	return body, nil
 }
 
-func (c *clientImpl) buildReq(path string) (*http.Request, error) {
-	url := c.baseURL + path
-	req, err := http.NewRequest("GET", url, nil)
+func (c *clientImpl) buildReq(p string) (*http.Request, error) {
+	reqURL, err := url.JoinPath(c.baseURL, p)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
 		return nil, err
 	}

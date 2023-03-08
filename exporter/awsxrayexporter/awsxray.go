@@ -89,14 +89,18 @@ func newTracesExporter(
 
 func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace.Traces) []*string {
 	documents := make([]*string, 0, td.SpanCount())
+
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		resource := rspans.Resource()
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			spans := rspans.ScopeSpans().At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
-				document, localErr := translator.MakeSegmentDocumentString(spans.At(k), resource,
-					config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
+				document, localErr := translator.MakeSegmentDocumentString(
+					spans.At(k), resource,
+					config.(*Config).IndexedAttributes,
+					config.(*Config).IndexAllAttributes,
+					config.(*Config).LogGroupNames)
 				if localErr != nil {
 					logger.Debug("Error translating span.", zap.Error(localErr))
 					continue

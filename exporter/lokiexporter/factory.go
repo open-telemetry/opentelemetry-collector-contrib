@@ -39,12 +39,6 @@ func NewFactory() exporter.Factory {
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	expCfg := config.(*Config)
 
-	// this should go away once the legacy code is removed, as the config validation happens during the loading
-	// of the config already, it should not be called explicitly here
-	if err := expCfg.Validate(); err != nil {
-		return nil, err
-	}
-
 	if expCfg.isLegacy() {
 		return createLegacyLogsExporter(ctx, set, expCfg)
 	}

@@ -210,7 +210,7 @@ func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, 
 
 		filteredAlerts := a.applyFilters(pc, projectAlerts)
 		now := pcommon.NewTimestampFromTime(time.Now())
-		logs, err := a.convertAlerts(now, filteredAlerts)
+		logs, err := a.convertAlerts(now, filteredAlerts, project)
 		if err != nil {
 			a.logger.Error("error processing alerts", zap.Error(err))
 			break
@@ -356,7 +356,7 @@ func (a *alertsReceiver) shutdownPoller(ctx context.Context) error {
 	return a.writeCheckpoint(ctx)
 }
 
-func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert) (plog.Logs, error) {
+func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert, project *mongodbatlas.Project) (plog.Logs, error) {
 	logs := plog.NewLogs()
 	var errs error
 	for _, alert := range alerts {
@@ -364,6 +364,8 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 		resourceAttrs := resourceLogs.Resource().Attributes()
 		resourceAttrs.PutStr("mongodbatlas.group.id", alert.GroupID)
 		resourceAttrs.PutStr("mongodbatlas.alert.config.id", alert.AlertConfigID)
+		resourceAttrs.PutStr("mongodbatlas.org.id", project.OrgID)
+		resourceAttrs.PutStr("mongodbatlas.project.name", project.Name)
 		putStringToMapNotNil(resourceAttrs, "mongodbatlas.cluster.name", &alert.ClusterName)
 		putStringToMapNotNil(resourceAttrs, "mongodbatlas.replica_set.name", &alert.ReplicaSetName)
 

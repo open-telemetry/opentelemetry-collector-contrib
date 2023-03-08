@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+
 import (
 	"fmt"
 	"strings"

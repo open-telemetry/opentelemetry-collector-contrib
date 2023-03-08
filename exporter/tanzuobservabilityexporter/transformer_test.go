@@ -252,10 +252,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_source", actual.Source)
 	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
-	if value, isFound := actual.Tags[labelSource]; isFound {
-		t.Logf("Tag Source with value " + value + " not expected.")
-		t.Fail()
-	}
+	require.NotContains(t, actual.Tags, labelSource)
 
 	//TestCase2: source value from resAttrs.host.name when source is not present
 	resAttrs = pcommon.NewMap()
@@ -271,10 +268,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_host.name", actual.Source)
 	assert.Equal(t, "test_hostname", actual.Tags["hostname"])
-	if value, isFound := actual.Tags[conventions.AttributeHostName]; isFound {
-		t.Logf("Tag host.name with value " + value + " not expected.")
-		t.Fail()
-	}
+	require.NotContains(t, actual.Tags, conventions.AttributeHostName)
 
 	//TestCase4: source value from resAttrs.source when spanAttrs.source is present
 	resAttrs = pcommon.NewMap()
@@ -286,10 +280,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_source", actual.Source)
 	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
-	if value, isFound := actual.Tags[labelSource]; isFound {
-		t.Logf("Tag Source with value " + value + " not expected.")
-		t.Fail()
-	}
+	require.NotContains(t, actual.Tags, labelSource)
 	assert.Equal(t, "source_from_span_attribute", actual.Tags["_source"])
 }
 
@@ -329,10 +320,7 @@ func TestGetSourceAndResourceTags(t *testing.T) {
 
 	actualSource, actualAttrsWithoutSource := getSourceAndResourceTags(resAttrs)
 	assert.Equal(t, "test_source", actualSource)
-	if value, isFound := actualAttrsWithoutSource[labelSource]; isFound {
-		t.Logf("Tag Source with value " + value + " not expected.")
-		t.Fail()
-	}
+	require.NotContains(t, actualAttrsWithoutSource, labelSource)
 }
 
 func TestGetSourceAndKey(t *testing.T) {

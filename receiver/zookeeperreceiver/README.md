@@ -3,7 +3,7 @@
 | Status                   |               |
 | ------------------------ |---------------|
 | Stability                | [development] |
-| Supported pipeline types | traces        |
+| Supported pipeline types | metrics       |
 | Distributions            | [contrib]     |
 
 The Zookeeper receiver collects metrics from a Zookeeper instance, using the `mntr` command. The `mntr` 4 letter word command needs

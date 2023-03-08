@@ -26,10 +26,9 @@ import (
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -50,7 +49,6 @@ func TestNew(t *testing.T) {
 		{
 			name: "createExporter",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -65,9 +63,8 @@ func TestNew(t *testing.T) {
 		{
 			name: "createExporterWithHeaders",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Headers:     map[string]string{"extra-header": "header-value"},
+					Headers:     map[string]configopaque.String{"extra-header": "header-value"},
 					Endpoint:    "foo.bar",
 					Compression: "",
 					Keepalive:   nil,
@@ -77,7 +74,6 @@ func TestNew(t *testing.T) {
 		{
 			name: "createBasicSecureExporter",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -89,7 +85,6 @@ func TestNew(t *testing.T) {
 		{
 			name: "createSecureExporterWithClientTLS",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -107,7 +102,6 @@ func TestNew(t *testing.T) {
 		{
 			name: "createSecureExporterWithKeepAlive",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -130,7 +124,6 @@ func TestNew(t *testing.T) {
 		{
 			name: "createSecureExporterWithMissingFile",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",

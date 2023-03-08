@@ -16,7 +16,7 @@ metrics:
 
 Monotonic cumulative sum int metric enabled by default.
 
-Additional information.
+The metric will be become optional soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -29,6 +29,16 @@ Additional information.
 | string_attr | Attribute with any string value. | Any Str |
 | state | Integer attribute with overridden name. | Any Int |
 | enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
+
+### default.metric.to_be_removed
+
+[DEPRECATED] Non-monotonic delta sum double metric enabled by default.
+
+The metric will be will be removed soon.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Delta | false |
 
 ## Optional Metrics
 
@@ -57,7 +67,8 @@ metrics:
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` |
-| string.resource.attr | Resource attribute with any string value. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| optional.resource.attr | Explicitly disabled ResourceAttribute. | Any Str | false |
+| string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` | true |
+| string.resource.attr | Resource attribute with any string value. | Any Str | true |

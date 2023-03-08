@@ -6,7 +6,7 @@
 | Supported pipeline types | traces, logs |
 | Distributions            | [contrib]    |
 
-This is an exporter that will consistently export spans and logs depending on the `routing_key` configured. If no `routing_key` is configured, the default routing mechanism in `traceID` i.e; spans belonging to the same `traceID` are sent to the same backend.
+This is an exporter that will consistently export spans and logs depending on the `routing_key` configured. If no `routing_key` is configured, the default routing mechanism is `traceID`. This means that spans belonging to the same `traceID` (or `service.name`, when `service` is used as the `routing_key`) will be sent to the same backend.
 
 It requires a source of backend information to be provided: static, with a fixed list of backends, or DNS, with a hostname that will resolve to all IP addresses to use. The DNS resolver will periodically check for updates.
 

@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	k8s "k8s.io/client-go/kubernetes"
@@ -36,7 +35,6 @@ func TestDefaultConfig(t *testing.T) {
 	require.True(t, ok)
 
 	assert.Equal(t, &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},

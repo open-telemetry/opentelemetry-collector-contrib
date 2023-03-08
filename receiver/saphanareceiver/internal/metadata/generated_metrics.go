@@ -18,12 +18,7 @@ import (
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -34,7 +29,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -222,6 +217,28 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		SaphanaVolumeOperationTime: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesSettings provides settings for saphanareceiver metrics.
+type ResourceAttributesSettings struct {
+	DbSystem    ResourceAttributeSettings `mapstructure:"db.system"`
+	SaphanaHost ResourceAttributeSettings `mapstructure:"saphana.host"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		DbSystem: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		SaphanaHost: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -3132,6 +3149,12 @@ func newMetricSaphanaVolumeOperationTime(settings MetricSettings) metricSaphanaV
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -3140,6 +3163,7 @@ type MetricsBuilder struct {
 	resourceCapacity                              int                 // maximum observed number of resource attributes.
 	metricsBuffer                                 pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                     component.BuildInfo // contains version information
+	resourceAttributesSettings                    ResourceAttributesSettings
 	metricSaphanaAlertCount                       metricSaphanaAlertCount
 	metricSaphanaBackupLatest                     metricSaphanaBackupLatest
 	metricSaphanaColumnMemoryUsed                 metricSaphanaColumnMemoryUsed
@@ -3197,56 +3221,71 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                     pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                 pmetric.NewMetrics(),
 		buildInfo:                                     settings.BuildInfo,
-		metricSaphanaAlertCount:                       newMetricSaphanaAlertCount(ms.SaphanaAlertCount),
-		metricSaphanaBackupLatest:                     newMetricSaphanaBackupLatest(ms.SaphanaBackupLatest),
-		metricSaphanaColumnMemoryUsed:                 newMetricSaphanaColumnMemoryUsed(ms.SaphanaColumnMemoryUsed),
-		metricSaphanaComponentMemoryUsed:              newMetricSaphanaComponentMemoryUsed(ms.SaphanaComponentMemoryUsed),
-		metricSaphanaConnectionCount:                  newMetricSaphanaConnectionCount(ms.SaphanaConnectionCount),
-		metricSaphanaCPUUsed:                          newMetricSaphanaCPUUsed(ms.SaphanaCPUUsed),
-		metricSaphanaDiskSizeCurrent:                  newMetricSaphanaDiskSizeCurrent(ms.SaphanaDiskSizeCurrent),
-		metricSaphanaHostMemoryCurrent:                newMetricSaphanaHostMemoryCurrent(ms.SaphanaHostMemoryCurrent),
-		metricSaphanaHostSwapCurrent:                  newMetricSaphanaHostSwapCurrent(ms.SaphanaHostSwapCurrent),
-		metricSaphanaInstanceCodeSize:                 newMetricSaphanaInstanceCodeSize(ms.SaphanaInstanceCodeSize),
-		metricSaphanaInstanceMemoryCurrent:            newMetricSaphanaInstanceMemoryCurrent(ms.SaphanaInstanceMemoryCurrent),
-		metricSaphanaInstanceMemorySharedAllocated:    newMetricSaphanaInstanceMemorySharedAllocated(ms.SaphanaInstanceMemorySharedAllocated),
-		metricSaphanaInstanceMemoryUsedPeak:           newMetricSaphanaInstanceMemoryUsedPeak(ms.SaphanaInstanceMemoryUsedPeak),
-		metricSaphanaLicenseExpirationTime:            newMetricSaphanaLicenseExpirationTime(ms.SaphanaLicenseExpirationTime),
-		metricSaphanaLicenseLimit:                     newMetricSaphanaLicenseLimit(ms.SaphanaLicenseLimit),
-		metricSaphanaLicensePeak:                      newMetricSaphanaLicensePeak(ms.SaphanaLicensePeak),
-		metricSaphanaNetworkRequestAverageTime:        newMetricSaphanaNetworkRequestAverageTime(ms.SaphanaNetworkRequestAverageTime),
-		metricSaphanaNetworkRequestCount:              newMetricSaphanaNetworkRequestCount(ms.SaphanaNetworkRequestCount),
-		metricSaphanaNetworkRequestFinishedCount:      newMetricSaphanaNetworkRequestFinishedCount(ms.SaphanaNetworkRequestFinishedCount),
-		metricSaphanaReplicationAverageTime:           newMetricSaphanaReplicationAverageTime(ms.SaphanaReplicationAverageTime),
-		metricSaphanaReplicationBacklogSize:           newMetricSaphanaReplicationBacklogSize(ms.SaphanaReplicationBacklogSize),
-		metricSaphanaReplicationBacklogTime:           newMetricSaphanaReplicationBacklogTime(ms.SaphanaReplicationBacklogTime),
-		metricSaphanaRowStoreMemoryUsed:               newMetricSaphanaRowStoreMemoryUsed(ms.SaphanaRowStoreMemoryUsed),
-		metricSaphanaSchemaMemoryUsedCurrent:          newMetricSaphanaSchemaMemoryUsedCurrent(ms.SaphanaSchemaMemoryUsedCurrent),
-		metricSaphanaSchemaMemoryUsedMax:              newMetricSaphanaSchemaMemoryUsedMax(ms.SaphanaSchemaMemoryUsedMax),
-		metricSaphanaSchemaOperationCount:             newMetricSaphanaSchemaOperationCount(ms.SaphanaSchemaOperationCount),
-		metricSaphanaSchemaRecordCompressedCount:      newMetricSaphanaSchemaRecordCompressedCount(ms.SaphanaSchemaRecordCompressedCount),
-		metricSaphanaSchemaRecordCount:                newMetricSaphanaSchemaRecordCount(ms.SaphanaSchemaRecordCount),
-		metricSaphanaServiceCodeSize:                  newMetricSaphanaServiceCodeSize(ms.SaphanaServiceCodeSize),
-		metricSaphanaServiceCount:                     newMetricSaphanaServiceCount(ms.SaphanaServiceCount),
-		metricSaphanaServiceMemoryCompactorsAllocated: newMetricSaphanaServiceMemoryCompactorsAllocated(ms.SaphanaServiceMemoryCompactorsAllocated),
-		metricSaphanaServiceMemoryCompactorsFreeable:  newMetricSaphanaServiceMemoryCompactorsFreeable(ms.SaphanaServiceMemoryCompactorsFreeable),
-		metricSaphanaServiceMemoryEffectiveLimit:      newMetricSaphanaServiceMemoryEffectiveLimit(ms.SaphanaServiceMemoryEffectiveLimit),
-		metricSaphanaServiceMemoryHeapCurrent:         newMetricSaphanaServiceMemoryHeapCurrent(ms.SaphanaServiceMemoryHeapCurrent),
-		metricSaphanaServiceMemoryLimit:               newMetricSaphanaServiceMemoryLimit(ms.SaphanaServiceMemoryLimit),
-		metricSaphanaServiceMemorySharedCurrent:       newMetricSaphanaServiceMemorySharedCurrent(ms.SaphanaServiceMemorySharedCurrent),
-		metricSaphanaServiceMemoryUsed:                newMetricSaphanaServiceMemoryUsed(ms.SaphanaServiceMemoryUsed),
-		metricSaphanaServiceStackSize:                 newMetricSaphanaServiceStackSize(ms.SaphanaServiceStackSize),
-		metricSaphanaServiceThreadCount:               newMetricSaphanaServiceThreadCount(ms.SaphanaServiceThreadCount),
-		metricSaphanaTransactionBlocked:               newMetricSaphanaTransactionBlocked(ms.SaphanaTransactionBlocked),
-		metricSaphanaTransactionCount:                 newMetricSaphanaTransactionCount(ms.SaphanaTransactionCount),
-		metricSaphanaUptime:                           newMetricSaphanaUptime(ms.SaphanaUptime),
-		metricSaphanaVolumeOperationCount:             newMetricSaphanaVolumeOperationCount(ms.SaphanaVolumeOperationCount),
-		metricSaphanaVolumeOperationSize:              newMetricSaphanaVolumeOperationSize(ms.SaphanaVolumeOperationSize),
-		metricSaphanaVolumeOperationTime:              newMetricSaphanaVolumeOperationTime(ms.SaphanaVolumeOperationTime),
+		resourceAttributesSettings:                    mbc.ResourceAttributes,
+		metricSaphanaAlertCount:                       newMetricSaphanaAlertCount(mbc.Metrics.SaphanaAlertCount),
+		metricSaphanaBackupLatest:                     newMetricSaphanaBackupLatest(mbc.Metrics.SaphanaBackupLatest),
+		metricSaphanaColumnMemoryUsed:                 newMetricSaphanaColumnMemoryUsed(mbc.Metrics.SaphanaColumnMemoryUsed),
+		metricSaphanaComponentMemoryUsed:              newMetricSaphanaComponentMemoryUsed(mbc.Metrics.SaphanaComponentMemoryUsed),
+		metricSaphanaConnectionCount:                  newMetricSaphanaConnectionCount(mbc.Metrics.SaphanaConnectionCount),
+		metricSaphanaCPUUsed:                          newMetricSaphanaCPUUsed(mbc.Metrics.SaphanaCPUUsed),
+		metricSaphanaDiskSizeCurrent:                  newMetricSaphanaDiskSizeCurrent(mbc.Metrics.SaphanaDiskSizeCurrent),
+		metricSaphanaHostMemoryCurrent:                newMetricSaphanaHostMemoryCurrent(mbc.Metrics.SaphanaHostMemoryCurrent),
+		metricSaphanaHostSwapCurrent:                  newMetricSaphanaHostSwapCurrent(mbc.Metrics.SaphanaHostSwapCurrent),
+		metricSaphanaInstanceCodeSize:                 newMetricSaphanaInstanceCodeSize(mbc.Metrics.SaphanaInstanceCodeSize),
+		metricSaphanaInstanceMemoryCurrent:            newMetricSaphanaInstanceMemoryCurrent(mbc.Metrics.SaphanaInstanceMemoryCurrent),
+		metricSaphanaInstanceMemorySharedAllocated:    newMetricSaphanaInstanceMemorySharedAllocated(mbc.Metrics.SaphanaInstanceMemorySharedAllocated),
+		metricSaphanaInstanceMemoryUsedPeak:           newMetricSaphanaInstanceMemoryUsedPeak(mbc.Metrics.SaphanaInstanceMemoryUsedPeak),
+		metricSaphanaLicenseExpirationTime:            newMetricSaphanaLicenseExpirationTime(mbc.Metrics.SaphanaLicenseExpirationTime),
+		metricSaphanaLicenseLimit:                     newMetricSaphanaLicenseLimit(mbc.Metrics.SaphanaLicenseLimit),
+		metricSaphanaLicensePeak:                      newMetricSaphanaLicensePeak(mbc.Metrics.SaphanaLicensePeak),
+		metricSaphanaNetworkRequestAverageTime:        newMetricSaphanaNetworkRequestAverageTime(mbc.Metrics.SaphanaNetworkRequestAverageTime),
+		metricSaphanaNetworkRequestCount:              newMetricSaphanaNetworkRequestCount(mbc.Metrics.SaphanaNetworkRequestCount),
+		metricSaphanaNetworkRequestFinishedCount:      newMetricSaphanaNetworkRequestFinishedCount(mbc.Metrics.SaphanaNetworkRequestFinishedCount),
+		metricSaphanaReplicationAverageTime:           newMetricSaphanaReplicationAverageTime(mbc.Metrics.SaphanaReplicationAverageTime),
+		metricSaphanaReplicationBacklogSize:           newMetricSaphanaReplicationBacklogSize(mbc.Metrics.SaphanaReplicationBacklogSize),
+		metricSaphanaReplicationBacklogTime:           newMetricSaphanaReplicationBacklogTime(mbc.Metrics.SaphanaReplicationBacklogTime),
+		metricSaphanaRowStoreMemoryUsed:               newMetricSaphanaRowStoreMemoryUsed(mbc.Metrics.SaphanaRowStoreMemoryUsed),
+		metricSaphanaSchemaMemoryUsedCurrent:          newMetricSaphanaSchemaMemoryUsedCurrent(mbc.Metrics.SaphanaSchemaMemoryUsedCurrent),
+		metricSaphanaSchemaMemoryUsedMax:              newMetricSaphanaSchemaMemoryUsedMax(mbc.Metrics.SaphanaSchemaMemoryUsedMax),
+		metricSaphanaSchemaOperationCount:             newMetricSaphanaSchemaOperationCount(mbc.Metrics.SaphanaSchemaOperationCount),
+		metricSaphanaSchemaRecordCompressedCount:      newMetricSaphanaSchemaRecordCompressedCount(mbc.Metrics.SaphanaSchemaRecordCompressedCount),
+		metricSaphanaSchemaRecordCount:                newMetricSaphanaSchemaRecordCount(mbc.Metrics.SaphanaSchemaRecordCount),
+		metricSaphanaServiceCodeSize:                  newMetricSaphanaServiceCodeSize(mbc.Metrics.SaphanaServiceCodeSize),
+		metricSaphanaServiceCount:                     newMetricSaphanaServiceCount(mbc.Metrics.SaphanaServiceCount),
+		metricSaphanaServiceMemoryCompactorsAllocated: newMetricSaphanaServiceMemoryCompactorsAllocated(mbc.Metrics.SaphanaServiceMemoryCompactorsAllocated),
+		metricSaphanaServiceMemoryCompactorsFreeable:  newMetricSaphanaServiceMemoryCompactorsFreeable(mbc.Metrics.SaphanaServiceMemoryCompactorsFreeable),
+		metricSaphanaServiceMemoryEffectiveLimit:      newMetricSaphanaServiceMemoryEffectiveLimit(mbc.Metrics.SaphanaServiceMemoryEffectiveLimit),
+		metricSaphanaServiceMemoryHeapCurrent:         newMetricSaphanaServiceMemoryHeapCurrent(mbc.Metrics.SaphanaServiceMemoryHeapCurrent),
+		metricSaphanaServiceMemoryLimit:               newMetricSaphanaServiceMemoryLimit(mbc.Metrics.SaphanaServiceMemoryLimit),
+		metricSaphanaServiceMemorySharedCurrent:       newMetricSaphanaServiceMemorySharedCurrent(mbc.Metrics.SaphanaServiceMemorySharedCurrent),
+		metricSaphanaServiceMemoryUsed:                newMetricSaphanaServiceMemoryUsed(mbc.Metrics.SaphanaServiceMemoryUsed),
+		metricSaphanaServiceStackSize:                 newMetricSaphanaServiceStackSize(mbc.Metrics.SaphanaServiceStackSize),
+		metricSaphanaServiceThreadCount:               newMetricSaphanaServiceThreadCount(mbc.Metrics.SaphanaServiceThreadCount),
+		metricSaphanaTransactionBlocked:               newMetricSaphanaTransactionBlocked(mbc.Metrics.SaphanaTransactionBlocked),
+		metricSaphanaTransactionCount:                 newMetricSaphanaTransactionCount(mbc.Metrics.SaphanaTransactionCount),
+		metricSaphanaUptime:                           newMetricSaphanaUptime(mbc.Metrics.SaphanaUptime),
+		metricSaphanaVolumeOperationCount:             newMetricSaphanaVolumeOperationCount(mbc.Metrics.SaphanaVolumeOperationCount),
+		metricSaphanaVolumeOperationSize:              newMetricSaphanaVolumeOperationSize(mbc.Metrics.SaphanaVolumeOperationSize),
+		metricSaphanaVolumeOperationTime:              newMetricSaphanaVolumeOperationTime(mbc.Metrics.SaphanaVolumeOperationTime),
 	}
 	for _, op := range options {
 		op(mb)
@@ -3265,26 +3304,30 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithDbSystem sets provided value as "db.system" attribute for current resource.
 func WithDbSystem(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("db.system", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.DbSystem.Enabled {
+			rm.Resource().Attributes().PutStr("db.system", val)
+		}
 	}
 }
 
 // WithSaphanaHost sets provided value as "saphana.host" attribute for current resource.
 func WithSaphanaHost(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("saphana.host", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.SaphanaHost.Enabled {
+			rm.Resource().Attributes().PutStr("saphana.host", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -3358,8 +3401,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSaphanaVolumeOperationCount.emit(ils.Metrics())
 	mb.metricSaphanaVolumeOperationSize.emit(ils.Metrics())
 	mb.metricSaphanaVolumeOperationTime.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -3372,8 +3416,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

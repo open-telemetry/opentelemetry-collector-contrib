@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
@@ -50,9 +49,7 @@ type pubsubReceiverFactory struct {
 }
 
 func (factory *pubsubReceiverFactory) CreateDefaultConfig() component.Config {
-	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
 func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.CreateSettings, config component.Config) (*pubsubReceiver, error) {

@@ -3,9 +3,11 @@ name: aerospikereceiver
 resource_attributes:
   aerospike.node.name:
     description: Name of the Aerospike node collected from
+    enabled: true
     type: string
   aerospike.namespace:
     description: Name of the Aerospike namespace
+    enabled: true
     type: string
 
 attributes:

@@ -455,8 +455,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 			td, err := jsonBatchToTraces(zBytes, true)
 			require.NoError(t, err)
 			gs := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-			gs.Attributes().Sort()
-			require.Equal(t, c.wantAttributes, gs.Attributes(), "Unsuccessful conversion %d", i)
+			require.Equal(t, c.wantAttributes.AsRaw(), gs.Attributes().AsRaw(), "Unsuccessful conversion %d", i)
 			require.Equal(t, c.wantStatus, gs.Status(), "Unsuccessful conversion %d", i)
 		})
 	}

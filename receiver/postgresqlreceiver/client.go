@@ -458,9 +458,9 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 	query := `SELECT
 	client_addr,
 	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
-	coalesce(write_lag, -1),
-	coalesce(flush_lag, -1),
-	coalesce(replay_lag, -1)
+	extract('epoch' from coalesce(write_lag, '-1 seconds')),
+	extract('epoch' from coalesce(flush_lag, '-1 seconds')),
+	extract('epoch' from coalesce(replay_lag, '-1 seconds'))
 	FROM pg_stat_replication;
 	`
 	rows, err := c.client.QueryContext(ctx, query)

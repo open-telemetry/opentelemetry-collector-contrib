@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -53,7 +52,6 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		NetAddr: confignet.NetAddr{
 			Endpoint:  defaultBindEndpoint,
 			Transport: defaultTransport,
@@ -72,9 +70,5 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	c := cfg.(*Config)
-	err := c.validate()
-	if err != nil {
-		return nil, err
-	}
 	return New(params, *c, consumer)
 }

@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver/internal/model"
@@ -145,7 +145,7 @@ func TestScaperScrape(t *testing.T) {
 			},
 			setupCfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Metrics = metadata.MetricsSettings{
+				cfg.MetricsBuilderConfig.Metrics = metadata.MetricsSettings{
 					RiakMemoryLimit: metadata.MetricSettings{
 						Enabled: false,
 					},
@@ -208,7 +208,8 @@ func TestScaperScrape(t *testing.T) {
 
 			expectedMetrics := tc.expectedMetricGen(t)
 
-			err = comparetest.CompareMetrics(expectedMetrics, actualMetrics)
+			err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp())
 			require.NoError(t, err)
 		})
 	}

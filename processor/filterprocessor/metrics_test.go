@@ -22,17 +22,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type metricNameTest struct {
@@ -332,7 +332,6 @@ func TestFilterMetricProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Include: test.inc,
 					Exclude: test.exc,
@@ -341,7 +340,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			factory := NewFactory()
 			fmp, err := factory.CreateMetricsProcessor(
 				context.Background(),
-				componenttest.NewNopProcessorCreateSettings(),
+				processortest.NewNopCreateSettings(),
 				cfg,
 				next,
 			)
@@ -430,7 +429,7 @@ func benchmarkFilter(b *testing.B, mp *filtermetric.MatchProperties) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -508,7 +507,7 @@ func requireNotPanics(t *testing.T, metrics pmetric.Metrics) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -528,6 +527,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 		conditions       MetricFilters
 		filterEverything bool
 		want             func(md pmetric.Metrics)
+		errorMode        ottl.ErrorMode
 	}{
 		{
 			name: "drop metrics",
@@ -541,6 +541,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return metric.Name() == "operationA"
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop everything by dropping all metrics",
@@ -550,6 +551,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 				},
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "drop sum data point",
@@ -563,6 +565,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return point.DoubleValue() == 1.0
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop all sum data points",
@@ -576,6 +579,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return metric.Type() == pmetric.MetricTypeSum
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop gauge data point",
@@ -589,6 +593,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return point.DoubleValue() == 1.0
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop all gauge data points",
@@ -602,6 +607,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return metric.Type() == pmetric.MetricTypeGauge
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop histogram data point",
@@ -615,6 +621,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return point.Count() == 1
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop all histogram data points",
@@ -628,6 +635,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return metric.Type() == pmetric.MetricTypeHistogram
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop exponential histogram data point",
@@ -641,6 +649,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return point.Count() == 1
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop all exponential histogram data points",
@@ -654,6 +663,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return metric.Type() == pmetric.MetricTypeExponentialHistogram
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop summary data point",
@@ -667,6 +677,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return point.Sum() == 43.21
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop all summary data points",
@@ -680,6 +691,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return metric.Type() == pmetric.MetricTypeSummary
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "multiple conditions",
@@ -690,11 +702,22 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 				},
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
+			name: "with error conditions",
+			conditions: MetricFilters{
+				MetricConditions: []string{
+					`Substring("", 0, 100) == "test"`,
+				},
+			},
+			want:      func(md pmetric.Metrics) {},
+			errorMode: ottl.IgnoreError,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterMetricProcessor(componenttest.NewNopTelemetrySettings(), &Config{Metrics: tt.conditions})
+			processor, err := newFilterMetricProcessor(componenttest.NewNopTelemetrySettings(), &Config{Metrics: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
 			got, err := processor.processMetrics(context.Background(), constructMetrics())

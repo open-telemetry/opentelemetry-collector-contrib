@@ -19,7 +19,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -42,7 +41,6 @@ func NewFactory() exporter.Factory {
 // Create a default Memzo config
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: createDefaultHTTPClientSettings(),
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
@@ -58,10 +56,6 @@ func createLogsExporter(ctx context.Context, settings exporter.CreateSettings, e
 		return nil, errors.New("nil config")
 	}
 	expCfg := exporterConfig.(*Config)
-
-	if err := expCfg.Validate(); err != nil {
-		return nil, err
-	}
 
 	exp := newLogsExporter(expCfg, settings.TelemetrySettings, settings.BuildInfo, log)
 

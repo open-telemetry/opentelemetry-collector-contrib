@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/models"
 )
@@ -269,7 +269,8 @@ func TestScraperScrape(t *testing.T) {
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricFile)
 			require.NoError(t, err)
 
-			require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
 }

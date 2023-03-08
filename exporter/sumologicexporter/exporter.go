@@ -40,10 +40,6 @@ type sumologicexporter struct {
 }
 
 func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologicexporter, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
 	sfs := newSourceFormats(cfg)
 
 	f, err := newFilter(cfg.MetadataAttributes)

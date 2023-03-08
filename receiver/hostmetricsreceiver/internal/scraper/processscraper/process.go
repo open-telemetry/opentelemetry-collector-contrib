@@ -15,6 +15,7 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"runtime"
 	"strings"
 	"time"
 
@@ -91,6 +92,7 @@ type processHandle interface {
 	Times() (*cpu.TimesStat, error)
 	Percent(time.Duration) (float64, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
+	MemoryPercent() (float32, error)
 	IOCounters() (*process.IOCountersStat, error)
 	NumThreads() (int32, error)
 	CreateTime() (int64, error)
@@ -128,8 +130,8 @@ func getProcessHandlesInternal() (processHandles, error) {
 }
 
 func parentPid(handle processHandle, pid int32) (int32, error) {
-	// special case for pid 0
-	if pid == 0 {
+	// special case for pid 0 and pid 1 in darwin
+	if pid == 0 || (pid == 1 && runtime.GOOS == "darwin") {
 		return 0, nil
 	}
 	parent, err := handle.Parent()

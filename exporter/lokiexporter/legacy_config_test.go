@@ -19,12 +19,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -44,9 +45,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "allsettings"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"X-Custom-Header": "loki_rocks",
 					},
 					Endpoint: "https://loki:3100/loki/api/v1/push",
@@ -63,10 +63,12 @@ func TestLoadConfig(t *testing.T) {
 					Timeout:         time.Second * 10,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 10 * time.Second,
-					MaxInterval:     1 * time.Minute,
-					MaxElapsedTime:  10 * time.Minute,
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
@@ -93,9 +95,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "json"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Headers:  map[string]string{},
+					Headers:  map[string]configopaque.String{},
 					Endpoint: "https://loki:3100/loki/api/v1/push",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -110,10 +111,12 @@ func TestLoadConfig(t *testing.T) {
 					Timeout:         time.Second * 30,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 5 * time.Second,
-					MaxInterval:     30 * time.Second,
-					MaxElapsedTime:  5 * time.Minute,
+					Enabled:             true,
+					InitialInterval:     5 * time.Second,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      5 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
@@ -304,7 +307,6 @@ func TestConfig_validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.ExporterSettings = config.NewExporterSettings(component.NewID(typeStr))
 			cfg.Endpoint = tt.fields.Endpoint
 			cfg.Labels = tt.fields.Labels
 

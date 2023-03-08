@@ -3,6 +3,7 @@ name: riakreceiver
 resource_attributes:
   riak.node.name:
     description: The name this node uses to identify itself.
+    enabled: true
     type: string
 
 attributes:

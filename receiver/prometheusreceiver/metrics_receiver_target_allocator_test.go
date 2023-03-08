@@ -31,9 +31,7 @@ import (
 	promConfig "github.com/prometheus/prometheus/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -232,7 +230,6 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &targetAllocator{
 					Interval:    10 * time.Second,
@@ -327,7 +324,6 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &targetAllocator{
 					Interval:    10 * time.Second,
@@ -440,7 +436,6 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &targetAllocator{
 					Interval:    10 * time.Second,
@@ -483,7 +478,6 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &targetAllocator{
 					Interval:    50 * time.Millisecond,
@@ -511,7 +505,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			defer allocator.Stop()
 
 			tc.cfg.TargetAllocator.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
-			receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), tc.cfg, cms, featuregate.GetRegistry())
+			receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), tc.cfg, cms, featuregate.GlobalRegistry())
 
 			require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 

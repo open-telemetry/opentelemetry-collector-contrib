@@ -35,8 +35,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
 
@@ -60,7 +60,8 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	})
 
 	t.Run("scrape from couchdb 3.12", func(t *testing.T) {
@@ -76,7 +77,8 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	})
 
 	t.Run("scrape returns nothing", func(t *testing.T) {
@@ -155,18 +157,20 @@ func TestStart(t *testing.T) {
 func TestMetricSettings(t *testing.T) {
 	mockClient := new(MockClient)
 	mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.Metrics = metadata.MetricsSettings{
+		CouchdbAverageRequestTime: metadata.MetricSettings{Enabled: false},
+		CouchdbDatabaseOpen:       metadata.MetricSettings{Enabled: false},
+		CouchdbDatabaseOperations: metadata.MetricSettings{Enabled: true},
+		CouchdbFileDescriptorOpen: metadata.MetricSettings{Enabled: false},
+		CouchdbHttpdBulkRequests:  metadata.MetricSettings{Enabled: false},
+		CouchdbHttpdRequests:      metadata.MetricSettings{Enabled: false},
+		CouchdbHttpdResponses:     metadata.MetricSettings{Enabled: false},
+		CouchdbHttpdViews:         metadata.MetricSettings{Enabled: false},
+	}
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{},
-		Metrics: metadata.MetricsSettings{
-			CouchdbAverageRequestTime: metadata.MetricSettings{Enabled: false},
-			CouchdbDatabaseOpen:       metadata.MetricSettings{Enabled: false},
-			CouchdbDatabaseOperations: metadata.MetricSettings{Enabled: true},
-			CouchdbFileDescriptorOpen: metadata.MetricSettings{Enabled: false},
-			CouchdbHttpdBulkRequests:  metadata.MetricSettings{Enabled: false},
-			CouchdbHttpdRequests:      metadata.MetricSettings{Enabled: false},
-			CouchdbHttpdResponses:     metadata.MetricSettings{Enabled: false},
-			CouchdbHttpdViews:         metadata.MetricSettings{Enabled: false},
-		},
+		HTTPClientSettings:   confighttp.HTTPClientSettings{},
+		MetricsBuilderConfig: mbc,
 	}
 	scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
 	scraper.client = mockClient
@@ -177,7 +181,8 @@ func TestMetricSettings(t *testing.T) {
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "scraper", "only_db_ops.json"))
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expected, metrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expected, metrics, pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	require.Equal(t, metrics.MetricCount(), 1)
 }
 

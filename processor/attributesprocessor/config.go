@@ -18,7 +18,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
@@ -32,8 +31,6 @@ import (
 // This determines if a span is to be processed or not.
 // The list of actions is applied in order specified in the configuration.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
 	filterconfig.MatchConfig `mapstructure:",squash"`
 
 	// Specifies the list of attributes to act on.

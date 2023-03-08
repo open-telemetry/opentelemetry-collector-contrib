@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics
 
-go 1.18
+go 1.19
 
 require (
-	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/otel v1.11.1
+	github.com/stretchr/testify v1.8.2
+	go.opentelemetry.io/otel v1.14.0
 )
 
 require (

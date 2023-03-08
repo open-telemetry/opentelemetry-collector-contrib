@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -39,16 +38,14 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
-			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))},
+			id:       component.NewIDWithName(typeStr, ""),
+			expected: &Config{},
 		},
 		{
 			id: component.NewIDWithName(typeStr, "customname"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				ProjectID:        "my-project",
-				UserAgent:        "opentelemetry-collector-contrib {{version}}",
+				ProjectID: "my-project",
+				UserAgent: "opentelemetry-collector-contrib {{version}}",
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 20 * time.Second,
 				},
