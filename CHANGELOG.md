@@ -157,7 +157,6 @@
 - `splunkhecexporter`: Reconnect when server returns 502/429 errors. (#18281)
 - `pkg/stanza`: Reduced `Converter` memory footprint by condensing the `aggregationLoop` logic into `workerLoop`. (#18411)
 - `telemetrygen`: Implement a simple metric generation command for telemetrygen (#17986)
-- `all`: Replaced usage of `go.uber.org/atomic` with `sync/atomic`. (#18456)
 
 ### 🧰 Bug fixes 🧰
 
