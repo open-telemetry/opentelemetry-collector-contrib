@@ -10,9 +10,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.72.0
 	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.18.0
-	go.opentelemetry.io/collector v0.72.1-0.20230306190955-966865880707
-	go.opentelemetry.io/collector/component v0.72.1-0.20230306190955-966865880707
-	go.opentelemetry.io/collector/confmap v0.72.1-0.20230306190955-966865880707
+	go.opentelemetry.io/collector v0.73.0
+	go.opentelemetry.io/collector/component v0.73.0
+	go.opentelemetry.io/collector/confmap v0.73.0
 	go.uber.org/zap v1.24.0
 )
 
@@ -45,9 +45,9 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.72.1-0.20230306190955-966865880707 // indirect
+	go.opentelemetry.io/collector/featuregate v0.73.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
-	go.opentelemetry.io/otel/metric v0.36.0 // indirect
+	go.opentelemetry.io/otel/metric v0.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
