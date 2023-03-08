@@ -255,10 +255,10 @@ genotelcontribcol: $(BUILDER)
 
 .PHONY: otelcontribcolbuilder
 otelcontribcolbuilder: $(BUILDER)
-	file $(BUILDER)
 	mkdir -p ./dist
 	$(BUILDER) --skip-compilation --config ./builder/lumigo-builder-config.yaml
-	cd ./dist/ && GOOS=$(go_os) GOARCH=$(go_arch) $(GOCMD) build -ldflags="-s -w" -trimpath -o "./otelcontribcol_$(go_os)_$(go_arch)"
+	cd ./dist/ && GOOS=$(go_os) GOARCH=$(go_arch) CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./otelcontribcol_$(go_os)_$(go_arch)$(EXTENSION) \
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
