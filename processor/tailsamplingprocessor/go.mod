@@ -36,12 +36,8 @@ require (
 	go.opentelemetry.io/collector/featuregate v0.73.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.73.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
-<<<<<<< HEAD
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
-=======
-	go.opentelemetry.io/otel/metric v0.36.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
->>>>>>> 3d94446df2 (replaces go.uber.org/atomic with sync/atomic)
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
