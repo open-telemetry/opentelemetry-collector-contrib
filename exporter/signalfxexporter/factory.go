@@ -55,6 +55,8 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	maxConnCount := defaultMaxConns
+	idleConnTimeout := 30 * time.Second
+
 	return &Config{
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
@@ -62,6 +64,7 @@ func createDefaultConfig() component.Config {
 			Timeout:             defaultHTTPTimeout,
 			MaxIdleConns:        &maxConnCount,
 			MaxIdleConnsPerHost: &maxConnCount,
+			IdleConnTimeout:     &idleConnTimeout,
 		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,

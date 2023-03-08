@@ -36,8 +36,7 @@ func TestNewConnector(t *testing.T) {
 		wantDimensions              []dimension
 	}{
 		{
-			name:                        "simplest config (use defaults)",
-			wantLatencyHistogramBuckets: defaultLatencyHistogramBucketsMs,
+			name: "simplest config (use defaults)",
 		},
 		{
 			name:                    "1 configured latency histogram bucket should result in 1 explicit latency bucket (+1 implicit +Inf bucket)",
@@ -46,7 +45,6 @@ func TestNewConnector(t *testing.T) {
 				{Name: "http.method", Default: &defaultMethod},
 				{Name: "http.status_code"},
 			},
-			wantLatencyHistogramBuckets: []float64{2},
 			wantDimensions: []dimension{
 				{name: "http.method", value: &defaultMethodValue},
 				{"http.status_code", nil},
@@ -59,7 +57,9 @@ func TestNewConnector(t *testing.T) {
 
 			creationParams := connectortest.NewNopCreateSettings()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.LatencyHistogramBuckets = tc.latencyHistogramBuckets
+			cfg.Histogram.Explicit = &ExplicitHistogramConfig{
+				Buckets: tc.latencyHistogramBuckets,
+			}
 			cfg.Dimensions = tc.dimensions
 
 			// Test
@@ -70,7 +70,6 @@ func TestNewConnector(t *testing.T) {
 			assert.Nil(t, err)
 			assert.NotNil(t, smc)
 
-			assert.Equal(t, tc.wantLatencyHistogramBuckets, smc.latencyBounds)
 			assert.Equal(t, tc.wantDimensions, smc.dimensions)
 		})
 	}
