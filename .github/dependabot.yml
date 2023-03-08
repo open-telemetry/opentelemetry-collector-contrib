@@ -35,10 +35,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/cmd/tracegen"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/confmap/provider/s3provider"
     schedule:
       interval: "weekly"
@@ -363,6 +359,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/influx"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/k8sconfig"
     schedule:
       interval: "weekly"
@@ -602,7 +602,7 @@ updates:
     directory: "/receiver/couchdbreceiver"
     schedule:
       interval: "weekly"
- - package-ecosystem: "gomod"
+  - package-ecosystem: "gomod"
     directory: "/receiver/datadogreceiver"
     schedule:
       interval: "weekly"
@@ -624,6 +624,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/filelogreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/filereceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -751,10 +755,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/receiver/promtailreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/receiver/pulsarreceiver"
     schedule:
       interval: "weekly"
@@ -828,6 +828,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/sqlserverreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/sshcheckreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
