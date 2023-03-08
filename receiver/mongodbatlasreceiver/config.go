@@ -34,15 +34,15 @@ var _ component.Config = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	PublicKey                               string                       `mapstructure:"public_key"`
-	PrivateKey                              string                       `mapstructure:"private_key"`
-	Granularity                             string                       `mapstructure:"granularity"`
-	Metrics                                 metadata.MetricsSettings     `mapstructure:"metrics"`
-	Alerts                                  AlertConfig                  `mapstructure:"alerts"`
-	Events                                  *EventsConfig                `mapstructure:"events"`
-	Logs                                    LogConfig                    `mapstructure:"logs"`
-	RetrySettings                           exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
-	StorageID                               *component.ID                `mapstructure:"storage"`
+	PublicKey                               string                        `mapstructure:"public_key"`
+	PrivateKey                              string                        `mapstructure:"private_key"`
+	Granularity                             string                        `mapstructure:"granularity"`
+	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Alerts                                  AlertConfig                   `mapstructure:"alerts"`
+	Events                                  *EventsConfig                 `mapstructure:"events"`
+	Logs                                    LogConfig                     `mapstructure:"logs"`
+	RetrySettings                           exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	StorageID                               *component.ID                 `mapstructure:"storage"`
 }
 
 type AlertConfig struct {

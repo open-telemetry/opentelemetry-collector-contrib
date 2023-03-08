@@ -1074,8 +1074,8 @@ func TestConsumeMetadata(t *testing.T) {
 
 			select {
 			case <-c:
-			// wait 5ms longer than send delay
-			case <-time.After(time.Duration(tt.sendDelay)*time.Second + 5*time.Millisecond):
+			// wait 500ms longer than send delay
+			case <-time.After(time.Duration(tt.sendDelay)*time.Second + 500*time.Millisecond):
 				require.True(t, tt.shouldNotSendUpdate, "timeout waiting for response")
 			}
 

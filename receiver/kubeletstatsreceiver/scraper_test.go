@@ -64,7 +64,7 @@ func TestScraper(t *testing.T) {
 		&fakeRestClient{},
 		receivertest.NewNopCreateSettings(),
 		options,
-		metadata.DefaultMetricsSettings(),
+		metadata.DefaultMetricsBuilderConfig(),
 	)
 	require.NoError(t, err)
 
@@ -114,7 +114,7 @@ func TestScraperWithMetadata(t *testing.T) {
 				&fakeRestClient{},
 				receivertest.NewNopCreateSettings(),
 				options,
-				metadata.DefaultMetricsSettings(),
+				metadata.DefaultMetricsBuilderConfig(),
 			)
 			require.NoError(t, err)
 
@@ -198,7 +198,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 					metricGroupsToCollect: test.metricGroups,
 				},
-				metadata.DefaultMetricsSettings(),
+				metadata.DefaultMetricsBuilderConfig(),
 			)
 			require.NoError(t, err)
 
@@ -348,7 +348,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 					},
 					k8sAPIClient: test.k8sAPIClient,
 				},
-				metadata.DefaultMetricsSettings(),
+				metadata.DefaultMetricsBuilderConfig(),
 			)
 			require.NoError(t, err)
 
@@ -461,7 +461,7 @@ func TestClientErrors(t *testing.T) {
 				},
 				settings,
 				options,
-				metadata.DefaultMetricsSettings(),
+				metadata.DefaultMetricsBuilderConfig(),
 			)
 			require.NoError(t, err)
 

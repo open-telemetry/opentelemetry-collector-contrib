@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 		NetAddr: confignet.NetAddr{
 			Endpoint: defaultEndpoint,
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

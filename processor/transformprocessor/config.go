@@ -18,13 +18,22 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
+// Config defines the configuration for the processor.
 type Config struct {
+	// ErrorMode determines how the processor reacts to errors that occur while processing a statement.
+	// Valid values are `ignore` and `propagate`.
+	// `ignore` means the processor ignores errors returned by statements and continues on to the next statement. This is the recommended mode.
+	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
+	// The default value is `propagate`.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
+
 	TraceStatements  []common.ContextStatements `mapstructure:"trace_statements"`
 	MetricStatements []common.ContextStatements `mapstructure:"metric_statements"`
 	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`

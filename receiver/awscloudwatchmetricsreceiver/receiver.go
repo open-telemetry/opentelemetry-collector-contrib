@@ -16,20 +16,20 @@ package awscloudwatchmetricsreceiver // import "github.com/open-telemetry/opente
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 )
 
 type metricReceiver struct {
@@ -62,8 +62,8 @@ const (
 	maxNumberOfElements = 500
 )
 
-func buildGetMetricDataQueries(metric *namedRequest, nammetricDataInput *cloudwatch.GetMetricDataInput) types.MetricDataQuery {
-	mdq := &types.MetricDataQuery{
+func buildGetMetricDataQueries(metric *namedRequest) types.MetricDataQuery {
+	mdq := types.MetricDataQuery{
 		Id:         aws.String("m1"),
 		ReturnData: aws.Bool(true),
 	}
@@ -76,7 +76,7 @@ func buildGetMetricDataQueries(metric *namedRequest, nammetricDataInput *cloudwa
 		Period: aws.Int32(int32(metric.Period / time.Second)),
 		Stat:   aws.String(metric.AwsAggregation),
 	}
-	return *mdq
+	return mdq
 }
 
 func chunkSlice(namedRequestMetrics []namedRequest, maxSize int) [][]namedRequest {
@@ -105,7 +105,7 @@ func (m *metricReceiver) request(st, et *time.Time) []cloudwatch.GetMetricDataIn
 			metricDataInput[idx].StartTime = st
 			metricDataInput[idx].EndTime = et
 			metricDataInput[idx].MetricDataQueries =
-				append(metricDataInput[idx].MetricDataQueries, buildGetMetricDataQueries(&chunk[ydx], &metricDataInput[idx]))
+				append(metricDataInput[idx].MetricDataQueries, buildGetMetricDataQueries(&chunk[ydx]))
 		}
 	}
 	return metricDataInput
@@ -114,7 +114,7 @@ func (m *metricReceiver) request(st, et *time.Time) []cloudwatch.GetMetricDataIn
 func newMetricsRceiver(cfg *Config, logger *zap.Logger, consumer consumer.Metrics) *metricReceiver {
 	var requests []namedRequest
 	for idx, nc := range cfg.Metrics.Names {
-		logger.Debug(nc.MetricName)
+		logger.Debug("metric name ", zap.String("", nc.MetricName))
 		var dimensions []types.Dimension
 		for ydx := range nc.Dimensions {
 			dimensions = append(dimensions,
@@ -137,6 +137,7 @@ func newMetricsRceiver(cfg *Config, logger *zap.Logger, consumer consumer.Metric
 		nextStartTime: time.Now().Add(-cfg.PollInterval),
 		logger:        logger,
 		wg:            &sync.WaitGroup{},
+		consumer:      consumer,
 		namedRequests: requests,
 		doneChan:      make(chan bool),
 	}
@@ -225,25 +226,32 @@ func (m *metricReceiver) pollForMetrics(ctx context.Context, r []namedRequest, s
 }
 
 func (m *metricReceiver) parseMetrics(observedTime pcommon.Timestamp, output []types.MetricDataResult, r []namedRequest) pmetric.Metrics {
-	md := pmetric.NewMetrics()
-	for idx, metric := range output {
-		if len(metric.Timestamps) < 1 {
-			m.logger.Error("no timestamps received from cloudwatch")
-			continue
-		}
-		if len(metric.Values) < 1 {
-			m.logger.Error("no values received from cloudwatch")
-			continue
-		}
-		rm := md.ResourceMetrics().AppendEmpty()
-		resourceAttributes := rm.Resource().Attributes()
-		resourceAttributes.PutStr("aws.region", m.region)
-		resourceAttributes.PutStr("cloudwatch.metric.namespace", r[idx].Namespace)
-		resourceAttributes.PutStr("cloudwatch.metric.name", r[idx].MetricName)
-		rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	pdm := pmetric.NewMetrics()
+	rms := pdm.ResourceMetrics()
+	rm := rms.AppendEmpty()
+	rm.Resource().Attributes()
+	ilms := rm.ScopeMetrics()
+	ilm := ilms.AppendEmpty()
+	ms := ilm.Metrics()
+	ms.EnsureCapacity(len(output))
+	for i := 0; i < len(output); i++ {
+		fillDataPoints(ms.AppendEmpty(), observedTime, output[i], r[i])
 	}
-	m.logger.Debug(" ", zap.Any("", md))
-	return md
+	return pdm
+}
+
+func fillDataPoints(pdm pmetric.Metric, observedTime pcommon.Timestamp, result types.MetricDataResult, r namedRequest) pmetric.Metric {
+	pdm.SetName(fmt.Sprintf("%s.%s", r.Namespace, r.MetricName))
+	dps := pdm.SetEmptyGauge().DataPoints()
+
+	for idx, value := range result.Values {
+		timestamp := result.Timestamps[idx]
+		dp := dps.AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+		dp.SetStartTimestamp(observedTime)
+		dp.SetDoubleValue(value)
+	}
+	return pdm
 }
 
 func (m *metricReceiver) configureAWSClient() error {

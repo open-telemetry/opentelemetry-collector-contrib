@@ -103,7 +103,7 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 				})
 
 				e.settings.Logger.Debug("Sending log data", zap.String("body", log.Body().Str()), zap.Any("resourcemap", resourceMapperMap), zap.Any("metadatamap", logMetadataMap))
-				payload := translator.ConvertToLMLogInput(log.Body().Str(), timestampFromLogRecord(log).String(), resourceMapperMap, logMetadataMap)
+				payload := translator.ConvertToLMLogInput(log.Body().AsRaw(), timestampFromLogRecord(log).String(), resourceMapperMap, logMetadataMap)
 				err := e.logIngestClient.SendLogs(ctx, payload)
 				if err != nil {
 					e.settings.Logger.Error("error while exporting logs ", zap.Error(err), zap.String("body", log.Body().Str()), zap.Any("resourcemap", resourceMapperMap), zap.Any("metadatamap", logMetadataMap))

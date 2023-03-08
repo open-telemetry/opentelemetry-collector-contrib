@@ -26,9 +26,6 @@ import (
 
 var (
 	defaultPollInterval = time.Minute
-	//defaultPeriod       = time.Minute * 5 // AWS default period for AWS metrics
-	//defaultNilToZero      = false
-	//defaultAwsAggregation = "Sum" // sum is default aggregation as it's the most common
 )
 
 // Config is the overall config structure for the awscloudwatchmetricsreceiver

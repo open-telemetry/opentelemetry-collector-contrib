@@ -34,7 +34,6 @@ func newMultilineSplitterFactory(splitter helper.SplitterConfig) *multilineSplit
 	return &multilineSplitterFactory{
 		SplitterConfig: splitter,
 	}
-
 }
 
 // Build builds Multiline Splitter struct
@@ -44,7 +43,7 @@ func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc,
 		return nil, err
 	}
 	flusher := factory.Flusher.Build()
-	splitter, err := factory.Multiline.Build(enc.Encoding, false, flusher, maxLogSize)
+	splitter, err := factory.Multiline.Build(enc.Encoding, false, factory.PreserveLeadingWhitespaces, factory.PreserveTrailingWhitespaces, flusher, maxLogSize)
 	if err != nil {
 		return nil, err
 	}

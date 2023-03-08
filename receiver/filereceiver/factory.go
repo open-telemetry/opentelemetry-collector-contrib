@@ -31,15 +31,20 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsFunc, component.StabilityLevelDevelopment),
+		receiver.WithMetrics(createMetricsReceiver, stability),
 	)
 }
 
-func createMetricsFunc(
-	ctx context.Context,
+func createMetricsReceiver(
+	_ context.Context,
 	settings receiver.CreateSettings,
-	config component.Config,
-	metrics consumer.Metrics,
+	cc component.Config,
+	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	return fileReceiver{}, nil
+	cfg := cc.(*Config)
+	return &fileReceiver{
+		consumer: consumer,
+		path:     cfg.Path,
+		logger:   settings.Logger,
+	}, nil
 }

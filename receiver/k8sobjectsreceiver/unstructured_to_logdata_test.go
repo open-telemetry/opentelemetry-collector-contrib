@@ -17,6 +17,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,7 +50,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 				Resource: "pods",
 			},
 		}
-		logs := pullObjectsToLogData(&objects, config)
+		logs := pullObjectsToLogData(&objects, time.Now(), config)
 
 		assert.Equal(t, logs.LogRecordCount(), 4)
 
@@ -86,7 +87,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			},
 		}
 
-		logs := pullObjectsToLogData(&objects, config)
+		logs := pullObjectsToLogData(&objects, time.Now(), config)
 
 		assert.Equal(t, logs.LogRecordCount(), 3)
 
@@ -123,7 +124,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			},
 		}
 
-		logs := watchObjectsToLogData(event, config)
+		logs := watchObjectsToLogData(event, time.Now(), config)
 
 		assert.Equal(t, logs.LogRecordCount(), 1)
 
@@ -139,6 +140,42 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		require.True(t, ok)
 		assert.EqualValues(t, "generic-name", eventName.AsRaw())
 
+	})
+
+	t.Run("Test event observed timestamp is present", func(t *testing.T) {
+		config := &K8sObjectsConfig{
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "events",
+			},
+		}
+		event := &watch.Event{
+			Type: watch.Added,
+			Object: &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Event",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name": "generic-name",
+					},
+				},
+			},
+		}
+
+		observedAt := time.Now()
+		logs := watchObjectsToLogData(event, observedAt, config)
+
+		assert.Equal(t, logs.LogRecordCount(), 1)
+
+		resourceLogs := logs.ResourceLogs()
+		assert.Equal(t, resourceLogs.Len(), 1)
+		rl := resourceLogs.At(0)
+		logRecords := rl.ScopeLogs().At(0).LogRecords()
+		assert.Equal(t, rl.ScopeLogs().Len(), 1)
+		assert.Equal(t, logRecords.Len(), 1)
+		assert.Greater(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), int64(0))
+		assert.Equal(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), observedAt.Unix())
 	})
 
 }

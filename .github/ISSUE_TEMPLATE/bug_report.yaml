@@ -26,6 +26,7 @@ body:
       - confmap/provider/s3provider
       - connector/count
       - connector/servicegraph
+      - connector/spanmetrics
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
@@ -93,6 +94,7 @@ body:
       - internal/core
       - internal/docker
       - internal/filter
+      - internal/influx
       - internal/k8sconfig
       - internal/kubelet
       - internal/metadataproviders
@@ -193,7 +195,6 @@ body:
       - receiver/postgresql
       - receiver/prometheus
       - receiver/prometheusexec
-      - receiver/promtail
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb

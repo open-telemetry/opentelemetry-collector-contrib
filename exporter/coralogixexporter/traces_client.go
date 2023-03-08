@@ -100,7 +100,7 @@ func (e *tracesExporter) shutdown(context.Context) error {
 
 func (e *tracesExporter) enhanceContext(ctx context.Context) context.Context {
 	md := metadata.New(nil)
-	for k, v := range e.config.Logs.Headers {
+	for k, v := range e.config.Traces.Headers {
 		md.Set(k, string(v))
 	}
 	return metadata.NewOutgoingContext(ctx, md)

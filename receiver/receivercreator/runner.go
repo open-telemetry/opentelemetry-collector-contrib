@@ -57,13 +57,13 @@ func (run *receiverRunner) start(
 
 	receiverFactory := factory.(rcvr.Factory)
 
-	cfg, endpoint, err := run.loadRuntimeReceiverConfig(receiverFactory, receiver, discoveredConfig)
+	cfg, targetEndpoint, err := run.loadRuntimeReceiverConfig(receiverFactory, receiver, discoveredConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}/<EndpointID>.
-	id := component.NewIDWithName(factory.Type(), fmt.Sprintf("%s/%s{endpoint=%q}/%s", receiver.id.Name(), run.idNamespace, endpoint, receiver.endpointID))
+	id := component.NewIDWithName(factory.Type(), fmt.Sprintf("%s/%s{endpoint=%q}/%s", receiver.id.Name(), run.idNamespace, targetEndpoint, receiver.endpointID))
 
 	recvr, err := run.createRuntimeReceiver(receiverFactory, id, cfg, nextConsumer)
 	if err != nil {
@@ -89,19 +89,48 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (component.Config, string, error) {
-	// Merge in the config values specified in the config file.
-	mergedConfig := confmap.NewFromStringMap(receiver.config)
-
-	// Merge in discoveredConfig containing values discovered at runtime.
-	if err := mergedConfig.Merge(confmap.NewFromStringMap(discoveredConfig)); err != nil {
-		return nil, "", fmt.Errorf("failed to merge template config from discovered runtime values: %w", err)
+	// remove dynamically added "endpoint" field if not supported by receiver
+	mergedConfig, targetEndpoint, err := mergeTemplatedAndDiscoveredConfigs(factory, receiver.config, discoveredConfig)
+	if err != nil {
+		return nil, targetEndpoint, fmt.Errorf("failed to merge constituent template configs: %w", err)
 	}
 
 	receiverCfg := factory.CreateDefaultConfig()
 	if err := component.UnmarshalConfig(mergedConfig, receiverCfg); err != nil {
-		return nil, "", fmt.Errorf("failed to load template config: %w", err)
+		return nil, "", fmt.Errorf("failed to load %q template config: %w", receiver.id.String(), err)
 	}
-	return receiverCfg, cast.ToString(mergedConfig.Get(endpointConfigKey)), nil
+	return receiverCfg, targetEndpoint, nil
+}
+
+// mergeTemplateAndDiscoveredConfigs will unify the templated and discovered configs,
+// setting the `endpoint` field from the discovered one if 1. not specified by the user
+// and 2. determined to be supported (by trial and error of unmarshalling a temp intermediary).
+func mergeTemplatedAndDiscoveredConfigs(factory rcvr.Factory, templated, discovered userConfigMap) (*confmap.Conf, string, error) {
+	targetEndpoint := cast.ToString(templated[endpointConfigKey])
+	if _, endpointSet := discovered[tmpSetEndpointConfigKey]; endpointSet {
+		delete(discovered, tmpSetEndpointConfigKey)
+		targetEndpoint = cast.ToString(discovered[endpointConfigKey])
+
+		// confirm the endpoint we've added is supported, removing if not
+		endpointConfig := confmap.NewFromStringMap(map[string]any{
+			endpointConfigKey: targetEndpoint,
+		})
+		if err := endpointConfig.Unmarshal(factory.CreateDefaultConfig(), confmap.WithErrorUnused()); err != nil {
+			// rather than attach to error content that can change over time,
+			// confirm the error only arises w/ ErrorUnused mapstructure setting ("invalid keys")
+			if err = endpointConfig.Unmarshal(factory.CreateDefaultConfig()); err == nil {
+				delete(discovered, endpointConfigKey)
+			}
+		}
+	}
+	discoveredConfig := confmap.NewFromStringMap(discovered)
+	templatedConfig := confmap.NewFromStringMap(templated)
+
+	// Merge in discoveredConfig containing values discovered at runtime.
+	if err := templatedConfig.Merge(discoveredConfig); err != nil {
+		return nil, targetEndpoint, fmt.Errorf("failed to merge template config from discovered runtime values: %w", err)
+	}
+	return templatedConfig, targetEndpoint, nil
 }
 
 // createRuntimeReceiver creates a receiver that is discovered at runtime.

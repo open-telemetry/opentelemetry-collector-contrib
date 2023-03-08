@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -37,10 +38,10 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_enum"] = functionWithEnum
 	functions["testing_telemetry_settings_first"] = functionWithTelemetrySettingsFirst
 
-	p := NewParser[any](
+	p, _ := NewParser[any](
 		functions,
 		testParsePath,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
 
@@ -269,10 +270,10 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	p := NewParser[any](
+	p, _ := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
 

@@ -119,8 +119,8 @@ func TestScraper(t *testing.T) {
 			cfg.Endpoint = c.Endpoint
 			cfg.IgnoreHostKey = true
 			if tc.enableSFTP {
-				cfg.Metrics.SshcheckSftpStatus.Enabled = true
-				cfg.Metrics.SshcheckSftpDuration.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SshcheckSftpStatus.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
 			}
 
 			settings := receivertest.NewNopCreateSettings()
@@ -130,7 +130,6 @@ func TestScraper(t *testing.T) {
 
 			actualMetrics, err := scrpr.scrape(context.Background())
 			require.NoError(t, err, "failed scrape")
-
 			require.NoError(
 				t,
 				pmetrictest.CompareMetrics(
@@ -239,8 +238,8 @@ func TestWithoutStartErrsNotPanics(t *testing.T) {
 	cfg.Password = "otelp"
 	cfg.Endpoint = "localhost:22"
 	cfg.IgnoreHostKey = true
-	cfg.Metrics.SshcheckSftpStatus.Enabled = true
-	cfg.Metrics.SshcheckSftpDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SshcheckSftpStatus.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
 
 	// create the scraper without starting it, so Client is nil
 	scrpr := newScraper(cfg, receivertest.NewNopCreateSettings())

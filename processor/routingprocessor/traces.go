@@ -43,6 +43,8 @@ type tracesProcessor struct {
 func newTracesProcessor(settings component.TelemetrySettings, config component.Config) *tracesProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
+	spanParser, _ := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings)
+
 	return &tracesProcessor{
 		logger: settings.Logger,
 		config: cfg,
@@ -50,7 +52,7 @@ func newTracesProcessor(settings component.TelemetrySettings, config component.C
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings),
+			spanParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}

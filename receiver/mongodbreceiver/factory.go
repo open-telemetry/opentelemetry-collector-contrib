@@ -52,8 +52,8 @@ func createDefaultConfig() component.Config {
 				Endpoint: "localhost:27017",
 			},
 		},
-		Metrics:          metadata.DefaultMetricsSettings(),
-		TLSClientSetting: configtls.TLSClientSetting{},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		TLSClientSetting:     configtls.TLSClientSetting{},
 	}
 }
 
