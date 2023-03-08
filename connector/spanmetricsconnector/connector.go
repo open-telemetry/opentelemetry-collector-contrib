@@ -50,15 +50,6 @@ const (
 	defaultUnit = "ms"
 )
 
-var unitDividers = map[string]func() int64{
-	"s": func() int64 {
-		return time.Second.Nanoseconds()
-	},
-	"ms": func() int64 {
-		return time.Millisecond.Nanoseconds()
-	},
-}
-
 type connectorImp struct {
 	lock   sync.Mutex
 	logger *zap.Logger
@@ -75,9 +66,6 @@ type connectorImp struct {
 	// Metrics
 	histograms metrics.HistogramMetrics
 	sums       metrics.SumMetrics
-
-	// unit divider, used to convert nanoseconds to milliseconds or seconds
-	unitDivider int64
 
 	keyBuf *bytes.Buffer
 
@@ -121,7 +109,6 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		return nil, err
 	}
 
-	unitDivider := unitDividers[cfg.Histogram.Unit]
 	var histograms metrics.HistogramMetrics
 	if cfg.Histogram.Exponential != nil {
 		maxSize := cfg.Histogram.Exponential.MaxSize
@@ -135,10 +122,10 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		if cfg.LatencyHistogramBuckets != nil {
 			logger.Warn("latency_histogram_buckets is deprecated. " +
 				"Use `histogram: explicit: buckets` to set histogram buckets")
-			bounds = durationsToUnits(cfg.LatencyHistogramBuckets, unitDivider())
+			bounds = durationsToUnits(cfg.LatencyHistogramBuckets, unitDivider(cfg.Histogram.Unit))
 		}
 		if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
-			bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider())
+			bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider(cfg.Histogram.Unit))
 		}
 		histograms = metrics.NewExplicitHistogramMetrics(bounds)
 	}
@@ -149,13 +136,20 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
 		histograms:            histograms,
 		sums:                  metrics.NewSumMetrics(),
-		unitDivider:           unitDivider(),
 		dimensions:            newDimensions(cfg.Dimensions),
 		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
 		ticker:                ticker,
 		done:                  make(chan struct{}),
 	}, nil
+}
+
+// unitDivider returns a unit divider to convert nanoseconds to milliseconds or seconds.
+func unitDivider(s string) int64 {
+	return map[string]int64{
+		"s":  time.Second.Nanoseconds(),
+		"ms": time.Millisecond.Nanoseconds(),
+	}[s]
 }
 
 func durationsToUnits(vs []time.Duration, unitDivider int64) []float64 {
@@ -287,6 +281,8 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 		if !ok {
 			continue
 		}
+
+		unitDivider := unitDivider(p.config.Histogram.Unit)
 		serviceName := serviceAttr.Str()
 		ilsSlice := rspans.ScopeSpans()
 		for j := 0; j < ilsSlice.Len(); j++ {
@@ -299,7 +295,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				startTime := span.StartTimestamp()
 				endTime := span.EndTimestamp()
 				if endTime > startTime {
-					latency = float64(endTime-startTime) / float64(p.unitDivider)
+					latency = float64(endTime-startTime) / float64(unitDivider)
 				}
 				key := p.buildKey(serviceName, span, p.dimensions, resourceAttr)
 
