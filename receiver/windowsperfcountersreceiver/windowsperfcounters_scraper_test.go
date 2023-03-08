@@ -33,8 +33,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
@@ -187,7 +187,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 
 			require.NoError(t, err)
 			expectedMetrics, err := golden.ReadMetrics(test.expectedMetricPath)
-			scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+			pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues())
 			require.NoError(t, err)
 		})
 	}

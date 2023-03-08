@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml?query=branch%3Amain">
-    <img alt="Build Status" src="https://img.shields.io/github/workflow/status/open-telemetry/opentelemetry-collector-contrib/build-and-test/main?style=for-the-badge">
+    <img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/open-telemetry/opentelemetry-collector-contrib/build-and-test.yml?branch=main&style=for-the-badge">
   </a>
   <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector-contrib">
     <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
@@ -50,7 +50,7 @@ This is a repository for OpenTelemetry Collector components that are not suitabl
 
 The official distributions, core and contrib, are available as part of the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository. Some of the components in this repository are part of the "core" distribution, such as the Jaeger and Prometheus components, but most of the components here are only available as part of the "contrib" distribution. Users of the OpenTelemetry Collector are also encouraged to build their own custom distributions with the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder), using the components they need from the core repository, the contrib repository, and possibly third-party or internal repositories.
 
-Each component has its own support levels, as defined in the following sections. For each signal that a component supports, there's a stability level, setting the right expectations. It is possible then that a component will be **Stable** for traces but **Alpha** for metrics and **In Development** for logs.
+Each component has its own support levels, as defined in the following sections. For each signal that a component supports, there's a stability level, setting the right expectations. It is possible then that a component will be **Stable** for traces but **Alpha** for metrics and **Development** for logs.
 
 ## Stability levels
 
@@ -74,9 +74,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
-- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
+- [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
-- [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
@@ -88,8 +87,12 @@ Emeritus Triagers:
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
+- [Antoine Toulme](https://github.com/atoulme), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
-- [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
+- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
+- [Ruslan Kovalov](https://github.com/kovrus), Grafana Labs
+- [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
+- [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
 Emeritus Approvers:
 - [Przemek Maciolek](https://github.com/pmm-sumo)
@@ -102,6 +105,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
+- [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Maintainers
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk

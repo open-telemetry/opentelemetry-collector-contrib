@@ -21,7 +21,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"syscall"
 	"testing"
@@ -430,9 +429,7 @@ func TestCollectConnectionDetails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := collectConnectionDetails(&tt.conn); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("collectConnectionDetails() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, collectConnectionDetails(&tt.conn))
 		})
 	}
 }
@@ -548,10 +545,7 @@ func TestCollectEndpoints(t *testing.T) {
 
 			require.NotNil(t, e.collectProcessDetails)
 			require.NotNil(t, e.getProcess)
-
-			if got := e.collectEndpoints(tt.conns); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("collectEndpoints() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, e.collectEndpoints(tt.conns))
 		})
 	}
 }

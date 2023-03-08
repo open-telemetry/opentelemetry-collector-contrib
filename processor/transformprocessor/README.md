@@ -19,8 +19,18 @@ The value of `context` specifies which [OTTL Context](#contexts) to use when int
 The statement strings, which must be OTTL compatible, will be passed to the OTTL and interpreted using the associated context. 
 Each context will be processed in the order specified and each statement for a context will be executed in the order specified.
 
+The transform processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing a statement.
+
+| error_mode            | description                                                                                                                |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------|
+| ignore                | The processor ignores errors returned by statements and continues on to the next statement.  This is the recommended mode. |
+| propagate             | The processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.        |
+
+If not specified, `propagate` will be used.
+
 ```yaml
 transform:
+  error_mode: ignore
   <trace|metric|log>_statements:
     - context: string
       statements:
@@ -52,6 +62,7 @@ See [Contexts](#contexts) for more details.
 Example configuration:
 ```yaml
 transform:
+  error_mode: ignore
   trace_statements:
     - context: resource
       statements:
@@ -59,7 +70,7 @@ transform:
         - replace_pattern(attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")
         - limit(attributes, 100, [])
         - truncate_all(attributes, 4096)
-    - context: trace
+    - context: span
       statements:
         - set(status.code, 1) where attributes["http.path"] == "/health"
         - set(name, attributes["http.route"])
@@ -100,7 +111,7 @@ You can learn more in-depth details on the capabilities and limitations of the O
 
 ## Contexts
 
-The transform processor utilizes the OTTL's contexts to transform Resource, Scope, Trace, SpanEvent, Metric, DataPoint, and Log telemetry.
+The transform processor utilizes the OTTL's contexts to transform Resource, Scope, Span, SpanEvent, Metric, DataPoint, and Log telemetry.
 The contexts allow the OTTL to interact with the underlying telemetry data in its pdata form.
 
 - [Resource Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlresource)
@@ -109,7 +120,7 @@ The contexts allow the OTTL to interact with the underlying telemetry data in it
 - [SpanEvent Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent)
 - [Metric Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric)
 - [DataPoint Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint) <!-- markdown-link-check-disable-line -->
-- [Logs Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllogs)
+- [Log Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog) <!-- markdown-link-check-disable-line -->
 
 Each context allows transformation of its type of telemetry.  
 For example, statements associated to a `resource` context will be able to transform the resource's `attributes` and `dropped_attributes_count`.
@@ -118,7 +129,7 @@ Contexts __NEVER__ supply access to individual items "lower" in the protobuf def
 - This means statements associated to a `resource` __WILL NOT__ be able to access the underlying instrumentation scopes.
 - This means statements associated to a `scope` __WILL NOT__ be able to access the underlying telemetry slices (spans, metrics, or logs).
 - Similarly, statements associated to a  `metric` __WILL NOT__ be able to access individual datapoints, but can access the entire datapoints slice.
-- Similarly, statements associated to a  `trace` __WILL NOT__ be able to access individual SpanEvents, but can access the entire SpanEvents slice.
+- Similarly, statements associated to a  `span` __WILL NOT__ be able to access individual SpanEvents, but can access the entire SpanEvents slice.
 
 For practical purposes, this means that a context cannot make decisions on its telemetry based on telemetry "lower" in the structure.
 For example, __the following context statement is not possible__ because it attempts to use individual datapoint attributes in the condition of a statements that is associated to a `metric`
@@ -133,7 +144,7 @@ metric_statements:
 Context __ALWAYS__ supply access to the items "higher" in the protobuf definition that are associated to the telemetry being transformed.
 - This means that statements associated to a `datapoint` have access to a datapoint's metric, instrumentation scope, and resource.
 - This means that statements associated to a `spanevent` have access to a spanevent's span, instrumentation scope, and resource.
-- This means that statements associated to a `trace`/`metric`/`log` have access to the telemetry's instrumentation scope, and resource.
+- This means that statements associated to a `span`/`metric`/`log` have access to the telemetry's instrumentation scope, and resource.
 - This means that statements associated to a `scope` have access to the scope's resource.
 
 For example, __the following context statement is possible__ because `datapoint` statements can access the datapoint's metric.
@@ -146,7 +157,7 @@ metric_statements:
 ```
 
 Whenever possible, associate your statements to the context that the statement intend to transform.
-Although you can modify resource attributes associated to a span using the `trace` context, it is more efficient to use the `resource` context.
+Although you can modify resource attributes associated to a span using the `span` context, it is more efficient to use the `resource` context.
 This is because contexts are nested: the efficiency comes because higher-level contexts can avoid iterating through any of the contexts at a lower level. 
 
 ## Supported functions:

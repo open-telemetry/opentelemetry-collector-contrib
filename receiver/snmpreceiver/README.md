@@ -1,10 +1,10 @@
 # SNMP Receiver
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [in development] |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [alpha] |
+| Supported pipeline types | metrics       |
+| Distributions            | [contrib]     |
 
 This receiver fetches stats from a SNMP enabled host using a [golang
 snmp client](https://github.com/gosnmp/gosnmp). Metrics are collected
@@ -71,7 +71,7 @@ These configuration options are for determining what metrics and attributes will
 #### Resource Attribute Configuration
 Resource attribute configurations are used to define what resource attributes will be used in a collection.
 
-| Field Name           | Description                              | Value        | 
+| Field Name           | Description                              | Value        |
 | --                   | --                                       | --           |
 | `oid`                  | Required if no `indexed_value_prefix`. This is the column OID in a SNMP table which will use the returned indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string       |
 | `indexed_value_prefix` | Required if no `oid`. This is a string prefix which will be added to the indices of returned metric indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string       |
@@ -145,16 +145,16 @@ receivers:
     security_level: auth_priv
     user: otel
     auth_type: "MD5"
-    auth_password: $SNMP_AUTH_PASSWORD
+    auth_password: ${env:SNMP_AUTH_PASSWORD}
     privacy_type: "DES"
-    privacy_password: $SNMP_PRIVACY_PASSWORD
-    
+    privacy_password: ${env:SNMP_PRIVACY_PASSWORD}
+
     resource_attributes:
       resource_attr.name.1:
         indexed_value_prefix: probe
       resource_attr.name.2:
         oid: "1.1.1.1"
-    
+
     attributes:
       attr.name.1:
         value: a2_new_key
@@ -165,7 +165,7 @@ receivers:
         indexed_value_prefix: device
       attr.name.3:
         oid: "2.2.2.2"
-    
+
     metrics:
       # This metric will have multiple datapoints wil 1 attribute on each.
       # Each datapoint will have a (hopefully) different attribute value
@@ -208,11 +208,11 @@ receivers:
           monotonic: false
           value_type: double
         scalar_oids:
-          - oid: "4.4.4.4.0"  
+          - oid: "4.4.4.4.0"
             attributes:
               - name: attr.name.1
                 value: in
-          - oid: "4.4.4.5.0"  
+          - oid: "4.4.4.5.0"
             attributes:
               - name: aattr.name.1
                 value: out
@@ -241,5 +241,5 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
 
-[in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

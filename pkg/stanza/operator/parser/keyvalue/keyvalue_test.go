@@ -102,6 +102,15 @@ func TestBuild(t *testing.T) {
 			false,
 		},
 		{
+			"pair-delimiter-multiline",
+			func() *Config {
+				cfg := basicConfig()
+				cfg.PairDelimiter = "^\n"
+				return cfg
+			}(),
+			false,
+		},
+		{
 			"same-delimiter-and-pair-delimiter",
 			func() *Config {
 				cfg := basicConfig()
@@ -383,6 +392,29 @@ func TestParser(t *testing.T) {
 					"key":  "value",
 				},
 				Body: `name=stanza|age=2     | key=value`,
+			},
+			false,
+			false,
+		},
+		{
+			"pair-delimiter-multiline",
+			func(kv *Config) {
+				kv.PairDelimiter = "^\n"
+			},
+			&entry.Entry{
+				Body: `name=stanza^
+age=2^
+key=value`,
+			},
+			&entry.Entry{
+				Attributes: map[string]interface{}{
+					"name": "stanza",
+					"age":  "2",
+					"key":  "value",
+				},
+				Body: `name=stanza^
+age=2^
+key=value`,
 			},
 			false,
 			false,

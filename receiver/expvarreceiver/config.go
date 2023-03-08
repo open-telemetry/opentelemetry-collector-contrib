@@ -28,10 +28,10 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	MetricsConfig                           metadata.MetricsSettings `mapstructure:"metrics"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 }
 
-var _ component.ReceiverConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	u, err := url.Parse(c.Endpoint)

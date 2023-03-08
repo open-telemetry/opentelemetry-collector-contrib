@@ -452,7 +452,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.testName, func(t *testing.T) {
 			attrs := pcommon.NewMap()
-			attrs.FromRaw(test.attrs)
+			assert.NoError(t, attrs.FromRaw(test.attrs))
 			op, description := generateSpanDescriptors(test.name, attrs, test.spanKind)
 			assert.Equal(t, test.op, op)
 			assert.Equal(t, test.description, description)

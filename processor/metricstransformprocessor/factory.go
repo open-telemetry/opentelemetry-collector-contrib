@@ -21,8 +21,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -36,25 +36,23 @@ const (
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Metrics Transform processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsProcessor(createMetricsProcessor, stability))
+		processor.WithMetrics(createMetricsProcessor, stability))
 }
 
-func createDefaultConfig() component.ProcessorConfig {
-	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
 func createMetricsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	oCfg := cfg.(*Config)
 	if err := validateConfiguration(oCfg); err != nil {
 		return nil, err

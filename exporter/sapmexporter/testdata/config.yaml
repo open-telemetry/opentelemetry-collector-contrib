@@ -1,9 +1,10 @@
 sapm:
+  endpoint: http://example.com
 sapm/customname:
 
   # Endpoint is the destination to where traces will be sent to in SAPM format.
   # It must be a full URL and include the scheme, port and path e.g, https://ingest.signalfx.com/v2/trace
-  endpoint: test-endpoint
+  endpoint: https://example.com
 
   # AccessToken is the authentication token provided by SignalFx.
   access_token: abcd1234

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
+
 import (
 	"context"
 	"fmt"

@@ -122,18 +122,24 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() {
-	c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
 	})
+	if err != nil {
+		c.logger.Error("error adding event handler to pod informer", zap.Error(err))
+	}
 	go c.informer.Run(c.stopCh)
 
-	c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
 		UpdateFunc: c.handleNamespaceUpdate,
 		DeleteFunc: c.handleNamespaceDelete,
 	})
+	if err != nil {
+		c.logger.Error("error adding event handler to namespace informer", zap.Error(err))
+	}
 	go c.namespaceInformer.Run(c.stopCh)
 }
 
@@ -280,6 +286,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	tags := map[string]string{}
 	if c.Rules.PodName {
 		tags[conventions.AttributeK8SPodName] = pod.Name
+	}
+
+	if c.Rules.PodHostName {
+		tags[tagHostName] = pod.Spec.Hostname
 	}
 
 	if c.Rules.Namespace {

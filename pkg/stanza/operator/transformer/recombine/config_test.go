@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
@@ -82,6 +83,15 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.CombineWith = "line1\nLINE2"
+					return cfg
+				}(),
+			},
+			{
+				Name:      "custom_max_log_size",
+				ExpectErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.MaxLogSize = helper.ByteSize(256000)
 					return cfg
 				}(),
 			},

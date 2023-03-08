@@ -38,7 +38,7 @@ func TestStorageHostWithOne(t *testing.T) {
 
 	storageOne, ok := extOne.(*TestStorage)
 	require.True(t, ok)
-	require.Equal(t, storageID, storageOne.ID())
+	require.Equal(t, storageID, storageOne.ID)
 }
 
 func TestStorageHostWithTwo(t *testing.T) {
@@ -57,14 +57,14 @@ func TestStorageHostWithTwo(t *testing.T) {
 
 	storageOne, ok := extOne.(*TestStorage)
 	require.True(t, ok)
-	require.Equal(t, storageOneID, storageOne.ID())
+	require.Equal(t, storageOneID, storageOne.ID)
 
 	extTwo, exists := exts[storageTwoID]
 	require.True(t, exists)
 
 	storageTwo, ok := extTwo.(*TestStorage)
 	require.True(t, ok)
-	require.Equal(t, storageTwoID, storageTwo.ID())
+	require.Equal(t, storageTwoID, storageTwo.ID)
 }
 
 func TestStorageHostWithMixed(t *testing.T) {
@@ -85,19 +85,19 @@ func TestStorageHostWithMixed(t *testing.T) {
 
 	storageOne, ok := extOne.(*TestStorage)
 	require.True(t, ok)
-	require.Equal(t, storageOneID, storageOne.ID())
+	require.Equal(t, storageOneID, storageOne.ID)
 
 	extTwo, exists := exts[storageTwoID]
 	require.True(t, exists)
 
 	storageTwo, ok := extTwo.(*TestStorage)
 	require.True(t, ok)
-	require.Equal(t, storageTwoID, storageTwo.ID())
+	require.Equal(t, storageTwoID, storageTwo.ID)
 
 	extNon, exists := exts[nonStorageID]
 	require.True(t, exists)
 
 	nonStorage, ok := extNon.(*NonStorage)
 	require.True(t, ok)
-	require.Equal(t, nonStorageID, nonStorage.ID())
+	require.Equal(t, nonStorageID, nonStorage.ID)
 }

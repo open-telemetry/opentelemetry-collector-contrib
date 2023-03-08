@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package oauth2clientcredentialsauthextension implements `configauth.ClientAuthenticator`
+// Package oauth2clientauthextension implements `cauth.Client`
 // This extension provides OAuth2 Client Credentials flow authenticator for HTTP and gRPC based exporters.
 // The extension fetches and refreshes the token after expiry
 // For further details about OAuth2 Client Credentials flow refer https://datatracker.ietf.org/doc/html/rfc6749#section-4.4

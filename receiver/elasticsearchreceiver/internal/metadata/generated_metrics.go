@@ -9,18 +9,14 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -31,7 +27,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -43,6 +39,7 @@ type MetricsSettings struct {
 	ElasticsearchClusterDataNodes                             MetricSettings `mapstructure:"elasticsearch.cluster.data_nodes"`
 	ElasticsearchClusterHealth                                MetricSettings `mapstructure:"elasticsearch.cluster.health"`
 	ElasticsearchClusterInFlightFetch                         MetricSettings `mapstructure:"elasticsearch.cluster.in_flight_fetch"`
+	ElasticsearchClusterIndicesCacheEvictions                 MetricSettings `mapstructure:"elasticsearch.cluster.indices.cache.evictions"`
 	ElasticsearchClusterNodes                                 MetricSettings `mapstructure:"elasticsearch.cluster.nodes"`
 	ElasticsearchClusterPendingTasks                          MetricSettings `mapstructure:"elasticsearch.cluster.pending_tasks"`
 	ElasticsearchClusterPublishedStatesDifferences            MetricSettings `mapstructure:"elasticsearch.cluster.published_states.differences"`
@@ -51,6 +48,10 @@ type MetricsSettings struct {
 	ElasticsearchClusterStateQueue                            MetricSettings `mapstructure:"elasticsearch.cluster.state_queue"`
 	ElasticsearchClusterStateUpdateCount                      MetricSettings `mapstructure:"elasticsearch.cluster.state_update.count"`
 	ElasticsearchClusterStateUpdateTime                       MetricSettings `mapstructure:"elasticsearch.cluster.state_update.time"`
+	ElasticsearchIndexCacheEvictions                          MetricSettings `mapstructure:"elasticsearch.index.cache.evictions"`
+	ElasticsearchIndexCacheMemoryUsage                        MetricSettings `mapstructure:"elasticsearch.index.cache.memory.usage"`
+	ElasticsearchIndexCacheSize                               MetricSettings `mapstructure:"elasticsearch.index.cache.size"`
+	ElasticsearchIndexDocuments                               MetricSettings `mapstructure:"elasticsearch.index.documents"`
 	ElasticsearchIndexOperationsCompleted                     MetricSettings `mapstructure:"elasticsearch.index.operations.completed"`
 	ElasticsearchIndexOperationsMergeDocsCount                MetricSettings `mapstructure:"elasticsearch.index.operations.merge.docs_count"`
 	ElasticsearchIndexOperationsMergeSize                     MetricSettings `mapstructure:"elasticsearch.index.operations.merge.size"`
@@ -68,6 +69,7 @@ type MetricsSettings struct {
 	ElasticsearchNodeCacheCount                               MetricSettings `mapstructure:"elasticsearch.node.cache.count"`
 	ElasticsearchNodeCacheEvictions                           MetricSettings `mapstructure:"elasticsearch.node.cache.evictions"`
 	ElasticsearchNodeCacheMemoryUsage                         MetricSettings `mapstructure:"elasticsearch.node.cache.memory.usage"`
+	ElasticsearchNodeCacheSize                                MetricSettings `mapstructure:"elasticsearch.node.cache.size"`
 	ElasticsearchNodeClusterConnections                       MetricSettings `mapstructure:"elasticsearch.node.cluster.connections"`
 	ElasticsearchNodeClusterIo                                MetricSettings `mapstructure:"elasticsearch.node.cluster.io"`
 	ElasticsearchNodeDiskIoRead                               MetricSettings `mapstructure:"elasticsearch.node.disk.io.read"`
@@ -82,6 +84,7 @@ type MetricsSettings struct {
 	ElasticsearchNodeIngestOperationsFailed                   MetricSettings `mapstructure:"elasticsearch.node.ingest.operations.failed"`
 	ElasticsearchNodeOpenFiles                                MetricSettings `mapstructure:"elasticsearch.node.open_files"`
 	ElasticsearchNodeOperationsCompleted                      MetricSettings `mapstructure:"elasticsearch.node.operations.completed"`
+	ElasticsearchNodeOperationsCurrent                        MetricSettings `mapstructure:"elasticsearch.node.operations.current"`
 	ElasticsearchNodeOperationsGetCompleted                   MetricSettings `mapstructure:"elasticsearch.node.operations.get.completed"`
 	ElasticsearchNodeOperationsGetTime                        MetricSettings `mapstructure:"elasticsearch.node.operations.get.time"`
 	ElasticsearchNodeOperationsTime                           MetricSettings `mapstructure:"elasticsearch.node.operations.time"`
@@ -91,6 +94,7 @@ type MetricsSettings struct {
 	ElasticsearchNodeScriptCacheEvictions                     MetricSettings `mapstructure:"elasticsearch.node.script.cache_evictions"`
 	ElasticsearchNodeScriptCompilationLimitTriggered          MetricSettings `mapstructure:"elasticsearch.node.script.compilation_limit_triggered"`
 	ElasticsearchNodeScriptCompilations                       MetricSettings `mapstructure:"elasticsearch.node.script.compilations"`
+	ElasticsearchNodeSegmentsMemory                           MetricSettings `mapstructure:"elasticsearch.node.segments.memory"`
 	ElasticsearchNodeShardsDataSetSize                        MetricSettings `mapstructure:"elasticsearch.node.shards.data_set.size"`
 	ElasticsearchNodeShardsReservedSize                       MetricSettings `mapstructure:"elasticsearch.node.shards.reserved.size"`
 	ElasticsearchNodeShardsSize                               MetricSettings `mapstructure:"elasticsearch.node.shards.size"`
@@ -105,6 +109,9 @@ type MetricsSettings struct {
 	ElasticsearchOsCPULoadAvg5m                               MetricSettings `mapstructure:"elasticsearch.os.cpu.load_avg.5m"`
 	ElasticsearchOsCPUUsage                                   MetricSettings `mapstructure:"elasticsearch.os.cpu.usage"`
 	ElasticsearchOsMemory                                     MetricSettings `mapstructure:"elasticsearch.os.memory"`
+	ElasticsearchProcessCPUTime                               MetricSettings `mapstructure:"elasticsearch.process.cpu.time"`
+	ElasticsearchProcessCPUUsage                              MetricSettings `mapstructure:"elasticsearch.process.cpu.usage"`
+	ElasticsearchProcessMemoryVirtual                         MetricSettings `mapstructure:"elasticsearch.process.memory.virtual"`
 	JvmClassesLoaded                                          MetricSettings `mapstructure:"jvm.classes.loaded"`
 	JvmGcCollectionsCount                                     MetricSettings `mapstructure:"jvm.gc.collections.count"`
 	JvmGcCollectionsElapsed                                   MetricSettings `mapstructure:"jvm.gc.collections.elapsed"`
@@ -139,6 +146,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchClusterInFlightFetch: MetricSettings{
 			Enabled: true,
 		},
+		ElasticsearchClusterIndicesCacheEvictions: MetricSettings{
+			Enabled: false,
+		},
 		ElasticsearchClusterNodes: MetricSettings{
 			Enabled: true,
 		},
@@ -162,6 +172,18 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		ElasticsearchClusterStateUpdateTime: MetricSettings{
 			Enabled: true,
+		},
+		ElasticsearchIndexCacheEvictions: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchIndexCacheMemoryUsage: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchIndexCacheSize: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchIndexDocuments: MetricSettings{
+			Enabled: false,
 		},
 		ElasticsearchIndexOperationsCompleted: MetricSettings{
 			Enabled: true,
@@ -214,6 +236,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchNodeCacheMemoryUsage: MetricSettings{
 			Enabled: true,
 		},
+		ElasticsearchNodeCacheSize: MetricSettings{
+			Enabled: false,
+		},
 		ElasticsearchNodeClusterConnections: MetricSettings{
 			Enabled: true,
 		},
@@ -256,6 +281,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchNodeOperationsCompleted: MetricSettings{
 			Enabled: true,
 		},
+		ElasticsearchNodeOperationsCurrent: MetricSettings{
+			Enabled: false,
+		},
 		ElasticsearchNodeOperationsGetCompleted: MetricSettings{
 			Enabled: false,
 		},
@@ -282,6 +310,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		ElasticsearchNodeScriptCompilations: MetricSettings{
 			Enabled: true,
+		},
+		ElasticsearchNodeSegmentsMemory: MetricSettings{
+			Enabled: false,
 		},
 		ElasticsearchNodeShardsDataSetSize: MetricSettings{
 			Enabled: true,
@@ -325,6 +356,15 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchOsMemory: MetricSettings{
 			Enabled: true,
 		},
+		ElasticsearchProcessCPUTime: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchProcessCPUUsage: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchProcessMemoryVirtual: MetricSettings{
+			Enabled: false,
+		},
 		JvmClassesLoaded: MetricSettings{
 			Enabled: true,
 		},
@@ -359,6 +399,36 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		JvmThreadsCount: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesSettings provides settings for elasticsearchreceiver metrics.
+type ResourceAttributesSettings struct {
+	ElasticsearchClusterName ResourceAttributeSettings `mapstructure:"elasticsearch.cluster.name"`
+	ElasticsearchIndexName   ResourceAttributeSettings `mapstructure:"elasticsearch.index.name"`
+	ElasticsearchNodeName    ResourceAttributeSettings `mapstructure:"elasticsearch.node.name"`
+	ElasticsearchNodeVersion ResourceAttributeSettings `mapstructure:"elasticsearch.node.version"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		ElasticsearchClusterName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ElasticsearchIndexName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeVersion: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -536,32 +606,6 @@ var MapAttributeDocumentState = map[string]AttributeDocumentState{
 	"deleted": AttributeDocumentStateDeleted,
 }
 
-// AttributeFsDirection specifies the a value fs_direction attribute.
-type AttributeFsDirection int
-
-const (
-	_ AttributeFsDirection = iota
-	AttributeFsDirectionRead
-	AttributeFsDirectionWrite
-)
-
-// String returns the string representation of the AttributeFsDirection.
-func (av AttributeFsDirection) String() string {
-	switch av {
-	case AttributeFsDirectionRead:
-		return "read"
-	case AttributeFsDirectionWrite:
-		return "write"
-	}
-	return ""
-}
-
-// MapAttributeFsDirection is a helper map of string to AttributeFsDirection attribute value.
-var MapAttributeFsDirection = map[string]AttributeFsDirection{
-	"read":  AttributeFsDirectionRead,
-	"write": AttributeFsDirectionWrite,
-}
-
 // AttributeGetResult specifies the a value get_result attribute.
 type AttributeGetResult int
 
@@ -642,32 +686,6 @@ func (av AttributeIndexAggregationType) String() string {
 var MapAttributeIndexAggregationType = map[string]AttributeIndexAggregationType{
 	"primary_shards": AttributeIndexAggregationTypePrimaryShards,
 	"total":          AttributeIndexAggregationTypeTotal,
-}
-
-// AttributeIndexingMemoryState specifies the a value indexing_memory_state attribute.
-type AttributeIndexingMemoryState int
-
-const (
-	_ AttributeIndexingMemoryState = iota
-	AttributeIndexingMemoryStateCurrent
-	AttributeIndexingMemoryStateTotal
-)
-
-// String returns the string representation of the AttributeIndexingMemoryState.
-func (av AttributeIndexingMemoryState) String() string {
-	switch av {
-	case AttributeIndexingMemoryStateCurrent:
-		return "current"
-	case AttributeIndexingMemoryStateTotal:
-		return "total"
-	}
-	return ""
-}
-
-// MapAttributeIndexingMemoryState is a helper map of string to AttributeIndexingMemoryState attribute value.
-var MapAttributeIndexingMemoryState = map[string]AttributeIndexingMemoryState{
-	"current": AttributeIndexingMemoryStateCurrent,
-	"total":   AttributeIndexingMemoryStateTotal,
 }
 
 // AttributeIndexingPressureStage specifies the a value indexing_pressure_stage attribute.
@@ -854,9 +872,11 @@ type AttributeShardState int
 const (
 	_ AttributeShardState = iota
 	AttributeShardStateActive
+	AttributeShardStateActivePrimary
 	AttributeShardStateRelocating
 	AttributeShardStateInitializing
 	AttributeShardStateUnassigned
+	AttributeShardStateUnassignedDelayed
 )
 
 // String returns the string representation of the AttributeShardState.
@@ -864,22 +884,28 @@ func (av AttributeShardState) String() string {
 	switch av {
 	case AttributeShardStateActive:
 		return "active"
+	case AttributeShardStateActivePrimary:
+		return "active_primary"
 	case AttributeShardStateRelocating:
 		return "relocating"
 	case AttributeShardStateInitializing:
 		return "initializing"
 	case AttributeShardStateUnassigned:
 		return "unassigned"
+	case AttributeShardStateUnassignedDelayed:
+		return "unassigned_delayed"
 	}
 	return ""
 }
 
 // MapAttributeShardState is a helper map of string to AttributeShardState attribute value.
 var MapAttributeShardState = map[string]AttributeShardState{
-	"active":       AttributeShardStateActive,
-	"relocating":   AttributeShardStateRelocating,
-	"initializing": AttributeShardStateInitializing,
-	"unassigned":   AttributeShardStateUnassigned,
+	"active":             AttributeShardStateActive,
+	"active_primary":     AttributeShardStateActivePrimary,
+	"relocating":         AttributeShardStateRelocating,
+	"initializing":       AttributeShardStateInitializing,
+	"unassigned":         AttributeShardStateUnassigned,
+	"unassigned_delayed": AttributeShardStateUnassignedDelayed,
 }
 
 // AttributeTaskState specifies the a value task_state attribute.
@@ -1239,6 +1265,59 @@ func (m *metricElasticsearchClusterInFlightFetch) emit(metrics pmetric.MetricSli
 
 func newMetricElasticsearchClusterInFlightFetch(settings MetricSettings) metricElasticsearchClusterInFlightFetch {
 	m := metricElasticsearchClusterInFlightFetch{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchClusterIndicesCacheEvictions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.cluster.indices.cache.evictions metric with initial data.
+func (m *metricElasticsearchClusterIndicesCacheEvictions) init() {
+	m.data.SetName("elasticsearch.cluster.indices.cache.evictions")
+	m.data.SetDescription("The number of evictions from the cache for indices in cluster.")
+	m.data.SetUnit("{evictions}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchClusterIndicesCacheEvictions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchClusterIndicesCacheEvictions) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchClusterIndicesCacheEvictions) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchClusterIndicesCacheEvictions(settings MetricSettings) metricElasticsearchClusterIndicesCacheEvictions {
+	m := metricElasticsearchClusterIndicesCacheEvictions{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1658,6 +1737,221 @@ func (m *metricElasticsearchClusterStateUpdateTime) emit(metrics pmetric.MetricS
 
 func newMetricElasticsearchClusterStateUpdateTime(settings MetricSettings) metricElasticsearchClusterStateUpdateTime {
 	m := metricElasticsearchClusterStateUpdateTime{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchIndexCacheEvictions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.index.cache.evictions metric with initial data.
+func (m *metricElasticsearchIndexCacheEvictions) init() {
+	m.data.SetName("elasticsearch.index.cache.evictions")
+	m.data.SetDescription("The number of evictions from the cache for an index.")
+	m.data.SetUnit("{evictions}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchIndexCacheEvictions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheNameAttributeValue string, indexAggregationTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchIndexCacheEvictions) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchIndexCacheEvictions) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchIndexCacheEvictions(settings MetricSettings) metricElasticsearchIndexCacheEvictions {
+	m := metricElasticsearchIndexCacheEvictions{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchIndexCacheMemoryUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.index.cache.memory.usage metric with initial data.
+func (m *metricElasticsearchIndexCacheMemoryUsage) init() {
+	m.data.SetName("elasticsearch.index.cache.memory.usage")
+	m.data.SetDescription("The size in bytes of the cache for an index.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchIndexCacheMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheNameAttributeValue string, indexAggregationTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchIndexCacheMemoryUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchIndexCacheMemoryUsage) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchIndexCacheMemoryUsage(settings MetricSettings) metricElasticsearchIndexCacheMemoryUsage {
+	m := metricElasticsearchIndexCacheMemoryUsage{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchIndexCacheSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.index.cache.size metric with initial data.
+func (m *metricElasticsearchIndexCacheSize) init() {
+	m.data.SetName("elasticsearch.index.cache.size")
+	m.data.SetDescription("The number of elements of the query cache for an index.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchIndexCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchIndexCacheSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchIndexCacheSize) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchIndexCacheSize(settings MetricSettings) metricElasticsearchIndexCacheSize {
+	m := metricElasticsearchIndexCacheSize{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchIndexDocuments struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.index.documents metric with initial data.
+func (m *metricElasticsearchIndexDocuments) init() {
+	m.data.SetName("elasticsearch.index.documents")
+	m.data.SetDescription("The number of documents for an index.")
+	m.data.SetUnit("{documents}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchIndexDocuments) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, documentStateAttributeValue string, indexAggregationTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("state", documentStateAttributeValue)
+	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchIndexDocuments) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchIndexDocuments) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchIndexDocuments(settings MetricSettings) metricElasticsearchIndexDocuments {
+	m := metricElasticsearchIndexDocuments{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2464,7 +2758,7 @@ type metricElasticsearchNodeCacheEvictions struct {
 // init fills elasticsearch.node.cache.evictions metric with initial data.
 func (m *metricElasticsearchNodeCacheEvictions) init() {
 	m.data.SetName("elasticsearch.node.cache.evictions")
-	m.data.SetDescription("The number of evictions from the cache.")
+	m.data.SetDescription("The number of evictions from the cache on a node.")
 	m.data.SetUnit("{evictions}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -2517,7 +2811,7 @@ type metricElasticsearchNodeCacheMemoryUsage struct {
 // init fills elasticsearch.node.cache.memory.usage metric with initial data.
 func (m *metricElasticsearchNodeCacheMemoryUsage) init() {
 	m.data.SetName("elasticsearch.node.cache.memory.usage")
-	m.data.SetDescription("The size in bytes of the cache.")
+	m.data.SetDescription("The size in bytes of the cache on a node.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -2554,6 +2848,57 @@ func (m *metricElasticsearchNodeCacheMemoryUsage) emit(metrics pmetric.MetricSli
 
 func newMetricElasticsearchNodeCacheMemoryUsage(settings MetricSettings) metricElasticsearchNodeCacheMemoryUsage {
 	m := metricElasticsearchNodeCacheMemoryUsage{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeCacheSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.cache.size metric with initial data.
+func (m *metricElasticsearchNodeCacheSize) init() {
+	m.data.SetName("elasticsearch.node.cache.size")
+	m.data.SetDescription("Total amount of memory used for the query cache across all shards assigned to the node.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricElasticsearchNodeCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeCacheSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeCacheSize) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeCacheSize(settings MetricSettings) metricElasticsearchNodeCacheSize {
+	m := metricElasticsearchNodeCacheSize{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3281,6 +3626,57 @@ func newMetricElasticsearchNodeOperationsCompleted(settings MetricSettings) metr
 	return m
 }
 
+type metricElasticsearchNodeOperationsCurrent struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.operations.current metric with initial data.
+func (m *metricElasticsearchNodeOperationsCurrent) init() {
+	m.data.SetName("elasticsearch.node.operations.current")
+	m.data.SetDescription("Number of query operations currently running.")
+	m.data.SetUnit("{operations}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeOperationsCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeOperationsCurrent) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeOperationsCurrent) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeOperationsCurrent(settings MetricSettings) metricElasticsearchNodeOperationsCurrent {
+	m := metricElasticsearchNodeOperationsCurrent{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricElasticsearchNodeOperationsGetCompleted struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -3745,6 +4141,59 @@ func (m *metricElasticsearchNodeScriptCompilations) emit(metrics pmetric.MetricS
 
 func newMetricElasticsearchNodeScriptCompilations(settings MetricSettings) metricElasticsearchNodeScriptCompilations {
 	m := metricElasticsearchNodeScriptCompilations{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeSegmentsMemory struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.segments.memory metric with initial data.
+func (m *metricElasticsearchNodeSegmentsMemory) init() {
+	m.data.SetName("elasticsearch.node.segments.memory")
+	m.data.SetDescription("Size of memory for segment object of a node.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeSegmentsMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, segmentsMemoryObjectTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("object", segmentsMemoryObjectTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeSegmentsMemory) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeSegmentsMemory) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeSegmentsMemory(settings MetricSettings) metricElasticsearchNodeSegmentsMemory {
+	m := metricElasticsearchNodeSegmentsMemory{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4466,6 +4915,157 @@ func newMetricElasticsearchOsMemory(settings MetricSettings) metricElasticsearch
 	return m
 }
 
+type metricElasticsearchProcessCPUTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.process.cpu.time metric with initial data.
+func (m *metricElasticsearchProcessCPUTime) init() {
+	m.data.SetName("elasticsearch.process.cpu.time")
+	m.data.SetDescription("CPU time used by the process on which the Java virtual machine is running.")
+	m.data.SetUnit("ms")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricElasticsearchProcessCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchProcessCPUTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchProcessCPUTime) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchProcessCPUTime(settings MetricSettings) metricElasticsearchProcessCPUTime {
+	m := metricElasticsearchProcessCPUTime{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchProcessCPUUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.process.cpu.usage metric with initial data.
+func (m *metricElasticsearchProcessCPUUsage) init() {
+	m.data.SetName("elasticsearch.process.cpu.usage")
+	m.data.SetDescription("CPU usage in percent.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricElasticsearchProcessCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchProcessCPUUsage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchProcessCPUUsage) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchProcessCPUUsage(settings MetricSettings) metricElasticsearchProcessCPUUsage {
+	m := metricElasticsearchProcessCPUUsage{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchProcessMemoryVirtual struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.process.memory.virtual metric with initial data.
+func (m *metricElasticsearchProcessMemoryVirtual) init() {
+	m.data.SetName("elasticsearch.process.memory.virtual")
+	m.data.SetDescription("Size of virtual memory that is guaranteed to be available to the running process.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricElasticsearchProcessMemoryVirtual) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchProcessMemoryVirtual) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchProcessMemoryVirtual) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchProcessMemoryVirtual(settings MetricSettings) metricElasticsearchProcessMemoryVirtual {
+	m := metricElasticsearchProcessMemoryVirtual{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricJvmClassesLoaded struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -5066,6 +5666,12 @@ func newMetricJvmThreadsCount(settings MetricSettings) metricJvmThreadsCount {
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -5074,12 +5680,14 @@ type MetricsBuilder struct {
 	resourceCapacity                                                int                 // maximum observed number of resource attributes.
 	metricsBuffer                                                   pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                                       component.BuildInfo // contains version information
+	resourceAttributesSettings                                      ResourceAttributesSettings
 	metricElasticsearchBreakerMemoryEstimated                       metricElasticsearchBreakerMemoryEstimated
 	metricElasticsearchBreakerMemoryLimit                           metricElasticsearchBreakerMemoryLimit
 	metricElasticsearchBreakerTripped                               metricElasticsearchBreakerTripped
 	metricElasticsearchClusterDataNodes                             metricElasticsearchClusterDataNodes
 	metricElasticsearchClusterHealth                                metricElasticsearchClusterHealth
 	metricElasticsearchClusterInFlightFetch                         metricElasticsearchClusterInFlightFetch
+	metricElasticsearchClusterIndicesCacheEvictions                 metricElasticsearchClusterIndicesCacheEvictions
 	metricElasticsearchClusterNodes                                 metricElasticsearchClusterNodes
 	metricElasticsearchClusterPendingTasks                          metricElasticsearchClusterPendingTasks
 	metricElasticsearchClusterPublishedStatesDifferences            metricElasticsearchClusterPublishedStatesDifferences
@@ -5088,6 +5696,10 @@ type MetricsBuilder struct {
 	metricElasticsearchClusterStateQueue                            metricElasticsearchClusterStateQueue
 	metricElasticsearchClusterStateUpdateCount                      metricElasticsearchClusterStateUpdateCount
 	metricElasticsearchClusterStateUpdateTime                       metricElasticsearchClusterStateUpdateTime
+	metricElasticsearchIndexCacheEvictions                          metricElasticsearchIndexCacheEvictions
+	metricElasticsearchIndexCacheMemoryUsage                        metricElasticsearchIndexCacheMemoryUsage
+	metricElasticsearchIndexCacheSize                               metricElasticsearchIndexCacheSize
+	metricElasticsearchIndexDocuments                               metricElasticsearchIndexDocuments
 	metricElasticsearchIndexOperationsCompleted                     metricElasticsearchIndexOperationsCompleted
 	metricElasticsearchIndexOperationsMergeDocsCount                metricElasticsearchIndexOperationsMergeDocsCount
 	metricElasticsearchIndexOperationsMergeSize                     metricElasticsearchIndexOperationsMergeSize
@@ -5105,6 +5717,7 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeCacheCount                               metricElasticsearchNodeCacheCount
 	metricElasticsearchNodeCacheEvictions                           metricElasticsearchNodeCacheEvictions
 	metricElasticsearchNodeCacheMemoryUsage                         metricElasticsearchNodeCacheMemoryUsage
+	metricElasticsearchNodeCacheSize                                metricElasticsearchNodeCacheSize
 	metricElasticsearchNodeClusterConnections                       metricElasticsearchNodeClusterConnections
 	metricElasticsearchNodeClusterIo                                metricElasticsearchNodeClusterIo
 	metricElasticsearchNodeDiskIoRead                               metricElasticsearchNodeDiskIoRead
@@ -5119,6 +5732,7 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeIngestOperationsFailed                   metricElasticsearchNodeIngestOperationsFailed
 	metricElasticsearchNodeOpenFiles                                metricElasticsearchNodeOpenFiles
 	metricElasticsearchNodeOperationsCompleted                      metricElasticsearchNodeOperationsCompleted
+	metricElasticsearchNodeOperationsCurrent                        metricElasticsearchNodeOperationsCurrent
 	metricElasticsearchNodeOperationsGetCompleted                   metricElasticsearchNodeOperationsGetCompleted
 	metricElasticsearchNodeOperationsGetTime                        metricElasticsearchNodeOperationsGetTime
 	metricElasticsearchNodeOperationsTime                           metricElasticsearchNodeOperationsTime
@@ -5128,6 +5742,7 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeScriptCacheEvictions                     metricElasticsearchNodeScriptCacheEvictions
 	metricElasticsearchNodeScriptCompilationLimitTriggered          metricElasticsearchNodeScriptCompilationLimitTriggered
 	metricElasticsearchNodeScriptCompilations                       metricElasticsearchNodeScriptCompilations
+	metricElasticsearchNodeSegmentsMemory                           metricElasticsearchNodeSegmentsMemory
 	metricElasticsearchNodeShardsDataSetSize                        metricElasticsearchNodeShardsDataSetSize
 	metricElasticsearchNodeShardsReservedSize                       metricElasticsearchNodeShardsReservedSize
 	metricElasticsearchNodeShardsSize                               metricElasticsearchNodeShardsSize
@@ -5142,6 +5757,9 @@ type MetricsBuilder struct {
 	metricElasticsearchOsCPULoadAvg5m                               metricElasticsearchOsCPULoadAvg5m
 	metricElasticsearchOsCPUUsage                                   metricElasticsearchOsCPUUsage
 	metricElasticsearchOsMemory                                     metricElasticsearchOsMemory
+	metricElasticsearchProcessCPUTime                               metricElasticsearchProcessCPUTime
+	metricElasticsearchProcessCPUUsage                              metricElasticsearchProcessCPUUsage
+	metricElasticsearchProcessMemoryVirtual                         metricElasticsearchProcessMemoryVirtual
 	metricJvmClassesLoaded                                          metricJvmClassesLoaded
 	metricJvmGcCollectionsCount                                     metricJvmGcCollectionsCount
 	metricJvmGcCollectionsElapsed                                   metricJvmGcCollectionsElapsed
@@ -5166,91 +5784,117 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:     pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer: pmetric.NewMetrics(),
-		buildInfo:     buildInfo,
-		metricElasticsearchBreakerMemoryEstimated:                       newMetricElasticsearchBreakerMemoryEstimated(settings.ElasticsearchBreakerMemoryEstimated),
-		metricElasticsearchBreakerMemoryLimit:                           newMetricElasticsearchBreakerMemoryLimit(settings.ElasticsearchBreakerMemoryLimit),
-		metricElasticsearchBreakerTripped:                               newMetricElasticsearchBreakerTripped(settings.ElasticsearchBreakerTripped),
-		metricElasticsearchClusterDataNodes:                             newMetricElasticsearchClusterDataNodes(settings.ElasticsearchClusterDataNodes),
-		metricElasticsearchClusterHealth:                                newMetricElasticsearchClusterHealth(settings.ElasticsearchClusterHealth),
-		metricElasticsearchClusterInFlightFetch:                         newMetricElasticsearchClusterInFlightFetch(settings.ElasticsearchClusterInFlightFetch),
-		metricElasticsearchClusterNodes:                                 newMetricElasticsearchClusterNodes(settings.ElasticsearchClusterNodes),
-		metricElasticsearchClusterPendingTasks:                          newMetricElasticsearchClusterPendingTasks(settings.ElasticsearchClusterPendingTasks),
-		metricElasticsearchClusterPublishedStatesDifferences:            newMetricElasticsearchClusterPublishedStatesDifferences(settings.ElasticsearchClusterPublishedStatesDifferences),
-		metricElasticsearchClusterPublishedStatesFull:                   newMetricElasticsearchClusterPublishedStatesFull(settings.ElasticsearchClusterPublishedStatesFull),
-		metricElasticsearchClusterShards:                                newMetricElasticsearchClusterShards(settings.ElasticsearchClusterShards),
-		metricElasticsearchClusterStateQueue:                            newMetricElasticsearchClusterStateQueue(settings.ElasticsearchClusterStateQueue),
-		metricElasticsearchClusterStateUpdateCount:                      newMetricElasticsearchClusterStateUpdateCount(settings.ElasticsearchClusterStateUpdateCount),
-		metricElasticsearchClusterStateUpdateTime:                       newMetricElasticsearchClusterStateUpdateTime(settings.ElasticsearchClusterStateUpdateTime),
-		metricElasticsearchIndexOperationsCompleted:                     newMetricElasticsearchIndexOperationsCompleted(settings.ElasticsearchIndexOperationsCompleted),
-		metricElasticsearchIndexOperationsMergeDocsCount:                newMetricElasticsearchIndexOperationsMergeDocsCount(settings.ElasticsearchIndexOperationsMergeDocsCount),
-		metricElasticsearchIndexOperationsMergeSize:                     newMetricElasticsearchIndexOperationsMergeSize(settings.ElasticsearchIndexOperationsMergeSize),
-		metricElasticsearchIndexOperationsTime:                          newMetricElasticsearchIndexOperationsTime(settings.ElasticsearchIndexOperationsTime),
-		metricElasticsearchIndexSegmentsCount:                           newMetricElasticsearchIndexSegmentsCount(settings.ElasticsearchIndexSegmentsCount),
-		metricElasticsearchIndexSegmentsMemory:                          newMetricElasticsearchIndexSegmentsMemory(settings.ElasticsearchIndexSegmentsMemory),
-		metricElasticsearchIndexSegmentsSize:                            newMetricElasticsearchIndexSegmentsSize(settings.ElasticsearchIndexSegmentsSize),
-		metricElasticsearchIndexShardsSize:                              newMetricElasticsearchIndexShardsSize(settings.ElasticsearchIndexShardsSize),
-		metricElasticsearchIndexTranslogOperations:                      newMetricElasticsearchIndexTranslogOperations(settings.ElasticsearchIndexTranslogOperations),
-		metricElasticsearchIndexTranslogSize:                            newMetricElasticsearchIndexTranslogSize(settings.ElasticsearchIndexTranslogSize),
-		metricElasticsearchIndexingPressureMemoryLimit:                  newMetricElasticsearchIndexingPressureMemoryLimit(settings.ElasticsearchIndexingPressureMemoryLimit),
-		metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections: newMetricElasticsearchIndexingPressureMemoryTotalPrimaryRejections(settings.ElasticsearchIndexingPressureMemoryTotalPrimaryRejections),
-		metricElasticsearchIndexingPressureMemoryTotalReplicaRejections: newMetricElasticsearchIndexingPressureMemoryTotalReplicaRejections(settings.ElasticsearchIndexingPressureMemoryTotalReplicaRejections),
-		metricElasticsearchMemoryIndexingPressure:                       newMetricElasticsearchMemoryIndexingPressure(settings.ElasticsearchMemoryIndexingPressure),
-		metricElasticsearchNodeCacheCount:                               newMetricElasticsearchNodeCacheCount(settings.ElasticsearchNodeCacheCount),
-		metricElasticsearchNodeCacheEvictions:                           newMetricElasticsearchNodeCacheEvictions(settings.ElasticsearchNodeCacheEvictions),
-		metricElasticsearchNodeCacheMemoryUsage:                         newMetricElasticsearchNodeCacheMemoryUsage(settings.ElasticsearchNodeCacheMemoryUsage),
-		metricElasticsearchNodeClusterConnections:                       newMetricElasticsearchNodeClusterConnections(settings.ElasticsearchNodeClusterConnections),
-		metricElasticsearchNodeClusterIo:                                newMetricElasticsearchNodeClusterIo(settings.ElasticsearchNodeClusterIo),
-		metricElasticsearchNodeDiskIoRead:                               newMetricElasticsearchNodeDiskIoRead(settings.ElasticsearchNodeDiskIoRead),
-		metricElasticsearchNodeDiskIoWrite:                              newMetricElasticsearchNodeDiskIoWrite(settings.ElasticsearchNodeDiskIoWrite),
-		metricElasticsearchNodeDocuments:                                newMetricElasticsearchNodeDocuments(settings.ElasticsearchNodeDocuments),
-		metricElasticsearchNodeFsDiskAvailable:                          newMetricElasticsearchNodeFsDiskAvailable(settings.ElasticsearchNodeFsDiskAvailable),
-		metricElasticsearchNodeFsDiskFree:                               newMetricElasticsearchNodeFsDiskFree(settings.ElasticsearchNodeFsDiskFree),
-		metricElasticsearchNodeFsDiskTotal:                              newMetricElasticsearchNodeFsDiskTotal(settings.ElasticsearchNodeFsDiskTotal),
-		metricElasticsearchNodeHTTPConnections:                          newMetricElasticsearchNodeHTTPConnections(settings.ElasticsearchNodeHTTPConnections),
-		metricElasticsearchNodeIngestDocuments:                          newMetricElasticsearchNodeIngestDocuments(settings.ElasticsearchNodeIngestDocuments),
-		metricElasticsearchNodeIngestDocumentsCurrent:                   newMetricElasticsearchNodeIngestDocumentsCurrent(settings.ElasticsearchNodeIngestDocumentsCurrent),
-		metricElasticsearchNodeIngestOperationsFailed:                   newMetricElasticsearchNodeIngestOperationsFailed(settings.ElasticsearchNodeIngestOperationsFailed),
-		metricElasticsearchNodeOpenFiles:                                newMetricElasticsearchNodeOpenFiles(settings.ElasticsearchNodeOpenFiles),
-		metricElasticsearchNodeOperationsCompleted:                      newMetricElasticsearchNodeOperationsCompleted(settings.ElasticsearchNodeOperationsCompleted),
-		metricElasticsearchNodeOperationsGetCompleted:                   newMetricElasticsearchNodeOperationsGetCompleted(settings.ElasticsearchNodeOperationsGetCompleted),
-		metricElasticsearchNodeOperationsGetTime:                        newMetricElasticsearchNodeOperationsGetTime(settings.ElasticsearchNodeOperationsGetTime),
-		metricElasticsearchNodeOperationsTime:                           newMetricElasticsearchNodeOperationsTime(settings.ElasticsearchNodeOperationsTime),
-		metricElasticsearchNodePipelineIngestDocumentsCurrent:           newMetricElasticsearchNodePipelineIngestDocumentsCurrent(settings.ElasticsearchNodePipelineIngestDocumentsCurrent),
-		metricElasticsearchNodePipelineIngestDocumentsPreprocessed:      newMetricElasticsearchNodePipelineIngestDocumentsPreprocessed(settings.ElasticsearchNodePipelineIngestDocumentsPreprocessed),
-		metricElasticsearchNodePipelineIngestOperationsFailed:           newMetricElasticsearchNodePipelineIngestOperationsFailed(settings.ElasticsearchNodePipelineIngestOperationsFailed),
-		metricElasticsearchNodeScriptCacheEvictions:                     newMetricElasticsearchNodeScriptCacheEvictions(settings.ElasticsearchNodeScriptCacheEvictions),
-		metricElasticsearchNodeScriptCompilationLimitTriggered:          newMetricElasticsearchNodeScriptCompilationLimitTriggered(settings.ElasticsearchNodeScriptCompilationLimitTriggered),
-		metricElasticsearchNodeScriptCompilations:                       newMetricElasticsearchNodeScriptCompilations(settings.ElasticsearchNodeScriptCompilations),
-		metricElasticsearchNodeShardsDataSetSize:                        newMetricElasticsearchNodeShardsDataSetSize(settings.ElasticsearchNodeShardsDataSetSize),
-		metricElasticsearchNodeShardsReservedSize:                       newMetricElasticsearchNodeShardsReservedSize(settings.ElasticsearchNodeShardsReservedSize),
-		metricElasticsearchNodeShardsSize:                               newMetricElasticsearchNodeShardsSize(settings.ElasticsearchNodeShardsSize),
-		metricElasticsearchNodeThreadPoolTasksFinished:                  newMetricElasticsearchNodeThreadPoolTasksFinished(settings.ElasticsearchNodeThreadPoolTasksFinished),
-		metricElasticsearchNodeThreadPoolTasksQueued:                    newMetricElasticsearchNodeThreadPoolTasksQueued(settings.ElasticsearchNodeThreadPoolTasksQueued),
-		metricElasticsearchNodeThreadPoolThreads:                        newMetricElasticsearchNodeThreadPoolThreads(settings.ElasticsearchNodeThreadPoolThreads),
-		metricElasticsearchNodeTranslogOperations:                       newMetricElasticsearchNodeTranslogOperations(settings.ElasticsearchNodeTranslogOperations),
-		metricElasticsearchNodeTranslogSize:                             newMetricElasticsearchNodeTranslogSize(settings.ElasticsearchNodeTranslogSize),
-		metricElasticsearchNodeTranslogUncommittedSize:                  newMetricElasticsearchNodeTranslogUncommittedSize(settings.ElasticsearchNodeTranslogUncommittedSize),
-		metricElasticsearchOsCPULoadAvg15m:                              newMetricElasticsearchOsCPULoadAvg15m(settings.ElasticsearchOsCPULoadAvg15m),
-		metricElasticsearchOsCPULoadAvg1m:                               newMetricElasticsearchOsCPULoadAvg1m(settings.ElasticsearchOsCPULoadAvg1m),
-		metricElasticsearchOsCPULoadAvg5m:                               newMetricElasticsearchOsCPULoadAvg5m(settings.ElasticsearchOsCPULoadAvg5m),
-		metricElasticsearchOsCPUUsage:                                   newMetricElasticsearchOsCPUUsage(settings.ElasticsearchOsCPUUsage),
-		metricElasticsearchOsMemory:                                     newMetricElasticsearchOsMemory(settings.ElasticsearchOsMemory),
-		metricJvmClassesLoaded:                                          newMetricJvmClassesLoaded(settings.JvmClassesLoaded),
-		metricJvmGcCollectionsCount:                                     newMetricJvmGcCollectionsCount(settings.JvmGcCollectionsCount),
-		metricJvmGcCollectionsElapsed:                                   newMetricJvmGcCollectionsElapsed(settings.JvmGcCollectionsElapsed),
-		metricJvmMemoryHeapCommitted:                                    newMetricJvmMemoryHeapCommitted(settings.JvmMemoryHeapCommitted),
-		metricJvmMemoryHeapMax:                                          newMetricJvmMemoryHeapMax(settings.JvmMemoryHeapMax),
-		metricJvmMemoryHeapUsed:                                         newMetricJvmMemoryHeapUsed(settings.JvmMemoryHeapUsed),
-		metricJvmMemoryHeapUtilization:                                  newMetricJvmMemoryHeapUtilization(settings.JvmMemoryHeapUtilization),
-		metricJvmMemoryNonheapCommitted:                                 newMetricJvmMemoryNonheapCommitted(settings.JvmMemoryNonheapCommitted),
-		metricJvmMemoryNonheapUsed:                                      newMetricJvmMemoryNonheapUsed(settings.JvmMemoryNonheapUsed),
-		metricJvmMemoryPoolMax:                                          newMetricJvmMemoryPoolMax(settings.JvmMemoryPoolMax),
-		metricJvmMemoryPoolUsed:                                         newMetricJvmMemoryPoolUsed(settings.JvmMemoryPoolUsed),
-		metricJvmThreadsCount:                                           newMetricJvmThreadsCount(settings.JvmThreadsCount),
+		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:              pmetric.NewMetrics(),
+		buildInfo:                  settings.BuildInfo,
+		resourceAttributesSettings: mbc.ResourceAttributes,
+		metricElasticsearchBreakerMemoryEstimated:                       newMetricElasticsearchBreakerMemoryEstimated(mbc.Metrics.ElasticsearchBreakerMemoryEstimated),
+		metricElasticsearchBreakerMemoryLimit:                           newMetricElasticsearchBreakerMemoryLimit(mbc.Metrics.ElasticsearchBreakerMemoryLimit),
+		metricElasticsearchBreakerTripped:                               newMetricElasticsearchBreakerTripped(mbc.Metrics.ElasticsearchBreakerTripped),
+		metricElasticsearchClusterDataNodes:                             newMetricElasticsearchClusterDataNodes(mbc.Metrics.ElasticsearchClusterDataNodes),
+		metricElasticsearchClusterHealth:                                newMetricElasticsearchClusterHealth(mbc.Metrics.ElasticsearchClusterHealth),
+		metricElasticsearchClusterInFlightFetch:                         newMetricElasticsearchClusterInFlightFetch(mbc.Metrics.ElasticsearchClusterInFlightFetch),
+		metricElasticsearchClusterIndicesCacheEvictions:                 newMetricElasticsearchClusterIndicesCacheEvictions(mbc.Metrics.ElasticsearchClusterIndicesCacheEvictions),
+		metricElasticsearchClusterNodes:                                 newMetricElasticsearchClusterNodes(mbc.Metrics.ElasticsearchClusterNodes),
+		metricElasticsearchClusterPendingTasks:                          newMetricElasticsearchClusterPendingTasks(mbc.Metrics.ElasticsearchClusterPendingTasks),
+		metricElasticsearchClusterPublishedStatesDifferences:            newMetricElasticsearchClusterPublishedStatesDifferences(mbc.Metrics.ElasticsearchClusterPublishedStatesDifferences),
+		metricElasticsearchClusterPublishedStatesFull:                   newMetricElasticsearchClusterPublishedStatesFull(mbc.Metrics.ElasticsearchClusterPublishedStatesFull),
+		metricElasticsearchClusterShards:                                newMetricElasticsearchClusterShards(mbc.Metrics.ElasticsearchClusterShards),
+		metricElasticsearchClusterStateQueue:                            newMetricElasticsearchClusterStateQueue(mbc.Metrics.ElasticsearchClusterStateQueue),
+		metricElasticsearchClusterStateUpdateCount:                      newMetricElasticsearchClusterStateUpdateCount(mbc.Metrics.ElasticsearchClusterStateUpdateCount),
+		metricElasticsearchClusterStateUpdateTime:                       newMetricElasticsearchClusterStateUpdateTime(mbc.Metrics.ElasticsearchClusterStateUpdateTime),
+		metricElasticsearchIndexCacheEvictions:                          newMetricElasticsearchIndexCacheEvictions(mbc.Metrics.ElasticsearchIndexCacheEvictions),
+		metricElasticsearchIndexCacheMemoryUsage:                        newMetricElasticsearchIndexCacheMemoryUsage(mbc.Metrics.ElasticsearchIndexCacheMemoryUsage),
+		metricElasticsearchIndexCacheSize:                               newMetricElasticsearchIndexCacheSize(mbc.Metrics.ElasticsearchIndexCacheSize),
+		metricElasticsearchIndexDocuments:                               newMetricElasticsearchIndexDocuments(mbc.Metrics.ElasticsearchIndexDocuments),
+		metricElasticsearchIndexOperationsCompleted:                     newMetricElasticsearchIndexOperationsCompleted(mbc.Metrics.ElasticsearchIndexOperationsCompleted),
+		metricElasticsearchIndexOperationsMergeDocsCount:                newMetricElasticsearchIndexOperationsMergeDocsCount(mbc.Metrics.ElasticsearchIndexOperationsMergeDocsCount),
+		metricElasticsearchIndexOperationsMergeSize:                     newMetricElasticsearchIndexOperationsMergeSize(mbc.Metrics.ElasticsearchIndexOperationsMergeSize),
+		metricElasticsearchIndexOperationsTime:                          newMetricElasticsearchIndexOperationsTime(mbc.Metrics.ElasticsearchIndexOperationsTime),
+		metricElasticsearchIndexSegmentsCount:                           newMetricElasticsearchIndexSegmentsCount(mbc.Metrics.ElasticsearchIndexSegmentsCount),
+		metricElasticsearchIndexSegmentsMemory:                          newMetricElasticsearchIndexSegmentsMemory(mbc.Metrics.ElasticsearchIndexSegmentsMemory),
+		metricElasticsearchIndexSegmentsSize:                            newMetricElasticsearchIndexSegmentsSize(mbc.Metrics.ElasticsearchIndexSegmentsSize),
+		metricElasticsearchIndexShardsSize:                              newMetricElasticsearchIndexShardsSize(mbc.Metrics.ElasticsearchIndexShardsSize),
+		metricElasticsearchIndexTranslogOperations:                      newMetricElasticsearchIndexTranslogOperations(mbc.Metrics.ElasticsearchIndexTranslogOperations),
+		metricElasticsearchIndexTranslogSize:                            newMetricElasticsearchIndexTranslogSize(mbc.Metrics.ElasticsearchIndexTranslogSize),
+		metricElasticsearchIndexingPressureMemoryLimit:                  newMetricElasticsearchIndexingPressureMemoryLimit(mbc.Metrics.ElasticsearchIndexingPressureMemoryLimit),
+		metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections: newMetricElasticsearchIndexingPressureMemoryTotalPrimaryRejections(mbc.Metrics.ElasticsearchIndexingPressureMemoryTotalPrimaryRejections),
+		metricElasticsearchIndexingPressureMemoryTotalReplicaRejections: newMetricElasticsearchIndexingPressureMemoryTotalReplicaRejections(mbc.Metrics.ElasticsearchIndexingPressureMemoryTotalReplicaRejections),
+		metricElasticsearchMemoryIndexingPressure:                       newMetricElasticsearchMemoryIndexingPressure(mbc.Metrics.ElasticsearchMemoryIndexingPressure),
+		metricElasticsearchNodeCacheCount:                               newMetricElasticsearchNodeCacheCount(mbc.Metrics.ElasticsearchNodeCacheCount),
+		metricElasticsearchNodeCacheEvictions:                           newMetricElasticsearchNodeCacheEvictions(mbc.Metrics.ElasticsearchNodeCacheEvictions),
+		metricElasticsearchNodeCacheMemoryUsage:                         newMetricElasticsearchNodeCacheMemoryUsage(mbc.Metrics.ElasticsearchNodeCacheMemoryUsage),
+		metricElasticsearchNodeCacheSize:                                newMetricElasticsearchNodeCacheSize(mbc.Metrics.ElasticsearchNodeCacheSize),
+		metricElasticsearchNodeClusterConnections:                       newMetricElasticsearchNodeClusterConnections(mbc.Metrics.ElasticsearchNodeClusterConnections),
+		metricElasticsearchNodeClusterIo:                                newMetricElasticsearchNodeClusterIo(mbc.Metrics.ElasticsearchNodeClusterIo),
+		metricElasticsearchNodeDiskIoRead:                               newMetricElasticsearchNodeDiskIoRead(mbc.Metrics.ElasticsearchNodeDiskIoRead),
+		metricElasticsearchNodeDiskIoWrite:                              newMetricElasticsearchNodeDiskIoWrite(mbc.Metrics.ElasticsearchNodeDiskIoWrite),
+		metricElasticsearchNodeDocuments:                                newMetricElasticsearchNodeDocuments(mbc.Metrics.ElasticsearchNodeDocuments),
+		metricElasticsearchNodeFsDiskAvailable:                          newMetricElasticsearchNodeFsDiskAvailable(mbc.Metrics.ElasticsearchNodeFsDiskAvailable),
+		metricElasticsearchNodeFsDiskFree:                               newMetricElasticsearchNodeFsDiskFree(mbc.Metrics.ElasticsearchNodeFsDiskFree),
+		metricElasticsearchNodeFsDiskTotal:                              newMetricElasticsearchNodeFsDiskTotal(mbc.Metrics.ElasticsearchNodeFsDiskTotal),
+		metricElasticsearchNodeHTTPConnections:                          newMetricElasticsearchNodeHTTPConnections(mbc.Metrics.ElasticsearchNodeHTTPConnections),
+		metricElasticsearchNodeIngestDocuments:                          newMetricElasticsearchNodeIngestDocuments(mbc.Metrics.ElasticsearchNodeIngestDocuments),
+		metricElasticsearchNodeIngestDocumentsCurrent:                   newMetricElasticsearchNodeIngestDocumentsCurrent(mbc.Metrics.ElasticsearchNodeIngestDocumentsCurrent),
+		metricElasticsearchNodeIngestOperationsFailed:                   newMetricElasticsearchNodeIngestOperationsFailed(mbc.Metrics.ElasticsearchNodeIngestOperationsFailed),
+		metricElasticsearchNodeOpenFiles:                                newMetricElasticsearchNodeOpenFiles(mbc.Metrics.ElasticsearchNodeOpenFiles),
+		metricElasticsearchNodeOperationsCompleted:                      newMetricElasticsearchNodeOperationsCompleted(mbc.Metrics.ElasticsearchNodeOperationsCompleted),
+		metricElasticsearchNodeOperationsCurrent:                        newMetricElasticsearchNodeOperationsCurrent(mbc.Metrics.ElasticsearchNodeOperationsCurrent),
+		metricElasticsearchNodeOperationsGetCompleted:                   newMetricElasticsearchNodeOperationsGetCompleted(mbc.Metrics.ElasticsearchNodeOperationsGetCompleted),
+		metricElasticsearchNodeOperationsGetTime:                        newMetricElasticsearchNodeOperationsGetTime(mbc.Metrics.ElasticsearchNodeOperationsGetTime),
+		metricElasticsearchNodeOperationsTime:                           newMetricElasticsearchNodeOperationsTime(mbc.Metrics.ElasticsearchNodeOperationsTime),
+		metricElasticsearchNodePipelineIngestDocumentsCurrent:           newMetricElasticsearchNodePipelineIngestDocumentsCurrent(mbc.Metrics.ElasticsearchNodePipelineIngestDocumentsCurrent),
+		metricElasticsearchNodePipelineIngestDocumentsPreprocessed:      newMetricElasticsearchNodePipelineIngestDocumentsPreprocessed(mbc.Metrics.ElasticsearchNodePipelineIngestDocumentsPreprocessed),
+		metricElasticsearchNodePipelineIngestOperationsFailed:           newMetricElasticsearchNodePipelineIngestOperationsFailed(mbc.Metrics.ElasticsearchNodePipelineIngestOperationsFailed),
+		metricElasticsearchNodeScriptCacheEvictions:                     newMetricElasticsearchNodeScriptCacheEvictions(mbc.Metrics.ElasticsearchNodeScriptCacheEvictions),
+		metricElasticsearchNodeScriptCompilationLimitTriggered:          newMetricElasticsearchNodeScriptCompilationLimitTriggered(mbc.Metrics.ElasticsearchNodeScriptCompilationLimitTriggered),
+		metricElasticsearchNodeScriptCompilations:                       newMetricElasticsearchNodeScriptCompilations(mbc.Metrics.ElasticsearchNodeScriptCompilations),
+		metricElasticsearchNodeSegmentsMemory:                           newMetricElasticsearchNodeSegmentsMemory(mbc.Metrics.ElasticsearchNodeSegmentsMemory),
+		metricElasticsearchNodeShardsDataSetSize:                        newMetricElasticsearchNodeShardsDataSetSize(mbc.Metrics.ElasticsearchNodeShardsDataSetSize),
+		metricElasticsearchNodeShardsReservedSize:                       newMetricElasticsearchNodeShardsReservedSize(mbc.Metrics.ElasticsearchNodeShardsReservedSize),
+		metricElasticsearchNodeShardsSize:                               newMetricElasticsearchNodeShardsSize(mbc.Metrics.ElasticsearchNodeShardsSize),
+		metricElasticsearchNodeThreadPoolTasksFinished:                  newMetricElasticsearchNodeThreadPoolTasksFinished(mbc.Metrics.ElasticsearchNodeThreadPoolTasksFinished),
+		metricElasticsearchNodeThreadPoolTasksQueued:                    newMetricElasticsearchNodeThreadPoolTasksQueued(mbc.Metrics.ElasticsearchNodeThreadPoolTasksQueued),
+		metricElasticsearchNodeThreadPoolThreads:                        newMetricElasticsearchNodeThreadPoolThreads(mbc.Metrics.ElasticsearchNodeThreadPoolThreads),
+		metricElasticsearchNodeTranslogOperations:                       newMetricElasticsearchNodeTranslogOperations(mbc.Metrics.ElasticsearchNodeTranslogOperations),
+		metricElasticsearchNodeTranslogSize:                             newMetricElasticsearchNodeTranslogSize(mbc.Metrics.ElasticsearchNodeTranslogSize),
+		metricElasticsearchNodeTranslogUncommittedSize:                  newMetricElasticsearchNodeTranslogUncommittedSize(mbc.Metrics.ElasticsearchNodeTranslogUncommittedSize),
+		metricElasticsearchOsCPULoadAvg15m:                              newMetricElasticsearchOsCPULoadAvg15m(mbc.Metrics.ElasticsearchOsCPULoadAvg15m),
+		metricElasticsearchOsCPULoadAvg1m:                               newMetricElasticsearchOsCPULoadAvg1m(mbc.Metrics.ElasticsearchOsCPULoadAvg1m),
+		metricElasticsearchOsCPULoadAvg5m:                               newMetricElasticsearchOsCPULoadAvg5m(mbc.Metrics.ElasticsearchOsCPULoadAvg5m),
+		metricElasticsearchOsCPUUsage:                                   newMetricElasticsearchOsCPUUsage(mbc.Metrics.ElasticsearchOsCPUUsage),
+		metricElasticsearchOsMemory:                                     newMetricElasticsearchOsMemory(mbc.Metrics.ElasticsearchOsMemory),
+		metricElasticsearchProcessCPUTime:                               newMetricElasticsearchProcessCPUTime(mbc.Metrics.ElasticsearchProcessCPUTime),
+		metricElasticsearchProcessCPUUsage:                              newMetricElasticsearchProcessCPUUsage(mbc.Metrics.ElasticsearchProcessCPUUsage),
+		metricElasticsearchProcessMemoryVirtual:                         newMetricElasticsearchProcessMemoryVirtual(mbc.Metrics.ElasticsearchProcessMemoryVirtual),
+		metricJvmClassesLoaded:                                          newMetricJvmClassesLoaded(mbc.Metrics.JvmClassesLoaded),
+		metricJvmGcCollectionsCount:                                     newMetricJvmGcCollectionsCount(mbc.Metrics.JvmGcCollectionsCount),
+		metricJvmGcCollectionsElapsed:                                   newMetricJvmGcCollectionsElapsed(mbc.Metrics.JvmGcCollectionsElapsed),
+		metricJvmMemoryHeapCommitted:                                    newMetricJvmMemoryHeapCommitted(mbc.Metrics.JvmMemoryHeapCommitted),
+		metricJvmMemoryHeapMax:                                          newMetricJvmMemoryHeapMax(mbc.Metrics.JvmMemoryHeapMax),
+		metricJvmMemoryHeapUsed:                                         newMetricJvmMemoryHeapUsed(mbc.Metrics.JvmMemoryHeapUsed),
+		metricJvmMemoryHeapUtilization:                                  newMetricJvmMemoryHeapUtilization(mbc.Metrics.JvmMemoryHeapUtilization),
+		metricJvmMemoryNonheapCommitted:                                 newMetricJvmMemoryNonheapCommitted(mbc.Metrics.JvmMemoryNonheapCommitted),
+		metricJvmMemoryNonheapUsed:                                      newMetricJvmMemoryNonheapUsed(mbc.Metrics.JvmMemoryNonheapUsed),
+		metricJvmMemoryPoolMax:                                          newMetricJvmMemoryPoolMax(mbc.Metrics.JvmMemoryPoolMax),
+		metricJvmMemoryPoolUsed:                                         newMetricJvmMemoryPoolUsed(mbc.Metrics.JvmMemoryPoolUsed),
+		metricJvmThreadsCount:                                           newMetricJvmThreadsCount(mbc.Metrics.JvmThreadsCount),
 	}
 	for _, op := range options {
 		op(mb)
@@ -5269,33 +5913,48 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithElasticsearchClusterName sets provided value as "elasticsearch.cluster.name" attribute for current resource.
 func WithElasticsearchClusterName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("elasticsearch.cluster.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ElasticsearchClusterName.Enabled {
+			rm.Resource().Attributes().PutStr("elasticsearch.cluster.name", val)
+		}
 	}
 }
 
 // WithElasticsearchIndexName sets provided value as "elasticsearch.index.name" attribute for current resource.
 func WithElasticsearchIndexName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("elasticsearch.index.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ElasticsearchIndexName.Enabled {
+			rm.Resource().Attributes().PutStr("elasticsearch.index.name", val)
+		}
 	}
 }
 
 // WithElasticsearchNodeName sets provided value as "elasticsearch.node.name" attribute for current resource.
 func WithElasticsearchNodeName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("elasticsearch.node.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ElasticsearchNodeName.Enabled {
+			rm.Resource().Attributes().PutStr("elasticsearch.node.name", val)
+		}
+	}
+}
+
+// WithElasticsearchNodeVersion sets provided value as "elasticsearch.node.version" attribute for current resource.
+func WithElasticsearchNodeVersion(val string) ResourceMetricsOption {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ElasticsearchNodeVersion.Enabled {
+			rm.Resource().Attributes().PutStr("elasticsearch.node.version", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -5330,6 +5989,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchClusterDataNodes.emit(ils.Metrics())
 	mb.metricElasticsearchClusterHealth.emit(ils.Metrics())
 	mb.metricElasticsearchClusterInFlightFetch.emit(ils.Metrics())
+	mb.metricElasticsearchClusterIndicesCacheEvictions.emit(ils.Metrics())
 	mb.metricElasticsearchClusterNodes.emit(ils.Metrics())
 	mb.metricElasticsearchClusterPendingTasks.emit(ils.Metrics())
 	mb.metricElasticsearchClusterPublishedStatesDifferences.emit(ils.Metrics())
@@ -5338,6 +5998,10 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchClusterStateQueue.emit(ils.Metrics())
 	mb.metricElasticsearchClusterStateUpdateCount.emit(ils.Metrics())
 	mb.metricElasticsearchClusterStateUpdateTime.emit(ils.Metrics())
+	mb.metricElasticsearchIndexCacheEvictions.emit(ils.Metrics())
+	mb.metricElasticsearchIndexCacheMemoryUsage.emit(ils.Metrics())
+	mb.metricElasticsearchIndexCacheSize.emit(ils.Metrics())
+	mb.metricElasticsearchIndexDocuments.emit(ils.Metrics())
 	mb.metricElasticsearchIndexOperationsCompleted.emit(ils.Metrics())
 	mb.metricElasticsearchIndexOperationsMergeDocsCount.emit(ils.Metrics())
 	mb.metricElasticsearchIndexOperationsMergeSize.emit(ils.Metrics())
@@ -5355,6 +6019,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchNodeCacheCount.emit(ils.Metrics())
 	mb.metricElasticsearchNodeCacheEvictions.emit(ils.Metrics())
 	mb.metricElasticsearchNodeCacheMemoryUsage.emit(ils.Metrics())
+	mb.metricElasticsearchNodeCacheSize.emit(ils.Metrics())
 	mb.metricElasticsearchNodeClusterConnections.emit(ils.Metrics())
 	mb.metricElasticsearchNodeClusterIo.emit(ils.Metrics())
 	mb.metricElasticsearchNodeDiskIoRead.emit(ils.Metrics())
@@ -5369,6 +6034,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchNodeIngestOperationsFailed.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOpenFiles.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOperationsCompleted.emit(ils.Metrics())
+	mb.metricElasticsearchNodeOperationsCurrent.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOperationsGetCompleted.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOperationsGetTime.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOperationsTime.emit(ils.Metrics())
@@ -5378,6 +6044,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchNodeScriptCacheEvictions.emit(ils.Metrics())
 	mb.metricElasticsearchNodeScriptCompilationLimitTriggered.emit(ils.Metrics())
 	mb.metricElasticsearchNodeScriptCompilations.emit(ils.Metrics())
+	mb.metricElasticsearchNodeSegmentsMemory.emit(ils.Metrics())
 	mb.metricElasticsearchNodeShardsDataSetSize.emit(ils.Metrics())
 	mb.metricElasticsearchNodeShardsReservedSize.emit(ils.Metrics())
 	mb.metricElasticsearchNodeShardsSize.emit(ils.Metrics())
@@ -5392,6 +6059,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchOsCPULoadAvg5m.emit(ils.Metrics())
 	mb.metricElasticsearchOsCPUUsage.emit(ils.Metrics())
 	mb.metricElasticsearchOsMemory.emit(ils.Metrics())
+	mb.metricElasticsearchProcessCPUTime.emit(ils.Metrics())
+	mb.metricElasticsearchProcessCPUUsage.emit(ils.Metrics())
+	mb.metricElasticsearchProcessMemoryVirtual.emit(ils.Metrics())
 	mb.metricJvmClassesLoaded.emit(ils.Metrics())
 	mb.metricJvmGcCollectionsCount.emit(ils.Metrics())
 	mb.metricJvmGcCollectionsElapsed.emit(ils.Metrics())
@@ -5404,8 +6074,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricJvmMemoryPoolMax.emit(ils.Metrics())
 	mb.metricJvmMemoryPoolUsed.emit(ils.Metrics())
 	mb.metricJvmThreadsCount.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -5418,8 +6089,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 
@@ -5451,6 +6122,11 @@ func (mb *MetricsBuilder) RecordElasticsearchClusterHealthDataPoint(ts pcommon.T
 // RecordElasticsearchClusterInFlightFetchDataPoint adds a data point to elasticsearch.cluster.in_flight_fetch metric.
 func (mb *MetricsBuilder) RecordElasticsearchClusterInFlightFetchDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchClusterInFlightFetch.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchClusterIndicesCacheEvictionsDataPoint adds a data point to elasticsearch.cluster.indices.cache.evictions metric.
+func (mb *MetricsBuilder) RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName) {
+	mb.metricElasticsearchClusterIndicesCacheEvictions.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String())
 }
 
 // RecordElasticsearchClusterNodesDataPoint adds a data point to elasticsearch.cluster.nodes metric.
@@ -5491,6 +6167,26 @@ func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateCountDataPoint(ts
 // RecordElasticsearchClusterStateUpdateTimeDataPoint adds a data point to elasticsearch.cluster.state_update.time metric.
 func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateTimeDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateStateAttributeValue string, clusterStateUpdateTypeAttributeValue AttributeClusterStateUpdateType) {
 	mb.metricElasticsearchClusterStateUpdateTime.recordDataPoint(mb.startTime, ts, val, clusterStateUpdateStateAttributeValue, clusterStateUpdateTypeAttributeValue.String())
+}
+
+// RecordElasticsearchIndexCacheEvictionsDataPoint adds a data point to elasticsearch.index.cache.evictions metric.
+func (mb *MetricsBuilder) RecordElasticsearchIndexCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	mb.metricElasticsearchIndexCacheEvictions.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String(), indexAggregationTypeAttributeValue.String())
+}
+
+// RecordElasticsearchIndexCacheMemoryUsageDataPoint adds a data point to elasticsearch.index.cache.memory.usage metric.
+func (mb *MetricsBuilder) RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	mb.metricElasticsearchIndexCacheMemoryUsage.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String(), indexAggregationTypeAttributeValue.String())
+}
+
+// RecordElasticsearchIndexCacheSizeDataPoint adds a data point to elasticsearch.index.cache.size metric.
+func (mb *MetricsBuilder) RecordElasticsearchIndexCacheSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	mb.metricElasticsearchIndexCacheSize.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+}
+
+// RecordElasticsearchIndexDocumentsDataPoint adds a data point to elasticsearch.index.documents metric.
+func (mb *MetricsBuilder) RecordElasticsearchIndexDocumentsDataPoint(ts pcommon.Timestamp, val int64, documentStateAttributeValue AttributeDocumentState, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	mb.metricElasticsearchIndexDocuments.recordDataPoint(mb.startTime, ts, val, documentStateAttributeValue.String(), indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexOperationsCompletedDataPoint adds a data point to elasticsearch.index.operations.completed metric.
@@ -5578,6 +6274,11 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pc
 	mb.metricElasticsearchNodeCacheMemoryUsage.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String())
 }
 
+// RecordElasticsearchNodeCacheSizeDataPoint adds a data point to elasticsearch.node.cache.size metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeCacheSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeCacheSize.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordElasticsearchNodeClusterConnectionsDataPoint adds a data point to elasticsearch.node.cluster.connections metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeClusterConnectionsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeClusterConnections.recordDataPoint(mb.startTime, ts, val)
@@ -5648,6 +6349,11 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts
 	mb.metricElasticsearchNodeOperationsCompleted.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
+// RecordElasticsearchNodeOperationsCurrentDataPoint adds a data point to elasticsearch.node.operations.current metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCurrentDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	mb.metricElasticsearchNodeOperationsCurrent.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+}
+
 // RecordElasticsearchNodeOperationsGetCompletedDataPoint adds a data point to elasticsearch.node.operations.get.completed metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts pcommon.Timestamp, val int64, getResultAttributeValue AttributeGetResult) {
 	mb.metricElasticsearchNodeOperationsGetCompleted.recordDataPoint(mb.startTime, ts, val, getResultAttributeValue.String())
@@ -5691,6 +6397,11 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeScriptCompilationLimitTriggered
 // RecordElasticsearchNodeScriptCompilationsDataPoint adds a data point to elasticsearch.node.script.compilations metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeScriptCompilationsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeScriptCompilations.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchNodeSegmentsMemoryDataPoint adds a data point to elasticsearch.node.segments.memory metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeSegmentsMemoryDataPoint(ts pcommon.Timestamp, val int64, segmentsMemoryObjectTypeAttributeValue AttributeSegmentsMemoryObjectType) {
+	mb.metricElasticsearchNodeSegmentsMemory.recordDataPoint(mb.startTime, ts, val, segmentsMemoryObjectTypeAttributeValue.String())
 }
 
 // RecordElasticsearchNodeShardsDataSetSizeDataPoint adds a data point to elasticsearch.node.shards.data_set.size metric.
@@ -5761,6 +6472,21 @@ func (mb *MetricsBuilder) RecordElasticsearchOsCPUUsageDataPoint(ts pcommon.Time
 // RecordElasticsearchOsMemoryDataPoint adds a data point to elasticsearch.os.memory metric.
 func (mb *MetricsBuilder) RecordElasticsearchOsMemoryDataPoint(ts pcommon.Timestamp, val int64, memoryStateAttributeValue AttributeMemoryState) {
 	mb.metricElasticsearchOsMemory.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue.String())
+}
+
+// RecordElasticsearchProcessCPUTimeDataPoint adds a data point to elasticsearch.process.cpu.time metric.
+func (mb *MetricsBuilder) RecordElasticsearchProcessCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchProcessCPUTime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchProcessCPUUsageDataPoint adds a data point to elasticsearch.process.cpu.usage metric.
+func (mb *MetricsBuilder) RecordElasticsearchProcessCPUUsageDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricElasticsearchProcessCPUUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchProcessMemoryVirtualDataPoint adds a data point to elasticsearch.process.memory.virtual metric.
+func (mb *MetricsBuilder) RecordElasticsearchProcessMemoryVirtualDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchProcessMemoryVirtual.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmClassesLoadedDataPoint adds a data point to jvm.classes.loaded metric.

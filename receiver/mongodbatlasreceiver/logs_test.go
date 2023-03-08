@@ -22,6 +22,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 )
 
@@ -47,40 +48,24 @@ func TestFilterClusters(t *testing.T) {
 func TestDefaultLoggingConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.SetIDName("LoggingID")
-	params := componenttest.NewNopReceiverCreateSettings()
-	ctx := context.Background()
 	cfg.Logs.Enabled = true
 
-	receiver, err := createCombinedLogReceiver(
-		ctx,
-		params,
-		cfg,
-		consumertest.NewNop(),
-	)
+	recv, err := createCombinedLogReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	require.NotNil(t, receiver, "receiver creation failed")
+	require.NotNil(t, recv, "receiver creation failed")
 
-	err = receiver.Start(ctx, componenttest.NewNopHost())
+	err = recv.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	err = receiver.Shutdown(ctx)
+	err = recv.Shutdown(context.Background())
 	require.NoError(t, err)
 }
 
 func TestNoLoggingEnabled(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.SetIDName("LoggingID")
-	params := componenttest.NewNopReceiverCreateSettings()
-	ctx := context.Background()
 
-	receiver, err := createCombinedLogReceiver(
-		ctx,
-		params,
-		cfg,
-		consumertest.NewNop(),
-	)
+	recv, err := createCombinedLogReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.Error(t, err)
-	require.Nil(t, receiver, "receiver creation failed")
+	require.Nil(t, recv, "receiver creation failed")
 }

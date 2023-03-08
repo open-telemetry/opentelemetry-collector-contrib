@@ -22,6 +22,7 @@ import (
 
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -161,7 +162,7 @@ func TestHonorTimeStampsWithTrue(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 // TestHonorTimeStampsWithFalse validates that with honor_timestamp config set to false,
@@ -179,7 +180,7 @@ func TestHonorTimeStampsWithFalse(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.HonorTimestamps = false
 		}

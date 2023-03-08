@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver/internal/metadata"
 )
@@ -81,10 +82,10 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	return h.mb.Emit(), nil
 }
 
-func newScraper(conf *Config, settings component.ReceiverCreateSettings) *httpcheckScraper {
+func newScraper(conf *Config, settings receiver.CreateSettings) *httpcheckScraper {
 	return &httpcheckScraper{
 		cfg:      conf,
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(conf.Metrics, settings.BuildInfo),
+		mb:       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
 	}
 }

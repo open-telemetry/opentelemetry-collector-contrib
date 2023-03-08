@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -176,12 +178,12 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(traceIDField),
-		Value: proto.String(lr.TraceID().HexString()),
+		Value: proto.String(traceutil.TraceIDToHexOrEmptyString(lr.TraceID())),
 	})
 
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(spanIDField),
-		Value: proto.String(lr.SpanID().HexString()),
+		Value: proto.String(traceutil.SpanIDToHexOrEmptyString(lr.SpanID())),
 	})
 
 	for i := range contentsBuffer {

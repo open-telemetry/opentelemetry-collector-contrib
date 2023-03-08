@@ -60,7 +60,9 @@ Duration is measured both from the client and the server sides.
 
 Possible values for `connection_type`: unset, `messaging_system`, or `database`.
 
-Additional labels can be included using the `dimensions` configuration option.
+Additional labels can be included using the `dimensions` configuration option. Those labels will have a prefix to mark where they originate (client or server span kinds).
+The `client_` prefix relates to the dimensions coming from spans with `SPAN_KIND_CLIENT`, and the `server_` prefix relates to the
+dimensions coming from spans with `SPAN_KIND_SERVER`.
 
 Since the service graph processor has to process both sides of an edge,
 it needs to process all spans of a trace to function properly.
@@ -134,6 +136,10 @@ service:
       processors: []
       exporters: [prometheus/servicegraph]
 ```
+
+## Features and Feature-Gates
+
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

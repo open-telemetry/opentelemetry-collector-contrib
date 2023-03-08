@@ -1,10 +1,10 @@
 # Delta to Rate Processor
 
-| Status                   |                  |
-|--------------------------|------------------|
-| Stability                | [in development] |
-| Supported pipeline types | metrics          |
-| Distributions            | [contrib]        |
+| Status                   |               |
+|--------------------------|---------------|
+| Stability                | [development] |
+| Supported pipeline types | metrics       |
+| Distributions            | [contrib]     |
 
 **Status: under development; Not recommended for production usage.**
 
@@ -32,5 +32,5 @@ processors:
             - <metric_n_name>
 ```
 
-[in development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

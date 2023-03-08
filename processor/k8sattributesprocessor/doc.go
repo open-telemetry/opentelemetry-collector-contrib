@@ -32,16 +32,17 @@
 //	                             Semantic convention should be used for naming.
 //
 // Pod association configuration.
-// pod_association:
-//   - sources:
-//   - from: resource_attribute
-//     name: k8s.pod.ip
-//     # below association matches for pair `k8s.pod.name` and `k8s.namespace.name`
-//   - sources:
-//   - from: resource_attribute
-//     name: k8s.pod.name
-//   - from: resource_attribute
-//     name: k8s.namespace.name
+//
+//	pod_association:
+//	  - sources:
+//	      - from: resource_attribute
+//	        name: k8s.pod.ip
+//	  # below association matches for pair `k8s.pod.name` and `k8s.namespace.name`
+//	  - sources:
+//	      - from: resource_attribute
+//	        name: k8s.pod.name
+//	      - from: resource_attribute
+//	        name: k8s.namespace.name
 //
 // If Pod association rules are not configured resources are associated with metadata only by connection's IP Address.
 //
@@ -66,9 +67,9 @@
 //     as a resource attribute (similar to all other attributes, pod has to be identified as well):
 //     - container.image.name
 //     - container.image.tag
-//  2. Container status attributes - in addition to pod identifier and `k8s.container.name` attribute, these attributes
-//     require identifier of a particular container run set as `k8s.container.restart_count` in resource attributes:
-//     - container.id
+//  2. Container ID attribute - in addition to pod identifier and `k8s.container.name` attribute, `container.id` must
+//     be explicitly requested in `metadata`. Specifying `k8s.container.restart_count` in the resource
+//     attributes will match only the specified container run; if omitted, the current instance is assumed.
 //
 // The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
 // The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
@@ -78,23 +79,24 @@
 // The "from" field has only two possible values "pod" and "namespace" and defaults to "pod" if none is specified.
 //
 // A few examples to use this config are as follows:
-// annotations:
-//   - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
-//     key: annotation-one
-//     from: pod
-//   - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
-//     key: annotation-two
-//     regex: field=(?P<value>.+)
-//     from: namespace
 //
-// labels:
-//   - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
-//     key: label1
-//     from: namespace
-//   - tag_name: l2 # extracts value of label from pods with key `label2` with regexp and inserts it as a tag with key `l2`
-//     key: label2
-//     regex: field=(?P<value>.+)
-//     from: pod
+//	annotations:
+//	  - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
+//	    key: annotation-one
+//	    from: pod
+//	  - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
+//	    key: annotation-two
+//	    regex: field=(?P<value>.+)
+//	    from: namespace
+//
+//	labels:
+//	  - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
+//	    key: label1
+//	    from: namespace
+//	  - tag_name: l2 # extracts value of label from pods with key `label2` with regexp and inserts it as a tag with key `l2`
+//	    key: label2
+//	    regex: field=(?P<value>.+)
+//	    from: pod
 //
 // # RBAC
 //

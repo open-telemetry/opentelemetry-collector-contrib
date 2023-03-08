@@ -19,9 +19,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestType(t *testing.T) {
@@ -38,7 +38,7 @@ func TestBadAlertsReceiver(t *testing.T) {
 	cfg.Alerts.TLS = &configtls.TLSServerSetting{
 		ClientCAFile: "/not/a/file",
 	}
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 
 	_, err := createCombinedLogReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	require.Error(t, err)

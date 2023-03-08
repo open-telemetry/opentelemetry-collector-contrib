@@ -5,7 +5,7 @@ on:
 
 jobs:
   add-labels:
-    if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/label') && github.repository_owner == "open-telemetry" }}
+    if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/label') && github.repository_owner == 'open-telemetry' }}
 
     runs-on: ubuntu-latest
     steps:

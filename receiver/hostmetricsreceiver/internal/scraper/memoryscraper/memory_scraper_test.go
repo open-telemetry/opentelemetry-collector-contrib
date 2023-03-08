@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -47,21 +48,21 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Standard",
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedMetricCount: 1,
 		},
 		{
 			name: "All metrics enabled",
 			config: &Config{
-				Metrics: metadata.MetricsSettings{
+				MetricsBuilderConfig: metadata.NewMetricsBuilderConfig(metadata.MetricsSettings{
 					SystemMemoryUtilization: metadata.MetricSettings{
 						Enabled: true,
 					},
 					SystemMemoryUsage: metadata.MetricSettings{
 						Enabled: true,
 					},
-				},
+				}, metadata.DefaultResourceAttributesSettings()),
 			},
 			expectedMetricCount: 2,
 		},
@@ -70,7 +71,7 @@ func TestScrape(t *testing.T) {
 			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
 			expectedErr:       "err1",
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedMetricCount: 1,
 		},
@@ -79,7 +80,7 @@ func TestScrape(t *testing.T) {
 			bootTimeFunc:      func() (uint64, error) { return 100, errors.New("err1") },
 			initializationErr: "err1",
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedMetricCount: 1,
 		},
@@ -87,7 +88,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newMemoryScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), test.config)
+			scraper := newMemoryScraper(context.Background(), receivertest.NewNopCreateSettings(), test.config)
 			if test.virtualMemoryFunc != nil {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}
@@ -152,14 +153,13 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			mbc := metadata.DefaultMetricsBuilderConfig()
+			mbc.Metrics.SystemMemoryUtilization.Enabled = true
+			mbc.Metrics.SystemMemoryUsage.Enabled = false
 			scraperConfig := Config{
-				Metrics: metadata.MetricsSettings{
-					SystemMemoryUtilization: metadata.MetricSettings{
-						Enabled: true,
-					},
-				},
+				MetricsBuilderConfig: mbc,
 			}
-			scraper := newMemoryScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &scraperConfig)
+			scraper := newMemoryScraper(context.Background(), receivertest.NewNopCreateSettings(), &scraperConfig)
 			if test.virtualMemoryFunc != nil {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}

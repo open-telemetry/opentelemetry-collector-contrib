@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -35,20 +34,18 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id          component.ID
-		expected    component.ReceiverConfig
+		expected    component.Config
 		expectedErr error
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
-			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))},
+			id:       component.NewIDWithName(typeStr, ""),
+			expected: &Config{},
 		},
 		{
 			id: component.NewIDWithName(typeStr, "customname"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				ProjectID:        "my-project",
-				UserAgent:        "opentelemetry-collector-contrib {{version}}",
+				ProjectID: "my-project",
+				UserAgent: "opentelemetry-collector-contrib {{version}}",
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 20 * time.Second,
 				},
@@ -64,9 +61,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

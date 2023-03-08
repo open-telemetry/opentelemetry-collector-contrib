@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -38,18 +38,18 @@ const (
 )
 
 // NewFactory creates a factory for Google Cloud Pub/Sub exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
-		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, stability))
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability))
 }
 
 var exporters = map[*Config]*pubsubExporter{}
 
-func ensureExporter(params component.ExporterCreateSettings, pCfg *Config) *pubsubExporter {
+func ensureExporter(params exporter.CreateSettings, pCfg *Config) *pubsubExporter {
 	receiver := exporters[pCfg]
 	if receiver != nil {
 		return receiver
@@ -81,11 +81,10 @@ func ensureExporter(params component.ExporterCreateSettings, pCfg *Config) *pubs
 }
 
 // createDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		UserAgent:        "opentelemetry-collector-contrib {{version}}",
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		UserAgent:       "opentelemetry-collector-contrib {{version}}",
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
 		Watermark: WatermarkConfig{
 			Behavior:     "current",
 			AllowedDrift: 0,
@@ -95,8 +94,8 @@ func createDefaultConfig() component.ExporterConfig {
 
 func createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig) (component.TracesExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config) (exporter.Traces, error) {
 
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
@@ -117,8 +116,8 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig) (component.MetricsExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config) (exporter.Metrics, error) {
 
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
@@ -138,8 +137,8 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig) (component.LogsExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config) (exporter.Logs, error) {
 
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)

@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -34,29 +35,29 @@ const (
 )
 
 // NewFactory creates kafkametrics receiver factory.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		Brokers:                   []string{defaultBroker},
 		GroupMatch:                defaultGroupMatch,
 		TopicMatch:                defaultTopicMatch,
 		ClientID:                  defaultClientID,
-		Metrics:                   metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
-	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+	params receiver.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	c := cfg.(*Config)
 	r, err := newMetricsReceiver(ctx, *c, params, nextConsumer)
 	if err != nil {

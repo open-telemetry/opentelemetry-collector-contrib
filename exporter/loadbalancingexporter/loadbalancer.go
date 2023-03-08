@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
 )
 
@@ -36,12 +37,12 @@ var (
 
 var _ loadBalancer = (*loadBalancerImp)(nil)
 
-type componentFactory func(ctx context.Context, endpoint string) (component.Exporter, error)
+type componentFactory func(ctx context.Context, endpoint string) (component.Component, error)
 
 type loadBalancer interface {
 	component.Component
 	Endpoint(identifier []byte) string
-	Exporter(endpoint string) (component.Exporter, error)
+	Exporter(endpoint string) (component.Component, error)
 }
 
 type loadBalancerImp struct {
@@ -52,14 +53,14 @@ type loadBalancerImp struct {
 	ring *hashRing
 
 	componentFactory componentFactory
-	exporters        map[string]component.Exporter
+	exporters        map[string]component.Component
 
 	stopped    bool
 	updateLock sync.RWMutex
 }
 
 // Create new load balancer
-func newLoadBalancer(params component.ExporterCreateSettings, cfg component.ExporterConfig, factory componentFactory) (*loadBalancerImp, error) {
+func newLoadBalancer(params exporter.CreateSettings, cfg component.Config, factory componentFactory) (*loadBalancerImp, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Resolver.DNS != nil && oCfg.Resolver.Static != nil {
@@ -92,7 +93,7 @@ func newLoadBalancer(params component.ExporterCreateSettings, cfg component.Expo
 		logger:           params.Logger,
 		res:              res,
 		componentFactory: factory,
-		exporters:        map[string]component.Exporter{},
+		exporters:        map[string]component.Component{},
 	}, nil
 }
 
@@ -182,7 +183,7 @@ func (lb *loadBalancerImp) Endpoint(identifier []byte) string {
 	return lb.ring.endpointFor(identifier)
 }
 
-func (lb *loadBalancerImp) Exporter(endpoint string) (component.Exporter, error) {
+func (lb *loadBalancerImp) Exporter(endpoint string) (component.Component, error) {
 	// NOTE: make rolling updates of next tier of collectors work. currently, this may cause
 	// data loss because the latest batches sent to outdated backend will never find their way out.
 	// for details: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690

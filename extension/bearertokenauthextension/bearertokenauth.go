@@ -23,7 +23,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/extension/auth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
 )
@@ -45,7 +45,7 @@ func (c *PerRPCAuth) RequireTransportSecurity() bool {
 	return true
 }
 
-// BearerTokenAuth is an implementation of configauth.GRPCClientAuthenticator. It embeds a static authorization "bearer" token in every rpc call.
+// BearerTokenAuth is an implementation of auth.Client. It embeds a static authorization "bearer" token in every rpc call.
 type BearerTokenAuth struct {
 	muTokenString sync.RWMutex
 	scheme        string
@@ -57,7 +57,7 @@ type BearerTokenAuth struct {
 	logger   *zap.Logger
 }
 
-var _ configauth.ClientAuthenticator = (*BearerTokenAuth)(nil)
+var _ auth.Client = (*BearerTokenAuth)(nil)
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	if cfg.Filename != "" && cfg.BearerToken != "" {
@@ -65,7 +65,7 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	}
 	return &BearerTokenAuth{
 		scheme:      cfg.Scheme,
-		tokenString: cfg.BearerToken,
+		tokenString: string(cfg.BearerToken),
 		filename:    cfg.Filename,
 		logger:      logger,
 	}
@@ -177,15 +177,15 @@ func (b *BearerTokenAuth) bearerToken() string {
 // RoundTripper is not implemented by BearerTokenAuth
 func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return &BearerAuthRoundTripper{
-		baseTransport: base,
-		bearerToken:   b.bearerToken(),
+		baseTransport:   base,
+		bearerTokenFunc: b.bearerToken,
 	}, nil
 }
 
 // BearerAuthRoundTripper intercepts and adds Bearer token Authorization headers to each http request.
 type BearerAuthRoundTripper struct {
-	baseTransport http.RoundTripper
-	bearerToken   string
+	baseTransport   http.RoundTripper
+	bearerTokenFunc func() string
 }
 
 // RoundTrip modifies the original request and adds Bearer token Authorization headers.
@@ -194,6 +194,6 @@ func (interceptor *BearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.R
 	if req2.Header == nil {
 		req2.Header = make(http.Header)
 	}
-	req2.Header.Set("Authorization", interceptor.bearerToken)
+	req2.Header.Set("Authorization", interceptor.bearerTokenFunc())
 	return interceptor.baseTransport.RoundTrip(req2)
 }

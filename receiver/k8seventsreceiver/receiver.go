@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	k8s "k8s.io/client-go/kubernetes"
@@ -29,7 +30,7 @@ import (
 
 type k8seventsReceiver struct {
 	config          *Config
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	client          k8s.Interface
 	logsConsumer    consumer.Logs
 	stopperChanList []chan struct{}
@@ -41,12 +42,21 @@ type k8seventsReceiver struct {
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
 func newReceiver(
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	config *Config,
 	consumer consumer.Logs,
 	client k8s.Interface,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	transport := "http"
+
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             set.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	return &k8seventsReceiver{
 		settings:     set,
@@ -54,11 +64,7 @@ func newReceiver(
 		client:       client,
 		logsConsumer: consumer,
 		startTime:    time.Now(),
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: set,
-		}),
+		obsrecv:      obsrecv,
 	}, nil
 }
 

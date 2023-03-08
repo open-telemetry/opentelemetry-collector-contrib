@@ -16,11 +16,31 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
+
+type ErrorMode string
+
+const (
+	IgnoreError    ErrorMode = "ignore"
+	PropagateError ErrorMode = "propagate"
+)
+
+func (e *ErrorMode) UnmarshalText(text []byte) error {
+	str := ErrorMode(strings.ToLower(string(text)))
+	switch str {
+	case IgnoreError, PropagateError:
+		*e = str
+		return nil
+	default:
+		return fmt.Errorf("unknown error mode %v", str)
+	}
+}
 
 type Parser[K any] struct {
 	functions         map[string]interface{}
@@ -34,6 +54,7 @@ type Parser[K any] struct {
 type Statement[K any] struct {
 	function  Expr[K]
 	condition BoolExpr[K]
+	origText  string
 }
 
 // Execute is a function that will execute the statement's function if the statement's condition is met.
@@ -55,54 +76,82 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	return result, condition, nil
 }
 
-func NewParser[K any](functions map[string]interface{}, pathParser PathExpressionParser[K], enumParser EnumParser, telemetrySettings component.TelemetrySettings) Parser[K] {
-	return Parser[K]{
-		functions:         functions,
-		pathParser:        pathParser,
-		enumParser:        enumParser,
-		telemetrySettings: telemetrySettings,
+func NewParser[K any](
+	functions map[string]interface{},
+	pathParser PathExpressionParser[K],
+	settings component.TelemetrySettings,
+	options ...Option[K],
+) (Parser[K], error) {
+	if settings.Logger == nil {
+		return Parser[K]{}, fmt.Errorf("logger cannot be nil")
+	}
+	p := Parser[K]{
+		functions:  functions,
+		pathParser: pathParser,
+		enumParser: func(*EnumSymbol) (*Enum, error) {
+			return nil, fmt.Errorf("enums aren't supported for the current context: %T", new(K))
+		},
+		telemetrySettings: settings,
+	}
+	for _, opt := range options {
+		opt(&p)
+	}
+	return p, nil
+}
+
+type Option[K any] func(*Parser[K])
+
+func WithEnumParser[K any](parser EnumParser) Option[K] {
+	return func(p *Parser[K]) {
+		p.enumParser = parser
 	}
 }
 
 func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error) {
 	var parsedStatements []*Statement[K]
-	var errors error
-
 	for _, statement := range statements {
-		parsed, err := parseStatement(statement)
+		ps, err := p.ParseStatement(statement)
 		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
+			return nil, err
 		}
-		function, err := p.newFunctionCall(parsed.Invocation)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		expression, err := p.newBoolExpr(parsed.WhereClause)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		parsedStatements = append(parsedStatements, &Statement[K]{
-			function:  function,
-			condition: expression,
-		})
-	}
-
-	if errors != nil {
-		return nil, errors
+		parsedStatements = append(parsedStatements, ps)
 	}
 	return parsedStatements, nil
+}
+
+func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
+	parsed, err := parseStatement(statement)
+	if err != nil {
+		return nil, err
+	}
+	function, err := p.newFunctionCall(parsed.Invocation)
+	if err != nil {
+		return nil, err
+	}
+	expression, err := p.newBoolExpr(parsed.WhereClause)
+	if err != nil {
+		return nil, err
+	}
+	return &Statement[K]{
+		function:  function,
+		condition: expression,
+		origText:  statement,
+	}, nil
 }
 
 var parser = newParser[parsedStatement]()
 
 func parseStatement(raw string) (*parsedStatement, error) {
 	parsed, err := parser.ParseString("", raw)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse OTTL statement: %w", err)
+	}
+	err = parsed.checkForCustomError()
 	if err != nil {
 		return nil, err
 	}
+
 	return parsed, nil
 }
 
@@ -120,4 +169,67 @@ func newParser[G any]() *participle.Parser[G] {
 		panic("Unable to initialize parser; this is a programming error in the transformprocessor:" + err.Error())
 	}
 	return parser
+}
+
+// Statements represents a list of statements that will be executed sequentially for a TransformContext.
+type Statements[K any] struct {
+	statements        []*Statement[K]
+	errorMode         ErrorMode
+	telemetrySettings component.TelemetrySettings
+}
+
+type StatementsOption[K any] func(*Statements[K])
+
+func WithErrorMode[K any](errorMode ErrorMode) StatementsOption[K] {
+	return func(s *Statements[K]) {
+		s.errorMode = errorMode
+	}
+}
+
+func NewStatements[K any](statements []*Statement[K], telemetrySettings component.TelemetrySettings, options ...StatementsOption[K]) Statements[K] {
+	s := Statements[K]{
+		statements:        statements,
+		telemetrySettings: telemetrySettings,
+	}
+	for _, op := range options {
+		op(&s)
+	}
+	return s
+}
+
+// Execute is a function that will execute all the statements in the Statements list.
+func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
+	for _, statement := range s.statements {
+		_, _, err := statement.Execute(ctx, tCtx)
+		if err != nil {
+			if s.errorMode == PropagateError {
+				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
+				return err
+			}
+			s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
+		}
+	}
+	return nil
+}
+
+// Eval returns true if any statement's condition is true and returns false otherwise.
+// Does not execute the statement's function.
+// When errorMode is `propagate`, errors cause the evaluation to be false and an error is returned.
+// When errorMode is `ignore`, errors cause evaluation to continue to the next statement.
+func (s *Statements[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	for _, statement := range s.statements {
+		match, err := statement.condition.Eval(ctx, tCtx)
+		if err != nil {
+			if s.errorMode == PropagateError {
+				err = fmt.Errorf("failed to eval statement: %v, %w", statement.origText, err)
+				return false, err
+			}
+			s.telemetrySettings.Logger.Warn("failed to eval statement", zap.Error(err), zap.String("statement", statement.origText))
+			continue
+		}
+		if match {
+			return true, nil
+		}
+	}
+	return false, nil
 }

@@ -19,8 +19,8 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -42,32 +42,31 @@ type blobReceiverFactory struct {
 }
 
 // NewFactory returns a factory for Azure Blob receiver.
-func NewFactory() component.ReceiverFactory {
+func NewFactory() receiver.Factory {
 	f := &blobReceiverFactory{
 		receivers: sharedcomponent.NewSharedComponents(),
 	}
 
-	return component.NewReceiverFactory(
+	return receiver.NewFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithTracesReceiver(f.createTracesReceiver, component.StabilityLevelBeta),
-		component.WithLogsReceiver(f.createLogsReceiver, component.StabilityLevelBeta))
+		receiver.WithTraces(f.createTracesReceiver, component.StabilityLevelBeta),
+		receiver.WithLogs(f.createLogsReceiver, component.StabilityLevelBeta))
 }
 
-func (f *blobReceiverFactory) createDefaultConfig() component.ReceiverConfig {
+func (f *blobReceiverFactory) createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-		Logs:             LogsConfig{ContainerName: logsContainerName},
-		Traces:           TracesConfig{ContainerName: tracesContainerName},
+		Logs:   LogsConfig{ContainerName: logsContainerName},
+		Traces: TracesConfig{ContainerName: tracesContainerName},
 	}
 }
 
 func (f *blobReceiverFactory) createLogsReceiver(
 	ctx context.Context,
-	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	set receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 
 	receiver, err := f.getReceiver(set, cfg)
 
@@ -83,10 +82,10 @@ func (f *blobReceiverFactory) createLogsReceiver(
 
 func (f *blobReceiverFactory) createTracesReceiver(
 	ctx context.Context,
-	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	set receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 
 	receiver, err := f.getReceiver(set, cfg)
 
@@ -100,8 +99,8 @@ func (f *blobReceiverFactory) createTracesReceiver(
 }
 
 func (f *blobReceiverFactory) getReceiver(
-	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig) (component.Receiver, error) {
+	set receiver.CreateSettings,
+	cfg component.Config) (component.Component, error) {
 
 	var err error
 	r := f.receivers.GetOrAdd(cfg, func() component.Component {
@@ -118,8 +117,8 @@ func (f *blobReceiverFactory) getReceiver(
 			return nil
 		}
 
-		var receiver component.Receiver
-		receiver, err = newReceiver(*receiverConfig, set, beh)
+		var receiver component.Component
+		receiver, err = newReceiver(set, beh)
 		return receiver
 	})
 

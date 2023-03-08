@@ -91,12 +91,12 @@ func TestValidate(t *testing.T) {
 				})
 			}
 
-			cfg := Config{
+			cfg := &Config{
 				Username: tc.username,
 				Password: tc.password,
 				Hosts:    hosts,
 			}
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 			if tc.expected == nil {
 				require.Nil(t, err)
 			} else {
@@ -137,7 +137,7 @@ func TestBadTLSConfigs(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			cfg := Config{
+			cfg := &Config{
 				Username: "otel",
 				Password: "pword",
 				Hosts: []confignet.NetAddr{
@@ -147,7 +147,7 @@ func TestBadTLSConfigs(t *testing.T) {
 				},
 				TLSClientSetting: tc.tlsConfig,
 			}
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -209,7 +209,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Hosts = []confignet.NetAddr{
@@ -218,7 +218,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}
 	expected.Username = "otel"
-	expected.Password = "$MONGO_PASSWORD"
+	expected.Password = "${env:MONGO_PASSWORD}"
 	expected.CollectionInterval = time.Minute
 
 	require.Equal(t, expected, cfg)

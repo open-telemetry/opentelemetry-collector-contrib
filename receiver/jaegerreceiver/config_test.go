@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -38,12 +37,11 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ReceiverConfig
+		expected component.Config
 	}{
 		{
 			id: component.NewIDWithName(typeStr, "customname"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -86,7 +84,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "defaults"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -111,7 +108,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "mixed"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -129,7 +125,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "tls"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -158,9 +153,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -174,18 +169,18 @@ func TestFailedLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "typo_default_proto_config").String())
 	require.NoError(t, err)
-	err = component.UnmarshalReceiverConfig(sub, cfg)
+	err = component.UnmarshalConfig(sub, cfg)
 	assert.EqualError(t, err, "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "bad_proto_config").String())
 	require.NoError(t, err)
-	err = component.UnmarshalReceiverConfig(sub, cfg)
+	err = component.UnmarshalConfig(sub, cfg)
 	assert.EqualError(t, err, "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "empty").String())
 	require.NoError(t, err)
-	err = component.UnmarshalReceiverConfig(sub, cfg)
-	assert.EqualError(t, err, "empty \"protocols\" config for Jaeger receiver")
+	err = component.UnmarshalConfig(sub, cfg)
+	assert.EqualError(t, err, "empty config for Jaeger receiver")
 }
 
 func TestInvalidConfig(t *testing.T) {
@@ -297,7 +292,7 @@ func TestInvalidConfig(t *testing.T) {
 
 			tC.apply(cfg)
 
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 			assert.Error(t, err, tC.err)
 
 		})

@@ -21,13 +21,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 // Test to make sure a new receiver can be created properly, started and shutdown with the default config
 func TestDefaultValidReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 
 	receiver, err := newCloudFoundryReceiver(
 		params,
@@ -52,7 +53,7 @@ func TestDefaultValidReceiver(t *testing.T) {
 func TestInvalidConsumer(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 
 	receiver, err := newCloudFoundryReceiver(
 		params,

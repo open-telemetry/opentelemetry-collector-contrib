@@ -24,6 +24,7 @@ import (
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 )
 
@@ -37,7 +38,7 @@ type healthCheckExtension struct {
 	settings component.TelemetrySettings
 }
 
-var _ component.PipelineWatcher = (*healthCheckExtension)(nil)
+var _ extension.PipelineWatcher = (*healthCheckExtension)(nil)
 
 func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) error {
 

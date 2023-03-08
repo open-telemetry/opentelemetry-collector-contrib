@@ -32,6 +32,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
 
@@ -51,36 +53,36 @@ func newPodIdentifier(from string, name string, value string) kube.PodIdentifier
 	}
 }
 
-func newTracesProcessor(cfg component.ProcessorConfig, next consumer.Traces, options ...option) (component.TracesProcessor, error) {
+func newTracesProcessor(cfg component.Config, next consumer.Traces, options ...option) (processor.Traces, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createTracesProcessorWithOptions(
 		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		cfg,
 		next,
 		opts...,
 	)
 }
 
-func newMetricsProcessor(cfg component.ProcessorConfig, nextMetricsConsumer consumer.Metrics, options ...option) (component.MetricsProcessor, error) {
+func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metrics, options ...option) (processor.Metrics, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createMetricsProcessorWithOptions(
 		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		cfg,
 		nextMetricsConsumer,
 		opts...,
 	)
 }
 
-func newLogsProcessor(cfg component.ProcessorConfig, nextLogsConsumer consumer.Logs, options ...option) (component.LogsProcessor, error) {
+func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, options ...option) (processor.Logs, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createLogsProcessorWithOptions(
 		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		cfg,
 		nextLogsConsumer,
 		opts...,
@@ -105,9 +107,9 @@ func withExtractKubernetesProcessorInto(kp **kubernetesprocessor) option {
 type multiTest struct {
 	t *testing.T
 
-	tp component.TracesProcessor
-	mp component.MetricsProcessor
-	lp component.LogsProcessor
+	tp processor.Traces
+	mp processor.Metrics
+	lp processor.Logs
 
 	nextTrace   *consumertest.TracesSink
 	nextMetrics *consumertest.MetricsSink
@@ -120,7 +122,7 @@ type multiTest struct {
 
 func newMultiTest(
 	t *testing.T,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	errFunc func(err error),
 	options ...option,
 ) *multiTest {
@@ -806,6 +808,31 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				conventions.AttributeK8SContainerName:         "app",
 				conventions.AttributeK8SContainerRestartCount: "1",
 				conventions.AttributeContainerID:              "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e",
+			},
+		},
+		{
+			name: "container-id-latest",
+			op: func(kp *kubernetesprocessor) {
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")] = &kube.Pod{
+					Containers: map[string]*kube.Container{
+						"app": {
+							Statuses: map[int]kube.ContainerStatus{
+								0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
+								1: {ContainerID: "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e"},
+								2: {ContainerID: "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848"},
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPassthroughIP("1.1.1.1"),
+				withContainerName("app"),
+			},
+			wantAttrs: map[string]string{
+				kube.K8sIPLabelName:                   "1.1.1.1",
+				conventions.AttributeK8SContainerName: "app",
+				conventions.AttributeContainerID:      "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848",
 			},
 		},
 		{

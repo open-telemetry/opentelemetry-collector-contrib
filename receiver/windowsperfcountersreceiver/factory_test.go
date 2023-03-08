@@ -22,9 +22,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-var creationParams = componenttest.NewNopReceiverCreateSettings()
+var creationParams = receivertest.NewNopCreateSettings()
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
@@ -48,7 +49,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, component.ValidateConfig(cfg))
 }
 
 func TestCreateTracesReceiver(t *testing.T) {

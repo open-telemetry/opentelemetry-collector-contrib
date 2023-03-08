@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
@@ -38,11 +39,11 @@ import (
 func TestStart(t *testing.T) {
 	mockConsumer := &consumertest.LogsSink{}
 
-	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
 	logsReceiver, err := factory.CreateLogsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		factory.CreateDefaultConfig(),
 		mockConsumer,
 	)
@@ -67,12 +68,12 @@ func TestStart(t *testing.T) {
 func TestHandleStartError(t *testing.T) {
 	mockConsumer := &consumertest.LogsSink{}
 
-	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
 	cfg := factory.CreateDefaultConfig().(*TestConfig)
 	cfg.Input = NewUnstartableConfig()
 
-	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, mockConsumer)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = receiver.Start(context.Background(), componenttest.NewNopHost())
@@ -81,9 +82,9 @@ func TestHandleStartError(t *testing.T) {
 
 func TestHandleConsumeError(t *testing.T) {
 	mockConsumer := &mockLogsRejecter{}
-	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
-	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), factory.CreateDefaultConfig(), mockConsumer)
+	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), factory.CreateDefaultConfig(), mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())

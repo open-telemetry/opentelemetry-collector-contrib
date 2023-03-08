@@ -31,7 +31,6 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
-	"github.com/jaegertracing/jaeger/cmd/collector/app/handler"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/pkg/metrics"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
@@ -45,6 +44,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
 
@@ -78,7 +78,7 @@ type jReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 
 	grpcObsrecv *obsreport.Receiver
 	httpObsrecv *obsreport.Receiver
@@ -107,24 +107,33 @@ func newJaegerReceiver(
 	id component.ID,
 	config *configuration,
 	nextConsumer consumer.Traces,
-	set component.ReceiverCreateSettings,
-) *jReceiver {
+	set receiver.CreateSettings,
+) (*jReceiver, error) {
+	grpcObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             id,
+		Transport:              grpcTransport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+	httpObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             id,
+		Transport:              collectorHTTPTransport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &jReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
 		id:           id,
 		settings:     set,
-		grpcObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              grpcTransport,
-			ReceiverCreateSettings: set,
-		}),
-		httpObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              collectorHTTPTransport,
-			ReceiverCreateSettings: set,
-		}),
-	}
+		grpcObsrecv:  grpcObsrecv,
+		httpObsrecv:  httpObsrecv,
+	}, nil
 }
 
 func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
@@ -231,13 +240,18 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	}
 
 	if jr.config.AgentBinaryThrift.Endpoint != "" {
+		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             jr.id,
+			Transport:              agentTransportBinary,
+			ReceiverCreateSettings: jr.settings,
+		})
+		if err != nil {
+			return err
+		}
+
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
-			obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-				ReceiverID:             jr.id,
-				Transport:              agentTransportBinary,
-				ReceiverCreateSettings: jr.settings,
-			}),
+			obsrecv:      obsrecv,
 		}
 		processor, err := jr.buildProcessor(jr.config.AgentBinaryThrift.Endpoint, jr.config.AgentBinaryThrift.ServerConfigUDP, apacheThrift.NewTBinaryProtocolFactoryConf(nil), h)
 		if err != nil {
@@ -247,13 +261,17 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	}
 
 	if jr.config.AgentCompactThrift.Endpoint != "" {
+		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             jr.id,
+			Transport:              agentTransportCompact,
+			ReceiverCreateSettings: jr.settings,
+		})
+		if err != nil {
+			return err
+		}
 		h := &agentHandler{
 			nextConsumer: jr.nextConsumer,
-			obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-				ReceiverID:             jr.id,
-				Transport:              agentTransportCompact,
-				ReceiverCreateSettings: jr.settings,
-			}),
+			obsrecv:      obsrecv,
 		}
 		processor, err := jr.buildProcessor(jr.config.AgentCompactThrift.Endpoint, jr.config.AgentCompactThrift.ServerConfigUDP, apacheThrift.NewTCompactProtocolFactoryConf(nil), h)
 		if err != nil {
@@ -312,7 +330,7 @@ func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *http
 	r.Body.Close()
 	if err != nil {
 		return nil, &httpError{
-			handler.UnableToReadBodyErrFormat,
+			fmt.Sprintf("Unable to process request body: %v", err),
 			http.StatusInternalServerError,
 		}
 	}
@@ -335,7 +353,7 @@ func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *http
 	batch := &jaeger.Batch{}
 	if err = tdes.Read(r.Context(), batch, bodyBytes); err != nil {
 		return nil, &httpError{
-			fmt.Sprintf(handler.UnableToReadBodyErrFormat, err),
+			fmt.Sprintf("Unable to process request body: %v", err),
 			http.StatusBadRequest,
 		}
 	}

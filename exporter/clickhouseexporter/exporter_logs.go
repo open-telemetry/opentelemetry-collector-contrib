@@ -18,14 +18,16 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 type logsExporter struct {
@@ -37,17 +39,8 @@ type logsExporter struct {
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-
-	if err := createDatabase(cfg); err != nil {
-		return nil, err
-	}
-
 	client, err := newClickhouseClient(cfg)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = createLogsTable(cfg, client); err != nil {
 		return nil, err
 	}
 
@@ -59,8 +52,19 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	}, nil
 }
 
-// Shutdown will shutdown the exporter.
-func (e *logsExporter) Shutdown(_ context.Context) error {
+func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
+	if err := createDatabase(ctx, e.cfg); err != nil {
+		return err
+	}
+
+	if err := createLogsTable(ctx, e.cfg, e.client); err != nil {
+		return err
+	}
+	return nil
+}
+
+// shutdown will shut down the exporter.
+func (e *logsExporter) shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -92,8 +96,8 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					logAttr := attributesToMap(r.Attributes())
 					_, err = statement.ExecContext(ctx,
 						r.Timestamp().AsTime(),
-						r.TraceID().HexString(),
-						r.SpanID().HexString(),
+						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
+						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
 						uint32(r.Flags()),
 						r.SeverityText(),
 						int32(r.SeverityNumber()),
@@ -119,7 +123,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 func attributesToMap(attributes pcommon.Map) map[string]string {
 	m := make(map[string]string, attributes.Len())
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		m[k] = v.Str()
+		m[k] = v.AsString()
 		return true
 	})
 	return m
@@ -181,16 +185,26 @@ var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
-	return sql.Open(driverName, cfg.DSN)
+	dsn, err := cfg.buildDSN(cfg.Database)
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open(driverName, dsn)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
-func createDatabase(cfg *Config) error {
-	database, _ := parseDSNDatabase(cfg.DSN)
-	if database == defaultDatabase {
+func createDatabase(ctx context.Context, cfg *Config) error {
+	if cfg.Database == defaultDatabase {
 		return nil
 	}
 	// use default database to create new database
-	dsnUseDefaultDatabase := strings.Replace(cfg.DSN, database, defaultDatabase, 1)
+	dsnUseDefaultDatabase, err := cfg.buildDSN(defaultDatabase)
+	if err != nil {
+		return err
+	}
 	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
 	if err != nil {
 		return fmt.Errorf("sql.Open:%w", err)
@@ -198,16 +212,16 @@ func createDatabase(cfg *Config) error {
 	defer func() {
 		_ = db.Close()
 	}()
-	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", database)
-	_, err = db.Exec(query)
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database)
+	_, err = db.ExecContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)
 	}
 	return nil
 }
 
-func createLogsTable(cfg *Config, db *sql.DB) error {
-	if _, err := db.Exec(renderCreateLogsTableSQL(cfg)); err != nil {
+func createLogsTable(ctx context.Context, cfg *Config, db *sql.DB) error {
+	if _, err := db.ExecContext(ctx, renderCreateLogsTableSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create logs table sql: %w", err)
 	}
 	return nil

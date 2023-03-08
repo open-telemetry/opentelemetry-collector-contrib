@@ -28,6 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -96,10 +98,10 @@ func TestLogRecordToEnvelope(t *testing.T) {
 			assert.Equal(t, messageData.Message, logRecord.Body().Str())
 			assert.Equal(t, messageData.SeverityLevel, contracts.Information)
 
-			hexTraceID := logRecord.TraceID().HexString()
+			hexTraceID := traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID())
 			assert.Equal(t, envelope.Tags[contracts.OperationId], hexTraceID)
 
-			hexSpanID := logRecord.SpanID().HexString()
+			hexSpanID := traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID())
 			assert.Equal(t, envelope.Tags[contracts.OperationParentId], hexSpanID)
 		})
 	}

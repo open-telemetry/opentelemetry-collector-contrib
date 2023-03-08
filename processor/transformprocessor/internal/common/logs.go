@@ -22,14 +22,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
 var _ consumer.Logs = &logStatements{}
 
-type logStatements []*ottl.Statement[ottllogs.TransformContext]
+type logStatements struct {
+	ottl.Statements[ottllog.TransformContext]
+}
 
 func (l logStatements) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
@@ -44,12 +46,10 @@ func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				tCtx := ottllogs.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
-				for _, statement := range l {
-					_, _, err := statement.Execute(ctx, tCtx)
-					if err != nil {
-						return err
-					}
+				tCtx := ottllog.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
+				err := l.Execute(ctx, tCtx)
+				if err != nil {
+					return err
 				}
 			}
 		}
@@ -59,19 +59,45 @@ func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 type LogParserCollection struct {
 	parserCollection
-	logParser ottl.Parser[ottllogs.TransformContext]
+	logParser ottl.Parser[ottllog.TransformContext]
+	errorMode ottl.ErrorMode
 }
 
 type LogParserCollectionOption func(*LogParserCollection) error
 
-func NewLogParserCollection(functions map[string]interface{}, settings component.TelemetrySettings, options ...LogParserCollectionOption) (*LogParserCollection, error) {
+func WithLogParser(functions map[string]interface{}) LogParserCollectionOption {
+	return func(lp *LogParserCollection) error {
+		logParser, err := ottllog.NewParser(functions, lp.settings)
+		if err != nil {
+			return err
+		}
+		lp.logParser = logParser
+		return nil
+	}
+}
+
+func WithLogErrorMode(errorMode ottl.ErrorMode) LogParserCollectionOption {
+	return func(lp *LogParserCollection) error {
+		lp.errorMode = errorMode
+		return nil
+	}
+}
+
+func NewLogParserCollection(settings component.TelemetrySettings, options ...LogParserCollectionOption) (*LogParserCollection, error) {
+	rp, err := ottlresource.NewParser(ResourceFunctions(), settings)
+	if err != nil {
+		return nil, err
+	}
+	sp, err := ottlscope.NewParser(ScopeFunctions(), settings)
+	if err != nil {
+		return nil, err
+	}
 	lpc := &LogParserCollection{
 		parserCollection: parserCollection{
 			settings:       settings,
-			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
-			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
+			resourceParser: rp,
+			scopeParser:    sp,
 		},
-		logParser: ottllogs.NewParser(functions, settings),
 	}
 
 	for _, op := range options {
@@ -87,11 +113,12 @@ func NewLogParserCollection(functions map[string]interface{}, settings component
 func (pc LogParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Logs, error) {
 	switch contextStatements.Context {
 	case Log:
-		lStatements, err := pc.logParser.ParseStatements(contextStatements.Statements)
+		parsedStatements, err := pc.logParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		return logStatements(lStatements), nil
+		lStatements := ottllog.NewStatements(parsedStatements, pc.settings, ottllog.WithErrorMode(pc.errorMode))
+		return logStatements{lStatements}, nil
 	default:
 		statements, err := pc.parseCommonContextStatements(contextStatements)
 		if err != nil {

@@ -24,8 +24,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
@@ -47,7 +47,7 @@ type Detector struct {
 	logger           *zap.Logger
 }
 
-func NewDetector(set component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	sess, err := session.NewSession()
 	if err != nil {

@@ -24,14 +24,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 type spanProcessor struct {
 	config           Config
 	toAttributeRules []toAttributeRule
-	include          filterspan.Matcher
-	exclude          filterspan.Matcher
+	skipExpr         expr.BoolExpr[ottlspan.TransformContext]
 }
 
 // toAttributeRule is the compiled equivalent of config.ToAttributes field.
@@ -45,19 +46,14 @@ type toAttributeRule struct {
 
 // newSpanProcessor returns the span processor.
 func newSpanProcessor(config Config) (*spanProcessor, error) {
-	include, err := filterspan.NewMatcher(config.Include)
-	if err != nil {
-		return nil, err
-	}
-	exclude, err := filterspan.NewMatcher(config.Exclude)
+	skipExpr, err := filterspan.NewSkipExpr(&config.MatchConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	sp := &spanProcessor{
-		config:  config,
-		include: include,
-		exclude: exclude,
+		config:   config,
+		skipExpr: skipExpr,
 	}
 
 	// Compile ToAttributes regexp and extract attributes names.
@@ -81,7 +77,7 @@ func newSpanProcessor(config Config) (*spanProcessor, error) {
 	return sp, nil
 }
 
-func (sp *spanProcessor) processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (sp *spanProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -90,15 +86,21 @@ func (sp *spanProcessor) processTraces(_ context.Context, td ptrace.Traces) (ptr
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			spans := ils.Spans()
-			library := ils.Scope()
+			scope := ils.Scope()
 			for k := 0; k < spans.Len(); k++ {
-				s := spans.At(k)
-				if filterspan.SkipSpan(sp.include, sp.exclude, s, resource, library) {
-					continue
+				span := spans.At(k)
+				if sp.skipExpr != nil {
+					skip, err := sp.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
+					if err != nil {
+						return td, err
+					}
+					if skip {
+						continue
+					}
 				}
-				sp.processFromAttributes(s)
-				sp.processToAttributes(s)
-				sp.processUpdateStatus(s)
+				sp.processFromAttributes(span)
+				sp.processToAttributes(span)
+				sp.processUpdateStatus(span)
 			}
 		}
 	}

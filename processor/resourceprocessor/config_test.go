@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
@@ -32,18 +31,19 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ProcessorConfig
+		expected component.Config
+		valid    bool
 	}{
 		{
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				AttributesActions: []attraction.ActionKeyValue{
 					{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
 					{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
 					{Key: "redundant-attribute", Action: attraction.DELETE},
 				},
 			},
+			valid: true,
 		},
 		{
 			id:       component.NewIDWithName(typeStr, "invalid"),
@@ -61,9 +61,13 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			if tt.valid {
+				assert.NoError(t, component.ValidateConfig(cfg))
+			} else {
+				assert.Error(t, component.ValidateConfig(cfg))
+			}
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

@@ -21,11 +21,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 func TestLoadingConfig(t *testing.T) {
@@ -33,12 +32,11 @@ func TestLoadingConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ProcessorConfig
+		expected component.Config
 	}{
 		{
 			id: component.NewIDWithName("span", "custom"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID("span")),
 				Rename: Name{
 					FromAttributes: []string{"db.svc", "operation", "id"},
 					Separator:      "::",
@@ -48,7 +46,6 @@ func TestLoadingConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName("span", "no-separator"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID("span")),
 				Rename: Name{
 					FromAttributes: []string{"db.svc", "operation", "id"},
 					Separator:      "",
@@ -58,7 +55,6 @@ func TestLoadingConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName("span", "to_attributes"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID("span")),
 				Rename: Name{
 					ToAttributes: &ToAttributes{
 						Rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
@@ -69,7 +65,6 @@ func TestLoadingConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName("span", "includeexclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID("span")),
 				MatchConfig: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{
 						Config:    *createMatchConfig(filterset.Regexp),
@@ -92,7 +87,6 @@ func TestLoadingConfig(t *testing.T) {
 			// Set name
 			id: component.NewIDWithName("span", "set_status_err"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID("span")),
 				SetStatus: &Status{
 					Code:        "Error",
 					Description: "some additional error description",
@@ -102,7 +96,6 @@ func TestLoadingConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName("span", "set_status_ok"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID("span")),
 				MatchConfig: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{
 						Attributes: []filterconfig.Attribute{
@@ -126,9 +119,9 @@ func TestLoadingConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

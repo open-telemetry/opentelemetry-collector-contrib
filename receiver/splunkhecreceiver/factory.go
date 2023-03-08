@@ -18,12 +18,12 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -40,18 +40,17 @@ const (
 )
 
 // NewFactory creates a factory for Splunk HEC receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability),
-		component.WithLogsReceiver(createLogsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithLogs(createLogsReceiver, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -62,40 +61,49 @@ func createDefaultConfig() component.ReceiverConfig {
 			Index:      splunk.DefaultIndexLabel,
 			Host:       conventions.AttributeHostName,
 		},
-		RawPath: splunk.DefaultRawPath,
+		RawPath:    splunk.DefaultRawPath,
+		HealthPath: splunk.DefaultHealthPath,
 	}
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	params receiver.CreateSettings,
+	cfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
-
+) (receiver.Metrics, error) {
+	var err error
+	var recv receiver.Metrics
 	rCfg := cfg.(*Config)
-
-	if rCfg.Path != "" {
-		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		recv, err = newMetricsReceiver(params, *rCfg, consumer)
+		return recv
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	return newMetricsReceiver(params, *rCfg, consumer)
+	return r, nil
 }
 
 // createLogsReceiver creates a logs receiver based on provided config.
 func createLogsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	params receiver.CreateSettings,
+	cfg component.Config,
 	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
-
+) (receiver.Logs, error) {
+	var err error
+	var recv receiver.Logs
 	rCfg := cfg.(*Config)
-
-	if rCfg.Path != "" {
-		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		recv, err = newLogsReceiver(params, *rCfg, consumer)
+		return recv
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	return newLogsReceiver(params, *rCfg, consumer)
+	return r, nil
 }
+
+var receivers = sharedcomponent.NewSharedComponents()

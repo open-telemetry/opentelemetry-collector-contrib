@@ -391,3 +391,15 @@ func Test_serializeSum(t *testing.T) {
 		})
 	})
 }
+
+func Test_convertTotalCounterToDelta_notMutating(t *testing.T) {
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetIntValue(5)
+	dp.Attributes().PutStr("attr2", "val2")
+	dp.Attributes().PutStr("attr1", "val1")
+	orig := pmetric.NewNumberDataPoint()
+	dp.CopyTo(orig)
+	_, err := convertTotalCounterToDelta("m", "prefix", dimensions.NormalizedDimensionList{}, dp, ttlmap.New(1, 1))
+	assert.NoError(t, err)
+	assert.Equal(t, orig, dp) // make sure the original data point is not mutated
+}

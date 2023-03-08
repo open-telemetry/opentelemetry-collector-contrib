@@ -15,7 +15,6 @@
 package alibabacloudlogserviceexporter
 
 import (
-	"reflect"
 	"sort"
 	"testing"
 
@@ -137,9 +136,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	for j := 0; j < len(gotLogs); j++ {
 		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
 		sort.Sort(logKeyValuePairs(wantLogs[j]))
-		if !reflect.DeepEqual(gotLogPairs[j], wantLogs[j]) {
-			t.Errorf("Unsuccessful conversion \nGot:\n\t%v\nWant:\n\t%v", gotLogPairs, wantLogs)
-		}
+		assert.Equal(t, wantLogs[j], gotLogPairs[j])
 	}
 }
 

@@ -14,10 +14,7 @@
 
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
-import "go.opentelemetry.io/collector/config"
-
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
 	// Azure Blob Storage connection key,
 	// which can be found in the Azure Blob Storage resource on the Azure Portal. (no default)
 	ConnectionString string `mapstructure:"connection_string"`

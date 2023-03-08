@@ -19,12 +19,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 type mockMetaDataProvider struct {
@@ -60,14 +59,14 @@ func (md *mockMetaDataProvider) FetchContainerMetadata() (*ecsutil.ContainerMeta
 
 func Test_ecsNewDetector(t *testing.T) {
 	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
-	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
+	d, err := NewDetector(processortest.NewNopCreateSettings(), nil)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, d)
 }
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
-	d, _ := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
+	d, _ := NewDetector(processortest.NewNopCreateSettings(), nil)
 	res, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
@@ -121,7 +120,7 @@ func Test_ecsDetectV4(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.NotNil(t, got)
-	assert.Equal(t, internal.AttributesToMap(want.Attributes()), internal.AttributesToMap(got.Attributes()))
+	assert.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
 }
 
 func Test_ecsDetectV3(t *testing.T) {
@@ -144,7 +143,7 @@ func Test_ecsDetectV3(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.NotNil(t, got)
-	assert.Equal(t, internal.AttributesToMap(want.Attributes()), internal.AttributesToMap(got.Attributes()))
+	assert.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
 }
 
 func createTestContainer(isV4 bool) ecsutil.ContainerMetadata {

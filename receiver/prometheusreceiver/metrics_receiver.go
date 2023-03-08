@@ -35,6 +35,8 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
@@ -55,19 +57,21 @@ type pReceiver struct {
 	configLoaded        chan struct{}
 	loadConfigOnce      sync.Once
 
-	settings         component.ReceiverCreateSettings
+	settings         receiver.CreateSettings
+	registry         *featuregate.Registry
 	scrapeManager    *scrape.Manager
 	discoveryManager *discovery.Manager
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(set component.ReceiverCreateSettings, cfg *Config, next consumer.Metrics) *pReceiver {
+func newPrometheusReceiver(set receiver.CreateSettings, cfg *Config, next consumer.Metrics, registry *featuregate.Registry) *pReceiver {
 	pr := &pReceiver{
 		cfg:                 cfg,
 		consumer:            next,
 		settings:            set,
 		configLoaded:        make(chan struct{}),
 		targetAllocatorStop: make(chan struct{}),
+		registry:            registry,
 	}
 	return pr
 }
@@ -264,15 +268,19 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 		}
 	}
 
-	store := internal.NewAppendable(
+	store, err := internal.NewAppendable(
 		r.consumer,
 		r.settings,
 		gcInterval(r.cfg.PrometheusConfig),
 		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
-		r.cfg.ID(),
+		useCreatedMetricGate.IsEnabled(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
+		r.registry,
 	)
+	if err != nil {
+		return err
+	}
 	r.scrapeManager = scrape.NewManager(&scrape.Options{PassMetadataInContext: true}, logger, store)
 
 	go func() {
@@ -305,8 +313,12 @@ func gcInterval(cfg *config.Config) time.Duration {
 
 // Shutdown stops and cancels the underlying Prometheus scrapers.
 func (r *pReceiver) Shutdown(context.Context) error {
-	r.cancelFunc()
-	r.scrapeManager.Stop()
+	if r.cancelFunc != nil {
+		r.cancelFunc()
+	}
+	if r.scrapeManager != nil {
+		r.scrapeManager.Stop()
+	}
 	close(r.targetAllocatorStop)
 	return nil
 }

@@ -36,7 +36,7 @@ receivers:
   vcenter:
     endpoint: http://localhost:15672
     username: otelu
-    password: $VCENTER_PASSWORD
+    password: ${env:VCENTER_PASSWORD}
     collection_interval: 5m
     metrics: []
 ```

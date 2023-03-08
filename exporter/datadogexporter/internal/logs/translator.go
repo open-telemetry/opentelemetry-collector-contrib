@@ -21,10 +21,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -121,13 +121,13 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, logger *zap.Logger) data
 		}
 		return true
 	})
-	if !lr.TraceID().IsEmpty() {
-		l.AdditionalProperties[ddTraceID] = strconv.FormatUint(traceIDToUint64(lr.TraceID()), 10)
-		l.AdditionalProperties[otelTraceID] = lr.TraceID().HexString()
+	if traceID := lr.TraceID(); !traceID.IsEmpty() {
+		l.AdditionalProperties[ddTraceID] = strconv.FormatUint(traceIDToUint64(traceID), 10)
+		l.AdditionalProperties[otelTraceID] = hex.EncodeToString(traceID[:])
 	}
-	if !lr.SpanID().IsEmpty() {
-		l.AdditionalProperties[ddSpanID] = strconv.FormatUint(spanIDToUint64(lr.SpanID()), 10)
-		l.AdditionalProperties[otelSpanID] = lr.SpanID().HexString()
+	if spanID := lr.SpanID(); !spanID.IsEmpty() {
+		l.AdditionalProperties[ddSpanID] = strconv.FormatUint(spanIDToUint64(spanID), 10)
+		l.AdditionalProperties[otelSpanID] = hex.EncodeToString(spanID[:])
 	}
 
 	// we want to use the serverity that client has set on the log and let Datadog backend

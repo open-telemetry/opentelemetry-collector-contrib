@@ -26,8 +26,8 @@ import (
 	"regexp"
 	"strings"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -48,7 +48,7 @@ var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct{}
 
-func NewDetector(component.ProcessorCreateSettings, internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(processor.CreateSettings, internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{}, nil
 }
 

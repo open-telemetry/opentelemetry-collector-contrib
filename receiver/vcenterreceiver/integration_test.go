@@ -30,10 +30,11 @@ import (
 	"github.com/vmware/govmomi/vim25"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
@@ -43,11 +44,11 @@ func TestEndtoEnd_ESX(t *testing.T) {
 			TLSClientSetting: configtls.TLSClientSetting{
 				Insecure: true,
 			},
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		}
 		s := session.NewManager(c)
 
-		scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
+		scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, receivertest.NewNopCreateSettings())
 		scraper.client.moClient = &govmomi.Client{
 			Client:         c,
 			SessionManager: s,
@@ -76,7 +77,7 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		goldenPath := filepath.Join("testdata", "metrics", "integration-metrics.json")
 		expectedMetrics, err := golden.ReadMetrics(goldenPath)
 		require.NoError(t, err)
-		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, metrics, scrapertest.IgnoreMetricValues()))
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreMetricValues()))
 
 		err = scraper.Shutdown(ctx)
 		require.NoError(t, err)

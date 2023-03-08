@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -32,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id          component.ID
-		expected    component.ExtensionConfig
+		expected    component.Config
 		expectedErr string
 	}{
 		{
@@ -42,20 +41,18 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "own-node-only"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-				Node:              "node-1",
-				APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-				ObservePods:       true,
+				Node:        "node-1",
+				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+				ObservePods: true,
 			},
 		},
 		{
 			id: component.NewIDWithName(typeStr, "observe-all"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-				Node:              "",
-				APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
-				ObservePods:       true,
-				ObserveNodes:      true,
+				Node:         "",
+				APIConfig:    k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
+				ObservePods:  true,
+				ObserveNodes: true,
 			},
 		},
 		{
@@ -75,12 +72,12 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 			if tt.expectedErr != "" {
-				assert.EqualError(t, cfg.Validate(), tt.expectedErr)
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

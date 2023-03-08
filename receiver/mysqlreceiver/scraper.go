@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -38,17 +39,22 @@ type mySQLScraper struct {
 	logger    *zap.Logger
 	config    *Config
 	mb        *metadata.MetricsBuilder
+
+	// Feature gates regarding resource attributes
+	renameCommands bool
 }
 
 func newMySQLScraper(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config *Config,
 ) *mySQLScraper {
-	return &mySQLScraper{
+	ms := &mySQLScraper{
 		logger: settings.Logger,
 		config: config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
+
+	return ms
 }
 
 // start starts the scraper by initializing the db client connection.
@@ -105,6 +111,9 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	// collect global status metrics.
 	m.scrapeGlobalStats(now, errs)
+
+	// colect replicas status metrics.
+	m.scrapeReplicaStatusStats(now, errs)
 
 	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
 
@@ -188,20 +197,39 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Connection_errors_tcpwrap":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorTcpwrap))
+		// connection
+		case "Connections":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionCountDataPoint(now, v))
+
+		// prepared_statements_commands
+		case "Com_stmt_execute":
+			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
+				metadata.AttributePreparedStatementsCommandExecute))
+		case "Com_stmt_close":
+			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
+				metadata.AttributePreparedStatementsCommandClose))
+		case "Com_stmt_fetch":
+			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
+				metadata.AttributePreparedStatementsCommandFetch))
+		case "Com_stmt_prepare":
+			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
+				metadata.AttributePreparedStatementsCommandPrepare))
+		case "Com_stmt_reset":
+			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
+				metadata.AttributePreparedStatementsCommandReset))
+		case "Com_stmt_send_long_data":
+			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
+				metadata.AttributePreparedStatementsCommandSendLongData))
 
 		// commands
-		case "Com_stmt_execute":
-			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandExecute))
-		case "Com_stmt_close":
-			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandClose))
-		case "Com_stmt_fetch":
-			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandFetch))
-		case "Com_stmt_prepare":
-			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandPrepare))
-		case "Com_stmt_reset":
-			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandReset))
-		case "Com_stmt_send_long_data":
-			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandSendLongData))
+		case "Com_delete":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandDelete))
+		case "Com_insert":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandInsert))
+		case "Com_select":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandSelect))
+		case "Com_update":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandUpdate))
 
 		// created tmps
 		case "Created_tmp_disk_tables":
@@ -508,6 +536,26 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteLowPriority/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeWriteLockTypeLowPriority)
 		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteNormal/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeWriteLockTypeNormal)
 		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteExternal/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeWriteLockTypeExternal)
+	}
+}
+
+func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	replicaStatusStats, err := m.sqlclient.getReplicaStatusStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch replica status stats", zap.Error(err))
+		errs.AddPartial(8, err)
+		return
+	}
+
+	for i := 0; i < len(replicaStatusStats); i++ {
+		s := replicaStatusStats[i]
+
+		val, _ := s.secondsBehindSource.Value()
+		if val != nil {
+			m.mb.RecordMysqlReplicaTimeBehindSourceDataPoint(now, val.(int64))
+		}
+
+		m.mb.RecordMysqlReplicaSQLDelayDataPoint(now, s.sqlDelay)
 	}
 }
 

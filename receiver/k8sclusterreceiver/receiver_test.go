@@ -22,6 +22,7 @@ import (
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	fakeQuota "github.com/openshift/client-go/quota/clientset/versioned/fake"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -38,7 +39,7 @@ import (
 )
 
 func TestReceiver(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -88,7 +89,7 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -109,7 +110,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 }
 
 func TestReceiverWithManyResources(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -147,7 +148,7 @@ var consumeMetadataInvocation = func() {
 }
 
 func TestReceiverWithMetadata(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -164,7 +165,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 	pods := createPods(t, client, 1)
 
 	ctx := context.Background()
-	require.NoError(t, r.Start(ctx, nopHostWithExporters{}))
+	require.NoError(t, r.Start(ctx, newNopHostWithExporters()))
 
 	// Mock an update on the Pod object. It appears that the fake clientset
 	// does not pass on events for updates to resources.

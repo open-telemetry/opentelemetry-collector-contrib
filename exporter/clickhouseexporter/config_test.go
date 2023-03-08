@@ -19,15 +19,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const defaultDSN = "tcp://127.0.0.1:9000/otel"
+const defaultEndpoint = "tcp://127.0.0.1:9000"
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -36,11 +36,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultCfg := createDefaultConfig()
-	defaultCfg.(*Config).DSN = defaultDSN
+	defaultCfg.(*Config).Endpoint = defaultEndpoint
 
 	tests := []struct {
 		id       component.ID
-		expected component.ExporterConfig
+		expected component.Config
 	}{
 
 		{
@@ -50,19 +50,28 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "full"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				DSN:              defaultDSN,
+				Endpoint: defaultEndpoint,
+				Database: "otel",
+				Username: "foo",
+				Password: "bar",
+				ConnectionParams: map[string]string{
+					"compression":  "zstd",
+					"dial_timeout": "5s",
+				},
 				TTLDays:          3,
 				LogsTableName:    "otel_logs",
 				TracesTableName:  "otel_traces",
+				MetricsTableName: "otel_metrics",
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 5 * time.Second,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 5 * time.Second,
-					MaxInterval:     30 * time.Second,
-					MaxElapsedTime:  300 * time.Second,
+					Enabled:             true,
+					InitialInterval:     5 * time.Second,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      300 * time.Second,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: QueueSettings{
 					QueueSize: 100,
@@ -78,9 +87,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -92,4 +101,62 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 		fn(cfg)
 	}
 	return cfg
+}
+
+func TestConfig_buildDSN(t *testing.T) {
+	type fields struct {
+		Endpoint string
+		Username string
+		Password string
+		Database string
+		Params   map[string]string
+	}
+	type args struct {
+		database string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    string
+		wantErr error
+	}{
+		{
+			name: "valid config",
+			fields: fields{
+				Endpoint: defaultEndpoint,
+				Username: "foo",
+				Password: "bar",
+				Database: "otel",
+				Params: map[string]string{
+					"compression": "zstd",
+				},
+			},
+			args: args{
+				database: defaultDatabase,
+			},
+			want: "tcp://foo:bar@127.0.0.1:9000/default?compression=zstd",
+		},
+		{
+			name: "invalid config",
+			fields: fields{
+				Endpoint: "127.0.0.1:9000",
+			},
+			wantErr: errConfigInvalidEndpoint,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Endpoint:         tt.fields.Endpoint,
+				Username:         tt.fields.Username,
+				Password:         tt.fields.Password,
+				Database:         tt.fields.Database,
+				ConnectionParams: tt.fields.Params,
+			}
+			got, err := cfg.buildDSN(tt.args.database)
+			assert.Equalf(t, tt.wantErr, err, "buildDSN(%v)", tt.args.database)
+			assert.Equalf(t, tt.want, got, "buildDSN(%v)", tt.args.database)
+		})
+	}
 }

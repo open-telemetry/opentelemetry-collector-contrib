@@ -43,6 +43,7 @@
 package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 
 import (
+	"encoding/hex"
 	"io"
 	"math"
 	"sort"
@@ -97,11 +98,6 @@ const tsLayout = "2006-01-02T15:04:05.000000000Z"
 var nilValue = Value{kind: KindNil}
 var ignoreValue = Value{kind: KindIgnore}
 
-type idValue interface {
-	IsEmpty() bool
-	HexString() string
-}
-
 // DocumentFromAttributes creates a document from a OpenTelemetry attribute
 // map. All nested maps will be flattened, with keys being joined using a `.` symbol.
 func DocumentFromAttributes(am pcommon.Map) Document {
@@ -139,11 +135,19 @@ func (doc *Document) AddString(key string, v string) {
 	}
 }
 
-// AddID adds the hex presentation of an id value to the document. If the ID
+// AddSpanID adds the hex presentation of a SpanID to the document. If the SpanID
 // is empty, no value will be added.
-func (doc *Document) AddID(key string, id idValue) {
+func (doc *Document) AddSpanID(key string, id pcommon.SpanID) {
 	if !id.IsEmpty() {
-		doc.AddString(key, id.HexString())
+		doc.AddString(key, hex.EncodeToString(id[:]))
+	}
+}
+
+// AddTraceID adds the hex presentation of a TraceID value to the document. If the TraceID
+// is empty, no value will be added.
+func (doc *Document) AddTraceID(key string, id pcommon.TraceID) {
+	if !id.IsEmpty() {
+		doc.AddString(key, hex.EncodeToString(id[:]))
 	}
 }
 

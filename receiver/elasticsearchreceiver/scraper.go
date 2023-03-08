@@ -22,8 +22,10 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
@@ -41,6 +43,19 @@ var (
 	}()
 )
 
+const (
+	readmeURL = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md"
+)
+
+var (
+	emitNodeVersionAttr = featuregate.GlobalRegistry().MustRegister(
+		"receiver.elasticsearch.emitNodeVersionAttr",
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, all node metrics will be enriched with the node version resource attribute."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16847"),
+	)
+)
+
 var errUnknownClusterStatus = errors.New("unknown cluster status")
 
 type elasticsearchScraper struct {
@@ -50,17 +65,29 @@ type elasticsearchScraper struct {
 	mb          *metadata.MetricsBuilder
 	version     *version.Version
 	clusterName string
+
+	// Feature gates
+	emitNodeVersionAttr bool
 }
 
 func newElasticSearchScraper(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	cfg *Config,
 ) *elasticsearchScraper {
-	return &elasticsearchScraper{
-		settings: settings.TelemetrySettings,
-		cfg:      cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+	e := &elasticsearchScraper{
+		settings:            settings.TelemetrySettings,
+		cfg:                 cfg,
+		mb:                  metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		emitNodeVersionAttr: emitNodeVersionAttr.IsEnabled(),
 	}
+
+	if !e.emitNodeVersionAttr {
+		settings.Logger.Warn(
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", emitNodeVersionAttr.ID(), readmeURL),
+		)
+	}
+
+	return e
 }
 
 func (r *elasticsearchScraper) start(_ context.Context, host component.Host) (err error) {
@@ -112,7 +139,18 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		return
 	}
 
-	for _, info := range nodeStats.Nodes {
+	var nodesInfo *model.Nodes
+	if r.emitNodeVersionAttr {
+		// Certain node metadata is not available from the /_nodes/stats endpoint. Therefore, we need to get this metadata
+		// from the /_nodes endpoint. The metadata may or may not be used depending on feature gates.
+		nodesInfo, err = r.client.Nodes(ctx, r.cfg.Nodes)
+		if err != nil {
+			errs.AddPartial(26, err)
+			return
+		}
+	}
+
+	for id, info := range nodeStats.Nodes {
 		r.mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(now, info.Indices.FieldDataCache.MemorySizeInBy, metadata.AttributeCacheNameFielddata)
 		r.mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(now, info.Indices.QueryCache.MemorySizeInBy, metadata.AttributeCacheNameQuery)
 
@@ -121,6 +159,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 
 		r.mb.RecordElasticsearchNodeCacheCountDataPoint(now, info.Indices.QueryCache.HitCount, metadata.AttributeQueryCacheCountTypeHit)
 		r.mb.RecordElasticsearchNodeCacheCountDataPoint(now, info.Indices.QueryCache.MissCount, metadata.AttributeQueryCacheCountTypeMiss)
+
+		r.mb.RecordElasticsearchNodeCacheSizeDataPoint(now, info.Indices.QueryCache.MemorySizeInBy)
 
 		r.mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(now, info.FS.Total.AvailableBytes)
 		r.mb.RecordElasticsearchNodeFsDiskFreeDataPoint(now, info.FS.Total.FreeBytes)
@@ -135,6 +175,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeClusterConnectionsDataPoint(now, info.TransportStats.OpenConnections)
 
 		r.mb.RecordElasticsearchNodeHTTPConnectionsDataPoint(now, info.HTTPStats.OpenConnections)
+
+		r.mb.RecordElasticsearchNodeOperationsCurrentDataPoint(now, info.Indices.SearchOperations.QueryCurrent, metadata.AttributeOperationQuery)
 
 		r.mb.RecordElasticsearchNodeOperationsCompletedDataPoint(now, info.Indices.IndexingOperations.IndexTotal, metadata.AttributeOperationIndex)
 		r.mb.RecordElasticsearchNodeOperationsCompletedDataPoint(now, info.Indices.IndexingOperations.DeleteTotal, metadata.AttributeOperationDelete)
@@ -205,6 +247,17 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchOsCPULoadAvg1mDataPoint(now, info.OS.CPU.LoadAvg.OneMinute)
 		r.mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(now, info.OS.CPU.LoadAvg.FiveMinutes)
 		r.mb.RecordElasticsearchOsCPULoadAvg15mDataPoint(now, info.OS.CPU.LoadAvg.FifteenMinutes)
+
+		// Elasticsearch sends this data in percent, but we want to represent it as a number between 0 and 1, so we need to divide.
+		// Additionally, if the usage is not known, ES will send '-1'. We do not want to report the metric in this case.
+		if info.ProcessStats.CPU.Percent != -1 {
+			r.mb.RecordElasticsearchProcessCPUUsageDataPoint(now, float64(info.ProcessStats.CPU.Percent)/100)
+		}
+		if info.ProcessStats.CPU.TotalInMs != -1 {
+			r.mb.RecordElasticsearchProcessCPUTimeDataPoint(now, info.ProcessStats.CPU.TotalInMs)
+		}
+
+		r.mb.RecordElasticsearchProcessMemoryVirtualDataPoint(now, info.ProcessStats.Memory.TotalVirtualInBy)
 
 		r.mb.RecordElasticsearchOsMemoryDataPoint(now, info.OS.Memory.UsedInBy, metadata.AttributeMemoryStateUsed)
 		r.mb.RecordElasticsearchOsMemoryDataPoint(now, info.OS.Memory.FreeInBy, metadata.AttributeMemoryStateFree)
@@ -285,8 +338,32 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeScriptCompilationsDataPoint(now, info.Script.Compilations)
 		r.mb.RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(now, info.Script.CompilationLimitTriggered)
 
-		r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
-			metadata.WithElasticsearchNodeName(info.Name))
+		r.mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(
+			now, info.Indices.SegmentsStats.DocumentValuesMemoryInBy, metadata.AttributeSegmentsMemoryObjectTypeDocValue,
+		)
+		r.mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(
+			now, info.Indices.SegmentsStats.FixedBitSetMemoryInBy, metadata.AttributeSegmentsMemoryObjectTypeFixedBitSet,
+		)
+		r.mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(
+			now, info.Indices.SegmentsStats.IndexWriterMemoryInBy, metadata.AttributeSegmentsMemoryObjectTypeIndexWriter,
+		)
+		r.mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(
+			now, info.Indices.SegmentsStats.TermsMemoryInBy, metadata.AttributeSegmentsMemoryObjectTypeTerm,
+		)
+
+		// Define nodeMetadata slice to store all metadata. New metadata can be easily introduced by appending to the slice.
+		nodeMetadata := []metadata.ResourceMetricsOption{
+			metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
+			metadata.WithElasticsearchNodeName(info.Name),
+		}
+
+		if r.emitNodeVersionAttr {
+			if node, ok := nodesInfo.Nodes[id]; ok {
+				nodeMetadata = append(nodeMetadata, metadata.WithElasticsearchNodeVersion(node.Version))
+			}
+		}
+
+		r.mb.EmitForResource(nodeMetadata...)
 	}
 }
 
@@ -295,6 +372,34 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 		return
 	}
 
+	r.scrapeClusterHealthMetrics(ctx, now, errs)
+	r.scrapeClusterStatsMetrics(ctx, now, errs)
+
+	r.mb.EmitForResource(metadata.WithElasticsearchClusterName(r.clusterName))
+}
+
+func (r *elasticsearchScraper) scrapeClusterStatsMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	if len(r.cfg.Nodes) == 0 {
+		return
+	}
+
+	clusterStats, err := r.client.ClusterStats(ctx, r.cfg.Nodes)
+	if err != nil {
+		errs.AddPartial(3, err)
+		return
+	}
+
+	r.mb.RecordJvmMemoryHeapUsedDataPoint(now, clusterStats.NodesStats.JVMInfo.JVMMemoryInfo.HeapUsedInBy)
+
+	r.mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(
+		now, clusterStats.IndicesStats.FieldDataCache.Evictions, metadata.AttributeCacheNameFielddata,
+	)
+	r.mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(
+		now, clusterStats.IndicesStats.QueryCache.Evictions, metadata.AttributeCacheNameQuery,
+	)
+}
+
+func (r *elasticsearchScraper) scrapeClusterHealthMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	clusterHealth, err := r.client.ClusterHealth(ctx)
 	if err != nil {
 		errs.AddPartial(4, err)
@@ -309,6 +414,8 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.InitializingShards, metadata.AttributeShardStateInitializing)
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.RelocatingShards, metadata.AttributeShardStateRelocating)
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.UnassignedShards, metadata.AttributeShardStateUnassigned)
+	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.ActivePrimaryShards, metadata.AttributeShardStateActivePrimary)
+	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.DelayedUnassignedShards, metadata.AttributeShardStateUnassignedDelayed)
 
 	r.mb.RecordElasticsearchClusterPendingTasksDataPoint(now, clusterHealth.PendingTasksCount)
 	r.mb.RecordElasticsearchClusterInFlightFetchDataPoint(now, clusterHealth.InFlightFetchCount)
@@ -329,8 +436,6 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 	default:
 		errs.AddPartial(1, fmt.Errorf("health status %s: %w", clusterHealth.Status, errUnknownClusterStatus))
 	}
-
-	r.mb.EmitForResource(metadata.WithElasticsearchClusterName(clusterHealth.ClusterName))
 }
 
 func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -341,7 +446,7 @@ func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pco
 	indexStats, err := r.client.IndexStats(ctx, r.cfg.Indices)
 
 	if err != nil {
-		errs.AddPartial(16, err)
+		errs.AddPartial(63, err)
 		return
 	}
 
@@ -360,6 +465,67 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
 		now, stats.Total.SearchOperations.QueryTotal, metadata.AttributeOperationQuery, metadata.AttributeIndexAggregationTypeTotal,
 	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.IndexingOperations.IndexTotal, metadata.AttributeOperationIndex, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.IndexingOperations.DeleteTotal, metadata.AttributeOperationDelete, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.GetOperation.Total, metadata.AttributeOperationGet, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.SearchOperations.ScrollTotal, metadata.AttributeOperationScroll, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.SearchOperations.SuggestTotal, metadata.AttributeOperationSuggest, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.MergeOperations.Total, metadata.AttributeOperationMerge, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.RefreshOperations.Total, metadata.AttributeOperationRefresh, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.FlushOperations.Total, metadata.AttributeOperationFlush, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Total.WarmerOperations.Total, metadata.AttributeOperationWarmer, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Primaries.SearchOperations.FetchTotal, metadata.AttributeOperationFetch, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Primaries.SearchOperations.QueryTotal, metadata.AttributeOperationQuery, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Primaries.IndexingOperations.IndexTotal, metadata.AttributeOperationIndex, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Primaries.IndexingOperations.DeleteTotal, metadata.AttributeOperationDelete, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Primaries.GetOperation.Total, metadata.AttributeOperationGet, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Primaries.SearchOperations.ScrollTotal, metadata.AttributeOperationScroll, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Primaries.SearchOperations.SuggestTotal, metadata.AttributeOperationSuggest, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Primaries.MergeOperations.Total, metadata.AttributeOperationMerge, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Primaries.RefreshOperations.Total, metadata.AttributeOperationRefresh, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Primaries.FlushOperations.Total, metadata.AttributeOperationFlush, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsCompletedDataPoint(
+		now, stats.Primaries.WarmerOperations.Total, metadata.AttributeOperationWarmer, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
 
 	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
 		now, stats.Total.SearchOperations.FetchTimeInMs, metadata.AttributeOperationFetch, metadata.AttributeIndexAggregationTypeTotal,
@@ -368,7 +534,65 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 		now, stats.Total.SearchOperations.QueryTimeInMs, metadata.AttributeOperationQuery, metadata.AttributeIndexAggregationTypeTotal,
 	)
 	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Total.IndexingOperations.IndexTimeInMs, metadata.AttributeOperationIndex, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Total.IndexingOperations.DeleteTimeInMs, metadata.AttributeOperationDelete, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Total.GetOperation.TotalTimeInMs, metadata.AttributeOperationGet, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Total.SearchOperations.ScrollTimeInMs, metadata.AttributeOperationScroll, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Total.SearchOperations.SuggestTimeInMs, metadata.AttributeOperationSuggest, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
 		now, stats.Total.MergeOperations.TotalTimeInMs, metadata.AttributeOperationMerge, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Total.RefreshOperations.TotalTimeInMs, metadata.AttributeOperationRefresh, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Total.FlushOperations.TotalTimeInMs, metadata.AttributeOperationFlush, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Total.WarmerOperations.TotalTimeInMs, metadata.AttributeOperationWarmer, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Primaries.SearchOperations.FetchTimeInMs, metadata.AttributeOperationFetch, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Primaries.SearchOperations.QueryTimeInMs, metadata.AttributeOperationQuery, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Primaries.IndexingOperations.IndexTimeInMs, metadata.AttributeOperationIndex, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Primaries.IndexingOperations.DeleteTimeInMs, metadata.AttributeOperationDelete, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Primaries.GetOperation.TotalTimeInMs, metadata.AttributeOperationGet, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Primaries.SearchOperations.ScrollTimeInMs, metadata.AttributeOperationScroll, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Primaries.SearchOperations.SuggestTimeInMs, metadata.AttributeOperationSuggest, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Primaries.MergeOperations.TotalTimeInMs, metadata.AttributeOperationMerge, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Primaries.RefreshOperations.TotalTimeInMs, metadata.AttributeOperationRefresh, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Primaries.FlushOperations.TotalTimeInMs, metadata.AttributeOperationFlush, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexOperationsTimeDataPoint(
+		now, stats.Primaries.WarmerOperations.TotalTimeInMs, metadata.AttributeOperationWarmer, metadata.AttributeIndexAggregationTypePrimaryShards,
 	)
 
 	r.mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(
@@ -450,6 +674,40 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 	)
 	r.mb.RecordElasticsearchIndexTranslogSizeDataPoint(
 		now, stats.Total.TranslogStats.SizeInBy, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(
+		now, stats.Primaries.FieldDataCache.MemorySizeInBy, metadata.AttributeCacheNameFielddata, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(
+		now, stats.Total.FieldDataCache.MemorySizeInBy, metadata.AttributeCacheNameFielddata, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(
+		now, stats.Total.QueryCache.MemorySizeInBy, metadata.AttributeCacheNameQuery, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(
+		now, stats.Primaries.QueryCache.MemorySizeInBy, metadata.AttributeCacheNameQuery, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+
+	r.mb.RecordElasticsearchIndexCacheSizeDataPoint(
+		now, stats.Primaries.QueryCache.CacheSize, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexCacheSizeDataPoint(
+		now, stats.Total.QueryCache.CacheSize, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexCacheEvictionsDataPoint(
+		now, stats.Primaries.QueryCache.Evictions, metadata.AttributeCacheNameQuery, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexCacheEvictionsDataPoint(
+		now, stats.Total.QueryCache.Evictions, metadata.AttributeCacheNameQuery, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexDocumentsDataPoint(
+		now, stats.Primaries.DocumentStats.ActiveCount, metadata.AttributeDocumentStateActive, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexDocumentsDataPoint(
+		now, stats.Total.DocumentStats.ActiveCount, metadata.AttributeDocumentStateActive, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
 	r.mb.EmitForResource(metadata.WithElasticsearchIndexName(name), metadata.WithElasticsearchClusterName(r.clusterName))

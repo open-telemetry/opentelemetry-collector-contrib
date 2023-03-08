@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 
@@ -36,8 +35,6 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for the Carbon receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-
 	confignet.NetAddr `mapstructure:",squash"`
 
 	// TCPIdleTimeout is the timout for idle TCP connections, it is ignored
@@ -64,7 +61,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	if err := protocol.LoadParserConfig(vParserCfg, cfg.Parser); err != nil {
-		return fmt.Errorf("error on %q section for %s: %w", parserConfigSection, cfg.ID().String(), err)
+		return fmt.Errorf("error on %q section: %w", parserConfigSection, err)
 	}
 
 	// Unmarshal exact to validate the config keys.

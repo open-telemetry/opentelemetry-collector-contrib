@@ -25,6 +25,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/proto"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -173,11 +174,11 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 		},
 		{
 			Key:   proto.String(traceIDField),
-			Value: proto.String(lr.TraceID().HexString()),
+			Value: proto.String(traceutil.TraceIDToHexOrEmptyString(lr.TraceID())),
 		},
 		{
 			Key:   proto.String(spanIDField),
-			Value: proto.String(lr.SpanID().HexString()),
+			Value: proto.String(traceutil.SpanIDToHexOrEmptyString(lr.SpanID())),
 		},
 	}
 

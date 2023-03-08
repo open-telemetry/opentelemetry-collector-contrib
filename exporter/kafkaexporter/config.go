@@ -20,13 +20,11 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
@@ -100,7 +98,7 @@ type MetadataRetry struct {
 	Backoff time.Duration `mapstructure:"backoff"`
 }
 
-var _ component.ExporterConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

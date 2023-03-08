@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
@@ -97,10 +98,10 @@ func TestScrape_Errors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			metricsConfig := metadata.DefaultMetricsSettings()
-			metricsConfig.SystemPagingUtilization.Enabled = true
+			metricsConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metricsConfig})
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsConfig})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}
@@ -169,10 +170,10 @@ func TestStart_Error(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			metricsConfig := metadata.DefaultMetricsSettings()
-			metricsConfig.SystemPagingUtilization.Enabled = true
+			metricsConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metricsConfig})
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsConfig})
 
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(nil, nil, nil, tc.initError)
 

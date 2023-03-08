@@ -25,21 +25,21 @@ import (
 )
 
 func TestID(t *testing.T) {
-	require.Equal(t, NewStorageID("test"), NewInMemoryStorageExtension("test").ID())
-	require.Equal(t, NewStorageID("test"), NewFileBackedStorageExtension("test", t.TempDir()).ID())
-	require.Equal(t, NewNonStorageID("test"), NewNonStorageExtension("test").ID())
+	require.Equal(t, NewStorageID("test"), NewInMemoryStorageExtension("test").ID)
+	require.Equal(t, NewStorageID("test"), NewFileBackedStorageExtension("test", t.TempDir()).ID)
+	require.Equal(t, NewNonStorageID("test"), NewNonStorageExtension("test").ID)
 }
 
 func TestInMemoryLifecycle(t *testing.T) {
 	ext := NewInMemoryStorageExtension("test")
-	require.Equal(t, component.NewIDWithName(testStorageType, "test"), ext.ID())
+	require.Equal(t, component.NewIDWithName(testStorageType, "test"), ext.ID)
 	runExtensionLifecycle(t, ext, false)
 }
 
 func TestFileBackedLifecycle(t *testing.T) {
 	dir := t.TempDir()
 	ext := NewFileBackedStorageExtension("test", dir)
-	require.Equal(t, component.NewIDWithName(testStorageType, "test"), ext.ID())
+	require.Equal(t, component.NewIDWithName(testStorageType, "test"), ext.ID)
 	runExtensionLifecycle(t, ext, true)
 }
 
@@ -52,7 +52,7 @@ func runExtensionLifecycle(t *testing.T, ext *TestStorage, expectPersistence boo
 
 	creatorID, err := CreatorID(ctx, clientOne)
 	require.NoError(t, err)
-	require.Equal(t, ext.ID(), creatorID)
+	require.Equal(t, ext.ID, creatorID)
 
 	// Write a value, confirm it is saved
 	require.NoError(t, clientOne.Set(ctx, "foo", []byte("bar")))
@@ -81,7 +81,7 @@ func runExtensionLifecycle(t *testing.T, ext *TestStorage, expectPersistence boo
 
 	creatorID, err = CreatorID(ctx, clientTwo)
 	require.NoError(t, err)
-	require.Equal(t, ext.ID(), creatorID)
+	require.Equal(t, ext.ID, creatorID)
 
 	// Check if the value is accessible from another client
 	fooVal, err = clientTwo.Get(ctx, "foo2")

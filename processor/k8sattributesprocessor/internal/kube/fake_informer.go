@@ -46,9 +46,20 @@ func NewFakeInformer(
 	}
 }
 
-func (f *FakeInformer) AddEventHandler(handler cache.ResourceEventHandler) {}
+func (f *FakeInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	return f.AddEventHandlerWithResyncPeriod(handler, time.Second)
+}
 
-func (f *FakeInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, period time.Duration) {
+func (f *FakeInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
+	return handler, nil
+}
+
+func (f *FakeInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
+	return nil
+}
+
+func (f *FakeInformer) IsStopped() bool {
+	return false
 }
 
 func (f *FakeInformer) SetTransform(handler cache.TransformFunc) error {
@@ -130,9 +141,15 @@ func NewNoOpInformer(
 	}
 }
 
-func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) {}
+func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	return f.AddEventHandlerWithResyncPeriod(handler, time.Second)
+}
+func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
+	return handler, nil
+}
 
-func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, period time.Duration) {
+func (f *NoOpInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
+	return nil
 }
 
 func (f *NoOpInformer) SetTransform(handler cache.TransformFunc) error {
@@ -157,7 +174,7 @@ func (c *NoOpController) Run(stopCh <-chan struct{}) {
 		c.hasStopped = true
 	}()
 }
-func (c *NoOpController) HasStopped() bool {
+func (c *NoOpController) IsStopped() bool {
 	return c.hasStopped
 }
 func (c *NoOpController) HasSynced() bool {

@@ -222,12 +222,8 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			assertMetricValueEqual(t, metric, "cluster_node_count", int64(1))
 		case ci.TypeClusterService:
 			assertMetricValueEqual(t, metric, "service_number_of_running_pods", int64(1))
-			if serviceTag := getStringAttrVal(metric, ci.TypeService); serviceTag != "service1" && serviceTag != "service2" {
-				assert.Fail(t, "Expect to see a tag named as Service")
-			}
-			if namespaceTag := getStringAttrVal(metric, ci.K8sNamespace); namespaceTag != "kube-system" {
-				assert.Fail(t, "Expect to see a tag named as Namespace")
-			}
+			assert.Contains(t, []string{"service1", "service2"}, getStringAttrVal(metric, ci.TypeService))
+			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
 		case ci.TypeClusterNamespace:
 			assertMetricValueEqual(t, metric, "namespace_number_of_running_pods", int64(2))
 			assert.Equal(t, "default", getStringAttrVal(metric, ci.K8sNamespace))

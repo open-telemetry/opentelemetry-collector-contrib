@@ -21,8 +21,9 @@ import (
 )
 
 type ReaderConfig struct {
-	TopMetricsQueryMaxRows int
-	BackfillEnabled        bool
+	TopMetricsQueryMaxRows            int
+	BackfillEnabled                   bool
+	HideTopnLockstatsRowrangestartkey bool
 }
 
 type Reader interface {

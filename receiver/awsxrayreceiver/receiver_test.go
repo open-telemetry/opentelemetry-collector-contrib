@@ -29,11 +29,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -66,7 +67,7 @@ func TestConsumerCantBeNil(t *testing.T) {
 			},
 		},
 		nil,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	assert.True(t, errors.Is(err, component.ErrNilNextConsumer), "consumer is nil should be detected")
 }
@@ -89,7 +90,7 @@ func TestProxyCreationFailed(t *testing.T) {
 			},
 		},
 		sink,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create TCP proxy")
 }
@@ -104,7 +105,7 @@ func TestPollerCreationFailed(t *testing.T) {
 			},
 		},
 		sink,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create UCP poller")
 }
@@ -117,7 +118,8 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	}
 	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10596")
 
-	tt, err := obsreporttest.SetupTelemetry()
+	receiverID := component.NewID("TestSegmentsPassedToConsumer")
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
@@ -125,9 +127,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
-	receiverID := component.NewID("TestSegmentsPassedToConsumer")
-
-	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverID, nil, true, tt.ToReceiverCreateSettings())
+	addr, rcvr, _ := createAndOptionallyStartReceiver(t, nil, true, tt.ToReceiverCreateSettings())
 	defer func() {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
 	}()
@@ -145,11 +145,12 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 		return len(got) == 1
 	}, 10*time.Second, 5*time.Millisecond, "consumer should eventually get the X-Ray span")
 
-	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiverID, udppoller.Transport, 18, 0))
+	assert.NoError(t, tt.CheckReceiverTraces(udppoller.Transport, 18, 0))
 }
 
 func TestTranslatorErrorsOut(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	receiverID := component.NewID("TestTranslatorErrorsOut")
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
@@ -157,9 +158,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
-	receiverID := component.NewID("TestTranslatorErrorsOut")
-
-	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID, nil, true, tt.ToReceiverCreateSettings())
+	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, nil, true, tt.ToReceiverCreateSettings())
 	defer func() {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
 	}()
@@ -173,11 +172,12 @@ func TestTranslatorErrorsOut(t *testing.T) {
 			"X-Ray segment to OT traces conversion failed")
 	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")
 
-	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiverID, udppoller.Transport, 1, 1))
+	assert.NoError(t, tt.CheckReceiverTraces(udppoller.Transport, 1, 1))
 }
 
 func TestSegmentsConsumerErrorsOut(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	receiverID := component.NewID("TestSegmentsConsumerErrorsOut")
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
@@ -185,10 +185,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
-	receiverID := component.NewID("TestSegmentsConsumerErrorsOut")
-
-	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID,
-		consumertest.NewErr(errors.New("can't consume traces")), true, tt.ToReceiverCreateSettings())
+	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, consumertest.NewErr(errors.New("can't consume traces")), true, tt.ToReceiverCreateSettings())
 	defer func() {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
 	}()
@@ -205,11 +202,11 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 			"Trace consumer errored out")
 	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")
 
-	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiverID, udppoller.Transport, 1, 1))
+	assert.NoError(t, tt.CheckReceiverTraces(udppoller.Transport, 1, 1))
 }
 
 func TestPollerCloseError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("TestPollerCloseError"))
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
@@ -217,7 +214,7 @@ func TestPollerCloseError(t *testing.T) {
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, component.NewID("TestPollerCloseError"), nil, false, tt.ToReceiverCreateSettings())
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, nil, false, tt.ToReceiverCreateSettings())
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = &mockProxy{}
@@ -226,7 +223,7 @@ func TestPollerCloseError(t *testing.T) {
 }
 
 func TestProxyCloseError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("TestPollerCloseError"))
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
@@ -234,7 +231,7 @@ func TestProxyCloseError(t *testing.T) {
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, component.NewID("TestPollerCloseError"), nil, false, tt.ToReceiverCreateSettings())
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, nil, false, tt.ToReceiverCreateSettings())
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = &mockPoller{}
 	rcvr.(*xrayReceiver).server = mProxy
@@ -243,7 +240,7 @@ func TestProxyCloseError(t *testing.T) {
 }
 
 func TestBothPollerAndProxyCloseError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("TestBothPollerAndProxyCloseError"))
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
@@ -251,7 +248,7 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, component.NewID("TestBothPollerAndProxyCloseError"), nil, false, tt.ToReceiverCreateSettings())
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, nil, false, tt.ToReceiverCreateSettings())
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
@@ -295,10 +292,9 @@ func (m *mockProxy) Shutdown(ctx context.Context) error {
 
 func createAndOptionallyStartReceiver(
 	t *testing.T,
-	receiverID component.ID,
 	csu consumer.Traces,
 	start bool,
-	set component.ReceiverCreateSettings) (string, component.TracesReceiver, *observer.ObservedLogs) {
+	set receiver.CreateSettings) (string, receiver.Traces, *observer.ObservedLogs) {
 	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
@@ -314,7 +310,6 @@ func createAndOptionallyStartReceiver(
 	set.Logger = logger
 	rcvr, err := newReceiver(
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(receiverID),
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,

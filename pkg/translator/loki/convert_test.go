@@ -19,6 +19,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -31,7 +32,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 	}{
 		{
 			desc:     "empty attributes should have at least the default labels",
-			expected: defaultExporterLabels,
+			expected: model.LabelSet{"exporter": "OTLP"},
 		},
 		{
 			desc: "selected log attribute should be included",
@@ -60,6 +61,19 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 			},
 		},
 		{
+			desc:     "selected attributes from resource attributes should be included",
+			logAttrs: map[string]interface{}{},
+			resAttrs: map[string]interface{}{
+				hintResources: "host.name",
+				"host.name":   "hostname-from-resources",
+				"pod.name":    "should-be-ignored",
+			},
+			expected: model.LabelSet{
+				"exporter":  "OTLP",
+				"host.name": "hostname-from-resources",
+			},
+		},
+		{
 			desc: "selected attributes from both sources should have most specific win",
 			logAttrs: map[string]interface{}{
 				"host.name":    "hostname-from-attributes",
@@ -85,13 +99,53 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 				"exporter": "overridden",
 			},
 		},
+		{
+			desc: "it should add service.namespace/service.name as job label if both of them are present",
+			resAttrs: map[string]interface{}{
+				"service.namespace": "my-service-namespace",
+				"service.name":      "my-service-name",
+			},
+			expected: model.LabelSet{
+				"exporter": "OTLP",
+				"job":      "my-service-namespace/my-service-name",
+			},
+		},
+		{
+			desc: "it should add service.name as job label if service.namespace is missing",
+			resAttrs: map[string]interface{}{
+				"service.name": "my-service-name",
+			},
+			expected: model.LabelSet{
+				"exporter": "OTLP",
+				"job":      "my-service-name",
+			},
+		},
+		{
+			desc: "it shouldn't add service.namespace as job label if service.name is missing",
+			resAttrs: map[string]interface{}{
+				"service.namespace": "my-service-namespace",
+			},
+			expected: model.LabelSet{
+				"exporter": "OTLP",
+			},
+		},
+		{
+			desc: "it should add service.instance.id as instance label if service.instance.id is present",
+			resAttrs: map[string]interface{}{
+				"service.instance.id": "my-service-instance-id",
+			},
+			expected: model.LabelSet{
+				"exporter": "OTLP",
+				"instance": "my-service-instance-id",
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			logAttrs := pcommon.NewMap()
-			logAttrs.FromRaw(tC.logAttrs)
+			assert.NoError(t, logAttrs.FromRaw(tC.logAttrs))
 			resAttrs := pcommon.NewMap()
-			resAttrs.FromRaw(tC.resAttrs)
+			assert.NoError(t, resAttrs.FromRaw(tC.resAttrs))
 			out := convertAttributesAndMerge(logAttrs, resAttrs)
 			assert.Equal(t, tC.expected, out)
 		})
@@ -145,11 +199,25 @@ func TestConvertAttributesToLabels(t *testing.T) {
 				"pod.name":  "pod-123",
 			},
 		},
+		{
+			desc: "nested attributes",
+			attrsAvailable: map[string]interface{}{
+				"host": map[string]interface{}{
+					"name": "guarana",
+				},
+				"pod.name": "pod-123",
+			},
+			attrsToSelect: attrsToSelectSlice,
+			expected: model.LabelSet{
+				"host.name": "guarana",
+				"pod.name":  "pod-123",
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			attrsAvailable := pcommon.NewMap()
-			attrsAvailable.FromRaw(tC.attrsAvailable)
+			assert.NoError(t, attrsAvailable.FromRaw(tC.attrsAvailable))
 			out := convertAttributesToLabels(attrsAvailable, tC.attrsToSelect)
 			assert.Equal(t, tC.expected, out)
 		})
@@ -194,9 +262,27 @@ func TestRemoveAttributes(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			attrs := pcommon.NewMap()
-			attrs.FromRaw(tC.attrs)
+			assert.NoError(t, attrs.FromRaw(tC.attrs))
 			removeAttributes(attrs, tC.labels)
 			assert.Equal(t, tC.expected, attrs.AsRaw())
 		})
 	}
+}
+
+func TestGetNestedAttribute(t *testing.T) {
+	// prepare
+	attrs := pcommon.NewMap()
+	err := attrs.FromRaw(map[string]interface{}{
+		"host": map[string]interface{}{
+			"name": "guarana",
+		},
+	})
+	require.NoError(t, err)
+
+	// test
+	attr, ok := getNestedAttribute("host.name", attrs)
+
+	// verify
+	assert.Equal(t, "guarana", attr.AsString())
+	assert.True(t, ok)
 }

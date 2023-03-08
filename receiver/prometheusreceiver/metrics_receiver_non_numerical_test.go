@@ -21,6 +21,7 @@ import (
 
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -81,7 +82,7 @@ func TestStaleNaNs(t *testing.T) {
 			validateScrapes: true,
 		},
 	}
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -255,7 +256,7 @@ func TestNormalNaNs(t *testing.T) {
 			validateFunc: verifyNormalNaNs,
 		},
 	}
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -339,7 +340,7 @@ func TestInfValues(t *testing.T) {
 			validateFunc: verifyInfValues,
 		},
 	}
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 func verifyInfValues(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {

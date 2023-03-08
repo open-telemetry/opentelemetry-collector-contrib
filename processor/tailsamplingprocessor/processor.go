@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
@@ -68,7 +69,7 @@ const (
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform tail sampling according to the given
 // configuration.
-func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (component.TracesProcessor, error) {
+func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -151,10 +152,13 @@ func getSharedPolicyEvaluator(logger *zap.Logger, cfg *sharedPolicyCfg) (samplin
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
 	case SpanCount:
 		spCfg := cfg.SpanCountCfg
-		return sampling.NewSpanCount(logger, spCfg.MinSpans), nil
+		return sampling.NewSpanCount(logger, spCfg.MinSpans, spCfg.MaxSpans), nil
 	case TraceState:
 		tsfCfg := cfg.TraceStateCfg
 		return sampling.NewTraceStateFilter(logger, tsfCfg.Key, tsfCfg.Values), nil
+	case BooleanAttribute:
+		bafCfg := cfg.BooleanAttributeCfg
+		return sampling.NewBooleanAttributeFilter(logger, bafCfg.Key, bafCfg.Value), nil
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
@@ -184,8 +188,9 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 		// Sampled or not, remove the batches
 		trace.Lock()
-		allSpans := ptrace.NewTraces()
-		trace.ReceivedBatches.MoveTo(allSpans)
+		allSpans := trace.ReceivedBatches
+		trace.FinalDecision = decision
+		trace.ReceivedBatches = ptrace.NewTraces()
 		trace.Unlock()
 
 		if decision == sampling.Sampled {
@@ -292,7 +297,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	return finalDecision, matchingPolicy
 }
 
-// ConsumeTraces is required by the component.TracesProcessor interface.
+// ConsumeTraces is required by the processor.Traces interface.
 func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -356,43 +361,32 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			}
 		}
 
-		for i, p := range tsp.policies {
-			actualData.Lock()
-			actualDecision := actualData.Decisions[i]
-			// If decision is pending, we want to add the new spans still under the lock, so the decision doesn't happen
-			// in between the transition from pending.
-			if actualDecision == sampling.Pending {
-				// Add the spans to the trace, but only once for all policy, otherwise same spans will
-				// be duplicated in the final trace.
-				appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
-				actualData.Unlock()
-				break
-			}
+		// The only thing we really care about here is the final decision.
+		actualData.Lock()
+		finalDecision := actualData.FinalDecision
+
+		if finalDecision == sampling.Unspecified {
+			// If the final decision hasn't been made, add the new spans under the lock.
+			appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
+			actualData.Unlock()
+		} else {
 			actualData.Unlock()
 
-			switch actualDecision {
+			switch finalDecision {
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
 				traceTd := ptrace.NewTraces()
 				appendToTraces(traceTd, resourceSpans, spans)
-				if err := tsp.nextConsumer.ConsumeTraces(p.ctx, traceTd); err != nil {
-					tsp.logger.Warn("Error sending late arrived spans to destination",
-						zap.String("policy", p.name),
+				if err := tsp.nextConsumer.ConsumeTraces(tsp.ctx, traceTd); err != nil {
+					tsp.logger.Warn(
+						"Error sending late arrived spans to destination",
 						zap.Error(err))
 				}
 			case sampling.NotSampled:
 				stats.Record(tsp.ctx, statLateSpanArrivalAfterDecision.M(int64(time.Since(actualData.DecisionTime)/time.Second)))
-
 			default:
 				tsp.logger.Warn("Encountered unexpected sampling decision",
-					zap.String("policy", p.name),
-					zap.Int("decision", int(actualDecision)))
-			}
-
-			// At this point the late arrival has been passed to nextConsumer. Need to break out of the policy loop
-			// so that it isn't sent to nextConsumer more than once when multiple policies chose to sample
-			if actualDecision == sampling.Sampled {
-				break
+					zap.Int("decision", int(finalDecision)))
 			}
 		}
 	}

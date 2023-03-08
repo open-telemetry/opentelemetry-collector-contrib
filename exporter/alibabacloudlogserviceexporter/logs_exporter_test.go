@@ -22,9 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -53,11 +51,10 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 }
 
 func TestNewLogsExporter(t *testing.T) {
-	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Endpoint:         "us-west-1.log.aliyuncs.com",
-		Project:          "demo-project",
-		Logstore:         "demo-logstore",
+	got, err := newLogsExporter(exportertest.NewNopCreateSettings(), &Config{
+		Endpoint: "us-west-1.log.aliyuncs.com",
+		Project:  "demo-project",
+		Logstore: "demo-logstore",
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
@@ -69,19 +66,18 @@ func TestNewLogsExporter(t *testing.T) {
 }
 
 func TestSTSTokenExporter(t *testing.T) {
-	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Endpoint:         "us-west-1.log.aliyuncs.com",
-		Project:          "demo-project",
-		Logstore:         "demo-logstore",
-		TokenFilePath:    filepath.Join("testdata", "config.yaml"),
+	got, err := newLogsExporter(exportertest.NewNopCreateSettings(), &Config{
+		Endpoint:      "us-west-1.log.aliyuncs.com",
+		Project:       "demo-project",
+		Logstore:      "demo-logstore",
+		TokenFilePath: filepath.Join("testdata", "config.yaml"),
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
-	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{})
+	got, err := newLogsExporter(exportertest.NewNopCreateSettings(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }

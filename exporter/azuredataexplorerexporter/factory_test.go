@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 // Given a new factory and no-op exporter , the NewMetric exporter should work.
@@ -36,9 +37,9 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
@@ -54,9 +55,9 @@ func TestCreateMetricsExporterWhenIngestEmpty(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	// Load the #3 which has empty
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NotNil(t, err)
@@ -83,9 +84,9 @@ func TestCreateLogsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
@@ -101,9 +102,9 @@ func TestCreateLogsExporterWhenIngestEmpty(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	// Load the #3 which has empty
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	assert.NotNil(t, err)
@@ -122,9 +123,9 @@ func TestCreateTracesExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
@@ -140,9 +141,9 @@ func TestCreateTracesExporterWhenIngestEmpty(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	// Load the #3 which has empty
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NotNil(t, err)

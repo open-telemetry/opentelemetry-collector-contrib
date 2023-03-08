@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"github.com/apache/pulsar-client-go/pulsar"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -141,10 +141,9 @@ func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
 		return nil, nil, err
 	}
 
-	producer, err := client.CreateProducer(pulsar.ProducerOptions{
-		Topic:       config.Topic,
-		SendTimeout: config.Timeout,
-	})
+	producerOptions := config.getProducerOptions()
+
+	producer, err := client.CreateProducer(producerOptions)
 
 	if err != nil {
 		return nil, nil, err
@@ -153,7 +152,7 @@ func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
 	return client, producer, nil
 }
 
-func newMetricsExporter(config Config, set component.ExporterCreateSettings, marshalers map[string]MetricsMarshaler) (*PulsarMetricsProducer, error) {
+func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers map[string]MetricsMarshaler) (*PulsarMetricsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -173,7 +172,7 @@ func newMetricsExporter(config Config, set component.ExporterCreateSettings, mar
 
 }
 
-func newTracesExporter(config Config, set component.ExporterCreateSettings, marshalers map[string]TracesMarshaler) (*PulsarTracesProducer, error) {
+func newTracesExporter(config Config, set exporter.CreateSettings, marshalers map[string]TracesMarshaler) (*PulsarTracesProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -191,7 +190,7 @@ func newTracesExporter(config Config, set component.ExporterCreateSettings, mars
 	}, nil
 }
 
-func newLogsExporter(config Config, set component.ExporterCreateSettings, marshalers map[string]LogsMarshaler) (*PulsarLogsProducer, error) {
+func newLogsExporter(config Config, set exporter.CreateSettings, marshalers map[string]LogsMarshaler) (*PulsarLogsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding

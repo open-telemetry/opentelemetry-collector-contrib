@@ -25,11 +25,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -46,8 +45,7 @@ func TestPrometheusExporter(t *testing.T) {
 	}{
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Namespace:        "test",
+				Namespace: "test",
 				ConstLabels: map[string]string{
 					"foo0":  "bar0",
 					"code0": "one0",
@@ -61,7 +59,6 @@ func TestPrometheusExporter(t *testing.T) {
 		},
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: ":88999",
 				},
@@ -69,15 +66,13 @@ func TestPrometheusExporter(t *testing.T) {
 			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
 		{
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-			},
+			config:  &Config{},
 			wantErr: "expecting a non-blank address to run the Prometheus metrics handler",
 		},
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
@@ -108,8 +103,7 @@ func TestPrometheusExporter(t *testing.T) {
 
 func TestPrometheusExporter_WithTLS(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
 			"code2": "one2",
@@ -131,7 +125,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 	}
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 
@@ -194,8 +188,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 // See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4986
 func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo1":  "bar1",
 			"code1": "one1",
@@ -207,7 +200,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -277,8 +270,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 
 func TestPrometheusExporter_endToEnd(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo1":  "bar1",
 			"code1": "one1",
@@ -290,7 +282,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -354,8 +346,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
 			"code2": "one2",
@@ -368,7 +359,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -432,8 +423,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
 			"code2": "one2",
@@ -449,7 +439,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 

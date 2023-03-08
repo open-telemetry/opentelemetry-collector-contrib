@@ -19,7 +19,6 @@ import (
 
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -84,8 +83,7 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for receiver_creator.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	receiverTemplates       map[string]receiverTemplate
+	receiverTemplates map[string]receiverTemplate
 	// WatchObservers are the extensions to listen to endpoints from.
 	WatchObservers []component.ID `mapstructure:"watch_observers"`
 	// ResourceAttributes is a map of default resource attributes to add to each resource

@@ -21,6 +21,7 @@ import (
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -58,7 +59,7 @@ func TestMetricRenaming(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -101,7 +102,7 @@ func TestMetricRenamingKeepAction(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -204,7 +205,7 @@ func verifyRenameMetricKeepAction(t *testing.T, td *testData, resourceMetrics []
 			}),
 		assertMetricAbsent("http_go_threads"),
 		assertMetricAbsent("http_connected_total"),
-		assertMetricAbsent("redis_http_request_total"),
+		assertMetricAbsent("redis_http_requests_total"),
 	}
 	doCompare(t, "scrape-metricRenameKeepAction-1", wantAttributes, m1, e1)
 }
@@ -240,7 +241,7 @@ func TestLabelRenaming(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -366,7 +367,7 @@ func TestLabelRenamingKeepAction(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{

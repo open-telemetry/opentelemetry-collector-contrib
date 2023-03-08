@@ -24,16 +24,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
@@ -49,17 +52,17 @@ func (h *testHost) ReportFatalError(err error) {
 
 var _ component.Host = (*testHost)(nil)
 
-func factory() (component.ReceiverFactory, *Config) {
+func factory() (rcvr.Factory, *Config) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
 	config.CollectionInterval = 1 * time.Second
 	return f, config
 }
 
-func paramsAndContext(t *testing.T) (component.ReceiverCreateSettings, context.Context, context.CancelFunc) {
+func paramsAndContext(t *testing.T) (rcvr.CreateSettings, context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	settings := componenttest.NewNopReceiverCreateSettings()
+	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = logger
 	return settings, ctx, cancel
 }
@@ -67,8 +70,18 @@ func paramsAndContext(t *testing.T) (component.ReceiverCreateSettings, context.C
 func TestDefaultMetricsIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
-	d := containertest.New(t)
-	d.StartImage("docker.io/library/nginx:1.17", containertest.WithPortReady(80))
+
+	req := testcontainers.ContainerRequest{
+		Image:        "docker.io/library/nginx:1.17",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	require.NotNil(t, container)
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
@@ -87,12 +100,20 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 }
 
 func TestAllMetricsIntegration(t *testing.T) {
-	d := containertest.New(t)
-	d.StartImage("docker.io/library/nginx:1.17", containertest.WithPortReady(80))
+	req := testcontainers.ContainerRequest{
+		Image:        "docker.io/library/nginx:1.17",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+	}
+	container, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	require.NotNil(t, container)
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
-	config.ProvidePerCoreCPUMetrics = true
 
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
@@ -122,8 +143,17 @@ func TestMonitoringAddedContainerIntegration(t *testing.T) {
 		t: t,
 	}))
 
-	d := containertest.New(t)
-	d.StartImage("docker.io/library/nginx:1.17", containertest.WithPortReady(80))
+	req := testcontainers.ContainerRequest{
+		Image:        "docker.io/library/nginx:1.17",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+	}
+	container, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	require.NotNil(t, container)
 
 	assert.Eventuallyf(t, func() bool {
 		return len(consumer.AllMetrics()) > 0
@@ -135,8 +165,18 @@ func TestMonitoringAddedContainerIntegration(t *testing.T) {
 func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
-	d := containertest.New(t)
-	d.StartImage("docker.io/library/redis:6.0.3", containertest.WithPortReady(6379))
+
+	req := testcontainers.ContainerRequest{
+		Image:        "docker.io/library/redis:6.0.3",
+		ExposedPorts: []string{"6379/tcp"},
+		WaitingFor:   wait.ForListeningPort("6379/tcp"),
+	}
+	container, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	require.NotNil(t, container)
 
 	f, config := factory()
 	config.ExcludedImages = append(config.ExcludedImages, "*redis*")
@@ -181,23 +221,46 @@ func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
 	require.NoError(t, client.LoadContainerList(context.Background()))
 	go client.ContainerEventLoop(context.Background())
 
-	d := containertest.New(t)
-	nginx := d.StartImage("docker.io/library/nginx:1.17", containertest.WithPortReady(80))
-	t.Log(nginx.ID)
+	initialCount := len(client.Containers())
+
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "docker.io/library/nginx:1.17",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		SkipReaper:   true,
+	}
+	nginx, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	require.NotNil(t, nginx)
+
+	t.Log(nginx.GetContainerID())
 	desiredAmount := func(numDesired int) func() bool {
 		return func() bool {
 			return len(client.Containers()) == numDesired
 		}
 	}
 
-	require.Eventuallyf(t, desiredAmount(1), 5*time.Second, 1*time.Millisecond, "failed to load container stores")
-	containers := client.Containers()
-	d.RemoveContainer(nginx)
-	require.Eventuallyf(t, desiredAmount(0), 5*time.Second, 1*time.Millisecond, "failed to clear container stores")
+	require.Eventuallyf(t, desiredAmount(initialCount+1), 5*time.Second, 1*time.Millisecond, "failed to load container stores")
+
+	err = nginx.Terminate(ctx)
+	require.Nil(t, err)
+
+	require.Eventuallyf(t, desiredAmount(initialCount), 5*time.Second, 1*time.Millisecond, "failed to clear container stores")
 
 	// Confirm missing container paths
-	statsJSON, err := client.FetchContainerStatsAsJSON(context.Background(), containers[0])
+	dc := docker.Container{
+		ContainerJSON: &types.ContainerJSON{
+			ContainerJSONBase: &types.ContainerJSONBase{
+				ID: nginx.GetContainerID(),
+			},
+		},
+	}
+	statsJSON, err := client.FetchContainerStatsAsJSON(context.Background(), dc)
 	assert.Nil(t, statsJSON)
 	require.Error(t, err)
-	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", containers[0].ID), err.Error())
+	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", nginx.GetContainerID()), err.Error())
 }

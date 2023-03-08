@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -30,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id          component.ID
-		expected    component.ExtensionConfig
+		expected    component.Config
 		expectedErr bool
 	}{
 		{
@@ -40,17 +39,15 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "sometoken"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-				Scheme:            defaultScheme,
-				BearerToken:       "sometoken",
+				Scheme:      defaultScheme,
+				BearerToken: "sometoken",
 			},
 		},
 		{
 			id: component.NewIDWithName(typeStr, "withscheme"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-				Scheme:            "MyScheme",
-				BearerToken:       "my-token",
+				Scheme:      "MyScheme",
+				BearerToken: "my-token",
 			},
 		},
 	}
@@ -62,12 +59,12 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 			if tt.expectedErr {
-				assert.Error(t, cfg.Validate())
+				assert.Error(t, component.ValidateConfig(cfg))
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

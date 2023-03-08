@@ -2,37 +2,90 @@
 
 # riakreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **riak.memory.limit** | The amount of memory allocated to the node. | By | Sum(Int) | <ul> </ul> |
-| **riak.node.operation.count** | The number of operations performed by the node. | {operation} | Sum(Int) | <ul> <li>request</li> </ul> |
-| **riak.node.operation.time.mean** | The mean time between request and response for operations performed by the node over the last minute. | us | Gauge(Int) | <ul> <li>request</li> </ul> |
-| **riak.node.read_repair.count** | The number of read repairs performed by the node. | {read_repair} | Sum(Int) | <ul> </ul> |
-| **riak.vnode.index.operation.count** | The number of index operations performed by vnodes on the node. | {operation} | Sum(Int) | <ul> <li>operation</li> </ul> |
-| **riak.vnode.operation.count** | The number of operations performed by vnodes on the node. | {operation} | Sum(Int) | <ul> <li>request</li> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Resource attributes
+### riak.memory.limit
 
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| riak.node.name | The name this node uses to identify itself. | Str |
+The amount of memory allocated to the node.
 
-## Metric attributes
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### riak.node.operation.count
+
+The number of operations performed by the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation} | Sum | Int | Cumulative | true |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| operation | The operation type for index operations. | read, write, delete |
-| request | The request operation type. | put, get |
+| request | The request operation type. | Str: ``put``, ``get`` |
+
+### riak.node.operation.time.mean
+
+The mean time between request and response for operations performed by the node over the last minute.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| us | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| request | The request operation type. | Str: ``put``, ``get`` |
+
+### riak.node.read_repair.count
+
+The number of read repairs performed by the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {read_repair} | Sum | Int | Cumulative | true |
+
+### riak.vnode.index.operation.count
+
+The number of index operations performed by vnodes on the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The operation type for index operations. | Str: ``read``, ``write``, ``delete`` |
+
+### riak.vnode.operation.count
+
+The number of operations performed by vnodes on the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| request | The request operation type. | Str: ``put``, ``get`` |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| riak.node.name | The name this node uses to identify itself. | Any Str | true |

@@ -36,7 +36,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 		metadataConsumers []metadataConsumer
 	}
 	type args struct {
-		exporters                   map[component.ID]component.Exporter
+		exporters                   map[component.ID]component.Component
 		metadataExportersFromConfig []string
 	}
 	tests := []struct {
@@ -49,7 +49,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 			"Unsupported exporter",
 			fields{},
 			args{
-				exporters: map[component.ID]component.Exporter{
+				exporters: map[component.ID]component.Component{
 					component.NewID("nop"): MockExporter{},
 				},
 				metadataExportersFromConfig: []string{"nop"},
@@ -61,7 +61,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{
 				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeMetadata},
 			},
-			args{exporters: map[component.ID]component.Exporter{
+			args{exporters: map[component.ID]component.Component{
 				component.NewID("nop"): mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"nop"},
@@ -73,7 +73,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{
 				metadataConsumers: []metadataConsumer{},
 			},
-			args{exporters: map[component.ID]component.Exporter{
+			args{exporters: map[component.ID]component.Component{
 				component.NewID("nop"): mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"nop/1"},

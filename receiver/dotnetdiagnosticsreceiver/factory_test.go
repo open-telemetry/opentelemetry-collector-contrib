@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -41,7 +42,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestNewFactory(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig()
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, r)

@@ -15,15 +15,15 @@
 package diskscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 )
 
 // Config relating to Disk Metric Scraper.
 type Config struct {
-	// Metrics allows to customize scraped metrics representation.
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	// MetricsbuilderConfig allows to customize scraped metrics/attributes representation.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	internal.ScraperConfig
 
 	// Include specifies a filter on the devices that should be included from the generated metrics.

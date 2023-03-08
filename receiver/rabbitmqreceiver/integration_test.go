@@ -19,19 +19,24 @@ package rabbitmqreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
+	"unicode"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 var (
@@ -42,18 +47,20 @@ var (
 		},
 		ExposedPorts: []string{"15672:15672"},
 		Hostname:     "localhost",
-		WaitingFor: wait.ForListeningPort("15672").
-			WithStartupTimeout(2 * time.Minute),
+		WaitingFor:   waitStrategy{},
 	}
 )
 
 func TestRabbitmqIntegration(t *testing.T) {
+	t.Skip("See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17201")
 	t.Run("Running rabbitmq 3.9", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest3_9)
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
+		require.NoError(t, container.Start(context.Background()))
+
 		hostname, err := container.Host(context.Background())
 		require.NoError(t, err)
 
@@ -64,7 +71,7 @@ func TestRabbitmqIntegration(t *testing.T) {
 		cfg.Password = "otelp"
 
 		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
+		settings := receivertest.NewNopCreateSettings()
 		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 		require.NoError(t, err, "failed creating metrics receiver")
 
@@ -80,7 +87,7 @@ func TestRabbitmqIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues()))
 	})
 }
 
@@ -93,12 +100,36 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontain
 			Started:          true,
 		})
 	require.NoError(t, err)
-
-	code, _, err := container.Exec(context.Background(), []string{"./setup.sh"})
-	require.NoError(t, err)
-	require.Equal(t, 0, code)
-
-	err = container.Start(context.Background())
-	require.NoError(t, err)
 	return container
+}
+
+type waitStrategy struct{}
+
+func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
+	if err := wait.ForListeningPort("15672").
+		WithStartupTimeout(2*time.Minute).
+		WaitUntilReady(ctx, st); err != nil {
+		return err
+	}
+
+	code, r, err := st.Exec(context.Background(), []string{"./setup.sh"})
+	if err != nil {
+		return err
+	}
+	if code == 0 {
+		return nil
+	}
+
+	// Try to read the error message for the sake of debugging
+	if errBytes, readerErr := io.ReadAll(r); readerErr == nil {
+		// Error message may have non-printable chars, so clean it up
+		errStr := strings.Map(func(r rune) rune {
+			if unicode.IsPrint(r) {
+				return r
+			}
+			return -1
+		}, string(errBytes))
+		return errors.New(strings.TrimSpace(errStr))
+	}
+	return errors.New("setup script returned non-zero exit code")
 }

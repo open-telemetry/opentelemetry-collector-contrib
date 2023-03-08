@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -36,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ReceiverConfig
+		expected component.Config
 	}{
 		{
 			id:       component.NewIDWithName(typeStr, ""),
@@ -46,7 +45,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "allsettings"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 2 * time.Second,
 				},
 
@@ -54,7 +52,6 @@ func TestLoadConfig(t *testing.T) {
 				Timeout:          20 * time.Second,
 				DockerAPIVersion: 1.24,
 
-				ProvidePerCoreCPUMetrics: true,
 				ExcludedImages: []string{
 					"undesired-container",
 					"another-*-container",
@@ -69,12 +66,12 @@ func TestLoadConfig(t *testing.T) {
 					"MY_ENVIRONMENT_VARIABLE":       "my-metric-label",
 					"MY_OTHER_ENVIRONMENT_VARIABLE": "my-other-metric-label",
 				},
-				MetricsConfig: func() metadata.MetricsSettings {
-					m := metadata.DefaultMetricsSettings()
-					m.ContainerCPUUsageSystem = metadata.MetricSettings{
+				MetricsBuilderConfig: func() metadata.MetricsBuilderConfig {
+					m := metadata.DefaultMetricsBuilderConfig()
+					m.Metrics.ContainerCPUUsageSystem = metadata.MetricSettings{
 						Enabled: false,
 					}
-					m.ContainerMemoryTotalRss = metadata.MetricSettings{
+					m.Metrics.ContainerMemoryTotalRss = metadata.MetricSettings{
 						Enabled: true,
 					}
 					return m
@@ -93,10 +90,10 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(config.ReceiverSettings{}, metadata.MetricSettings{})); diff != "" {
+			assert.NoError(t, component.ValidateConfig(cfg))
+			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})
@@ -105,11 +102,11 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidateErrors(t *testing.T) {
 	cfg := &Config{}
-	assert.Equal(t, "endpoint must be specified", cfg.Validate().Error())
+	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{Endpoint: "someEndpoint"}
-	assert.Equal(t, "collection_interval must be a positive duration", cfg.Validate().Error())
+	assert.Equal(t, "collection_interval must be a positive duration", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: 1 * time.Second}, Endpoint: "someEndpoint", DockerAPIVersion: 1.21}
-	assert.Equal(t, "api_version must be at least 1.22", cfg.Validate().Error())
+	assert.Equal(t, "api_version must be at least 1.22", component.ValidateConfig(cfg).Error())
 }

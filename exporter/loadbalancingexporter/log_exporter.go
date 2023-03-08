@@ -25,6 +25,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -33,7 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
-var _ component.LogsExporter = (*logExporterImp)(nil)
+var _ exporter.Logs = (*logExporterImp)(nil)
 
 type logExporterImp struct {
 	loadBalancer loadBalancer
@@ -43,10 +44,10 @@ type logExporterImp struct {
 }
 
 // Create new logs exporter
-func newLogsExporter(params component.ExporterCreateSettings, cfg component.ExporterConfig) (*logExporterImp, error) {
+func newLogsExporter(params exporter.CreateSettings, cfg component.Config) (*logExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
-	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
 		return exporterFactory.CreateLogsExporter(ctx, params, &oCfg)
 	})
@@ -99,10 +100,9 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 		return err
 	}
 
-	le, ok := exp.(component.LogsExporter)
+	le, ok := exp.(exporter.Logs)
 	if !ok {
-		expectType := (*component.LogsExporter)(nil)
-		return fmt.Errorf("unable to export logs, unexpected exporter type: expected %T but got %T", expectType, exp)
+		return fmt.Errorf("unable to export logs, unexpected exporter type: expected exporter.Logs but got %T", exp)
 	}
 
 	start := time.Now()

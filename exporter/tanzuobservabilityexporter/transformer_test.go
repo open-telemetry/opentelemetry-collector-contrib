@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -251,10 +252,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_source", actual.Source)
 	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
-	if value, isFound := actual.Tags[labelSource]; isFound {
-		t.Logf("Tag Source with value " + value + " not expected.")
-		t.Fail()
-	}
+	require.NotContains(t, actual.Tags, labelSource)
 
 	//TestCase2: source value from resAttrs.host.name when source is not present
 	resAttrs = pcommon.NewMap()
@@ -270,10 +268,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_host.name", actual.Source)
 	assert.Equal(t, "test_hostname", actual.Tags["hostname"])
-	if value, isFound := actual.Tags[conventions.AttributeHostName]; isFound {
-		t.Logf("Tag host.name with value " + value + " not expected.")
-		t.Fail()
-	}
+	require.NotContains(t, actual.Tags, conventions.AttributeHostName)
 
 	//TestCase4: source value from resAttrs.source when spanAttrs.source is present
 	resAttrs = pcommon.NewMap()
@@ -285,10 +280,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_source", actual.Source)
 	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
-	if value, isFound := actual.Tags[labelSource]; isFound {
-		t.Logf("Tag Source with value " + value + " not expected.")
-		t.Fail()
-	}
+	require.NotContains(t, actual.Tags, labelSource)
 	assert.Equal(t, "source_from_span_attribute", actual.Tags["_source"])
 }
 
@@ -328,10 +320,7 @@ func TestGetSourceAndResourceTags(t *testing.T) {
 
 	actualSource, actualAttrsWithoutSource := getSourceAndResourceTags(resAttrs)
 	assert.Equal(t, "test_source", actualSource)
-	if value, isFound := actualAttrsWithoutSource[labelSource]; isFound {
-		t.Logf("Tag Source with value " + value + " not expected.")
-		t.Fail()
-	}
+	require.NotContains(t, actualAttrsWithoutSource, labelSource)
 }
 
 func TestGetSourceAndKey(t *testing.T) {
@@ -445,4 +434,48 @@ func TestPointAndResAttrsToTagsAndFixSource(t *testing.T) {
 	attrMap = newMap(map[string]string{"application": "test_app", "service.name": "test_service.name", "source": "test_source", "service": "test_service", "other_source": "test_other_source"})
 	tags = pointAndResAttrsToTagsAndFixSource("other_source", attrMap)
 	assert.Equal(t, map[string]string{"application": "test_app", "service": "test_service", "service.name": "test_service.name", "_source": "test_source"}, tags)
+}
+
+func TestTraceIDtoUUID(t *testing.T) {
+	tests := []struct {
+		name  string
+		in    pcommon.TraceID
+		out   uuid.UUID
+		error bool
+	}{
+		{
+			name:  "empty",
+			in:    pcommon.NewTraceIDEmpty(),
+			out:   uuid.UUID{},
+			error: true,
+		},
+		{
+			name: "one",
+			in:   pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}),
+			out:  uuid.UUID{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+		},
+		{
+			name: "all_bytes",
+			in:   pcommon.TraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}),
+			out:  uuid.UUID{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := traceIDtoUUID(tt.in)
+			if tt.error {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.out, got)
+		})
+	}
+}
+
+func BenchmarkTraceIDtoUUID(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		_, err := traceIDtoUUID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+		assert.NoError(b, err)
+	}
 }

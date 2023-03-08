@@ -182,7 +182,7 @@ func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", m.userAgentString)
-	req.Header.Add("apikey", m.config.IngestKey)
+	req.Header.Add("apikey", string(m.config.IngestKey))
 
 	var res *http.Response
 	if res, errs = m.client.Do(req); errs != nil {

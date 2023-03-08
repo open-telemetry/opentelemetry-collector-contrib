@@ -112,12 +112,12 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Endpoint = "http://localhost:5984"
 	expected.Username = "otelu"
-	expected.Password = "$COUCHDB_PASSWORD"
+	expected.Password = "${env:COUCHDB_PASSWORD}"
 	expected.CollectionInterval = time.Minute
 
 	require.Equal(t, expected, cfg)

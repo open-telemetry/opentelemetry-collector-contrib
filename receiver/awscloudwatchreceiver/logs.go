@@ -48,6 +48,8 @@ type logsReceiver struct {
 	doneChan            chan bool
 }
 
+const maxLogGroupsPerDiscovery = int64(50)
+
 type client interface {
 	DescribeLogGroupsWithContext(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...request.Option) (*cloudwatchlogs.DescribeLogGroupsOutput, error)
 	FilterLogEventsWithContext(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...request.Option) (*cloudwatchlogs.FilterLogEventsOutput, error)
@@ -274,13 +276,12 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 	numGroups := 0
 	var nextToken = aws.String("")
 	for nextToken != nil {
-		if numGroups > auto.Limit {
+		if numGroups >= auto.Limit {
 			break
 		}
 
-		limit := int64(auto.Limit)
 		req := &cloudwatchlogs.DescribeLogGroupsInput{
-			Limit: aws.Int64(limit),
+			Limit: aws.Int64(maxLogGroupsPerDiscovery),
 		}
 
 		if auto.Prefix != "" {
@@ -293,6 +294,13 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 		}
 
 		for _, lg := range dlgResults.LogGroups {
+			if numGroups == auto.Limit {
+				l.logger.Debug("reached limit of the number of log groups to discover."+
+					"To increase the number of groups able to be discovered, please increase the autodiscover limit field.",
+					zap.Int("groups_discovered", numGroups), zap.Int("limit", auto.Limit))
+				break
+			}
+
 			numGroups++
 			l.logger.Debug("discovered log group", zap.String("log group", lg.GoString()))
 			// default behavior is to collect all if not stream filtered
@@ -311,7 +319,6 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 		}
 		nextToken = dlgResults.NextToken
 	}
-
 	return groups, nil
 }
 

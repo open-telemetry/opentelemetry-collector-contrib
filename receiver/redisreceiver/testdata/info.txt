@@ -131,6 +131,8 @@ used_cpu_sys:185.649184
 used_cpu_user:46.396430
 used_cpu_sys_children:0.002354
 used_cpu_user_children:0.001619
+used_cpu_sys_main_thread:180.0
+used_cpu_user_main_thread:42.39
 
 # Cluster
 cluster_enabled:0

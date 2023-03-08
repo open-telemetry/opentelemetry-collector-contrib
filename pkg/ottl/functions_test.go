@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -37,11 +38,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_enum"] = functionWithEnum
 	functions["testing_telemetry_settings_first"] = functionWithTelemetrySettingsFirst
 
-	p := NewParser(
+	p, _ := NewParser[any](
 		functions,
 		testParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	tests := []struct {
@@ -73,8 +74,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Arguments: []value{
 					{
 						Literal: &mathExprLiteral{
-							Invocation: &invocation{
-								Function: "unknownfunc",
+							Converter: &converter{
+								Function: "Unknownfunc",
 							},
 						},
 					},
@@ -137,7 +138,13 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 						String: ottltest.Strp("test"),
 					},
 					{
-						String: ottltest.Strp("test"),
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
 					},
 				},
 			},
@@ -151,7 +158,13 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 						String: ottltest.Strp("test"),
 					},
 					{
-						String: ottltest.Strp("test"),
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
 					},
 					{
 						Literal: &mathExprLiteral{
@@ -257,11 +270,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	p := NewParser(
+	p, _ := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	tests := []struct {
@@ -406,8 +419,50 @@ func Test_NewFunctionCall(t *testing.T) {
 									Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
 								},
 								{
+									List: &list{
+										Values: []value{
+											{
+												String: ottltest.Strp("test"),
+											},
+											{
+												String: ottltest.Strp("test"),
+											},
+										},
+									},
+								},
+								{
+									List: &list{
+										Values: []value{
+											{
+												String: ottltest.Strp("test"),
+											},
+											{
+												List: &list{
+													Values: []value{
+														{
+															String: ottltest.Strp("test"),
+														},
+														{
+															List: &list{
+																Values: []value{
+																	{
+																		String: ottltest.Strp("test"),
+																	},
+																	{
+																		String: ottltest.Strp("test"),
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								{
 									Literal: &mathExprLiteral{
-										Invocation: &invocation{
+										Converter: &converter{
 											Function: "testing_getter",
 											Arguments: []value{
 												{
@@ -430,8 +485,9 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
-			want: 7,
-		}, {
+			want: 9,
+		},
+		{
 			name: "setter arg",
 			inv: invocation{
 				Function: "testing_setter",
@@ -498,6 +554,97 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []value{
 					{
 						IsNil: (*isNil)(ottltest.Boolp(true)),
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "getter arg with list",
+			inv: invocation{
+				Function: "testing_getter",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									Literal: &mathExprLiteral{
+										Int: ottltest.Intp(1),
+									},
+								},
+								{
+									Literal: &mathExprLiteral{
+										Float: ottltest.Floatp(1.1),
+									},
+								},
+								{
+									Bool: (*boolean)(ottltest.Boolp(true)),
+								},
+								{
+									Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+								},
+								{
+									Literal: &mathExprLiteral{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+								},
+								{
+									Literal: &mathExprLiteral{
+										Converter: &converter{
+											Function: "testing_getter",
+											Arguments: []value{
+												{
+													Literal: &mathExprLiteral{
+														Path: &Path{
+															Fields: []Field{
+																{
+																	Name: "name",
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "stringgetter arg",
+			inv: invocation{
+				Function: "testing_stringgetter",
+				Arguments: []value{
+					{
+						String: ottltest.Strp("test"),
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "intgetter arg",
+			inv: invocation{
+				Function: "testing_intgetter",
+				Arguments: []value{
+					{
+						Literal: &mathExprLiteral{
+							Int: ottltest.Intp(1),
+						},
 					},
 				},
 			},
@@ -621,7 +768,13 @@ func Test_NewFunctionCall(t *testing.T) {
 						String: ottltest.Strp("test0"),
 					},
 					{
-						String: ottltest.Strp("test1"),
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
 					},
 					{
 						Literal: &mathExprLiteral{
@@ -641,7 +794,13 @@ func Test_NewFunctionCall(t *testing.T) {
 						String: ottltest.Strp("test0"),
 					},
 					{
-						String: ottltest.Strp("test1"),
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
 					},
 					{
 						Literal: &mathExprLiteral{
@@ -661,7 +820,13 @@ func Test_NewFunctionCall(t *testing.T) {
 						String: ottltest.Strp("test0"),
 					},
 					{
-						String: ottltest.Strp("test1"),
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
 					},
 					{
 						Literal: &mathExprLiteral{
@@ -734,6 +899,18 @@ func functionWithGetter(Getter[interface{}]) (ExprFunc[interface{}], error) {
 	}, nil
 }
 
+func functionWithStringGetter(StringGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+func functionWithIntGetter(IntGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
 func functionWithString(string) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
@@ -777,19 +954,19 @@ func functionWithEnum(Enum) (ExprFunc[interface{}], error) {
 	}, nil
 }
 
-func functionWithTelemetrySettingsFirst(component.TelemetrySettings, string, string, int64) (ExprFunc[interface{}], error) {
+func functionWithTelemetrySettingsFirst(component.TelemetrySettings, string, []string, int64) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
-func functionWithTelemetrySettingsMiddle(string, string, component.TelemetrySettings, int64) (ExprFunc[interface{}], error) {
+func functionWithTelemetrySettingsMiddle(string, []string, component.TelemetrySettings, int64) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
-func functionWithTelemetrySettingsLast(string, string, int64, component.TelemetrySettings) (ExprFunc[interface{}], error) {
+func functionWithTelemetrySettingsLast(string, []string, int64, component.TelemetrySettings) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
@@ -805,6 +982,8 @@ func defaultFunctionsForTests() map[string]interface{} {
 	functions["testing_setter"] = functionWithSetter
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter
+	functions["testing_stringgetter"] = functionWithStringGetter
+	functions["testing_intgetter"] = functionWithIntGetter
 	functions["testing_string"] = functionWithString
 	functions["testing_float"] = functionWithFloat
 	functions["testing_int"] = functionWithInt

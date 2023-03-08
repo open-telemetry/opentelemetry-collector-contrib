@@ -3,12 +3,14 @@ name: sqlserverreceiver
 resource_attributes:
   sqlserver.database.name:
     description: The name of the SQL Server database.
+    enabled: true
     type: string
 
 attributes:
   page.operations:
-    value: type
+    name_override: type
     description: The page operation types.
+    type: string
     enum: [read, write]
 
 metrics:

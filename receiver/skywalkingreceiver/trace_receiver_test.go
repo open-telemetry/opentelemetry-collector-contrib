@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
@@ -38,8 +39,10 @@ var (
 )
 
 func TestTraceSource(t *testing.T) {
-	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newSkywalkingReceiver(skywalkingReceiver, &configuration{}, nil, set)
+	set := receivertest.NewNopCreateSettings()
+	set.ID = skywalkingReceiver
+	jr, err := newSkywalkingReceiver(&configuration{}, nil, set)
+	require.NoError(t, err)
 	require.NotNil(t, jr)
 }
 
@@ -53,8 +56,10 @@ func TestStartAndShutdown(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := componenttest.NewNopReceiverCreateSettings()
-	sr := newSkywalkingReceiver(skywalkingReceiver, config, sink, set)
+	set := receivertest.NewNopCreateSettings()
+	set.ID = skywalkingReceiver
+	sr, err := newSkywalkingReceiver(config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, sr.Shutdown(context.Background())) })
@@ -68,9 +73,10 @@ func TestGRPCReception(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := componenttest.NewNopReceiverCreateSettings()
-
-	swReceiver := newSkywalkingReceiver(skywalkingReceiver, config, sink, set)
+	set := receivertest.NewNopCreateSettings()
+	set.ID = skywalkingReceiver
+	swReceiver, err := newSkywalkingReceiver(config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, swReceiver.Start(context.Background(), componenttest.NewNopHost()))
 

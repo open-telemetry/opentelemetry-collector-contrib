@@ -17,7 +17,6 @@ package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"time"
 
@@ -147,13 +146,16 @@ func accessTraceID[K SpanContext]() ottl.StandardGetSetter[K] {
 func accessStringTraceID[K SpanContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
-			return tCtx.GetSpan().TraceID().HexString(), nil
+			id := tCtx.GetSpan().TraceID()
+			return hex.EncodeToString(id[:]), nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if str, ok := val.(string); ok {
-				if traceID, err := parseTraceID(str); err == nil {
-					tCtx.GetSpan().SetTraceID(traceID)
+				id, err := ParseTraceID(str)
+				if err != nil {
+					return err
 				}
+				tCtx.GetSpan().SetTraceID(id)
 			}
 			return nil
 		},
@@ -177,13 +179,16 @@ func accessSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 func accessStringSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
-			return tCtx.GetSpan().SpanID().HexString(), nil
+			id := tCtx.GetSpan().SpanID()
+			return hex.EncodeToString(id[:]), nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if str, ok := val.(string); ok {
-				if spanID, err := parseSpanID(str); err == nil {
-					tCtx.GetSpan().SetSpanID(spanID)
+				id, err := ParseSpanID(str)
+				if err != nil {
+					return err
 				}
+				tCtx.GetSpan().SetSpanID(id)
 			}
 			return nil
 		},
@@ -242,13 +247,16 @@ func accessParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 func accessStringParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
-			return tCtx.GetSpan().ParentSpanID().HexString(), nil
+			id := tCtx.GetSpan().ParentSpanID()
+			return hex.EncodeToString(id[:]), nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if str, ok := val.(string); ok {
-				if spanID, err := parseSpanID(str); err == nil {
-					tCtx.GetSpan().SetParentSpanID(spanID)
+				id, err := ParseSpanID(str)
+				if err != nil {
+					return err
 				}
+				tCtx.GetSpan().SetParentSpanID(id)
 			}
 			return nil
 		},
@@ -453,30 +461,4 @@ func accessStatusMessage[K SpanContext]() ottl.StandardGetSetter[K] {
 			return nil
 		},
 	}
-}
-
-func parseSpanID(spanIDStr string) (pcommon.SpanID, error) {
-	id, err := hex.DecodeString(spanIDStr)
-	if err != nil {
-		return pcommon.SpanID{}, err
-	}
-	if len(id) != 8 {
-		return pcommon.SpanID{}, errors.New("span ids must be 8 bytes")
-	}
-	var idArr [8]byte
-	copy(idArr[:8], id)
-	return pcommon.SpanID(idArr), nil
-}
-
-func parseTraceID(traceIDStr string) (pcommon.TraceID, error) {
-	id, err := hex.DecodeString(traceIDStr)
-	if err != nil {
-		return pcommon.TraceID{}, err
-	}
-	if len(id) != 16 {
-		return pcommon.TraceID{}, errors.New("traces ids must be 16 bytes")
-	}
-	var idArr [16]byte
-	copy(idArr[:16], id)
-	return pcommon.TraceID(idArr), nil
 }

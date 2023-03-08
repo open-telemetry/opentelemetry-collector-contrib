@@ -18,14 +18,12 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for SkyWalking exporter.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	configgrpc.GRPCClientSettings  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
@@ -35,7 +33,7 @@ type Config struct {
 	NumStreams int `mapstructure:"num_streams"`
 }
 
-var _ component.ExporterConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

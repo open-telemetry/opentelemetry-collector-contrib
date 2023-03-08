@@ -23,12 +23,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 func TestLogsExporter(t *testing.T) {
@@ -41,7 +42,7 @@ func TestLogsExporter(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []map[string]interface{}
+		want testutil.JSONLogs
 	}{
 		{
 			name: "message",
@@ -49,7 +50,7 @@ func TestLogsExporter(t *testing.T) {
 				ld: lr,
 			},
 
-			want: []map[string]interface{}{
+			want: testutil.JSONLogs{
 				{
 					"message":              ld.Body().AsString(),
 					"app":                  "server",
@@ -61,8 +62,8 @@ func TestLogsExporter(t *testing.T) {
 					"ddtags":               "otel_source:datadog_exporter",
 					"otel.severity_text":   "Info",
 					"otel.severity_number": "9",
-					"otel.span_id":         ld.SpanID().HexString(),
-					"otel.trace_id":        ld.TraceID().HexString(),
+					"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+					"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
 					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
 				},
 			},
@@ -78,7 +79,7 @@ func TestLogsExporter(t *testing.T) {
 				}(),
 			},
 
-			want: []map[string]interface{}{
+			want: testutil.JSONLogs{
 				{
 					"message":              "hello",
 					"app":                  "server",
@@ -90,8 +91,121 @@ func TestLogsExporter(t *testing.T) {
 					"ddtags":               "otel_source:datadog_exporter",
 					"otel.severity_text":   "Info",
 					"otel.severity_number": "9",
-					"otel.span_id":         ld.SpanID().HexString(),
-					"otel.trace_id":        ld.TraceID().HexString(),
+					"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+					"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
+					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+				},
+			},
+		},
+		{
+			name: "ddtags",
+			args: args{
+				ld: func() plog.Logs {
+					lrr := testdata.GenerateLogsOneLogRecord()
+					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+					ldd.Attributes().PutStr("ddtags", "tag1:true")
+					return lrr
+				}(),
+			},
+
+			want: testutil.JSONLogs{
+				{
+					"message":              ld.Body().AsString(),
+					"app":                  "server",
+					"instance_num":         "1",
+					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"status":               "Info",
+					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+					"ddtags":               "tag1:true,otel_source:datadog_exporter",
+					"otel.severity_text":   "Info",
+					"otel.severity_number": "9",
+					"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+					"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
+					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+				},
+			},
+		},
+		{
+			name: "ddtags submits same tags",
+			args: args{
+				ld: func() plog.Logs {
+					lrr := testdata.GenerateLogsTwoLogRecordsSameResource()
+					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+					ldd.Attributes().PutStr("ddtags", "tag1:true")
+					ldd2 := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
+					ldd2.Attributes().PutStr("ddtags", "tag1:true")
+					return lrr
+				}(),
+			},
+
+			want: testutil.JSONLogs{
+				{
+					"message":              ld.Body().AsString(),
+					"app":                  "server",
+					"instance_num":         "1",
+					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"status":               "Info",
+					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+					"ddtags":               "tag1:true,otel_source:datadog_exporter",
+					"otel.severity_text":   "Info",
+					"otel.severity_number": "9",
+					"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+					"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
+					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+				},
+				{
+					"message":              "something happened",
+					"env":                  "dev",
+					"customer":             "acme",
+					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"status":               "Info",
+					"ddtags":               "tag1:true,otel_source:datadog_exporter",
+					"otel.severity_text":   "Info",
+					"otel.severity_number": "9",
+					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+				},
+			},
+		},
+		{
+			name: "ddtags submits different tags",
+			args: args{
+				ld: func() plog.Logs {
+					lrr := testdata.GenerateLogsTwoLogRecordsSameResource()
+					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+					ldd.Attributes().PutStr("ddtags", "tag1:true")
+					ldd2 := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
+					ldd2.Attributes().PutStr("ddtags", "tag2:true")
+					return lrr
+				}(),
+			},
+
+			want: testutil.JSONLogs{
+				{
+					"message":              ld.Body().AsString(),
+					"app":                  "server",
+					"instance_num":         "1",
+					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"status":               "Info",
+					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+					"ddtags":               "tag1:true,otel_source:datadog_exporter",
+					"otel.severity_text":   "Info",
+					"otel.severity_number": "9",
+					"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+					"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
+					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+				},
+				{
+					"message":              "something happened",
+					"env":                  "dev",
+					"customer":             "acme",
+					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"status":               "Info",
+					"ddtags":               "tag2:true,otel_source:datadog_exporter",
+					"otel.severity_text":   "Info",
+					"otel.severity_number": "9",
 					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
 				},
 			},
@@ -114,7 +228,7 @@ func TestLogsExporter(t *testing.T) {
 				},
 			}
 
-			params := componenttest.NewNopExporterCreateSettings()
+			params := exportertest.NewNopCreateSettings()
 			f := NewFactory()
 			ctx := context.Background()
 			exp, err := f.CreateLogsExporter(ctx, params, cfg)

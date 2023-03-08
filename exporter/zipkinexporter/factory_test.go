@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -33,14 +34,14 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Default config doesn't have default endpoint so creating from it should
 	// fail.
-	ze, err := createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	ze, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	assert.Error(t, err)
 	assert.Nil(t, ze)
 
 	// URL doesn't have a default value so set it directly.
 	zeCfg := cfg.(*Config)
 	zeCfg.Endpoint = "http://some.location.org:9411/api/v2/spans"
-	ze, err = createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	ze, err = createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ze)
 }

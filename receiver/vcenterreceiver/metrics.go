@@ -54,8 +54,13 @@ func (v *vcenterMetricScraper) recordVMUsages(
 ) {
 	memUsage := vm.Summary.QuickStats.GuestMemoryUsage
 	balloonedMem := vm.Summary.QuickStats.BalloonedMemory
+	swappedMem := vm.Summary.QuickStats.SwappedMemory
+	swappedSSDMem := vm.Summary.QuickStats.SsdSwappedMemory
+
 	v.mb.RecordVcenterVMMemoryUsageDataPoint(now, int64(memUsage))
 	v.mb.RecordVcenterVMMemoryBalloonedDataPoint(now, int64(balloonedMem))
+	v.mb.RecordVcenterVMMemorySwappedDataPoint(now, int64(swappedMem))
+	v.mb.RecordVcenterVMMemorySwappedSsdDataPoint(now, swappedSSDMem)
 
 	diskUsed := vm.Summary.Storage.Committed
 	diskFree := vm.Summary.Storage.Uncommitted

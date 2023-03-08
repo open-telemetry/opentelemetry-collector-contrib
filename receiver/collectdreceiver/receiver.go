@@ -27,14 +27,15 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
-var _ component.MetricsReceiver = (*collectdReceiver)(nil)
+var _ receiver.Metrics = (*collectdReceiver)(nil)
 
-// collectdReceiver implements the component.MetricsReceiver for CollectD protocol.
+// collectdReceiver implements the receiver.Metrics for CollectD protocol.
 type collectdReceiver struct {
 	logger             *zap.Logger
 	addr               string
@@ -49,7 +50,7 @@ func newCollectdReceiver(
 	addr string,
 	timeout time.Duration,
 	defaultAttrsPrefix string,
-	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}

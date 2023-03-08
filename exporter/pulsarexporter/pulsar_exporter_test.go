@@ -21,8 +21,8 @@ import (
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -30,14 +30,14 @@ import (
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newMetricsExporter(c, componenttest.NewNopExporterCreateSettings(), metricsMarshalers())
+	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newMetricsExporter(c, componenttest.NewNopExporterCreateSettings(), metricsMarshalers())
+	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 
@@ -45,14 +45,14 @@ func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newLogsExporter(c, componenttest.NewNopExporterCreateSettings(), logsMarshalers())
+	mexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newLogsExporter(c, componenttest.NewNopExporterCreateSettings(), logsMarshalers())
+	mexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }

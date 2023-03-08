@@ -27,15 +27,15 @@ type Host struct {
 }
 
 // GetExporters provides a mock function with given fields:
-func (_m *Host) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
+func (_m *Host) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	ret := _m.Called()
 
-	var r0 map[component.DataType]map[component.ID]component.Exporter
-	if rf, ok := ret.Get(0).(func() map[component.DataType]map[component.ID]component.Exporter); ok {
+	var r0 map[component.DataType]map[component.ID]component.Component
+	if rf, ok := ret.Get(0).(func() map[component.DataType]map[component.ID]component.Component); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[component.DataType]map[component.ID]component.Exporter)
+			r0 = ret.Get(0).(map[component.DataType]map[component.ID]component.Component)
 		}
 	}
 
@@ -43,15 +43,15 @@ func (_m *Host) GetExporters() map[component.DataType]map[component.ID]component
 }
 
 // GetExtensions provides a mock function with given fields:
-func (_m *Host) GetExtensions() map[component.ID]component.Extension {
+func (_m *Host) GetExtensions() map[component.ID]component.Component {
 	ret := _m.Called()
 
-	var r0 map[component.ID]component.Extension
-	if rf, ok := ret.Get(0).(func() map[component.ID]component.Extension); ok {
+	var r0 map[component.ID]component.Component
+	if rf, ok := ret.Get(0).(func() map[component.ID]component.Component); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[component.ID]component.Extension)
+			r0 = ret.Get(0).(map[component.ID]component.Component)
 		}
 	}
 

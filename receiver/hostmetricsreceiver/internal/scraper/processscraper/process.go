@@ -15,7 +15,9 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
@@ -88,7 +90,9 @@ type processHandle interface {
 	Cmdline() (string, error)
 	CmdlineSlice() ([]string, error)
 	Times() (*cpu.TimesStat, error)
+	Percent(time.Duration) (float64, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
+	MemoryPercent() (float32, error)
 	IOCounters() (*process.IOCountersStat, error)
 	NumThreads() (int32, error)
 	CreateTime() (int64, error)
@@ -96,6 +100,8 @@ type processHandle interface {
 	PageFaults() (*process.PageFaultsStat, error)
 	NumCtxSwitches() (*process.NumCtxSwitchesStat, error)
 	NumFDs() (int32, error)
+	// If gatherUsed is true, the currently used value will be gathered and added to the resulting RlimitStat.
+	RlimitUsage(gatherUsed bool) ([]process.RlimitStat, error)
 }
 
 type gopsProcessHandles struct {
@@ -124,8 +130,8 @@ func getProcessHandlesInternal() (processHandles, error) {
 }
 
 func parentPid(handle processHandle, pid int32) (int32, error) {
-	// special case for pid 0
-	if pid == 0 {
+	// special case for pid 0 and pid 1 in darwin
+	if pid == 0 || (pid == 1 && runtime.GOOS == "darwin") {
 		return 0, nil
 	}
 	parent, err := handle.Parent()

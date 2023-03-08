@@ -19,10 +19,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ExporterConfig
+		expected component.Config
 	}{
 		{
 			id:       component.NewIDWithName(typeStr, ""),
@@ -45,15 +45,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "2"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 10 * time.Second,
-					MaxInterval:     1 * time.Minute,
-					MaxElapsedTime:  10 * time.Minute,
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
@@ -76,10 +77,13 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
-
-			assert.NoError(t, cfg.Validate())
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	cfg := &Config{}
+	assert.EqualError(t, component.ValidateConfig(cfg), "must have a non-empty \"endpoint\"")
 }

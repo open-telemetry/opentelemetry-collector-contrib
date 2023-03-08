@@ -17,6 +17,7 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -160,26 +161,26 @@ func (v *CorrectnessTestValidator) diffSpan(sentSpan ptrace.Span, recdSpan ptrac
 }
 
 func (v *CorrectnessTestValidator) diffSpanTraceID(sentSpan ptrace.Span, recdSpan ptrace.Span) {
-	if sentSpan.TraceID().HexString() != recdSpan.TraceID().HexString() {
+	if sentSpan.TraceID() != recdSpan.TraceID() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name(),
 			fieldPath:     "TraceId",
-			expectedValue: sentSpan.TraceID().HexString(),
-			actualValue:   recdSpan.TraceID().HexString(),
+			expectedValue: sentSpan.TraceID(),
+			actualValue:   recdSpan.TraceID(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
 }
 
 func (v *CorrectnessTestValidator) diffSpanSpanID(sentSpan ptrace.Span, recdSpan ptrace.Span) {
-	if sentSpan.SpanID().HexString() != recdSpan.SpanID().HexString() {
+	if sentSpan.SpanID() != recdSpan.SpanID() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name(),
 			fieldPath:     "SpanId",
-			expectedValue: sentSpan.SpanID().HexString(),
-			actualValue:   recdSpan.SpanID().HexString(),
+			expectedValue: sentSpan.SpanID(),
+			actualValue:   recdSpan.SpanID(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
@@ -199,13 +200,13 @@ func (v *CorrectnessTestValidator) diffSpanTraceState(sentSpan ptrace.Span, recd
 }
 
 func (v *CorrectnessTestValidator) diffSpanParentSpanID(sentSpan ptrace.Span, recdSpan ptrace.Span) {
-	if sentSpan.ParentSpanID().HexString() != recdSpan.ParentSpanID().HexString() {
+	if sentSpan.ParentSpanID() != recdSpan.ParentSpanID() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name(),
 			fieldPath:     "ParentSpanId",
-			expectedValue: sentSpan.ParentSpanID().HexString(),
-			actualValue:   recdSpan.ParentSpanID().HexString(),
+			expectedValue: sentSpan.ParentSpanID(),
+			actualValue:   recdSpan.ParentSpanID(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
@@ -441,7 +442,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 
 func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pcommon.Value, recdVal pcommon.Value,
 	fmtStr string, attrKey string) {
-	if !sentVal.Equal(recdVal) {
+	if reflect.DeepEqual(sentVal.AsRaw(), recdVal.AsRaw()) {
 		sentStr := sentVal.AsString()
 		recdStr := recdVal.AsString()
 		if !strings.EqualFold(sentStr, recdStr) {
@@ -529,5 +530,5 @@ func populateSpansMap(spansMap map[string]ptrace.Span, tds []ptrace.Traces) {
 }
 
 func traceIDAndSpanIDToString(traceID pcommon.TraceID, spanID pcommon.SpanID) string {
-	return fmt.Sprintf("%s-%s", traceID.HexString(), spanID.HexString())
+	return fmt.Sprintf("%s-%s", traceID, spanID)
 }

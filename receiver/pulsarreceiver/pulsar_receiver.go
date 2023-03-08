@@ -23,6 +23,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -31,18 +32,17 @@ var errUnrecognizedEncoding = errors.New("unrecognized encoding")
 const alreadyClosedError = "AlreadyClosedError"
 
 type pulsarTracesConsumer struct {
-	id              component.ID
 	tracesConsumer  consumer.Traces
 	topic           string
 	client          pulsar.Client
 	cancel          context.CancelFunc
 	consumer        pulsar.Consumer
 	unmarshaler     TracesUnmarshaler
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
+func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -60,7 +60,6 @@ func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unma
 	}
 
 	return &pulsarTracesConsumer{
-		id:              config.ID(),
 		tracesConsumer:  nextConsumer,
 		topic:           config.Topic,
 		unmarshaler:     unmarshaler,
@@ -121,6 +120,9 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 }
 
 func (c *pulsarTracesConsumer) Shutdown(context.Context) error {
+	if c.cancel == nil {
+		return nil
+	}
 	c.cancel()
 	c.consumer.Close()
 	c.client.Close()
@@ -128,18 +130,17 @@ func (c *pulsarTracesConsumer) Shutdown(context.Context) error {
 }
 
 type pulsarMetricsConsumer struct {
-	id              component.ID
 	metricsConsumer consumer.Metrics
 	unmarshaler     MetricsUnmarshaler
 	topic           string
 	client          pulsar.Client
 	consumer        pulsar.Consumer
 	cancel          context.CancelFunc
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
+func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -157,7 +158,6 @@ func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unm
 	}
 
 	return &pulsarMetricsConsumer{
-		id:              config.ID(),
 		metricsConsumer: nextConsumer,
 		topic:           config.Topic,
 		unmarshaler:     unmarshaler,
@@ -221,6 +221,9 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 }
 
 func (c *pulsarMetricsConsumer) Shutdown(context.Context) error {
+	if c.cancel == nil {
+		return nil
+	}
 	c.cancel()
 	c.consumer.Close()
 	c.client.Close()
@@ -228,18 +231,17 @@ func (c *pulsarMetricsConsumer) Shutdown(context.Context) error {
 }
 
 type pulsarLogsConsumer struct {
-	id              component.ID
 	logsConsumer    consumer.Logs
 	unmarshaler     LogsUnmarshaler
 	topic           string
 	client          pulsar.Client
 	consumer        pulsar.Consumer
 	cancel          context.CancelFunc
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
+func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -257,7 +259,6 @@ func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmars
 	}
 
 	return &pulsarLogsConsumer{
-		id:              config.ID(),
 		logsConsumer:    nextConsumer,
 		topic:           config.Topic,
 		cancel:          nil,
@@ -320,6 +321,9 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 }
 
 func (c *pulsarLogsConsumer) Shutdown(context.Context) error {
+	if c.cancel == nil {
+		return nil
+	}
 	c.cancel()
 	c.consumer.Close()
 	c.client.Close()

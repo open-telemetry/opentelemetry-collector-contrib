@@ -15,10 +15,6 @@
 
 package main
 
-import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/telemetrygen"
-)
-
 func main() {
-	telemetrygen.Execute()
+	Execute()
 }

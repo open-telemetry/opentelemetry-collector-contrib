@@ -288,7 +288,7 @@ func errorTagsFromStatus(status ptrace.Status) map[string]string {
 }
 
 func traceIDtoUUID(id pcommon.TraceID) (uuid.UUID, error) {
-	formatted, err := uuid.Parse(id.HexString())
+	formatted, err := uuid.FromBytes(id[:])
 	if err != nil || id.IsEmpty() {
 		return uuid.Nil, errInvalidTraceID
 	}

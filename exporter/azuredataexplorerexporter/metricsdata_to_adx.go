@@ -44,7 +44,7 @@ const (
 
 // This is derived from the specification https://opentelemetry.io/docs/reference/specification/metrics/datamodel/
 type AdxMetric struct {
-	Timestamp string // The timestamp of the occurrence. A metric is measured at a point of time. Formatted into string as RFC3339
+	Timestamp string // The timestamp of the occurrence. A metric is measured at a point of time. Formatted into string as RFC3339Nano
 	// Including name, the Metric object is defined by the following properties:
 	MetricName        string                 // Name of the metric field
 	MetricType        string                 // The data point type (e.g. Sum, Gauge, Histogram ExponentialHistogram, Summary)
@@ -81,7 +81,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			desc = md.Description()
 		}
 		return &AdxMetric{
-			Timestamp:          times.Format(time.RFC3339),
+			Timestamp:          times.Format(time.RFC3339Nano),
 			MetricName:         name,
 			MetricType:         mt.String(),
 			MetricUnit:         md.Unit(),
@@ -144,12 +144,11 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			// now create buckets for each bound.
 			for bi := 0; bi < bounds.Len(); bi++ {
 				customMap :=
-					copyMap(map[string]interface{}{
-						"le": float64ToDimValue(bounds.At(bi)),
-					}, dataPoint.Attributes().AsRaw())
+					copyMap(map[string]interface{}{"le": float64ToDimValue(bounds.At(bi))}, dataPoint.Attributes().AsRaw())
 
 				value += counts.At(bi)
 				vMap := pcommon.NewMap()
+				//nolint:errcheck
 				vMap.FromRaw(customMap)
 				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), vMap, func() float64 {
 					// Change int to float. The value is a float64 in the table
@@ -167,6 +166,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 						"le": float64ToDimValue(math.Inf(1)),
 					}, dataPoint.Attributes().AsRaw())
 				vMap := pcommon.NewMap()
+				//nolint:errcheck
 				vMap.FromRaw(customMap)
 				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), vMap, func() float64 {
 					// Change int to float. The value is a float64 in the table
@@ -228,9 +228,9 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					"qt":         float64ToDimValue(dp.Quantile()),
 					quantileName: sanitizeFloat(dp.Value()).(float64),
 				}
-				customMap :=
-					copyMap(metricQuantile, dataPoint.Attributes().AsRaw())
+				customMap := copyMap(metricQuantile, dataPoint.Attributes().AsRaw())
 				vMap := pcommon.NewMap()
+				//nolint:errcheck
 				vMap.FromRaw(customMap)
 				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(),
 					vMap,

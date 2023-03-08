@@ -19,30 +19,48 @@ package memcachedreceiver
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestIntegration(t *testing.T) {
-	cs := containertest.New(t)
-	c := cs.StartImage("memcached:1.6-alpine", containertest.WithPortReady(11211))
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "docker.io/library/memcached:1.6-alpine",
+		ExposedPorts: []string{"11211/tcp"},
+		WaitingFor:   wait.ForListeningPort("11211/tcp"),
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+
+	mappedPort, err := container.MappedPort(ctx, "11211")
+	require.Nil(t, err)
+
+	hostIP, err := container.Host(ctx)
+	require.Nil(t, err)
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = c.AddrForPort(11211)
+	cfg.Endpoint = fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
 
 	consumer := new(consumertest.MetricsSink)
 
-	rcvr, err := f.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer)
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -59,5 +77,6 @@ func TestIntegration(t *testing.T) {
 	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }

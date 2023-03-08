@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 const (
@@ -27,8 +27,8 @@ const (
 )
 
 // NewFactory creates a factory for asapauthextension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -36,12 +36,10 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createExtension(_ context.Context, _ component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
+func createExtension(_ context.Context, _ extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 	return createASAPClientAuthenticator(cfg.(*Config))
 }
 
-func createDefaultConfig() component.ExtensionConfig {
-	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }

@@ -76,7 +76,7 @@ func TestConfig(t *testing.T) {
 					parseField := entry.NewBodyField("severity_field")
 					severityField := helper.NewSeverityConfig()
 					severityField.ParseFrom = &parseField
-					mapping := map[interface{}]interface{}{
+					mapping := map[string]interface{}{
 						"critical": "5xx",
 						"error":    "4xx",
 						"info":     "3xx",
@@ -100,6 +100,14 @@ func TestConfig(t *testing.T) {
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.PairDelimiter = ";"
+					return cfg
+				}(),
+			},
+			{
+				Name: "pair_delimiter_multiline",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.PairDelimiter = "^\n"
 					return cfg
 				}(),
 			},

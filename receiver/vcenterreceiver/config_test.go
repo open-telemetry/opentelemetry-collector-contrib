@@ -24,7 +24,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -103,17 +102,17 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Endpoint = "http://vcsa.host.localnet"
 	expected.Username = "otelu"
-	expected.Password = "$VCENTER_PASSWORD"
-	expected.Metrics = metadata.DefaultMetricsSettings()
-	expected.Metrics.VcenterHostCPUUtilization.Enabled = false
+	expected.Password = "${env:VCENTER_PASSWORD}"
+	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
+	expected.MetricsBuilderConfig.Metrics.VcenterHostCPUUtilization.Enabled = false
 	expected.CollectionInterval = 5 * time.Minute
 
-	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(config.ReceiverSettings{}, metadata.MetricSettings{})); diff != "" {
+	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{})); diff != "" {
 		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 	}
 

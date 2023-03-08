@@ -25,12 +25,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
 )
 
 const filteredMetric = "p0_metric_1"
@@ -47,15 +46,14 @@ func TestExprError(t *testing.T) {
 }
 
 func testMatchError(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) {
-	// the "foo" expr expression will cause expr Run() to return an error
-	proc, next, logs := testProcessor(t, nil, []string{"foo"})
-	pdm := testData("", 1, mdType, mvType)
-	err := proc.ConsumeMetrics(context.Background(), pdm)
-	assert.NoError(t, err)
-	// assert that metrics not be filtered as a result
-	assert.Equal(t, []pmetric.Metrics{pdm}, next.AllMetrics())
-	assert.Equal(t, 1, logs.Len())
-	assert.Equal(t, "shouldKeepMetric failed", logs.All()[0].Message)
+	t.Run(mdType.String(), func(t *testing.T) {
+		// the "foo" expr expression will cause expr Run() to return an error
+		proc, next := testProcessor(t, nil, []string{"foo"})
+		err := proc.ConsumeMetrics(context.Background(), testData("", 1, mdType, mvType))
+		assert.Error(t, err)
+		// assert that metrics not be filtered as a result
+		assert.Len(t, next.AllMetrics(), 0)
+	})
 }
 
 func TestExprProcessor(t *testing.T) {
@@ -118,16 +116,15 @@ func testFilter(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDa
 
 func assertFiltered(t *testing.T, lm pcommon.Map) {
 	lm.Range(func(k string, v pcommon.Value) bool {
-		if k == filteredAttrKey && v.Equal(filteredAttrVal) {
-			assert.Fail(t, "found metric that should have been filtered out")
-			return false
+		if k == filteredAttrKey {
+			require.NotEqual(t, v.AsRaw(), filteredAttrVal.AsRaw())
 		}
 		return true
 	})
 }
 
 func filterMetrics(t *testing.T, include []string, exclude []string, mds []pmetric.Metrics) []pmetric.Metrics {
-	proc, next, _ := testProcessor(t, include, exclude)
+	proc, next := testProcessor(t, include, exclude)
 	for _, md := range mds {
 		err := proc.ConsumeMetrics(context.Background(), md)
 		require.NoError(t, err)
@@ -135,28 +132,23 @@ func filterMetrics(t *testing.T, include []string, exclude []string, mds []pmetr
 	return next.AllMetrics()
 }
 
-func testProcessor(t *testing.T, include []string, exclude []string) (component.MetricsProcessor, *consumertest.MetricsSink, *observer.ObservedLogs) {
+func testProcessor(t *testing.T, include []string, exclude []string) (processor.Metrics, *consumertest.MetricsSink) {
 	factory := NewFactory()
 	cfg := exprConfig(factory, include, exclude)
 	ctx := context.Background()
 	next := &consumertest.MetricsSink{}
-	core, logs := observer.New(zapcore.WarnLevel)
 	proc, err := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateSettings{
-			TelemetrySettings: component.TelemetrySettings{
-				Logger: zap.New(core),
-			},
-		},
+		processortest.NewNopCreateSettings(),
 		cfg,
 		next,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, proc)
-	return proc, next, logs
+	return proc, next
 }
 
-func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) component.ProcessorConfig {
+func exprConfig(factory processor.Factory, include []string, exclude []string) component.Config {
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
 	pCfg.Metrics = MetricFilters{}

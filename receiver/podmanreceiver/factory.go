@@ -19,28 +19,27 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
 	typeStr           = "podman_stats"
-	stability         = component.StabilityLevelInDevelopment
+	stability         = component.StabilityLevelDevelopment
 	defaultAPIVersion = "3.3.1"
 )
 
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() rcvr.Factory {
+	return rcvr.NewFactory(
 		typeStr,
 		createDefaultReceiverConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		rcvr.WithMetrics(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() *Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
 		Endpoint:   "unix:///run/podman/podman.sock",
@@ -49,16 +48,16 @@ func createDefaultConfig() *Config {
 	}
 }
 
-func createDefaultReceiverConfig() component.ReceiverConfig {
+func createDefaultReceiverConfig() component.Config {
 	return createDefaultConfig()
 }
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
-	config component.ReceiverConfig,
+	params rcvr.CreateSettings,
+	config component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (rcvr.Metrics, error) {
 	podmanConfig := config.(*Config)
 	dsr, err := newReceiver(ctx, params, podmanConfig, consumer, nil)
 	if err != nil {

@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 func Test_PerfCounterScraper(t *testing.T) {
@@ -165,10 +165,7 @@ func Test_PerfCounterScraper(t *testing.T) {
 			if len(test.excludedInstanceNames) > 0 {
 				for _, excludedName := range test.excludedInstanceNames {
 					for _, cv := range counterValues {
-						if cv.InstanceName == excludedName {
-							assert.Fail(t, "", "Excluded Instance %q was returned", excludedName)
-							break
-						}
+						require.NotEqual(t, excludedName, cv.InstanceName)
 					}
 				}
 			}

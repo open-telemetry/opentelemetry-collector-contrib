@@ -1,10 +1,10 @@
 # Span Metrics Processor
 
-| Status                   |                     |
-| ------------------------ |---------------------|
-| Stability                | [in development]    |
-| Supported pipeline types | traces              |
-| Distributions            | [contrib]           |
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [development] |
+| Supported pipeline types | traces        |
+| Distributions            | [contrib]     |
 
 **Note:** Currently experimental and subject to breaking changes (e.g. change from processor to exporter/translator component).
 See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/403.
@@ -65,6 +65,7 @@ The following settings can be optionally configured:
 - `aggregation_temporality`: Defines the aggregation temporality of the generated metrics. 
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
   - Default: `AGGREGATION_TEMPORALITY_CUMULATIVE`
+- `namespace`: Defines the namespace of the generated metrics. If `namespace` provided, generated metric name will be added `namespace.` prefix.
 
 ## Examples
 
@@ -138,5 +139,5 @@ service:
 
 For more example configuration covering various other use cases, please visit the [testdata directory](./testdata).
 
-[in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

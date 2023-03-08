@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
+
 import (
 	"context"
 	"encoding/json"

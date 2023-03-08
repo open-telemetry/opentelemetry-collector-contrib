@@ -33,12 +33,12 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Endpoint = "localhost:3306"
 	expected.Username = "otel"
-	expected.Password = "$MYSQL_PASSWORD"
+	expected.Password = "${env:MYSQL_PASSWORD}"
 	expected.Database = "otel"
 	expected.CollectionInterval = 10 * time.Second
 

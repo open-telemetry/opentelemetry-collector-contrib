@@ -22,13 +22,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/watch"
 )
 
 type k8sobjectsreceiver struct {
-	setting         component.ReceiverCreateSettings
+	setting         receiver.CreateSettings
 	objects         []*K8sObjectsConfig
 	stopperChanList []chan struct{}
 	client          dynamic.Interface
@@ -37,9 +41,18 @@ type k8sobjectsreceiver struct {
 	mu              sync.Mutex
 }
 
-func newReceiver(params component.ReceiverCreateSettings, config *Config, consumer consumer.Logs) (component.LogsReceiver, error) {
+func newReceiver(params receiver.CreateSettings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
 	transport := "http"
 	client, err := config.getDynamicClient()
+	if err != nil {
+		return nil, err
+	}
+
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             params.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: params,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -49,12 +62,8 @@ func newReceiver(params component.ReceiverCreateSettings, config *Config, consum
 		setting:  params,
 		consumer: consumer,
 		objects:  config.Objects,
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: params,
-		}),
-		mu: sync.Mutex{},
+		obsrecv:  obsrecv,
+		mu:       sync.Mutex{},
 	}, nil
 }
 
@@ -119,7 +128,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 			if err != nil {
 				kr.setting.Logger.Error("error in pulling object", zap.String("resource", config.gvr.String()), zap.Error(err))
 			} else if len(objects.Items) > 0 {
-				logs := unstructuredListToLogData(objects)
+				logs := pullObjectsToLogData(objects, time.Now(), config)
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				err = kr.consumer.ConsumeLogs(obsCtx, logs)
 				kr.obsrecv.EndLogsOp(obsCtx, typeStr, logs.LogRecordCount(), err)
@@ -139,10 +148,14 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
 
-	watch, err := resource.Watch(ctx, metav1.ListOptions{
-		FieldSelector: config.FieldSelector,
-		LabelSelector: config.LabelSelector,
-	})
+	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
+		return resource.Watch(ctx, metav1.ListOptions{
+			FieldSelector: config.FieldSelector,
+			LabelSelector: config.LabelSelector,
+		})
+	}
+
+	watch, err := watch.NewRetryWatcher(config.ResourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
 		kr.setting.Logger.Error("error in watching object", zap.String("resource", config.gvr.String()), zap.Error(err))
 		return
@@ -156,7 +169,7 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
 				return
 			}
-			logs := watchEventToLogData(&data)
+			logs := watchObjectsToLogData(&data, time.Now(), config)
 
 			obsCtx := kr.obsrecv.StartLogsOp(ctx)
 			err := kr.consumer.ConsumeLogs(obsCtx, logs)
