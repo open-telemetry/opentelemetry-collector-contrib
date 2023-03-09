@@ -89,7 +89,7 @@ Note: JSON does not distinguish between fixed and floating point numbers. All
 JSON numbers are encoded as doubles.
 
 For Metrics the Azure Metric Records are an array
-of "records with the following fields.
+of "records" with the following fields.
 
 | Azure      |
 |------------|
