@@ -29,6 +29,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
+// The test input file has a repetitive structure:
+// - There are four resources, each with four spans, each with four span events.
+// - The four resources have the following sets of attributes:
+//   - resource.required: foo, resource.optional: bar
+//   - resource.required: foo, resource.optional: notbar
+//   - resource.required: notfoo
+//   - (no attributes)
+//
+// - The four spans on each resource have the following sets of attributes:
+//   - span.required: foo, span.optional: bar
+//   - span.required: foo, span.optional: notbar
+//   - span.required: notfoo
+//   - (no attributes)
+//
+// - The four span events on each span have the following sets of attributes:
+//   - event.required: foo, event.optional: bar
+//   - event.required: foo, event.optional: notbar
+//   - event.required: notfoo
+//   - (no attributes)
 func TestTracesToMetrics(t *testing.T) {
 	testCases := []struct {
 		name string
@@ -271,6 +290,22 @@ func TestTracesToMetrics(t *testing.T) {
 	}
 }
 
+// The test input file has a repetitive structure:
+// - There are four resources, each with six metrics, each with four data point.
+// - The four resources have the following sets of attributes:
+//   - resource.required: foo, resource.optional: bar
+//   - resource.required: foo, resource.optional: notbar
+//   - resource.required: notfoo
+//   - (no attributes)
+//
+// - The size metrics have the following sets of types:
+//   - int gauge, double gauge, int sum, double sum, historgram, summary
+//
+// - The four data points on each metric have the following sets of attributes:
+//   - datapoint.required: foo, datapoint.optional: bar
+//   - datapoint.required: foo, datapoint.optional: notbar
+//   - datapoint.required: notfoo
+//   - (no attributes)
 func TestMetricsToMetrics(t *testing.T) {
 	testCases := []struct {
 		name string
@@ -463,6 +498,19 @@ func TestMetricsToMetrics(t *testing.T) {
 	}
 }
 
+// The test input file has a repetitive structure:
+// - There are four resources, each with four logs.
+// - The four resources have the following sets of attributes:
+//   - resource.required: foo, resource.optional: bar
+//   - resource.required: foo, resource.optional: notbar
+//   - resource.required: notfoo
+//   - (no attributes)
+//
+// - The four logs on each resource have the following sets of attributes:
+//   - log.required: foo, log.optional: bar
+//   - log.required: foo, log.optional: notbar
+//   - log.required: notfoo
+//   - (no attributes)
 func TestLogsToMetrics(t *testing.T) {
 	testCases := []struct {
 		name string
