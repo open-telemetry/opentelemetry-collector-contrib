@@ -144,7 +144,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 
 	h := m.At(1)
 	assert.Equal(t, metricNameDuration, h.Name())
-	assert.Equal(t, defaultUnit, h.Unit())
+	assert.Equal(t, defaultUnit.String(), h.Unit())
 
 	// The remaining 3 data points are for duration.
 	if h.Type() == pmetric.MetricTypeExponentialHistogram {
@@ -937,7 +937,7 @@ func TestBuildMetricName(t *testing.T) {
 func TestConnector_durationsToUnits(t *testing.T) {
 	tests := []struct {
 		input []time.Duration
-		unit  string
+		unit  metrics.Unit
 		want  []float64
 	}{
 		{
@@ -957,7 +957,7 @@ func TestConnector_durationsToUnits(t *testing.T) {
 				3 * time.Millisecond,
 				3 * time.Second,
 			},
-			unit: "s",
+			unit: metrics.Seconds,
 			want: []float64{3e-09, 3e-06, 0.003, 3},
 		},
 		{
