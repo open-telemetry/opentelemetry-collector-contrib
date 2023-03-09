@@ -78,8 +78,10 @@ func defaultMetricsUnmarshalers() map[string]MetricsUnmarshaler {
 func defaultLogsUnmarshalers() map[string]LogsUnmarshaler {
 	otlpPb := newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding)
 	raw := newRawLogsUnmarshaler()
+	azureresourcelogs := newAzureResourceLogsUnmarshaler()
 	return map[string]LogsUnmarshaler{
-		otlpPb.Encoding(): otlpPb,
-		raw.Encoding():    raw,
+		otlpPb.Encoding():            otlpPb,
+		raw.Encoding():               raw,
+		azureresourcelogs.Encoding(): azureresourcelogs,
 	}
 }

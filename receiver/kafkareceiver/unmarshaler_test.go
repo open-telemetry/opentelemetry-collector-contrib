@@ -60,6 +60,7 @@ func TestDefaultLogsUnMarshaler(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
 		"raw",
+		"azureresourcelogs",
 	}
 	marshalers := defaultLogsUnmarshalers()
 	assert.Equal(t, len(expectedEncodings), len(marshalers))
