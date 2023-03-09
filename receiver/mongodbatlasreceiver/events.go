@@ -30,7 +30,6 @@ import (
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 )
 
@@ -49,8 +48,6 @@ type eventsClient interface {
 type eventsReceiver struct {
 	client        eventsClient
 	logger        *zap.Logger
-	id            component.ID  // ID of the receiver component
-	storageID     *component.ID // ID of the storage extension component
 	storageClient storage.Client
 	cfg           *Config
 	consumer      consumer.Logs
@@ -72,8 +69,6 @@ func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consume
 		client:        internal.NewMongoDBAtlasClient(c.PublicKey, c.PrivateKey, c.RetrySettings, settings.Logger),
 		cfg:           c,
 		logger:        settings.Logger,
-		id:            settings.ID,
-		storageID:     c.StorageID,
 		consumer:      consumer,
 		pollInterval:  c.Events.PollInterval,
 		wg:            &sync.WaitGroup{},
@@ -97,14 +92,10 @@ func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consume
 	return r
 }
 
-func (er *eventsReceiver) Start(ctx context.Context, host component.Host) error {
+func (er *eventsReceiver) Start(ctx context.Context, host component.Host, storageClient storage.Client) error {
 	er.logger.Debug("Starting up events receiver")
 	cancelCtx, cancel := context.WithCancel(ctx)
 	er.cancel = cancel
-	storageClient, err := adapter.GetStorageClient(cancelCtx, host, er.storageID, er.id)
-	if err != nil {
-		return fmt.Errorf("failed to get storage client: %w", err)
-	}
 	er.storageClient = storageClient
 	er.loadCheckpoint(cancelCtx)
 
