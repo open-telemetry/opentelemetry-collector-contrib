@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/wavefronthq/wavefront-sdk-go/histogram"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/atomic"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -208,7 +208,7 @@ func logMissingValue(metric pmetric.Metric, settings component.TelemetrySettings
 	namef := zap.String(metricNameString, metric.Name())
 	typef := zap.String(metricTypeString, metric.Type().String())
 	settings.Logger.Debug("Metric missing value", namef, typef)
-	count.Inc()
+	count.Add(1)
 }
 
 // getValue gets the floating point value out of a NumberDataPoint
@@ -267,7 +267,7 @@ func newGaugeConsumer(
 	return &gaugeConsumer{
 		sender:        sender,
 		settings:      settings,
-		missingValues: atomic.NewInt64(0),
+		missingValues: &atomic.Int64{},
 	}
 }
 
@@ -306,7 +306,7 @@ func newSumConsumer(
 	return &sumConsumer{
 		sender:        sender,
 		settings:      settings,
-		missingValues: atomic.NewInt64(0),
+		missingValues: &atomic.Int64{},
 	}
 }
 
@@ -359,8 +359,8 @@ type histogramReporting struct {
 func newHistogramReporting(settings component.TelemetrySettings) *histogramReporting {
 	return &histogramReporting{
 		settings:                 settings,
-		malformedHistograms:      atomic.NewInt64(0),
-		noAggregationTemporality: atomic.NewInt64(0),
+		malformedHistograms:      &atomic.Int64{},
+		noAggregationTemporality: &atomic.Int64{},
 	}
 }
 
@@ -379,14 +379,14 @@ func (r *histogramReporting) NoAggregationTemporality() int64 {
 func (r *histogramReporting) LogMalformed(metric pmetric.Metric) {
 	namef := zap.String(metricNameString, metric.Name())
 	r.settings.Logger.Debug("Malformed histogram", namef)
-	r.malformedHistograms.Inc()
+	r.malformedHistograms.Add(1)
 }
 
 // LogNoAggregationTemporality logs seeing a histogram metric with no aggregation temporality
 func (r *histogramReporting) LogNoAggregationTemporality(metric pmetric.Metric) {
 	namef := zap.String(metricNameString, metric.Name())
 	r.settings.Logger.Debug("histogram metric missing aggregation temporality", namef)
-	r.noAggregationTemporality.Inc()
+	r.noAggregationTemporality.Add(1)
 }
 
 // Report sends the counts in this instance to wavefront.

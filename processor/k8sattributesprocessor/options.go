@@ -79,7 +79,6 @@ func withExtractMetadata(fields ...string) option {
 				metadataPodStartTime,
 				conventions.AttributeK8SDeploymentName,
 				conventions.AttributeK8SNodeName,
-				conventions.AttributeContainerID,
 				conventions.AttributeContainerImageName,
 				conventions.AttributeContainerImageTag,
 			}

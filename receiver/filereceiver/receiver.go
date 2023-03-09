@@ -15,10 +15,39 @@
 package filereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver"
 
 import (
+	"context"
+	"fmt"
+	"os"
+
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.uber.org/zap"
 )
 
 type fileReceiver struct {
-	component.StartFunc
-	component.ShutdownFunc
+	consumer consumer.Metrics
+	path     string
+	logger   *zap.Logger
+	cancel   context.CancelFunc
+}
+
+func (r *fileReceiver) Start(_ context.Context, _ component.Host) error {
+	var ctx context.Context
+	ctx, r.cancel = context.WithCancel(context.Background())
+
+	file, err := os.Open(r.path)
+	if err != nil {
+		return fmt.Errorf("failed to open file %q: %w", r.path, err)
+	}
+
+	fr := newFileReader(r.logger, r.consumer, file)
+	go fr.readAll(ctx)
+	return nil
+}
+
+func (r *fileReceiver) Shutdown(ctx context.Context) error {
+	if r.cancel != nil {
+		r.cancel()
+	}
+	return nil
 }

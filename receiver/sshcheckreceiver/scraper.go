@@ -142,7 +142,7 @@ func newScraper(conf *Config, settings receiver.CreateSettings) *sshcheckScraper
 	return &sshcheckScraper{
 		Config:   conf,
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(conf.Metrics, settings),
+		mb:       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
 	}
 }
 

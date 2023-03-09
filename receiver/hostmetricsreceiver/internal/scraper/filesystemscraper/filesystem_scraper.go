@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
@@ -27,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
@@ -71,7 +73,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 
@@ -84,7 +86,15 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		if len(partitions) == 0 {
 			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 		}
-		errors.AddPartial(0, fmt.Errorf("failed collecting partitions information: %w", err))
+		if strings.Contains(strings.ToLower(err.Error()), "locked") {
+			// Log a debug message instead of an error message if a drive is
+			// locked and unavailable. For this particular case, we do not want
+			// to log an error message on every poll.
+			// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18236
+			s.settings.Logger.Debug("failed collecting locked partitions information: %w", zap.Error(err))
+		} else {
+			errors.AddPartial(0, fmt.Errorf("failed collecting partitions information: %w", err))
+		}
 	}
 
 	usages := make([]*deviceUsage, 0, len(partitions))

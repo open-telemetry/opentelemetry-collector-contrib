@@ -68,11 +68,12 @@ type cWMetricStats struct {
 }
 
 type groupedMetricMetadata struct {
-	namespace      string
-	timestampMs    int64
-	logGroup       string
-	logStream      string
-	metricDataType pmetric.MetricType
+	namespace                  string
+	timestampMs                int64
+	logGroup                   string
+	logStream                  string
+	metricDataType             pmetric.MetricType
+	retainInitialValueForDelta bool
 }
 
 // cWMetricMetadata represents the metadata associated with a given CloudWatch metric

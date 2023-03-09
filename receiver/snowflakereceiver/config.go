@@ -32,14 +32,14 @@ var (
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
-	Username                                string                   `mapstructure:"username"`
-	Password                                string                   `mapstructure:"password"`
-	Account                                 string                   `mapstructure:"account"`
-	Schema                                  string                   `mapstructure:"schema"`
-	Warehouse                               string                   `mapstructure:"warehouse"`
-	Database                                string                   `mapstructure:"database"`
-	Role                                    string                   `mapstructure:"role"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
+	Username                                string `mapstructure:"username"`
+	Password                                string `mapstructure:"password"`
+	Account                                 string `mapstructure:"account"`
+	Schema                                  string `mapstructure:"schema"`
+	Warehouse                               string `mapstructure:"warehouse"`
+	Database                                string `mapstructure:"database"`
+	Role                                    string `mapstructure:"role"`
 }
 
 func (cfg *Config) Validate() error {
