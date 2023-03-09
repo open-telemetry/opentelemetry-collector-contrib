@@ -29,18 +29,18 @@ func TestNewConnector(t *testing.T) {
 	defaultMethod := "GET"
 	defaultMethodValue := pcommon.NewValueStr(defaultMethod)
 	for _, tc := range []struct {
-		name                        string
-		latencyHistogramBuckets     []time.Duration
-		dimensions                  []Dimension
-		wantLatencyHistogramBuckets []float64
-		wantDimensions              []dimension
+		name                         string
+		durationHistogramBuckets     []time.Duration
+		dimensions                   []Dimension
+		wantDurationHistogramBuckets []float64
+		wantDimensions               []dimension
 	}{
 		{
 			name: "simplest config (use defaults)",
 		},
 		{
-			name:                    "1 configured latency histogram bucket should result in 1 explicit latency bucket (+1 implicit +Inf bucket)",
-			latencyHistogramBuckets: []time.Duration{2 * time.Millisecond},
+			name:                     "1 configured duration histogram bucket should result in 1 explicit duration bucket (+1 implicit +Inf bucket)",
+			durationHistogramBuckets: []time.Duration{2 * time.Millisecond},
 			dimensions: []Dimension{
 				{Name: "http.method", Default: &defaultMethod},
 				{Name: "http.status_code"},
@@ -58,7 +58,7 @@ func TestNewConnector(t *testing.T) {
 			creationParams := connectortest.NewNopCreateSettings()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Histogram.Explicit = &ExplicitHistogramConfig{
-				Buckets: tc.latencyHistogramBuckets,
+				Buckets: tc.durationHistogramBuckets,
 			}
 			cfg.Dimensions = tc.dimensions
 
