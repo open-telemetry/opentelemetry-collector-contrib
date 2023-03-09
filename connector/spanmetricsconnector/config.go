@@ -71,6 +71,7 @@ type Config struct {
 }
 
 type HistogramConfig struct {
+	Unit        string                      `mapstructure:"unit"`
 	Exponential *ExponentialHistogramConfig `mapstructure:"exponential"`
 	Explicit    *ExplicitHistogramConfig    `mapstructure:"explicit"`
 }
@@ -104,6 +105,10 @@ func (c Config) Validate() error {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
 	}
 
+	unit := c.Histogram.Unit
+	if unit != "s" && unit != "ms" {
+		return fmt.Errorf("allowed units are 'ms' and 's', got: '%s'", c.Histogram.Unit)
+	}
 	return nil
 }
 

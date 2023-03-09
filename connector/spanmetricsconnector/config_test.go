@@ -58,6 +58,7 @@ func TestLoadConfig(t *testing.T) {
 				DimensionsCacheSize:  1500,
 				MetricsFlushInterval: 30 * time.Second,
 				Histogram: HistogramConfig{
+					Unit: "s",
 					Explicit: &ExplicitHistogramConfig{
 						Buckets: []time.Duration{
 							10 * time.Millisecond,
@@ -75,6 +76,7 @@ func TestLoadConfig(t *testing.T) {
 				DimensionsCacheSize:    1000,
 				MetricsFlushInterval:   15 * time.Second,
 				Histogram: HistogramConfig{
+					Unit: "ms",
 					Exponential: &ExponentialHistogramConfig{
 						MaxSize: 10,
 					},
@@ -84,6 +86,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(typeStr, "exponential_and_explicit_histogram"),
 			errorMessage: "use either `explicit` or `exponential` buckets histogram",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "invalid_histogram_unit"),
+			errorMessage: "allowed units are 'ms' and 's', got: 'h'",
 		},
 	}
 

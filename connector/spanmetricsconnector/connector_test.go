@@ -58,9 +58,8 @@ const (
 	regionResourceAttrName = "region"
 	DimensionsCacheSize    = 2
 
-	sampleRegion          = "us-east-1"
-	sampleLatency         = float64(11)
-	sampleLatencyDuration = time.Duration(sampleLatency) * time.Millisecond
+	sampleRegion   = "us-east-1"
+	sampleDuration = float64(11)
 )
 
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
@@ -114,7 +113,7 @@ func verifyMultipleCumulativeConsumptions() func(t testing.TB, input pmetric.Met
 // This is the best point to verify the computed metrics from spans are as expected.
 func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemporality pmetric.AggregationTemporality, numCumulativeConsumptions int) bool {
 	require.Equal(t, 6, input.DataPointCount(),
-		"Should be 3 for each of call count and latency. Each group of 3 data points is made of: "+
+		"Should be 3 for each of calls count and duration. Each group of 3 data points is made of: "+
 			"service-a (server kind) -> service-a (client kind) -> service-b (service kind)",
 	)
 
@@ -144,10 +143,10 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 	}
 
 	h := m.At(1)
-	assert.Equal(t, metricNameLatency, h.Name())
-	assert.Equal(t, "ms", h.Unit())
+	assert.Equal(t, metricNameDuration, h.Name())
+	assert.Equal(t, defaultUnit, h.Unit())
 
-	// The remaining 3 data points are for latency.
+	// The remaining 3 data points are for duration.
 	if h.Type() == pmetric.MetricTypeExponentialHistogram {
 		hist := h.ExponentialHistogram()
 		assert.Equal(t, expectedTemporality, hist.AggregationTemporality())
@@ -167,9 +166,9 @@ func verifyExplicitHistogramDataPoints(t testing.TB, dps pmetric.HistogramDataPo
 		dp := dps.At(dpi)
 		assert.Equal(
 			t,
-			sampleLatency*float64(numCumulativeConsumptions),
+			sampleDuration*float64(numCumulativeConsumptions),
 			dp.Sum(),
-			"Should be a 11ms latency measurement, multiplied by the number of stateful accumulations.")
+			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
 		// Verify bucket counts.
@@ -178,19 +177,19 @@ func verifyExplicitHistogramDataPoints(t testing.TB, dps pmetric.HistogramDataPo
 		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto.
 		assert.Equal(t, dp.ExplicitBounds().Len()+1, dp.BucketCounts().Len())
 
-		// Find the bucket index where the 11ms latency should belong in.
-		var foundLatencyIndex int
-		for foundLatencyIndex = 0; foundLatencyIndex < dp.ExplicitBounds().Len(); foundLatencyIndex++ {
-			if dp.ExplicitBounds().At(foundLatencyIndex) > sampleLatency {
+		// Find the bucket index where the 11ms duration should belong in.
+		var foundDurationIndex int
+		for foundDurationIndex = 0; foundDurationIndex < dp.ExplicitBounds().Len(); foundDurationIndex++ {
+			if dp.ExplicitBounds().At(foundDurationIndex) > sampleDuration {
 				break
 			}
 		}
 
-		// Then verify that all histogram buckets are empty except for the bucket with the 11ms latency.
+		// Then verify that all histogram buckets are empty except for the bucket with the 11ms duration.
 		var wantBucketCount uint64
 		for bi := 0; bi < dp.BucketCounts().Len(); bi++ {
 			wantBucketCount = 0
-			if bi == foundLatencyIndex {
+			if bi == foundDurationIndex {
 				wantBucketCount = uint64(numCumulativeConsumptions)
 			}
 			assert.Equal(t, wantBucketCount, dp.BucketCounts().At(bi))
@@ -206,9 +205,9 @@ func verifyExponentialHistogramDataPoints(t testing.TB, dps pmetric.ExponentialH
 		dp := dps.At(dpi)
 		assert.Equal(
 			t,
-			sampleLatency*float64(numCumulativeConsumptions),
+			sampleDuration*float64(numCumulativeConsumptions),
 			dp.Sum(),
-			"Should be a 11ms latency measurement, multiplied by the number of stateful accumulations.")
+			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
 		assert.Equal(t, uint64(numCumulativeConsumptions), dp.Count())
 		assert.Equal(t, []uint64{uint64(numCumulativeConsumptions)}, dp.Positive().BucketCounts().AsRaw())
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
@@ -261,7 +260,8 @@ func buildBadSampleTrace() ptrace.Traces {
 	now := time.Now()
 	// Flipping timestamp for a bad duration
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(now))
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
+	span.SetStartTimestamp(
+		pcommon.NewTimestampFromTime(now.Add(time.Duration(sampleDuration) * time.Millisecond)))
 	return badTrace
 }
 
@@ -323,7 +323,8 @@ func initSpan(span span, s ptrace.Span) {
 	s.Status().SetCode(span.statusCode)
 	now := time.Now()
 	s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
-	s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
+	s.SetEndTimestamp(
+		pcommon.NewTimestampFromTime(now.Add(time.Duration(sampleDuration) * time.Millisecond)))
 
 	s.Attributes().PutStr(stringAttrName, "stringAttrValue")
 	s.Attributes().PutInt(intAttrName, 99)
@@ -761,12 +762,11 @@ func newConnectorImp(
 	}
 	return &connectorImp{
 		logger:          logger,
-		config:          Config{AggregationTemporality: temporality},
+		config:          Config{AggregationTemporality: temporality, Histogram: HistogramConfig{Unit: defaultUnit}},
 		metricsConsumer: mcon,
-
-		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
-		histograms:     histograms(),
-		sums:           metrics.NewSumMetrics(),
+		startTimestamp:  pcommon.NewTimestampFromTime(time.Now()),
+		histograms:      histograms(),
+		sums:            metrics.NewSumMetrics(),
 		dimensions: []dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
@@ -860,8 +860,8 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 	mcon := &mocks.MetricsConsumer{}
 
 	wantDataPointCounts := []int{
-		6, // (calls + latency) * (service-a + service-b + service-c)
-		4, // (calls + latency) * (service-b + service-c)
+		6, // (calls + duration) * (service-a + service-b + service-c)
+		4, // (calls + duration) * (service-b + service-c)
 	}
 
 	// Ensure the assertion that wantDataPointCounts is performed only after all ConsumeMetrics
@@ -934,9 +934,10 @@ func TestBuildMetricName(t *testing.T) {
 	}
 }
 
-func TestConnector_MapDurationsToMillis(t *testing.T) {
+func TestConnector_durationsToUnits(t *testing.T) {
 	tests := []struct {
 		input []time.Duration
+		unit  string
 		want  []float64
 	}{
 		{
@@ -946,16 +947,28 @@ func TestConnector_MapDurationsToMillis(t *testing.T) {
 				3 * time.Millisecond,
 				3 * time.Second,
 			},
+			unit: defaultUnit,
 			want: []float64{0.000003, 0.003, 3, 3000},
 		},
 		{
+			input: []time.Duration{
+				3 * time.Nanosecond,
+				3 * time.Microsecond,
+				3 * time.Millisecond,
+				3 * time.Second,
+			},
+			unit: "s",
+			want: []float64{3e-09, 3e-06, 0.003, 3},
+		},
+		{
 			input: []time.Duration{},
+			unit:  defaultUnit,
 			want:  []float64{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
-			got := mapDurationsToMillis(tt.input)
+			got := durationsToUnits(tt.input, unitDivider(tt.unit))
 			assert.Equal(t, tt.want, got)
 		})
 	}

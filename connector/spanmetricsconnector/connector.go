@@ -44,8 +44,10 @@ const (
 
 	defaultDimensionsCacheSize = 1000
 
-	metricNameLatency = "latency"
-	metricNameCalls   = "calls"
+	metricNameDuration = "duration"
+	metricNameCalls    = "calls"
+
+	defaultUnit = "ms"
 )
 
 type connectorImp struct {
@@ -120,10 +122,10 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		if cfg.LatencyHistogramBuckets != nil {
 			logger.Warn("latency_histogram_buckets is deprecated. " +
 				"Use `histogram: explicit: buckets` to set histogram buckets")
-			bounds = mapDurationsToMillis(cfg.LatencyHistogramBuckets)
+			bounds = durationsToUnits(cfg.LatencyHistogramBuckets, unitDivider(cfg.Histogram.Unit))
 		}
 		if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
-			bounds = mapDurationsToMillis(cfg.Histogram.Explicit.Buckets)
+			bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider(cfg.Histogram.Unit))
 		}
 		histograms = metrics.NewExplicitHistogramMetrics(bounds)
 	}
@@ -142,16 +144,18 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 	}, nil
 }
 
-// durationToMillis converts the given duration to the number of milliseconds it represents.
-// Note that this can return sub-millisecond (i.e. < 1ms) values as well.
-func durationToMillis(d time.Duration) float64 {
-	return float64(d.Nanoseconds()) / float64(time.Millisecond.Nanoseconds())
+// unitDivider returns a unit divider to convert nanoseconds to milliseconds or seconds.
+func unitDivider(s string) int64 {
+	return map[string]int64{
+		"s":  time.Second.Nanoseconds(),
+		"ms": time.Millisecond.Nanoseconds(),
+	}[s]
 }
 
-func mapDurationsToMillis(vs []time.Duration) []float64 {
+func durationsToUnits(vs []time.Duration, unitDivider int64) []float64 {
 	vsm := make([]float64, len(vs))
 	for i, v := range vs {
-		vsm[i] = durationToMillis(v)
+		vsm[i] = float64(v.Nanoseconds()) / float64(unitDivider)
 	}
 	return vsm
 }
@@ -226,25 +230,25 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName("spanmetricsconnector")
 
-	p.buildCallsMetrics(ilm)
-	p.buildLatencyMetrics(ilm)
+	p.buildCallsMetric(ilm)
+	p.buildDurationMetric(ilm)
 
 	return m
 }
 
-// buildCallsMetrics collects the raw call count metrics and builds
+// buildDurationMetric collects the raw call count metrics and builds
 // a explicit or exponential buckets histogram scope metric.
-func (p *connectorImp) buildLatencyMetrics(ilm pmetric.ScopeMetrics) {
+func (p *connectorImp) buildDurationMetric(ilm pmetric.ScopeMetrics) {
 	m := ilm.Metrics().AppendEmpty()
-	m.SetName(buildMetricName(p.config.Namespace, metricNameLatency))
-	m.SetUnit("ms")
+	m.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
+	m.SetUnit(p.config.Histogram.Unit)
 
 	p.histograms.BuildMetrics(m, p.startTimestamp, p.config.GetAggregationTemporality())
 }
 
-// buildCallsMetrics collects the raw call count metrics and builds
+// buildCallsMetric collects the raw call count metrics and builds
 // a sum scope metric.
-func (p *connectorImp) buildCallsMetrics(ilm pmetric.ScopeMetrics) {
+func (p *connectorImp) buildCallsMetric(ilm pmetric.ScopeMetrics) {
 	m := ilm.Metrics().AppendEmpty()
 	m.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
 
@@ -277,6 +281,8 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 		if !ok {
 			continue
 		}
+
+		unitDivider := unitDivider(p.config.Histogram.Unit)
 		serviceName := serviceAttr.Str()
 		ilsSlice := rspans.ScopeSpans()
 		for j := 0; j < ilsSlice.Len(); j++ {
@@ -285,11 +291,11 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				// Protect against end timestamps before start timestamps. Assume 0 duration.
-				latencyMs := float64(0)
+				duration := float64(0)
 				startTime := span.StartTimestamp()
 				endTime := span.EndTimestamp()
 				if endTime > startTime {
-					latencyMs = float64(endTime-startTime) / float64(time.Millisecond.Nanoseconds())
+					duration = float64(endTime-startTime) / float64(unitDivider)
 				}
 				key := p.buildKey(serviceName, span, p.dimensions, resourceAttr)
 
@@ -301,9 +307,9 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 				// aggregate histogram metrics
 				h := p.histograms.GetOrCreate(key, attributes)
-				h.Observe(latencyMs)
+				h.Observe(duration)
 				if !span.TraceID().IsEmpty() {
-					h.AddExemplar(span.TraceID(), span.SpanID(), latencyMs)
+					h.AddExemplar(span.TraceID(), span.SpanID(), duration)
 				}
 
 				// aggregate sums metrics
