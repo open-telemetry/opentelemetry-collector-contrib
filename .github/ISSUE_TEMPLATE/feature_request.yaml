@@ -1,4 +1,4 @@
-name: Feature request
+eame: Feature request
 description: Suggest an idea for this project
 labels: ["enhancement", "needs triage"]
 body:
@@ -146,6 +146,7 @@ body:
       - receiver/apachespark
       - receiver/awscloudwatch
       - receiver/awscontainerinsight
+      - receiver/awscloudwatchmetricsreceiver
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
       - receiver/awsxray
