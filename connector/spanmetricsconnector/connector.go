@@ -30,6 +30,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -63,9 +65,7 @@ type connectorImp struct {
 	// The starting time of the data points.
 	startTimestamp pcommon.Timestamp
 
-	resourceHistograms map[string]metrics.HistogramMetrics
-	resourceSums       map[string]metrics.SumMetrics
-	resourceAttributes map[string]pcommon.Map
+	resourceMetrics map[resourceKey]*resourceMetrics
 
 	keyBuf *bytes.Buffer
 
@@ -78,6 +78,12 @@ type connectorImp struct {
 	started bool
 
 	shutdownOnce sync.Once
+}
+
+type resourceMetrics struct {
+	histograms metrics.HistogramMetrics
+	sums       metrics.SumMetrics
+	attributes pcommon.Map
 }
 
 type dimension struct {
@@ -113,9 +119,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		logger:                logger,
 		config:                *cfg,
 		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
-		resourceHistograms:    make(map[string]metrics.HistogramMetrics),
-		resourceSums:          make(map[string]metrics.SumMetrics),
-		resourceAttributes:    make(map[string]pcommon.Map),
+		resourceMetrics:       make(map[resourceKey]*resourceMetrics),
 		dimensions:            newDimensions(cfg.Dimensions),
 		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
@@ -227,25 +231,23 @@ func (p *connectorImp) exportMetrics(ctx context.Context) {
 // buildMetrics collects the computed raw metrics data and builds OTLP metrics.
 func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
-	for key, attr := range p.resourceAttributes {
+	for _, rawMetrics := range p.resourceMetrics {
 		rm := m.ResourceMetrics().AppendEmpty()
-		attr.CopyTo(rm.Resource().Attributes())
+		rawMetrics.attributes.CopyTo(rm.Resource().Attributes())
 
 		sm := rm.ScopeMetrics().AppendEmpty()
 		sm.Scope().SetName("spanmetricsconnector")
 
-		if sums, ok := p.resourceSums[key]; ok {
-			metric := sm.Metrics().AppendEmpty()
-			metric.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
-			sums.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
-		}
+		sums := rawMetrics.sums
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
+		sums.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
 
-		if histograms, ok := p.resourceHistograms[key]; ok {
-			metric := sm.Metrics().AppendEmpty()
-			metric.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
-			metric.SetUnit(p.config.Histogram.Unit.String())
-			histograms.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
-		}
+		histograms := rawMetrics.histograms
+		metric = sm.Metrics().AppendEmpty()
+		metric.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
+		metric.SetUnit(p.config.Histogram.Unit.String())
+		histograms.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
 	}
 
 	return m
@@ -254,16 +256,14 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 func (p *connectorImp) resetState() {
 	// If delta metrics, reset accumulated data
 	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-		p.resourceSums = make(map[string]metrics.SumMetrics)
-		p.resourceHistograms = make(map[string]metrics.HistogramMetrics)
-		p.resourceAttributes = make(map[string]pcommon.Map)
+		p.resourceMetrics = make(map[resourceKey]*resourceMetrics)
 		p.metricKeyToDimensions.Purge()
 	} else {
 		p.metricKeyToDimensions.RemoveEvictedItems()
 
 		// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
-		for _, h := range p.resourceHistograms {
-			h.Reset(true)
+		for _, m := range p.resourceMetrics {
+			m.histograms.Reset(true)
 		}
 	}
 }
@@ -283,7 +283,9 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 			continue
 		}
 
-		histograms, sums := p.getOrCreateResourceMetrics(resourceAttr)
+		rm := p.getOrCreateResourceMetrics(resourceAttr)
+		sums := rm.sums
+		histograms := rm.histograms
 
 		unitDivider := unitDivider(p.config.Histogram.Unit)
 		serviceName := serviceAttr.Str()
@@ -323,34 +325,20 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	}
 }
 
-func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) (metrics.HistogramMetrics, metrics.SumMetrics) {
-	p.keyBuf.Reset()
-	attr.Range(func(k string, v pcommon.Value) bool {
-		p.keyBuf.WriteString(k)
-		p.keyBuf.WriteString(metricKeySeparator)
-		p.keyBuf.WriteString(v.AsString())
-		p.keyBuf.WriteString(metricKeySeparator)
+type resourceKey [16]byte
 
-		return true
-	})
-	key := p.keyBuf.String()
-
-	if _, ok := p.resourceAttributes[key]; !ok {
-		p.resourceAttributes[key] = attr
-	}
-	histograms, ok := p.resourceHistograms[key]
+func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {
+	key := resourceKey(pdatautil.MapHash(attr))
+	v, ok := p.resourceMetrics[key]
 	if !ok {
-		histograms = p.initHistogramMetrics()
-		p.resourceHistograms[key] = histograms
+		v = &resourceMetrics{
+			histograms: p.initHistogramMetrics(),
+			sums:       metrics.NewSumMetrics(),
+			attributes: attr,
+		}
+		p.resourceMetrics[key] = v
 	}
-
-	sums, ok := p.resourceSums[key]
-	if !ok {
-		sums = metrics.NewSumMetrics()
-		p.resourceSums[key] = sums
-	}
-
-	return histograms, sums
+	return v
 }
 
 func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {
