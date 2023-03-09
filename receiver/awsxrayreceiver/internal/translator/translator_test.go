@@ -880,7 +880,7 @@ func TestTranslation(t *testing.T) {
 				)
 			}
 
-			traces, totalSpanCount, err := ToTraces(content)
+			traces, totalSpanCount, err := ToTraces(content, nil)
 			if err == nil || (!tc.expectedUnmarshallFailure && expectedRs.ScopeSpans().Len() > 0 && expectedRs.ScopeSpans().At(0).Spans().Len() > 0) {
 				assert.Equal(t, totalSpanCount,
 					expectedRs.ScopeSpans().At(0).Spans().Len(),

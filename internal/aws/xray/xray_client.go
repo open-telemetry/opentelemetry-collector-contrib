@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
+package awsxray // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 
 import (
 	"os"
@@ -35,7 +35,14 @@ const agentPrefix = "xray-otel-exporter/"
 const execEnvPrefix = " exec-env/"
 const osPrefix = " OS/"
 
-// xrayClient represents X-Ray client.
+// XRayClient represents X-Ray client.
+type XRayClient interface {
+	// PutTraceSegments makes PutTraceSegments api call on X-Ray client.
+	PutTraceSegments(input *xray.PutTraceSegmentsInput) (*xray.PutTraceSegmentsOutput, error)
+	// PutTelemetryRecords makes PutTelemetryRecords api call on X-Ray client.
+	PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (*xray.PutTelemetryRecordsOutput, error)
+}
+
 type xrayClient struct {
 	xRay *xray.XRay
 }
@@ -65,8 +72,8 @@ func getModVersion() string {
 	return "UNKNOWN"
 }
 
-// newXRay creates a new instance of the XRay client with a aws configuration and session .
-func newXRay(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, s *session.Session) xrayClient {
+// NewXRayClient creates a new instance of the XRay client with an AWS configuration and session.
+func NewXRayClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, s *session.Session) XRayClient {
 	x := xray.New(s, awsConfig)
 	logger.Debug("Using Endpoint: %s", zap.String("endpoint", x.Endpoint))
 
@@ -92,7 +99,7 @@ func newXRay(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Buil
 		},
 	})
 
-	return xrayClient{
+	return &xrayClient{
 		xRay: x,
 	}
 }

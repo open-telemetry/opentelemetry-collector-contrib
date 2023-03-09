@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -35,7 +35,7 @@ import (
 )
 
 func TestTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter(t)
+	traceExporter := initializeTracesExporter(t, generateConfig(t))
 	ctx := context.Background()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -51,7 +51,7 @@ func TestXraySpanTraceResourceExtraction(t *testing.T) {
 }
 
 func TestXrayAndW3CSpanTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter(t)
+	traceExporter := initializeTracesExporter(t, generateConfig(t))
 	ctx := context.Background()
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -73,8 +73,21 @@ func TestW3CSpanTraceResourceExtraction(t *testing.T) {
 	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 0, "0 spans have xray trace id")
 }
 
+func TestTelemetryEnabled(t *testing.T) {
+	cfg := generateConfig(t)
+	cfg.TelemetryConfig.Enabled = true
+	traceExporter := initializeTracesExporter(t, cfg)
+	ctx := context.Background()
+	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
+	td := constructSpanData()
+	err := traceExporter.ConsumeTraces(ctx, td)
+	assert.NotNil(t, err)
+	err = traceExporter.Shutdown(ctx)
+	assert.Nil(t, err)
+}
+
 func BenchmarkForTracesExporter(b *testing.B) {
-	traceExporter := initializeTracesExporter(b)
+	traceExporter := initializeTracesExporter(b, generateConfig(b))
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		ctx := context.Background()
@@ -85,8 +98,8 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	}
 }
 
-func initializeTracesExporter(t testing.TB) exporter.Traces {
-	exporterConfig := generateConfig(t)
+func initializeTracesExporter(t testing.TB, exporterConfig *Config) exporter.Traces {
+	t.Helper()
 	mconn := new(awsutil.Conn)
 	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopCreateSettings(), mconn)
 	if err != nil {
@@ -95,15 +108,15 @@ func initializeTracesExporter(t testing.TB) exporter.Traces {
 	return traceExporter
 }
 
-func generateConfig(t testing.TB) component.Config {
+func generateConfig(t testing.TB) *Config {
 	t.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	t.Setenv("AWS_DEFAULT_REGION", "us-east-1")
 	t.Setenv("AWS_REGION", "us-east-1")
 	factory := NewFactory()
-	exporterConfig := factory.CreateDefaultConfig()
-	exporterConfig.(*Config).Region = "us-east-1"
-	exporterConfig.(*Config).LocalMode = true
+	exporterConfig := factory.CreateDefaultConfig().(*Config)
+	exporterConfig.Region = "us-east-1"
+	exporterConfig.LocalMode = true
 	return exporterConfig
 }
 

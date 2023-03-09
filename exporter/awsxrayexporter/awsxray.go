@@ -29,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 const (
@@ -38,24 +39,31 @@ const (
 // newTracesExporter creates an exporter.Traces that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
 func newTracesExporter(
-	config component.Config, set exporter.CreateSettings, cn awsutil.ConnAttr) (exporter.Traces, error) {
+	cfg *Config,
+	set exporter.CreateSettings,
+	cn awsutil.ConnAttr,
+) (exporter.Traces, error) {
 	typeLog := zap.String("type", string(set.ID.Type()))
 	nameLog := zap.String("name", set.ID.String())
 	logger := set.Logger
-	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &config.(*Config).AWSSessionSettings)
+	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &cfg.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
-	xrayClient := newXRay(logger, awsConfig, set.BuildInfo, session)
+	xrayClient := awsxray.NewXRayClient(logger, awsConfig, set.BuildInfo, session)
+	var telemetry awsxray.Telemetry
+	if cfg.TelemetryConfig.Enabled {
+		telemetry = awsxray.SetupTelemetry(set.ID, xrayClient, session, &cfg.TelemetryConfig, &cfg.AWSSessionSettings)
+	}
 	return exporterhelper.NewTracesExporter(
 		context.TODO(),
 		set,
-		config,
+		cfg,
 		func(ctx context.Context, td ptrace.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
 
-			documents := extractResourceSpans(config, logger, td)
+			documents := extractResourceSpans(cfg, logger, td)
 
 			for offset := 0; offset < len(documents); offset += maxSegmentsPerPut {
 				var nextOffset int
@@ -70,6 +78,11 @@ func newTracesExporter(
 				if localErr != nil {
 					logger.Debug("response error", zap.Error(localErr))
 					err = wrapErrorIfBadRequest(localErr) // record error
+					if telemetry != nil {
+						telemetry.RecordConnectionError(localErr)
+					}
+				} else if telemetry != nil {
+					telemetry.RecordSegmentsSent(len(input.TraceSegmentDocuments))
 				}
 				if output != nil {
 					logger.Debug("response: " + output.String())
@@ -80,7 +93,16 @@ func newTracesExporter(
 			}
 			return err
 		},
+		exporterhelper.WithStart(func(context.Context, component.Host) error {
+			if telemetry != nil {
+				telemetry.Start()
+			}
+			return nil
+		}),
 		exporterhelper.WithShutdown(func(context.Context) error {
+			if telemetry != nil {
+				telemetry.Stop()
+			}
 			_ = logger.Sync()
 			return nil
 		}),

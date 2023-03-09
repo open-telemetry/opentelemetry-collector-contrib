@@ -65,6 +65,8 @@ comparable AWS X-Ray Daemon configuration values.
 | `indexed_attributes`      | List of attribute names to be converted to X-Ray annotations.                      |         |
 | `index_all_attributes`    | Enable or disable conversion of all OpenTelemetry attributes to X-Ray annotations. | false   |
 | `aws_log_groups`          | List of log group names for CloudWatch.                                            | []      |
+| `telemetry.enabled`          | Whether telemetry collection is enabled at all.                                    | false   |
+| `telemetry.include_metadata` | Whether to include metadata in the telemetry (InstanceID, Hostname, ResourceARN)   | false   |
 
 ## Traces and logs correlation
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxrayexporter
+package awsxray
 
 import (
 	"testing"
@@ -34,8 +34,8 @@ func TestUserAgent(t *testing.T) {
 		Version: "1.0",
 	}
 
-	session, _ := session.NewSession()
-	xray := newXRay(logger, &aws.Config{}, buildInfo, session)
+	newSession, _ := session.NewSession()
+	xray := NewXRayClient(logger, &aws.Config{}, buildInfo, newSession).(*xrayClient)
 	x := xray.xRay
 
 	req := request.New(aws.Config{}, metadata.ClientInfo{}, x.Handlers, nil, &request.Operation{
