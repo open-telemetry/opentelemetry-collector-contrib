@@ -1097,6 +1097,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "wednesday"
+<<<<<<< HEAD
   - package-ecosystem: "gomod"
     directory: "/testbed/mockdatareceivers/mockawsxrayreceiver"
     schedule:
@@ -1107,3 +1108,5 @@ updates:
     schedule:
       interval: "weekly"
       day: "wednesday"
+=======
+>>>>>>> make gendependabot
