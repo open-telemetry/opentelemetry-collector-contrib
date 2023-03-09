@@ -42,6 +42,7 @@ The following settings can be optionally configured:
 
 - `histogram` (default: `explicit_buckets`): Use to configure the type of histogram to record
   calculated from spans latency measurements.
+  - `unit` (default: `ms`, allowed values: `ms`, `s`): The time unit for recording duration measurements.
   - `explicit`:
     - `buckets`: the list of durations defining the latency histogram buckets. Default
       buckets: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
