@@ -16,58 +16,85 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "azureeventhub"
+
 	// The stability level of the exporter.
 	stability = component.StabilityLevelAlpha
+
+	// The receiver scope name
+	receiverScopeName = "otelcol/" + typeStr
 )
+
+var (
+	errUnexpectedConfigurationType = errors.New("Failed to cast configuration to Azure Event Hub Config")
+)
+
+type eventhubReceiverFactory struct {
+	receivers *sharedcomponent.SharedComponents
+}
 
 // NewFactory creates a factory for the Azure Event Hub receiver.
 func NewFactory() receiver.Factory {
+	f := &eventhubReceiverFactory{
+		receivers: sharedcomponent.NewSharedComponents(),
+	}
+
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, stability))
+		receiver.WithLogs(f.createLogsReceiver, stability),
+		receiver.WithMetrics(f.createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, cfg component.Config, logs consumer.Logs) (receiver.Logs, error) {
+func (f *eventhubReceiverFactory) createLogsReceiver(
+	ctx context.Context,
+	settings receiver.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (receiver.Logs, error) {
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             settings.ID,
-		Transport:              "azureeventhub",
-		ReceiverCreateSettings: settings,
-	})
+	receiverConfig := cfg.(*Config)
+	receiver, err := newReceiver(component.DataTypeLogs, receiverConfig, settings)
+
 	if err != nil {
 		return nil, err
 	}
 
-	var converter eventConverter
-	switch logFormat(cfg.(*Config).Format) {
-	case azureLogFormat:
-		converter = newAzureLogFormatConverter(settings)
-	case rawLogFormat:
-		converter = newRawConverter(settings)
-	default:
-		converter = newAzureLogFormatConverter(settings)
+	receiver.(dataConsumer).setNextLogsConsumer(nextConsumer)
+
+	return receiver, nil
+}
+
+func (f *eventhubReceiverFactory) createMetricsReceiver(
+	ctx context.Context,
+	settings receiver.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics,
+) (receiver.Metrics, error) {
+
+	receiverConfig := cfg.(*Config)
+	receiver, err := newReceiver(component.DataTypeMetrics, receiverConfig, settings)
+
+	if err != nil {
+		return nil, err
 	}
 
-	return &client{
-		settings: settings,
-		consumer: logs,
-		config:   cfg.(*Config),
-		obsrecv:  obsrecv,
-		convert:  converter,
-	}, nil
+	receiver.(dataConsumer).setNextMetricsConsumer(nextConsumer)
+
+	return receiver, nil
 }

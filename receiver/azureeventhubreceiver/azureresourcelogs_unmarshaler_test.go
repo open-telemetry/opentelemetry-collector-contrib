@@ -18,7 +18,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
+	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -75,7 +77,7 @@ var maximumLogRecord = func() plog.LogRecord {
 	return lr
 }()
 
-func TestAsTimestamp(t *testing.T) {
+func Test_AsTimestamp(t *testing.T) {
 	timestamp := "2022-11-11T04:48:27.6767145Z"
 	nanos, err := asTimestamp(timestamp)
 	assert.NoError(t, err)
@@ -87,7 +89,7 @@ func TestAsTimestamp(t *testing.T) {
 	assert.Equal(t, pcommon.Timestamp(0), nanos)
 }
 
-func TestAsSeverity(t *testing.T) {
+func Test_AsSeverity(t *testing.T) {
 	tests := map[string]plog.SeverityNumber{
 		"Informational": plog.SeverityNumberInfo,
 		"Warning":       plog.SeverityNumberWarn,
@@ -103,7 +105,7 @@ func TestAsSeverity(t *testing.T) {
 	}
 }
 
-func TestSetIf(t *testing.T) {
+func Test_SetIf(t *testing.T) {
 	m := map[string]interface{}{}
 
 	setIf(m, "key", nil)
@@ -124,7 +126,7 @@ func TestSetIf(t *testing.T) {
 	assert.Equal(t, "ok", actual)
 }
 
-func TestExtractRawAttributes(t *testing.T) {
+func Test_ExtractRawAttributes(t *testing.T) {
 	badDuration := "invalid"
 	goodDuration := "1234"
 
@@ -229,7 +231,7 @@ func TestExtractRawAttributes(t *testing.T) {
 
 }
 
-func TestDecodeAzureLogRecord(t *testing.T) {
+func Test_UnmarshalLogs(t *testing.T) {
 
 	expectedMinimum := plog.NewLogs()
 	resourceLogs := expectedMinimum.ResourceLogs().AppendEmpty()
@@ -279,13 +281,30 @@ func TestDecodeAzureLogRecord(t *testing.T) {
 		},
 	}
 
+	sut := newAzureResourceLogsUnmarshaler(testBuildInfo, nil)
+	now := time.Now()
 	for _, tt := range tests {
 		t.Run(tt.file, func(t *testing.T) {
 			data, err := os.ReadFile(filepath.Join("testdata", tt.file))
 			assert.NoError(t, err)
 			assert.NotNil(t, data)
 
-			logs, err := transform(testBuildInfo, data)
+			event := &eventhub.Event{
+				Data:         data,
+				PartitionKey: nil,
+				Properties:   map[string]interface{}{},
+				ID:           "11234",
+				SystemProperties: &eventhub.SystemProperties{
+					SequenceNumber: nil,
+					EnqueuedTime:   &now,
+					Offset:         nil,
+					PartitionID:    nil,
+					PartitionKey:   nil,
+					Annotations:    nil,
+				},
+			}
+
+			logs, err := sut.UnmarshalLogs(event)
 			assert.NoError(t, err)
 
 			assert.NoError(t, plogtest.CompareLogs(tt.expected, logs))
