@@ -142,12 +142,12 @@ func newAlertsReceiver(params rcvr.CreateSettings, baseConfig *Config, consumer 
 
 func (a *alertsReceiver) Start(ctx context.Context, host component.Host, storageClient storage.Client) error {
 	if a.mode == alertModePoll {
-		return a.startPolling(ctx, host, storageClient)
+		return a.startPolling(ctx, storageClient)
 	}
 	return a.startListening(ctx, host)
 }
 
-func (a *alertsReceiver) startPolling(ctx context.Context, host component.Host, storageClient storage.Client) error {
+func (a *alertsReceiver) startPolling(ctx context.Context, storageClient storage.Client) error {
 	a.logger.Debug("starting alerts receiver in retrieval mode")
 	a.storageClient = storageClient
 	err := a.syncPersistence(ctx)
