@@ -44,23 +44,19 @@ func TestTracesToMetrics(t *testing.T) {
 		{
 			name: "one_condition",
 			cfg: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"span.count.if": {
-						MetricInfo: MetricInfo{
-							Description: "Span count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-							},
+						Description: "Span count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
 						},
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"spanevent.count.if": {
-						MetricInfo: MetricInfo{
-							Description: "Span event count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-							},
+						Description: "Span event count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
 						},
 					},
 				},
@@ -69,25 +65,21 @@ func TestTracesToMetrics(t *testing.T) {
 		{
 			name: "multiple_conditions",
 			cfg: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"span.count.if": {
-						MetricInfo: MetricInfo{
-							Description: "Span count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-								`attributes["span.optional"] != nil`,
-							},
+						Description: "Span count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`attributes["span.optional"] != nil`,
 						},
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"spanevent.count.if": {
-						MetricInfo: MetricInfo{
-							Description: "Span event count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-								`attributes["event.optional"] != nil`,
-							},
+						Description: "Span event count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`attributes["event.optional"] != nil`,
 						},
 					},
 				},
@@ -96,35 +88,27 @@ func TestTracesToMetrics(t *testing.T) {
 		{
 			name: "multiple_metrics",
 			cfg: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"span.count.all": {
-						MetricInfo: MetricInfo{
-							Description: "All spans count",
-						},
+						Description: "All spans count",
 					},
 					"span.count.if": {
-						MetricInfo: MetricInfo{
-							Description: "Span count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-								`attributes["span.optional"] != nil`,
-							},
+						Description: "Span count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`attributes["span.optional"] != nil`,
 						},
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"spanevent.count.all": {
-						MetricInfo: MetricInfo{
-							Description: "All span events count",
-						},
+						Description: "All span events count",
 					},
 					"spanevent.count.if": {
-						MetricInfo: MetricInfo{
-							Description: "Span event count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-								`attributes["event.optional"] != nil`,
-							},
+						Description: "Span event count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`attributes["event.optional"] != nil`,
 						},
 					},
 				},
@@ -133,11 +117,9 @@ func TestTracesToMetrics(t *testing.T) {
 		{
 			name: "one_attribute",
 			cfg: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"span.count.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Span count by attribute",
-						},
+						Description: "Span count by attribute",
 						Attributes: []AttributeConfig{
 							{
 								Key: "span.required",
@@ -145,11 +127,9 @@ func TestTracesToMetrics(t *testing.T) {
 						},
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"spanevent.count.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Span event count by attribute",
-						},
+						Description: "Span event count by attribute",
 						Attributes: []AttributeConfig{
 							{
 								Key: "event.required",
@@ -162,11 +142,9 @@ func TestTracesToMetrics(t *testing.T) {
 		{
 			name: "multiple_attributes",
 			cfg: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"span.count.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Span count by attributes",
-						},
+						Description: "Span count by attributes",
 						Attributes: []AttributeConfig{
 							{
 								Key: "span.required",
@@ -177,11 +155,9 @@ func TestTracesToMetrics(t *testing.T) {
 						},
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"spanevent.count.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Span event count by attributes",
-						},
+						Description: "Span event count by attributes",
 						Attributes: []AttributeConfig{
 							{
 								Key: "event.required",
@@ -197,11 +173,9 @@ func TestTracesToMetrics(t *testing.T) {
 		{
 			name: "default_attribute_value",
 			cfg: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"span.count.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Span count by attribute with default",
-						},
+						Description: "Span count by attribute with default",
 						Attributes: []AttributeConfig{
 							{
 								Key: "span.required",
@@ -213,11 +187,9 @@ func TestTracesToMetrics(t *testing.T) {
 						},
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"spanevent.count.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Span event count by attribute with default",
-						},
+						Description: "Span event count by attribute with default",
 						Attributes: []AttributeConfig{
 							{
 								Key: "event.required",
@@ -234,13 +206,11 @@ func TestTracesToMetrics(t *testing.T) {
 		{
 			name: "condition_and_attribute",
 			cfg: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"span.count.if.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Span count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-							},
+						Description: "Span count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
 						},
 						Attributes: []AttributeConfig{
 							{
@@ -249,13 +219,11 @@ func TestTracesToMetrics(t *testing.T) {
 						},
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"spanevent.count.if.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Span event count by attribute if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-							},
+						Description: "Span event count by attribute if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
 						},
 						Attributes: []AttributeConfig{
 							{
@@ -326,13 +294,11 @@ func TestMetricsToMetrics(t *testing.T) {
 						},
 					},
 				},
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"datapoint.count.if": {
-						MetricInfo: MetricInfo{
-							Description: "Data point count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-							},
+						Description: "Data point count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
 						},
 					},
 				},
@@ -350,14 +316,12 @@ func TestMetricsToMetrics(t *testing.T) {
 						},
 					},
 				},
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"datapoint.count.if": {
-						MetricInfo: MetricInfo{
-							Description: "Data point count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-								`attributes["datapoint.optional"] != nil`,
-							},
+						Description: "Data point count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`attributes["datapoint.optional"] != nil`,
 						},
 					},
 				},
@@ -378,19 +342,15 @@ func TestMetricsToMetrics(t *testing.T) {
 						},
 					},
 				},
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"datapoint.count.all": {
-						MetricInfo: MetricInfo{
-							Description: "All data points count",
-						},
+						Description: "All data points count",
 					},
 					"datapoint.count.if": {
-						MetricInfo: MetricInfo{
-							Description: "Data point count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-								`attributes["datapoint.optional"] != nil`,
-							},
+						Description: "Data point count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`attributes["datapoint.optional"] != nil`,
 						},
 					},
 				},
@@ -399,11 +359,9 @@ func TestMetricsToMetrics(t *testing.T) {
 		{
 			name: "one_attribute",
 			cfg: &Config{
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"datapoint.count.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Data point count by attribute",
-						},
+						Description: "Data point count by attribute",
 						Attributes: []AttributeConfig{
 							{
 								Key: "datapoint.required",
@@ -416,11 +374,9 @@ func TestMetricsToMetrics(t *testing.T) {
 		{
 			name: "multiple_attributes",
 			cfg: &Config{
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"datapoint.count.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Data point count by attributes",
-						},
+						Description: "Data point count by attributes",
 						Attributes: []AttributeConfig{
 							{
 								Key: "datapoint.required",
@@ -436,11 +392,9 @@ func TestMetricsToMetrics(t *testing.T) {
 		{
 			name: "default_attribute_value",
 			cfg: &Config{
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"datapoint.count.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Data point count by attribute with default",
-						},
+						Description: "Data point count by attribute with default",
 						Attributes: []AttributeConfig{
 							{
 								Key: "datapoint.required",
@@ -457,13 +411,11 @@ func TestMetricsToMetrics(t *testing.T) {
 		{
 			name: "condition_and_attribute",
 			cfg: &Config{
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"datapoint.count.if.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Data point count by attribute if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-							},
+						Description: "Data point count by attribute if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
 						},
 						Attributes: []AttributeConfig{
 							{
@@ -523,13 +475,11 @@ func TestLogsToMetrics(t *testing.T) {
 		{
 			name: "one_condition",
 			cfg: &Config{
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"count.if": {
-						MetricInfo: MetricInfo{
-							Description: "Count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-							},
+						Description: "Count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
 						},
 					},
 				},
@@ -538,14 +488,12 @@ func TestLogsToMetrics(t *testing.T) {
 		{
 			name: "multiple_conditions",
 			cfg: &Config{
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"count.if": {
-						MetricInfo: MetricInfo{
-							Description: "Count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-								`attributes["log.optional"] != nil`,
-							},
+						Description: "Count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`attributes["log.optional"] != nil`,
 						},
 					},
 				},
@@ -554,18 +502,14 @@ func TestLogsToMetrics(t *testing.T) {
 		{
 			name: "multiple_metrics",
 			cfg: &Config{
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"count.all": {
-						MetricInfo: MetricInfo{
-							Description: "All logs count",
-						},
+						Description: "All logs count",
 					},
 					"count.if": {
-						MetricInfo: MetricInfo{
-							Description: "Count if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-							},
+						Description: "Count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
 						},
 					},
 				},
@@ -574,11 +518,9 @@ func TestLogsToMetrics(t *testing.T) {
 		{
 			name: "one_attribute",
 			cfg: &Config{
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"log.count.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Log count by attribute",
-						},
+						Description: "Log count by attribute",
 						Attributes: []AttributeConfig{
 							{
 								Key: "log.required",
@@ -591,11 +533,9 @@ func TestLogsToMetrics(t *testing.T) {
 		{
 			name: "multiple_attributes",
 			cfg: &Config{
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"log.count.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Log count by attributes",
-						},
+						Description: "Log count by attributes",
 						Attributes: []AttributeConfig{
 							{
 								Key: "log.required",
@@ -611,11 +551,9 @@ func TestLogsToMetrics(t *testing.T) {
 		{
 			name: "default_attribute_value",
 			cfg: &Config{
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"log.count.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Log count by attribute with default",
-						},
+						Description: "Log count by attribute with default",
 						Attributes: []AttributeConfig{
 							{
 								Key: "log.required",
@@ -632,13 +570,11 @@ func TestLogsToMetrics(t *testing.T) {
 		{
 			name: "condition_and_attribute",
 			cfg: &Config{
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"log.count.if.by_attr": {
-						MetricInfo: MetricInfo{
-							Description: "Log count by attribute if ...",
-							Conditions: []string{
-								`resource.attributes["resource.optional"] != nil`,
-							},
+						Description: "Log count by attribute if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
 						},
 						Attributes: []AttributeConfig{
 							{

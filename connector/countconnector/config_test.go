@@ -33,18 +33,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "",
 			expect: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					defaultMetricNameSpans: {
-						MetricInfo: MetricInfo{
-							Description: defaultMetricDescSpans,
-						},
+						Description: defaultMetricDescSpans,
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					defaultMetricNameSpanEvents: {
-						MetricInfo: MetricInfo{
-							Description: defaultMetricDescSpanEvents,
-						},
+						Description: defaultMetricDescSpanEvents,
 					},
 				},
 				Metrics: map[string]MetricInfo{
@@ -52,18 +48,14 @@ func TestLoadConfig(t *testing.T) {
 						Description: defaultMetricDescMetrics,
 					},
 				},
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					defaultMetricNameDataPoints: {
-						MetricInfo: MetricInfo{
-							Description: defaultMetricDescDataPoints,
-						},
+						Description: defaultMetricDescDataPoints,
 					},
 				},
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					defaultMetricNameLogs: {
-						MetricInfo: MetricInfo{
-							Description: defaultMetricDescLogs,
-						},
+						Description: defaultMetricDescLogs,
 					},
 				},
 			},
@@ -71,18 +63,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "custom_description",
 			expect: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					defaultMetricNameSpans: {
-						MetricInfo: MetricInfo{
-							Description: "My description for default span count metric.",
-						},
+						Description: "My description for default span count metric.",
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					defaultMetricNameSpanEvents: {
-						MetricInfo: MetricInfo{
-							Description: "My description for default span event count metric.",
-						},
+						Description: "My description for default span event count metric.",
 					},
 				},
 				Metrics: map[string]MetricInfo{
@@ -90,18 +78,14 @@ func TestLoadConfig(t *testing.T) {
 						Description: "My description for default metric count metric.",
 					},
 				},
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					defaultMetricNameDataPoints: {
-						MetricInfo: MetricInfo{
-							Description: "My description for default datapoint count metric.",
-						},
+						Description: "My description for default datapoint count metric.",
 					},
 				},
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					defaultMetricNameLogs: {
-						MetricInfo: MetricInfo{
-							Description: "My description for default log count metric.",
-						},
+						Description: "My description for default log count metric.",
 					},
 				},
 			},
@@ -109,18 +93,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "custom_metric",
 			expect: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"my.span.count": {
-						MetricInfo: MetricInfo{
-							Description: "My span count.",
-						},
+						Description: "My span count.",
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"my.spanevent.count": {
-						MetricInfo: MetricInfo{
-							Description: "My span event count.",
-						},
+						Description: "My span event count.",
 					},
 				},
 				Metrics: map[string]MetricInfo{
@@ -128,18 +108,14 @@ func TestLoadConfig(t *testing.T) {
 						Description: "My metric count.",
 					},
 				},
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"my.datapoint.count": {
-						MetricInfo: MetricInfo{
-							Description: "My data point count.",
-						},
+						Description: "My data point count.",
 					},
 				},
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"my.logrecord.count": {
-						MetricInfo: MetricInfo{
-							Description: "My log record count.",
-						},
+						Description: "My log record count.",
 					},
 				},
 			},
@@ -147,20 +123,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "condition",
 			expect: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"my.span.count": {
-						MetricInfo: MetricInfo{
-							Description: "My span count.",
-							Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s") == true`},
-						},
+						Description: "My span count.",
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s") == true`},
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"my.spanevent.count": {
-						MetricInfo: MetricInfo{
-							Description: "My span event count.",
-							Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e") == true`},
-						},
+						Description: "My span event count.",
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e") == true`},
 					},
 				},
 				Metrics: map[string]MetricInfo{
@@ -169,20 +141,16 @@ func TestLoadConfig(t *testing.T) {
 						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m") == true`},
 					},
 				},
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"my.datapoint.count": {
-						MetricInfo: MetricInfo{
-							Description: "My data point count.",
-							Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d") == true`},
-						},
+						Description: "My data point count.",
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d") == true`},
 					},
 				},
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"my.logrecord.count": {
-						MetricInfo: MetricInfo{
-							Description: "My log record count.",
-							Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l") == true`},
-						},
+						Description: "My log record count.",
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l") == true`},
 					},
 				},
 			},
@@ -190,25 +158,21 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "multiple_condition",
 			expect: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"my.span.count": {
-						MetricInfo: MetricInfo{
-							Description: "My span count.",
-							Conditions: []string{
-								`IsMatch(resource.attributes["host.name"], "pod-s") == true`,
-								`IsMatch(resource.attributes["foo"], "bar-s") == true`,
-							},
+						Description: "My span count.",
+						Conditions: []string{
+							`IsMatch(resource.attributes["host.name"], "pod-s") == true`,
+							`IsMatch(resource.attributes["foo"], "bar-s") == true`,
 						},
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"my.spanevent.count": {
-						MetricInfo: MetricInfo{
-							Description: "My span event count.",
-							Conditions: []string{
-								`IsMatch(resource.attributes["host.name"], "pod-e") == true`,
-								`IsMatch(resource.attributes["foo"], "bar-e") == true`,
-							},
+						Description: "My span event count.",
+						Conditions: []string{
+							`IsMatch(resource.attributes["host.name"], "pod-e") == true`,
+							`IsMatch(resource.attributes["foo"], "bar-e") == true`,
 						},
 					},
 				},
@@ -221,25 +185,21 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"my.datapoint.count": {
-						MetricInfo: MetricInfo{
-							Description: "My data point count.",
-							Conditions: []string{
-								`IsMatch(resource.attributes["host.name"], "pod-d") == true`,
-								`IsMatch(resource.attributes["foo"], "bar-d") == true`,
-							},
+						Description: "My data point count.",
+						Conditions: []string{
+							`IsMatch(resource.attributes["host.name"], "pod-d") == true`,
+							`IsMatch(resource.attributes["foo"], "bar-d") == true`,
 						},
 					},
 				},
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"my.logrecord.count": {
-						MetricInfo: MetricInfo{
-							Description: "My log record count.",
-							Conditions: []string{
-								`IsMatch(resource.attributes["host.name"], "pod-l") == true`,
-								`IsMatch(resource.attributes["foo"], "bar-l") == true`,
-							},
+						Description: "My log record count.",
+						Conditions: []string{
+							`IsMatch(resource.attributes["host.name"], "pod-l") == true`,
+							`IsMatch(resource.attributes["foo"], "bar-l") == true`,
 						},
 					},
 				},
@@ -248,21 +208,17 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "attribute",
 			expect: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"my.span.count": {
-						MetricInfo: MetricInfo{
-							Description: "My span count by environment.",
-						},
+						Description: "My span count by environment.",
 						Attributes: []AttributeConfig{
 							{Key: "env"},
 						},
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"my.spanevent.count": {
-						MetricInfo: MetricInfo{
-							Description: "My span event count by environment.",
-						},
+						Description: "My span event count by environment.",
 						Attributes: []AttributeConfig{
 							{Key: "env"},
 						},
@@ -273,21 +229,17 @@ func TestLoadConfig(t *testing.T) {
 						Description: "My metric count.",
 					},
 				},
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"my.datapoint.count": {
-						MetricInfo: MetricInfo{
-							Description: "My data point count by environment.",
-						},
+						Description: "My data point count by environment.",
 						Attributes: []AttributeConfig{
 							{Key: "env"},
 						},
 					},
 				},
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"my.logrecord.count": {
-						MetricInfo: MetricInfo{
-							Description: "My log record count by environment.",
-						},
+						Description: "My log record count by environment.",
 						Attributes: []AttributeConfig{
 							{Key: "env"},
 						},
@@ -298,17 +250,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "multiple_metrics",
 			expect: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"my.span.count": {
-						MetricInfo: MetricInfo{
-							Description: "My span count.",
-						},
+						Description: "My span count.",
 					},
 					"limited.span.count": {
-						MetricInfo: MetricInfo{
-							Description: "Limited span count.",
-							Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s") == true`},
-						},
+						Description: "Limited span count.",
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s") == true`},
 						Attributes: []AttributeConfig{
 							{
 								Key: "env",
@@ -320,17 +268,13 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"my.spanevent.count": {
-						MetricInfo: MetricInfo{
-							Description: "My span event count.",
-						},
+						Description: "My span event count.",
 					},
 					"limited.spanevent.count": {
-						MetricInfo: MetricInfo{
-							Description: "Limited span event count.",
-							Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e") == true`},
-						},
+						Description: "Limited span event count.",
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e") == true`},
 						Attributes: []AttributeConfig{
 							{
 								Key: "env",
@@ -350,17 +294,13 @@ func TestLoadConfig(t *testing.T) {
 						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m") == true`},
 					},
 				},
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"my.datapoint.count": {
-						MetricInfo: MetricInfo{
-							Description: "My data point count.",
-						},
+						Description: "My data point count.",
 					},
 					"limited.datapoint.count": {
-						MetricInfo: MetricInfo{
-							Description: "Limited data point count.",
-							Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d") == true`},
-						},
+						Description: "Limited data point count.",
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d") == true`},
 						Attributes: []AttributeConfig{
 							{
 								Key: "env",
@@ -372,17 +312,13 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"my.logrecord.count": {
-						MetricInfo: MetricInfo{
-							Description: "My log record count.",
-						},
+						Description: "My log record count.",
 					},
 					"limited.logrecord.count": {
-						MetricInfo: MetricInfo{
-							Description: "Limited log record count.",
-							Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l") == true`},
-						},
+						Description: "Limited log record count.",
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l") == true`},
 						Attributes: []AttributeConfig{
 							{
 								Key: "env",
@@ -424,11 +360,9 @@ func TestConfigErrors(t *testing.T) {
 		{
 			name: "missing_metric_name_span",
 			input: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					"": {
-						MetricInfo: MetricInfo{
-							Description: defaultMetricDescSpans,
-						},
+						Description: defaultMetricDescSpans,
 					},
 				},
 			},
@@ -437,11 +371,9 @@ func TestConfigErrors(t *testing.T) {
 		{
 			name: "missing_metric_name_spanevent",
 			input: &Config{
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					"": {
-						MetricInfo: MetricInfo{
-							Description: defaultMetricDescSpans,
-						},
+						Description: defaultMetricDescSpans,
 					},
 				},
 			},
@@ -461,11 +393,9 @@ func TestConfigErrors(t *testing.T) {
 		{
 			name: "missing_metric_name_datapoint",
 			input: &Config{
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					"": {
-						MetricInfo: MetricInfo{
-							Description: defaultMetricDescSpans,
-						},
+						Description: defaultMetricDescSpans,
 					},
 				},
 			},
@@ -474,11 +404,9 @@ func TestConfigErrors(t *testing.T) {
 		{
 			name: "missing_metric_name_log",
 			input: &Config{
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					"": {
-						MetricInfo: MetricInfo{
-							Description: defaultMetricDescSpans,
-						},
+						Description: defaultMetricDescSpans,
 					},
 				},
 			},
@@ -487,12 +415,10 @@ func TestConfigErrors(t *testing.T) {
 		{
 			name: "invalid_condition_span",
 			input: &Config{
-				Spans: map[string]MetricInfoWithAttributes{
+				Spans: map[string]MetricInfo{
 					defaultMetricNameSpans: {
-						MetricInfo: MetricInfo{
-							Description: defaultMetricDescSpans,
-							Conditions:  []string{"invalid condition"},
-						},
+						Description: defaultMetricDescSpans,
+						Conditions:  []string{"invalid condition"},
 					},
 				},
 			},
@@ -501,12 +427,10 @@ func TestConfigErrors(t *testing.T) {
 		{
 			name: "invalid_condition_spanevent",
 			input: &Config{
-				SpanEvents: map[string]MetricInfoWithAttributes{
+				SpanEvents: map[string]MetricInfo{
 					defaultMetricNameSpanEvents: {
-						MetricInfo: MetricInfo{
-							Description: defaultMetricDescSpans,
-							Conditions:  []string{"invalid condition"},
-						},
+						Description: defaultMetricDescSpans,
+						Conditions:  []string{"invalid condition"},
 					},
 				},
 			},
@@ -527,12 +451,10 @@ func TestConfigErrors(t *testing.T) {
 		{
 			name: "invalid_condition_datapoint",
 			input: &Config{
-				DataPoints: map[string]MetricInfoWithAttributes{
+				DataPoints: map[string]MetricInfo{
 					defaultMetricNameDataPoints: {
-						MetricInfo: MetricInfo{
-							Description: defaultMetricDescSpans,
-							Conditions:  []string{"invalid condition"},
-						},
+						Description: defaultMetricDescSpans,
+						Conditions:  []string{"invalid condition"},
 					},
 				},
 			},
@@ -541,12 +463,10 @@ func TestConfigErrors(t *testing.T) {
 		{
 			name: "invalid_condition_log",
 			input: &Config{
-				Logs: map[string]MetricInfoWithAttributes{
+				Logs: map[string]MetricInfo{
 					defaultMetricNameLogs: {
-						MetricInfo: MetricInfo{
-							Description: defaultMetricDescSpans,
-							Conditions:  []string{"invalid condition"},
-						},
+						Description: defaultMetricDescSpans,
+						Conditions:  []string{"invalid condition"},
 					},
 				},
 			},

@@ -66,7 +66,7 @@ func createTracesToMetrics(
 	}
 	for name, info := range c.Spans {
 		md := metricDef[ottlspan.TransformContext]{
-			desc:  info.MetricInfo.Description,
+			desc:  info.Description,
 			attrs: info.Attributes,
 		}
 		if len(info.Conditions) > 0 {
@@ -84,7 +84,7 @@ func createTracesToMetrics(
 	}
 	for name, info := range c.SpanEvents {
 		md := metricDef[ottlspanevent.TransformContext]{
-			desc:  info.MetricInfo.Description,
+			desc:  info.Description,
 			attrs: info.Attributes,
 		}
 		if len(info.Conditions) > 0 {
@@ -135,7 +135,7 @@ func createMetricsToMetrics(
 	}
 	for name, info := range c.DataPoints {
 		md := metricDef[ottldatapoint.TransformContext]{
-			desc:  info.MetricInfo.Description,
+			desc:  info.Description,
 			attrs: info.Attributes,
 		}
 		if len(info.Conditions) > 0 {
@@ -169,7 +169,7 @@ func createLogsToMetrics(
 	}
 	for name, info := range c.Logs {
 		md := metricDef[ottllog.TransformContext]{
-			desc:  info.MetricInfo.Description,
+			desc:  info.Description,
 			attrs: info.Attributes,
 		}
 		if len(info.Conditions) > 0 {
