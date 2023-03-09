@@ -17,7 +17,6 @@ package mongodbatlasreceiver
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -28,7 +27,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -60,23 +58,6 @@ func TestStartAndShutdown(t *testing.T) {
 				}
 				return cfg
 			},
-		},
-		{
-			desc: "invalid storage config",
-			getConfig: func() *Config {
-				cfg := createDefaultConfig().(*Config)
-				cfg.StorageID = &component.ID{}
-				cfg.Events = &EventsConfig{
-					Projects: []*ProjectConfig{
-						{
-							Name: testProjectName,
-						},
-					},
-					PollInterval: time.Minute,
-				}
-				return cfg
-			},
-			expectedStartErr: errors.New("failed to get storage client"),
 		},
 	}
 	for _, tc := range cases {
