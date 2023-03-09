@@ -157,7 +157,7 @@ gendependabot:
 	@echo "    schedule:" >> ${DEPENDABOT_PATH}
 	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}
 	@echo "      day: \"wednesday\"" >> ${DEPENDABOT_PATH}
-	@set -e; for dir in $(NONROOT_MODS); do \
+	@set -e; for dir in `echo $(NONROOT_MODS) | tr ' ' '\n' | head -n 217 | tr '\n' ' '`; do \
 		echo "Add entry for \"$${dir:1}\""; \
 		echo "  - package-ecosystem: \"gomod\"" >> ${DEPENDABOT_PATH}; \
 		echo "    directory: \"$${dir:1}\"" >> ${DEPENDABOT_PATH}; \
@@ -165,6 +165,11 @@ gendependabot:
 		echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}; \
 		echo "      day: \"wednesday\"" >> ${DEPENDABOT_PATH}; \
 	done
+	@echo "The following modules are not included in the dependabot file because it has a limit of 220 entries:"
+	@set -e; for dir in `echo $(NONROOT_MODS) | tr ' ' '\n' | tail -n +218 | tr '\n' ' '`; do \
+		echo "  - $${dir:1}"; \
+	done
+
 
 # Define a delegation target for each module
 .PHONY: $(ALL_MODS)

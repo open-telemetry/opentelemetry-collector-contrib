@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -39,7 +40,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
@@ -64,7 +64,7 @@ func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockProme
 	wg := &sync.WaitGroup{}
 	wg.Add(len(endpoints))
 	for k := range endpoints {
-		accessIndex[k] = atomic.NewInt32(0)
+		accessIndex[k] = &atomic.Int32{}
 	}
 	mp := &mockPrometheus{
 		wg:          wg,

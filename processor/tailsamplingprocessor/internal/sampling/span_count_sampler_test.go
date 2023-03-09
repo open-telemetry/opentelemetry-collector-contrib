@@ -15,12 +15,12 @@
 package sampling
 
 import (
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -262,8 +262,10 @@ func newTraceWithMultipleSpans(numberSpans []int32) *TraceData {
 		totalNumberSpans += numberSpans[i]
 	}
 
+	traceSpanCount := &atomic.Int64{}
+	traceSpanCount.Store(int64(totalNumberSpans))
 	return &TraceData{
 		ReceivedBatches: traces,
-		SpanCount:       atomic.NewInt64(int64(totalNumberSpans)),
+		SpanCount:       traceSpanCount,
 	}
 }
