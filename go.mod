@@ -439,7 +439,7 @@ require (
 	github.com/lightstep/go-expohisto v1.0.0 // indirect
 	github.com/linkedin/goavro/v2 v2.9.8 // indirect
 	github.com/linode/linodego v1.12.0 // indirect
-	github.com/logicmonitor/lm-data-sdk-go v0.8.0 // indirect
+	github.com/logicmonitor/lm-data-sdk-go v1.0.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20220517141722-cf486979b281 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
