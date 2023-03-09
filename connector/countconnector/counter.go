@@ -25,7 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
-var noAttributes [16]byte = [16]byte{}
+var noAttributes = [16]byte{}
 
 func newCounter[K any](metricDefs map[string]metricDef[K]) *counter[K] {
 	return &counter[K]{
@@ -65,14 +65,14 @@ func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) erro
 
 		// No conditions, so match all.
 		if md.condition == nil {
-			c.increment(name, countAttrs)
+			errors = multierr.Append(errors, c.increment(name, countAttrs))
 			continue
 		}
 
 		if match, err := md.condition.Eval(ctx, tCtx); err != nil {
 			errors = multierr.Append(errors, err)
 		} else if match {
-			c.increment(name, countAttrs)
+			errors = multierr.Append(errors, c.increment(name, countAttrs))
 		}
 	}
 	return errors
