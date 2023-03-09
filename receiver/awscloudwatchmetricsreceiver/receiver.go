@@ -56,6 +56,8 @@ type namedRequest struct {
 	Period         time.Duration
 	AwsAggregation string
 	Dimensions     []types.Dimension
+	Values         *types.MetricDataResult
+	observedTime   *pcommon.Timestamp
 }
 
 const (
@@ -211,21 +213,25 @@ func (m *metricReceiver) pollForMetrics(ctx context.Context, r []namedRequest, s
 					break
 				}
 				ret = append(ret, output.MetricDataResults...)
-				observedTime := pcommon.NewTimestampFromTime(time.Now())
-				metrics := m.parseMetrics(observedTime, ret, r)
-				if metrics.MetricCount() > 0 {
-					if err = m.consumer.ConsumeMetrics(ctx, metrics); err != nil {
-						m.logger.Error("unable to consume logs", zap.Error(err))
-						break
-					}
-				}
+			}
+		}
+		observedTime := pcommon.NewTimestampFromTime(time.Now())
+		for i := range r {
+			r[i].Values = &ret[i]
+			r[i].observedTime = &observedTime
+		}
+		metrics := m.parseMetrics()
+		if metrics.MetricCount() > 0 {
+			if err := m.consumer.ConsumeMetrics(ctx, metrics); err != nil {
+				m.logger.Error("unable to consume logs", zap.Error(err))
+				return err
 			}
 		}
 	}
 	return nil
 }
 
-func (m *metricReceiver) parseMetrics(observedTime pcommon.Timestamp, output []types.MetricDataResult, r []namedRequest) pmetric.Metrics {
+func (m *metricReceiver) parseMetrics() pmetric.Metrics {
 	pdm := pmetric.NewMetrics()
 	rms := pdm.ResourceMetrics()
 	rm := rms.AppendEmpty()
@@ -233,23 +239,31 @@ func (m *metricReceiver) parseMetrics(observedTime pcommon.Timestamp, output []t
 	ilms := rm.ScopeMetrics()
 	ilm := ilms.AppendEmpty()
 	ms := ilm.Metrics()
-	ms.EnsureCapacity(len(output))
-	for i := 0; i < len(output); i++ {
-		fillDataPoints(ms.AppendEmpty(), observedTime, output[i], r[i])
+	ms.EnsureCapacity(len(m.namedRequests))
+	for i := 0; i < len(m.namedRequests); i++ {
+		fillDataPoints(ms.AppendEmpty(), &m.namedRequests[i])
 	}
 	return pdm
 }
 
-func fillDataPoints(pdm pmetric.Metric, observedTime pcommon.Timestamp, result types.MetricDataResult, r namedRequest) pmetric.Metric {
-	pdm.SetName(fmt.Sprintf("%s.%s", r.Namespace, r.MetricName))
+func fillDataPoints(pdm pmetric.Metric, nr *namedRequest) pmetric.Metric {
+	atts := make(map[string]interface{})
+	pdm.SetName(fmt.Sprintf("%s.%s", nr.Namespace, nr.MetricName))
 	dps := pdm.SetEmptyGauge().DataPoints()
 
-	for idx, value := range result.Values {
-		timestamp := result.Timestamps[idx]
+	for _, dim := range nr.Dimensions {
+		atts[*dim.Name] = dim.Value
+	}
+
+	for idx, value := range nr.Values.Values {
+		timestamp := nr.Values.Timestamps[idx]
 		dp := dps.AppendEmpty()
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
-		dp.SetStartTimestamp(observedTime)
+		dp.SetStartTimestamp(*nr.observedTime)
 		dp.SetDoubleValue(value)
+		for _, dim := range nr.Dimensions {
+			dp.Attributes().PutStr(*dim.Name, *dim.Value)
+		}
 	}
 	return pdm
 }
@@ -263,4 +277,9 @@ func (m *metricReceiver) configureAWSClient() error {
 		config.WithRegion(m.region), config.WithEC2IMDSEndpoint(m.imdsEndpoint), config.WithSharedConfigProfile(m.profile))
 	m.client = cloudwatch.NewFromConfig(cfg)
 	return err
+}
+
+type Dimension struct {
+	Name  *string
+	Value *string
 }
