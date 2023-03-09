@@ -5,7 +5,7 @@ change_type: new_component
 component: awscloudwatchmetricsreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added [AWS CloudWatch metrics receiver using GetMetricData API call
+note: Added [AWS CloudWatch metrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/working_with_metrics.html) receiver using GetMetricData API call
 
 # One or more tracking issues related to the change
 issues: [15667]
