@@ -34,6 +34,7 @@ The following settings can be optionally configured:
   - `zipkin_proto`: the payload is deserialized into a list of Zipkin proto spans.
   - `zipkin_json`: the payload is deserialized into a list of Zipkin V2 JSON spans.
   - `zipkin_thrift`: the payload is deserialized into a list of Zipkin Thrift spans.
+  - `azureresourcelogs`: (logs only) the payload is deserialized into a list of Azure Resource Logs (https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-logs-schema).
   - `raw`: (logs only) the payload's bytes are inserted as the body of a log record.
   - `text`: (logs only) the payload are decoded as text and inserted as the body of a log record. By default, it uses UTF-8 to decode. You can use `text_<ENCODING>`, like `text_utf-8`, `text_shift_jis`, etc., to customize this behavior.
 - `group_id` (default = otel-collector):  The consumer group that receiver will be consuming messages from
