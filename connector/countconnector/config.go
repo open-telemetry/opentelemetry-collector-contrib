@@ -39,17 +39,28 @@ const (
 
 // Config for the connector
 type Config struct {
-	Spans      map[string]MetricInfo `mapstructure:"spans"`
-	SpanEvents map[string]MetricInfo `mapstructure:"spanevents"`
-	Metrics    map[string]MetricInfo `mapstructure:"metrics"`
-	DataPoints map[string]MetricInfo `mapstructure:"datapoints"`
-	Logs       map[string]MetricInfo `mapstructure:"logs"`
+	Spans      map[string]MetricInfoWithAttributes `mapstructure:"spans"`
+	SpanEvents map[string]MetricInfoWithAttributes `mapstructure:"spanevents"`
+	Metrics    map[string]MetricInfo               `mapstructure:"metrics"`
+	DataPoints map[string]MetricInfoWithAttributes `mapstructure:"datapoints"`
+	Logs       map[string]MetricInfoWithAttributes `mapstructure:"logs"`
+}
+
+// MetricInfoWithAttributes for a data type
+type MetricInfoWithAttributes struct {
+	MetricInfo `mapstructure:",squash"`
+	Attributes []AttributeConfig `mapstructure:"attributes"`
 }
 
 // MetricInfo for a data type
 type MetricInfo struct {
 	Description string   `mapstructure:"description"`
 	Conditions  []string `mapstructure:"conditions"`
+}
+
+type AttributeConfig struct {
+	Key          string `mapstructure:"key"`
+	DefaultValue string `mapstructure:"default_value"`
 }
 
 func (c *Config) Validate() error {
@@ -64,6 +75,9 @@ func (c *Config) Validate() error {
 		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("spans condition: metric %q: %w", name, err)
 		}
+		if err := info.validateAttributes(); err != nil {
+			return fmt.Errorf("spans attributes: metric %q: %w", name, err)
+		}
 	}
 	for name, info := range c.SpanEvents {
 		if name == "" {
@@ -75,6 +89,9 @@ func (c *Config) Validate() error {
 		}
 		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("spanevents condition: metric %q: %w", name, err)
+		}
+		if err := info.validateAttributes(); err != nil {
+			return fmt.Errorf("spans attributes: metric %q: %w", name, err)
 		}
 	}
 	for name, info := range c.Metrics {
@@ -101,6 +118,9 @@ func (c *Config) Validate() error {
 		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("datapoints condition: metric %q: %w", name, err)
 		}
+		if err := info.validateAttributes(); err != nil {
+			return fmt.Errorf("spans attributes: metric %q: %w", name, err)
+		}
 	}
 	for name, info := range c.Logs {
 		if name == "" {
@@ -112,6 +132,18 @@ func (c *Config) Validate() error {
 		}
 		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("logs condition: metric %q: %w", name, err)
+		}
+		if err := info.validateAttributes(); err != nil {
+			return fmt.Errorf("spans attributes: metric %q: %w", name, err)
+		}
+	}
+	return nil
+}
+
+func (i *MetricInfoWithAttributes) validateAttributes() error {
+	for _, attr := range i.Attributes {
+		if attr.Key == "" {
+			return fmt.Errorf("attribute key missing")
 		}
 	}
 	return nil
@@ -148,18 +180,22 @@ func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
 	return nil
 }
 
-func defaultSpansConfig() map[string]MetricInfo {
-	return map[string]MetricInfo{
+func defaultSpansConfig() map[string]MetricInfoWithAttributes {
+	return map[string]MetricInfoWithAttributes{
 		defaultMetricNameSpans: {
-			Description: defaultMetricDescSpans,
+			MetricInfo: MetricInfo{
+				Description: defaultMetricDescSpans,
+			},
 		},
 	}
 }
 
-func defaultSpanEventsConfig() map[string]MetricInfo {
-	return map[string]MetricInfo{
+func defaultSpanEventsConfig() map[string]MetricInfoWithAttributes {
+	return map[string]MetricInfoWithAttributes{
 		defaultMetricNameSpanEvents: {
-			Description: defaultMetricDescSpanEvents,
+			MetricInfo: MetricInfo{
+				Description: defaultMetricDescSpanEvents,
+			},
 		},
 	}
 }
@@ -172,18 +208,22 @@ func defaultMetricsConfig() map[string]MetricInfo {
 	}
 }
 
-func defaultDataPointsConfig() map[string]MetricInfo {
-	return map[string]MetricInfo{
+func defaultDataPointsConfig() map[string]MetricInfoWithAttributes {
+	return map[string]MetricInfoWithAttributes{
 		defaultMetricNameDataPoints: {
-			Description: defaultMetricDescDataPoints,
+			MetricInfo: MetricInfo{
+				Description: defaultMetricDescDataPoints,
+			},
 		},
 	}
 }
 
-func defaultLogsConfig() map[string]MetricInfo {
-	return map[string]MetricInfo{
+func defaultLogsConfig() map[string]MetricInfoWithAttributes {
+	return map[string]MetricInfoWithAttributes{
 		defaultMetricNameLogs: {
-			Description: defaultMetricDescLogs,
+			MetricInfo: MetricInfo{
+				Description: defaultMetricDescLogs,
+			},
 		},
 	}
 }
