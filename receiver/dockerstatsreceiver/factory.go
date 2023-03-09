@@ -55,7 +55,7 @@ func createDefaultConfig() component.Config {
 		Endpoint:                  "unix:///var/run/docker.sock",
 		Timeout:                   5 * time.Second,
 		DockerAPIVersion:          defaultDockerAPIVersion,
-		MetricsConfig:             metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

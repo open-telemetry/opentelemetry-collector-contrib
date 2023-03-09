@@ -58,21 +58,8 @@ func DefaultMetricsSettings() MetricsSettings {
 // ResourceAttributeSettings provides common settings for a particular metric.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
 }
 
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ras.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
-}
 
 // ResourceAttributesSettings provides settings for {{ .Name }} metrics.
 type ResourceAttributesSettings struct {
@@ -193,6 +180,12 @@ func newMetric{{ $name.Render }}(settings MetricSettings) metric{{ $name.Render 
 
 {{ end -}}
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+    Metrics MetricsSettings `mapstructure:"metrics"`
+    ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -216,27 +209,35 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 		mb.startTime = startTime
 	}
 }
-// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
-func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
-    return func(mb *MetricsBuilder) {
-        mb.resourceAttributesSettings = ras
+
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+   return MetricsBuilderConfig {
+        Metrics: DefaultMetricsSettings(),
+        ResourceAttributes: DefaultResourceAttributesSettings(),
+   }
+}
+
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+    return MetricsBuilderConfig {
+        Metrics: ms,
+        ResourceAttributes: ras,
     }
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	{{- range $name, $metric := .Metrics }}
 	{{- if $metric.Warnings.IfEnabled }}
-	if ms.{{ $name.Render }}.Enabled {
+	if mbc.Metrics.{{ $name.Render }}.Enabled {
 		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}")
 	}
 	{{- end }}
 	{{- if $metric.Warnings.IfEnabledNotSet }}
-	if !ms.{{ $name.Render }}.enabledSetByUser {
+	if !mbc.Metrics.{{ $name.Render }}.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}")
 	}
 	{{- end }}
 	{{- if $metric.Warnings.IfConfigured }}
-	if ms.{{ $name.Render }}.enabledSetByUser {
+	if mbc.Metrics.{{ $name.Render }}.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}")
 	}
 	{{- end }}
@@ -245,9 +246,9 @@ func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, opt
 		startTime:                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:            pmetric.NewMetrics(),
 		buildInfo:                settings.BuildInfo,
-		resourceAttributesSettings: DefaultResourceAttributesSettings(),
+		resourceAttributesSettings: mbc.ResourceAttributes,
 		{{- range $name, $metric := .Metrics }}
-		metric{{ $name.Render }}: newMetric{{ $name.Render }}(ms.{{ $name.Render }}),
+		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mbc.Metrics.{{ $name.Render }}),
 		{{- end }}
 	}
 	for _, op := range options {

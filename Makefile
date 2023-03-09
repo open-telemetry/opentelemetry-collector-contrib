@@ -18,7 +18,7 @@ FOR_GROUP_TARGET=for-$(GROUP)-target
 
 FIND_MOD_ARGS=-type f -name "go.mod"
 TO_MOD_DIR=dirname {} \; | sort | grep -E '^./'
-EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path "./exporter/*" -not -path "./extension/*"
+EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path "./exporter/*" -not -path "./extension/*" -not -path "./connector/*"
 EX_INTERNAL=-not -path "./internal/*"
 
 # NONROOT_MODS includes ./* dirs (excludes . dir)
@@ -30,9 +30,10 @@ RECEIVER_MODS := $(RECEIVER_MODS_0) $(RECEIVER_MODS_1)
 PROCESSOR_MODS := $(shell find ./processor/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 EXPORTER_MODS := $(shell find ./exporter/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+CONNECTOR_MODS := $(shell find ./connector/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
-ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(INTERNAL_MODS) $(OTHER_MODS)
+ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(OTHER_MODS)
 
 # find -exec dirname cannot be used to process multiple matching patterns
 FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . -type f -name "*e2e_test.go" -not -path "./testbed/*"; }
@@ -54,6 +55,7 @@ all-groups:
 	@echo "\nprocessor: $(PROCESSOR_MODS)"
 	@echo "\nexporter: $(EXPORTER_MODS)"
 	@echo "\nextension: $(EXTENSION_MODS)"
+	@echo "\nconnector: $(CONNECTOR_MODS)"
 	@echo "\ninternal: $(INTERNAL_MODS)"
 	@echo "\nother: $(OTHER_MODS)"
 
@@ -187,6 +189,9 @@ for-exporter-target: $(EXPORTER_MODS)
 
 .PHONY: for-extension-target
 for-extension-target: $(EXTENSION_MODS)
+
+.PHONY: for-connector-target
+for-connector-target: $(CONNECTOR_MODS)
 
 .PHONY: for-internal-target
 for-internal-target: $(INTERNAL_MODS)

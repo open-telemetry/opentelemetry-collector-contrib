@@ -50,7 +50,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 		noOut   bool
 	}{
 		{
-			name: "Initial Value not recorded",
+			name: "Initial Value Omitted",
 			value: ValuePoint{
 				ObservedTimestamp: 10,
 				FloatValue:        100.0,
@@ -59,7 +59,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 			noOut: true,
 		},
 		{
-			name: "Higher Value Recorded",
+			name: "Higher Value Converted",
 			value: ValuePoint{
 				ObservedTimestamp: 50,
 				FloatValue:        225.0,
@@ -72,20 +72,16 @@ func TestMetricTracker_Convert(t *testing.T) {
 			},
 		},
 		{
-			name: "Lower Value Recorded - No Previous Offset",
+			name: "Lower Value not Converted - Restart",
 			value: ValuePoint{
 				ObservedTimestamp: 100,
 				FloatValue:        75.0,
 				IntValue:          75,
 			},
-			wantOut: DeltaValue{
-				StartTimestamp: 50,
-				FloatValue:     75.0,
-				IntValue:       75,
-			},
+			noOut: true,
 		},
 		{
-			name: "Record delta above first recorded value",
+			name: "Convert delta above previous not Converted Value",
 			value: ValuePoint{
 				ObservedTimestamp: 150,
 				FloatValue:        300.0,
@@ -98,11 +94,11 @@ func TestMetricTracker_Convert(t *testing.T) {
 			},
 		},
 		{
-			name: "Lower Value Recorded - Previous Offset Recorded",
+			name: "Higher Value Converted - Previous Offset Recorded",
 			value: ValuePoint{
 				ObservedTimestamp: 200,
-				FloatValue:        25.0,
-				IntValue:          25,
+				FloatValue:        325.0,
+				IntValue:          325,
 			},
 			wantOut: DeltaValue{
 				StartTimestamp: 150,

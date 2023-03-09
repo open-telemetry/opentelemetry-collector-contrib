@@ -14,42 +14,40 @@
 
 ## Overview
 
-Aggregates Request, Error and Duration (R.E.D) metrics from span data.
+Aggregates Request, Error and Duration (R.E.D) OpenTelemetry metrics from span data.
 
-**Request** counts are computed as the number of spans seen per unique set of dimensions, including Errors.
-For example, the following metric shows 142 calls:
-```
-calls_total{http_method="GET",http_status_code="200",span_name="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 142
-```
-Multiple metrics can be aggregated if, for instance, a user wishes to view call counts just on `service_name` and `span_name`.
+**Request** counts are computed as the number of spans seen per unique set of
+dimensions, including Errors. Multiple metrics can be aggregated if, for instance,
+a user wishes to view call counts just on `service.name` and `span.name`.
 
-**Error** counts are computed from the Request counts which have an "Error" Status Code metric dimension.
-For example, the following metric indicates 220 errors:
-```
-calls_total{http_method="GET",http_status_code="503",span_name="/checkout",service_name="frontend",span_kind="SPAN_KIND_CLIENT",status_code="STATUS_CODE_ERROR"} 220
-```
+**Error** counts are computed from the Request counts which have an `Error` Status Code metric dimension.
 
 **Duration** is computed from the difference between the span start and end times and inserted into the
 relevant latency histogram time bucket for each unique set dimensions.
-For example, the following latency buckets indicate the vast majority of spans (9K) have a 100ms latency:
-```
-latency_bucket{http_method="GET",http_status_code="200",label1="value1",span_name="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="2"} 327
-latency_bucket{http_method="GET",http_status_code="200",label1="value1",span_name="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="6"} 751
-latency_bucket{http_method="GET",http_status_code="200",label1="value1",span_name="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="10"} 1195
-latency_bucket{http_method="GET",http_status_code="200",label1="value1",span_name="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="100"} 10180
-latency_bucket{http_method="GET",http_status_code="200",label1="value1",span_name="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="250"} 10180
-...
-```
 
-Each metric will have _at least_ the following dimensions because they are common across all spans:
-- Service name
-- Span Name
-- Span kind
-- Status code
+Each metric will have _at least_ the following dimensions because they are common
+across all spans:
+
+- `service.name`
+- `span.name`
+- `span.kind`
+- `status.code`
+
+## Configurations
+
+If you are not already familiar with connectors, you may find it helpful to first
+visit the [Connectors README].
 
 The following settings can be optionally configured:
 
-- `latency_histogram_buckets`: the list of durations defining the latency histogram buckets.
+- `histogram` (default: `explicit_buckets`): Use to configure the type of histogram to record
+  calculated from spans latency measurements.
+  - `explicit`:
+    - `buckets`: the list of durations defining the latency histogram buckets. Default
+      buckets: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
+  - `exponential`:
+    - `max_size` (default: 160) the maximum number of buckets per positive or negative number range.
+- `latency_histogram_buckets` (deprecated): the list of durations defining the latency histogram buckets.
   - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
 - `dimensions`: the list of dimensions to add together with the default dimensions defined above.
   
@@ -68,7 +66,7 @@ The following settings can be optionally configured:
 
 ## Examples
 
-The following is a simple example usage of the spanmetrics connector.
+The following is a simple example usage of the `spanmetrics` connector.
 
 For configuration examples on other use cases, please refer to [More Examples](#more-examples).
 
@@ -83,7 +81,9 @@ exporters:
 
 connector:
   spanmetrics:
-    latency_histogram_buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms]
+    histogram:
+      explicit:
+        buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms]
     dimensions:
       - name: http.method
         default: GET
@@ -106,3 +106,6 @@ service:
 For more example configuration covering various other use cases, please visit the [testdata directory](../../connector/spanmetricsconnector/testdata).
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
+[Exporter Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
+[Receiver Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type

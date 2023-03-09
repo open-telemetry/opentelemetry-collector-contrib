@@ -41,6 +41,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/mocks"
 )
 
@@ -142,16 +143,33 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 		verifyMetricLabels(dp, t, seenMetricIDs)
 	}
 
-	seenMetricIDs = make(map[metricID]bool)
+	h := m.At(1)
+	assert.Equal(t, metricNameLatency, h.Name())
+	assert.Equal(t, "ms", h.Unit())
+
 	// The remaining 3 data points are for latency.
-	assert.Equal(t, "latency", m.At(1).Name())
-	assert.Equal(t, "ms", m.At(1).Unit())
-	assert.Equal(t, expectedTemporality, m.At(1).Histogram().AggregationTemporality())
-	latencyDps := m.At(1).Histogram().DataPoints()
-	require.Equal(t, 3, latencyDps.Len())
+	if h.Type() == pmetric.MetricTypeExponentialHistogram {
+		hist := h.ExponentialHistogram()
+		assert.Equal(t, expectedTemporality, hist.AggregationTemporality())
+		verifyExponentialHistogramDataPoints(t, hist.DataPoints(), numCumulativeConsumptions)
+	} else {
+		hist := h.Histogram()
+		assert.Equal(t, expectedTemporality, hist.AggregationTemporality())
+		verifyExplicitHistogramDataPoints(t, hist.DataPoints(), numCumulativeConsumptions)
+	}
+	return true
+}
+
+func verifyExplicitHistogramDataPoints(t testing.TB, dps pmetric.HistogramDataPointSlice, numCumulativeConsumptions int) {
+	seenMetricIDs := make(map[metricID]bool)
+	require.Equal(t, 3, dps.Len())
 	for dpi := 0; dpi < 3; dpi++ {
-		dp := latencyDps.At(dpi)
-		assert.Equal(t, sampleLatency*float64(numCumulativeConsumptions), dp.Sum(), "Should be a 11ms latency measurement, multiplied by the number of stateful accumulations.")
+		dp := dps.At(dpi)
+		assert.Equal(
+			t,
+			sampleLatency*float64(numCumulativeConsumptions),
+			dp.Sum(),
+			"Should be a 11ms latency measurement, multiplied by the number of stateful accumulations.")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
 		// Verify bucket counts.
@@ -179,7 +197,24 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 		}
 		verifyMetricLabels(dp, t, seenMetricIDs)
 	}
-	return true
+}
+
+func verifyExponentialHistogramDataPoints(t testing.TB, dps pmetric.ExponentialHistogramDataPointSlice, numCumulativeConsumptions int) {
+	seenMetricIDs := make(map[metricID]bool)
+	require.Equal(t, 3, dps.Len())
+	for dpi := 0; dpi < 3; dpi++ {
+		dp := dps.At(dpi)
+		assert.Equal(
+			t,
+			sampleLatency*float64(numCumulativeConsumptions),
+			dp.Sum(),
+			"Should be a 11ms latency measurement, multiplied by the number of stateful accumulations.")
+		assert.Equal(t, uint64(numCumulativeConsumptions), dp.Count())
+		assert.Equal(t, []uint64{uint64(numCumulativeConsumptions)}, dp.Positive().BucketCounts().AsRaw())
+		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
+
+		verifyMetricLabels(dp, t, seenMetricIDs)
+	}
 }
 
 func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metricID]bool) {
@@ -301,23 +336,39 @@ func initSpan(span span, s ptrace.Span) {
 	s.SetSpanID(pcommon.SpanID([8]byte{byte(42)}))
 }
 
+func initExplicitHistograms() metrics.HistogramMetrics {
+	return metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs)
+}
+
+func initExponentialHistograms() metrics.HistogramMetrics {
+	return metrics.NewExponentialHistogramMetrics(10)
+}
+
 func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
+
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
-	buf := &bytes.Buffer{}
-	buildKey(buf, "ab", span0, nil, pcommon.NewMap())
-	k0 := metricKey(buf.String())
-	buf.Reset()
+	k0 := c.buildKey("ab", span0, nil, pcommon.NewMap())
+
 	span1 := ptrace.NewSpan()
 	span1.SetName("bc")
-	buildKey(buf, "a", span1, nil, pcommon.NewMap())
-	k1 := metricKey(buf.String())
+	k1 := c.buildKey("a", span1, nil, pcommon.NewMap())
+
 	assert.NotEqual(t, k0, k1)
-	assert.Equal(t, metricKey("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
-	assert.Equal(t, metricKey("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
+	assert.Equal(t, metrics.Key("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
+	assert.Equal(t, metrics.Key("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
 }
 
 func TestBuildKeyWithDimensions(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
+
 	defaultFoo := pcommon.NewValueStr("bar")
 	for _, tc := range []struct {
 		name            string
@@ -384,166 +435,10 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			span0 := ptrace.NewSpan()
 			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
-			buf := &bytes.Buffer{}
-			buildKey(buf, "ab", span0, tc.optionalDims, resAttr)
-			assert.Equal(t, tc.wantKey, buf.String())
+			key := c.buildKey("ab", span0, tc.optionalDims, resAttr)
+			assert.Equal(t, metrics.Key(tc.wantKey), key)
 		})
 	}
-}
-
-func TestConnectorDuplicateDimensions(t *testing.T) {
-	// Prepare
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	// Duplicate dimension with reserved label after sanitization.
-	cfg.Dimensions = []Dimension{
-		{Name: "status_code"},
-	}
-
-	// Test
-	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	assert.Error(t, err)
-	assert.Nil(t, c)
-}
-
-func TestValidateDimensions(t *testing.T) {
-	for _, tc := range []struct {
-		name              string
-		dimensions        []Dimension
-		expectedErr       string
-		skipSanitizeLabel bool
-	}{
-		{
-			name:       "no additional dimensions",
-			dimensions: []Dimension{},
-		},
-		{
-			name: "no duplicate dimensions",
-			dimensions: []Dimension{
-				{Name: "http.service_name"},
-				{Name: "http.status_code"},
-			},
-		},
-		{
-			name: "duplicate dimension with reserved labels",
-			dimensions: []Dimension{
-				{Name: "service.name"},
-			},
-			expectedErr: "duplicate dimension name service.name",
-		},
-		{
-			name: "duplicate dimension with reserved labels after sanitization",
-			dimensions: []Dimension{
-				{Name: "service_name"},
-			},
-			expectedErr: "duplicate dimension name service_name",
-		},
-		{
-			name: "duplicate additional dimensions",
-			dimensions: []Dimension{
-				{Name: "service_name"},
-				{Name: "service_name"},
-			},
-			expectedErr: "duplicate dimension name service_name",
-		},
-		{
-			name: "duplicate additional dimensions after sanitization",
-			dimensions: []Dimension{
-				{Name: "http.status_code"},
-				{Name: "http!status_code"},
-			},
-			expectedErr: "duplicate dimension name http_status_code after sanitization",
-		},
-		{
-			name: "we skip the case if the dimension name is the same after sanitization",
-			dimensions: []Dimension{
-				{Name: "http_status_code"},
-			},
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.skipSanitizeLabel = false
-			err := validateDimensions(tc.dimensions, tc.skipSanitizeLabel)
-			if tc.expectedErr != "" {
-				assert.EqualError(t, err, tc.expectedErr)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestSanitize(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
-	require.Equal(t, "key_test", sanitize("_test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key__test", sanitize("__test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
-	// testcases with skipSanitizeLabel flag turned on
-	cfg.skipSanitizeLabel = true
-	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
-	require.Equal(t, "_test", sanitize("_test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key__test", sanitize("__test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
-}
-
-func TestSetExemplars(t *testing.T) {
-	// ----- conditions -------------------------------------------------------
-	traces := buildSampleTrace()
-	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
-	exemplarSlice := pmetric.NewExemplarSlice()
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	value := float64(42)
-
-	ed := []exemplar{{traceID: traceID, spanID: spanID, value: value}}
-
-	// ----- call -------------------------------------------------------------
-	setExemplars(ed, timestamp, exemplarSlice)
-
-	// ----- verify -----------------------------------------------------------
-	traceIDValue := exemplarSlice.At(0).TraceID()
-	spanIDValue := exemplarSlice.At(0).SpanID()
-
-	assert.NotEmpty(t, exemplarSlice)
-	assert.Equal(t, traceIDValue, traceID)
-	assert.Equal(t, spanIDValue, spanID)
-	assert.Equal(t, exemplarSlice.At(0).Timestamp(), timestamp)
-	assert.Equal(t, exemplarSlice.At(0).DoubleValue(), value)
-}
-
-func TestConnectorUpdateExemplars(t *testing.T) {
-	// ----- conditions -------------------------------------------------------
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	traces := buildSampleTrace()
-	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
-	key := metricKey("metricKey")
-	next := new(consumertest.MetricsSink)
-	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	c.metricsConsumer = next
-	value := float64(42)
-
-	// ----- call -------------------------------------------------------------
-	h := c.getOrCreateHistogram(key, pcommon.NewMap())
-	h.observe(value, traceID, spanID)
-
-	// ----- verify -----------------------------------------------------------
-	assert.NoError(t, err)
-	assert.NotEmpty(t, c.histograms[key].exemplars)
-	assert.Equal(t, c.histograms[key].exemplars[0], exemplar{traceID: traceID, spanID: spanID, value: value})
-
-	// ----- call -------------------------------------------------------------
-	c.resetExemplars()
-
-	// ----- verify -----------------------------------------------------------
-	assert.NoError(t, err)
-	assert.Empty(t, c.histograms[key].exemplars)
 }
 
 func TestStart(t *testing.T) {
@@ -571,7 +466,7 @@ func TestConcurrentShutdown(t *testing.T) {
 	ticker := mockClock.NewTicker(time.Nanosecond)
 
 	// Test
-	p := newConnectorImp(new(consumertest.MetricsSink), nil, cumulative, logger, ticker)
+	p := newConnectorImp(new(consumertest.MetricsSink), nil, initExplicitHistograms, cumulative, logger, ticker)
 	err := p.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -606,27 +501,6 @@ func TestConcurrentShutdown(t *testing.T) {
 	assert.Len(t, allLogs, 3)
 }
 
-func TestConfigureLatencyBounds(t *testing.T) {
-	// Prepare
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.LatencyHistogramBuckets = []time.Duration{
-		3 * time.Nanosecond,
-		3 * time.Microsecond,
-		3 * time.Millisecond,
-		3 * time.Second,
-	}
-
-	// Test
-	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	c.metricsConsumer = new(consumertest.MetricsSink)
-
-	// Verify
-	assert.NoError(t, err)
-	assert.NotNil(t, c)
-	assert.Equal(t, []float64{0.000003, 0.003, 3, 3000}, c.latencyBounds)
-}
-
 func TestConnectorCapabilities(t *testing.T) {
 	// Prepare
 	factory := NewFactory()
@@ -659,7 +533,7 @@ func TestConsumeMetricsErrors(t *testing.T) {
 
 	mockClock := clock.NewMock(time.Now())
 	ticker := mockClock.NewTicker(time.Nanosecond)
-	p := newConnectorImp(mcon, nil, cumulative, logger, ticker)
+	p := newConnectorImp(mcon, nil, initExplicitHistograms, cumulative, logger, ticker)
 
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	err := p.Start(ctx, componenttest.NewNopHost())
@@ -695,18 +569,62 @@ func TestConsumeTraces(t *testing.T) {
 	testcases := []struct {
 		name                   string
 		aggregationTemporality string
+		histograms             func() metrics.HistogramMetrics
 		verifier               func(t testing.TB, input pmetric.Metrics) bool
 		traces                 []ptrace.Traces
 	}{
+		// exponential buckets histogram
+		{
+			name:                   "Test single consumption, three spans (Cumulative), using exp. histogram",
+			aggregationTemporality: cumulative,
+			histograms:             initExponentialHistograms,
+			verifier:               verifyConsumeMetricsInputCumulative,
+			traces:                 []ptrace.Traces{buildSampleTrace()},
+		},
+		{
+			name:                   "Test single consumption, three spans (Delta), using exp. histogram",
+			aggregationTemporality: delta,
+			histograms:             initExponentialHistograms,
+			verifier:               verifyConsumeMetricsInputDelta,
+			traces:                 []ptrace.Traces{buildSampleTrace()},
+		},
+		{
+			// More consumptions, should accumulate additively.
+			name:                   "Test two consumptions (Cumulative), using exp. histogram",
+			aggregationTemporality: cumulative,
+			histograms:             initExponentialHistograms,
+			verifier:               verifyMultipleCumulativeConsumptions(),
+			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
+		},
+		{
+			// More consumptions, should not accumulate. Therefore, end state should be the same as single consumption case.
+			name:                   "Test two consumptions (Delta), using exp. histogram",
+			aggregationTemporality: delta,
+			histograms:             initExponentialHistograms,
+			verifier:               verifyConsumeMetricsInputDelta,
+			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
+		},
+		{
+			// Consumptions with improper timestamps
+			name:                   "Test bad consumptions (Delta), using exp. histogram",
+			aggregationTemporality: cumulative,
+			histograms:             initExponentialHistograms,
+			verifier:               verifyBadMetricsOkay,
+			traces:                 []ptrace.Traces{buildBadSampleTrace()},
+		},
+
+		// explicit buckets histogram
 		{
 			name:                   "Test single consumption, three spans (Cumulative).",
 			aggregationTemporality: cumulative,
+			histograms:             initExplicitHistograms,
 			verifier:               verifyConsumeMetricsInputCumulative,
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
 		{
 			name:                   "Test single consumption, three spans (Delta).",
 			aggregationTemporality: delta,
+			histograms:             initExplicitHistograms,
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
@@ -714,6 +632,7 @@ func TestConsumeTraces(t *testing.T) {
 			// More consumptions, should accumulate additively.
 			name:                   "Test two consumptions (Cumulative).",
 			aggregationTemporality: cumulative,
+			histograms:             initExplicitHistograms,
 			verifier:               verifyMultipleCumulativeConsumptions(),
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
@@ -721,6 +640,7 @@ func TestConsumeTraces(t *testing.T) {
 			// More consumptions, should not accumulate. Therefore, end state should be the same as single consumption case.
 			name:                   "Test two consumptions (Delta).",
 			aggregationTemporality: delta,
+			histograms:             initExplicitHistograms,
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
@@ -728,6 +648,7 @@ func TestConsumeTraces(t *testing.T) {
 			// Consumptions with improper timestamps
 			name:                   "Test bad consumptions (Delta).",
 			aggregationTemporality: cumulative,
+			histograms:             initExplicitHistograms,
 			verifier:               verifyBadMetricsOkay,
 			traces:                 []ptrace.Traces{buildBadSampleTrace()},
 		},
@@ -754,7 +675,7 @@ func TestConsumeTraces(t *testing.T) {
 			mockClock := clock.NewMock(time.Now())
 			ticker := mockClock.NewTicker(time.Nanosecond)
 
-			p := newConnectorImp(mcon, &defaultNullValue, tc.aggregationTemporality, zaptest.NewLogger(t), ticker)
+			p := newConnectorImp(mcon, &defaultNullValue, tc.histograms, tc.aggregationTemporality, zaptest.NewLogger(t), ticker)
 
 			ctx := metadata.NewIncomingContext(context.Background(), nil)
 			err := p.Start(ctx, componenttest.NewNopHost())
@@ -780,7 +701,7 @@ func TestMetricKeyCache(t *testing.T) {
 	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
-	p := newConnectorImp(mcon, &defaultNullValue, cumulative, zaptest.NewLogger(t), nil)
+	p := newConnectorImp(mcon, &defaultNullValue, initExplicitHistograms, cumulative, zaptest.NewLogger(t), nil)
 	traces := buildSampleTrace()
 
 	// Test
@@ -813,7 +734,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
-	conn := newConnectorImp(mcon, &defaultNullValue, cumulative, zaptest.NewLogger(b), nil)
+	conn := newConnectorImp(mcon, &defaultNullValue, initExplicitHistograms, cumulative, zaptest.NewLogger(b), nil)
 
 	traces := buildSampleTrace()
 
@@ -824,10 +745,17 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newConnectorImp(mcon consumer.Metrics, defaultNullValue *pcommon.Value, temporality string, logger *zap.Logger, ticker *clock.Ticker) *connectorImp {
+func newConnectorImp(
+	mcon consumer.Metrics,
+	defaultNullValue *pcommon.Value,
+	histograms func() metrics.HistogramMetrics,
+	temporality string,
+	logger *zap.Logger,
+	ticker *clock.Ticker,
+) *connectorImp {
 	defaultNotInSpanAttrVal := pcommon.NewValueStr("defaultNotInSpanAttrVal")
 	// use size 2 for LRU cache for testing purpose
-	metricKeyToDimensions, err := cache.NewCache[metricKey, pcommon.Map](DimensionsCacheSize)
+	metricKeyToDimensions, err := cache.NewCache[metrics.Key, pcommon.Map](DimensionsCacheSize)
 	if err != nil {
 		panic(err)
 	}
@@ -837,8 +765,8 @@ func newConnectorImp(mcon consumer.Metrics, defaultNullValue *pcommon.Value, tem
 		metricsConsumer: mcon,
 
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
-		histograms:     make(map[metricKey]*histogram),
-		latencyBounds:  defaultLatencyHistogramBucketsMs,
+		histograms:     histograms(),
+		sums:           metrics.NewSumMetrics(),
 		dimensions: []dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
@@ -860,50 +788,6 @@ func newConnectorImp(mcon consumer.Metrics, defaultNullValue *pcommon.Value, tem
 		ticker:                ticker,
 		done:                  make(chan struct{}),
 	}
-}
-
-func TestDuplicateDimensions(t *testing.T) {
-	// Prepare
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	// Duplicate dimension with reserved label after sanitization.
-	cfg.Dimensions = []Dimension{
-		{Name: "status_code"},
-	}
-
-	// Test
-	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	assert.Error(t, err)
-	assert.Nil(t, c)
-}
-
-func TestUpdateExemplars(t *testing.T) {
-	// ----- conditions -------------------------------------------------------
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	traces := buildSampleTrace()
-	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
-	key := metricKey("metricKey")
-	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	c.metricsConsumer = new(consumertest.MetricsSink)
-	value := float64(42)
-
-	// ----- call -------------------------------------------------------------
-	h := c.getOrCreateHistogram(key, pcommon.NewMap())
-	h.observe(value, traceID, spanID)
-
-	// ----- verify -----------------------------------------------------------
-	assert.NoError(t, err)
-	assert.NotEmpty(t, c.histograms[key].exemplars)
-	assert.Equal(t, c.histograms[key].exemplars[0], exemplar{traceID: traceID, spanID: spanID, value: value})
-
-	// ----- call -------------------------------------------------------------
-	c.resetExemplars()
-
-	// ----- verify -----------------------------------------------------------
-	assert.NoError(t, err)
-	assert.Empty(t, c.histograms[key].exemplars)
 }
 
 func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
@@ -1007,7 +891,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 	ticker := mockClock.NewTicker(time.Nanosecond)
 
 	// Note: default dimension key cache size is 2.
-	p := newConnectorImp(mcon, &defaultNullValue, cumulative, zaptest.NewLogger(t), ticker)
+	p := newConnectorImp(mcon, &defaultNullValue, initExplicitHistograms, cumulative, zaptest.NewLogger(t), ticker)
 
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	err := p.Start(ctx, componenttest.NewNopHost())
@@ -1047,5 +931,32 @@ func TestBuildMetricName(t *testing.T) {
 	for _, test := range tests {
 		actual := buildMetricName(test.namespace, test.metricName)
 		assert.Equal(t, test.expected, actual)
+	}
+}
+
+func TestConnector_MapDurationsToMillis(t *testing.T) {
+	tests := []struct {
+		input []time.Duration
+		want  []float64
+	}{
+		{
+			input: []time.Duration{
+				3 * time.Nanosecond,
+				3 * time.Microsecond,
+				3 * time.Millisecond,
+				3 * time.Second,
+			},
+			want: []float64{0.000003, 0.003, 3, 3000},
+		},
+		{
+			input: []time.Duration{},
+			want:  []float64{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run("", func(t *testing.T) {
+			got := mapDurationsToMillis(tt.input)
+			assert.Equal(t, tt.want, got)
+		})
 	}
 }

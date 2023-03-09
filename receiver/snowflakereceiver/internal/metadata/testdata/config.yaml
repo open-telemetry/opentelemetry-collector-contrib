@@ -1,143 +1,151 @@
 default:
-all_metrics:
-  snowflake.billing.cloud_service.total:
-    enabled: true
-  snowflake.billing.total_credit.total:
-    enabled: true
-  snowflake.billing.virtual_warehouse.total:
-    enabled: true
-  snowflake.billing.warehouse.cloud_service.total:
-    enabled: true
-  snowflake.billing.warehouse.total_credit.total:
-    enabled: true
-  snowflake.billing.warehouse.virtual_warehouse.total:
-    enabled: true
-  snowflake.database.bytes_scanned.avg:
-    enabled: true
-  snowflake.database.query.count:
-    enabled: true
-  snowflake.logins.total:
-    enabled: true
-  snowflake.pipe.credits_used.total:
-    enabled: true
-  snowflake.query.blocked:
-    enabled: true
-  snowflake.query.bytes_deleted.avg:
-    enabled: true
-  snowflake.query.bytes_spilled.local.avg:
-    enabled: true
-  snowflake.query.bytes_spilled.remote.avg:
-    enabled: true
-  snowflake.query.bytes_written.avg:
-    enabled: true
-  snowflake.query.compilation_time.avg:
-    enabled: true
-  snowflake.query.data_scanned_cache.avg:
-    enabled: true
-  snowflake.query.executed:
-    enabled: true
-  snowflake.query.execution_time.avg:
-    enabled: true
-  snowflake.query.partitions_scanned.avg:
-    enabled: true
-  snowflake.query.queued_overload:
-    enabled: true
-  snowflake.query.queued_provision:
-    enabled: true
-  snowflake.queued_overload_time.avg:
-    enabled: true
-  snowflake.queued_provisioning_time.avg:
-    enabled: true
-  snowflake.queued_repair_time.avg:
-    enabled: true
-  snowflake.rows_deleted.avg:
-    enabled: true
-  snowflake.rows_inserted.avg:
-    enabled: true
-  snowflake.rows_produced.avg:
-    enabled: true
-  snowflake.rows_unloaded.avg:
-    enabled: true
-  snowflake.rows_updated.avg:
-    enabled: true
-  snowflake.session_id.count:
-    enabled: true
-  snowflake.storage.failsafe_bytes.total:
-    enabled: true
-  snowflake.storage.stage_bytes.total:
-    enabled: true
-  snowflake.storage.storage_bytes.total:
-    enabled: true
-  snowflake.total_elapsed_time.avg:
-    enabled: true
-no_metrics:
-  snowflake.billing.cloud_service.total:
-    enabled: false
-  snowflake.billing.total_credit.total:
-    enabled: false
-  snowflake.billing.virtual_warehouse.total:
-    enabled: false
-  snowflake.billing.warehouse.cloud_service.total:
-    enabled: false
-  snowflake.billing.warehouse.total_credit.total:
-    enabled: false
-  snowflake.billing.warehouse.virtual_warehouse.total:
-    enabled: false
-  snowflake.database.bytes_scanned.avg:
-    enabled: false
-  snowflake.database.query.count:
-    enabled: false
-  snowflake.logins.total:
-    enabled: false
-  snowflake.pipe.credits_used.total:
-    enabled: false
-  snowflake.query.blocked:
-    enabled: false
-  snowflake.query.bytes_deleted.avg:
-    enabled: false
-  snowflake.query.bytes_spilled.local.avg:
-    enabled: false
-  snowflake.query.bytes_spilled.remote.avg:
-    enabled: false
-  snowflake.query.bytes_written.avg:
-    enabled: false
-  snowflake.query.compilation_time.avg:
-    enabled: false
-  snowflake.query.data_scanned_cache.avg:
-    enabled: false
-  snowflake.query.executed:
-    enabled: false
-  snowflake.query.execution_time.avg:
-    enabled: false
-  snowflake.query.partitions_scanned.avg:
-    enabled: false
-  snowflake.query.queued_overload:
-    enabled: false
-  snowflake.query.queued_provision:
-    enabled: false
-  snowflake.queued_overload_time.avg:
-    enabled: false
-  snowflake.queued_provisioning_time.avg:
-    enabled: false
-  snowflake.queued_repair_time.avg:
-    enabled: false
-  snowflake.rows_deleted.avg:
-    enabled: false
-  snowflake.rows_inserted.avg:
-    enabled: false
-  snowflake.rows_produced.avg:
-    enabled: false
-  snowflake.rows_unloaded.avg:
-    enabled: false
-  snowflake.rows_updated.avg:
-    enabled: false
-  snowflake.session_id.count:
-    enabled: false
-  snowflake.storage.failsafe_bytes.total:
-    enabled: false
-  snowflake.storage.stage_bytes.total:
-    enabled: false
-  snowflake.storage.storage_bytes.total:
-    enabled: false
-  snowflake.total_elapsed_time.avg:
-    enabled: false
+all_set:
+  metrics:
+    snowflake.billing.cloud_service.total:
+      enabled: true
+    snowflake.billing.total_credit.total:
+      enabled: true
+    snowflake.billing.virtual_warehouse.total:
+      enabled: true
+    snowflake.billing.warehouse.cloud_service.total:
+      enabled: true
+    snowflake.billing.warehouse.total_credit.total:
+      enabled: true
+    snowflake.billing.warehouse.virtual_warehouse.total:
+      enabled: true
+    snowflake.database.bytes_scanned.avg:
+      enabled: true
+    snowflake.database.query.count:
+      enabled: true
+    snowflake.logins.total:
+      enabled: true
+    snowflake.pipe.credits_used.total:
+      enabled: true
+    snowflake.query.blocked:
+      enabled: true
+    snowflake.query.bytes_deleted.avg:
+      enabled: true
+    snowflake.query.bytes_spilled.local.avg:
+      enabled: true
+    snowflake.query.bytes_spilled.remote.avg:
+      enabled: true
+    snowflake.query.bytes_written.avg:
+      enabled: true
+    snowflake.query.compilation_time.avg:
+      enabled: true
+    snowflake.query.data_scanned_cache.avg:
+      enabled: true
+    snowflake.query.executed:
+      enabled: true
+    snowflake.query.execution_time.avg:
+      enabled: true
+    snowflake.query.partitions_scanned.avg:
+      enabled: true
+    snowflake.query.queued_overload:
+      enabled: true
+    snowflake.query.queued_provision:
+      enabled: true
+    snowflake.queued_overload_time.avg:
+      enabled: true
+    snowflake.queued_provisioning_time.avg:
+      enabled: true
+    snowflake.queued_repair_time.avg:
+      enabled: true
+    snowflake.rows_deleted.avg:
+      enabled: true
+    snowflake.rows_inserted.avg:
+      enabled: true
+    snowflake.rows_produced.avg:
+      enabled: true
+    snowflake.rows_unloaded.avg:
+      enabled: true
+    snowflake.rows_updated.avg:
+      enabled: true
+    snowflake.session_id.count:
+      enabled: true
+    snowflake.storage.failsafe_bytes.total:
+      enabled: true
+    snowflake.storage.stage_bytes.total:
+      enabled: true
+    snowflake.storage.storage_bytes.total:
+      enabled: true
+    snowflake.total_elapsed_time.avg:
+      enabled: true
+  resource_attributes:
+    snowflake.account.name:
+      enabled: true
+none_set:
+  metrics:
+    snowflake.billing.cloud_service.total:
+      enabled: false
+    snowflake.billing.total_credit.total:
+      enabled: false
+    snowflake.billing.virtual_warehouse.total:
+      enabled: false
+    snowflake.billing.warehouse.cloud_service.total:
+      enabled: false
+    snowflake.billing.warehouse.total_credit.total:
+      enabled: false
+    snowflake.billing.warehouse.virtual_warehouse.total:
+      enabled: false
+    snowflake.database.bytes_scanned.avg:
+      enabled: false
+    snowflake.database.query.count:
+      enabled: false
+    snowflake.logins.total:
+      enabled: false
+    snowflake.pipe.credits_used.total:
+      enabled: false
+    snowflake.query.blocked:
+      enabled: false
+    snowflake.query.bytes_deleted.avg:
+      enabled: false
+    snowflake.query.bytes_spilled.local.avg:
+      enabled: false
+    snowflake.query.bytes_spilled.remote.avg:
+      enabled: false
+    snowflake.query.bytes_written.avg:
+      enabled: false
+    snowflake.query.compilation_time.avg:
+      enabled: false
+    snowflake.query.data_scanned_cache.avg:
+      enabled: false
+    snowflake.query.executed:
+      enabled: false
+    snowflake.query.execution_time.avg:
+      enabled: false
+    snowflake.query.partitions_scanned.avg:
+      enabled: false
+    snowflake.query.queued_overload:
+      enabled: false
+    snowflake.query.queued_provision:
+      enabled: false
+    snowflake.queued_overload_time.avg:
+      enabled: false
+    snowflake.queued_provisioning_time.avg:
+      enabled: false
+    snowflake.queued_repair_time.avg:
+      enabled: false
+    snowflake.rows_deleted.avg:
+      enabled: false
+    snowflake.rows_inserted.avg:
+      enabled: false
+    snowflake.rows_produced.avg:
+      enabled: false
+    snowflake.rows_unloaded.avg:
+      enabled: false
+    snowflake.rows_updated.avg:
+      enabled: false
+    snowflake.session_id.count:
+      enabled: false
+    snowflake.storage.failsafe_bytes.total:
+      enabled: false
+    snowflake.storage.stage_bytes.total:
+      enabled: false
+    snowflake.storage.storage_bytes.total:
+      enabled: false
+    snowflake.total_elapsed_time.avg:
+      enabled: false
+  resource_attributes:
+    snowflake.account.name:
+      enabled: false

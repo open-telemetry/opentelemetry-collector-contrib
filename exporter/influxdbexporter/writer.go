@@ -26,13 +26,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/influxdata/influxdb-observability/common"
-	"github.com/influxdata/influxdb-observability/otel2influx"
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx/otel2influx"
 )
 
 type influxHTTPWriter struct {

@@ -28,7 +28,7 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	MetricsConfig                           metadata.MetricsSettings `mapstructure:"metrics"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 }
 
 var _ component.Config = (*Config)(nil)
