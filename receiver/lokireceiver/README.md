@@ -13,10 +13,10 @@ This receiver runs HTTP and GRPC servers to ingest log entries in Loki format.
 
 ## Getting Started
 
-The following settings are required:
+The settings are:
 
-- `endpoint` (default = 0.0.0.0:3500 for grpc protocol, 0.0.0.0:3600 http protocol): host:port to which the receiver is going to receive data.
-- `use_incoming_timestamp` (default = false) if set `true` the timestamp from Loki log entry is used
+- `endpoint` (required, default = 0.0.0.0:3500 for grpc protocol, 0.0.0.0:3600 http protocol): host:port to which the receiver is going to receive data.
+- `use_incoming_timestamp` (optional, default = false) if set `true` the timestamp from Loki log entry is used
 
 Example:
 ```yaml

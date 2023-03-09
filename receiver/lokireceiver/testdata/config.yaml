@@ -11,6 +11,5 @@ loki/mixed:
       endpoint: localhost:4500
   use_incoming_timestamp: true
 loki/empty:
-
 loki/extra_keys:
   foo:
