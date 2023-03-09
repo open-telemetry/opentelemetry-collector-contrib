@@ -181,7 +181,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
 			cfg.TracesIndex = index
-			cfg.TracesDynamicIndex.Disabled = false
+			cfg.TracesDynamicIndex.Enabled = true
 		})
 
 		mustSendTracesWithAttributes(t, exporter,

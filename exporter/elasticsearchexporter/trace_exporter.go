@@ -72,7 +72,7 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 		bulkIndexer: bulkIndexer,
 
 		index:        cfg.TracesIndex,
-		dynamicIndex: !cfg.TracesDynamicIndex.Disabled,
+		dynamicIndex: cfg.TracesDynamicIndex.Enabled,
 		maxAttempts:  maxAttempts,
 		model:        model,
 	}, nil

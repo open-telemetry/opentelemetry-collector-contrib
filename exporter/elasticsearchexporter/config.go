@@ -74,7 +74,7 @@ type Config struct {
 }
 
 type DynamicIndexSetting struct {
-	Disabled bool `mapstructure:"disabled"`
+	Enabled bool `mapstructure:"enabled"`
 }
 
 type HTTPClientSettings struct {

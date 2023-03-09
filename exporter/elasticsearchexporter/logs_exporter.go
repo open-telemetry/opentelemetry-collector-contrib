@@ -80,7 +80,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 		bulkIndexer: bulkIndexer,
 
 		index:        indexStr,
-		dynamicIndex: !cfg.LogsDynamicIndex.Disabled,
+		dynamicIndex: cfg.LogsDynamicIndex.Enabled,
 		maxAttempts:  maxAttempts,
 		model:        model,
 	}

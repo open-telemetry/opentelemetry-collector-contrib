@@ -191,7 +191,7 @@ func TestExporter_PushEvent(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.LogsIndex = index
-			cfg.LogsDynamicIndex.Disabled = false
+			cfg.LogsDynamicIndex.Enabled = true
 		})
 
 		mustSendLogsWithAttributes(t, exporter,
