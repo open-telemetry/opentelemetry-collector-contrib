@@ -15,8 +15,9 @@
 package influxdbexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 
 import (
-	"github.com/influxdata/influxdb-observability/common"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx/common"
 )
 
 type zapInfluxLogger struct {

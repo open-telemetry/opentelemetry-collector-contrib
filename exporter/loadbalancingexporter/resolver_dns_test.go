@@ -19,12 +19,12 @@ import (
 	"errors"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -135,9 +135,9 @@ func TestOnChange(t *testing.T) {
 	}
 
 	// test
-	counter := atomic.NewInt64(0)
+	counter := &atomic.Int64{}
 	res.onChange(func(endpoints []string) {
-		counter.Inc()
+		counter.Add(1)
 	})
 	require.NoError(t, res.start(context.Background()))
 	defer func() {
@@ -192,7 +192,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second)
 	require.NoError(t, err)
 
-	counter := atomic.NewInt64(0)
+	counter := &atomic.Int64{}
 	resolve := [][]net.IPAddr{
 		{
 			{IP: net.IPv4(127, 0, 0, 1)},
@@ -208,7 +208,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
 			defer func() {
-				counter.Inc()
+				counter.Add(1)
 			}()
 			// for second call, return the second result
 			if counter.Load() == 2 {
@@ -252,11 +252,11 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 
 	expectedErr := errors.New("some expected error")
 	wg := sync.WaitGroup{}
-	counter := atomic.NewInt64(0)
+	counter := &atomic.Int64{}
 	resolve := []net.IPAddr{{IP: net.IPv4(127, 0, 0, 1)}}
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
-			counter.Inc()
+			counter.Add(1)
 
 			// count down at most two times
 			if counter.Load() <= 2 {
