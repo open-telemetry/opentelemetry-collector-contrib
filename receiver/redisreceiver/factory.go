@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 			Insecure: true,
 		},
 		ScraperControllerSettings: scs,
-		Metrics:                   metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

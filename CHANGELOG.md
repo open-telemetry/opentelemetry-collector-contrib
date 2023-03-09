@@ -4,6 +4,94 @@
 
 <!-- next version -->
 
+## v0.73.0
+
+### 🛑 Breaking changes 🛑
+
+- `googlecloudexporter`: Disable retry helper by default in GCP and GMP exporter configs. (#19203)
+- `k8sattributesprocessor`: Remove `container.id` as default metadata given possible ambiguity matching a container run to a container ID (#16432)
+- `pkg/ottl`: Ability to reference matched capture groups in `replace_pattern()` and `replace_all_patterns()` (#18610)
+  This change affects all processors that use OTTL (i.e. `transformprocessor`, `routingprocessor`, and `filterprocessor`).
+  This is a breaking change in the rare scenario that the `$` character is currently used in a replacement string.
+  To output a literal `$` in a replacement string it must now be escaped with an additional `$`.
+- `resourcedetectionprocessor`: Bump OpenShift semconv version from 1.16.0 to 1.18.0. (#19168)
+  Rename google openshift platform attribute from google_cloud_openshift to gcp_openshift.
+- `spanmetricsconnector`: Drop Prometheus-specific metrics labels sanitization. (#18678)
+  The spanmeterics connector is the OTel component, therefore, we would
+  like to strip Prometheus-specific parts from it. Metric names and attributes
+  conversion to Prometheus conventions should happen in Prometheus components,
+  e.g. Prometheus Remote Write exporter.
+  
+
+### 🚀 New components 🚀
+
+- `filereceiver`: Add basic file reading capabilities to file receiver. Second PR. (#14638)
+  This component is not yet enabled.
+
+### 💡 Enhancements 💡
+
+- `jmxreceiver`: Add the JMX metrics gatherer version 1.23.0-alpha to the supported jars hash list (#18888)
+- `telemetrygen`: Add makefile targets and docker build for telemetrygen (#18835)
+- `internal/filter`: Adds new `filterottl` package that enables filtering/matching using OTTL conditions. (#18930)
+- `pulsarexporter`: Expose in configuration all Pulsar producer options (#19182)
+- `receiver/splunkhec`: Adds sharedcomponent to Splunk HEC Receiver (#18734)
+- `resourcedetectionprocessor`: Add support for detecting AWS Lambda resources. (#17584)
+- `awscloudwatchlogsexporter`: Add the ability to export raw log to cloud watch (#18758)
+  Add emf and raw log support for aws cloudwatch exporter.
+- `awsemfexporter`: The AWS EMF exporter now supports the additional configuration flag `retain_initial_value_of_delta_metric`. With this flag active the first value of a metric is not discarded but instead sent to AWS. (#16218)
+- `processor/tailsampling`: adds support for a BooleanAttribute PolicyType (#17545)
+  enables use of boolean attrbiutes in defining tail sampling policies
+- `pkg/stanza`: Add `header_delimiter` option to the `csv_parser`. (#18198)
+- `datadogexporter`: Enable gzip compression for metric payloads submitted by native Datadog client (#17373)
+- `hostmetrics`: Have the hostmetrics receiver file system scraper use more debug messages (#18236)
+  Log a debug message instead of an error if the collector does not have the permissions to access a locked drive on the host. We do not want to log an error message on every poll for this case.
+- `exporter/prometheus`: Produce exemplars for monotonic sum metrics (i.e. counters in Prometheus) when available (#18201)
+  This could be a breaking change if you already have enabled OpenMetrics format for the Prometheus exporter and have enabled exemplar ingestion in your Prometheus scraper.  To ensure names and types are generated correctly according to the OpenMetrics conventions, you should run your collector with `--feature-gates=pkg.translator.prometheus.NormalizeName`
+- `filelogreceiver`: Adds ability to parse a file header and parse it as metadata to decorate log entries. (#18198)
+  This feature must be activated with the `filelog.allowHeaderMetadataParsing` feature gate.
+- `filterprocessor`: Add `error_mode` configuration option that allows specifying how errors from OTTL conditions should be handled. (#19142)
+- `receiver/purefareceiver`: Ensure a clear visualization for hosts scraper from Pure Storage FlashArray API (#14886)
+- `k8sattributesprocessor`: e2e test support log data (#18392)
+- `k8sattributesprocessor`: k8sattributesprocessor e2e tests support metric data type. (#18391)
+- `k8sattributesprocessor`: Default `container.id` to latest instance unless `k8s.container.restart_count` is specified (#16432)
+- `mdatagen`: Turn on the ability to enable/disable resource attributes by embedding MetricsSettings and ResourceAttributesSettings into all scraping receivers as MetricsBuilderConfig (#16373)
+  Currently, the only way to add configurative functionality to mdatagen is by using a bunch of WithResourceAttributesSettings options to the constructor.
+  This PR changes the first argument to the NewMetricsBuilder constructor to be of type MetricsBuilderConfig,
+  which is a new class that wraps both MetricsSettings and ResourceAttributesSettings, and may be (hopefully) easily extended with more
+  configuration in the future.
+  
+- `pkg/ottl`: Add Eval function to Statements (#18915)
+- `Process Metrics for Mac`: Enabling process metrics to be collected for Mac in the hostmetrics receiver (#17863)
+- `servicegraphprocessor`: servicegraph support virtual/peer node (#17196)
+- `tailsamplingprocessor`: Add a max_spans configuration for the span_count policy of tailsamplingprocessor (#18215)
+- `spanmetricsconnector`: Allow optional usage of Exponential Histograms when generating latency metrics. (#18528)
+- `splunkhecexporter`: Allow merging metric events. (#11532)
+- `filelogreceiver`: Support preserving whitespace for log entries (#18242)
+- `awsemfexporter`: Support exporting quantile for summary metrics (#17265)
+- `cmd/telemetrygen`: Initial implementation of `telemetrygen logs` subcommand for exporting log data (#12927)
+- `transformprocessor`: Add error_mode configuration option that allows specifying how the processor should handle errors from statements. (#18693)
+- `resourcedetectionprocessor`: Update Heroku mappings to match specification (#18872)
+- `awsxrayexporter`: Allow additions of special attributes to the list of indexable attributes in the AWS X-Ray exporter when explicitly listed by the user (#19173)
+- `awsxrayexporter`: Reformatted and improved accuracy of data captured in user agent string in the AWS X-Ray exporter (#18264)
+
+### 🧰 Bug fixes 🧰
+
+- `bearertokenauthextension`: Allow bearertokenauthextension to pick updated token from bearertoken file for http requests (#17031)
+- `cumulativetodeltaprocessor`: exclude the first point after a restart in monotonic sums (#17190, #18053)
+- `datadogreceiver`: Fix misuse of span.Type and span.kind meta of dd spans. (#18190)
+- `mongodbatlasreceiver`: Fixes issue where on a failed start we don't try to checkpoint with an unset storage client. (#19191)
+- `fluentforwardreceiver`: Fix issue where the receiver was dropping errors returned by processors (#18860)
+- `filelogreceiver`: Fixed a bug when delete_after_read was enabled partially read files would be deleted on collector shutdown. (#18926)
+- `receiver/jaeger`: Fix translation of span status (#19171)
+- `hostmetricsreceiver`: Fix `process.cpu.utilization` calculation by using individual `CPUUtilizationCalculator` instances per-PID. (#19119)
+  Update `processscraper` to keep a map of PIDs to `CPUUtilizationCalculator`s, rather than using a single instance globally.
+- `filterprocessor`: Fixes issue where errors in the filterprocessor might not be logged (#18862)
+- `pkg/pdatautil`: Fix a potential panic that could occur while hashing nested maps. (#18910)
+- `receiver_creator`: No longer attempt to add observer target to `endpoint` if underlying receiver config doesn't support it. (#7381)
+  Also adds backticked expansion support for more config forms
+- `transformprocessor`: Fixes a bug where the transformprocessor's errors failed to be logged. (#18859)
+- `prometheusreceiver`: Validate that histograms include the inf bucket (#9384)
+
 ## v0.72.0
 
 ### 🛑 Breaking changes 🛑

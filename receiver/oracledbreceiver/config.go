@@ -27,7 +27,7 @@ import (
 type Config struct {
 	DataSource                              string `mapstructure:"datasource"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	MetricsSettings                         metadata.MetricsSettings `mapstructure:"metrics"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 }
 
 func (c Config) Validate() error {

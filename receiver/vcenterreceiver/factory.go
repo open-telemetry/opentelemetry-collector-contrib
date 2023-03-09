@@ -47,8 +47,8 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 2 * time.Minute,
 		},
-		TLSClientSetting: configtls.TLSClientSetting{},
-		Metrics:          metadata.DefaultMetricsSettings(),
+		TLSClientSetting:     configtls.TLSClientSetting{},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

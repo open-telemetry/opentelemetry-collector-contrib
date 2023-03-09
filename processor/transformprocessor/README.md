@@ -62,6 +62,7 @@ See [Contexts](#contexts) for more details.
 Example configuration:
 ```yaml
 transform:
+  error_mode: ignore
   trace_statements:
     - context: resource
       statements:
