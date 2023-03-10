@@ -63,14 +63,13 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).ScopeLogs()
+		resource := rls.At(i).Resource()
 
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).LogRecords()
 			scope := ills.At(j).Scope()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				resource := rls.At(i).Resource()
-
 				entry, err := LogToLokiEntry(log, resource, scope)
 				tenant := entry.Tenant
 
