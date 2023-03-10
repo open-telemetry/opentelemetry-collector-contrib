@@ -83,8 +83,8 @@ func (receiver *pubsubPushReceiver) Shutdown(_ context.Context) error {
 type Message struct {
 	Attributes  map[string]string `json:"attributes,omitempty"`
 	Data        []byte            `json:"data,omitempty"`
-	PublishTime string            `json:"messageId"`
-	ID          string            `json:"publishTime"`
+	PublishTime string            `json:"publishTime"`
+	ID          string            `json:"messageId"`
 }
 
 type PubSubMessage struct {
