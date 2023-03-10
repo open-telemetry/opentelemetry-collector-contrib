@@ -395,8 +395,9 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
-	github.com/influxdata/influxdb-observability/common v0.3.1 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.3.1 // indirect
+	github.com/influxdata/influxdb-observability/common v0.3.2 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.3.2 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.3.2 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.3 // indirect
 	github.com/jaegertracing/jaeger v1.41.0 // indirect
@@ -463,7 +464,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.73.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.73.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.73.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx v0.73.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.73.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.73.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.73.0 // indirect
@@ -955,8 +955,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../../receiver/prometheusreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter => ../../exporter/sapmexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx => ../../internal/influx
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ../../internal/kubelet
 

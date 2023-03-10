@@ -100,7 +100,6 @@ extension/storage/filestorage/                           @open-telemetry/collect
 
 internal/aws/                                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 internal/docker/                                         @open-telemetry/collector-contrib-approvers @rmfitzpatrick @jamesmoessis
-internal/influx/                                         @open-telemetry/collector-contrib-approvers @jacobmarble @dmitryax
 internal/k8sconfig/                                      @open-telemetry/collector-contrib-approvers @dmitryax
 internal/kubelet/                                        @open-telemetry/collector-contrib-approvers @dmitryax
 internal/metadataproviders/                              @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
