@@ -39,7 +39,7 @@ type logsExporter struct {
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-	client, err := newClickhouseClient(cfg)
+	client, err := newClickHouseClient(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -73,28 +73,40 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 
 func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
-	err := doWithTx(ctx, e.client, func(tx *sql.Tx) error {
-		statement, err := tx.PrepareContext(ctx, e.insertSQL)
+	err := func() error {
+		scope, err := e.client.Begin()
 		if err != nil {
-			return fmt.Errorf("PrepareContext:%w", err)
+			return fmt.Errorf("Begin:%w", err)
 		}
-		defer func() {
-			_ = statement.Close()
-		}()
+
+		batch, err := scope.Prepare(e.insertSQL)
+		if err != nil {
+			return fmt.Errorf("Prepare:%w", err)
+		}
+
 		var serviceName string
-		for i := 0; i < ld.ResourceLogs().Len(); i++ {
-			logs := ld.ResourceLogs().At(i)
+		resAttr := make(map[string]string)
+
+		resourceLogs := ld.ResourceLogs()
+		for i := 0; i < resourceLogs.Len(); i++ {
+			logs := resourceLogs.At(i)
 			res := logs.Resource()
-			resAttr := attributesToMap(res.Attributes())
-			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
+
+			attrs := res.Attributes()
+			attributesToMap(attrs, resAttr)
+
+			if v, ok := attrs.Get(conventions.AttributeServiceName); ok {
 				serviceName = v.Str()
 			}
 			for j := 0; j < logs.ScopeLogs().Len(); j++ {
 				rs := logs.ScopeLogs().At(j).LogRecords()
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
-					logAttr := attributesToMap(r.Attributes())
-					_, err = statement.ExecContext(ctx,
+
+					logAttr := make(map[string]string, attrs.Len())
+					attributesToMap(r.Attributes(), logAttr)
+
+					_, err = batch.Exec(
 						r.Timestamp().AsTime(),
 						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
@@ -111,22 +123,27 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					}
 				}
 			}
+
+			// clear map for reuse
+			for k := range resAttr {
+				delete(resAttr, k)
+			}
 		}
-		return nil
-	})
+
+		return scope.Commit()
+	}()
+
 	duration := time.Since(start)
 	e.logger.Info("insert logs", zap.Int("records", ld.LogRecordCount()),
 		zap.String("cost", duration.String()))
 	return err
 }
 
-func attributesToMap(attributes pcommon.Map) map[string]string {
-	m := make(map[string]string, attributes.Len())
+func attributesToMap(attributes pcommon.Map, dest map[string]string) {
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		m[k] = v.AsString()
+		dest[k] = v.AsString()
 		return true
 	})
-	return m
 }
 
 const (
@@ -155,6 +172,7 @@ PARTITION BY toDate(Timestamp)
 ORDER BY (ServiceName, SeverityText, toUnixTimestamp(Timestamp), TraceId)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
+
 	// language=ClickHouse SQL
 	insertLogsSQLTemplate = `INSERT INTO %s (
                         Timestamp,
@@ -167,24 +185,13 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         Body,
                         ResourceAttributes,
                         LogAttributes
-                        ) VALUES (
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?
-                                  )`
+                        )`
 )
 
 var driverName = "clickhouse" // for testing
 
-// newClickhouseClient create a clickhouse client.
-func newClickhouseClient(cfg *Config) (*sql.DB, error) {
+// newClickHouseClient create a clickhouse client.
+func newClickHouseClient(cfg *Config) (*sql.DB, error) {
 	dsn, err := cfg.buildDSN(cfg.Database)
 	if err != nil {
 		return nil, err
@@ -205,6 +212,7 @@ func createDatabase(ctx context.Context, cfg *Config) error {
 	if err != nil {
 		return err
 	}
+
 	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
 	if err != nil {
 		return fmt.Errorf("sql.Open:%w", err)
@@ -237,18 +245,4 @@ func renderCreateLogsTableSQL(cfg *Config) string {
 
 func renderInsertLogsSQL(cfg *Config) string {
 	return fmt.Sprintf(insertLogsSQLTemplate, cfg.LogsTableName)
-}
-
-func doWithTx(_ context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("db.Begin: %w", err)
-	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
-	if err := fn(tx); err != nil {
-		return err
-	}
-	return tx.Commit()
 }

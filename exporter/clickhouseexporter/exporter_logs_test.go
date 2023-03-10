@@ -90,6 +90,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 	t.Run("push success", func(t *testing.T) {
 		var items int
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			t.Logf(query)
 			t.Logf("%d, values:%+v", items, values)
 			if strings.HasPrefix(query, "INSERT") {
 				items++
@@ -194,7 +195,18 @@ func (*testClickhouseDriverStmt) Close() error {
 }
 
 func (t *testClickhouseDriverStmt) NumInput() int {
-	return strings.Count(t.query, "?")
+	if !strings.HasPrefix(t.query, `INSERT`) {
+		return 0
+	}
+
+	n := strings.Count(t.query, "?")
+	if n > 0 {
+		return n
+	}
+
+	// no ? in batched queries but column are separated with ","
+	// except for the last one
+	return strings.Count(t.query, ",") + 1
 }
 
 func (t *testClickhouseDriverStmt) Exec(args []driver.Value) (driver.Result, error) {

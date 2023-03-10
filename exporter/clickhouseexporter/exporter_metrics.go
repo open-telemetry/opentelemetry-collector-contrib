@@ -35,7 +35,7 @@ type metricsExporter struct {
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
-	client, err := newClickhouseClient(cfg)
+	client, err := newClickHouseClient(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,11 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 		metaData := internal.MetricsMetaData{}
 		metrics := md.ResourceMetrics().At(i)
 		res := metrics.Resource()
-		metaData.ResAttr = attributesToMap(res.Attributes())
+
+		resAttr := res.Attributes()
+		attr := make(map[string]string, resAttr.Len())
+		attributesToMap(resAttr, attr)
+		metaData.ResAttr = attr
 		metaData.ResURL = metrics.SchemaUrl()
 		for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
 			rs := metrics.ScopeMetrics().At(j).Metrics()

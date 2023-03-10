@@ -124,7 +124,7 @@ COMMIT?=HEAD
 MODSET?=contrib-core
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
 .PHONY: push-tags
-push-tags: $(MULITMOD) 
+push-tags: $(MULITMOD)
 	$(MULITMOD) verify
 	set -e; for tag in `$(MULITMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
 		echo "pushing tag $${tag}"; \
@@ -221,7 +221,7 @@ run:
 docker-component: check-component
 	GOOS=linux GOARCH=amd64 $(MAKE) $(COMPONENT)
 	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
-	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
+	docker buildx build --platform=linux/amd64 -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
 .PHONY: check-component
