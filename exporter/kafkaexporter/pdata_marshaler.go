@@ -85,16 +85,48 @@ type pdataTracesMarshaler struct {
 }
 
 func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
-	bts, err := p.marshaler.MarshalTraces(td)
-	if err != nil {
-		return nil, err
+	var messages []*sarama.ProducerMessage
+	// minimum implementation
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
+		for i := 0; i < rs.ScopeSpans().Len(); i++ {
+			ils := rs.ScopeSpans().At(i)
+			spans := ils.Spans()
+			for j := 0; j < spans.Len(); j++ {
+				span := spans.At(j)
+				key := span.TraceID().String()
+				nTraces := ptrace.NewTraces()
+				newRS := nTraces.ResourceSpans().AppendEmpty()
+				rs.Resource().CopyTo(newRS.Resource())
+				newRS.SetSchemaUrl(rs.SchemaUrl())
+				newILS := newRS.ScopeSpans().AppendEmpty()
+				newILS.SetSchemaUrl(ils.SchemaUrl())
+				tgt := newILS.Spans().AppendEmpty()
+				span.CopyTo(tgt)
+
+				bts, err := p.marshaler.MarshalTraces(nTraces)
+				if err != nil {
+					return nil, err
+				}
+				messages = append(messages, &sarama.ProducerMessage{
+					Topic: topic,
+					Value: sarama.ByteEncoder(bts),
+					Key:   sarama.ByteEncoder(key),
+				})
+			}
+		}
 	}
-	return []*sarama.ProducerMessage{
-		{
-			Topic: topic,
-			Value: sarama.ByteEncoder(bts),
-		},
-	}, nil
+	return messages, nil
+	//bts, err := p.marshaler.MarshalTraces(td)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return []*sarama.ProducerMessage{
+	//	{
+	//		Topic: topic,
+	//		Value: sarama.ByteEncoder(bts),
+	//	},
+	//}, nil
 }
 
 func (p pdataTracesMarshaler) Encoding() string {
