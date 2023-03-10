@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
+
 package cloudflarereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver"
 
 import (
@@ -117,11 +119,6 @@ func TestReceiverTLS(t *testing.T) {
 			}, 2*time.Second, 10*time.Millisecond)
 
 			logs := sink.AllLogs()[0]
-
-			marshaler := plog.JSONMarshaler{}
-			b, err := marshaler.MarshalLogs(logs)
-			require.NoError(t, err)
-			os.WriteFile(filepath.Join("testdata", "processed", fmt.Sprintf("%s.json", payloadName)), b, 0644)
 
 			expectedLogs, err := readLogs(filepath.Join("testdata", "processed", fmt.Sprintf("%s.json", payloadName)))
 			require.NoError(t, err)
