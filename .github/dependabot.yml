@@ -448,11 +448,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/internal/influx"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/internal/k8sconfig"
     schedule:
       interval: "weekly"
@@ -1099,6 +1094,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/testbed/mockdatareceivers/mockawsxrayreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/testbed/mockdatasenders/mockdatadogagentexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
