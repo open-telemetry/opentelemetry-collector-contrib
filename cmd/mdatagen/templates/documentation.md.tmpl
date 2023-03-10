@@ -41,7 +41,7 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [{{ .Status.Stability }}]   |
-| Supported pipeline types | {{range .Status.Pipelines }}{{.}},{{end}}   |
+| Supported pipeline types | {{ stringsJoin .Status.Pipelines ", " }} |
 | Distributions            | [{{ distroJoin .Status.Distributions "], [" }}] |
 {{ end }}
 ## Default Metrics
