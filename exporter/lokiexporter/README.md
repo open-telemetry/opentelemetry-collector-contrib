@@ -46,6 +46,7 @@ processors:
 
 Currently, Loki does not support label names with dots. 
 That's why lokiexporter normalizes label names to follow Prometheus label names standard before sending requests to Loki.
+More information on label normalization could be found [here](../../pkg/translator/prometheus/README.md#Labels)
 
 Default labels:
 - `job=service.namespace/service.name`
