@@ -21,12 +21,10 @@ import (
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/relvacode/iso8601"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
-
 	"go.uber.org/zap"
 )
 

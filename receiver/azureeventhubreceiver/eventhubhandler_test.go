@@ -22,7 +22,6 @@ import (
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
@@ -67,11 +66,9 @@ func (m mockListenerHandleWrapper) Err() error {
 }
 
 type mockDataConsumer struct {
-	logsUnmarshaler     eventLogsUnmarshaler
-	nextLogsConsumer    consumer.Logs
-	metricsUnmarshaler  eventMetricsUnmarshaler
-	nextMetricsConsumer consumer.Metrics
-	obsrecv             *obsreport.Receiver
+	logsUnmarshaler  eventLogsUnmarshaler
+	nextLogsConsumer consumer.Logs
+	obsrecv          *obsreport.Receiver
 }
 
 func (m *mockDataConsumer) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {

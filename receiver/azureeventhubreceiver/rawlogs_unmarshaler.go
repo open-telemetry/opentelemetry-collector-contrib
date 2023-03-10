@@ -16,7 +16,6 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"

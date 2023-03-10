@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -86,8 +85,6 @@ func (receiver *eventhubReceiver) consume(ctx context.Context, event *eventhub.E
 	default:
 		return fmt.Errorf("invalid data type: %v", receiver.dataType)
 	}
-
-	return nil
 }
 
 func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventhub.Event) error {

@@ -17,17 +17,15 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"fmt"
-	"time"
 	"strings"
+	"time"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	jsoniter "github.com/json-iterator/go"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
-
 	"go.uber.org/zap"
 )
 
@@ -122,7 +120,7 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 		dpCount.SetStartTimestamp(startTimestamp)
 		dpCount.SetTimestamp(nanos)
 		dpCount.SetDoubleValue(azureMetric.Count)
-		
+
 		metricMin := metrics.AppendEmpty()
 		metricMin.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Minimum")))
 		dpMin := metricMin.SetEmptyGauge().DataPoints().AppendEmpty()

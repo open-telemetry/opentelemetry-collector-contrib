@@ -17,12 +17,10 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 
+	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
-
 	"go.uber.org/zap"
-
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
@@ -113,7 +111,6 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 			return err
 		}
 	}
-	return nil
 
 	if h.hub != nil {
 		return nil
