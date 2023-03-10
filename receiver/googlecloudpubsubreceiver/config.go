@@ -64,7 +64,7 @@ func (c *PushConfig) validate() error {
 		c.Path = "/"
 	}
 	if c.Endpoint == "" {
-		return fmt.Errorf("push endpoint need to be defined in push mode")
+		return fmt.Errorf("push endpoint needs to be defined in push mode")
 	}
 	return nil
 }
