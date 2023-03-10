@@ -35,7 +35,7 @@ func TestCreateResourceMetricsScraper(t *testing.T) {
 
 	scraper, err := factory.CreateMetricsScraper(context.Background(), receivertest.NewNopCreateSettings(), cfg)
 
-	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
+	if runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		assert.NoError(t, err)
 		assert.NotNil(t, scraper)
 	} else {

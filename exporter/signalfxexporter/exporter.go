@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -161,6 +160,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			// to make configurable.
 			PropertiesMaxBuffered: 10000,
 			MetricsConverter:      *se.converter,
+			ExcludeProperties:     se.config.ExcludeProperties,
 		})
 	dimClient.Start()
 
@@ -231,10 +231,6 @@ func (se *signalfxExporter) createClient(host component.Host) (*http.Client, err
 		if se.config.HTTPClientSettings.MaxIdleConnsPerHost == nil {
 			se.config.HTTPClientSettings.MaxIdleConnsPerHost = &se.config.MaxConnections
 		}
-	}
-	if se.config.HTTPClientSettings.IdleConnTimeout == nil {
-		defaultIdleConnTimeout := 30 * time.Second
-		se.config.HTTPClientSettings.IdleConnTimeout = &defaultIdleConnTimeout
 	}
 
 	return se.config.ToClient(host, se.telemetrySettings)

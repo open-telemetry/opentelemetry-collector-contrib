@@ -32,6 +32,7 @@ const (
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
 	tagNodeName             = "k8s.node.name"
 	tagStartTime            = "k8s.pod.start_time"
+	tagHostName             = "k8s.pod.hostname"
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
@@ -192,6 +193,7 @@ type ExtractionRules struct {
 	Namespace          bool
 	PodName            bool
 	PodUID             bool
+	PodHostName        bool
 	ReplicaSetID       bool
 	ReplicaSetName     bool
 	StatefulSetUID     bool

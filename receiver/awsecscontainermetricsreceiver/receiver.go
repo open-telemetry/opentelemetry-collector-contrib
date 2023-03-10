@@ -79,7 +79,9 @@ func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host com
 
 // Shutdown stops the awsecscontainermetricsreceiver receiver.
 func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
-	aecmr.cancel()
+	if aecmr.cancel != nil {
+		aecmr.cancel()
+	}
 	return nil
 }
 

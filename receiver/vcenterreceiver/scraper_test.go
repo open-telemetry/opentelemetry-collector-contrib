@@ -34,10 +34,10 @@ func TestScrape(t *testing.T) {
 	mockServer := mock.MockServer(t, false)
 
 	cfg := &Config{
-		Metrics:  metadata.DefaultMetricsSettings(),
-		Endpoint: mockServer.URL,
-		Username: mock.MockUsername,
-		Password: mock.MockPassword,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Endpoint:             mockServer.URL,
+		Username:             mock.MockUsername,
+		Password:             mock.MockPassword,
 	}
 
 	testScrape(ctx, t, cfg)
@@ -48,10 +48,10 @@ func TestScrape_TLS(t *testing.T) {
 	mockServer := mock.MockServer(t, true)
 
 	cfg := &Config{
-		Metrics:  metadata.DefaultMetricsSettings(),
-		Endpoint: mockServer.URL,
-		Username: mock.MockUsername,
-		Password: mock.MockPassword,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Endpoint:             mockServer.URL,
+		Username:             mock.MockUsername,
+		Password:             mock.MockPassword,
 	}
 
 	cfg.Insecure = true
@@ -83,7 +83,7 @@ func TestScrape_NoClient(t *testing.T) {
 		config: &Config{
 			Endpoint: "http://vcsa.localnet",
 		},
-		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
+		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 		logger: zap.NewNop(),
 	}
 	metrics, err := scraper.scrape(ctx)

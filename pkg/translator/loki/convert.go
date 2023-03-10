@@ -37,10 +37,17 @@ const (
 	formatLogfmt string = "logfmt"
 )
 
-var defaultExporterLabels = model.LabelSet{"exporter": "OTLP"}
-
 func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model.LabelSet {
-	out := defaultExporterLabels
+	out := model.LabelSet{"exporter": "OTLP"}
+
+	// Map service.namespace + service.name to job
+	if job, ok := extractJob(resAttrs); ok {
+		out[model.JobLabel] = model.LabelValue(job)
+	}
+	// Map service.instance.id to instance
+	if instance, ok := extractInstance(resAttrs); ok {
+		out[model.InstanceLabel] = model.LabelValue(instance)
+	}
 
 	if resourcesToLabel, found := resAttrs.Get(hintResources); found {
 		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)

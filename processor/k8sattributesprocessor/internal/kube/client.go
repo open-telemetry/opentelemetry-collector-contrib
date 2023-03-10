@@ -288,6 +288,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		tags[conventions.AttributeK8SPodName] = pod.Name
 	}
 
+	if c.Rules.PodHostName {
+		tags[tagHostName] = pod.Spec.Hostname
+	}
+
 	if c.Rules.Namespace {
 		tags[conventions.AttributeK8SNamespaceName] = pod.GetNamespace()
 	}

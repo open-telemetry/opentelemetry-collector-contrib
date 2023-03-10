@@ -19,6 +19,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -34,19 +35,8 @@ type metricsExporter struct {
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-	if err := createDatabase(cfg); err != nil {
-		return nil, err
-	}
 	client, err := newClickhouseClient(cfg)
 	if err != nil {
-		return nil, err
-	}
-
-	internal.SetLogger(logger)
-	if err = internal.NewMetricsTable(cfg.MetricsTableName, cfg.TTLDays, client); err != nil {
 		return nil, err
 	}
 
@@ -57,7 +47,19 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 	}, nil
 }
 
-// Shutdown will shutdown the exporter.
+func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
+	if err := createDatabase(ctx, e.cfg); err != nil {
+		return err
+	}
+
+	internal.SetLogger(e.logger)
+	if err := internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, e.cfg.TTLDays, e.client); err != nil {
+		return err
+	}
+	return nil
+}
+
+// shutdown will shut down the exporter.
 func (e *metricsExporter) shutdown(ctx context.Context) error {
 	if e.client != nil {
 		return e.client.Close()

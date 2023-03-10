@@ -67,9 +67,9 @@
 //     as a resource attribute (similar to all other attributes, pod has to be identified as well):
 //     - container.image.name
 //     - container.image.tag
-//  2. Container status attributes - in addition to pod identifier and `k8s.container.name` attribute, these attributes
-//     require identifier of a particular container run set as `k8s.container.restart_count` in resource attributes:
-//     - container.id
+//  2. Container ID attribute - in addition to pod identifier and `k8s.container.name` attribute, `container.id` must
+//     be explicitly requested in `metadata`. Specifying `k8s.container.restart_count` in the resource
+//     attributes will match only the specified container run; if omitted, the current instance is assumed.
 //
 // The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
 // The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.

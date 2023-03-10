@@ -43,6 +43,8 @@ type metricsProcessor struct {
 func newMetricProcessor(settings component.TelemetrySettings, config component.Config) *metricsProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
+	dataPointParser, _ := ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), settings)
+
 	return &metricsProcessor{
 		logger: settings.Logger,
 		config: cfg,
@@ -50,7 +52,7 @@ func newMetricProcessor(settings component.TelemetrySettings, config component.C
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), settings),
+			dataPointParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}

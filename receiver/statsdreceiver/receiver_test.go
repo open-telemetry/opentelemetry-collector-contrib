@@ -124,14 +124,14 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 		clientFn func(t *testing.T) *client.StatsD
 	}{
 		{
-			name: "default_config with 9s interval",
+			name: "default_config with 4s interval",
 			configFn: func() *Config {
 				return &Config{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  defaultBindEndpoint,
 						Transport: defaultTransport,
 					},
-					AggregationInterval: 9 * time.Second,
+					AggregationInterval: 4 * time.Second,
 				}
 			},
 			clientFn: func(t *testing.T) *client.StatsD {
@@ -168,7 +168,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			err = statsdClient.SendMetric(statsdMetric)
 			require.NoError(t, err)
 
-			time.Sleep(10 * time.Second)
+			time.Sleep(5 * time.Second)
 			mdd := sink.AllMetrics()
 			require.Len(t, mdd, 1)
 			require.Equal(t, 1, mdd[0].ResourceMetrics().Len())
@@ -178,6 +178,21 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			assert.Equal(t, statsdMetric.Name, metric.Name())
 			assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
 			require.Equal(t, 1, metric.Sum().DataPoints().Len())
+			assert.NotEqual(t, 0, metric.Sum().DataPoints().At(0).Timestamp())
+			assert.NotEqual(t, 0, metric.Sum().DataPoints().At(0).StartTimestamp())
+			assert.Less(t, metric.Sum().DataPoints().At(0).StartTimestamp(), metric.Sum().DataPoints().At(0).Timestamp())
+
+			// Send the same metric again to ensure that the timestamps of successive data points
+			// are aligned.
+			statsdMetric.Value = "43"
+			err = statsdClient.SendMetric(statsdMetric)
+			require.NoError(t, err)
+
+			time.Sleep(5 * time.Second)
+			mddAfter := sink.AllMetrics()
+			require.Len(t, mddAfter, 2)
+			metricAfter := mddAfter[1].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+			require.Equal(t, metric.Sum().DataPoints().At(0).Timestamp(), metricAfter.Sum().DataPoints().At(0).StartTimestamp())
 		})
 	}
 }

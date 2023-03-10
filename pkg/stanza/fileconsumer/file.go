@@ -140,6 +140,9 @@ func (m *Manager) poll(ctx context.Context) {
 	}
 	m.knownFilesLock.Unlock()
 
+	// Used to keep track of the number of batches processed in this poll cycle
+	batchesProcessed := 0
+
 	// Get the list of paths on disk
 	matches := m.finder.FindFiles()
 	m.consume(ctx, matches)
@@ -203,6 +206,7 @@ func (m *Manager) worker(ctx context.Context) {
 //		}
 //	}
 func (m *Manager) consume(ctx context.Context, paths []string) {
+	m.Debug("Consuming files")
 	m.handleLostFiles(ctx)
 	for _, path := range paths {
 		m.queueHashMtx.Lock()

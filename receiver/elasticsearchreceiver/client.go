@@ -190,7 +190,7 @@ func (c defaultElasticsearchClient) ClusterStats(ctx context.Context, nodes []st
 		nodesSpec = "_all"
 	}
 
-	clusterStatsPath := fmt.Sprintf("_cluster/stats/%s", nodesSpec)
+	clusterStatsPath := fmt.Sprintf("_cluster/stats/nodes/%s", nodesSpec)
 
 	body, err := c.doRequest(ctx, clusterStatsPath)
 	if err != nil {

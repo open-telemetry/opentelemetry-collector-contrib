@@ -58,12 +58,14 @@ type QueueSettings struct {
 	QueueSize int `mapstructure:"queue_size"`
 }
 
+const defaultDatabase = "default"
+
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
 )
 
-// Validate validates the clickhouse server configuration.
+// Validate the clickhouse server configuration.
 func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
 		err = multierr.Append(err, errConfigNoEndpoint)
@@ -74,8 +76,6 @@ func (cfg *Config) Validate() (err error) {
 	}
 	return err
 }
-
-const defaultDatabase = "default"
 
 func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 	return exporterhelper.QueueSettings{

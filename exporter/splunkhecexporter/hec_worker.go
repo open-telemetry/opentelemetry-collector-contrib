@@ -68,8 +68,14 @@ func (hec *defaultHecWorker) send(ctx context.Context, bufferState *bufferState,
 		return err
 	}
 
-	_, errCopy := io.Copy(io.Discard, resp.Body)
-	return multierr.Combine(err, errCopy)
+	// Do not drain the response when 429 or 502 status code is returned.
+	// HTTP client will not reuse the same connection unless it is drained.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18281 for more details.
+	if resp.StatusCode != http.StatusTooManyRequests && resp.StatusCode != http.StatusBadGateway {
+		_, errCopy := io.Copy(io.Discard, resp.Body)
+		err = multierr.Combine(err, errCopy)
+	}
+	return err
 }
 
 var _ hecWorker = &defaultHecWorker{}

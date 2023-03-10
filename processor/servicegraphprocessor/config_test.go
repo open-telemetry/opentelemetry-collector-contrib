@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
@@ -31,6 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	factories.Processors[typeStr] = NewFactory()
+	factories.Connectors[typeStr] = NewConnectorFactory()
 
 	// Test
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-config.yaml"), factories)
@@ -50,4 +52,28 @@ func TestLoadConfig(t *testing.T) {
 		},
 		cfg.Processors[component.NewID(typeStr)],
 	)
+
+	// Need to set this gate to load connector configs
+	require.NoError(t, featuregate.GlobalRegistry().Set("service.connectors", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("service.connectors", false))
+	}()
+
+	cfg, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-connector-config.yaml"), factories)
+
+	// Verify
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	assert.Equal(t,
+		&Config{
+			LatencyHistogramBuckets: []time.Duration{1, 2, 3, 4, 5},
+			Dimensions:              []string{"dimension-1", "dimension-2"},
+			Store: StoreConfig{
+				TTL:      time.Second,
+				MaxItems: 10,
+			},
+		},
+		cfg.Connectors[component.NewID(typeStr)],
+	)
+
 }

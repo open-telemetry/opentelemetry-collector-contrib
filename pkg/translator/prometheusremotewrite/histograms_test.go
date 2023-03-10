@@ -32,7 +32,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 	tests := []struct {
 		name       string
 		buckets    func() pmetric.ExponentialHistogramDataPointBuckets
-		wantSpans  []*prompb.BucketSpan
+		wantSpans  []prompb.BucketSpan
 		wantDeltas []int64
 	}{
 		{
@@ -43,7 +43,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				b.BucketCounts().FromRaw([]uint64{4, 3, 2, 1})
 				return b
 			},
-			wantSpans: []*prompb.BucketSpan{
+			wantSpans: []prompb.BucketSpan{
 				{
 					Offset: 1,
 					Length: 4,
@@ -59,7 +59,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				b.BucketCounts().FromRaw([]uint64{4, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
 				return b
 			},
-			wantSpans: []*prompb.BucketSpan{
+			wantSpans: []prompb.BucketSpan{
 				{
 					Offset: 5,
 					Length: 4,
@@ -79,7 +79,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				b.BucketCounts().FromRaw([]uint64{3, 1, 0, 0, 0, 1})
 				return b
 			},
-			wantSpans: []*prompb.BucketSpan{
+			wantSpans: []prompb.BucketSpan{
 				{
 					Offset: -1,
 					Length: 2,
@@ -99,7 +99,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				b.BucketCounts().FromRaw([]uint64{3, 1, 0, 1, 0, 1})
 				return b
 			},
-			wantSpans: []*prompb.BucketSpan{
+			wantSpans: []prompb.BucketSpan{
 				{
 					Offset: -1,
 					Length: 6,
@@ -115,7 +115,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				b.BucketCounts().FromRaw([]uint64{3, 0, 0, 1, 0, 0, 1})
 				return b
 			},
-			wantSpans: []*prompb.BucketSpan{
+			wantSpans: []prompb.BucketSpan{
 				{
 					Offset: -1,
 					Length: 7,
@@ -172,9 +172,9 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 					Schema:         1,
 					ZeroThreshold:  defaultZeroThreshold,
 					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
-					NegativeSpans:  []*prompb.BucketSpan{{Offset: 2, Length: 2}},
+					NegativeSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
 					NegativeDeltas: []int64{1, 0},
-					PositiveSpans:  []*prompb.BucketSpan{{Offset: 2, Length: 2}},
+					PositiveSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
 					PositiveDeltas: []int64{1, 0},
 					Timestamp:      500,
 				}
@@ -205,9 +205,9 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 					Schema:         1,
 					ZeroThreshold:  defaultZeroThreshold,
 					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
-					NegativeSpans:  []*prompb.BucketSpan{{Offset: 2, Length: 2}},
+					NegativeSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
 					NegativeDeltas: []int64{1, 0},
-					PositiveSpans:  []*prompb.BucketSpan{{Offset: 2, Length: 2}},
+					PositiveSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
 					PositiveDeltas: []int64{1, 0},
 					Timestamp:      500,
 				}
@@ -283,7 +283,7 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 								Schema:         1,
 								ZeroThreshold:  defaultZeroThreshold,
 								ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
-								PositiveSpans:  []*prompb.BucketSpan{{Offset: 0, Length: 2}},
+								PositiveSpans:  []prompb.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{4, -2},
 							},
 							{
@@ -291,7 +291,7 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 								Schema:         1,
 								ZeroThreshold:  defaultZeroThreshold,
 								ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
-								PositiveSpans:  []*prompb.BucketSpan{{Offset: 0, Length: 3}},
+								PositiveSpans:  []prompb.BucketSpan{{Offset: 0, Length: 3}},
 								PositiveDeltas: []int64{4, -2, -1},
 							},
 						},
@@ -347,7 +347,7 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 								Schema:         1,
 								ZeroThreshold:  defaultZeroThreshold,
 								ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
-								PositiveSpans:  []*prompb.BucketSpan{{Offset: 0, Length: 2}},
+								PositiveSpans:  []prompb.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{4, -2},
 							},
 						},
@@ -363,7 +363,7 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 								Schema:         1,
 								ZeroThreshold:  defaultZeroThreshold,
 								ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
-								NegativeSpans:  []*prompb.BucketSpan{{Offset: 0, Length: 3}},
+								NegativeSpans:  []prompb.BucketSpan{{Offset: 0, Length: 3}},
 								NegativeDeltas: []int64{4, -2, -1},
 							},
 						},

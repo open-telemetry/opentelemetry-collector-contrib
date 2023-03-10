@@ -38,7 +38,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
@@ -154,14 +153,6 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension:     "awsproxy",
 			skipLifecycle: true, // Requires EC2 metadata service to be running
-		},
-		{
-			extension: "fluentbit",
-			getConfigFn: func() component.Config {
-				cfg := extFactories["fluentbit"].CreateDefaultConfig().(*fluentbitextension.Config)
-				cfg.TCPEndpoint = "http://" + endpoint
-				return cfg
-			},
 		},
 		{
 			extension: "http_forwarder",

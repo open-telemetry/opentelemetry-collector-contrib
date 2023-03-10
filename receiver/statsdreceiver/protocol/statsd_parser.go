@@ -183,15 +183,16 @@ func (p *StatsDParser) GetMetrics() pmetric.Metrics {
 		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
-	for _, metric := range p.counters {
-		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
-	}
-
 	for _, metric := range p.timersAndDistributions {
 		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
 	now := timeNowFunc()
+
+	for _, metric := range p.counters {
+		setTimestampsForCounterMetric(metric, p.lastIntervalTime, now)
+		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
+	}
 
 	for desc, summaryMetric := range p.summaries {
 		buildSummaryMetric(
@@ -252,9 +253,7 @@ func (p *StatsDParser) Aggregate(line string) error {
 	case CounterType:
 		_, ok := p.counters[parsedMetric.description]
 		if !ok {
-			timeNow := timeNowFunc()
-			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNow, p.lastIntervalTime)
-			p.lastIntervalTime = timeNow
+			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter)
 		} else {
 			point := p.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
 			point.SetIntValue(point.IntValue() + parsedMetric.counterValue())

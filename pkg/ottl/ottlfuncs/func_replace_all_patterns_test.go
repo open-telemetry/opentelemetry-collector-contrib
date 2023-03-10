@@ -124,6 +124,32 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutStr("test.3", "goodbye world1 and world2")
 			},
 		},
+		{
+			name:        "expand capturing groups",
+			target:      target,
+			mode:        modeValue,
+			pattern:     `world(\d)`,
+			replacement: "world-$1",
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye world-1 and world-2")
+			},
+		},
+		{
+			name:        "replacement with literal $",
+			target:      target,
+			mode:        modeValue,
+			pattern:     `world(\d)`,
+			replacement: "$$world-$1",
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye $world-1 and $world-2")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

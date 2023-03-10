@@ -35,6 +35,7 @@ Note: use the Docker detector (see below) if running the Collector as a Docker c
 Queries the host machine to retrieve the following resource attributes:
 
     * host.name
+    * host.id
     * os.type
 
 By default `host.name` is being set to FQDN if possible, and a hostname provided by OS used as fallback.
@@ -269,6 +270,40 @@ processors:
     override: false
 ```
 
+### AWS Lambda
+
+Uses the AWS Lambda [runtime environment variables](https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime)
+to retrieve the following resource attributes:
+
+[Cloud semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md)
+
+* `cloud.provider` (`"aws"`)
+* `cloud.platform` (`"aws_lambda"`)
+* `cloud.region` (`$AWS_REGION`)
+
+[Function as a Service semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md)
+and [AWS Lambda semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/instrumentation/aws-lambda.md#resource-detector)
+
+* `faas.name` (`$AWS_LAMBDA_FUNCTION_NAME`)
+* `faas.version` (`$AWS_LAMBDA_FUNCTION_VERSION`)
+* `faas.instance` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
+* `faas.max_memory` (`$AWS_LAMBDA_FUNCTION_MEMORY_SIZE`)
+
+[AWS Logs semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/aws/logs.md)
+
+* `aws.log.group.names` (`$AWS_LAMBDA_LOG_GROUP_NAME`)
+* `aws.log.stream.names` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/lambda:
+    detectors: [env, lambda]
+    timeout: 0.2s
+    override: false
+```
+
 ### Azure
 
 Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve the following resource attributes:
@@ -379,7 +414,7 @@ See: [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetr
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "eks", "azure", "heroku", "openshift"
+# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
@@ -398,6 +433,7 @@ Note that if multiple detectors are inserting the same attribute name, the first
 
 ### AWS
 
+* lambda
 * elastic_beanstalk
 * eks
 * ecs
