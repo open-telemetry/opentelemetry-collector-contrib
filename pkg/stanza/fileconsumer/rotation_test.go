@@ -368,6 +368,8 @@ func TestMoveFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
+	// Keep the poll interval high, as we're manually calling poll()
+	cfg.PollInterval = 200 * time.Second
 	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
@@ -375,6 +377,7 @@ func TestMoveFile(t *testing.T) {
 	writeString(t, temp1, "testlog1\n")
 	temp1.Close()
 
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
 	operator.poll(context.Background())
 	defer func() {
 		require.NoError(t, operator.Stop())
@@ -382,8 +385,6 @@ func TestMoveFile(t *testing.T) {
 
 	waitForToken(t, emitCalls, []byte("testlog1"))
 
-	// Wait until all goroutines are finished before renaming
-	operator.wg.Wait()
 	err := os.Rename(temp1.Name(), fmt.Sprintf("%s.2", temp1.Name()))
 	require.NoError(t, err)
 
@@ -400,22 +401,20 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
+	cfg.PollInterval = 200 * time.Second
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\n")
 	temp1.Close()
 
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
 	operator.poll(context.Background())
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
 
 	waitForToken(t, emitCalls, []byte("testlog1"))
-
-	// Wait until all goroutines are finished before renaming
-	operator.wg.Wait()
 
 	newDir := fmt.Sprintf("%s%s", tempDir[:len(tempDir)-1], "_new/")
 	err := os.Mkdir(newDir, 0777)
@@ -427,6 +426,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 
 	movedFile, err := os.OpenFile(newFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	require.NoError(t, err)
+	operator.poll(context.Background())
 	writeString(t, movedFile, "testlog2\n")
 	operator.poll(context.Background())
 
@@ -486,12 +486,11 @@ func TestTruncateThenWrite(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\ntestlog2\n")
 
-	operator.poll(context.Background())
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -504,7 +503,6 @@ func TestTruncateThenWrite(t *testing.T) {
 	require.NoError(t, err)
 
 	writeString(t, temp1, "testlog3\n")
-	operator.poll(context.Background())
 	waitForToken(t, emitCalls, []byte("testlog3"))
 	expectNoTokens(t, emitCalls)
 }
@@ -523,19 +521,17 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\ntestlog2\n")
 
-	operator.poll(context.Background())
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
 
 	waitForToken(t, emitCalls, []byte("testlog1"))
 	waitForToken(t, emitCalls, []byte("testlog2"))
-	operator.wg.Wait() // wait for all goroutines to finish
 
 	// Copy the first file to a new file, and add another log
 	temp2 := openTemp(t, tempDir)
@@ -552,7 +548,6 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	writeString(t, temp1, "testlog4\n")
 
 	// Expect both messages to come through
-	operator.poll(context.Background())
 	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog3"), []byte("testlog4")})
 }
 

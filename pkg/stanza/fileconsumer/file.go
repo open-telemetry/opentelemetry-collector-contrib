@@ -32,9 +32,10 @@ type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
 
 type Manager struct {
 	*zap.SugaredLogger
-	wg     sync.WaitGroup
-	_wg    sync.WaitGroup
-	cancel context.CancelFunc
+	wg       sync.WaitGroup
+	workerWg sync.WaitGroup
+	cancel   context.CancelFunc
+	ctx      context.Context
 
 	readerFactory readerFactory
 	finder        Finder
@@ -46,23 +47,27 @@ type Manager struct {
 	maxBatchFiles   int
 	deleteAfterRead bool
 
-	knownFiles      []*Reader
-	knownFilesLock  sync.RWMutex
-	seenPaths       map[string]struct{}
-	currentFiles    []*os.File
-	currentFps      []*Fingerprint
-	currentReaders  []*Reader
-	readerChan      chan ReaderWrapper
-	readerCloseChan chan *Reader
-	queueHash       map[string]bool
-	queueHashMtx    sync.RWMutex
-	readerLock      sync.Mutex
+	knownFiles     []*Reader
+	knownFilesLock sync.RWMutex
+	seenPaths      map[string]struct{}
+
+	currentFiles   []*os.File
+	currentFps     []*Fingerprint
+	currentReaders []*Reader
+
+	readerChan   chan ReaderWrapper
+	queueHash    map[string]bool
+	queueHashMtx sync.RWMutex
+	readerLock   sync.Mutex
+	lostReaders  []*Reader
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
+	m.ctx = ctx
 	m.persister = persister
+	m.readerChan = make(chan ReaderWrapper, m.maxBatchFiles)
 
 	// Load offsets from disk
 	if err := m.loadLastPollFiles(ctx); err != nil {
@@ -76,10 +81,9 @@ func (m *Manager) Start(persister operator.Persister) error {
 	}
 
 	for i := 0; i < m.maxBatchFiles; i++ {
-		m._wg.Add(1)
+		m.workerWg.Add(1)
 		go m.worker(ctx)
 	}
-	go m.handleLostFiles(ctx)
 
 	// Start polling goroutine
 	m.startPoller(ctx)
@@ -91,6 +95,11 @@ func (m *Manager) Start(persister operator.Persister) error {
 func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
+	close(m.readerChan)
+	m.workerWg.Wait()
+	if !m.deleteAfterRead {
+		m.syncLastPollFiles(m.ctx)
+	}
 	m.roller.cleanup()
 	for _, reader := range m.knownFiles {
 		reader.Close()
@@ -125,30 +134,19 @@ func (m *Manager) startPoller(ctx context.Context) {
 func (m *Manager) poll(ctx context.Context) {
 	// Increment the generation on all known readers
 	// This is done here because the next generation is about to start
+	m.knownFilesLock.Lock()
 	for i := 0; i < len(m.knownFiles); i++ {
 		m.knownFiles[i].generation++
 	}
-
-	// Used to keep track of the number of batches processed in this poll cycle
-	// batchesProcessed := 0
+	m.knownFilesLock.Unlock()
 
 	// Get the list of paths on disk
 	matches := m.finder.FindFiles()
-	// for len(matches) > m.maxBatchFiles {
-	// 	m.consume(ctx, matches[:m.maxBatchFiles])
-
-	// 	// If a maxBatches is set, check if we have hit the limit
-	// 	if m.maxBatches != 0 {
-	// 		batchesProcessed++
-	// 		if batchesProcessed >= m.maxBatches {
-	// 			return
-	// 		}
-	// 	}
-
-	// 	matches = matches[m.maxBatchFiles:]
-	// }
 	m.consume(ctx, matches)
 	m.clearCurrentFiles()
+	if !m.deleteAfterRead {
+		m.readerFactory.fromBeginning = true
+	}
 }
 
 func (m *Manager) clearCurrentFiles() {
@@ -157,12 +155,12 @@ func (m *Manager) clearCurrentFiles() {
 }
 
 func (m *Manager) worker(ctx context.Context) {
-	defer m._wg.Done()
+	defer m.workerWg.Done()
 	for {
 		chanData, ok := <-m.readerChan
 
 		if !ok {
-			break
+			return
 		}
 		r, path := chanData.reader, chanData.path
 		r.ReadToEnd(ctx)
@@ -172,7 +170,10 @@ func (m *Manager) worker(ctx context.Context) {
 				m.Errorf("could not delete %s", r.file.Name())
 			}
 		} else {
-			m.readerCloseChan <- r
+			m.saveCurrent([]*Reader{r})
+			m.readerLock.Lock()
+			m.lostReaders = append(m.lostReaders, r)
+			m.readerLock.Unlock()
 		}
 		m.queueHashMtx.Lock()
 		delete(m.queueHash, path)
@@ -180,89 +181,60 @@ func (m *Manager) worker(ctx context.Context) {
 	}
 }
 
+//	func (m *Manager) consume(ctx context.Context, paths []string) {
+//		m.handleLostFiles(ctx)
+//		for _, path := range paths {
+//			m.queueHashMtx.Lock()
+//			if _, ok := m.queueHash[path]; ok {
+//				m.queueHashMtx.Unlock()
+//				continue
+//			}
+//			m.queueHash[path] = true
+//			m.queueHashMtx.Unlock()
+//			reader := m.makeReader(path)
+//			if reader == nil {
+//				fmt.Println("Couldn't create reader for ", path)
+//				m.queueHashMtx.Lock()
+//				delete(m.queueHash, path)
+//				m.queueHashMtx.Unlock()
+//				continue
+//			}
+//			m.readerChan <- ReaderWrapper{reader: reader, path: path}
+//		}
+//	}
 func (m *Manager) consume(ctx context.Context, paths []string) {
+	m.handleLostFiles(ctx)
 	for _, path := range paths {
 		m.queueHashMtx.Lock()
 		if _, ok := m.queueHash[path]; ok {
 			m.queueHashMtx.Unlock()
 			continue
 		}
+		m.queueHash[path] = true
 		reader := m.makeReader(path)
 		if reader == nil {
 			fmt.Println("Couldn't create reader for ", path)
+			delete(m.queueHash, path)
 			m.queueHashMtx.Unlock()
 			continue
 		}
-		m.queueHash[path] = true
 		m.queueHashMtx.Unlock()
 		m.readerChan <- ReaderWrapper{reader: reader, path: path}
-	}
-	if m.deleteAfterRead {
-		return
 	}
 }
 
 func (m *Manager) handleLostFiles(ctx context.Context) {
-	var wg sync.WaitGroup
-	wg.Add(1)
-	// ticker := time.NewTicker(10 * time.Millisecond)
-	go func() {
-		defer wg.Done()
-		// readers := make([]*Reader, 0)
-		if !m.deleteAfterRead {
-
-			for {
-				select {
-				case reader := <-m.readerCloseChan:
-					m.roller.readLostFiles(ctx, []*Reader{reader})
-					m.roller.roll(ctx, []*Reader{reader})
-					m.saveCurrent([]*Reader{reader})
-					m.syncLastPollFiles(ctx)
-					m.readerFactory.fromBeginning = true
-					// case reader := <-m.readerCloseChan:
-					// 	readers = append(readers, reader)
-					// 	if len(readers)%m.maxBatchFiles == 0 {
-					// 		m.roller.readLostFiles(ctx, readers)
-					// 		m.roller.roll(ctx, readers)
-					// 		m.saveCurrent(readers)
-					// 		m.syncLastPollFiles(ctx)
-					// 		readers = make([]*Reader, 0)
-					// 	}
-					// case <-ticker.C:
-					// 	if len(readers) > 0 {
-					// 		m.roller.readLostFiles(ctx, readers)
-					// 		m.roller.roll(ctx, readers)
-					// 		m.saveCurrent(readers)
-					// 		m.syncLastPollFiles(ctx)
-					// 		readers = make([]*Reader, 0)
-					// 	}
-					// }
-
-				}
-				// if len(readers) > 0 {
-				// 	m.roller.readLostFiles(ctx, readers)
-				// 	m.roller.roll(ctx, readers)
-				// 	m.saveCurrent(readers)
-				// 	m.syncLastPollFiles(ctx)
-			}
-		}
-	}()
+	if !m.deleteAfterRead {
+		m.readerLock.Lock()
+		m.rollReaders(ctx, m.lostReaders)
+		m.lostReaders = make([]*Reader, 0)
+		m.readerLock.Unlock()
+	}
 }
 
-// makeReaders takes a list of paths, then creates readers from each of those paths,
-// discarding any that have a duplicate fingerprint to other files that have already
-// been read this polling interval
-func (m *Manager) makeReaders(filePaths []string) []*Reader {
-	readers := make([]*Reader, 0)
-	for i := 0; i < len(filePaths); i++ {
-		reader := m.makeReader(filePaths[i])
-		if reader == nil {
-			m.Errorw("Failed to create reader for path ")
-			continue
-		}
-		readers = append(readers, reader)
-	}
-	return readers
+func (m *Manager) rollReaders(ctx context.Context, readers []*Reader) {
+	m.roller.readLostFiles(ctx, readers)
+	m.roller.roll(ctx, readers)
 }
 
 func (m *Manager) makeReader(filePath string) *Reader {

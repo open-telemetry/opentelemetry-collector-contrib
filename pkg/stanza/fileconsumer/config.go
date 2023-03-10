@@ -69,6 +69,7 @@ type Config struct {
 	DeleteAfterRead         bool                  `mapstructure:"delete_after_read,omitempty"`
 	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
 }
+
 type ReaderWrapper struct {
 	reader *Reader
 	path   string
@@ -148,7 +149,6 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		seenPaths:       make(map[string]struct{}, 100),
 		queueHash:       make(map[string]bool),
 		readerChan:      make(chan ReaderWrapper, c.MaxConcurrentFiles/2),
-		readerCloseChan: make(chan *Reader, c.MaxConcurrentFiles),
 	}, nil
 }
 
