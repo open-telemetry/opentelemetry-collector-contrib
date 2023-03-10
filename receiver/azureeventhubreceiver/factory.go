@@ -68,9 +68,7 @@ func (f *eventhubReceiverFactory) createLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
 
-	receiverConfig := cfg.(*Config)
-	receiver, err := newReceiver(component.DataTypeLogs, receiverConfig, settings)
-
+	receiver, err := f.getReceiver(component.DataTypeLogs, cfg, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -87,9 +85,7 @@ func (f *eventhubReceiverFactory) createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 
-	receiverConfig := cfg.(*Config)
-	receiver, err := newReceiver(component.DataTypeMetrics, receiverConfig, settings)
-
+	receiver, err := f.getReceiver(component.DataTypeMetrics, cfg, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -97,4 +93,57 @@ func (f *eventhubReceiverFactory) createMetricsReceiver(
 	receiver.(dataConsumer).setNextMetricsConsumer(nextConsumer)
 
 	return receiver, nil
+}
+
+func (f *eventhubReceiverFactory) getReceiver(
+	receiverType component.Type,
+	cfg component.Config,
+	settings receiver.CreateSettings,
+) (component.Component, error) {
+
+	var err error
+	r := f.receivers.GetOrAdd(cfg, func() component.Component {
+		receiverConfig, ok := cfg.(*Config)
+		if !ok {
+			err = errUnexpectedConfigurationType
+			return nil
+		}
+
+		var logsUnmarshaler eventLogsUnmarshaler
+		var metricsUnmarshaler eventMetricsUnmarshaler
+		switch receiverType {
+		case component.DataTypeLogs:
+			switch logFormat(receiverConfig.Format) {
+			case rawLogFormat:
+				logsUnmarshaler = newRawLogsUnmarshaler(settings.Logger)
+			default:
+				logsUnmarshaler = newAzureResourceLogsUnmarshaler(settings.BuildInfo, settings.Logger)
+			}
+
+		case component.DataTypeMetrics:
+			switch logFormat(receiverConfig.Format) {
+			case rawLogFormat:
+				metricsUnmarshaler = nil
+				err = errors.New("Raw format not supported for Metrics")
+			default:
+				metricsUnmarshaler = newAzureResourceMetricsUnmarshaler(settings.BuildInfo, settings.Logger)
+			}
+		}
+
+		if err != nil {
+			return nil
+		}
+
+		eventHandler := newEventhubHandler(receiverConfig, settings)
+
+		var receiver component.Component
+		receiver, err = newReceiver(receiverType, logsUnmarshaler, metricsUnmarshaler, eventHandler, settings)
+		return receiver
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Unwrap(), err
 }

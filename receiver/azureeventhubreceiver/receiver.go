@@ -36,11 +36,11 @@ type dataConsumer interface {
 	setNextMetricsConsumer(nextLogsConsumer consumer.Metrics)
 }
 
-type eventhubLogsUnmarshaller interface {
+type eventLogsUnmarshaler interface {
 	UnmarshalLogs(event *eventhub.Event) (plog.Logs, error)
 }
 
-type eventhubMetricsUnmarshaller interface {
+type eventMetricsUnmarshaler interface {
 	UnmarshalMetrics(event *eventhub.Event) (pmetric.Metrics, error)
 }
 
@@ -48,8 +48,8 @@ type eventhubReceiver struct {
 	eventHandler        eventHandler
 	dataType            component.Type
 	logger              *zap.Logger
-	logsUnmarshaler     eventhubLogsUnmarshaller
-	metricsUnmarshaler  eventhubMetricsUnmarshaller
+	logsUnmarshaler     eventLogsUnmarshaler
+	metricsUnmarshaler  eventMetricsUnmarshaler
 	nextLogsConsumer    consumer.Logs
 	nextMetricsConsumer consumer.Metrics
 	obsrecv             *obsreport.Receiver
@@ -139,7 +139,13 @@ func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *eve
 	return err
 }
 
-func newReceiver(dataType component.Type, config *Config, settings receiver.CreateSettings) (component.Component, error) {
+func newReceiver(
+	receiverType component.Type,
+	logsUnmarshaler eventLogsUnmarshaler,
+	metricsUnmarshaler eventMetricsUnmarshaler,
+	eventHandler eventHandler,
+	settings receiver.CreateSettings,
+) (component.Component, error) {
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             settings.ID,
@@ -150,29 +156,8 @@ func newReceiver(dataType component.Type, config *Config, settings receiver.Crea
 		return nil, err
 	}
 
-	var logsUnmarshaler eventhubLogsUnmarshaller
-	var metricsUnmarshaler eventhubMetricsUnmarshaller
-	switch dataType {
-	case component.DataTypeLogs:
-		switch logFormat(config.Format) {
-		case rawLogFormat:
-			logsUnmarshaler = newRawLogsUnmarshaler(settings.Logger)
-		default:
-			logsUnmarshaler = newAzureResourceLogsUnmarshaler(settings.BuildInfo, settings.Logger)
-		}
-
-	case component.DataTypeMetrics:
-		switch logFormat(config.Format) {
-		case rawLogFormat:
-			metricsUnmarshaler = nil
-		default:
-			metricsUnmarshaler = newAzureResourceMetricsUnmarshaler(settings.BuildInfo, settings.Logger)
-		}
-	}
-
-	eventHandler := newEventhubHandler(config, settings)
 	eventhubReceiver := &eventhubReceiver{
-		dataType:           dataType,
+		dataType:           receiverType,
 		eventHandler:       eventHandler,
 		logger:             settings.Logger,
 		logsUnmarshaler:    logsUnmarshaler,

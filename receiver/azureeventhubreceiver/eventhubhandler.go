@@ -33,6 +33,34 @@ type eventHandler interface {
 	setDataConsumer(dataConsumer dataConsumer)
 }
 
+type hubWrapper interface {
+	GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error)
+	Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error)
+	Close(ctx context.Context) error
+}
+
+type hubWrapperImpl struct {
+	hub *eventhub.Hub
+}
+
+func (h *hubWrapperImpl) GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error) {
+	return h.hub.GetRuntimeInformation(ctx)
+}
+
+func (h *hubWrapperImpl) Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error) {
+	l, err := h.hub.Receive(ctx, partitionID, handler, opts...)
+	return l, err
+}
+
+func (h *hubWrapperImpl) Close(ctx context.Context) error {
+	return h.hub.Close(ctx)
+}
+
+type listerHandleWrapper interface {
+	Done() <-chan struct{}
+	Err() error
+}
+
 type eventhubHandler struct {
 	hub          hubWrapper
 	dataConsumer dataConsumer

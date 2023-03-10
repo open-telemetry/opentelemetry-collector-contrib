@@ -80,7 +80,7 @@ type azureLogRecord struct {
 	Properties        *interface{} `json:"properties"`
 }
 
-func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventhubLogsUnmarshaller {
+func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventLogsUnmarshaler {
 
 	return azureResourceLogsUnmarshaler{
 		buildInfo: buildInfo,
@@ -116,6 +116,7 @@ func (r azureResourceLogsUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog
 		resourceID = azureLog.ResourceID
 		nanos, err := asTimestamp(azureLog.Time)
 		if err != nil {
+			r.logger.Warn("Invalid Timestamp", zap.String("time", azureLog.Time))
 			continue
 		}
 
@@ -148,7 +149,6 @@ func (r azureResourceLogsUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog
 // nanosecond timestamp. If the string cannot be parsed, it will
 // return zero and the error.
 func asTimestamp(s string) (pcommon.Timestamp, error) {
-
 	t, err := iso8601.ParseString(s)
 	if err != nil {
 		return 0, err
@@ -160,7 +160,6 @@ func asTimestamp(s string) (pcommon.Timestamp, error) {
 // OpenTelemetry severity numbers. If the log level is not
 // valid, then the 'Unspecified' value is returned.
 func asSeverity(s string) plog.SeverityNumber {
-
 	switch s {
 	case "Informational":
 		return plog.SeverityNumberInfo
@@ -181,7 +180,6 @@ func asSeverity(s string) plog.SeverityNumber {
 // azureDuration value is only set if the value in the
 // Azure log record can be parsed as an integer.
 func extractRawAttributes(log azureLogRecord) map[string]interface{} {
-
 	var attrs = map[string]interface{}{}
 
 	attrs[azureCategory] = log.Category

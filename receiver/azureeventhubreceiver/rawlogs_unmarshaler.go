@@ -26,7 +26,7 @@ type rawLogsUnmarshaler struct {
 	logger *zap.Logger
 }
 
-func newRawLogsUnmarshaler(logger *zap.Logger) eventhubLogsUnmarshaller {
+func newRawLogsUnmarshaler(logger *zap.Logger) eventLogsUnmarshaler {
 
 	return rawLogsUnmarshaler{
 		logger: logger,

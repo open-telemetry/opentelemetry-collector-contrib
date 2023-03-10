@@ -77,7 +77,7 @@ var maximumLogRecord = func() plog.LogRecord {
 	return lr
 }()
 
-func Test_AsTimestamp(t *testing.T) {
+func TestAsTimestamp(t *testing.T) {
 	timestamp := "2022-11-11T04:48:27.6767145Z"
 	nanos, err := asTimestamp(timestamp)
 	assert.NoError(t, err)
@@ -89,7 +89,7 @@ func Test_AsTimestamp(t *testing.T) {
 	assert.Equal(t, pcommon.Timestamp(0), nanos)
 }
 
-func Test_AsSeverity(t *testing.T) {
+func TestAsSeverity(t *testing.T) {
 	tests := map[string]plog.SeverityNumber{
 		"Informational": plog.SeverityNumberInfo,
 		"Warning":       plog.SeverityNumberWarn,
@@ -105,7 +105,7 @@ func Test_AsSeverity(t *testing.T) {
 	}
 }
 
-func Test_SetIf(t *testing.T) {
+func TestSetIf(t *testing.T) {
 	m := map[string]interface{}{}
 
 	setIf(m, "key", nil)
@@ -126,7 +126,7 @@ func Test_SetIf(t *testing.T) {
 	assert.Equal(t, "ok", actual)
 }
 
-func Test_ExtractRawAttributes(t *testing.T) {
+func TestExtractRawAttributes(t *testing.T) {
 	badDuration := "invalid"
 	goodDuration := "1234"
 
@@ -231,7 +231,7 @@ func Test_ExtractRawAttributes(t *testing.T) {
 
 }
 
-func Test_UnmarshalLogs(t *testing.T) {
+func TestUnmarshalLogs(t *testing.T) {
 
 	expectedMinimum := plog.NewLogs()
 	resourceLogs := expectedMinimum.ResourceLogs().AppendEmpty()
