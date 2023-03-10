@@ -112,6 +112,8 @@ goporto: $(PORTO)
 
 .PHONY: for-all
 for-all:
+	@echo "running $${CMD} in root"
+	@$${CMD}
 	@set -e; for dir in $(NONROOT_MODS); do \
 	  (cd "$${dir}" && \
 	  	echo "running $${CMD} in $${dir}" && \
