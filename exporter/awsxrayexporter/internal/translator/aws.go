@@ -43,6 +43,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		requestID    string
 		queueURL     string
 		tableName    string
+		tableNames   []string
 		sdk          string
 		sdkName      string
 		sdkLanguage  string
@@ -167,8 +168,14 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		queueURL = value.Str()
 	}
 	if value, ok := attributes[conventions.AttributeAWSDynamoDBTableNames]; ok {
-		if value.Slice().Len() > 0 {
+		if value.Slice().Len() == 1 {
 			tableName = value.Slice().At(0).Str()
+		} else if value.Slice().Len() > 1 {
+			tableName = ""
+			tableNames = []string{}
+			for i := 0; i < value.Slice().Len(); i++ {
+				tableNames = append(tableNames, value.Slice().At(i).Str())
+			}
 		}
 	}
 
@@ -266,6 +273,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		RequestID:    awsxray.String(requestID),
 		QueueURL:     awsxray.String(queueURL),
 		TableName:    awsxray.String(tableName),
+		TableNames:   tableNames,
 	}
 	return filtered, awsData
 }
