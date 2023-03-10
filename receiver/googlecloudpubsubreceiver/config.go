@@ -124,7 +124,7 @@ func (config *Config) validate() error {
 		}
 	case "push":
 		if config.Subscription != "" {
-			return fmt.Errorf("subscription should not specified in push mode")
+			return fmt.Errorf("subscription should not be specified in push mode")
 		}
 		err := config.Push.validate()
 		if err != nil {
