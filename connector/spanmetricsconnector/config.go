@@ -21,6 +21,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
 const (
@@ -71,7 +73,7 @@ type Config struct {
 }
 
 type HistogramConfig struct {
-	Unit        string                      `mapstructure:"unit"`
+	Unit        metrics.Unit                `mapstructure:"unit"`
 	Exponential *ExponentialHistogramConfig `mapstructure:"exponential"`
 	Explicit    *ExplicitHistogramConfig    `mapstructure:"explicit"`
 }
@@ -103,11 +105,6 @@ func (c Config) Validate() error {
 
 	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
-	}
-
-	unit := c.Histogram.Unit
-	if unit != "s" && unit != "ms" {
-		return fmt.Errorf("allowed units are 'ms' and 's', got: '%s'", c.Histogram.Unit)
 	}
 	return nil
 }

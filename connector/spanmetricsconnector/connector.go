@@ -47,7 +47,7 @@ const (
 	metricNameDuration = "duration"
 	metricNameCalls    = "calls"
 
-	defaultUnit = "ms"
+	defaultUnit = metrics.Milliseconds
 )
 
 type connectorImp struct {
@@ -145,11 +145,11 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 }
 
 // unitDivider returns a unit divider to convert nanoseconds to milliseconds or seconds.
-func unitDivider(s string) int64 {
-	return map[string]int64{
-		"s":  time.Second.Nanoseconds(),
-		"ms": time.Millisecond.Nanoseconds(),
-	}[s]
+func unitDivider(u metrics.Unit) int64 {
+	return map[metrics.Unit]int64{
+		metrics.Seconds:      time.Second.Nanoseconds(),
+		metrics.Milliseconds: time.Millisecond.Nanoseconds(),
+	}[u]
 }
 
 func durationsToUnits(vs []time.Duration, unitDivider int64) []float64 {
@@ -241,7 +241,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 func (p *connectorImp) buildDurationMetric(ilm pmetric.ScopeMetrics) {
 	m := ilm.Metrics().AppendEmpty()
 	m.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
-	m.SetUnit(p.config.Histogram.Unit)
+	m.SetUnit(p.config.Histogram.Unit.String())
 
 	p.histograms.BuildMetrics(m, p.startTimestamp, p.config.GetAggregationTemporality())
 }
