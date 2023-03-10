@@ -58,10 +58,11 @@ func TestPayloadToLogRecord(t *testing.T) {
 			expectedLogs: func(t *testing.T, payload string) plog.Logs {
 				logs := plog.NewLogs()
 				rl := logs.ResourceLogs().AppendEmpty()
-				scopeLogs := rl.ScopeLogs().AppendEmpty().LogRecords()
+				sl := rl.ScopeLogs().AppendEmpty()
+				sl.Scope().SetName(receiverScopeName)
 
 				for idx, line := range strings.Split(payload, "\n") {
-					lr := scopeLogs.AppendEmpty()
+					lr := sl.LogRecords().AppendEmpty()
 
 					require.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
 						"http_request.client_ip": fmt.Sprintf("89.163.253.%d", 200+idx),
@@ -90,7 +91,14 @@ func TestPayloadToLogRecord(t *testing.T) {
 			expectedLogs: func(t *testing.T, payload string) plog.Logs {
 				logs := plog.NewLogs()
 				rl := logs.ResourceLogs().AppendEmpty()
-				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+				require.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
+					"cloudflare.zone": "otlpdev.net",
+				}))
+
+				sl := rl.ScopeLogs().AppendEmpty()
+				sl.Scope().SetName(receiverScopeName)
+				lr := sl.LogRecords().AppendEmpty()
 
 				require.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
 					"http_request.client_ip": "47.35.104.49",
@@ -116,17 +124,19 @@ func TestPayloadToLogRecord(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			recv := newReceiver(t, &Config{
-				Endpoint:       "localhost:0",
-				TLS:            &configtls.TLSServerSetting{},
-				TimestampField: "EdgeStartTimestamp",
-				FieldAttributeMap: map[string]string{
-					"ClientIP": "http_request.client_ip",
+				Logs: LogsConfig{
+					Endpoint:       "localhost:0",
+					TLS:            &configtls.TLSServerSetting{},
+					TimestampField: "EdgeStartTimestamp",
+					Attributes: map[string]string{
+						"ClientIP": "http_request.client_ip",
+					},
 				},
 			},
 				&consumertest.LogsSink{},
 			)
 			var logs plog.Logs
-			rawLogs, err := parsePayload(tc.payload)
+			rawLogs, err := parsePayload([]byte(tc.payload))
 			if err == nil {
 				logs = recv.processLogs(pcommon.NewTimestampFromTime(time.Now()), rawLogs)
 			}
@@ -304,13 +314,15 @@ func TestHandleRequest(t *testing.T) {
 			}
 
 			r := newReceiver(t, &Config{
-				Endpoint:       "localhost:0",
-				Secret:         "abc123",
-				TimestampField: "MyTimestamp",
-				FieldAttributeMap: map[string]string{
-					"ClientIP": "http_request.client_ip",
+				Logs: LogsConfig{
+					Endpoint:       "localhost:0",
+					Secret:         "abc123",
+					TimestampField: "MyTimestamp",
+					Attributes: map[string]string{
+						"ClientIP": "http_request.client_ip",
+					},
+					TLS: &configtls.TLSServerSetting{},
 				},
-				TLS: &configtls.TLSServerSetting{},
 			},
 				consumer,
 			)

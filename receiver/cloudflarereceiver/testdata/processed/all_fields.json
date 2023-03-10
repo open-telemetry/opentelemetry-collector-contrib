@@ -1,45 +1,110 @@
 {
     "resourceLogs": [
         {
-            "resource": {},
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "cloudflare.zone",
+                        "value": {
+                            "stringValue": "otlpdev.net"
+                        }
+                    }
+                ]
+            },
             "scopeLogs": [
                 {
-                    "scope": {},
+                    "scope": {
+                        "name": "otelcol/cloudflare"
+                    },
                     "logRecords": [
                         {
                             "timeUnixNano": "1677821346000000000",
-                            "observedTimeUnixNano": "1678164416795582000",
+                            "observedTimeUnixNano": "1678479732061055000",
                             "severityNumber": 9,
                             "severityText": "Info",
                             "body": {
                                 "kvlistValue": {
                                     "values": [
                                         {
-                                            "key": "ClientRequestHost",
+                                            "key": "CacheReserveUsed",
                                             "value": {
-                                                "stringValue": "www.theburritobot2.com"
+                                                "boolValue": false
                                             }
                                         },
                                         {
-                                            "key": "EdgeResponseCompressionRatio",
+                                            "key": "ClientXRequestedWith",
                                             "value": {
-                                                "doubleValue": 2.54
+                                                "stringValue": ""
                                             }
                                         },
                                         {
-                                            "key": "OriginIP",
+                                            "key": "FirewallMatchesSources",
                                             "value": {
-                                                "stringValue": "35.223.103.128"
+                                                "arrayValue": {}
                                             }
                                         },
                                         {
-                                            "key": "OriginRequestHeaderSendDurationMs",
+                                            "key": "ZoneName",
+                                            "value": {
+                                                "stringValue": "otlpdev.net"
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientASN",
+                                            "value": {
+                                                "doubleValue": 20115
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientMTLSAuthCertFingerprint",
+                                            "value": {
+                                                "stringValue": ""
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientRequestBytes",
+                                            "value": {
+                                                "doubleValue": 2667
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientRequestUserAgent",
+                                            "value": {
+                                                "stringValue": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeEndTimestamp",
+                                            "value": {
+                                                "stringValue": "2023-03-03T05:29:06Z"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgePathingSrc",
+                                            "value": {
+                                                "stringValue": "macro"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeServerIP",
+                                            "value": {
+                                                "stringValue": "172.70.131.84"
+                                            }
+                                        },
+                                        {
+                                            "key": "OriginResponseHeaderReceiveDurationMs",
+                                            "value": {
+                                                "doubleValue": 21
+                                            }
+                                        },
+                                        {
+                                            "key": "WAFAttackScore",
                                             "value": {
                                                 "doubleValue": 0
                                             }
                                         },
                                         {
-                                            "key": "OriginTLSHandshakeDurationMs",
+                                            "key": "WorkerWallTimeUs",
                                             "value": {
                                                 "doubleValue": 0
                                             }
@@ -51,93 +116,15 @@
                                             }
                                         },
                                         {
-                                            "key": "CacheCacheStatus",
+                                            "key": "ClientRequestPath",
                                             "value": {
-                                                "stringValue": "dynamic"
+                                                "stringValue": "/product/66VCHSJNUP"
                                             }
                                         },
                                         {
-                                            "key": "FirewallMatchesSources",
-                                            "value": {
-                                                "arrayValue": {}
-                                            }
-                                        },
-                                        {
-                                            "key": "OriginResponseHTTPLastModified",
-                                            "value": {
-                                                "stringValue": ""
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientRequestMethod",
-                                            "value": {
-                                                "stringValue": "GET"
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientTCPRTTMs",
-                                            "value": {
-                                                "doubleValue": 18
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeResponseBodyBytes",
-                                            "value": {
-                                                "doubleValue": 1963
-                                            }
-                                        },
-                                        {
-                                            "key": "FirewallMatchesActions",
-                                            "value": {
-                                                "arrayValue": {}
-                                            }
-                                        },
-                                        {
-                                            "key": "OriginResponseDurationMs",
-                                            "value": {
-                                                "doubleValue": 22
-                                            }
-                                        },
-                                        {
-                                            "key": "OriginSSLProtocol",
-                                            "value": {
-                                                "stringValue": "none"
-                                            }
-                                        },
-                                        {
-                                            "key": "OriginTCPHandshakeDurationMs",
-                                            "value": {
-                                                "doubleValue": 0
-                                            }
-                                        },
-                                        {
-                                            "key": "RequestHeaders",
+                                            "key": "Cookies",
                                             "value": {
                                                 "kvlistValue": {}
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientRegionCode",
-                                            "value": {
-                                                "stringValue": "MI"
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientRequestUserAgent",
-                                            "value": {
-                                                "stringValue": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgePathingSrc",
-                                            "value": {
-                                                "stringValue": "macro"
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgePathingStatus",
-                                            "value": {
-                                                "stringValue": "nr"
                                             }
                                         },
                                         {
@@ -147,91 +134,13 @@
                                             }
                                         },
                                         {
-                                            "key": "OriginResponseStatus",
+                                            "key": "FirewallMatchesActions",
                                             "value": {
-                                                "doubleValue": 200
+                                                "arrayValue": {}
                                             }
                                         },
                                         {
-                                            "key": "UpperTierColoID",
-                                            "value": {
-                                                "doubleValue": 0
-                                            }
-                                        },
-                                        {
-                                            "key": "WAFFlags",
-                                            "value": {
-                                                "stringValue": "0"
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientCountry",
-                                            "value": {
-                                                "stringValue": "us"
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeCFConnectingO2O",
-                                            "value": {
-                                                "boolValue": false
-                                            }
-                                        },
-                                        {
-                                            "key": "ZoneName",
-                                            "value": {
-                                                "stringValue": "otlpdev.net"
-                                            }
-                                        },
-                                        {
-                                            "key": "WAFRuleMessage",
-                                            "value": {
-                                                "stringValue": ""
-                                            }
-                                        },
-                                        {
-                                            "key": "WorkerSubrequestCount",
-                                            "value": {
-                                                "doubleValue": 0
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientRequestSource",
-                                            "value": {
-                                                "stringValue": "eyeball"
-                                            }
-                                        },
-                                        {
-                                            "key": "WAFRuleID",
-                                            "value": {
-                                                "stringValue": ""
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeRateLimitAction",
-                                            "value": {
-                                                "stringValue": ""
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeRequestHost",
-                                            "value": {
-                                                "stringValue": "www.theburritobot2.com"
-                                            }
-                                        },
-                                        {
-                                            "key": "OriginDNSResponseTimeMs",
-                                            "value": {
-                                                "doubleValue": 0
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientRequestURI",
-                                            "value": {
-                                                "stringValue": "/product/66VCHSJNUP"
-                                            }
-                                        },
-                                        {
-                                            "key": "ContentScanObjTypes",
+                                            "key": "FirewallMatchesRuleIDs",
                                             "value": {
                                                 "arrayValue": {}
                                             }
@@ -243,69 +152,9 @@
                                             }
                                         },
                                         {
-                                            "key": "WAFAttackScore",
+                                            "key": "WorkerSubrequestCount",
                                             "value": {
                                                 "doubleValue": 0
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientRequestProtocol",
-                                            "value": {
-                                                "stringValue": "HTTP/2"
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientRequestReferer",
-                                            "value": {
-                                                "stringValue": "https://www.theburritobot2.com/"
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeColoID",
-                                            "value": {
-                                                "doubleValue": 398
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeRateLimitID",
-                                            "value": {
-                                                "doubleValue": 0
-                                            }
-                                        },
-                                        {
-                                            "key": "FirewallMatchesRuleIDs",
-                                            "value": {
-                                                "arrayValue": {}
-                                            }
-                                        },
-                                        {
-                                            "key": "SecurityLevel",
-                                            "value": {
-                                                "stringValue": "med"
-                                            }
-                                        },
-                                        {
-                                            "key": "WorkerCPUTime",
-                                            "value": {
-                                                "doubleValue": 0
-                                            }
-                                        },
-                                        {
-                                            "key": "WorkerStatus",
-                                            "value": {
-                                                "stringValue": "unknown"
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeStartTimestamp",
-                                            "value": {
-                                                "stringValue": "2023-03-03T05:29:06Z"
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientRequestScheme",
-                                            "value": {
-                                                "stringValue": "https"
                                             }
                                         },
                                         {
@@ -315,73 +164,49 @@
                                             }
                                         },
                                         {
-                                            "key": "ClientIPClass",
+                                            "key": "ClientRequestReferer",
                                             "value": {
-                                                "stringValue": "noRecord"
+                                                "stringValue": "https://www.theburritobot2.com/"
                                             }
                                         },
                                         {
-                                            "key": "ClientRequestPath",
+                                            "key": "ClientRequestScheme",
                                             "value": {
-                                                "stringValue": "/product/66VCHSJNUP"
+                                                "stringValue": "https"
                                             }
                                         },
                                         {
-                                            "key": "ClientXRequestedWith",
+                                            "key": "EdgeResponseCompressionRatio",
                                             "value": {
-                                                "stringValue": ""
+                                                "doubleValue": 2.54
                                             }
                                         },
                                         {
-                                            "key": "EdgeServerIP",
-                                            "value": {
-                                                "stringValue": "172.70.131.84"
-                                            }
-                                        },
-                                        {
-                                            "key": "CacheResponseStatus",
-                                            "value": {
-                                                "doubleValue": 200
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientASN",
-                                            "value": {
-                                                "doubleValue": 20115
-                                            }
-                                        },
-                                        {
-                                            "key": "OriginResponseHeaderReceiveDurationMs",
-                                            "value": {
-                                                "doubleValue": 21
-                                            }
-                                        },
-                                        {
-                                            "key": "WAFXSSAttackScore",
+                                            "key": "OriginDNSResponseTimeMs",
                                             "value": {
                                                 "doubleValue": 0
                                             }
                                         },
                                         {
-                                            "key": "ClientMTLSAuthStatus",
+                                            "key": "OriginTLSHandshakeDurationMs",
                                             "value": {
-                                                "stringValue": "unknown"
+                                                "doubleValue": 0
                                             }
                                         },
                                         {
-                                            "key": "EdgeTimeToFirstByteMs",
+                                            "key": "ResponseHeaders",
                                             "value": {
-                                                "doubleValue": 28
+                                                "kvlistValue": {}
                                             }
                                         },
                                         {
-                                            "key": "WAFAction",
+                                            "key": "ClientRegionCode",
                                             "value": {
-                                                "stringValue": "unknown"
+                                                "stringValue": "MI"
                                             }
                                         },
                                         {
-                                            "key": "WAFRCEAttackScore",
+                                            "key": "OriginTCPHandshakeDurationMs",
                                             "value": {
                                                 "doubleValue": 0
                                             }
@@ -393,37 +218,79 @@
                                             }
                                         },
                                         {
-                                            "key": "CacheReserveUsed",
+                                            "key": "CacheTieredFill",
                                             "value": {
                                                 "boolValue": false
                                             }
                                         },
                                         {
-                                            "key": "ClientIP",
+                                            "key": "ClientIPClass",
                                             "value": {
-                                                "stringValue": "47.35.104.49"
+                                                "stringValue": "noRecord"
                                             }
                                         },
                                         {
-                                            "key": "ClientSSLCipher",
+                                            "key": "ClientRequestHost",
                                             "value": {
-                                                "stringValue": "AEAD-AES128-GCM-SHA256"
+                                                "stringValue": "www.theburritobot2.com"
                                             }
                                         },
                                         {
-                                            "key": "Cookies",
+                                            "key": "EdgeRateLimitAction",
+                                            "value": {
+                                                "stringValue": ""
+                                            }
+                                        },
+                                        {
+                                            "key": "OriginResponseDurationMs",
+                                            "value": {
+                                                "doubleValue": 22
+                                            }
+                                        },
+                                        {
+                                            "key": "RequestHeaders",
                                             "value": {
                                                 "kvlistValue": {}
                                             }
                                         },
                                         {
-                                            "key": "WAFProfile",
+                                            "key": "WAFRuleID",
                                             "value": {
-                                                "stringValue": "unknown"
+                                                "stringValue": ""
                                             }
                                         },
                                         {
-                                            "key": "WorkerWallTimeUs",
+                                            "key": "EdgeStartTimestamp",
+                                            "value": {
+                                                "stringValue": "2023-03-03T05:29:06Z"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeColoID",
+                                            "value": {
+                                                "doubleValue": 398
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeRequestHost",
+                                            "value": {
+                                                "stringValue": "www.theburritobot2.com"
+                                            }
+                                        },
+                                        {
+                                            "key": "OriginResponseHTTPLastModified",
+                                            "value": {
+                                                "stringValue": ""
+                                            }
+                                        },
+                                        {
+                                            "key": "WAFSQLiAttackScore",
+                                            "value": {
+                                                "doubleValue": 0
+                                            }
+                                        },
+                                        {
+                                            "key": "WAFXSSAttackScore",
                                             "value": {
                                                 "doubleValue": 0
                                             }
@@ -435,9 +302,27 @@
                                             }
                                         },
                                         {
-                                            "key": "ClientMTLSAuthCertFingerprint",
+                                            "key": "ClientCountry",
                                             "value": {
-                                                "stringValue": ""
+                                                "stringValue": "us"
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientMTLSAuthStatus",
+                                            "value": {
+                                                "stringValue": "unknown"
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientSSLCipher",
+                                            "value": {
+                                                "stringValue": "AEAD-AES128-GCM-SHA256"
+                                            }
+                                        },
+                                        {
+                                            "key": "OriginSSLProtocol",
+                                            "value": {
+                                                "stringValue": "none"
                                             }
                                         },
                                         {
@@ -447,15 +332,45 @@
                                             }
                                         },
                                         {
-                                            "key": "ResponseHeaders",
+                                            "key": "WAFMatchedVar",
                                             "value": {
-                                                "kvlistValue": {}
+                                                "stringValue": ""
                                             }
                                         },
                                         {
-                                            "key": "WAFSQLiAttackScore",
+                                            "key": "CacheCacheStatus",
+                                            "value": {
+                                                "stringValue": "dynamic"
+                                            }
+                                        },
+                                        {
+                                            "key": "CacheResponseStatus",
+                                            "value": {
+                                                "doubleValue": 200
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientRequestMethod",
+                                            "value": {
+                                                "stringValue": "GET"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeResponseBytes",
+                                            "value": {
+                                                "doubleValue": 2301
+                                            }
+                                        },
+                                        {
+                                            "key": "UpperTierColoID",
                                             "value": {
                                                 "doubleValue": 0
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientRequestProtocol",
+                                            "value": {
+                                                "stringValue": "HTTP/2"
                                             }
                                         },
                                         {
@@ -465,9 +380,15 @@
                                             }
                                         },
                                         {
-                                            "key": "EdgePathingOp",
+                                            "key": "OriginResponseHTTPExpires",
                                             "value": {
-                                                "stringValue": "wl"
+                                                "stringValue": ""
+                                            }
+                                        },
+                                        {
+                                            "key": "OriginResponseStatus",
+                                            "value": {
+                                                "doubleValue": 200
                                             }
                                         },
                                         {
@@ -483,39 +404,15 @@
                                             }
                                         },
                                         {
-                                            "key": "CacheTieredFill",
+                                            "key": "EdgeResponseBodyBytes",
                                             "value": {
-                                                "boolValue": false
+                                                "doubleValue": 1963
                                             }
                                         },
                                         {
-                                            "key": "ClientSSLProtocol",
+                                            "key": "EdgeTimeToFirstByteMs",
                                             "value": {
-                                                "stringValue": "TLSv1.3"
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeResponseStatus",
-                                            "value": {
-                                                "doubleValue": 200
-                                            }
-                                        },
-                                        {
-                                            "key": "SmartRouteColoID",
-                                            "value": {
-                                                "doubleValue": 0
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientRequestBytes",
-                                            "value": {
-                                                "doubleValue": 2667
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeResponseBytes",
-                                            "value": {
-                                                "doubleValue": 2301
+                                                "doubleValue": 28
                                             }
                                         },
                                         {
@@ -525,21 +422,135 @@
                                             }
                                         },
                                         {
-                                            "key": "WAFMatchedVar",
+                                            "key": "SecurityLevel",
+                                            "value": {
+                                                "stringValue": "med"
+                                            }
+                                        },
+                                        {
+                                            "key": "WAFRCEAttackScore",
+                                            "value": {
+                                                "doubleValue": 0
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientSSLProtocol",
+                                            "value": {
+                                                "stringValue": "TLSv1.3"
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientTCPRTTMs",
+                                            "value": {
+                                                "doubleValue": 18
+                                            }
+                                        },
+                                        {
+                                            "key": "WorkerStatus",
+                                            "value": {
+                                                "stringValue": "unknown"
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientRequestURI",
+                                            "value": {
+                                                "stringValue": "/product/66VCHSJNUP"
+                                            }
+                                        },
+                                        {
+                                            "key": "ContentScanObjTypes",
+                                            "value": {
+                                                "arrayValue": {}
+                                            }
+                                        },
+                                        {
+                                            "key": "OriginRequestHeaderSendDurationMs",
+                                            "value": {
+                                                "doubleValue": 0
+                                            }
+                                        },
+                                        {
+                                            "key": "WAFAction",
+                                            "value": {
+                                                "stringValue": "unknown"
+                                            }
+                                        },
+                                        {
+                                            "key": "WAFRuleMessage",
                                             "value": {
                                                 "stringValue": ""
                                             }
                                         },
                                         {
-                                            "key": "EdgeEndTimestamp",
+                                            "key": "ClientRequestSource",
                                             "value": {
-                                                "stringValue": "2023-03-03T05:29:06Z"
+                                                "stringValue": "eyeball"
                                             }
                                         },
                                         {
-                                            "key": "OriginResponseHTTPExpires",
+                                            "key": "EdgeCFConnectingO2O",
                                             "value": {
-                                                "stringValue": ""
+                                                "boolValue": false
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgePathingOp",
+                                            "value": {
+                                                "stringValue": "wl"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeResponseStatus",
+                                            "value": {
+                                                "doubleValue": 200
+                                            }
+                                        },
+                                        {
+                                            "key": "WAFProfile",
+                                            "value": {
+                                                "stringValue": "unknown"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeRateLimitID",
+                                            "value": {
+                                                "doubleValue": 0
+                                            }
+                                        },
+                                        {
+                                            "key": "OriginIP",
+                                            "value": {
+                                                "stringValue": "35.223.103.128"
+                                            }
+                                        },
+                                        {
+                                            "key": "WorkerCPUTime",
+                                            "value": {
+                                                "doubleValue": 0
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientIP",
+                                            "value": {
+                                                "stringValue": "47.35.104.49"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgePathingStatus",
+                                            "value": {
+                                                "stringValue": "nr"
+                                            }
+                                        },
+                                        {
+                                            "key": "SmartRouteColoID",
+                                            "value": {
+                                                "doubleValue": 0
+                                            }
+                                        },
+                                        {
+                                            "key": "WAFFlags",
+                                            "value": {
+                                                "stringValue": "0"
                                             }
                                         }
                                     ]

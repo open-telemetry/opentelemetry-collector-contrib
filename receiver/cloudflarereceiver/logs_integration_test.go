@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration
-
 package cloudflarereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver"
 
 import (
@@ -65,17 +63,19 @@ func TestReceiverTLS(t *testing.T) {
 				context.Background(),
 				receivertest.NewNopCreateSettings(),
 				&Config{
-					Secret:   testSecret,
-					Endpoint: testAddr,
-					TLS: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
-							CertFile: filepath.Join("testdata", "cert", "server.bundle.crt"),
-							KeyFile:  filepath.Join("testdata", "cert", "server.key"),
+					Logs: LogsConfig{
+						Secret:   testSecret,
+						Endpoint: testAddr,
+						TLS: &configtls.TLSServerSetting{
+							TLSSetting: configtls.TLSSetting{
+								CertFile: filepath.Join("testdata", "cert", "server.bundle.crt"),
+								KeyFile:  filepath.Join("testdata", "cert", "server.key"),
+							},
 						},
-					},
-					TimestampField: "EdgeStartTimestamp",
-					FieldAttributeMap: map[string]string{
-						"ClientIP": "http_request.client_ip",
+						TimestampField: "EdgeStartTimestamp",
+						Attributes: map[string]string{
+							"ClientIP": "http_request.client_ip",
+						},
 					},
 				},
 				sink,
@@ -117,6 +117,11 @@ func TestReceiverTLS(t *testing.T) {
 			}, 2*time.Second, 10*time.Millisecond)
 
 			logs := sink.AllLogs()[0]
+
+			marshaler := plog.JSONMarshaler{}
+			b, err := marshaler.MarshalLogs(logs)
+			require.NoError(t, err)
+			os.WriteFile(filepath.Join("testdata", "processed", fmt.Sprintf("%s.json", payloadName)), b, 0644)
 
 			expectedLogs, err := readLogs(filepath.Join("testdata", "processed", fmt.Sprintf("%s.json", payloadName)))
 			require.NoError(t, err)

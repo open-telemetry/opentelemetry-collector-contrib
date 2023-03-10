@@ -49,7 +49,9 @@ func createLogsReceiver(
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		TimestampField: defaultTimestampField,
-		TLS:            &configtls.TLSServerSetting{},
+		Logs: LogsConfig{
+			TimestampField: defaultTimestampField,
+			TLS:            &configtls.TLSServerSetting{},
+		},
 	}
 }

@@ -25,11 +25,15 @@ import (
 
 // Config holds all the parameters to start an HTTP server that can be sent logs from CloudFlare
 type Config struct {
-	Secret            string                      `mapstructure:"secret"`
-	Endpoint          string                      `mapstructure:"endpoint"`
-	TLS               *configtls.TLSServerSetting `mapstructure:"tls"`
-	FieldAttributeMap map[string]string           `mapstructure:"field_attribute_map"`
-	TimestampField    string                      `mapstructure:"timestamp_field"`
+	Logs LogsConfig `mapstructure:"logs"`
+}
+
+type LogsConfig struct {
+	Secret         string                      `mapstructure:"secret"`
+	Endpoint       string                      `mapstructure:"endpoint"`
+	TLS            *configtls.TLSServerSetting `mapstructure:"tls"`
+	Attributes     map[string]string           `mapstructure:"attributes"`
+	TimestampField string                      `mapstructure:"timestamp_field"`
 }
 
 var (
@@ -42,28 +46,27 @@ var (
 )
 
 func (c *Config) Validate() error {
-	if c.Endpoint == "" {
+	if c.Logs.Endpoint == "" {
 		return errNoEndpoint
 	}
 
-	if c.TLS == nil {
+	if c.Logs.TLS == nil {
 		return errNoTLS
 	}
 
 	var errs error
-	_, _, err := net.SplitHostPort(c.Endpoint)
+	_, _, err := net.SplitHostPort(c.Logs.Endpoint)
 	if err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to split endpoint into 'host:port' pair: %w", err))
 	}
 
-	if c.TLS != nil {
-		if c.TLS.CertFile == "" {
-			errs = multierr.Append(errs, errNoCert)
-		}
-
-		if c.TLS.KeyFile == "" {
-			errs = multierr.Append(errs, errNoKey)
-		}
+	if c.Logs.TLS.CertFile == "" {
+		errs = multierr.Append(errs, errNoCert)
 	}
+
+	if c.Logs.TLS.KeyFile == "" {
+		errs = multierr.Append(errs, errNoKey)
+	}
+
 	return errs
 }

@@ -33,11 +33,13 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Valid config with tls",
 			config: Config{
-				Endpoint: "0.0.0.0:9999",
-				TLS: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: "some_cert_file",
-						KeyFile:  "some_key_file",
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:9999",
+					TLS: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "some_cert_file",
+							KeyFile:  "some_key_file",
+						},
 					},
 				},
 			},
@@ -45,10 +47,12 @@ func TestValidate(t *testing.T) {
 		{
 			name: "missing endpoint",
 			config: Config{
-				TLS: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: "some_cert_file",
-						KeyFile:  "some_key_file",
+				Logs: LogsConfig{
+					TLS: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "some_cert_file",
+							KeyFile:  "some_key_file",
+						},
 					},
 				},
 			},
@@ -57,11 +61,13 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid endpoint",
 			config: Config{
-				Endpoint: "9999",
-				TLS: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: "some_cert_file",
-						KeyFile:  "some_key_file",
+				Logs: LogsConfig{
+					Endpoint: "9999",
+					TLS: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "some_cert_file",
+							KeyFile:  "some_key_file",
+						},
 					},
 				},
 			},
@@ -70,10 +76,12 @@ func TestValidate(t *testing.T) {
 		{
 			name: "TLS config missing key",
 			config: Config{
-				Endpoint: "0.0.0.0:9999",
-				TLS: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: "some_cert_file",
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:9999",
+					TLS: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "some_cert_file",
+						},
 					},
 				},
 			},
@@ -82,10 +90,12 @@ func TestValidate(t *testing.T) {
 		{
 			name: "TLS config missing cert",
 			config: Config{
-				Endpoint: "0.0.0.0:9999",
-				TLS: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						KeyFile: "some_key_file",
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:9999",
+					TLS: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							KeyFile: "some_key_file",
+						},
 					},
 				},
 			},
@@ -116,18 +126,20 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "",
 			expectedConfig: &Config{
-				Endpoint: "0.0.0.0:12345",
-				TLS: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: "some_cert_file",
-						KeyFile:  "some_key_file",
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:12345",
+					TLS: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "some_cert_file",
+							KeyFile:  "some_key_file",
+						},
 					},
-				},
-				Secret:         "1234567890abcdef1234567890abcdef",
-				TimestampField: "EdgeStartTimestamp",
-				FieldAttributeMap: map[string]string{
-					"ClientIP":         "http_request.client_ip",
-					"ClientRequestURI": "http_request.uri",
+					Secret:         "1234567890abcdef1234567890abcdef",
+					TimestampField: "EdgeStartTimestamp",
+					Attributes: map[string]string{
+						"ClientIP":         "http_request.client_ip",
+						"ClientRequestURI": "http_request.uri",
+					},
 				},
 			},
 		},

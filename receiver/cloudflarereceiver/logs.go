@@ -15,6 +15,7 @@
 package cloudflarereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver"
 
 import (
+	"bytes"
 	"compress/gzip"
 	"context"
 	"encoding/json"
@@ -23,7 +24,6 @@ import (
 	"net"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -37,29 +37,26 @@ import (
 
 type logsReceiver struct {
 	logger   *zap.Logger
-	cfg      *Config
+	cfg      *LogsConfig
 	server   *http.Server
 	consumer consumer.Logs
 	wg       *sync.WaitGroup
-	doneChan chan bool
 	id       component.ID // ID of the receiver component
 }
 
-const (
-	secretHeaderName = "X-CF-Secret"
-)
+const secretHeaderName = "X-CF-Secret"
+const receiverScopeName = "otelcol/" + typeStr
 
 func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
 	recv := &logsReceiver{
-		cfg:      cfg,
+		cfg:      &cfg.Logs,
 		consumer: consumer,
 		logger:   params.Logger,
 		wg:       &sync.WaitGroup{},
-		doneChan: make(chan bool),
 		id:       params.ID,
 	}
 
-	tlsConfig, err := cfg.TLS.LoadTLSConfig()
+	tlsConfig, err := recv.cfg.TLS.LoadTLSConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -86,9 +83,6 @@ func (l *logsReceiver) Shutdown(ctx context.Context) error {
 
 	l.logger.Debug("Waiting for shutdown to complete.")
 	l.wg.Wait()
-
-	l.logger.Debug("shutting down logs receiver")
-	close(l.doneChan)
 	return nil
 }
 
@@ -125,7 +119,7 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 }
 
 func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) {
-	if len(l.cfg.Secret) > 0 {
+	if l.cfg.Secret != "" {
 		secretHeader := req.Header.Get(secretHeaderName)
 		if secretHeader == "" {
 			rw.WriteHeader(http.StatusUnauthorized)
@@ -164,15 +158,13 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 		}
 	}
 
-	strPayload := string(payload)
-
-	if strPayload == "test" {
+	if string(payload) == "test" {
 		l.logger.Info("Received test request from Cloudflare")
 		rw.WriteHeader(http.StatusOK)
 		return
 	}
 
-	logs, err := parsePayload(strPayload)
+	logs, err := parsePayload(payload)
 	if err != nil {
 		rw.WriteHeader(http.StatusUnprocessableEntity)
 		l.logger.Error("Failed to convert cloudflare request payload to maps", zap.Error(err))
@@ -188,9 +180,9 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 	rw.WriteHeader(http.StatusOK)
 }
 
-func parsePayload(payload string) ([]map[string]interface{}, error) {
+func parsePayload(payload []byte) ([]map[string]interface{}, error) {
 	var logs []map[string]interface{}
-	for _, line := range strings.Split(payload, "\n") {
+	for _, line := range bytes.Split(payload, []byte("\n")) {
 		if len(line) == 0 {
 			continue
 		}
@@ -207,68 +199,89 @@ func parsePayload(payload string) ([]map[string]interface{}, error) {
 func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]interface{}) plog.Logs {
 	pLogs := plog.NewLogs()
 
-	resourceLogs := pLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	// Group logs by ZoneName field if it was configured so it can be used as a resource attribute
+	groupedLogs := make(map[string][]map[string]interface{})
 	for _, log := range logs {
-		logRecord := resourceLogs.AppendEmpty()
-		logRecord.SetObservedTimestamp(now)
-
-		if v, ok := log[l.cfg.TimestampField]; ok {
+		zone := ""
+		if v, ok := log["ZoneName"]; ok {
 			if stringV, ok := v.(string); ok {
-				ts, err := time.Parse(time.RFC3339, stringV)
-				if err != nil {
-					l.logger.Warn(fmt.Sprintf("unable to parse %s", l.cfg.TimestampField), zap.Error(err), zap.String("value", stringV))
-				} else {
-					logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-				}
-			} else {
-				l.logger.Warn(fmt.Sprintf("unable to parse %s", l.cfg.TimestampField), zap.Any("value", v))
+				zone = stringV
 			}
 		}
+		groupedLogs[zone] = append(groupedLogs[zone], log)
+	}
 
-		if v, ok := log["EdgeResponseStatus"]; ok {
-			sev := plog.SeverityNumberUnspecified
-			switch v := v.(type) {
-			case string:
-				intV, err := strconv.ParseInt(v, 10, 64)
-				if err != nil {
-					l.logger.Warn("unable to parse EdgeResponseStatus", zap.Error(err), zap.String("value", v))
-				} else {
-					sev = severityFromStatusCode(intV)
-				}
-			case int64:
-				sev = severityFromStatusCode(v)
-			case float64:
-				sev = severityFromStatusCode(int64(v))
-			}
-			if sev != plog.SeverityNumberUnspecified {
-				logRecord.SetSeverityNumber(sev)
-				logRecord.SetSeverityText(sev.String())
-			}
+	for zone, logGroup := range groupedLogs {
+		resourceLogs := pLogs.ResourceLogs().AppendEmpty()
+		if zone != "" {
+			resource := resourceLogs.Resource()
+			resource.Attributes().PutStr("cloudflare.zone", zone)
 		}
+		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		scopeLogs.Scope().SetName(receiverScopeName)
 
-		attrs := logRecord.Attributes()
-		for field, attribute := range l.cfg.FieldAttributeMap {
-			if v, ok := log[field]; ok {
+		for _, log := range logGroup {
+			logRecord := scopeLogs.LogRecords().AppendEmpty()
+			logRecord.SetObservedTimestamp(now)
+
+			if v, ok := log[l.cfg.TimestampField]; ok {
+				if stringV, ok := v.(string); ok {
+					ts, err := time.Parse(time.RFC3339, stringV)
+					if err != nil {
+						l.logger.Warn(fmt.Sprintf("unable to parse %s", l.cfg.TimestampField), zap.Error(err), zap.String("value", stringV))
+					} else {
+						logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+					}
+				} else {
+					l.logger.Warn(fmt.Sprintf("unable to parse %s", l.cfg.TimestampField), zap.Any("value", v))
+				}
+			}
+
+			if v, ok := log["EdgeResponseStatus"]; ok {
+				sev := plog.SeverityNumberUnspecified
 				switch v := v.(type) {
 				case string:
-					attrs.PutStr(attribute, v)
-				case int:
-					attrs.PutInt(attribute, int64(v))
+					intV, err := strconv.ParseInt(v, 10, 64)
+					if err != nil {
+						l.logger.Warn("unable to parse EdgeResponseStatus", zap.Error(err), zap.String("value", v))
+					} else {
+						sev = severityFromStatusCode(intV)
+					}
 				case int64:
-					attrs.PutInt(attribute, v)
+					sev = severityFromStatusCode(v)
 				case float64:
-					attrs.PutDouble(attribute, v)
-				case bool:
-					attrs.PutBool(attribute, v)
-				default:
-					l.logger.Warn("unable to translate field to attribute, unsupported type", zap.String("field", field), zap.Any("value", v), zap.String("type", fmt.Sprintf("%T", v)))
+					sev = severityFromStatusCode(int64(v))
+				}
+				if sev != plog.SeverityNumberUnspecified {
+					logRecord.SetSeverityNumber(sev)
+					logRecord.SetSeverityText(sev.String())
 				}
 			}
-		}
 
-		err := logRecord.Body().SetEmptyMap().FromRaw(log)
-		if err != nil {
-			l.logger.Warn("unable to set body", zap.Error(err))
+			attrs := logRecord.Attributes()
+			for field, attribute := range l.cfg.Attributes {
+				if v, ok := log[field]; ok {
+					switch v := v.(type) {
+					case string:
+						attrs.PutStr(attribute, v)
+					case int:
+						attrs.PutInt(attribute, int64(v))
+					case int64:
+						attrs.PutInt(attribute, v)
+					case float64:
+						attrs.PutDouble(attribute, v)
+					case bool:
+						attrs.PutBool(attribute, v)
+					default:
+						l.logger.Warn("unable to translate field to attribute, unsupported type", zap.String("field", field), zap.Any("value", v), zap.String("type", fmt.Sprintf("%T", v)))
+					}
+				}
+			}
+
+			err := logRecord.Body().SetEmptyMap().FromRaw(log)
+			if err != nil {
+				l.logger.Warn("unable to set body", zap.Error(err))
+			}
 		}
 	}
 

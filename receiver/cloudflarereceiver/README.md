@@ -22,7 +22,7 @@ To successfully operate this receiver, you must follow these steps in order:
       - If using the deprecated `logpull_options` parameter to configure your job, this can be explicitly specified by adding `&timestamps=rfc3339` to the `logpull_options` string when creating your LogPush job.
       - If using the `output_options` parameter to configure your job, this can be explicitly specified by setting the `timestamp_format` field of `output_options` to `"rfc3339"`
     - The receiver expects the uploaded logs to be in `ndjson` format with no template, prefix, suffix, or delimiter changes based on the options in `output_options`. The only [settings](https://developers.cloudflare.com/logs/reference/log-output-options/#output-types) supported by this receiver in `output_options` are `field_names`, `CVE-2021-44228`, and `sample_rate`.
-5. If the LogPush job creates successfully, the receiver is correctly configured and the LogPush job was able to send it a "test" message. The LogPush job will now send it log messages as long as it was created with `enabled` as `true`. If the job failed to create the most likely issue is with the SSL configuration, check both the LogPush API response and the receiver's logs for more details.
+5. If the LogPush job creates successfully, the receiver is correctly configured and the LogPush job was able to send it a "test" message. If the job failed to create, the most likely issue is with the SSL configuration. Check both the LogPush API response and the receiver's logs for more details.
 
 ## Configuration
 
@@ -35,8 +35,8 @@ To successfully operate this receiver, you must follow these steps in order:
 - `secret`
   - If this value is set, the receiver expects to see it in any valid requests under the `X-CF-Secret` header
 - `timestamp_field` (default: `EdgeStartTimestamp`)
-  - This receiver was built with the Cloudflare `http_requests` dataset in mind, but should be able to support any Cloudflare dataset. If using another dataset, you will need to set the `timestamp_field` appropriately in order to have the log record be associated with the correct timestamp.
-- `field_attribute_map`
+  - This receiver was built with the Cloudflare `http_requests` dataset in mind, but should be able to support any Cloudflare dataset. If using another dataset, you will need to set the `timestamp_field` appropriately in order to have the log record be associated with the correct timestamp. the timestamp must be formatted RFC3339, as stated in the Getting Started section.
+- `attributes`
   - This parameter allows the receiver to be configured to set log record attributes based on fields found in the log message. The fields are not removed from the log message when set in this way. Only string, boolean, integer or float fields can be mapped using this parameter.
 
 
@@ -45,15 +45,16 @@ To successfully operate this receiver, you must follow these steps in order:
 ```yaml
 receivers:
   cloudflare:
-    tls:
-      key_file: some_key_file
-      cert_file: some_cert_file
-    endpoint: 0.0.0.0:12345
-    secret: 1234567890abcdef1234567890abcdef
-    timestamp_field: EdgeStartTimestamp
-    field_attribute_map:
-      ClientIP: http_request.client_ip
-      ClientRequestURI: http_request.uri
+    logs:
+      tls:
+        key_file: some_key_file
+        cert_file: some_cert_file
+      endpoint: 0.0.0.0:12345
+      secret: 1234567890abcdef1234567890abcdef
+      timestamp_field: EdgeStartTimestamp
+      attributes:
+        ClientIP: http_request.client_ip
+        ClientRequestURI: http_request.uri
 ```
 
 
