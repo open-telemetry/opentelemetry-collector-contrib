@@ -1,4 +1,4 @@
-include ./Makefile.Common
+include ./Makefile.Global
 
 RUN_CONFIG?=local/config.yaml
 CMD?=
