@@ -29,7 +29,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "loki"
 	// The stability level of the receiver.
-	stability = component.StabilityLevelAlpha
+	stability = component.StabilityLevelDevelopment
 
 	defaultGRPCBindEndpoint = "0.0.0.0:3600"
 	defaultHTTPBindEndpoint = "0.0.0.0:3500"

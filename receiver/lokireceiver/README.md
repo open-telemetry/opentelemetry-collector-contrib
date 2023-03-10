@@ -1,10 +1,10 @@
 # Loki Receiver
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [alpha]   |
-| Supported pipeline types | logs      |
-| Distributions            | [contrib] |
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [development] |
+| Supported pipeline types | logs          |
+| Distributions            | [contrib]     |
 
 The Loki receiver implements the [Loki push api](https://grafana.com/docs/loki/latest/clients/promtail/#loki-push-api) as specified [here](https://grafana.com/docs/loki/latest/api/#push-log-entries-to-loki). 
 It allows Promtail instances to specify the open telemetry collector as their lokiAddress.
@@ -28,5 +28,5 @@ receivers:
     use_incoming_timestamp: true
 ```
 
-[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
