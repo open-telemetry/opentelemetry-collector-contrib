@@ -51,14 +51,14 @@ func newMetricsRceiver(cfg *Config, logger *zap.Logger, consumer consumer.Metric
 }
 
 func (m *metricReceiver) Start(ctx context.Context, host component.Host) error {
-	m.logger.Debug("Starting to poll for CloudWatch metrics")
+	m.logger.Debug("starting to poll for CloudWatch metrics")
 	m.wg.Add(1)
 	go m.startPolling(ctx)
 	return nil
 }
 
 func (m *metricReceiver) Shutdown(ctx context.Context) error {
-	m.logger.Debug("Shutting down awscloudwatchmetrics receiver")
+	m.logger.Debug("shutting down awscloudwatchmetrics receiver")
 	close(m.doneChan)
 	m.wg.Wait()
 	return nil

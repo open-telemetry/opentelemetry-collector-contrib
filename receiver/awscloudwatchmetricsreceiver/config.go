@@ -66,7 +66,7 @@ var (
 
 	// https://docs.aws.amazon.com/cli/latest/reference/cloudwatch/get-metric-data.html
 	// GetMetricData supports up to 500 metrics per API call
-	errTooManyMetrics = errors.New("too many metrics defined")
+	errTooManyMetrics = errors.New("you cannot define more than 500 metrics")
 
 	// https://docs.aws.amazon.com/cli/latest/reference/cloudwatch/get-metric-data.html
 	errEmptyDimensions      = errors.New("dimensions name and value is empty")
