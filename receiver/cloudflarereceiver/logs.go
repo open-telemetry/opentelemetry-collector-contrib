@@ -187,7 +187,7 @@ func parsePayload(payload []byte) ([]map[string]interface{}, error) {
 			continue
 		}
 		var log map[string]interface{}
-		err := json.Unmarshal([]byte(line), &log)
+		err := json.Unmarshal(line, &log)
 		if err != nil {
 			return logs, err
 		}
