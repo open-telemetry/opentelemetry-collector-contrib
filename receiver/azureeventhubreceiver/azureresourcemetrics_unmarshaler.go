@@ -89,11 +89,10 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 	metrics := scopeMetrics.Metrics()
 	metrics.EnsureCapacity(len(azureMetrics.Records) * 5)
 
+	resourceID := ""
 	for _, azureMetric := range azureMetrics.Records {
-		resourceID := azureMetric.ResourceID
-		if resourceID == "" {
-			r.logger.Warn("No ResourceID Set on Metric")
-			continue
+		if resourceID == "" && azureMetric.ResourceID != "" {
+			resourceID = azureMetric.ResourceID
 		}
 
 		nanos, err := asTimestamp(azureMetric.Time)
@@ -116,7 +115,6 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 		dpTotal.SetStartTimestamp(startTimestamp)
 		dpTotal.SetTimestamp(nanos)
 		dpTotal.SetDoubleValue(azureMetric.Total)
-		dpTotal.Attributes().PutStr(azureResourceID, resourceID)
 
 		metricCount := metrics.AppendEmpty()
 		metricCount.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Count")))
@@ -124,7 +122,6 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 		dpCount.SetStartTimestamp(startTimestamp)
 		dpCount.SetTimestamp(nanos)
 		dpCount.SetDoubleValue(azureMetric.Count)
-		dpCount.Attributes().PutStr(azureResourceID, resourceID)
 		
 		metricMin := metrics.AppendEmpty()
 		metricMin.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Minimum")))
@@ -132,7 +129,6 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 		dpMin.SetStartTimestamp(startTimestamp)
 		dpMin.SetTimestamp(nanos)
 		dpMin.SetDoubleValue(azureMetric.Minimum)
-		dpMin.Attributes().PutStr(azureResourceID, resourceID)
 
 		metricMax := metrics.AppendEmpty()
 		metricMax.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Maximum")))
@@ -140,7 +136,6 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 		dpMax.SetStartTimestamp(startTimestamp)
 		dpMax.SetTimestamp(nanos)
 		dpMax.SetDoubleValue(azureMetric.Maximum)
-		dpMax.Attributes().PutStr(azureResourceID, resourceID)
 
 		metricAverage := metrics.AppendEmpty()
 		metricAverage.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Average")))
@@ -148,7 +143,12 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 		dpAverage.SetStartTimestamp(startTimestamp)
 		dpAverage.SetTimestamp(nanos)
 		dpAverage.SetDoubleValue(azureMetric.Average)
-		dpAverage.Attributes().PutStr(azureResourceID, resourceID)
+	}
+
+	if resourceID != "" {
+		resourceMetrics.Resource().Attributes().PutStr(azureResourceID, resourceID)
+	} else {
+		r.logger.Warn("No ResourceID Set on Metrics!")
 	}
 
 	return md, nil
