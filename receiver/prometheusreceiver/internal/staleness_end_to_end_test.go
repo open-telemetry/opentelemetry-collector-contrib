@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -40,7 +41,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -60,7 +60,7 @@ func TestStalenessMarkersEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// 1. Setup the server that sends series that intermittently appear and disappear.
-	n := atomic.NewUint64(0)
+	n := &atomic.Uint64{}
 	scrapeServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Increment the scrape count atomically per scrape.
 		i := n.Add(1)

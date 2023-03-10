@@ -235,7 +235,7 @@ func TestBuildReq(t *testing.T) {
 
 func TestBuildBadReq(t *testing.T) {
 	p := &saClientProvider{
-		endpoint:   "localhost:9876",
+		endpoint:   "[]localhost:9876",
 		caCertPath: certPath,
 		tokenPath:  "./testdata/token",
 		logger:     zap.NewNop(),
@@ -243,7 +243,7 @@ func TestBuildBadReq(t *testing.T) {
 	cl, err := p.BuildClient()
 	require.NoError(t, err)
 	require.NoError(t, err)
-	_, err = cl.(*clientImpl).buildReq(" ")
+	_, err = cl.(*clientImpl).buildReq("")
 	require.Error(t, err)
 }
 
@@ -260,12 +260,12 @@ func TestFailedRT(t *testing.T) {
 
 func TestBadReq(t *testing.T) {
 	tr := &fakeRoundTripper{}
-	baseURL := "http://localhost:9876"
+	baseURL := "http://[]localhost:9876"
 	client := &clientImpl{
 		baseURL:    baseURL,
 		httpClient: http.Client{Transport: tr},
 	}
-	_, err := client.Get(" ")
+	_, err := client.Get("")
 	require.Error(t, err)
 }
 

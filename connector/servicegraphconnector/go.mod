@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/servi
 
 go 1.18
 
-require github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.72.0
+require github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.73.0
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -30,7 +30,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect

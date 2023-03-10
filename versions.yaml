@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.72.0
+    version: v0.73.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -101,7 +101,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
@@ -225,6 +224,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver

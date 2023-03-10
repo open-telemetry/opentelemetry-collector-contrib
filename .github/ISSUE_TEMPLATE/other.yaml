@@ -88,7 +88,6 @@ body:
       - internal/core
       - internal/docker
       - internal/filter
-      - internal/influx
       - internal/k8sconfig
       - internal/kubelet
       - internal/metadataproviders
@@ -215,6 +214,7 @@ body:
       - receiver/udplog
       - receiver/vcenter
       - receiver/wavefront
+      - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters
       - receiver/zipkin

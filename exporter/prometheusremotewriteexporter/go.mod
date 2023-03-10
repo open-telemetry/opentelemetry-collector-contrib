@@ -7,10 +7,10 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.72.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.72.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.72.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.72.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.73.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.73.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.73.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.73.0
 	github.com/prometheus/prometheus v0.42.1-0.20230210113933-af1d9e01c7e4
 	github.com/stretchr/testify v1.8.2
 	github.com/tidwall/wal v1.1.7
@@ -20,7 +20,6 @@ require (
 	go.opentelemetry.io/collector/consumer v0.73.0
 	go.opentelemetry.io/collector/exporter v0.73.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc7
-	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 )
@@ -50,11 +49,12 @@ require (
 	go.opentelemetry.io/collector/featuregate v0.73.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.73.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.73.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.39.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
-	golang.org/x/net v0.7.0 // indirect
+	go.uber.org/atomic v1.10.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/genproto v0.0.0-20230124163310-31e0e69b6fc2 // indirect

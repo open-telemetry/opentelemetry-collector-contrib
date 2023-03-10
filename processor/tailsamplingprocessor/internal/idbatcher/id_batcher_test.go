@@ -18,12 +18,12 @@ import (
 	"encoding/binary"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.uber.org/atomic"
 )
 
 func TestBatcherNew(t *testing.T) {
@@ -67,12 +67,12 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
-	ticked := atomic.NewInt64(0)
-	received := atomic.NewInt64(0)
+	ticked := &atomic.Int64{}
+	received := &atomic.Int64{}
 	go func() {
 		for range ticker.C {
 			batch, _ := batcher.CloseCurrentAndTakeFirstBatch()
-			ticked.Inc()
+			ticked.Add(1)
 			received.Add(int64(len(batch)))
 		}
 	}()
