@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,14 +22,15 @@ const (
 	labelName       = "LabelName"
 	labelColumnName = "LabelColumnName"
 
-	stringValue  = "stringValue"
-	int64Value   = int64(64)
-	float64Value = float64(64.64)
-	boolValue    = true
+	stringValue             = "stringValue"
+	int64Value              = int64(64)
+	float64Value            = float64(64.64)
+	defaultNullFloat64Value = float64(0)
+	boolValue               = true
 
 	metricName       = "metricName"
 	metricColumnName = "metricColumnName"
-	metricDataType   = pmetric.MetricDataTypeGauge
+	metricDataType   = pmetric.MetricTypeGauge
 	metricUnit       = "metricUnit"
 	metricNamePrefix = "metricNamePrefix-"
 

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,22 +19,20 @@ import (
 	"fmt"
 
 	"github.com/Shopify/sarama"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
 
 const (
-	instrumentationLibName = "otelcol/kafkametricsreceiver"
-	brokersScraperName     = "brokers"
-	topicsScraperName      = "topics"
-	consumersScraperName   = "consumers"
+	brokersScraperName   = "brokers"
+	topicsScraperName    = "topics"
+	consumersScraperName = "consumers"
 )
 
-type createKafkaScraper func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.Scraper, error)
+type createKafkaScraper func(context.Context, Config, *sarama.Config, receiver.CreateSettings) (scraperhelper.Scraper, error)
 
 var (
 	allScrapers = map[string]createKafkaScraper{
@@ -47,9 +45,9 @@ var (
 var newMetricsReceiver = func(
 	ctx context.Context,
 	config Config,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	sc := sarama.NewConfig()
 	sc.ClientID = config.ClientID
 	if config.ProtocolVersion != "" {
@@ -65,7 +63,7 @@ var newMetricsReceiver = func(
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
 	for _, scraper := range config.Scrapers {
 		if s, ok := allScrapers[scraper]; ok {
-			s, err := s(ctx, config, sc, params.Logger)
+			s, err := s(ctx, config, sc, params)
 			if err != nil {
 				return nil, err
 			}

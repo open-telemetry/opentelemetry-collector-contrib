@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,48 +18,47 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
-	queries []common.Query
-	logger  *zap.Logger
+	contexts []consumer.Logs
+	logger   *zap.Logger
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	queries, err := common.ParseQueries(statements, functions, ParsePath)
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings) (*Processor, error) {
+	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(LogFunctions()), common.WithLogErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
+
+	contexts := make([]consumer.Logs, len(contextStatements))
+	for i, cs := range contextStatements {
+		context, err := pc.ParseContextStatements(cs)
+		if err != nil {
+			return nil, err
+		}
+		contexts[i] = context
+	}
+
 	return &Processor{
-		queries: queries,
-		logger:  settings.Logger,
+		contexts: contexts,
+		logger:   settings.Logger,
 	}, nil
 }
 
-func (p *Processor) ProcessLogs(_ context.Context, td plog.Logs) (plog.Logs, error) {
-	ctx := logTransformContext{}
-	for i := 0; i < td.ResourceLogs().Len(); i++ {
-		rlogs := td.ResourceLogs().At(i)
-		ctx.resource = rlogs.Resource()
-		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
-			slogs := rlogs.ScopeLogs().At(j)
-			ctx.il = slogs.Scope()
-			logs := slogs.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
-				log := logs.At(k)
-				ctx.log = log
-
-				for _, statement := range p.queries {
-					if statement.Condition(ctx) {
-						statement.Function(ctx)
-					}
-				}
-			}
+func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+	for _, c := range p.contexts {
+		err := c.ConsumeLogs(ctx, ld)
+		if err != nil {
+			p.logger.Error("failed processing logs", zap.Error(err))
+			return ld, err
 		}
 	}
-	return td, nil
+	return ld, nil
 }

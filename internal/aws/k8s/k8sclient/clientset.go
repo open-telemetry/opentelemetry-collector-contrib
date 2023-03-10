@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package k8sclient // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 
 import (
@@ -118,7 +117,7 @@ func InitSyncPollTimeout(pollTimeout time.Duration) Option {
 }
 
 func getStringifiedOptions(options ...Option) string {
-	opts := make([]string, 0)
+	var opts []string
 	for _, option := range options {
 		opts = append(opts, option.name)
 	}
@@ -134,7 +133,7 @@ func Get(logger *zap.Logger, options ...Option) *K8sClient {
 
 	mu.Lock()
 	if optionsToK8sClient[strOptions] == nil {
-		//construct the k8s client
+		// construct the k8s client
 		k8sClient := new(K8sClient)
 		err := k8sClient.init(logger, options...)
 		if err == nil {

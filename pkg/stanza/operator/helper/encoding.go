@@ -15,6 +15,7 @@
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -33,7 +34,7 @@ func NewEncodingConfig() EncodingConfig {
 
 // EncodingConfig is the configuration of a Encoding helper
 type EncodingConfig struct {
-	Encoding string `mapstructure:"encoding,omitempty"              json:"encoding,omitempty"             yaml:"encoding,omitempty"`
+	Encoding string `mapstructure:"encoding,omitempty"`
 }
 
 // Build will build an Encoding operator.
@@ -44,30 +45,31 @@ func (c EncodingConfig) Build() (Encoding, error) {
 	}
 
 	return Encoding{
-		Encoding: enc,
+		Encoding:     enc,
+		decodeBuffer: make([]byte, 1<<12),
+		decoder:      enc.NewDecoder(),
 	}, nil
 }
 
 type Encoding struct {
-	Encoding encoding.Encoding
+	Encoding     encoding.Encoding
+	decoder      *encoding.Decoder
+	decodeBuffer []byte
 }
 
-// decode converts the bytes in msgBuf to utf-8 from the configured encoding
-func (e *Encoding) Decode(msgBuf []byte) (string, error) {
-	decodeBuffer := make([]byte, 1<<12)
-	decoder := e.Encoding.NewDecoder()
-
+// Decode converts the bytes in msgBuf to utf-8 from the configured encoding
+func (e *Encoding) Decode(msgBuf []byte) ([]byte, error) {
 	for {
-		decoder.Reset()
-		nDst, _, err := decoder.Transform(decodeBuffer, msgBuf, true)
+		e.decoder.Reset()
+		nDst, _, err := e.decoder.Transform(e.decodeBuffer, msgBuf, true)
 		if err == nil {
-			return string(decodeBuffer[:nDst]), nil
+			return e.decodeBuffer[:nDst], nil
 		}
-		if err == transform.ErrShortDst {
-			decodeBuffer = make([]byte, len(decodeBuffer)*2)
+		if errors.Is(err, transform.ErrShortDst) {
+			e.decodeBuffer = make([]byte, len(e.decodeBuffer)*2)
 			continue
 		}
-		return "", fmt.Errorf("transform encoding: %s", err)
+		return nil, fmt.Errorf("transform encoding: %w", err)
 	}
 }
 
@@ -83,15 +85,23 @@ var encodingOverrides = map[string]encoding.Encoding{
 }
 
 func lookupEncoding(enc string) (encoding.Encoding, error) {
-	if encoding, ok := encodingOverrides[strings.ToLower(enc)]; ok {
-		return encoding, nil
+	if e, ok := encodingOverrides[strings.ToLower(enc)]; ok {
+		return e, nil
 	}
-	encoding, err := ianaindex.IANA.Encoding(enc)
+	e, err := ianaindex.IANA.Encoding(enc)
 	if err != nil {
 		return nil, fmt.Errorf("unsupported encoding '%s'", enc)
 	}
-	if encoding == nil {
+	if e == nil {
 		return nil, fmt.Errorf("no charmap defined for encoding '%s'", enc)
 	}
-	return encoding, nil
+	return e, nil
+}
+
+func IsNop(enc string) bool {
+	e, err := lookupEncoding(enc)
+	if err != nil {
+		return false
+	}
+	return e == encoding.Nop
 }

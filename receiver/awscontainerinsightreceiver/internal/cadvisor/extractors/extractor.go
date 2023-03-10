@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
 import (
@@ -24,12 +23,6 @@ import (
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
-)
-
-const (
-	containerNameLable = "io.kubernetes.container.name"
-	// TODO: https://github.com/containerd/cri/issues/922#issuecomment-423729537 the container name can be empty on containerd
-	infraContainerName = "POD"
 )
 
 func GetStats(info *cinfo.ContainerInfo) *cinfo.ContainerStats {
@@ -47,13 +40,15 @@ type CPUMemInfoProvider interface {
 
 type MetricExtractor interface {
 	HasValue(*cinfo.ContainerInfo) bool
-	GetValue(*cinfo.ContainerInfo, CPUMemInfoProvider, string) []*CAdvisorMetric
+	GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*CAdvisorMetric
 }
 
 type CAdvisorMetric struct {
-	//key/value pairs that are typed and contain the metric (numerical) data
+	// source of the metric for debugging merge conflict
+	cgroupPath string
+	// key/value pairs that are typed and contain the metric (numerical) data
 	fields map[string]interface{}
-	//key/value string pairs that are used to identify the metrics
+	// key/value string pairs that are used to identify the metrics
 	tags map[string]string
 
 	logger *zap.Logger
@@ -120,6 +115,7 @@ func (c *CAdvisorMetric) Merge(src *CAdvisorMetric) {
 	for k, v := range src.fields {
 		if _, ok := c.fields[k]; ok {
 			c.logger.Debug(fmt.Sprintf("metric being merged has conflict in fields, src: %v, dest: %v \n", *src, *c))
+			c.logger.Debug("metric being merged has conflict in fields", zap.String("src", src.cgroupPath), zap.String("dest", c.cgroupPath))
 			if c.tags[ci.Timestamp] < src.tags[ci.Timestamp] {
 				continue
 			}
@@ -143,8 +139,8 @@ func newFloat64RateCalculator() awsmetrics.MetricCalculator {
 
 func assignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields map[string]interface{}, metricName string,
 	cinfoName string, curVal interface{}, curTime time.Time, multiplier float64) {
-	key := cinfoName + metricName
-	if val, ok := rateCalculator.Calculate(key, nil, curVal, curTime); ok {
+	mKey := awsmetrics.NewKey(cinfoName+metricName, nil)
+	if val, ok := rateCalculator.Calculate(mKey, curVal, curTime); ok {
 		fields[metricName] = val.(float64) * multiplier
 	}
 }

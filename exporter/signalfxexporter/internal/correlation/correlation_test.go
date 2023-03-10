@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package correlation
 
 import (
@@ -24,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -31,7 +31,7 @@ func TestTrackerAddSpans(t *testing.T) {
 	tracker := NewTracker(
 		DefaultConfig(),
 		"abcd",
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 	)
 
 	err := tracker.Start(context.Background(), componenttest.NewNopHost())
@@ -41,13 +41,13 @@ func TestTrackerAddSpans(t *testing.T) {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	attr := rs.Resource().Attributes()
-	attr.InsertString("host.name", "localhost")
+	attr.PutStr("host.name", "localhost")
 
 	// Add empty first, should ignore.
-	tracker.AddSpans(context.Background(), ptrace.NewTraces())
+	assert.NoError(t, tracker.AddSpans(context.Background(), ptrace.NewTraces()))
 	assert.Nil(t, tracker.traceTracker)
 
-	tracker.AddSpans(context.Background(), traces)
+	assert.NoError(t, tracker.AddSpans(context.Background(), traces))
 
 	assert.NotNil(t, tracker.traceTracker, "trace tracker should be set")
 
@@ -84,7 +84,7 @@ func TestTrackerStart(t *testing.T) {
 			tracker := NewTracker(
 				tt.config,
 				"abcd",
-				componenttest.NewNopExporterCreateSettings(),
+				exportertest.NewNopCreateSettings(),
 			)
 
 			err := tracker.Start(context.Background(), componenttest.NewNopHost())

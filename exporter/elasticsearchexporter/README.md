@@ -1,10 +1,10 @@
 # Elasticsearch Exporter
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [beta]    |
-| Supported pipeline types | logs      |
-| Distributions            | [contrib] |
+| Status                   |             |
+| ------------------------ |-------------|
+| Stability                | [beta]      |
+| Supported pipeline types | logs,traces |
+| Distributions            | [contrib]   |
 
 This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www.elastic.co/elasticsearch).
 
@@ -20,7 +20,15 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
 - `index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
-  name to publish events to. The default value is `logs-generic-default`.
+  name to publish events to. The default value is `logs-generic-default`. Note: To better differentiate between log indexes and traces indexes, `index` option are deprecated and replaced with below `logs_index`
+- `logs_index`: The
+  [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
+  or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
+  name to publish events to. The default value is `logs-generic-default`
+- `traces_index`: The
+  [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
+  or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
+  name to publish traces to. The default value is `traces-generic-default`.
 - `pipeline` (optional): Optional [Ingest Node](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html)
   pipeline ID used for processing documents published by the exporter.
 - `flush`: Event bulk buffer flush settings
@@ -66,7 +74,8 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
   verifying the server's identity, if TLS is enabled.
 - `cert_file` (optional): Client TLS certificate.
 - `key_file` (optional): Client TLS key.
-- `insecure` (optional): Disable verification of the server's identity, if TLS
+- `insecure` (optional): In gRPC when set to true, this is used to disable the client transport security. In HTTP, this disables verifying the server's certificate chain and host name.
+- `insecure_skip_verify` (optional): Will enable TLS but not verify the certificate.
   is enabled.
 
 ### Node Discovery
@@ -84,9 +93,23 @@ nodes will automatically be used for load balancing.
 
 ```yaml
 exporters:
-  elasticsearch:
-    endpoints:
-    - "https://localhost:9200"
+  elasticsearch/trace:
+    endpoints: [https://elastic.example.com:9200]
+    traces_index: trace_index
+  elasticsearch/log:
+    endpoints: [http://localhost:9200]
+    logs_index: my_log_index
+······
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [elasticsearch/log]
+    traces:
+      receivers: [otlp]
+      exporters: [elasticsearch/trace]
+      processors: [batch]
 ```
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

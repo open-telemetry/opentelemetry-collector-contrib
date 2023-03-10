@@ -16,11 +16,12 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Shopify/sarama"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -53,9 +54,10 @@ func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) 
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
-		if value, ok := err.(sarama.ProducerErrors); ok {
-			if len(value) > 0 {
-				return kafkaErrors{len(value), value[0].Err.Error()}
+		var prodErr sarama.ProducerErrors
+		if errors.As(err, &prodErr) {
+			if len(prodErr) > 0 {
+				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
 			}
 		}
 		return err
@@ -82,9 +84,10 @@ func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.M
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
-		if value, ok := err.(sarama.ProducerErrors); ok {
-			if len(value) > 0 {
-				return kafkaErrors{len(value), value[0].Err.Error()}
+		var prodErr sarama.ProducerErrors
+		if errors.As(err, &prodErr) {
+			if len(prodErr) > 0 {
+				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
 			}
 		}
 		return err
@@ -111,9 +114,10 @@ func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) erro
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
-		if value, ok := err.(sarama.ProducerErrors); ok {
-			if len(value) > 0 {
-				return kafkaErrors{len(value), value[0].Err.Error()}
+		var prodErr sarama.ProducerErrors
+		if errors.As(err, &prodErr) {
+			if len(prodErr) > 0 {
+				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
 			}
 		}
 		return err
@@ -164,7 +168,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	return producer, nil
 }
 
-func newMetricsExporter(config Config, set component.ExporterCreateSettings, marshalers map[string]MetricsMarshaler) (*kafkaMetricsProducer, error) {
+func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers map[string]MetricsMarshaler) (*kafkaMetricsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -184,7 +188,7 @@ func newMetricsExporter(config Config, set component.ExporterCreateSettings, mar
 }
 
 // newTracesExporter creates Kafka exporter.
-func newTracesExporter(config Config, set component.ExporterCreateSettings, marshalers map[string]TracesMarshaler) (*kafkaTracesProducer, error) {
+func newTracesExporter(config Config, set exporter.CreateSettings, marshalers map[string]TracesMarshaler) (*kafkaTracesProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -201,7 +205,7 @@ func newTracesExporter(config Config, set component.ExporterCreateSettings, mars
 	}, nil
 }
 
-func newLogsExporter(config Config, set component.ExporterCreateSettings, marshalers map[string]LogsMarshaler) (*kafkaLogsProducer, error) {
+func newLogsExporter(config Config, set exporter.CreateSettings, marshalers map[string]LogsMarshaler) (*kafkaLogsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding

@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/jpillora/backoff"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -33,6 +34,8 @@ import (
 )
 
 const (
+	operatorType = "tcp_input"
+
 	// minMaxLogSize is the minimal size which can be used for buffering
 	// TCP input
 	minMaxLogSize = 64 * 1024
@@ -43,13 +46,18 @@ const (
 )
 
 func init() {
-	operator.Register("tcp_input", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-// NewConfig creates a new TCP input config with default values
-func NewConfig(operatorID string) *Config {
+// NewConfigWithID creates a new TCP input config with default values
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new TCP input config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "tcp_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
 			Multiline: helper.NewMultilineConfig(),
 			Encoding:  helper.NewEncodingConfig(),
@@ -59,18 +67,20 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a tcp input operator.
 type Config struct {
-	helper.InputConfig `yaml:",inline"`
-	BaseConfig         `yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash"`
+	BaseConfig         `mapstructure:",squash"`
 }
 
 // BaseConfig is the detailed configuration of a tcp input operator.
 type BaseConfig struct {
-	MaxLogSize    helper.ByteSize         `mapstructure:"max_log_size,omitempty"          json:"max_log_size,omitempty"         yaml:"max_log_size,omitempty"`
-	ListenAddress string                  `mapstructure:"listen_address,omitempty"        json:"listen_address,omitempty"       yaml:"listen_address,omitempty"`
-	TLS           *helper.TLSServerConfig `mapstructure:"tls,omitempty"                   json:"tls,omitempty"                  yaml:"tls,omitempty"`
-	AddAttributes bool                    `mapstructure:"add_attributes,omitempty"        json:"add_attributes,omitempty"       yaml:"add_attributes,omitempty"`
-	Encoding      helper.EncodingConfig   `mapstructure:",squash,omitempty"               json:",inline,omitempty"              yaml:",inline,omitempty"`
-	Multiline     helper.MultilineConfig  `mapstructure:"multiline,omitempty"             json:"multiline,omitempty"            yaml:"multiline,omitempty"`
+	MaxLogSize                  helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
+	ListenAddress               string                      `mapstructure:"listen_address,omitempty"`
+	TLS                         *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
+	AddAttributes               bool                        `mapstructure:"add_attributes,omitempty"`
+	Encoding                    helper.EncodingConfig       `mapstructure:",squash,omitempty"`
+	Multiline                   helper.MultilineConfig      `mapstructure:"multiline,omitempty"`
+	PreserveLeadingWhitespaces  bool                        `mapstructure:"preserve_leading_whitespaces,omitempty"`
+	PreserveTrailingWhitespaces bool                        `mapstructure:"preserve_trailing_whitespaces,omitempty"`
 }
 
 // Build will build a tcp input operator.
@@ -95,7 +105,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	// validate the input address
 	if _, err = net.ResolveTCPAddr("tcp", c.ListenAddress); err != nil {
-		return nil, fmt.Errorf("failed to resolve listen_address: %s", err)
+		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
 	encoding, err := c.Encoding.Build()
@@ -104,7 +114,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, nil, int(c.MaxLogSize))
+	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +263,7 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 				continue
 			}
 
-			entry, err := t.NewEntry(decoded)
+			entry, err := t.NewEntry(string(decoded))
 			if err != nil {
 				t.Errorw("Failed to create entry", zap.Error(err))
 				continue
@@ -286,6 +296,9 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 
 // Stop will stop listening for log entries over TCP.
 func (t *Input) Stop() error {
+	if t.cancel == nil {
+		return nil
+	}
 	t.cancel()
 
 	if t.listener != nil {

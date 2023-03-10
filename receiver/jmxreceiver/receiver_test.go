@@ -16,7 +16,6 @@ package jmxreceiver
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -24,16 +23,17 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestReceiver(t *testing.T) {
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 	config := &Config{
 		Endpoint: "service:jmx:protocol:sap",
 		OTLPExporterConfig: otlpExporterConfig{
-			Endpoint: fmt.Sprintf("localhost:%d", testutil.GetAvailablePort(t)),
+			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
 
@@ -157,7 +157,7 @@ otel.resource.attributes = abc=123,one=two`,
 
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
-			params := componenttest.NewNopReceiverCreateSettings()
+			params := receivertest.NewNopCreateSettings()
 			receiver := newJMXMetricReceiver(params, &test.config, consumertest.NewNop())
 			jmxConfig, err := receiver.buildJMXMetricGathererConfig()
 			if test.expectedError == "" {
@@ -185,12 +185,12 @@ func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
 		{
 			"invalid OTLPExporterConfig.Endpoint host with 0 port",
 			Config{OTLPExporterConfig: otlpExporterConfig{Endpoint: ".:0"}},
-			"failed determining desired port from OTLPExporterConfig.Endpoint .:0: listen tcp: lookup .:",
+			"failed determining desired port from OTLPExporterConfig.Endpoint .:0: listen tcp: lookup .",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
-			params := componenttest.NewNopReceiverCreateSettings()
+			params := receivertest.NewNopCreateSettings()
 			jmxReceiver := newJMXMetricReceiver(params, &test.config, consumertest.NewNop())
 			otlpReceiver, err := jmxReceiver.buildOTLPReceiver()
 			require.Error(t, err)

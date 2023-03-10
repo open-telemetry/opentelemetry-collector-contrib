@@ -15,83 +15,56 @@
 package deltatorateprocessor
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-func TestLoadingFullConfig(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
-		configFile string
-		expCfg     *Config
+		id           component.ID
+		expected     component.Config
+		errorMessage string
 	}{
 		{
-			configFile: "config_full.yaml",
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			id: component.NewIDWithName(typeStr, ""),
+			expected: &Config{
 				Metrics: []string{
 					"metric1",
 					"metric2",
 				},
 			},
 		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
-			factories, err := componenttest.NopFactories()
-			assert.NoError(t, err)
-
-			factory := NewFactory()
-			factories.Processors[typeStr] = factory
-			config, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configFile), factories)
-			assert.NoError(t, err)
-			require.NotNil(t, config)
-
-			cfg := config.Processors[test.expCfg.ID()]
-			assert.Equal(t, test.expCfg, cfg)
-		})
-	}
-}
-
-func TestValidateConfig(t *testing.T) {
-	tests := []struct {
-		configName   string
-		succeed      bool
-		errorMessage string
-	}{
 		{
-			configName: "config_full.yaml",
-			succeed:    true,
-		},
-		{
-			configName:   "config_missing_name.yaml",
-			succeed:      false,
+			id:           component.NewIDWithName(typeStr, "missing_name"),
 			errorMessage: "metric names are missing",
 		},
 	}
 
-	for _, test := range tests {
-		factories, err := componenttest.NopFactories()
-		assert.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
 
-		factory := NewFactory()
-		factories.Processors[typeStr] = factory
-		t.Run(test.configName, func(t *testing.T) {
-			config, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configName), factories)
-			if test.succeed {
-				assert.NotNil(t, config)
-				assert.NoError(t, err)
-			} else {
-				assert.EqualError(t, err, fmt.Sprintf("processor %q has invalid configuration: %s", typeStr, test.errorMessage))
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			if tt.expected == nil {
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				return
 			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
 		})
-
 	}
 }

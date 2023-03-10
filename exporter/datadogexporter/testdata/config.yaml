@@ -1,77 +1,39 @@
-receivers:
-  nop:
+datadog/api:
+  hostname: customhostname
+  api:
+    key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    site: datadoghq.eu
+    fail_on_invalid_key: true
 
-processors:
-  nop:
+  traces:
+    span_name_remappings:
+      "old_name1": "new_name1"
+      "old_name2": "new_name2"
+    span_name_as_resource_name: true
 
-exporters:
-  datadog/api:
-    hostname: customhostname
-    # Deprecated; kept here to avoid regressions.
-    env: prod
-    # Deprecated; kept here to avoid regressions.
-    service: myservice
-    # Deprecated; kept here to avoid regressions.
-    version: myversion
+datadog/api2:
+  hostname: customhostname
 
-    # Deprecated; kept here to avoid regressions.
-    tags:
-      - example:tag
+  host_metadata:
+    tags: [example:tag]
 
-    api:
-      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-      site: datadoghq.eu
-      fail_on_invalid_key: true
+  api:
+    key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    site: datadoghq.eu
 
-  datadog/api2:
-    hostname: customhostname
+  metrics:
+    endpoint: https://api.datadoghq.test
 
-    host_metadata:
-      tags: [example:tag]
+  traces:
+    span_name_remappings:
+      "old_name3": "new_name3"
+      "old_name4": "new_name4"
+    endpoint: https://trace.agent.datadoghq.test
 
-    api:
-      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-      site: datadoghq.eu
+  logs:
+    endpoint: https://http-intake.logs.datadoghq.test
 
-    metrics:
-      endpoint: https://api.datadoghq.test
-      # Deprecated; kept here to avoid regressions
-      report_quantiles: false
+datadog/default:
+  api:
+    key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
-    traces:
-      endpoint: https://trace.agent.datadoghq.test
-
-  datadog/default:
-    api:
-      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-
-  datadog/hostmetadata:
-    api:
-      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    # Deprecated; kept here to test rename system
-    tags: [example:one]
-    # Deprecated; kept here to test rename system
-    send_metadata: true
-    # Deprecated; kept here to test rename system
-    use_resource_metadata: false
-
-  datadog/default2:
-
-  datadog/invalid:
-    metrics:
-      endpoint: "invalid:"
-
-    traces:
-      endpoint: "invalid:"
-
-service:
-  pipelines:
-    metrics:
-      receivers: [nop]
-      processors: [nop]
-      exporters: [datadog/api, datadog/invalid]
-
-    traces:
-      receivers: [nop]
-      processors: [nop]
-      exporters: [datadog/api, datadog/invalid]

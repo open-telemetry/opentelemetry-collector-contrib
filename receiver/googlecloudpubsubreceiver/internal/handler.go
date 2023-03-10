@@ -16,15 +16,16 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	pubsub "cloud.google.com/go/pubsub/apiv1"
-	"go.uber.org/atomic"
+	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"go.uber.org/zap"
-	pubsubpb "google.golang.org/genproto/googleapis/pubsub/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -74,7 +75,6 @@ func NewHandler(
 		clientID:     clientID,
 		subscription: subscription,
 		pushMessage:  callback,
-		acks:         make([]string, 0),
 		ackBatchWait: 10 * time.Second,
 	}
 	return &handler, handler.initStream(ctx)
@@ -160,7 +160,7 @@ func (handler *StreamHandler) acknowledgeMessages() error {
 	request := pubsubpb.StreamingPullRequest{
 		AckIds: handler.acks,
 	}
-	handler.acks = make([]string, 0)
+	handler.acks = nil
 	return handler.stream.Send(&request)
 }
 
@@ -168,7 +168,7 @@ func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.
 	timer := time.NewTimer(handler.ackBatchWait)
 	for {
 		if err := handler.acknowledgeMessages(); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				handler.logger.Warn("EOF reached")
 				break
 			}
@@ -181,7 +181,7 @@ func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.
 		case <-timer.C:
 			timer.Reset(handler.ackBatchWait)
 		}
-		if ctx.Err() == context.Canceled {
+		if errors.Is(ctx.Err(), context.Canceled) {
 			_ = handler.acknowledgeMessages()
 			timer.Stop()
 			break
@@ -211,7 +211,7 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 		} else {
 			var s, grpcStatus = status.FromError(err)
 			switch {
-			case err == io.EOF:
+			case errors.Is(err, io.EOF):
 				activeStreaming = false
 			case !grpcStatus:
 				handler.logger.Warn("response stream breaking on error",
@@ -231,7 +231,7 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 				activeStreaming = false
 			}
 		}
-		if ctx.Err() == context.Canceled {
+		if errors.Is(ctx.Err(), context.Canceled) {
 			// Canceling the loop, collector is probably stopping
 			handler.logger.Warn("response stream ctx.Err() == context.Canceled")
 			break

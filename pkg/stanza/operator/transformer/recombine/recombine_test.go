@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -60,7 +61,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"NoEntriesFirst",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
@@ -72,7 +73,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"NoEntriesLast",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
@@ -84,7 +85,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"OneEntryFirst",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
@@ -96,7 +97,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"OneEntryLast",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
@@ -108,7 +109,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"TwoEntriesLast",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'test2'"
 				cfg.OutputIDs = []string{"fake"}
@@ -123,7 +124,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"ThreeEntriesFirstNewest",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
@@ -142,7 +143,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"EntriesNonMatchingForFirstEntry",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "$body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
@@ -163,7 +164,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"EntriesMatchingForFirstEntryOneFileOnly",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "body == 'file1'"
 				cfg.OutputIDs = []string{"fake"}
@@ -189,7 +190,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"CombineWithEmptyString",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.CombineWith = ""
 				cfg.IsLastEntry = "body == 'test2'"
@@ -205,7 +206,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"TestDefaultSourceIdentifier",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
@@ -225,7 +226,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"TestCustomSourceIdentifier",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
@@ -246,7 +247,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"TestMaxSources",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
@@ -265,7 +266,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"TestMaxBatchSize",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
@@ -283,6 +284,49 @@ func TestTransformer(t *testing.T) {
 				entryWithBodyAttr(t1, "file1_event1\nend", map[string]string{"file.path": "file1"}),
 				entryWithBodyAttr(t1, "file2_event1\nfile2_event2", map[string]string{"file.path": "file2"}),
 				entryWithBodyAttr(t2, "end", map[string]string{"file.path": "file2"}),
+			},
+		},
+		{
+			"TestMaxLogSizeForLastEntry",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'end'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxLogSize = helper.ByteSize(5)
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "end", map[string]string{"file.path": "file1"}),
+			},
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "file1\nfile1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "end", map[string]string{"file.path": "file1"}),
+			},
+		},
+		{
+			"TestMaxLogSizeForFirstEntry",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "body == 'start'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxLogSize = helper.ByteSize(12)
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content2", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
+			},
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "start\ncontent1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content2", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
 			},
 		},
 	}
@@ -314,7 +358,7 @@ func TestTransformer(t *testing.T) {
 	}
 
 	t.Run("FlushesOnShutdown", func(t *testing.T) {
-		cfg := NewConfig("")
+		cfg := NewConfig()
 		cfg.CombineField = entry.NewBodyField()
 		cfg.IsFirstEntry = MatchAll
 		cfg.OutputIDs = []string{"fake"}
@@ -349,7 +393,7 @@ func TestTransformer(t *testing.T) {
 }
 
 func BenchmarkRecombine(b *testing.B) {
-	cfg := NewConfig("")
+	cfg := NewConfig()
 	cfg.CombineField = entry.NewBodyField()
 	cfg.IsFirstEntry = "false"
 	cfg.OutputIDs = []string{"fake"}
@@ -386,7 +430,7 @@ func BenchmarkRecombine(b *testing.B) {
 func TestTimeout(t *testing.T) {
 	t.Parallel()
 
-	cfg := NewConfig("")
+	cfg := NewConfig()
 	cfg.CombineField = entry.NewBodyField()
 	cfg.IsFirstEntry = MatchAll
 	cfg.OutputIDs = []string{"fake"}

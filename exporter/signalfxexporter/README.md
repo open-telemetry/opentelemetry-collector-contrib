@@ -1,13 +1,17 @@
 # SignalFx Metrics Exporter
 
+| Status                   |                                                                   |
+| ------------------------ |-------------------------------------------------------------------|
+| Stability                | [beta]                                                            |
+| Supported pipeline types | logs (events), metrics, traces (trace to metric correlation only) |
+| Distributions            | [contrib]                                                         |
+
 This exporter can be used to send metrics, events, and trace correlation to SignalFx.
 
 Apart from metrics, the exporter is also capable of sending metric metadata
 (properties and tags) to SignalFx. Currently, only metric metadata updates from
 the [k8s_cluster receiver](../../receiver/k8sclusterreceiver/README.md) are
 supported.
-
-Supported pipeline types: logs (events), metrics, traces (trace to metric correlation only)
 
 ## Metrics Configuration
 
@@ -52,7 +56,7 @@ The following configuration options can also be configured:
   excludes.
 - `include_metrics`: List of filters to override exclusion of any metrics.
   This option can be used to included metrics that are otherwise dropped by
-  default. See [here](./translation/default_metrics.go) for a list of metrics
+  default. See [here](./internal/translation/default_metrics.go) for a list of metrics
   that are dropped by default. For example, the following configuration can be
   used to send through some of that are dropped by default.
   ```yaml
@@ -81,11 +85,41 @@ The following configuration options can also be configured:
   processor is enabled in the pipeline with one of the cloud provider detectors
   or environment variable detector setting a unique value to `host.name` attribute
   within your k8s cluster. And keep `override=true` in resourcedetection config.
+- `exclude_properties`: A list of property filters to limit dimension update content.
+  Property filters can contain any number of the following fields, supporting (negated)
+  string literals, re2 `/regex/`, and [glob](https://github.com/gobwas/glob) syntax values:
+  `dimension_name`, `dimension_value`, `property_name`, and `property_value`. For any field
+  not expressly configured for each filter object, a default catch-all value of `/^.*$/` is used
+  to allow each specified field to require a match for the filter to take effect:
+  ```yaml
+  # will filter all 'k8s.workload.name' properties from 'k8s.pod.uid' dimension updates:
+  exclude_properties:
+    - dimension_name: k8s.pod.uid
+      property_name: k8s.workload.name
+  ```
 - `nonalphanumeric_dimension_chars`: (default = `"_-."`) A string of characters 
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
 will be replaced with a `_`.
-- `max_connections` (default = 100):  The maximum number of idle HTTP connection the exporter can keep open.
+- `max_connections` (default = 100):  The maximum number of idle HTTP connections the exporter can keep open. Deprecated: use `max_idle_conns` or `max_idle_conns_per_host` instead. See [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md) for more info.
+- `ingest_tls`: (no default) exposes a list of TLS settings to establish a secure connection with signafx receiver configured on another collector instance.
+  - `ca_file` needs to be set if the exporter's `ingest_url` is pointing to a signalfx receiver
+  with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
+  Full list of TLS options can be found in the configtls [README](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls#client-configuration) 
+  The following example instructs the signalfx exporter ingest client to use a custom `ca_file` to verify the server certificate.
+  ```yaml
+  ingest_tls:
+      ca_file: "/etc/opt/certs/ca.pem"
+  ```
+- `api_tls`: (no default) exposes a list of TLS settings to establish a secure connection with http_forwarder extension configured on another collector instance.
+  - `ca_file` needs to be set if the exporter's `api_url` is pointing to a http_forwarder extension
+  with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
+  Full list of TLS options can be found in the configtls [README](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls#client-configuration)
+  The following example instructs the signalfx exporter api client to use a custom `ca_file` to verify the server certificate.
+  ```yaml
+  api_tls:
+      ca_file: "/etc/opt/certs/ca.pem"
+  ```
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
@@ -166,7 +200,7 @@ The rule language is expressed in yaml mappings and is [documented here](./inter
 * `rename_metrics` - Replaces a given metric name with specified one
 * `split_metric` - Splits a given metric into multiple new ones for a specified dimension
 
-The translation rules defined in [`translation/constants.go`](./internal/translation/constants.go) are used by default for this value.  The default rules will create the following aggregated metrics from the [`hostmetrics` receiver](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/hostmetricsreceiver/README.md):
+The translation rules defined in [`translation/constants.go`](./internal/translation/constants.go) are used by default for this value.  The default rules will create the following aggregated metrics from the [`hostmetrics` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md):
 
 * cpu.idle
 * cpu.interrupt
@@ -221,7 +255,7 @@ exporters:
       dot.test: test
     realm: us1
     timeout: 5s
-    max_connections: 80
+    max_idle_conns: 80
 ```
 
 > :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
@@ -248,3 +282,14 @@ with detailed sample configurations [here](testdata/config.yaml).
 
 This exporter also offers proxy support as documented
 [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+
+## Advanced Configuration
+
+Several helper files are leveraged to provide additional capabilities automatically:
+
+- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
+- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
+- [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

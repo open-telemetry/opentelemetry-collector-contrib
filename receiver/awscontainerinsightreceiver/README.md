@@ -1,7 +1,14 @@
 # AWS Container Insights Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 ## Overview
-AWS Container Insights Receiver (`awscontainerinsightreceiver`) is an AWS specific receiver that supports [CloudWatch Container Insights]((https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html)). CloudWatch Container Insights collect, aggregate, 
+
+AWS Container Insights Receiver (`awscontainerinsightreceiver`) is an AWS specific receiver that supports [CloudWatch Container Insights](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html). CloudWatch Container Insights collect, aggregate, 
 and summarize metrics and logs from your containerized applications and microservices. Data are collected as as performance log events 
 using [embedded metric format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format.html). From the EMF data, Amazon CloudWatch can create the aggregated CloudWatch metrics at the cluster, node, pod, task, and service level.
 
@@ -265,6 +272,9 @@ spec:
             - name: varlibdocker
               mountPath: /var/lib/docker
               readOnly: true
+            - name: containerdsock
+              mountPath: /run/containerd/containerd.sock
+              readOnly: true
             - name: sys
               mountPath: /sys
               readOnly: true
@@ -296,6 +306,9 @@ spec:
         - name: varlibdocker
           hostPath:
             path: /var/lib/docker
+        - name: containerdsock
+          hostPath:
+            path: /run/containerd/containerd.sock
         - name: sys
           hostPath:
             path: /sys
@@ -855,3 +868,6 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | EBSVolumeId          |
 <br/><br/>
 <br/><br/>
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

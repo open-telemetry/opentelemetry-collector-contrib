@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 
 import (
@@ -22,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -51,16 +51,31 @@ const (
 	TimingTypeName    TypeName = "timing"
 	TimingAltTypeName TypeName = "timer"
 
-	GaugeObserver   ObserverType = "gauge"
-	SummaryObserver ObserverType = "summary"
-	DisableObserver ObserverType = "disabled"
+	GaugeObserver     ObserverType = "gauge"
+	SummaryObserver   ObserverType = "summary"
+	HistogramObserver ObserverType = "histogram"
+	DisableObserver   ObserverType = "disabled"
 
 	DefaultObserverType = DisableObserver
 )
 
 type TimerHistogramMapping struct {
-	StatsdType   TypeName     `mapstructure:"statsd_type"`
-	ObserverType ObserverType `mapstructure:"observer_type"`
+	StatsdType   TypeName        `mapstructure:"statsd_type"`
+	ObserverType ObserverType    `mapstructure:"observer_type"`
+	Histogram    HistogramConfig `mapstructure:"histogram"`
+}
+
+type HistogramConfig struct {
+	MaxSize int32 `mapstructure:"max_size"`
+}
+
+type ObserverCategory struct {
+	method          ObserverType
+	histogramConfig structure.Config
+}
+
+var defaultObserverCategory = ObserverCategory{
+	method: DefaultObserverType,
 }
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
@@ -68,15 +83,16 @@ type StatsDParser struct {
 	gauges                 map[statsDMetricDescription]pmetric.ScopeMetrics
 	counters               map[statsDMetricDescription]pmetric.ScopeMetrics
 	summaries              map[statsDMetricDescription]summaryMetric
+	histograms             map[statsDMetricDescription]histogramMetric
 	timersAndDistributions []pmetric.ScopeMetrics
 	enableMetricType       bool
 	isMonotonicCounter     bool
-	observeTimer           ObserverType
-	observeHistogram       ObserverType
+	timerEvents            ObserverCategory
+	histogramEvents        ObserverCategory
 	lastIntervalTime       time.Time
 }
 
-type summaryRaw struct {
+type sampleValue struct {
 	value float64
 	count float64
 }
@@ -84,6 +100,12 @@ type summaryRaw struct {
 type summaryMetric struct {
 	points  []float64
 	weights []float64
+}
+
+type histogramStructure = structure.Histogram[float64]
+
+type histogramMetric struct {
+	agg *histogramStructure
 }
 
 type statsDMetric struct {
@@ -114,27 +136,42 @@ func (t MetricType) FullName() TypeName {
 	return TypeName(fmt.Sprintf("unknown(%s)", t))
 }
 
-func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error {
-	p.lastIntervalTime = timeNowFunc()
+func (p *StatsDParser) resetState(when time.Time) {
+	p.lastIntervalTime = when
 	p.gauges = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
 	p.counters = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
-	p.timersAndDistributions = make([]pmetric.ScopeMetrics, 0)
+	p.timersAndDistributions = nil
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
+	p.histograms = make(map[statsDMetricDescription]histogramMetric)
+}
 
-	p.observeHistogram = DefaultObserverType
-	p.observeTimer = DefaultObserverType
+func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error {
+	p.resetState(timeNowFunc())
+
+	p.histogramEvents = defaultObserverCategory
+	p.timerEvents = defaultObserverCategory
 	p.enableMetricType = enableMetricType
 	p.isMonotonicCounter = isMonotonicCounter
-	// Note: validation occurs in ("../".Config).vaidate()
+	// Note: validation occurs in ("../".Config).validate()
 	for _, eachMap := range sendTimerHistogram {
 		switch eachMap.StatsdType {
 		case HistogramTypeName:
-			p.observeHistogram = eachMap.ObserverType
+			p.histogramEvents.method = eachMap.ObserverType
+			p.histogramEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 		case TimingTypeName, TimingAltTypeName:
-			p.observeTimer = eachMap.ObserverType
+			p.timerEvents.method = eachMap.ObserverType
+			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 		}
 	}
 	return nil
+}
+
+func expoHistogramConfig(opts HistogramConfig) structure.Config {
+	var r []structure.Option
+	if opts.MaxSize >= structure.MinSize {
+		r = append(r, structure.WithMaxSize(opts.MaxSize))
+	}
+	return structure.NewConfig(r...)
 }
 
 // GetMetrics gets the metrics preparing for flushing and reset the state.
@@ -146,11 +183,14 @@ func (p *StatsDParser) GetMetrics() pmetric.Metrics {
 		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
-	for _, metric := range p.counters {
+	for _, metric := range p.timersAndDistributions {
 		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
-	for _, metric := range p.timersAndDistributions {
+	now := timeNowFunc()
+
+	for _, metric := range p.counters {
+		setTimestampsForCounterMetric(metric, p.lastIntervalTime, now)
 		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
@@ -159,31 +199,35 @@ func (p *StatsDParser) GetMetrics() pmetric.Metrics {
 			desc,
 			summaryMetric,
 			p.lastIntervalTime,
-			timeNowFunc(),
+			now,
 			statsDDefaultPercentiles,
 			rm.ScopeMetrics().AppendEmpty(),
 		)
 	}
 
-	p.gauges = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
-	p.counters = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
-	p.timersAndDistributions = make([]pmetric.ScopeMetrics, 0)
-	p.summaries = make(map[statsDMetricDescription]summaryMetric)
+	for desc, histogramMetric := range p.histograms {
+		buildHistogramMetric(
+			desc,
+			histogramMetric,
+			p.lastIntervalTime,
+			now,
+			rm.ScopeMetrics().AppendEmpty(),
+		)
+	}
+	p.resetState(now)
 	return metrics
 }
 
-var timeNowFunc = func() time.Time {
-	return time.Now()
-}
+var timeNowFunc = time.Now
 
-func (p *StatsDParser) observerTypeFor(t MetricType) ObserverType {
+func (p *StatsDParser) observerCategoryFor(t MetricType) ObserverCategory {
 	switch t {
 	case HistogramType:
-		return p.observeHistogram
+		return p.histogramEvents
 	case TimingType:
-		return p.observeTimer
+		return p.timerEvents
 	}
-	return DisableObserver
+	return defaultObserverCategory
 }
 
 // Aggregate for each metric line.
@@ -200,7 +244,7 @@ func (p *StatsDParser) Aggregate(line string) error {
 		} else {
 			if parsedMetric.addition {
 				point := p.gauges[parsedMetric.description].Metrics().At(0).Gauge().DataPoints().At(0)
-				point.SetDoubleVal(point.DoubleVal() + parsedMetric.gaugeValue())
+				point.SetDoubleValue(point.DoubleValue() + parsedMetric.gaugeValue())
 			} else {
 				p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 			}
@@ -209,20 +253,19 @@ func (p *StatsDParser) Aggregate(line string) error {
 	case CounterType:
 		_, ok := p.counters[parsedMetric.description]
 		if !ok {
-			timeNow := timeNowFunc()
-			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNow, p.lastIntervalTime)
-			p.lastIntervalTime = timeNow
+			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter)
 		} else {
 			point := p.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
-			point.SetIntVal(point.IntVal() + parsedMetric.counterValue())
+			point.SetIntValue(point.IntValue() + parsedMetric.counterValue())
 		}
 
 	case TimingType, HistogramType:
-		switch p.observerTypeFor(parsedMetric.description.metricType) {
+		category := p.observerCategoryFor(parsedMetric.description.metricType)
+		switch category.method {
 		case GaugeObserver:
 			p.timersAndDistributions = append(p.timersAndDistributions, buildGaugeMetric(parsedMetric, timeNowFunc()))
 		case SummaryObserver:
-			raw := parsedMetric.summaryValue()
+			raw := parsedMetric.sampleValue()
 			if existing, ok := p.summaries[parsedMetric.description]; !ok {
 				p.summaries[parsedMetric.description] = summaryMetric{
 					points:  []float64{raw.value},
@@ -234,6 +277,24 @@ func (p *StatsDParser) Aggregate(line string) error {
 					weights: append(existing.weights, raw.count),
 				}
 			}
+		case HistogramObserver:
+			raw := parsedMetric.sampleValue()
+			var agg *histogramStructure
+			if existing, ok := p.histograms[parsedMetric.description]; ok {
+				agg = existing.agg
+			} else {
+				agg = new(histogramStructure)
+				agg.Init(category.histogramConfig)
+
+				p.histograms[parsedMetric.description] = histogramMetric{
+					agg: agg,
+				}
+			}
+			agg.UpdateByIncr(
+				raw.value,
+				uint64(raw.count), // Note! Rounding float64 to uint64 here.
+			)
+
 		case DisableObserver:
 			// No action.
 		}
@@ -280,7 +341,8 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 	var kvs []attribute.KeyValue
 
 	for _, part := range additionalParts {
-		if strings.HasPrefix(part, "@") {
+		switch {
+		case strings.HasPrefix(part, "@"):
 			sampleRateStr := strings.TrimPrefix(part, "@")
 
 			f, err := strconv.ParseFloat(sampleRateStr, 64)
@@ -289,20 +351,21 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 			}
 
 			result.sampleRate = f
-		} else if strings.HasPrefix(part, "#") {
+		case strings.HasPrefix(part, "#"):
 			tagsStr := strings.TrimPrefix(part, "#")
 
 			tagSets := strings.Split(tagsStr, ",")
 
 			for _, tagSet := range tagSets {
-				tagParts := strings.Split(tagSet, ":")
+				tagParts := strings.SplitN(tagSet, ":", 2)
 				if len(tagParts) != 2 {
 					return result, fmt.Errorf("invalid tag format: %s", tagParts)
 				}
-				kvs = append(kvs, attribute.String(tagParts[0], tagParts[1]))
+				k := tagParts[0]
+				v := tagParts[1]
+				kvs = append(kvs, attribute.String(k, v))
 			}
-
-		} else {
+		default:
 			return result, fmt.Errorf("unrecognized message part: %s", part)
 		}
 	}

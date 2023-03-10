@@ -19,49 +19,54 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-const exporterType = "tanzuobservability"
+const (
+	exporterType = "tanzuobservability"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
+)
 
 // NewFactory creates a factory for the exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		exporterType,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(exporterType)),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 	}
 }
 
 // createTracesExporter implements exporterhelper.CreateTracesExporter and creates
 // an exporter for traces using this configuration
 func createTracesExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.TracesExporter, error) {
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
 	exp, err := newTracesExporter(set, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	tobsCfg := cfg.(*Config)
+	tobsCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid config: %#v", cfg)
+	}
 
 	return exporterhelper.NewTracesExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		exp.pushTraceData,
 		exporterhelper.WithQueue(tobsCfg.QueueSettings),
 		exporterhelper.WithRetry(tobsCfg.RetrySettings),
@@ -70,20 +75,23 @@ func createTracesExporter(
 }
 
 func createMetricsExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.MetricsExporter, error) {
-	exp, err := newMetricsExporter(set, cfg, createMetricsConsumer)
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
+	tobsCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid config: %#v", cfg)
+	}
+	exp, err := newMetricsExporter(set, tobsCfg, createMetricsConsumer)
 	if err != nil {
 		return nil, err
 	}
 
-	tobsCfg := cfg.(*Config)
-
 	exporter, err := exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		exp.pushMetricsData,
 		exporterhelper.WithQueue(tobsCfg.QueueSettings),
 		exporterhelper.WithRetry(tobsCfg.RetrySettings),
@@ -92,12 +100,6 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	ourConfig, ok := cfg.(*Config)
-	if !ok {
-		return nil, fmt.Errorf("invalid config: %#v", cfg)
-	}
-	return resourcetotelemetry.WrapMetricsExporter(
-		ourConfig.Metrics.ResourceAttributes,
-		exporter,
-	), nil
+
+	return exporter, nil
 }

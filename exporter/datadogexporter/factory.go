@@ -17,22 +17,23 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/trace/agent"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -41,30 +42,73 @@ const (
 	typeStr = "datadog"
 )
 
+var mertricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.metricexportnativeclient",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
+)
+
+// isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
+func isMetricExportV2Enabled() bool {
+	return mertricExportNativeClientFeatureGate.IsEnabled()
+}
+
+// enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
+func enableNativeMetricExport() error {
+	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), true)
+}
+
+// enableZorkianMetricExport switches metric export to call Zorkian APIs instead of native Datadog APIs.
+func enableZorkianMetricExport() error {
+	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), false)
+}
+
 type factory struct {
 	onceMetadata sync.Once
 
-	onceProvider sync.Once
-	hostProvider provider.HostnameProvider
-	providerErr  error
+	onceProvider   sync.Once
+	sourceProvider source.Provider
+	providerErr    error
+
+	wg sync.WaitGroup // waits for agent to exit
+
+	registry *featuregate.Registry
 }
 
-func (f *factory) HostnameProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
+func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
 	f.onceProvider.Do(func() {
-		f.hostProvider, f.providerErr = metadata.GetHostnameProvider(set, configHostname)
+		f.sourceProvider, f.providerErr = hostmetadata.GetSourceProvider(set, configHostname)
 	})
-	return f.hostProvider, f.providerErr
+	return f.sourceProvider, f.providerErr
+}
+
+func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
+	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider)
+	if err != nil {
+		return nil, err
+	}
+	f.wg.Add(1)
+	go func() {
+		defer f.wg.Done()
+		agnt.Run()
+	}()
+	return agnt, nil
+}
+
+func newFactoryWithRegistry(registry *featuregate.Registry) exporter.Factory {
+	f := &factory{registry: registry}
+	return exporter.NewFactory(
+		typeStr,
+		f.createDefaultConfig,
+		exporter.WithMetrics(f.createMetricsExporter, component.StabilityLevelBeta),
+		exporter.WithTraces(f.createTracesExporter, component.StabilityLevelBeta),
+		exporter.WithLogs(f.createLogsExporter, component.StabilityLevelAlpha),
+	)
 }
 
 // NewFactory creates a Datadog exporter factory
-func NewFactory() component.ExporterFactory {
-	f := &factory{}
-	return component.NewExporterFactory(
-		typeStr,
-		f.createDefaultConfig,
-		component.WithMetricsExporter(f.createMetricsExporter),
-		component.WithTracesExporter(f.createTracesExporter),
-	)
+func NewFactory() exporter.Factory {
+	return newFactoryWithRegistry(featuregate.GlobalRegistry())
 }
 
 func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
@@ -74,89 +118,93 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 }
 
 // createDefaultConfig creates the default exporter configuration
-// TODO (#8396): Remove `os.Getenv` everywhere.
-func (*factory) createDefaultConfig() config.Exporter {
-	return &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+func (f *factory) createDefaultConfig() component.Config {
+	hostnameSource := HostnameSourceFirstResource
+	if hostmetadata.HostnamePreviewFeatureGate.IsEnabled() {
+		hostnameSource = HostnameSourceConfigOrSystem
+	}
 
-		API: ddconfig.APIConfig{
-			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API
-			Site: os.Getenv("DD_SITE"),    // If not provided, set during config sanitization
+	return &Config{
+		TimeoutSettings: defaulttimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+
+		API: APIConfig{
+			Site: "datadoghq.com",
 		},
 
-		TagsConfig: ddconfig.TagsConfig{
-			Hostname:   os.Getenv("DD_HOST"),
-			Env:        os.Getenv("DD_ENV"),
-			Service:    os.Getenv("DD_SERVICE"),
-			Version:    os.Getenv("DD_VERSION"),
-			EnvVarTags: os.Getenv("DD_TAGS"), // Only taken into account if Tags is not set
-		},
-
-		Metrics: ddconfig.MetricsConfig{
+		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: os.Getenv("DD_URL"), // If not provided, set during config sanitization
+				Endpoint: "https://api.datadoghq.com",
 			},
-			SendMonotonic: true,
-			DeltaTTL:      3600,
-			Quantiles:     true,
-			ExporterConfig: ddconfig.MetricsExporterConfig{
-				ResourceAttributesAsTags:             false,
-				InstrumentationLibraryMetadataAsTags: false,
+			DeltaTTL: 3600,
+			ExporterConfig: MetricsExporterConfig{
+				ResourceAttributesAsTags:           false,
+				InstrumentationScopeMetadataAsTags: false,
 			},
-			HistConfig: ddconfig.HistogramConfig{
+			HistConfig: HistogramConfig{
 				Mode:         "distributions",
 				SendCountSum: false,
 			},
-			SumConfig: ddconfig.SumConfig{
-				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
-			SummaryConfig: ddconfig.SummaryConfig{
-				Mode: ddconfig.SummaryModeGauges,
+			SummaryConfig: SummaryConfig{
+				Mode: SummaryModeGauges,
 			},
 		},
 
-		Traces: ddconfig.TracesConfig{
+		Traces: TracesConfig{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: os.Getenv("DD_APM_URL"), // If not provided, set during config sanitization
+				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 			IgnoreResources: []string{},
 		},
 
-		HostMetadata: ddconfig.HostMetadataConfig{
-			Enabled:        true,
-			HostnameSource: ddconfig.HostnameSourceFirstResource,
+		Logs: LogsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://http-intake.logs.datadoghq.com",
+			},
 		},
 
-		SendMetadata:        true,
-		UseResourceMetadata: true,
+		HostMetadata: HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: hostnameSource,
+		},
 	}
+}
+
+// checkAndCastConfig checks the configuration type and its warnings, and casts it to
+// the Datadog Config struct.
+func checkAndCastConfig(c component.Config) *Config {
+	cfg, ok := c.(*Config)
+	if !ok {
+		panic("programming error: config structure is not of type *datadogexporter.Config")
+	}
+	return cfg
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
 func (f *factory) createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	c config.Exporter,
-) (component.MetricsExporter, error) {
+	set exporter.CreateSettings,
+	c component.Config,
+) (exporter.Metrics, error) {
+	cfg := checkAndCastConfig(c)
 
-	cfg := c.(*ddconfig.Config)
-
-	set.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(set.Logger); err != nil {
-		return nil, err
-	}
-
-	hostProvider, err := f.HostnameProvider(set.TelemetrySettings, cfg.Hostname)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
+	// cancel() runs on shutdown
 	var pushMetricsFn consumer.ConsumeMetricsFunc
-
+	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
+	}
 	if cfg.OnlyMetadata {
 		pushMetricsFn = func(_ context.Context, md pmetric.Metrics) error {
 			// only sending metadata use only metrics
@@ -165,23 +213,25 @@ func (f *factory) createMetricsExporter(
 				if md.ResourceMetrics().Len() > 0 {
 					attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 				}
-				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), hostProvider, attrs)
+				go hostmetadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), hostProvider, attrs)
 			})
 
 			return nil
 		}
 	} else {
-		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
+		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent)
 		if metricsErr != nil {
-			cancel()
+			cancel()    // first cancel context
+			f.wg.Wait() // then wait for shutdown
 			return nil, metricsErr
 		}
 		pushMetricsFn = exp.PushMetricsDataScrubbed
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		pushMetricsFn,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
@@ -203,55 +253,111 @@ func (f *factory) createMetricsExporter(
 // createTracesExporter creates a trace exporter based on this config.
 func (f *factory) createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	c config.Exporter,
-) (component.TracesExporter, error) {
+	set exporter.CreateSettings,
+	c component.Config,
+) (exporter.Traces, error) {
+	cfg := checkAndCastConfig(c)
 
-	cfg := c.(*ddconfig.Config)
+	var (
+		pusher consumer.ConsumeTracesFunc
+		stop   component.ShutdownFunc
+	)
 
-	set.Logger.Info("sanitizing Datadog traces exporter configuration")
-	if err := cfg.Sanitize(set.Logger); err != nil {
-		return nil, err
-	}
-
-	hostProvider, err := f.HostnameProvider(set.TelemetrySettings, cfg.Hostname)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
-
 	ctx, cancel := context.WithCancel(ctx)
-	var pushTracesFn consumer.ConsumeTracesFunc
-
+	// cancel() runs on shutdown
+	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
+	}
 	if cfg.OnlyMetadata {
-		pushTracesFn = func(_ context.Context, td ptrace.Traces) error {
-			// only sending metadata, use only attributes
+		// only host metadata needs to be sent, once.
+		pusher = func(_ context.Context, td ptrace.Traces) error {
 			f.onceMetadata.Do(func() {
 				attrs := pcommon.NewMap()
 				if td.ResourceSpans().Len() > 0 {
 					attrs = td.ResourceSpans().At(0).Resource().Attributes()
 				}
-				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), hostProvider, attrs)
+				go hostmetadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), hostProvider, attrs)
 			})
-
+			return nil
+		}
+		stop = func(context.Context) error {
+			cancel()
 			return nil
 		}
 	} else {
-		exporter, tracesErr := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
-		if tracesErr != nil {
+		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent)
+		if err2 != nil {
 			cancel()
-			return nil, tracesErr
+			return nil, err2
 		}
-		pushTracesFn = exporter.pushTraceDataScrubbed
+		pusher = tracex.consumeTraces
+		stop = func(context.Context) error {
+			cancel()    // first cancel context
+			f.wg.Wait() // then wait for shutdown
+			return nil
+		}
 	}
 
 	return exporterhelper.NewTracesExporter(
-		cfg,
+		ctx,
 		set,
-		pushTracesFn,
+		cfg,
+		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
 		// We don't do retries on traces because of deduping concerns on APM Events.
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithShutdown(stop),
+	)
+}
+
+// createLogsExporter creates a logs exporter based on the config.
+func (f *factory) createLogsExporter(
+	ctx context.Context,
+	set exporter.CreateSettings,
+	c component.Config,
+) (exporter.Logs, error) {
+	cfg := checkAndCastConfig(c)
+
+	var pusher consumer.ConsumeLogsFunc
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	// cancel() runs on shutdown
+	if cfg.OnlyMetadata {
+		// only host metadata needs to be sent, once.
+		pusher = func(_ context.Context, td plog.Logs) error {
+			f.onceMetadata.Do(func() {
+				attrs := pcommon.NewMap()
+				go hostmetadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), hostProvider, attrs)
+			})
+			return nil
+		}
+	} else {
+		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
+		if err != nil {
+			cancel()
+			return nil, err
+		}
+		pusher = exp.consumeLogs
+	}
+	return exporterhelper.NewLogsExporter(
+		ctx,
+		set,
+		cfg,
+		pusher,
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
+		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()

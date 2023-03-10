@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
@@ -31,7 +32,7 @@ type xrayProxy struct {
 	server proxy.Server
 }
 
-var _ component.Extension = (*xrayProxy)(nil)
+var _ extension.Extension = (*xrayProxy)(nil)
 
 func (x xrayProxy) Start(ctx context.Context, host component.Host) error {
 	go func() {
@@ -47,7 +48,7 @@ func (x xrayProxy) Shutdown(ctx context.Context) error {
 	return x.server.Shutdown(ctx)
 }
 
-func newXrayProxy(config *Config, logger *zap.Logger) (component.Extension, error) {
+func newXrayProxy(config *Config, logger *zap.Logger) (extension.Extension, error) {
 	srv, err := proxy.NewServer(&config.ProxyConfig, logger)
 
 	if err != nil {

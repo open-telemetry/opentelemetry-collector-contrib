@@ -23,6 +23,8 @@ import (
 	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/signalfx/signalfx-agent/pkg/apm/tracetracker"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
@@ -35,11 +37,11 @@ type Tracker struct {
 	once         sync.Once
 	log          *zap.Logger
 	cfg          *Config
-	params       component.ExporterCreateSettings
+	params       exporter.CreateSettings
 	traceTracker *tracetracker.ActiveServiceTracker
 	pTicker      timeutils.TTicker
 	correlation  *correlationContext
-	accessToken  string
+	accessToken  configopaque.String
 }
 
 type correlationContext struct {
@@ -48,7 +50,7 @@ type correlationContext struct {
 }
 
 // NewTracker creates a new tracker instance for correlation.
-func NewTracker(cfg *Config, accessToken string, params component.ExporterCreateSettings) *Tracker {
+func NewTracker(cfg *Config, accessToken configopaque.String, params exporter.CreateSettings) *Tracker {
 	return &Tracker{
 		log:         params.Logger,
 		cfg:         cfg,
@@ -57,30 +59,30 @@ func NewTracker(cfg *Config, accessToken string, params component.ExporterCreate
 	}
 }
 
-func newCorrelationClient(cfg *Config, accessToken string, params component.ExporterCreateSettings, host component.Host) (
+func newCorrelationClient(cfg *Config, accessToken configopaque.String, params exporter.CreateSettings, host component.Host) (
 	*correlationContext, error,
 ) {
-	corrURL, err := url.Parse(cfg.Endpoint)
+	corrURL, err := url.Parse(cfg.HTTPClientSettings.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %v", cfg.Endpoint, err)
+		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.HTTPClientSettings.Endpoint, err)
 	}
 
-	httpClient, err := cfg.ToClient(host.GetExtensions(), params.TelemetrySettings)
+	httpClient, err := cfg.ToClient(host, params.TelemetrySettings)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create correlation API client: %v", err)
+		return nil, fmt.Errorf("failed to create correlation API client: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	client, err := correlations.NewCorrelationClient(newZapShim(params.Logger), ctx, httpClient, correlations.ClientConfig{
 		Config:      cfg.Config,
-		AccessToken: accessToken,
+		AccessToken: string(accessToken),
 		URL:         corrURL,
 	})
 
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("failed to create correlation client: %v", err)
+		return nil, fmt.Errorf("failed to create correlation client: %w", err)
 	}
 
 	return &correlationContext{

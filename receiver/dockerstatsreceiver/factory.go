@@ -19,23 +19,35 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 const (
-	typeStr = "docker_stats"
+	typeStr   = "docker_stats"
+	stability = component.StabilityLevelAlpha
 )
 
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"receiver.dockerstats.useScraperV2",
+	featuregate.StageStable,
+	featuregate.WithRegisterDescription("When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794"),
+	featuregate.WithRegisterRemovalVersion("0.74.0"),
+)
+
+func NewFactory() rcvr.Factory {
+	return rcvr.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		rcvr.WithMetrics(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	scs := scraperhelper.NewDefaultScraperControllerSettings(typeStr)
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
@@ -43,21 +55,23 @@ func createDefaultConfig() config.Receiver {
 		Endpoint:                  "unix:///var/run/docker.sock",
 		Timeout:                   5 * time.Second,
 		DockerAPIVersion:          defaultDockerAPIVersion,
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
 func createMetricsReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateSettings,
-	config config.Receiver,
+	_ context.Context,
+	params rcvr.CreateSettings,
+	config component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (rcvr.Metrics, error) {
 	dockerConfig := config.(*Config)
+	dsr := newReceiver(params, dockerConfig)
 
-	dsr, err := NewReceiver(ctx, params, dockerConfig, consumer)
+	scrp, err := scraperhelper.NewScraper(typeStr, dsr.scrapeV2, scraperhelper.WithStart(dsr.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return dsr, nil
+	return scraperhelper.NewScraperControllerReceiver(&dsr.config.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scrp))
 }

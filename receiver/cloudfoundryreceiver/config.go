@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
@@ -48,9 +47,8 @@ type UAAConfig struct {
 
 // Config defines configuration for Collectd receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	RLPGateway              RLPGatewayConfig `mapstructure:"rlp_gateway"`
-	UAA                     UAAConfig        `mapstructure:"uaa"`
+	RLPGateway RLPGatewayConfig `mapstructure:"rlp_gateway"`
+	UAA        UAAConfig        `mapstructure:"uaa"`
 }
 
 func (c *Config) Validate() error {
@@ -82,7 +80,7 @@ func validateURLOption(name string, value string) error {
 
 	_, err := url.Parse(value)
 	if err != nil {
-		return fmt.Errorf("failed to parse %s as url: %v", name, err)
+		return fmt.Errorf("failed to parse %s as url: %w", name, err)
 	}
 
 	return nil

@@ -1,0 +1,24 @@
+{
+  "resourceMetrics": [
+    {
+      "scopeMetrics": [
+        {
+          "metrics": [
+            {
+              "name": "exponential_histogram.one",
+              "exponentialHistogram": {
+                "dataPoints": [
+                  {
+                    "negative": {
+                      "offset": 1
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

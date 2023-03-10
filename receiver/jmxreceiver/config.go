@@ -25,14 +25,12 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
 	// The path for the JMX Metric Gatherer uber JAR (/opt/opentelemetry-java-contrib-jmx-metrics.jar by default).
 	JARPath string `mapstructure:"jar_path"`
 	// The Service URL or host:port for the target coerced to one of form: service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
@@ -162,7 +160,7 @@ func testLevel(logger *zap.Logger, level zapcore.Level) bool {
 
 // parseClasspath creates a classpath string with the JMX Gatherer JAR at the beginning
 func (c *Config) parseClasspath() string {
-	classPathElems := make([]string, 0)
+	var classPathElems []string
 
 	// Add JMX JAR to classpath
 	classPathElems = append(classPathElems, c.JARPath)
@@ -227,7 +225,7 @@ func initAdditionalTargetSystems() {
 	}
 }
 
-func (c *Config) validate() error {
+func (c *Config) Validate() error {
 	var missingFields []string
 	if c.JARPath == "" {
 		missingFields = append(missingFields, "`jar_path`")
@@ -238,47 +236,40 @@ func (c *Config) validate() error {
 	if c.TargetSystem == "" {
 		missingFields = append(missingFields, "`target_system`")
 	}
-	if c.JARPath == "" {
-		missingFields = append(missingFields, "`jar_path`")
-	}
 	if missingFields != nil {
-		baseMsg := fmt.Sprintf("%v missing required field", c.ID())
-		if len(missingFields) > 1 {
-			baseMsg += "s"
-		}
-		return fmt.Errorf("%v: %v", baseMsg, strings.Join(missingFields, ", "))
+		return fmt.Errorf("missing required field(s): %v", strings.Join(missingFields, ", "))
 	}
 
 	err := c.validateJar(jmxMetricsGathererVersions, c.JARPath)
 	if err != nil {
-		return fmt.Errorf("%v error validating `jar_path`: %w", c.ID(), err)
+		return fmt.Errorf("invalid `jar_path`: %w", err)
 	}
 
 	for _, additionalJar := range c.AdditionalJars {
 		err := c.validateJar(wildflyJarVersions, additionalJar)
 		if err != nil {
-			return fmt.Errorf("%v error validating `additional_jars`. Additional Jar should be a jboss-client.jar from Wildfly, "+
-				"no other integrations require additional jars at this time: %w", c.ID(), err)
+			return fmt.Errorf("invalid `additional_jars`. Additional Jar should be a jboss-client.jar from Wildfly, "+
+				"no other integrations require additional jars at this time: %w", err)
 		}
 	}
 
 	if c.CollectionInterval < 0 {
-		return fmt.Errorf("%v `interval` must be positive: %vms", c.ID(), c.CollectionInterval.Milliseconds())
+		return fmt.Errorf("`interval` must be positive: %vms", c.CollectionInterval.Milliseconds())
 	}
 
 	if c.OTLPExporterConfig.Timeout < 0 {
-		return fmt.Errorf("%v `otlp.timeout` must be positive: %vms", c.ID(), c.OTLPExporterConfig.Timeout.Milliseconds())
+		return fmt.Errorf("`otlp.timeout` must be positive: %vms", c.OTLPExporterConfig.Timeout.Milliseconds())
 	}
 
 	if len(c.LogLevel) > 0 {
 		if _, ok := validLogLevels[strings.ToLower(c.LogLevel)]; !ok {
-			return fmt.Errorf("%v `log_level` must be one of %s", c.ID(), listKeys(validLogLevels))
+			return fmt.Errorf("`log_level` must be one of %s", listKeys(validLogLevels))
 		}
 	}
 
 	for _, system := range strings.Split(c.TargetSystem, ",") {
 		if _, ok := validTargetSystems[strings.ToLower(system)]; !ok {
-			return fmt.Errorf("%v `target_system` list may only be a subset of %s", c.ID(), listKeys(validTargetSystems))
+			return fmt.Errorf("`target_system` list may only be a subset of %s", listKeys(validTargetSystems))
 		}
 	}
 

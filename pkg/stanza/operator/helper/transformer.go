@@ -36,9 +36,9 @@ func NewTransformerConfig(operatorID, operatorType string) TransformerConfig {
 
 // TransformerConfig provides a basic implementation of a transformer config.
 type TransformerConfig struct {
-	WriterConfig `mapstructure:",squash"  yaml:",inline"`
-	OnError      string `mapstructure:"on_error" json:"on_error" yaml:"on_error"`
-	IfExpr       string `mapstructure:"if"       json:"if"       yaml:"if"`
+	WriterConfig `mapstructure:",squash"`
+	OnError      string `mapstructure:"on_error"`
+	IfExpr       string `mapstructure:"if"`
 }
 
 // Build will build a transformer operator.
@@ -124,7 +124,7 @@ func (t *TransformerOperator) Skip(ctx context.Context, entry *entry.Entry) (boo
 
 	matches, err := vm.Run(t.IfExpr, env)
 	if err != nil {
-		return false, fmt.Errorf("running if expr: %s", err)
+		return false, fmt.Errorf("running if expr: %w", err)
 	}
 
 	return !matches.(bool), nil

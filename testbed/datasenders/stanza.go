@@ -17,7 +17,6 @@ package datasenders // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
@@ -31,9 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-// TODO: Extract common bits from FileLogWriter and NewFluentBitFileLogWriter
-// and generalize as FileLogWriter.
-
 type FileLogWriter struct {
 	file *os.File
 }
@@ -44,7 +40,7 @@ var _ testbed.LogDataSender = (*FileLogWriter)(nil)
 // NewFileLogWriter creates a new data sender that will write log entries to a
 // file, to be tailed by FluentBit and sent to the collector.
 func NewFileLogWriter() *FileLogWriter {
-	file, err := ioutil.TempFile("", "perf-logs.log")
+	file, err := os.CreateTemp("", "perf-logs.log")
 	if err != nil {
 		panic("failed to create temp file")
 	}
@@ -90,8 +86,8 @@ func (f *FileLogWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 	sb.WriteString(lr.SeverityText())
 	sb.WriteString(" ")
 
-	if lr.Body().Type() == pcommon.ValueTypeString {
-		sb.WriteString(lr.Body().StringVal())
+	if lr.Body().Type() == pcommon.ValueTypeStr {
+		sb.WriteString(lr.Body().Str())
 	}
 
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
@@ -99,14 +95,14 @@ func (f *FileLogWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 		sb.WriteString(k)
 		sb.WriteString("=")
 		switch v.Type() {
-		case pcommon.ValueTypeString:
-			sb.WriteString(v.StringVal())
+		case pcommon.ValueTypeStr:
+			sb.WriteString(v.Str())
 		case pcommon.ValueTypeInt:
-			sb.WriteString(strconv.FormatInt(v.IntVal(), 10))
+			sb.WriteString(strconv.FormatInt(v.Int(), 10))
 		case pcommon.ValueTypeDouble:
-			sb.WriteString(strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64))
+			sb.WriteString(strconv.FormatFloat(v.Double(), 'f', -1, 64))
 		case pcommon.ValueTypeBool:
-			sb.WriteString(strconv.FormatBool(v.BoolVal()))
+			sb.WriteString(strconv.FormatBool(v.Bool()))
 		default:
 			panic("missing case")
 		}
@@ -147,7 +143,7 @@ func (f *FileLogWriter) GetEndpoint() net.Addr {
 }
 
 func NewLocalFileStorageExtension() map[string]string {
-	tempDir, err := ioutil.TempDir("", "")
+	tempDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		panic("failed to create temp storage dir")
 	}

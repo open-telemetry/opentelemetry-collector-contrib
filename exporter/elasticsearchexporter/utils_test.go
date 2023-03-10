@@ -17,6 +17,7 @@ package elasticsearchexporter
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -49,7 +50,7 @@ type httpTestError struct {
 	cause   error
 }
 
-const currentESVersion = "7.14.0"
+const currentESVersion = "7.17.7"
 
 func (e *httpTestError) Error() string {
 	return fmt.Sprintf("http request failed (status=%v): %v", e.Status(), e.Message())
@@ -146,6 +147,7 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 	mux.HandleFunc("/_bulk", handleErr(func(w http.ResponseWriter, req *http.Request) error {
 		tsStart := time.Now()
 		var items []itemRequest
+		w.Header().Add("X-Elastic-Product", "Elasticsearch")
 
 		dec := json.NewDecoder(req.Body)
 		for dec.More() {
@@ -171,6 +173,7 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+
 		enc := json.NewEncoder(w)
 		return enc.Encode(bulkResult{Took: took, Items: resp, HasErrors: itemsHasError(resp)})
 	}))
@@ -184,7 +187,8 @@ func handleErr(fn func(http.ResponseWriter, *http.Request) error) http.HandlerFu
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := fn(w, r)
 		if err != nil {
-			if httpError, ok := err.(*httpTestError); ok {
+			httpError := &httpTestError{}
+			if errors.As(err, &httpError) {
 				http.Error(w, httpError.Message(), httpError.Status())
 			} else {
 				http.Error(w, err.Error(), http.StatusInternalServerError)

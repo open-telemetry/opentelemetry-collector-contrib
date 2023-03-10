@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ func (v stringLabelValue) Value() interface{} {
 }
 
 func (v stringLabelValue) SetValueTo(attributes pcommon.Map) {
-	attributes.InsertString(v.metadata.Name(), v.value)
+	attributes.PutStr(v.metadata.Name(), v.value)
 }
 
 func newStringLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
@@ -122,7 +122,7 @@ func (v int64LabelValue) Value() interface{} {
 }
 
 func (v int64LabelValue) SetValueTo(attributes pcommon.Map) {
-	attributes.InsertInt(v.metadata.Name(), v.value)
+	attributes.PutInt(v.metadata.Name(), v.value)
 }
 
 func newInt64LabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
@@ -141,7 +141,7 @@ func (v boolLabelValue) Value() interface{} {
 }
 
 func (v boolLabelValue) SetValueTo(attributes pcommon.Map) {
-	attributes.InsertBool(v.metadata.Name(), v.value)
+	attributes.PutBool(v.metadata.Name(), v.value)
 }
 
 func newBoolLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
@@ -160,7 +160,7 @@ func (v stringSliceLabelValue) Value() interface{} {
 }
 
 func (v stringSliceLabelValue) SetValueTo(attributes pcommon.Map) {
-	attributes.InsertString(v.metadata.Name(), v.value)
+	attributes.PutStr(v.metadata.Name(), v.value)
 }
 
 func newStringSliceLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
@@ -185,7 +185,11 @@ func (v byteSliceLabelValue) Value() interface{} {
 }
 
 func (v byteSliceLabelValue) SetValueTo(attributes pcommon.Map) {
-	attributes.InsertString(v.metadata.Name(), v.value)
+	attributes.PutStr(v.metadata.Name(), v.value)
+}
+
+func (v *byteSliceLabelValue) ModifyValue(s string) {
+	v.value = s
 }
 
 func newByteSliceLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
@@ -204,7 +208,7 @@ func (v lockRequestSliceLabelValue) Value() interface{} {
 }
 
 func (v lockRequestSliceLabelValue) SetValueTo(attributes pcommon.Map) {
-	attributes.InsertString(v.metadata.Name(), v.value)
+	attributes.PutStr(v.metadata.Name(), v.value)
 }
 
 type lockRequest struct {

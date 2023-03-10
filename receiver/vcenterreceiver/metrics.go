@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,8 +54,13 @@ func (v *vcenterMetricScraper) recordVMUsages(
 ) {
 	memUsage := vm.Summary.QuickStats.GuestMemoryUsage
 	balloonedMem := vm.Summary.QuickStats.BalloonedMemory
+	swappedMem := vm.Summary.QuickStats.SwappedMemory
+	swappedSSDMem := vm.Summary.QuickStats.SsdSwappedMemory
+
 	v.mb.RecordVcenterVMMemoryUsageDataPoint(now, int64(memUsage))
 	v.mb.RecordVcenterVMMemoryBalloonedDataPoint(now, int64(balloonedMem))
+	v.mb.RecordVcenterVMMemorySwappedDataPoint(now, int64(swappedMem))
+	v.mb.RecordVcenterVMMemorySwappedSsdDataPoint(now, swappedSSDMem)
 
 	diskUsed := vm.Summary.Storage.Committed
 	diskFree := vm.Summary.Storage.Uncommitted
@@ -63,7 +68,7 @@ func (v *vcenterMetricScraper) recordVMUsages(
 	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskUsed, metadata.AttributeDiskStateUsed)
 	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskFree, metadata.AttributeDiskStateAvailable)
 	if diskFree != 0 {
-		diskUtilization := float64(diskUsed) / float64(diskFree) * 100
+		diskUtilization := float64(diskUsed) / float64(diskFree+diskUsed) * 100
 		v.mb.RecordVcenterVMDiskUtilizationDataPoint(now, diskUtilization)
 	}
 }

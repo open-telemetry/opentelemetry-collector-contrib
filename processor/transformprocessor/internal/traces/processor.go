@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,46 +18,46 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
-	queries []common.Query
-	logger  *zap.Logger
+	contexts []consumer.Traces
+	logger   *zap.Logger
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	queries, err := common.ParseQueries(statements, functions, ParsePath)
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings) (*Processor, error) {
+	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(SpanFunctions()), common.WithSpanEventParser(SpanEventFunctions()), common.WithTraceErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
+
+	contexts := make([]consumer.Traces, len(contextStatements))
+	for i, cs := range contextStatements {
+		context, err := pc.ParseContextStatements(cs)
+		if err != nil {
+			return nil, err
+		}
+		contexts[i] = context
+	}
+
 	return &Processor{
-		queries: queries,
-		logger:  settings.Logger,
+		contexts: contexts,
+		logger:   settings.Logger,
 	}, nil
 }
 
-func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	ctx := spanTransformContext{}
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rspans := td.ResourceSpans().At(i)
-		ctx.resource = rspans.Resource()
-		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
-			sspan := rspans.ScopeSpans().At(j)
-			ctx.il = sspan.Scope()
-			spans := sspan.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				ctx.span = spans.At(k)
-
-				for _, statement := range p.queries {
-					if statement.Condition(ctx) {
-						statement.Function(ctx)
-					}
-				}
-			}
+func (p *Processor) ProcessTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	for _, c := range p.contexts {
+		err := c.ConsumeTraces(ctx, td)
+		if err != nil {
+			p.logger.Error("failed processing traces", zap.Error(err))
+			return td, err
 		}
 	}
 	return td, nil

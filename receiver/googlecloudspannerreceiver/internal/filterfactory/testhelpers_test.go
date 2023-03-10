@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ func (f *mockFilter) LimitByTimestamp() int {
 }
 
 func generateMetadataItems(prefixes []string, prefixHighCardinality []bool) []*metadata.MetricsMetadata {
-	metricDataType := metadata.NewMetricDataType(pmetric.MetricDataTypeGauge, pmetric.MetricAggregationTemporalityUnspecified, false)
+	metricDataType := metadata.NewMetricType(pmetric.MetricTypeGauge, pmetric.AggregationTemporalityUnspecified, false)
 	metadataItems := make([]*metadata.MetricsMetadata, len(prefixes))
 	int64MetricValueMetadata, _ := metadata.NewMetricValueMetadata("int64", "int64Column", metricDataType, "int64Unit", metadata.IntValueType)
 	float64MetricValueMetadata, _ := metadata.NewMetricValueMetadata("float64", "float64Column", metricDataType, "float64Unit", metadata.FloatValueType)

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
@@ -46,29 +46,28 @@ func TestNewFactory(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 
-				var expectedCfg config.Receiver = &Config{
+				var expectedCfg component.Config = &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-						ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 						CollectionInterval: 10 * time.Second,
 					},
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Endpoint: defaultEndpoint,
 						Timeout:  10 * time.Second,
 					},
-					Metrics: metadata.DefaultMetricsSettings(),
+					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
 			},
 		},
 		{
-			desc: "creates a new factory and CreateMetricReceiver returns no error",
+			desc: "creates a new factory and CreateMetricsReceiver returns no error",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
@@ -76,12 +75,12 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "creates a new factory and CreateMetricReceiver returns error with incorrect config",
+			desc: "creates a new factory and CreateMetricsReceiver returns error with incorrect config",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					nil,
 					consumertest.NewNop(),
 				)

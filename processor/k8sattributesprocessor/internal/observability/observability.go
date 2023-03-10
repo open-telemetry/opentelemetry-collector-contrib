@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package observability // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/observability"
 
 import (
@@ -26,7 +25,7 @@ import (
 // mechanism should be used by the collector to discover views from all components
 
 func init() {
-	view.Register(
+	_ = view.Register(
 		viewPodsUpdated,
 		viewPodsAdded,
 		viewPodsDeleted,

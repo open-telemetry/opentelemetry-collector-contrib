@@ -25,12 +25,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
 	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 var errUnavailable = errors.New("ec2metadata unavailable")
@@ -96,7 +95,7 @@ func TestNewDetector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detector, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), tt.cfg)
+			detector, err := NewDetector(processortest.NewNopCreateSettings(), tt.cfg)
 			if tt.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, detector)
@@ -139,15 +138,15 @@ func TestDetector_Detect(t *testing.T) {
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attr := res.Attributes()
-				attr.InsertString("cloud.account.id", "account1234")
-				attr.InsertString("cloud.provider", "aws")
-				attr.InsertString("cloud.platform", "aws_ec2")
-				attr.InsertString("cloud.region", "us-west-2")
-				attr.InsertString("cloud.availability_zone", "us-west-2a")
-				attr.InsertString("host.id", "i-abcd1234")
-				attr.InsertString("host.image.id", "abcdef")
-				attr.InsertString("host.type", "c4.xlarge")
-				attr.InsertString("host.name", "example-hostname")
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				attr.PutStr("host.name", "example-hostname")
 				return res
 			}()},
 		{
@@ -157,10 +156,8 @@ func TestDetector_Detect(t *testing.T) {
 				retErrIDDoc: errors.New("should not be called"),
 				isAvailable: false,
 			}},
-			args: args{ctx: context.Background()},
-			want: func() pcommon.Resource {
-				return pcommon.NewResource()
-			}(),
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
 			wantErr: false},
 		{
 			name: "get fails",
@@ -169,10 +166,8 @@ func TestDetector_Detect(t *testing.T) {
 				retErrIDDoc: errors.New("get failed"),
 				isAvailable: true,
 			}},
-			args: args{ctx: context.Background()},
-			want: func() pcommon.Resource {
-				return pcommon.NewResource()
-			}(),
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
 			wantErr: true},
 		{
 			name: "hostname fails",
@@ -182,10 +177,8 @@ func TestDetector_Detect(t *testing.T) {
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,
 			}},
-			args: args{ctx: context.Background()},
-			want: func() pcommon.Resource {
-				return pcommon.NewResource()
-			}(),
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
 			wantErr: true},
 	}
 	for _, tt := range tests {
@@ -201,7 +194,7 @@ func TestDetector_Detect(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
-				assert.Equal(t, internal.AttributesToMap(tt.want.Attributes()), internal.AttributesToMap(got.Attributes()))
+				assert.Equal(t, tt.want.Attributes().AsRaw(), got.Attributes().AsRaw())
 			}
 		})
 	}

@@ -1,0 +1,22 @@
+{
+  "resourceMetrics": [
+    {
+      "scopeMetrics": [
+        {
+          "metrics": [
+            {
+              "name": "histogram.one",
+              "histogram": {
+                "dataPoints": [
+                  {
+                    "sum": 654.321000
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

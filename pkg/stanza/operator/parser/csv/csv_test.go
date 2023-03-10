@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,23 +28,42 @@ import (
 var testHeader = "name,sev,msg"
 
 func newTestParser(t *testing.T) *Parser {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.Header = testHeader
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	return op.(*Parser)
 }
 
+func newTestParserIgnoreQuotes(t *testing.T) *Parser {
+	cfg := NewConfigWithID("test")
+	cfg.Header = testHeader
+	cfg.IgnoreQuotes = true
+	op, err := cfg.Build(testutil.Logger(t))
+	require.NoError(t, err)
+	return op.(*Parser)
+}
+
 func TestParserBuildFailure(t *testing.T) {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
 	_, err := cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
 
+func TestParserBuildFailureLazyIgnoreQuotes(t *testing.T) {
+	cfg := NewConfigWithID("test")
+	cfg.Header = testHeader
+	cfg.LazyQuotes = true
+	cfg.IgnoreQuotes = true
+	_, err := cfg.Build(testutil.Logger(t))
+	require.Error(t, err)
+	require.ErrorContains(t, err, "only one of 'ignore_quotes' or 'lazy_quotes' can be true")
+}
+
 func TestParserBuildFailureInvalidDelimiter(t *testing.T) {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.Header = testHeader
 	cfg.FieldDelimiter = ";;"
 	_, err := cfg.Build(testutil.Logger(t))
@@ -53,7 +72,7 @@ func TestParserBuildFailureInvalidDelimiter(t *testing.T) {
 }
 
 func TestParserBuildFailureBadHeaderConfig(t *testing.T) {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.Header = "testheader"
 	cfg.HeaderAttribute = "testheader"
 	_, err := cfg.Build(testutil.Logger(t))
@@ -65,18 +84,25 @@ func TestParserByteFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]byte("invalid"))
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "wrong number of fields")
+	require.Contains(t, err.Error(), "wrong number of fields: expected 3, found 1")
 }
 
 func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "wrong number of fields")
+	require.Contains(t, err.Error(), "wrong number of fields: expected 3, found 1")
 }
 
 func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
+	_, err := parser.parse([]int{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as csv")
+}
+
+func TestParserInvalidTypeIgnoreQuotes(t *testing.T) {
+	parser := newTestParserIgnoreQuotes(t)
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as csv")
@@ -104,6 +130,31 @@ func TestParserCSV(t *testing.T) {
 			[]entry.Entry{
 				{
 					Body: "stanza,INFO,started agent",
+					Attributes: map[string]interface{}{
+						"name": "stanza",
+						"sev":  "INFO",
+						"msg":  "started agent",
+					},
+				},
+			},
+			false,
+			false,
+		},
+		{
+			"basic-different-delimiters",
+			func(p *Config) {
+				p.Header = testHeader
+				p.HeaderDelimiter = ","
+				p.FieldDelimiter = "|"
+			},
+			[]entry.Entry{
+				{
+					Body: "stanza|INFO|started agent",
+				},
+			},
+			[]entry.Entry{
+				{
+					Body: "stanza|INFO|started agent",
 					Attributes: map[string]interface{}{
 						"name": "stanza",
 						"sev":  "INFO",
@@ -215,6 +266,36 @@ func TestParserCSV(t *testing.T) {
 			false,
 		},
 		{
+			"dynamic-fields-header-delimiter",
+			func(p *Config) {
+				p.HeaderAttribute = "Fields"
+				p.FieldDelimiter = ","
+				p.HeaderDelimiter = "|"
+			},
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"Fields": "name|age|height|number",
+					},
+					Body: "stanza dev,1,400,555-555-5555",
+				},
+			},
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"Fields": "name|age|height|number",
+						"name":   "stanza dev",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
+					Body: "stanza dev,1,400,555-555-5555",
+				},
+			},
+			false,
+			false,
+		},
+		{
 			"dynamic-fields-multiple-entries",
 			func(p *Config) {
 				p.HeaderAttribute = "Fields"
@@ -291,13 +372,16 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
-						"columns": "name	age	height	number",
-						"name":   "stanza dev",
-						"age":    "1",
-						"height": "400",
-						"number": "555-555-5555",
-					},
+					Attributes: func() map[string]interface{} {
+						m := map[string]interface{}{
+							"name":   "stanza dev",
+							"age":    "1",
+							"height": "400",
+							"number": "555-555-5555",
+						}
+						m["columns"] = "name	age	height	number"
+						return m
+					}(),
 					Body: "stanza dev	1	400	555-555-5555",
 				},
 			},
@@ -534,6 +618,32 @@ func TestParserCSV(t *testing.T) {
 			false,
 		},
 		{
+			"invalid-header-delimiter",
+			func(p *Config) {
+				// expect []rune of length 1
+				p.Header = "name,,age,,height,,number"
+				p.HeaderDelimiter = ",,"
+			},
+			[]entry.Entry{
+				{
+					Body: "stanza,1,400,555-555-5555",
+				},
+			},
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
+					Body: "stanza,1,400,555-555-5555",
+				},
+			},
+			true,
+			false,
+		},
+		{
 			"parse-failure-num-fields-mismatch",
 			func(p *Config) {
 				p.Header = "name,age,height,number"
@@ -608,11 +718,89 @@ func TestParserCSV(t *testing.T) {
 			false,
 			false,
 		},
+		{
+			"parse-with-ignore-quotes",
+			func(p *Config) {
+				p.Header = "name,age,height,number"
+				p.FieldDelimiter = ","
+				p.IgnoreQuotes = true
+			},
+			[]entry.Entry{
+				{
+					Body: "stanza log parser,1,6ft,5",
+				},
+			},
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza log parser",
+						"age":    "1",
+						"height": "6ft",
+						"number": "5",
+					},
+					Body: "stanza log parser,1,6ft,5",
+				},
+			},
+			false,
+			false,
+		},
+		{
+			"parse-with-ignore-quotes-bytes",
+			func(p *Config) {
+				p.Header = "name,age,height,number"
+				p.FieldDelimiter = ","
+				p.IgnoreQuotes = true
+			},
+			[]entry.Entry{
+				{
+					Body: []byte("stanza log parser,1,6ft,5"),
+				},
+			},
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza log parser",
+						"age":    "1",
+						"height": "6ft",
+						"number": "5",
+					},
+					Body: []byte("stanza log parser,1,6ft,5"),
+				},
+			},
+			false,
+			false,
+		},
+		{
+			"parse-with-ignore-quotes-invalid-csv",
+			func(p *Config) {
+				p.Header = "name,age,height,number"
+				p.FieldDelimiter = ","
+				p.IgnoreQuotes = true
+			},
+			[]entry.Entry{
+				{
+					Body: "stanza log parser,\"1,\"6ft,5\"",
+				},
+			},
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza log parser",
+						"age":    "\"1",
+						"height": "\"6ft",
+						"number": "5\"",
+					},
+					Body: "stanza log parser,\"1,\"6ft,5\"",
+				},
+			},
+			false,
+			false,
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfig("test")
+			cfg := NewConfigWithID("test")
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
@@ -855,8 +1043,8 @@ cc""",dddd,eeee`,
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfig("test")
-			cfg.ParseTo = entry.NewBodyField()
+			cfg := NewConfigWithID("test")
+			cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
 			cfg.OutputIDs = []string{"fake"}
 			cfg.Header = "A,B,C,D,E"
 
@@ -878,7 +1066,7 @@ cc""",dddd,eeee`,
 
 func TestParserCSVInvalidJSONInput(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		cfg := NewConfig("test")
+		cfg := NewConfigWithID("test")
 		cfg.OutputIDs = []string{"fake"}
 		cfg.Header = testHeader
 
@@ -898,7 +1086,7 @@ func TestParserCSVInvalidJSONInput(t *testing.T) {
 
 func TestBuildParserCSV(t *testing.T) {
 	newBasicParser := func() *Config {
-		cfg := NewConfig("test")
+		cfg := NewConfigWithID("test")
 		cfg.OutputIDs = []string{"test"}
 		cfg.Header = "name,position,number"
 		cfg.FieldDelimiter = ","

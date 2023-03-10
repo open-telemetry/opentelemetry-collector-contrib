@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 
 import (
@@ -29,7 +28,7 @@ import (
 const (
 	// http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
 	// In truncation logic, it assuming this constant value is larger than perEventHeaderBytes + len(truncatedSuffix)
-	defaultMaxEventPayloadBytes = 1024 * 256 //256KB
+	defaultMaxEventPayloadBytes = 1024 * 256 // 256KB
 	// http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
 	maxRequestEventCount   = 10000
 	perEventHeaderBytes    = 26
@@ -39,8 +38,8 @@ const (
 
 	truncatedSuffix = "[Truncated...]"
 
-	eventTimestampLimitInPast  = 14 * 24 * time.Hour //None of the log events in the batch can be older than 14 days
-	evenTimestampLimitInFuture = -2 * time.Hour      //None of the log events in the batch can be more than 2 hours in the future.
+	eventTimestampLimitInPast  = 14 * 24 * time.Hour // None of the log events in the batch can be older than 14 days
+	evenTimestampLimitInFuture = -2 * time.Hour      // None of the log events in the batch can be more than 2 hours in the future.
 )
 
 var (
@@ -52,6 +51,8 @@ type Event struct {
 	InputLogEvent *cloudwatchlogs.InputLogEvent
 	// The time which log generated.
 	GeneratedTime time.Time
+	LogGroupName  string
+	LogStreamName string
 }
 
 // NewEvent creates a new log event
@@ -63,6 +64,11 @@ func NewEvent(timestampMs int64, message string) *Event {
 			Message:   aws.String(message)},
 	}
 	return event
+}
+
+type PusherKey struct {
+	LogGroupName  string
+	LogStreamName string
 }
 
 func (logEvent *Event) Validate(logger *zap.Logger) error {
@@ -82,11 +88,11 @@ func (logEvent *Event) Validate(logger *zap.Logger) error {
 		return errors.New("empty log event message")
 	}
 
-	//http://docs.aws.amazon.com/goto/SdkForGoV1/logs-2014-03-28/PutLogEvents
-	//* None of the log events in the batch can be more than 2 hours in the
-	//future.
-	//* None of the log events in the batch can be older than 14 days or the
-	//retention period of the log group.
+	// http://docs.aws.amazon.com/goto/SdkForGoV1/logs-2014-03-28/PutLogEvents
+	// * None of the log events in the batch can be more than 2 hours in the
+	// future.
+	// * None of the log events in the batch can be older than 14 days or the
+	// retention period of the log group.
 	currentTime := time.Now().UTC()
 	utcTime := time.Unix(0, *logEvent.InputLogEvent.Timestamp*int64(time.Millisecond)).UTC()
 	duration := currentTime.Sub(utcTime)
@@ -107,20 +113,20 @@ func (logEvent *Event) eventPayloadBytes() int {
 // eventBatch struct to present a log event batch
 type eventBatch struct {
 	putLogEventsInput *cloudwatchlogs.PutLogEventsInput
-	//the total bytes already in this log event batch
+	// the total bytes already in this log event batch
 	byteTotal int
-	//min timestamp recorded in this log event batch (ms)
+	// min timestamp recorded in this log event batch (ms)
 	minTimestampMs int64
-	//max timestamp recorded in this log event batch (ms)
+	// max timestamp recorded in this log event batch (ms)
 	maxTimestampMs int64
 }
 
 // Create a new log event batch if needed.
-func newEventBatch(logGroupName, logStreamName *string) *eventBatch {
+func newEventBatch(key PusherKey) *eventBatch {
 	return &eventBatch{
 		putLogEventsInput: &cloudwatchlogs.PutLogEventsInput{
-			LogGroupName:  logGroupName,
-			LogStreamName: logStreamName,
+			LogGroupName:  aws.String(key.LogGroupName),
+			LogStreamName: aws.String(key.LogStreamName),
 			LogEvents:     make([]*cloudwatchlogs.InputLogEvent, 0, maxRequestEventCount)},
 	}
 }
@@ -202,10 +208,10 @@ type logPusher struct {
 }
 
 // NewPusher creates a logPusher instance
-func NewPusher(logGroupName, logStreamName *string, retryCnt int,
+func NewPusher(pusherKey PusherKey, retryCnt int,
 	svcStructuredLog Client, logger *zap.Logger) Pusher {
 
-	pusher := newLogPusher(logGroupName, logStreamName, svcStructuredLog, logger)
+	pusher := newLogPusher(pusherKey, svcStructuredLog, logger)
 
 	pusher.retryCnt = defaultRetryCount
 	if retryCnt > 0 {
@@ -216,15 +222,15 @@ func NewPusher(logGroupName, logStreamName *string, retryCnt int,
 }
 
 // Only create a logPusher, but not start the instance.
-func newLogPusher(logGroupName, logStreamName *string,
+func newLogPusher(pusherKey PusherKey,
 	svcStructuredLog Client, logger *zap.Logger) *logPusher {
 	pusher := &logPusher{
-		logGroupName:     logGroupName,
-		logStreamName:    logStreamName,
+		logGroupName:     aws.String(pusherKey.LogGroupName),
+		logStreamName:    aws.String(pusherKey.LogStreamName),
 		svcStructuredLog: svcStructuredLog,
 		logger:           logger,
 	}
-	pusher.logEventBatch = newEventBatch(logGroupName, logStreamName)
+	pusher.logEventBatch = newEventBatch(pusherKey)
 
 	return pusher
 }
@@ -323,7 +329,10 @@ func (p *logPusher) addLogEvent(logEvent *Event) *eventBatch {
 	currentBatch := p.logEventBatch
 	if currentBatch.exceedsLimit(logEvent.eventPayloadBytes()) || !currentBatch.isActive(logEvent.InputLogEvent.Timestamp) {
 		prevBatch = currentBatch
-		currentBatch = newEventBatch(p.logGroupName, p.logStreamName)
+		currentBatch = newEventBatch(PusherKey{
+			LogGroupName:  *p.logGroupName,
+			LogStreamName: *p.logStreamName,
+		})
 	}
 	currentBatch.append(logEvent)
 	p.logEventBatch = currentBatch
@@ -338,7 +347,10 @@ func (p *logPusher) renewEventBatch() *eventBatch {
 	var prevBatch *eventBatch
 	if len(p.logEventBatch.putLogEventsInput.LogEvents) > 0 {
 		prevBatch = p.logEventBatch
-		p.logEventBatch = newEventBatch(p.logGroupName, p.logStreamName)
+		p.logEventBatch = newEventBatch(PusherKey{
+			LogGroupName:  *p.logGroupName,
+			LogStreamName: *p.logStreamName,
+		})
 	}
 
 	return prevBatch

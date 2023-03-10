@@ -41,7 +41,7 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a stdin input operator.
 type Config struct {
-	helper.InputConfig `yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash"`
 }
 
 // Build will build a stdin input operator.
@@ -72,7 +72,7 @@ func (g *Input) Start(_ operator.Persister) error {
 
 	stat, err := g.stdin.Stat()
 	if err != nil {
-		return fmt.Errorf("failed to stat stdin: %s", err)
+		return fmt.Errorf("failed to stat stdin: %w", err)
 	}
 
 	if stat.Mode()&os.ModeNamedPipe == 0 {

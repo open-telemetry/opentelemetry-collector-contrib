@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -54,7 +54,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"body_to_body",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewBodyField("key2")
 				return cfg
@@ -76,7 +76,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"nested_to_body",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("nested", "nestedkey")
 				cfg.To = entry.NewBodyField("key2")
 				return cfg
@@ -98,7 +98,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"body_to_nested",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewBodyField("nested", "key2")
 				return cfg
@@ -120,7 +120,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"body_to_attribute",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewAttributeField("key2")
 				return cfg
@@ -142,7 +142,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"body_to_nested_attribute",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField()
 				cfg.To = entry.NewAttributeField("one", "two")
 				return cfg
@@ -167,7 +167,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"body_to_nested_resource",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField()
 				cfg.To = entry.NewResourceField("one", "two")
 				return cfg
@@ -192,7 +192,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"attribute_to_body",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewAttributeField("key")
 				cfg.To = entry.NewBodyField("key2")
 				return cfg
@@ -219,7 +219,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"attribute_to_resource",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewAttributeField("key")
 				cfg.To = entry.NewResourceField("key2")
 				return cfg
@@ -240,7 +240,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"overwrite",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewBodyField("nested")
 				return cfg
@@ -259,7 +259,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"invalid_copy_to_attribute_root",
 			true,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewAttributeField()
 				return cfg
@@ -271,7 +271,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"invalid_copy_to_resource_root",
 			true,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewResourceField()
 				return cfg
@@ -283,7 +283,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"invalid_key",
 			true,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewAttributeField("nonexistentkey")
 				cfg.To = entry.NewResourceField("key2")
 				return cfg

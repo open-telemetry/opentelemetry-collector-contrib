@@ -15,253 +15,222 @@
 package jmxreceiver
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
-	"go.uber.org/zap"
 )
 
 func TestLoadConfig(t *testing.T) {
-	mockJarVersions()
-	defer unmockJarVersions()
+	t.Parallel()
 
-	testLogger, _ := zap.NewDevelopment()
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	assert.Equal(t, len(cfg.Receivers), 10)
-
-	r0 := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
-	require.NoError(t, configtest.CheckConfigStruct(r0))
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
-	err = r0.validate()
-	require.Error(t, err)
-	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system`", err.Error())
-
-	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all")].(*Config)
-	require.NoError(t, configtest.CheckConfigStruct(r1))
-	require.NoError(t, r1.validate())
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all")),
-			JARPath:            "testdata/fake_jmx.jar",
-			Endpoint:           "myendpoint:12345",
-			TargetSystem:       "jvm",
-			CollectionInterval: 15 * time.Second,
-			Username:           "myusername",
-			Password:           "mypassword",
-			LogLevel:           "trace",
-			OTLPExporterConfig: otlpExporterConfig{
-				Endpoint: "myotlpendpoint",
-				Headers: map[string]string{
-					"x-header-1": "value1",
-					"x-header-2": "value2",
+	initSupportedJars()
+	tests := []struct {
+		id          component.ID
+		expected    component.Config
+		expectedErr string
+	}{
+		{
+			id:          component.NewIDWithName(typeStr, ""),
+			expectedErr: "missing required field(s): `endpoint`, `target_system`",
+			expected:    createDefaultConfig(),
+		},
+		{
+			id: component.NewIDWithName(typeStr, "all"),
+			expected: &Config{
+				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "myendpoint:12345",
+				TargetSystem:       "jvm",
+				CollectionInterval: 15 * time.Second,
+				Username:           "myusername",
+				Password:           "mypassword",
+				LogLevel:           "trace",
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "myotlpendpoint",
+					Headers: map[string]string{
+						"x-header-1": "value1",
+						"x-header-2": "value2",
+					},
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 5 * time.Second,
+					},
 				},
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: 5 * time.Second,
+				KeystorePath:       "mykeystorepath",
+				KeystorePassword:   "mykeystorepassword",
+				KeystoreType:       "mykeystoretype",
+				TruststorePath:     "mytruststorepath",
+				TruststorePassword: "mytruststorepassword",
+				RemoteProfile:      "myremoteprofile",
+				Realm:              "myrealm",
+				AdditionalJars: []string{
+					"testdata/fake_additional.jar",
 				},
-			},
-			KeystorePath:       "mykeystorepath",
-			KeystorePassword:   "mykeystorepassword",
-			KeystoreType:       "mykeystoretype",
-			TruststorePath:     "mytruststorepath",
-			TruststorePassword: "mytruststorepassword",
-			RemoteProfile:      "myremoteprofile",
-			Realm:              "myrealm",
-			AdditionalJars: []string{
-				"testdata/fake_additional.jar",
-			},
-			ResourceAttributes: map[string]string{
-				"one": "two",
-			},
-		}, r1)
-
-	assert.Equal(
-		t, []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=trace"},
-		r1.parseProperties(testLogger),
-	)
-
-	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "missingendpoint")].(*Config)
-	require.NoError(t, configtest.CheckConfigStruct(r2))
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "missingendpoint")),
-			JARPath:            "testdata/fake_jmx.jar",
-			TargetSystem:       "jvm",
-			CollectionInterval: 10 * time.Second,
-			OTLPExporterConfig: otlpExporterConfig{
-				Endpoint: "0.0.0.0:0",
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: 5 * time.Second,
+				ResourceAttributes: map[string]string{
+					"one": "two",
 				},
 			},
-		}, r2)
-	err = r2.validate()
-	require.Error(t, err)
-	assert.Equal(t, "jmx/missingendpoint missing required field: `endpoint`", err.Error())
-
-	// Default log level should set to level of provided zap logger
-	assert.Equal(
-		t, []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=debug"},
-		r2.parseProperties(testLogger),
-	)
-
-	r3 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "missingtarget")].(*Config)
-	require.NoError(t, configtest.CheckConfigStruct(r3))
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "missingtarget")),
-			JARPath:            "testdata/fake_jmx.jar",
-			Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
-			CollectionInterval: 10 * time.Second,
-			OTLPExporterConfig: otlpExporterConfig{
-				Endpoint: "0.0.0.0:0",
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: 5 * time.Second,
+		},
+		{
+			id:          component.NewIDWithName(typeStr, "missingendpoint"),
+			expectedErr: "missing required field(s): `endpoint`",
+			expected: &Config{
+				JARPath:            "testdata/fake_jmx.jar",
+				TargetSystem:       "jvm",
+				CollectionInterval: 10 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "0.0.0.0:0",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 5 * time.Second,
+					},
 				},
 			},
-		}, r3)
-	err = r3.validate()
-	require.Error(t, err)
-	assert.Equal(t, "jmx/missingtarget missing required field: `target_system`", err.Error())
-
-	r4 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidinterval")].(*Config)
-	require.NoError(t, configtest.CheckConfigStruct(r4))
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidinterval")),
-			JARPath:            "testdata/fake_jmx.jar",
-			Endpoint:           "myendpoint:23456",
-			TargetSystem:       "jvm",
-			CollectionInterval: -100 * time.Millisecond,
-			OTLPExporterConfig: otlpExporterConfig{
-				Endpoint: "0.0.0.0:0",
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: 5 * time.Second,
+		},
+		{
+			id:          component.NewIDWithName(typeStr, "missingtarget"),
+			expectedErr: "missing required field(s): `target_system`",
+			expected: &Config{
+				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
+				CollectionInterval: 10 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "0.0.0.0:0",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 5 * time.Second,
+					},
 				},
 			},
-		}, r4)
-	err = r4.validate()
-	require.Error(t, err)
-	assert.Equal(t, "jmx/invalidinterval `interval` must be positive: -100ms", err.Error())
-
-	r5 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidotlptimeout")].(*Config)
-	require.NoError(t, configtest.CheckConfigStruct(r5))
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidotlptimeout")),
-			JARPath:            "testdata/fake_jmx.jar",
-			Endpoint:           "myendpoint:34567",
-			TargetSystem:       "jvm",
-			CollectionInterval: 10 * time.Second,
-			OTLPExporterConfig: otlpExporterConfig{
-				Endpoint: "0.0.0.0:0",
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: -100 * time.Millisecond,
+		},
+		{
+			id:          component.NewIDWithName(typeStr, "invalidinterval"),
+			expectedErr: "`interval` must be positive: -100ms",
+			expected: &Config{
+				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "myendpoint:23456",
+				TargetSystem:       "jvm",
+				CollectionInterval: -100 * time.Millisecond,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "0.0.0.0:0",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 5 * time.Second,
+					},
 				},
 			},
-		}, r5)
-	err = r5.validate()
-	require.Error(t, err)
-	assert.Equal(t, "jmx/invalidotlptimeout `otlp.timeout` must be positive: -100ms", err.Error())
-
-	r6 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "nonexistentjar")].(*Config)
-	require.NoError(t, configtest.CheckConfigStruct(r6))
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "nonexistentjar")),
-			JARPath:            "testdata/file_does_not_exist.jar",
-			Endpoint:           "myendpoint:23456",
-			TargetSystem:       "jvm",
-			CollectionInterval: 10 * time.Second,
-			OTLPExporterConfig: otlpExporterConfig{
-				Endpoint: "0.0.0.0:0",
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: 5 * time.Second,
+		},
+		{
+			id:          component.NewIDWithName(typeStr, "invalidotlptimeout"),
+			expectedErr: "`otlp.timeout` must be positive: -100ms",
+			expected: &Config{
+				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "myendpoint:34567",
+				TargetSystem:       "jvm",
+				CollectionInterval: 10 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "0.0.0.0:0",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: -100 * time.Millisecond,
+					},
 				},
 			},
-		}, r6)
-	err = r6.validate()
-	require.Error(t, err)
-	// Error is different based on OS, which is why this is contains, not equals
-	assert.Contains(t, err.Error(), "jmx/nonexistentjar error validating `jar_path`: error hashing file: open testdata/file_does_not_exist.jar:")
+		},
 
-	r7 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidjar")].(*Config)
-	require.NoError(t, configtest.CheckConfigStruct(r7))
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidjar")),
-			JARPath:            "testdata/fake_jmx_wrong.jar",
-			Endpoint:           "myendpoint:23456",
-			TargetSystem:       "jvm",
-			CollectionInterval: 10 * time.Second,
-			OTLPExporterConfig: otlpExporterConfig{
-				Endpoint: "0.0.0.0:0",
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: 5 * time.Second,
+		{
+			id: component.NewIDWithName(typeStr, "nonexistentjar"),
+			// Error is different based on OS, which is why this is contains, not equals
+			expectedErr: "invalid `jar_path`: error hashing file: open testdata/file_does_not_exist.jar:",
+			expected: &Config{
+				JARPath:            "testdata/file_does_not_exist.jar",
+				Endpoint:           "myendpoint:23456",
+				TargetSystem:       "jvm",
+				CollectionInterval: 10 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "0.0.0.0:0",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 5 * time.Second,
+					},
 				},
 			},
-		}, r7)
-	err = r7.validate()
-	require.Error(t, err)
-	assert.Equal(t, "jmx/invalidjar error validating `jar_path`: jar hash does not match known versions", err.Error())
-
-	r8 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidloglevel")].(*Config)
-	require.NoError(t, configtest.CheckConfigStruct(r8))
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidloglevel")),
-			JARPath:            "testdata/fake_jmx.jar",
-			Endpoint:           "myendpoint:55555",
-			TargetSystem:       "jvm",
-			LogLevel:           "truth",
-			CollectionInterval: 10 * time.Second,
-			OTLPExporterConfig: otlpExporterConfig{
-				Endpoint: "0.0.0.0:0",
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: 5 * time.Second,
+		},
+		{
+			id:          component.NewIDWithName(typeStr, "invalidjar"),
+			expectedErr: "invalid `jar_path`: jar hash does not match known versions",
+			expected: &Config{
+				JARPath:            "testdata/fake_jmx_wrong.jar",
+				Endpoint:           "myendpoint:23456",
+				TargetSystem:       "jvm",
+				CollectionInterval: 10 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "0.0.0.0:0",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 5 * time.Second,
+					},
 				},
 			},
-		}, r8)
-	err = r8.validate()
-	require.Error(t, err)
-	assert.Equal(t, "jmx/invalidloglevel `log_level` must be one of 'debug', 'error', 'info', 'off', 'trace', 'warn'", err.Error())
-
-	r9 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidtargetsystem")].(*Config)
-	require.NoError(t, configtest.CheckConfigStruct(r9))
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalidtargetsystem")),
-			JARPath:            "testdata/fake_jmx.jar",
-			Endpoint:           "myendpoint:55555",
-			TargetSystem:       "jvm,fakejvmtechnology",
-			CollectionInterval: 10 * time.Second,
-			OTLPExporterConfig: otlpExporterConfig{
-				Endpoint: "0.0.0.0:0",
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: 5 * time.Second,
+		},
+		{
+			id:          component.NewIDWithName(typeStr, "invalidloglevel"),
+			expectedErr: "`log_level` must be one of 'debug', 'error', 'info', 'off', 'trace', 'warn'",
+			expected: &Config{
+				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "myendpoint:55555",
+				TargetSystem:       "jvm",
+				LogLevel:           "truth",
+				CollectionInterval: 10 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "0.0.0.0:0",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 5 * time.Second,
+					},
 				},
 			},
-		}, r9)
-	err = r9.validate()
-	require.Error(t, err)
-	assert.Equal(t, "jmx/invalidtargetsystem `target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
+		},
+		{
+			id:          component.NewIDWithName(typeStr, "invalidtargetsystem"),
+			expectedErr: "`target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'",
+			expected: &Config{
+				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "myendpoint:55555",
+				TargetSystem:       "jvm,fakejvmtechnology",
+				CollectionInterval: 10 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "0.0.0.0:0",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 5 * time.Second,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			mockJarVersions()
+			t.Cleanup(func() {
+				unmockJarVersions()
+			})
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			if tt.expectedErr != "" {
+				assert.ErrorContains(t, cfg.(*Config).Validate(), tt.expectedErr)
+				assert.Equal(t, tt.expected, cfg)
+				return
+			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestCustomMetricsGathererConfig(t *testing.T) {
@@ -270,37 +239,38 @@ func TestCustomMetricsGathererConfig(t *testing.T) {
 		version: "2.3.4",
 	}
 
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, len(cfg.Receivers), 10)
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "invalidtargetsystem").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "invalidtargetsystem")].(*Config)
-	require.NoError(t, configtest.CheckConfigStruct(r1))
-	err = r1.validate()
+	conf := cfg.(*Config)
+
+	err = conf.Validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/invalidtargetsystem error validating `jar_path`: jar hash does not match known versions", err.Error())
+	assert.Equal(t, "invalid `jar_path`: jar hash does not match known versions", err.Error())
 
 	MetricsGathererHash = "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"
 	initSupportedJars()
 
-	err = r1.validate()
+	err = conf.Validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/invalidtargetsystem `target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
+	assert.Equal(t, "`target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
 
 	AdditionalTargetSystems = "fakejvmtechnology,anothertechnology"
+	t.Cleanup(func() {
+		delete(validTargetSystems, "fakejvmtechnology")
+		delete(validTargetSystems, "anothertechnology")
+	})
 	initAdditionalTargetSystems()
 
-	r1.TargetSystem = "jvm,fakejvmtechnology,anothertechnology"
+	conf.TargetSystem = "jvm,fakejvmtechnology,anothertechnology"
 
-	require.NoError(t, r1.validate())
+	require.NoError(t, conf.Validate())
 }
 
 func TestClassPathParse(t *testing.T) {
@@ -346,14 +316,23 @@ func TestClassPathParse(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			os.Unsetenv("CLASSPATH")
-			err := os.Setenv("CLASSPATH", tc.existingEnvVal)
-			require.NoError(t, err)
+			t.Setenv("CLASSPATH", tc.existingEnvVal)
 
 			actual := tc.cfg.parseClasspath()
 			require.Equal(t, tc.expected, actual)
 		})
 	}
+}
+
+func TestWithInvalidConfig(t *testing.T) {
+	f := NewFactory()
+	assert.Equal(t, component.Type("jmx"), f.Type())
+
+	cfg := f.CreateDefaultConfig().(*Config)
+	require.NotNil(t, cfg)
+
+	err := cfg.Validate()
+	assert.Equal(t, "missing required field(s): `endpoint`, `target_system`", err.Error())
 }
 
 func mockJarVersions() {

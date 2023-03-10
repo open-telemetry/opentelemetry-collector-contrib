@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-var _ config.Receiver = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
@@ -51,20 +51,8 @@ type Config struct {
 	// Configuration of the Kubernetes API client.
 	K8sAPIConfig *k8sconfig.APIConfig `mapstructure:"k8s_api_config"`
 
-	// Metrics allows customizing scraped metrics representation.
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
-}
-
-func (cfg *Config) Validate() error {
-	if err := cfg.ReceiverSettings.Validate(); err != nil {
-		return err
-	}
-	if cfg.K8sAPIConfig != nil {
-		if err := cfg.K8sAPIConfig.Validate(); err != nil {
-			return err
-		}
-	}
-	return nil
+	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 // getReceiverOptions returns scraperOptions is the config is valid,
@@ -89,7 +77,6 @@ func (cfg *Config) getReceiverOptions() (*scraperOptions, error) {
 	}
 
 	return &scraperOptions{
-		id:                    cfg.ID(),
 		collectionInterval:    cfg.CollectionInterval,
 		extraMetadataLabels:   cfg.ExtraMetadataLabels,
 		metricGroupsToCollect: mgs,
@@ -117,7 +104,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return nil
 	}
 
-	if err := componentParser.UnmarshalExact(cfg); err != nil {
+	if err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused()); err != nil {
 		return err
 	}
 

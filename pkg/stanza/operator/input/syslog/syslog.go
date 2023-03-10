@@ -15,6 +15,7 @@
 package syslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -26,20 +27,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
 )
 
+const operatorType = "syslog_input"
+
 func init() {
-	operator.Register("syslog_input", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
-func NewConfig(operatorID string) *Config {
+
+// NewConfig creates a new input config with default values
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new input config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "syslog_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 	}
 }
 
 type Config struct {
-	helper.InputConfig `yaml:",inline"`
-	syslog.BaseConfig  `yaml:",inline"`
-	TCP                *tcp.BaseConfig `json:"tcp" yaml:"tcp"`
-	UDP                *udp.BaseConfig `json:"udp" yaml:"udp"`
+	helper.InputConfig `mapstructure:",squash"`
+	syslog.BaseConfig  `mapstructure:",squash"`
+	TCP                *tcp.BaseConfig `mapstructure:"tcp"`
+	UDP                *udp.BaseConfig `mapstructure:"udp"`
 }
 
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
@@ -48,22 +58,22 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	syslogParserCfg := syslog.NewConfig(inputBase.ID() + "_internal_tcp")
+	syslogParserCfg := syslog.NewConfigWithID(inputBase.ID() + "_internal_tcp")
 	syslogParserCfg.BaseConfig = c.BaseConfig
 	syslogParserCfg.SetID(inputBase.ID() + "_internal_parser")
 	syslogParserCfg.OutputIDs = c.OutputIDs
 	syslogParser, err := syslogParserCfg.Build(logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve syslog config: %s", err)
+		return nil, fmt.Errorf("failed to resolve syslog config: %w", err)
 	}
 
 	if c.TCP != nil {
-		tcpInputCfg := tcp.NewConfig(inputBase.ID() + "_internal_tcp")
+		tcpInputCfg := tcp.NewConfigWithID(inputBase.ID() + "_internal_tcp")
 		tcpInputCfg.BaseConfig = *c.TCP
 
 		tcpInput, err := tcpInputCfg.Build(logger)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve tcp config: %s", err)
+			return nil, fmt.Errorf("failed to resolve tcp config: %w", err)
 		}
 
 		tcpInput.SetOutputIDs([]string{syslogParser.ID()})
@@ -79,12 +89,18 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	if c.UDP != nil {
-		udpInputCfg := udp.NewConfig(inputBase.ID() + "_internal_udp")
+
+		udpInputCfg := udp.NewConfigWithID(inputBase.ID() + "_internal_udp")
 		udpInputCfg.BaseConfig = *c.UDP
+
+		// Octet counting and Non-Transparent-Framing are invalid for UDP connections
+		if syslogParserCfg.EnableOctetCounting || syslogParserCfg.NonTransparentFramingTrailer != nil {
+			return nil, errors.New("octet_counting and non_transparent_framing is not compatible with UDP")
+		}
 
 		udpInput, err := udpInputCfg.Build(logger)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve upd config: %s", err)
+			return nil, fmt.Errorf("failed to resolve upd config: %w", err)
 		}
 
 		udpInput.SetOutputIDs([]string{syslogParser.ID()})

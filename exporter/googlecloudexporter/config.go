@@ -18,14 +18,12 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Google Cloud exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
-	collector.Config        `mapstructure:",squash"`
+	collector.Config `mapstructure:",squash"`
 
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -34,9 +32,6 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-	if err := cfg.ExporterSettings.Validate(); err != nil {
-		return fmt.Errorf("exporter settings are invalid :%w", err)
-	}
 	if err := collector.ValidateConfig(cfg.Config); err != nil {
 		return fmt.Errorf("googlecloud exporter settings are invalid :%w", err)
 	}

@@ -15,7 +15,6 @@
 package alibabacloudlogserviceexporter
 
 import (
-	"reflect"
 	"sort"
 	"testing"
 
@@ -32,9 +31,10 @@ func TestMetricDataToLogService(t *testing.T) {
 	md.ResourceMetrics().AppendEmpty() // Add an empty ResourceMetrics
 	rm := md.ResourceMetrics().AppendEmpty()
 
-	rm.Resource().Attributes().InsertString("labelB", "valueB")
-	rm.Resource().Attributes().InsertString("labelA", "valueA")
-	rm.Resource().Attributes().InsertString("a", "b")
+	rm.Resource().Attributes().PutStr("labelB", "valueB")
+	rm.Resource().Attributes().PutStr("labelA", "valueA")
+	rm.Resource().Attributes().PutStr("service.name", "unknown-service")
+	rm.Resource().Attributes().PutStr("a", "b")
 	sms := rm.ScopeMetrics()
 	sms.AppendEmpty() // Add an empty ScopeMetrics
 	sm := sms.AppendEmpty()
@@ -48,68 +48,62 @@ func TestMetricDataToLogService(t *testing.T) {
 	noneMetric.SetName("none")
 
 	intGaugeMetric := metrics.AppendEmpty()
-	intGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	intGaugeMetric.SetName("int_gauge")
-	intGauge := intGaugeMetric.Gauge()
+	intGauge := intGaugeMetric.SetEmptyGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
-	intGaugeDataPoint.Attributes().InsertString("innerLabel", "innerValue")
-	intGaugeDataPoint.SetIntVal(10)
+	intGaugeDataPoint.Attributes().PutStr("innerLabel", "innerValue")
+	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
 	doubleGaugeMetric := metrics.AppendEmpty()
-	doubleGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	doubleGaugeMetric.SetName("double_gauge")
-	doubleGauge := doubleGaugeMetric.Gauge()
+	doubleGauge := doubleGaugeMetric.SetEmptyGauge()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
 	doubleGaugeDataPoint := doubleGaugeDataPoints.AppendEmpty()
-	doubleGaugeDataPoint.Attributes().InsertString("innerLabel", "innerValue")
-	doubleGaugeDataPoint.SetDoubleVal(10.1)
+	doubleGaugeDataPoint.Attributes().PutStr("innerLabel", "innerValue")
+	doubleGaugeDataPoint.SetDoubleValue(10.1)
 	doubleGaugeDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
 	intSumMetric := metrics.AppendEmpty()
-	intSumMetric.SetDataType(pmetric.MetricDataTypeSum)
 	intSumMetric.SetName("int_sum")
-	intSum := intSumMetric.Sum()
+	intSum := intSumMetric.SetEmptySum()
 	intSumDataPoints := intSum.DataPoints()
 	intSumDataPoint := intSumDataPoints.AppendEmpty()
-	intSumDataPoint.Attributes().InsertString("innerLabel", "innerValue")
-	intSumDataPoint.SetIntVal(11)
+	intSumDataPoint.Attributes().PutStr("innerLabel", "innerValue")
+	intSumDataPoint.SetIntValue(11)
 	intSumDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
 	doubleSumMetric := metrics.AppendEmpty()
-	doubleSumMetric.SetDataType(pmetric.MetricDataTypeSum)
 	doubleSumMetric.SetName("double_sum")
-	doubleSum := doubleSumMetric.Sum()
+	doubleSum := doubleSumMetric.SetEmptySum()
 	doubleSumDataPoints := doubleSum.DataPoints()
 	doubleSumDataPoint := doubleSumDataPoints.AppendEmpty()
-	doubleSumDataPoint.Attributes().InsertString("innerLabel", "innerValue")
-	doubleSumDataPoint.SetDoubleVal(10.1)
+	doubleSumDataPoint.Attributes().PutStr("innerLabel", "innerValue")
+	doubleSumDataPoint.SetDoubleValue(10.1)
 	doubleSumDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
 	doubleHistogramMetric := metrics.AppendEmpty()
-	doubleHistogramMetric.SetDataType(pmetric.MetricDataTypeHistogram)
 	doubleHistogramMetric.SetName("double_$histogram")
-	doubleHistogram := doubleHistogramMetric.Histogram()
+	doubleHistogram := doubleHistogramMetric.SetEmptyHistogram()
 	doubleHistogramDataPoints := doubleHistogram.DataPoints()
 	doubleHistogramDataPoint := doubleHistogramDataPoints.AppendEmpty()
-	doubleHistogramDataPoint.Attributes().InsertString("innerLabel", "innerValue")
+	doubleHistogramDataPoint.Attributes().PutStr("innerLabel", "innerValue")
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
 	doubleHistogramDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
-	doubleHistogramDataPoint.SetMBucketCounts([]uint64{1, 2, 3})
-	doubleHistogramDataPoint.SetMExplicitBounds([]float64{1, 2})
+	doubleHistogramDataPoint.BucketCounts().FromRaw([]uint64{1, 2, 3})
+	doubleHistogramDataPoint.ExplicitBounds().FromRaw([]float64{1, 2})
 
 	doubleSummaryMetric := metrics.AppendEmpty()
-	doubleSummaryMetric.SetDataType(pmetric.MetricDataTypeSummary)
 	doubleSummaryMetric.SetName("double-summary")
-	doubleSummary := doubleSummaryMetric.Summary()
+	doubleSummary := doubleSummaryMetric.SetEmptySummary()
 	doubleSummaryDataPoints := doubleSummary.DataPoints()
 	doubleSummaryDataPoint := doubleSummaryDataPoints.AppendEmpty()
 	doubleSummaryDataPoint.SetCount(2)
 	doubleSummaryDataPoint.SetSum(10.1)
 	doubleSummaryDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
-	doubleSummaryDataPoint.Attributes().InsertString("innerLabel", "innerValue")
+	doubleSummaryDataPoint.Attributes().PutStr("innerLabel", "innerValue")
 	quantileVal := doubleSummaryDataPoint.QuantileValues().AppendEmpty()
 	quantileVal.SetValue(10.2)
 	quantileVal.SetQuantile(0.9)
@@ -142,9 +136,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	for j := 0; j < len(gotLogs); j++ {
 		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
 		sort.Sort(logKeyValuePairs(wantLogs[j]))
-		if !reflect.DeepEqual(gotLogPairs[j], wantLogs[j]) {
-			t.Errorf("Unsuccessful conversion \nGot:\n\t%v\nWant:\n\t%v", gotLogPairs, wantLogs)
-		}
+		assert.Equal(t, wantLogs[j], gotLogPairs[j])
 	}
 }
 

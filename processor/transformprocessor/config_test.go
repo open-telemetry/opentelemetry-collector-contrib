@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,85 +19,159 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func TestLoadingConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+func TestLoadConfig(t *testing.T) {
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	assert.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	p0 := cfg.Processors[config.NewComponentID(typeStr)]
-	assert.Equal(t, p0, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Traces: SignalConfig{
-			Queries: []string{
-				`set(name, "bear") where attributes["http.path"] == "/animal"`,
-				`keep_keys(attributes, "http.method", "http.path")`,
+	tests := []struct {
+		id           component.ID
+		expected     component.Config
+		errorMessage string
+	}{
+		{
+			id: component.NewIDWithName(typeStr, ""),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Context: "span",
+						Statements: []string{
+							`set(name, "bear") where attributes["http.path"] == "/animal"`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+						},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Context: "datapoint",
+						Statements: []string{
+							`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+						},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Context: "log",
+						Statements: []string{
+							`set(body, "bear") where attributes["http.path"] == "/animal"`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+						},
+					},
+				},
 			},
-
-			functions: traces.DefaultFunctions(),
 		},
-		Metrics: SignalConfig{
-			Queries: []string{
-				`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
-				`keep_keys(attributes, "http.method", "http.path")`,
+		{
+			id: component.NewIDWithName(typeStr, "ignore_errors"),
+			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+						},
+					},
+				},
+				MetricStatements: []common.ContextStatements{},
+				LogStatements:    []common.ContextStatements{},
 			},
-
-			functions: metrics.DefaultFunctions(),
 		},
-		Logs: SignalConfig{
-			Queries: []string{
-				`set(body, "bear") where attributes["http.path"] == "/animal"`,
-				`keep_keys(attributes, "http.method", "http.path")`,
-			},
-
-			functions: logs.DefaultFunctions(),
+		{
+			id:           component.NewIDWithName(typeStr, "bad_syntax_trace"),
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
 		},
-	})
+		{
+			id:           component.NewIDWithName(typeStr, "unknown_function_trace"),
+			errorMessage: "undefined function not_a_function",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "bad_syntax_metric"),
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "unknown_function_metric"),
+			errorMessage: "undefined function not_a_function",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "bad_syntax_log"),
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "unknown_function_log"),
+			errorMessage: "undefined function not_a_function",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			assert.NoError(t, err)
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			assert.NoError(t, err)
+			assert.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			if tt.expected == nil {
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				return
+			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
-func TestLoadInvalidConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+func Test_UnknownContextID(t *testing.T) {
+	id := component.NewIDWithName(typeStr, "unknown_context")
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	assert.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Processors[typeStr] = factory
+	cfg := factory.CreateDefaultConfig()
 
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_bad_syntax_trace.yaml"), factories)
-	assert.Error(t, err)
-	assert.NotNil(t, cfg)
+	sub, err := cm.Sub(id.String())
+	assert.NoError(t, err)
+	assert.Error(t, component.UnmarshalConfig(sub, cfg))
+}
 
-	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_unknown_function_trace.yaml"), factories)
-	assert.Error(t, err)
-	assert.NotNil(t, cfg)
+func Test_UnknownErrorMode(t *testing.T) {
+	id := component.NewIDWithName(typeStr, "unknown_error_mode")
 
-	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_bad_syntax_metric.yaml"), factories)
-	assert.Error(t, err)
-	assert.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	assert.NoError(t, err)
 
-	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_unknown_function_metric.yaml"), factories)
-	assert.Error(t, err)
-	assert.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_bad_syntax_log.yaml"), factories)
-	assert.Error(t, err)
-	assert.NotNil(t, cfg)
-
-	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_unknown_function_log.yaml"), factories)
-	assert.Error(t, err)
-	assert.NotNil(t, cfg)
+	sub, err := cm.Sub(id.String())
+	assert.NoError(t, err)
+	assert.Error(t, component.UnmarshalConfig(sub, cfg))
 }

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package kubelet
 
 import (
@@ -101,6 +100,12 @@ func TestSetExtraLabels(t *testing.T) {
 									ContainerID: "test-container",
 								},
 							},
+							InitContainerStatuses: []v1.ContainerStatus{
+								{
+									Name:        "init-container1",
+									ContainerID: "test-init-container",
+								},
+							},
 						},
 					},
 				},
@@ -108,6 +113,36 @@ func TestSetExtraLabels(t *testing.T) {
 			args: []string{"uid-1234", "container.id", "container1"},
 			want: map[string]interface{}{
 				string(MetadataLabelContainerID): "test-container",
+			},
+		},
+		{
+			name: "set_init_container_id_valid",
+			metadata: NewMetadata([]MetadataLabel{MetadataLabelContainerID}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: "uid-1234",
+						},
+						Status: v1.PodStatus{
+							ContainerStatuses: []v1.ContainerStatus{
+								{
+									Name:        "container1",
+									ContainerID: "test-container",
+								},
+							},
+							InitContainerStatuses: []v1.ContainerStatus{
+								{
+									Name:        "init-container1",
+									ContainerID: "test-init-container",
+								},
+							},
+						},
+					},
+				},
+			}, nil),
+			args: []string{"uid-1234", "container.id", "init-container1"},
+			want: map[string]interface{}{
+				string(MetadataLabelContainerID): "test-init-container",
 			},
 		},
 		{
@@ -137,6 +172,28 @@ func TestSetExtraLabels(t *testing.T) {
 			}, nil),
 			args:      []string{"uid-1234", "container.id", "container1"},
 			wantError: "pod \"uid-1234\" with container \"container1\" not found in the fetched metadata",
+		},
+		{
+			name: "set_container_id_is_empty",
+			metadata: NewMetadata([]MetadataLabel{MetadataLabelContainerID}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: "uid-1234",
+						},
+						Status: v1.PodStatus{
+							ContainerStatuses: []v1.ContainerStatus{
+								{
+									Name:        "container1",
+									ContainerID: "",
+								},
+							},
+						},
+					},
+				},
+			}, nil),
+			args:      []string{"uid-1234", "container.id", "container1"},
+			wantError: "pod \"uid-1234\" with container \"container1\" has an empty containerID",
 		},
 		{
 			name:      "set_volume_type_no_metadata",
@@ -172,8 +229,9 @@ func TestSetExtraLabels(t *testing.T) {
 			ro, err := tt.metadata.getExtraResources(stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), tt.args[2])
 
 			r := pmetric.NewResourceMetrics()
+			ras := metadata.DefaultResourceAttributesSettings()
 			for _, op := range ro {
-				op(r)
+				op(ras, r)
 			}
 
 			if tt.wantError == "" {
@@ -317,6 +375,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			volName := "volume0"
+			ras := metadata.DefaultResourceAttributesSettings()
 			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
 					{
@@ -340,7 +399,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 
 			rm := pmetric.NewResourceMetrics()
 			for _, op := range ro {
-				op(rm)
+				op(ras, rm)
 			}
 
 			assert.Equal(t, tt.want, rm.Resource().Attributes().AsRaw())

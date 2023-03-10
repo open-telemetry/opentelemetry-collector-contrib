@@ -17,6 +17,8 @@ package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"os"
+	"runtime"
+	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -28,7 +30,10 @@ import (
 	"go.uber.org/zap"
 )
 
-var collectorDistribution = "opentelemetry-collector-contrib"
+// Constant prefixes used to identify information in user-agent
+const agentPrefix = "xray-otel-exporter/"
+const execEnvPrefix = " exec-env/"
+const osPrefix = " OS/"
 
 // xrayClient represents X-Ray client.
 type xrayClient struct {
@@ -45,14 +50,36 @@ func (c *xrayClient) PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (
 	return c.xRay.PutTelemetryRecords(input)
 }
 
+func getModVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "UNKNOWN"
+	}
+
+	for _, mod := range info.Deps {
+		if mod.Path == "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter" {
+			return mod.Version
+		}
+	}
+
+	return "UNKNOWN"
+}
+
 // newXRay creates a new instance of the XRay client with a aws configuration and session .
 func newXRay(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, s *session.Session) xrayClient {
 	x := xray.New(s, awsConfig)
 	logger.Debug("Using Endpoint: %s", zap.String("endpoint", x.Endpoint))
 
+	execEnv := os.Getenv("AWS_EXECUTION_ENV")
+	if execEnv == "" {
+		execEnv = "UNKNOWN"
+	}
+
+	osInformation := runtime.GOOS + "-" + runtime.GOARCH
+
 	x.Handlers.Build.PushBackNamed(request.NamedHandler{
 		Name: "tracing.XRayVersionUserAgentHandler",
-		Fn:   request.MakeAddToUserAgentHandler("xray", "1.0", os.Getenv("AWS_EXECUTION_ENV")),
+		Fn:   request.MakeAddToUserAgentFreeFormHandler(agentPrefix + getModVersion() + execEnvPrefix + execEnv + osPrefix + osInformation),
 	})
 
 	x.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo))
@@ -73,6 +100,6 @@ func newXRay(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Buil
 func newCollectorUserAgentHandler(buildInfo component.BuildInfo) request.NamedHandler {
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
-		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version),
+		Fn:   request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version),
 	}
 }

@@ -17,7 +17,7 @@ package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"go.uber.org/zap"
@@ -94,7 +94,7 @@ func (s *serviceDiscovery) runAndWriteFile(ctx context.Context) error {
 				return err
 			}
 			// NOTE: We assume the folder already exists and does NOT try to create one.
-			if err := ioutil.WriteFile(s.cfg.ResultFile, b, 0600); err != nil {
+			if err := os.WriteFile(s.cfg.ResultFile, b, 0600); err != nil {
 				return err
 			}
 		}

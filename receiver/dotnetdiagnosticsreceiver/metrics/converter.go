@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/metrics"
 
 import (
@@ -47,20 +46,18 @@ func rawMetricToPdata(dm dotnet.Metric, pdm pmetric.Metric, startTime, now time.
 	nowPD := pcommon.NewTimestampFromTime(now)
 	switch dm.CounterType() {
 	case "Mean":
-		pdm.SetDataType(pmetric.MetricDataTypeGauge)
-		dps := pdm.Gauge().DataPoints()
+		dps := pdm.SetEmptyGauge().DataPoints()
 		dp := dps.AppendEmpty()
 		dp.SetTimestamp(nowPD)
-		dp.SetDoubleVal(dm.Mean())
+		dp.SetDoubleValue(dm.Mean())
 	case "Sum":
-		pdm.SetDataType(pmetric.MetricDataTypeSum)
-		sum := pdm.Sum()
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		sum := pdm.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		dps := sum.DataPoints()
 		dp := dps.AppendEmpty()
 		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 		dp.SetTimestamp(nowPD)
-		dp.SetDoubleVal(dm.Increment())
+		dp.SetDoubleValue(dm.Increment())
 	}
 	return pdm
 }
@@ -70,8 +67,7 @@ func rawMetricToPdata(dm dotnet.Metric, pdm pmetric.Metric, startTime, now time.
 // conforming so are left unchanged.
 func mapUnits(units string) string {
 	// do we want to make this mapping configurable?
-	switch units {
-	case "B":
+	if units == "B" {
 		return "By"
 	}
 	return units

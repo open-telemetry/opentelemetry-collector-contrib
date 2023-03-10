@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -27,19 +27,20 @@ import (
 const (
 	// Value of "type" key in configuration.
 	typeStr = "k8s_events"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a factory for k8s_cluster receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver))
+		receiver.WithLogs(createLogsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
@@ -48,10 +49,10 @@ func createDefaultConfig() config.Receiver {
 
 func createLogsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	params receiver.CreateSettings,
+	cfg component.Config,
 	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	rCfg := cfg.(*Config)
 
 	k8sInterface, err := rCfg.getK8sClient()

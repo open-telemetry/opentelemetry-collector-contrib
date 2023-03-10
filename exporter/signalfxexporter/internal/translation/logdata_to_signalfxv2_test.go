@@ -56,9 +56,9 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		logs := plog.NewLogs()
 		resourceLogs := logs.ResourceLogs()
 		resourceLog := resourceLogs.AppendEmpty()
-		resourceLog.Resource().Attributes().InsertString("k0", "should use ILL attr value instead")
-		resourceLog.Resource().Attributes().InsertString("k3", "v3")
-		resourceLog.Resource().Attributes().InsertInt("k4", 123)
+		resourceLog.Resource().Attributes().PutStr("k0", "should use ILL attr value instead")
+		resourceLog.Resource().Attributes().PutStr("k3", "v3")
+		resourceLog.Resource().Attributes().PutInt("k4", 123)
 
 		ilLogs := resourceLog.ScopeLogs()
 		logSlice := ilLogs.AppendEmpty().LogRecords()
@@ -67,22 +67,17 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		l.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
 
-		attrs.InsertString("k0", "v0")
-		attrs.InsertString("k1", "v1")
-		attrs.InsertString("k2", "v2")
+		attrs.PutStr("k0", "v0")
+		attrs.PutStr("k1", "v1")
+		attrs.PutStr("k2", "v2")
+		attrs.PutInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
+		attrs.PutStr("com.splunk.signalfx.event_type", "shutdown")
 
-		propMapVal := pcommon.NewValueMap()
-		propMap := propMapVal.MapVal()
-		propMap.InsertString("env", "prod")
-		propMap.InsertBool("isActive", true)
-		propMap.InsertInt("rack", 5)
-		propMap.InsertDouble("temp", 40.5)
-		propMap.Sort()
-		attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
-		attrs.Insert("com.splunk.signalfx.event_category", pcommon.NewValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
-		attrs.Insert("com.splunk.signalfx.event_type", pcommon.NewValueString("shutdown"))
-
-		l.Attributes().Sort()
+		propMap := attrs.PutEmptyMap("com.splunk.signalfx.event_properties")
+		propMap.PutStr("env", "prod")
+		propMap.PutBool("isActive", true)
+		propMap.PutInt("rack", 5)
+		propMap.PutDouble("temp", 40.5)
 
 		return logs
 	}
@@ -108,7 +103,21 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 			logData: func() plog.Logs {
 				logs := buildDefaultLogs()
 				lrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pcommon.NewValueEmpty())
+				lrs.At(0).Attributes().PutEmpty("com.splunk.signalfx.event_category")
+				return logs
+			}(),
+		},
+		{
+			name: "missing event type",
+			sfxEvents: func() []*sfxpb.Event {
+				e := buildDefaultSFxEvent()
+				e.EventType = "unknown"
+				return []*sfxpb.Event{e}
+			}(),
+			logData: func() plog.Logs {
+				logs := buildDefaultLogs()
+				lrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+				lrs.At(0).Attributes().Remove("com.splunk.signalfx.event_type")
 				return logs
 			}(),
 		},
@@ -119,9 +128,6 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 			resource := tt.logData.ResourceLogs().At(0).Resource()
 			logSlice := tt.logData.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 			events, dropped := LogRecordSliceToSignalFxV2(zap.NewNop(), logSlice, resource.Attributes())
-			for i := 0; i < logSlice.Len(); i++ {
-				logSlice.At(i).Attributes().Sort()
-			}
 
 			for k := range events {
 				sort.Slice(events[k].Properties, func(i, j int) bool {

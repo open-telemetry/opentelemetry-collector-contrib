@@ -21,7 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -73,7 +73,7 @@ func (p *azureProviderImpl) Metadata(ctx context.Context) (*ComputeMetadata, err
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.endpoint, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %v", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Add("Metadata", "True")
@@ -84,22 +84,22 @@ func (p *azureProviderImpl) Metadata(ctx context.Context) (*ComputeMetadata, err
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query Azure IMDS: %v", err)
+		return nil, fmt.Errorf("failed to query Azure IMDS: %w", err)
 	} else if resp.StatusCode != 200 {
 		//lint:ignore ST1005 Azure is a capitalized proper noun here
 		return nil, fmt.Errorf("Azure IMDS replied with status code: %s", resp.Status)
 	}
 
 	defer resp.Body.Close()
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure IMDS reply: %v", err)
+		return nil, fmt.Errorf("failed to read Azure IMDS reply: %w", err)
 	}
 
 	var metadata *ComputeMetadata
 	err = json.Unmarshal(respBody, &metadata)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode Azure IMDS reply: %v", err)
+		return nil, fmt.Errorf("failed to decode Azure IMDS reply: %w", err)
 	}
 
 	return metadata, nil

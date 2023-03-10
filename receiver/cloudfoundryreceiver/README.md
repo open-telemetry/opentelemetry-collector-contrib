@@ -1,5 +1,11 @@
 # Cloud Foundry Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 The Cloud Foundry receiver connects to the RLP (Reverse Log Proxy) Gateway of the Cloud Foundry installation, typically
 available at the URL `https://log-stream.<cf-system-domain>`.
 
@@ -98,3 +104,6 @@ provide the GUID and name of application, space and organization respectively.
 This might not be a comprehensive list of attributes, as the receiver passes on whatever attributes the gateway
 provides, which may include some that are specific to TAS and possibly new ones in future Cloud Foundry versions as
 well.
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

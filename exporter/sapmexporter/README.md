@@ -1,13 +1,17 @@
 # SAPM Exporter
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | traces    |
+| Distributions            | [contrib] |
+
 The SAPM exporter builds on the Jaeger proto and adds additional batching on top. This allows
 the collector to export traces from multiples nodes/services in a single batch. The SAPM proto
 and some useful related utilities can be found [here](https://github.com/signalfx/sapm-proto/).
 
-Supported pipeline types: traces
-
 > Please review the Collector's [security
-> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md),
 > which contains recommendations on securing sensitive information such as the
 > API key required by this exporter.
 
@@ -20,8 +24,8 @@ another backend that supports the SAPM proto. The SignalFx access token can be o
 web app. For details on how to do so please refer the documentation [here](https://docs.signalfx.com/en/latest/admin-guide/tokens.html#access-tokens).
 - `endpoint` (no default): This is the destination to where traces will be sent to in SAPM
 format. It must be a full URL and include the scheme, port and path e.g,
-https://ingest.us0.signalfx.com/v2/trace. This can be pointed to the SignalFx backend or to
-another Otel collector that has the SAPM receiver enabled.
+<!-- markdown-link-check-disable-line -->https://ingest.us0.signalfx.com/v2/trace. This can be pointed to the SignalFx 
+backend or to another Otel collector that has the SAPM receiver enabled.
 
 The following configuration options can also be configured:
 
@@ -35,6 +39,8 @@ trace resource attribute, if any, as SFx access token.  In either case this attr
 during final translation.  Intended to be used in tandem with identical configuration option for
 [SAPM receiver](../../receiver/sapmreceiver/README.md) to preserve trace origin.
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
+- `log_detailed_response` (default = `false`): Option to log detailed response from Splunk APM.
+In addition to setting this option to `true`, debug logging at the Collector level needs to be enabled.
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
@@ -50,6 +56,7 @@ exporters:
     endpoint: https://ingest.YOUR_SIGNALFX_REALM.signalfx.com/v2/trace
     max_connections: 100
     num_workers: 8
+    log_detailed_response: true
 ```
 
 The full list of settings exposed for this exporter are documented [here](config.go)
@@ -57,3 +64,6 @@ with detailed sample configurations [here](testdata/config.yaml).
 
 This exporter also offers proxy support as documented
 [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -1,82 +1,158 @@
 # Loki Exporter
 
-Exports data via HTTP to [Loki](https://grafana.com/docs/loki/latest/).
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
 
-Supported pipeline types: logs
+Exports data via HTTP to [Loki](https://grafana.com/docs/loki/latest/).
 
 ## Getting Started
 
 The following settings are required:
 
-- `endpoint` (no default): The target URL to send Loki log streams to (e.g.: http://loki:3100/loki/api/v1/push).
-  
-- `labels.{attributes/resource}` (no default): Either a map of attributes or resource names to valid Loki label names 
-  (must match "^[a-zA-Z_][a-zA-Z0-9_]*$") allowed to be added as labels to Loki log streams. 
-  Attributes are log record attributes that describe the log message itself. Resource attributes are attributes that 
-  belong to the infrastructure that create the log (container_name, cluster_name, etc.). At least one attribute from
-  attribute or resource is required 
-  Logs that do not have at least one of these attributes will be dropped. 
-  This is a safety net to help prevent accidentally adding dynamic labels that may significantly increase cardinality, 
-  thus having a performance impact on your Loki instance. See the 
-  [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/) page for 
-  additional details on the types of labels you may want to associate with log streams.
+- `endpoint` (no default): The target URL to send Loki log streams to (e.g.: `http://loki:3100/loki/api/v1/push`).
 
-- `labels.record` (no default): A map of record attributes to valid Loki label names (must match 
-  "^[a-zA-Z_][a-zA-Z0-9_]*$") allowed to be added as labels to Loki log streams.
-  Record attributes can be: `traceID`, `spanID`, `severity`, `severityN`. These attributes will be added as log labels 
-  and will be removed from the log body.
+The following options are now deprecated:
 
-The following settings can be optionally configured:
-
-- `tenant_id` (no default): The tenant ID used to identify the tenant the logs are associated to. This will set the 
-  "X-Scope-OrgID" header used by Loki. If left unset, this header will not be added.
-
-- `tls`:
-  - `insecure` (default = false): When set to true disables verifying the server's certificate chain and host name. The
-  connection is still encrypted but server identity is not verified.
-  - `ca_file` (no default) Path to the CA cert to verify the server being connected to. Should only be used if `insecure` 
-  is set to false.
-  - `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required. 
-  Should only be used if `insecure` is set to false.
-  - `key_file` (no default) Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is
-  set to false.
-
-
-- `timeout` (default = 30s): HTTP request time limit. For details see https://golang.org/pkg/net/http/#Client
-- `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
-- `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
-
-
-- `headers` (no default): Name/value pairs added to the HTTP request headers.
-
-- `format` (default = body): Set the log entry line format. This can be set to 'json' (the entire JSON encoded log record) or 'body' (the log record body field as a string).
+- `labels.{attributes/resource}`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
+- `labels.record`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
+- `tenant`: Deprecated and will be removed by v0.59.0. See the [Labels](#tenant-information) section for more information.
+- `format` Deprecated without replacement. If you rely on this, let us know by opening an issue before v0.59.0 and we'll assist you in finding a solution.
 
 Example:
-
 ```yaml
-loki:
-  endpoint: http://loki:3100/loki/api/v1/push
-  tenant_id: "example"
-  labels:
-    resource:
-      # Allowing 'container.name' attribute and transform it to 'container_name', which is a valid Loki label name.
-      container.name: "container_name"
-      # Allowing 'k8s.cluster.name' attribute and transform it to 'k8s_cluster_name', which is a valid Loki label name.
-      k8s.cluster.name: "k8s_cluster_name"
-    attributes:
-      # Allowing 'severity' attribute and not providing a mapping, since the attribute name is a valid Loki label name.
-      severity: ""
-      http.status_code: "http_status_code" 
-    record:
-      # Adds 'traceID' as a log label, seen as 'traceid' in Loki.
-      traceID: "traceid"
+receivers:
+  otlp:
 
-  headers:
-    "X-Custom-Header": "loki_rocks"
+exporters:
+  loki:
+    endpoint: https://loki.example.com:3100/loki/api/v1/push
+
+processors:
+  attributes:
+    actions:
+    - action: insert
+      key: event_domain
+      from_attribute: event.domain
+    - action: insert
+      key: loki.attribute.labels
+      value: event_domain
+
+  resource:
+    attributes:
+    - action: insert
+      key: service_name
+      from_attribute: service.name
+    - action: insert
+      key: service_namespace
+      from_attribute: service.namespace
+    - action: insert
+      key: loki.resource.labels
+      value: service_name, service_namespace
+
+extensions:
+
+service:
+  extensions:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [resource, attributes]
+      exporters: [loki]
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample
 configurations [here](./testdata/config.yaml).
+
+More information on how to send logs to Grafana Loki using the OpenTelemetry Collector could be found [here](https://grafana.com/docs/opentelemetry/collector/send-logs-to-loki/)
+## Labels
+
+The Loki exporter can convert OTLP resource and log attributes into Loki labels, which are indexed. For that, you need to configure
+hints, specifying which attributes should be placed as labels. The hints are themselves attributes and will be ignored when
+exporting to Loki. The following example uses the `attributes` processor to hint the Loki exporter to set the `event.domain` 
+attribute as label and the `resource` processor to give a hint to the Loki exporter to set the `service.name` as label.
+
+```yaml
+processors:
+  attributes:
+    actions:
+      - action: insert
+        key: event_domain
+        from_attribute: event.domain
+      - action: insert
+        key: loki.attribute.labels
+        value: event_domain
+
+  resource:
+    attributes:
+      - action: insert
+        key: service_name
+        from_attribute: service.name
+      - action: insert
+        key: loki.resource.labels
+        value: service_name
+```
+
+Currently, Loki does not support labels with dots. 
+That’s why to add Loki label based on `event.domain` OTLP attribute we need to specify two actions. The first one inserts a new attribute `event_domain` from the OTLP attribute `event.domain`. The second one is a hint for Loki, specifying that the `event_domain` attribute should be placed as a Loki label.
+The same approach is applicable to placing Loki labels from resource attribute `service.name`.
+
+Default labels:
+- `job=service.namespace/service.name`
+- `instance=service.instance.id`
+- `exporter=OTLP`
+
+`exporter=OTLP` is always set.
+
+If `service.name` and `service.namespace` are present then `job=service.namespace/service.name` is set
+
+If `service.name` is present and `service.namespace` is not present then `job=service.name` is set
+
+If `service.name` is not present and `service.namespace` is present then `job` label is not set
+
+If `service.instance.id` is present then `instance=service.instance.id` is set
+
+If `service.instance.id` is not present then `instance` label is not set
+
+## Tenant information
+
+It is recommended to use the [`header_setter`](../../extension/headerssetterextension/README.md) extension to configure the tenant information to send to Loki. In case a static tenant
+should be used, you can make use of the `headers` option for regular HTTP client settings, like the following:
+
+```yaml
+exporters:
+  loki:
+    endpoint: http://localhost:3100/loki/api/v1/push
+    headers:
+      "X-Scope-OrgID": acme
+```
+
+It is also possible to provide the `loki.tenant` attribute hint that specifies
+which resource or log attributes value should be used as a tenant. For example:
+
+```yaml
+processors:
+  resource:
+    attributes:
+    - action: insert
+      key: loki.tenant
+      value: host_name
+    - action: insert
+      key: host_name
+      from_attribute: host.name
+```
+
+In this case the value of the `host.name` resource attribute is used to group logs
+by tenant and send requests with the `X-Scope-OrgID` header set to relevant tenants.
+
+If the `loki.tenant` hint attribute is present in both resource or log attributes,
+then the look-up for a tenant value from resource attributes takes precedence.
+
+## Severity
+
+OpenTelemetry uses `record.severity` to track log levels where loki uses `record.attributes.level` for the same. The exporter automatically maps the two, except if a "level" attribute already exists.
 
 ## Advanced Configuration
 
@@ -84,3 +160,6 @@ Several helper files are leveraged to provide additional capabilities automatica
 
 - [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
 - [Queuing and retry settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

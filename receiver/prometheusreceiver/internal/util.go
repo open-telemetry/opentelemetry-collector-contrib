@@ -16,10 +16,15 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"errors"
+	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/textparse"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const (
@@ -27,6 +32,8 @@ const (
 	metricsSuffixBucket = "_bucket"
 	metricsSuffixSum    = "_sum"
 	metricSuffixTotal   = "_total"
+	metricSuffixInfo    = "_info"
+	metricSuffixCreated = "_created"
 	startTimeMetricName = "process_start_time_seconds"
 	scrapeUpMetricName  = "up"
 
@@ -35,39 +42,89 @@ const (
 )
 
 var (
-	trimmableSuffixes     = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum, metricSuffixTotal}
+	trimmableSuffixes     = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum, metricSuffixTotal, metricSuffixInfo, metricSuffixCreated}
 	errNoDataToBuild      = errors.New("there's no data to build")
-	errNoBoundaryLabel    = errors.New("given metricType has no BucketLabel or QuantileLabel")
-	errEmptyBoundaryLabel = errors.New("BucketLabel or QuantileLabel is empty")
+	errNoBoundaryLabel    = errors.New("given metricType has no 'le' or 'quantile' label")
+	errEmptyQuantileLabel = errors.New("'quantile' label on summary metric missing is empty")
+	errEmptyLeLabel       = errors.New("'le' label on histogram metric id missing or empty")
 	errMetricNameNotFound = errors.New("metricName not found from labels")
 	errTransactionAborted = errors.New("transaction aborted")
 	errNoJobInstance      = errors.New("job or instance cannot be found from labels")
-	errNoStartTimeMetrics = errors.New("process_start_time_seconds metric is missing")
+
+	notUsefulLabelsHistogram = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel, model.BucketLabel})
+	notUsefulLabelsSummary   = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel, model.QuantileLabel})
+	notUsefulLabelsOther     = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel})
 )
 
-// dpgSignature is used to create a key for data complexValue belong to a same group of a metric family
-func dpgSignature(orderedKnownLabelKeys []string, ls labels.Labels) string {
-	size := 0
-	for _, k := range orderedKnownLabelKeys {
-		v := ls.Get(k)
-		if v == "" {
-			continue
-		}
-		// 2 enclosing quotes + 1 equality sign = 3 extra chars.
-		// Note: if any character in the label value requires escaping,
-		// we'll need more space than that, which will lead to some
-		// extra allocation.
-		size += 3 + len(k) + len(v)
+func sortString(strs []string) []string {
+	sort.Strings(strs)
+	return strs
+}
+
+func getSortedNotUsefulLabels(mType pmetric.MetricType) []string {
+	switch mType {
+	case pmetric.MetricTypeHistogram:
+		return notUsefulLabelsHistogram
+	case pmetric.MetricTypeSummary:
+		return notUsefulLabelsSummary
+	default:
+		return notUsefulLabelsOther
 	}
-	sign := make([]byte, 0, size)
-	for _, k := range orderedKnownLabelKeys {
-		v := ls.Get(k)
-		if v == "" {
-			continue
+}
+
+func timestampFromFloat64(ts float64) pcommon.Timestamp {
+	secs := int64(ts)
+	nanos := int64((ts - float64(secs)) * 1e9)
+	return pcommon.Timestamp(secs*1e9 + nanos)
+}
+
+func timestampFromMs(timeAtMs int64) pcommon.Timestamp {
+	return pcommon.Timestamp(timeAtMs * 1e6)
+}
+
+func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, error) {
+	val := ""
+	switch metricType {
+	case pmetric.MetricTypeHistogram:
+		val = labels.Get(model.BucketLabel)
+		if val == "" {
+			return 0, errEmptyLeLabel
 		}
-		sign = strconv.AppendQuote(sign, k+"="+v)
+	case pmetric.MetricTypeSummary:
+		val = labels.Get(model.QuantileLabel)
+		if val == "" {
+			return 0, errEmptyQuantileLabel
+		}
+	default:
+		return 0, errNoBoundaryLabel
 	}
-	return string(sign)
+
+	return strconv.ParseFloat(val, 64)
+}
+
+// convToMetricType returns the data type and if it is monotonic
+func convToMetricType(metricType textparse.MetricType) (pmetric.MetricType, bool) {
+	switch metricType {
+	case textparse.MetricTypeCounter:
+		// always use float64, as it's the internal data type used in prometheus
+		return pmetric.MetricTypeSum, true
+	// textparse.MetricTypeUnknown is converted to gauge by default to prevent Prometheus untyped metrics from being dropped
+	case textparse.MetricTypeGauge, textparse.MetricTypeUnknown:
+		return pmetric.MetricTypeGauge, false
+	case textparse.MetricTypeHistogram:
+		return pmetric.MetricTypeHistogram, true
+	// dropping support for gaugehistogram for now until we have an official spec of its implementation
+	// a draft can be found in: https://docs.google.com/document/d/1KwV0mAXwwbvvifBvDKH_LU1YjyXE_wxCkHNoCGq1GX0/edit#heading=h.1cvzqd4ksd23
+	// case textparse.MetricTypeGaugeHistogram:
+	//	return <pdata gauge histogram type>
+	case textparse.MetricTypeSummary:
+		return pmetric.MetricTypeSummary, true
+	case textparse.MetricTypeInfo, textparse.MetricTypeStateset:
+		return pmetric.MetricTypeSum, false
+	default:
+		// including: textparse.MetricTypeGaugeHistogram
+		return pmetric.MetricTypeEmpty, false
+	}
 }
 
 func normalizeMetricName(name string) string {
@@ -77,11 +134,4 @@ func normalizeMetricName(name string) string {
 		}
 	}
 	return name
-}
-
-func isInternalMetric(metricName string) bool {
-	if metricName == scrapeUpMetricName || strings.HasPrefix(metricName, "scrape_") {
-		return true
-	}
-	return false
 }

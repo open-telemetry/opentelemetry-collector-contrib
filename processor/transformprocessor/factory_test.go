@@ -19,53 +19,39 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func TestFactory_Type(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, factory.Type(), config.Type(typeStr))
+	assert.Equal(t, factory.Type(), component.Type(typeStr))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Traces: SignalConfig{
-			Queries: []string{},
-
-			functions: traces.DefaultFunctions(),
-		},
-		Metrics: SignalConfig{
-			Queries: []string{},
-
-			functions: metrics.DefaultFunctions(),
-		},
-		Logs: SignalConfig{
-			Queries: []string{},
-
-			functions: logs.DefaultFunctions(),
-		},
+		ErrorMode:        ottl.PropagateError,
+		TraceStatements:  []common.ContextStatements{},
+		MetricStatements: []common.ContextStatements{},
+		LogStatements:    []common.ContextStatements{},
 	})
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestFactoryCreateProcessor_Empty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.NoError(t, err)
 }
 
@@ -73,8 +59,13 @@ func TestFactoryCreateTracesProcessor_InvalidActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Traces.Queries = []string{`set(123`}
-	ap, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	oCfg.TraceStatements = []common.ContextStatements{
+		{
+			Context:    "span",
+			Statements: []string{`set(123`},
+		},
+	}
+	ap, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -83,9 +74,13 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Traces.Queries = []string{`set(attributes["test"], "pass") where name == "operationA"`}
-
-	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	oCfg.TraceStatements = []common.ContextStatements{
+		{
+			Context:    "span",
+			Statements: []string{`set(attributes["test"], "pass") where name == "operationA"`},
+		},
+	}
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
@@ -101,15 +96,20 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 
 	val, ok := span.Attributes().Get("test")
 	assert.True(t, ok)
-	assert.Equal(t, "pass", val.StringVal())
+	assert.Equal(t, "pass", val.Str())
 }
 
 func TestFactoryCreateMetricsProcessor_InvalidActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Metrics.Queries = []string{`set(123`}
-	ap, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	oCfg.MetricStatements = []common.ContextStatements{
+		{
+			Context:    "datapoint",
+			Statements: []string{`set(123`},
+		},
+	}
+	ap, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -118,18 +118,21 @@ func TestFactoryCreateMetricsProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Metrics.Queries = []string{`set(attributes["test"], "pass") where metric.name == "operationA"`}
-
-	metricsProcessor, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	oCfg.MetricStatements = []common.ContextStatements{
+		{
+			Context:    "datapoint",
+			Statements: []string{`set(attributes["test"], "pass") where metric.name == "operationA"`},
+		},
+	}
+	metricsProcessor, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NotNil(t, metricsProcessor)
 	assert.NoError(t, err)
 
 	metrics := pmetric.NewMetrics()
 	metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetName("operationA")
-	metric.SetDataType(pmetric.MetricDataTypeSum)
 
-	_, ok := metric.Sum().DataPoints().AppendEmpty().Attributes().Get("test")
+	_, ok := metric.SetEmptySum().DataPoints().AppendEmpty().Attributes().Get("test")
 	assert.False(t, ok)
 
 	err = metricsProcessor.ConsumeMetrics(context.Background(), metrics)
@@ -137,22 +140,26 @@ func TestFactoryCreateMetricsProcessor(t *testing.T) {
 
 	val, ok := metric.Sum().DataPoints().At(0).Attributes().Get("test")
 	assert.True(t, ok)
-	assert.Equal(t, "pass", val.StringVal())
+	assert.Equal(t, "pass", val.Str())
 }
 
 func TestFactoryCreateLogsProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Logs.Queries = []string{`set(attributes["test"], "pass") where body == "operationA"`}
-
-	lp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	oCfg.LogStatements = []common.ContextStatements{
+		{
+			Context:    "log",
+			Statements: []string{`set(attributes["test"], "pass") where body == "operationA"`},
+		},
+	}
+	lp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 
 	ld := plog.NewLogs()
 	log := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.Body().SetStringVal("operationA")
+	log.Body().SetStr("operationA")
 
 	_, ok := log.Attributes().Get("test")
 	assert.False(t, ok)
@@ -162,15 +169,20 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 
 	val, ok := log.Attributes().Get("test")
 	assert.True(t, ok)
-	assert.Equal(t, "pass", val.StringVal())
+	assert.Equal(t, "pass", val.Str())
 }
 
 func TestFactoryCreateLogsProcessor_InvalidActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Logs.Queries = []string{`set(123`}
-	ap, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	oCfg.LogStatements = []common.ContextStatements{
+		{
+			Context:    "log",
+			Statements: []string{`set(123`},
+		},
+	}
+	ap, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }

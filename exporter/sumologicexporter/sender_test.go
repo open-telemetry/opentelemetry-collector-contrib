@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package sumologicexporter
 
 import (
@@ -22,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/atomic"
 )
 
 type senderTest struct {
@@ -40,7 +39,7 @@ type senderTest struct {
 }
 
 func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.Request)) *senderTest {
-	reqCounter := atomic.NewInt32(0)
+	reqCounter := &atomic.Int32{}
 	// generate a test server so we can capture and inspect the request
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if len(cb) == 0 {
@@ -49,7 +48,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 
 		if c := int(reqCounter.Load()); assert.Greater(t, len(cb), c) {
 			cb[c](w, req)
-			reqCounter.Inc()
+			reqCounter.Add(1)
 		}
 	}))
 
@@ -72,11 +71,9 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 	c, err := newCompressor(NoCompression)
 	require.NoError(t, err)
 
-	pf, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	pf := newPrometheusFormatter()
 
-	gf, err := newGraphiteFormatter(DefaultGraphiteTemplate)
-	require.NoError(t, err)
+	gf := newGraphiteFormatter(DefaultGraphiteTemplate)
 
 	err = exp.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -91,9 +88,9 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 			},
 			f,
 			sourceFormats{
-				host:     getTestSourceFormat(t, "source_host"),
-				category: getTestSourceFormat(t, "source_category"),
-				name:     getTestSourceFormat(t, "source_name"),
+				host:     getTestSourceFormat("source_host"),
+				category: getTestSourceFormat("source_category"),
+				name:     getTestSourceFormat("source_name"),
 			},
 			c,
 			pf,
@@ -112,7 +109,7 @@ func extractBody(t *testing.T, req *http.Request) string {
 func exampleLog() []plog.LogRecord {
 	buffer := make([]plog.LogRecord, 1)
 	buffer[0] = plog.NewLogRecord()
-	buffer[0].Body().SetStringVal("Example log")
+	buffer[0].Body().SetStr("Example log")
 
 	return buffer
 }
@@ -120,13 +117,13 @@ func exampleLog() []plog.LogRecord {
 func exampleTwoLogs() []plog.LogRecord {
 	buffer := make([]plog.LogRecord, 2)
 	buffer[0] = plog.NewLogRecord()
-	buffer[0].Body().SetStringVal("Example log")
-	buffer[0].Attributes().InsertString("key1", "value1")
-	buffer[0].Attributes().InsertString("key2", "value2")
+	buffer[0].Body().SetStr("Example log")
+	buffer[0].Attributes().PutStr("key1", "value1")
+	buffer[0].Attributes().PutStr("key2", "value2")
 	buffer[1] = plog.NewLogRecord()
-	buffer[1].Body().SetStringVal("Another example log")
-	buffer[1].Attributes().InsertString("key1", "value1")
-	buffer[1].Attributes().InsertString("key2", "value2")
+	buffer[1].Body().SetStr("Another example log")
+	buffer[1].Attributes().PutStr("key1", "value1")
+	buffer[1].Attributes().PutStr("key2", "value2")
 
 	return buffer
 }
@@ -134,13 +131,13 @@ func exampleTwoLogs() []plog.LogRecord {
 func exampleTwoDifferentLogs() []plog.LogRecord {
 	buffer := make([]plog.LogRecord, 2)
 	buffer[0] = plog.NewLogRecord()
-	buffer[0].Body().SetStringVal("Example log")
-	buffer[0].Attributes().InsertString("key1", "value1")
-	buffer[0].Attributes().InsertString("key2", "value2")
+	buffer[0].Body().SetStr("Example log")
+	buffer[0].Attributes().PutStr("key1", "value1")
+	buffer[0].Attributes().PutStr("key2", "value2")
 	buffer[1] = plog.NewLogRecord()
-	buffer[1].Body().SetStringVal("Another example log")
-	buffer[1].Attributes().InsertString("key3", "value3")
-	buffer[1].Attributes().InsertString("key4", "value4")
+	buffer[1].Body().SetStr("Another example log")
+	buffer[1].Attributes().PutStr("key3", "value3")
+	buffer[1].Attributes().PutStr("key4", "value4")
 
 	return buffer
 }
@@ -149,24 +146,24 @@ func exampleMultitypeLogs() []plog.LogRecord {
 	buffer := make([]plog.LogRecord, 2)
 
 	attVal := pcommon.NewValueMap()
-	attMap := attVal.MapVal()
-	attMap.InsertString("lk1", "lv1")
-	attMap.InsertInt("lk2", 13)
+	attMap := attVal.Map()
+	attMap.PutStr("lk1", "lv1")
+	attMap.PutInt("lk2", 13)
 
 	buffer[0] = plog.NewLogRecord()
 	attVal.CopyTo(buffer[0].Body())
 
-	buffer[0].Attributes().InsertString("key1", "value1")
-	buffer[0].Attributes().InsertString("key2", "value2")
+	buffer[0].Attributes().PutStr("key1", "value1")
+	buffer[0].Attributes().PutStr("key2", "value2")
 
 	buffer[1] = plog.NewLogRecord()
 
 	attVal = pcommon.NewValueSlice()
-	attArr := attVal.SliceVal()
+	attArr := attVal.Slice()
 	strVal := pcommon.NewValueEmpty()
-	strVal.SetStringVal("lv2")
+	strVal.SetStr("lv2")
 	intVal := pcommon.NewValueEmpty()
-	intVal.SetIntVal(13)
+	intVal.SetInt(13)
 
 	strTgt := attArr.AppendEmpty()
 	strVal.CopyTo(strTgt)
@@ -174,8 +171,8 @@ func exampleMultitypeLogs() []plog.LogRecord {
 	intVal.CopyTo(intTgt)
 
 	attVal.CopyTo(buffer[1].Body())
-	buffer[1].Attributes().InsertString("key1", "value1")
-	buffer[1].Attributes().InsertString("key2", "value2")
+	buffer[1].Attributes().PutStr("key1", "value1")
+	buffer[1].Attributes().PutStr("key2", "value2")
 
 	return buffer
 }
@@ -423,7 +420,7 @@ func TestOverrideSourceName(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 
-	test.s.sources.name = getTestSourceFormat(t, "Test source name/%{key1}")
+	test.s.sources.name = getTestSourceFormat("Test source name/%{key1}")
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key1": "test_name"}))
@@ -438,7 +435,7 @@ func TestOverrideSourceCategory(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 
-	test.s.sources.category = getTestSourceFormat(t, "Test source category/%{key1}")
+	test.s.sources.category = getTestSourceFormat("Test source category/%{key1}")
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key1": "test_name"}))
@@ -453,7 +450,7 @@ func TestOverrideSourceHost(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 
-	test.s.sources.host = getTestSourceFormat(t, "Test source host/%{key1}")
+	test.s.sources.host = getTestSourceFormat("Test source host/%{key1}")
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key1": "test_name"}))
@@ -546,7 +543,8 @@ func TestSendCompressGzip(t *testing.T) {
 	test := prepareSenderTest(t, []func(res http.ResponseWriter, req *http.Request){
 		func(res http.ResponseWriter, req *http.Request) {
 			res.WriteHeader(200)
-			res.Write([]byte(""))
+			_, err := res.Write([]byte(""))
+			require.NoError(t, err)
 			body := decodeGzip(t, req.Body)
 			assert.Equal(t, "gzip", req.Header.Get("Content-Encoding"))
 			assert.Equal(t, "Some example log", body)
@@ -570,7 +568,8 @@ func TestSendCompressDeflate(t *testing.T) {
 	test := prepareSenderTest(t, []func(res http.ResponseWriter, req *http.Request){
 		func(res http.ResponseWriter, req *http.Request) {
 			res.WriteHeader(200)
-			res.Write([]byte(""))
+			_, err := res.Write([]byte(""))
+			require.NoError(t, err)
 			body := decodeDeflate(t, req.Body)
 			assert.Equal(t, "deflate", req.Header.Get("Content-Encoding"))
 			assert.Equal(t, "Some example log", body)
@@ -819,9 +818,9 @@ foo=bar metric=gauge_metric_name  245 1608124662`
 		"key2": "value2",
 	})
 
-	test.s.metricBuffer[0].attributes.InsertString("unit", "m/s")
-	test.s.metricBuffer[0].attributes.InsertString("escape me", "=invalid\n")
-	test.s.metricBuffer[0].attributes.InsertBool("metric", true)
+	test.s.metricBuffer[0].attributes.PutStr("unit", "m/s")
+	test.s.metricBuffer[0].attributes.PutStr("escape me", "=invalid\n")
+	test.s.metricBuffer[0].attributes.PutBool("metric", true)
 
 	_, err := test.s.sendMetrics(context.Background(), flds)
 	assert.NoError(t, err)
@@ -841,8 +840,7 @@ gauge_metric_name.. 245 1608124662`
 	})
 	defer func() { test.srv.Close() }()
 
-	gf, err := newGraphiteFormatter("%{_metric_}.%{metric}.%{unit}")
-	require.NoError(t, err)
+	gf := newGraphiteFormatter("%{_metric_}.%{metric}.%{unit}")
 	test.s.graphiteFormatter = gf
 
 	test.s.config.MetricFormat = GraphiteFormat
@@ -856,9 +854,9 @@ gauge_metric_name.. 245 1608124662`
 		"key2": "value2",
 	})
 
-	test.s.metricBuffer[0].attributes.InsertString("unit", "m/s")
-	test.s.metricBuffer[0].attributes.InsertBool("metric", true)
+	test.s.metricBuffer[0].attributes.PutStr("unit", "m/s")
+	test.s.metricBuffer[0].attributes.PutBool("metric", true)
 
-	_, err = test.s.sendMetrics(context.Background(), flds)
+	_, err := test.s.sendMetrics(context.Background(), flds)
 	assert.NoError(t, err)
 }

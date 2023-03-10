@@ -21,7 +21,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"syscall"
 	"testing"
@@ -33,6 +32,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -184,12 +184,7 @@ func startAndStopObserver(
 	require.NotNil(t, ml.getProcess)
 	require.NotNil(t, ml.collectProcessDetails)
 
-	h := &hostObserver{
-		EndpointsWatcher: observer.EndpointsWatcher{
-			RefreshInterval: 10 * time.Second,
-			Endpointslister: ml,
-		},
-	}
+	h := &hostObserver{EndpointsWatcher: observer.NewEndpointsWatcher(ml, 10*time.Second, zaptest.NewLogger(t))}
 
 	mn := mockNotifier{map[observer.EndpointID]observer.Endpoint{}}
 
@@ -262,6 +257,10 @@ func openTestUDPPorts(t *testing.T) []*net.UDPConn {
 
 type mockNotifier struct {
 	endpointsMap map[observer.EndpointID]observer.Endpoint
+}
+
+func (m mockNotifier) ID() observer.NotifyID {
+	return "mockNotifier"
 }
 
 func (m mockNotifier) OnAdd(added []observer.Endpoint) {
@@ -430,9 +429,7 @@ func TestCollectConnectionDetails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := collectConnectionDetails(&tt.conn); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("collectConnectionDetails() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, collectConnectionDetails(&tt.conn))
 		})
 	}
 }
@@ -548,10 +545,7 @@ func TestCollectEndpoints(t *testing.T) {
 
 			require.NotNil(t, e.collectProcessDetails)
 			require.NotNil(t, e.getProcess)
-
-			if got := e.collectEndpoints(tt.conns); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("collectEndpoints() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, e.collectEndpoints(tt.conns))
 		})
 	}
 }

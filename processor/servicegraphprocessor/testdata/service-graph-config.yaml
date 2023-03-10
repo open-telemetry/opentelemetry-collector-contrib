@@ -1,0 +1,23 @@
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+processors:
+  servicegraph:
+    metrics_exporter: metrics
+    latency_histogram_buckets: [1,2,3,4,5]
+    dimensions:
+      - dimension-1
+      - dimension-2
+    store:
+      ttl: 1s
+      max_items: 10
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [servicegraph]
+      exporters: [nop]

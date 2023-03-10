@@ -14,18 +14,17 @@
 
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
-import metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
 
-func (mtp *metricsTransformProcessor) addLabelOp(metric *metricspb.Metric, op internalOperation) {
-	var lb = metricspb.LabelKey{
-		Key: op.configOperation.NewLabel,
-	}
-	metric.MetricDescriptor.LabelKeys = append(metric.MetricDescriptor.LabelKeys, &lb)
-	for _, ts := range metric.Timeseries {
-		lv := &metricspb.LabelValue{
-			Value:    op.configOperation.NewValue,
-			HasValue: true,
+// addLabelOp add a new attribute to metric data points.
+func addLabelOp(metric pmetric.Metric, op internalOperation) {
+	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
+		if _, found := attrs.Get(op.configOperation.NewLabel); !found {
+			attrs.PutStr(op.configOperation.NewLabel, op.configOperation.NewValue)
 		}
-		ts.LabelValues = append(ts.LabelValues, lv)
-	}
+		return true
+	})
 }

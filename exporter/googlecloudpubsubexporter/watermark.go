@@ -78,36 +78,36 @@ func traverseMetrics(metrics pmetric.Metrics, collect collectFunc) {
 			l := r.ScopeMetrics().At(lix)
 			for dix := 0; dix < l.Metrics().Len(); dix++ {
 				d := l.Metrics().At(dix)
-				switch d.DataType() {
-				case pmetric.MetricDataTypeHistogram:
+				switch d.Type() {
+				case pmetric.MetricTypeHistogram:
 					for pix := 0; pix < d.Histogram().DataPoints().Len(); pix++ {
 						p := d.Histogram().DataPoints().At(pix)
 						if collect(p.Timestamp()) {
 							return
 						}
 					}
-				case pmetric.MetricDataTypeExponentialHistogram:
+				case pmetric.MetricTypeExponentialHistogram:
 					for pix := 0; pix < d.ExponentialHistogram().DataPoints().Len(); pix++ {
 						p := d.ExponentialHistogram().DataPoints().At(pix)
 						if collect(p.Timestamp()) {
 							return
 						}
 					}
-				case pmetric.MetricDataTypeSum:
+				case pmetric.MetricTypeSum:
 					for pix := 0; pix < d.Sum().DataPoints().Len(); pix++ {
 						p := d.Sum().DataPoints().At(pix)
 						if collect(p.Timestamp()) {
 							return
 						}
 					}
-				case pmetric.MetricDataTypeGauge:
+				case pmetric.MetricTypeGauge:
 					for pix := 0; pix < d.Gauge().DataPoints().Len(); pix++ {
 						p := d.Gauge().DataPoints().At(pix)
 						if collect(p.Timestamp()) {
 							return
 						}
 					}
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					for pix := 0; pix < d.Summary().DataPoints().Len(); pix++ {
 						p := d.Summary().DataPoints().At(pix)
 						if collect(p.Timestamp()) {

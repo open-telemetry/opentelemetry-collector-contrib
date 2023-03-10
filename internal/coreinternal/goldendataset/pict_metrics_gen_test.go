@@ -45,7 +45,7 @@ func TestPICTtoCfg(t *testing.T) {
 			cfg: MetricsCfg{
 				NumResourceAttrs:     0,
 				NumPtsPerMetric:      1,
-				MetricDescriptorType: pmetric.MetricDataTypeGauge,
+				MetricDescriptorType: pmetric.MetricTypeGauge,
 				MetricValueType:      pmetric.NumberDataPointValueTypeInt,
 				NumPtLabels:          0,
 			},
@@ -61,7 +61,7 @@ func TestPICTtoCfg(t *testing.T) {
 			cfg: MetricsCfg{
 				NumResourceAttrs:     1,
 				NumPtsPerMetric:      1,
-				MetricDescriptorType: pmetric.MetricDataTypeGauge,
+				MetricDescriptorType: pmetric.MetricTypeGauge,
 				MetricValueType:      pmetric.NumberDataPointValueTypeDouble,
 				NumPtLabels:          1,
 			},
@@ -77,7 +77,7 @@ func TestPICTtoCfg(t *testing.T) {
 			cfg: MetricsCfg{
 				NumResourceAttrs:     2,
 				NumPtsPerMetric:      16,
-				MetricDescriptorType: pmetric.MetricDataTypeHistogram,
+				MetricDescriptorType: pmetric.MetricTypeHistogram,
 				NumPtLabels:          16,
 			},
 		},

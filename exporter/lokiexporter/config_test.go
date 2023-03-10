@@ -15,460 +15,196 @@
 package lokiexporter
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/prometheus/common/model"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+func TestLoadConfigNewExporter(t *testing.T) {
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, 3, len(cfg.Exporters))
-
-	actualCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "allsettings")].(*Config)
-	expectedCfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Headers: map[string]string{
-				"X-Custom-Header": "loki_rocks",
-			},
-			Endpoint: "https://loki:3100/loki/api/v1/push",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
-					CAFile:   "/var/lib/mycert.pem",
-					CertFile: "certfile",
-					KeyFile:  "keyfile",
-				},
-				Insecure: true,
-			},
-			ReadBufferSize:  123,
-			WriteBufferSize: 345,
-			Timeout:         time.Second * 10,
-		},
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 10 * time.Second,
-			MaxInterval:     1 * time.Minute,
-			MaxElapsedTime:  10 * time.Minute,
-		},
-		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      true,
-			NumConsumers: 2,
-			QueueSize:    10,
-		},
-		TenantID: "example",
-		Labels: LabelsConfig{
-			Attributes: map[string]string{
-				conventions.AttributeContainerName:  "container_name",
-				conventions.AttributeK8SClusterName: "k8s_cluster_name",
-				"severity":                          "severity",
-			},
-			ResourceAttributes: map[string]string{
-				"resource.name": "resource_name",
-				"severity":      "severity",
-			},
-			RecordAttributes: map[string]string{
-				"traceID": "traceid",
-			},
-		},
-		Format: "body",
-	}
-	require.Equal(t, &expectedCfg, actualCfg)
-}
-
-func TestJSONLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	assert.Equal(t, 3, len(cfg.Exporters))
-
-	actualCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "json")].(*Config)
-	expectedCfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "json")),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Headers:  map[string]string{},
-			Endpoint: "https://loki:3100/loki/api/v1/push",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
-					CAFile:   "",
-					CertFile: "",
-					KeyFile:  "",
-				},
-				Insecure: false,
-			},
-			ReadBufferSize:  0,
-			WriteBufferSize: 524288,
-			Timeout:         time.Second * 30,
-		},
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 5 * time.Second,
-			MaxInterval:     30 * time.Second,
-			MaxElapsedTime:  5 * time.Minute,
-		},
-		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      true,
-			NumConsumers: 10,
-			QueueSize:    5000,
-		},
-		TenantID: "example",
-		Labels: LabelsConfig{
-			Attributes:         map[string]string{},
-			ResourceAttributes: map[string]string{},
-		},
-		Format: "json",
-	}
-	require.Equal(t, &expectedCfg, actualCfg)
-}
-
-func TestConfig_validate(t *testing.T) {
-	const validEndpoint = "https://validendpoint.local"
-
-	validAttribLabelsConfig := LabelsConfig{
-		Attributes: testValidAttributesWithMapping,
-	}
-	validResourceLabelsConfig := LabelsConfig{
-		ResourceAttributes: testValidResourceWithMapping,
-	}
-
-	type fields struct {
-		Endpoint       string
-		Source         string
-		CredentialFile string
-		Audience       string
-		Labels         LabelsConfig
-	}
 	tests := []struct {
-		name         string
-		fields       fields
-		errorMessage string
-		shouldError  bool
+		id       component.ID
+		expected component.Config
 	}{
 		{
-			name: "with valid endpoint",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels:   validAttribLabelsConfig,
-			},
-			shouldError: false,
-		},
-		{
-			name: "with missing endpoint",
-			fields: fields{
-				Endpoint: "",
-				Labels:   validAttribLabelsConfig,
-			},
-			errorMessage: "\"endpoint\" must be a valid URL",
-			shouldError:  true,
-		},
-		{
-			name: "with invalid endpoint",
-			fields: fields{
-				Endpoint: "this://is:an:invalid:endpoint.com",
-				Labels:   validAttribLabelsConfig,
-			},
-			errorMessage: "\"endpoint\" must be a valid URL",
-			shouldError:  true,
-		},
-		{
-			name: "with missing `labels.attributes` and missing `labels.resource`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels: LabelsConfig{
-					Attributes:         nil,
-					ResourceAttributes: nil,
-				},
-			},
-			errorMessage: "\"labels.attributes\", \"labels.resource\", or \"labels.record\" must be configured with at least one attribute",
-			shouldError:  true,
-		},
-		{
-			name: "with missing `labels.attributes`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels:   validResourceLabelsConfig,
-			},
-			shouldError: false,
-		},
-		{
-			name: "with missing `labels.resource`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels:   validAttribLabelsConfig,
-			},
-			shouldError: false,
-		},
-		{
-			name: "with valid `labels.record`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels: LabelsConfig{
-					RecordAttributes: map[string]string{
-						"traceID":   "traceID",
-						"spanID":    "spanID",
-						"severity":  "severity",
-						"severityN": "severityN",
+			id: component.NewIDWithName(typeStr, "allsettings"),
+			expected: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Headers: map[string]configopaque.String{
+						"X-Custom-Header": "loki_rocks",
 					},
-				},
-			},
-			shouldError: false,
-		},
-		{
-			name: "with invalid `labels.record`",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels: LabelsConfig{
-					RecordAttributes: map[string]string{
-						"invalid": "Invalid",
+					Endpoint: "https://loki:3100/loki/api/v1/push",
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile:   "/var/lib/mycert.pem",
+							CertFile: "certfile",
+							KeyFile:  "keyfile",
+						},
+						Insecure: true,
 					},
+					ReadBufferSize:  123,
+					WriteBufferSize: 345,
+					Timeout:         time.Second * 10,
+				},
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
 				},
 			},
-			shouldError: true,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.id.String(), func(t *testing.T) {
 			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
-			cfg.Endpoint = tt.fields.Endpoint
-			cfg.Labels = tt.fields.Labels
+			cfg := factory.CreateDefaultConfig()
 
-			err := cfg.validate()
-			if (err != nil) != tt.shouldError {
-				t.Errorf("validate() error = %v, shouldError %v", err, tt.shouldError)
-				return
-			}
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			if tt.shouldError {
-				assert.Error(t, err)
-				if len(tt.errorMessage) != 0 {
-					assert.Equal(t, tt.errorMessage, err.Error())
-				}
-			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
 
-func TestLabelsConfig_validate(t *testing.T) {
-	tests := []struct {
-		name         string
-		labels       LabelsConfig
-		errorMessage string
-		shouldError  bool
+func TestIsLegacy(t *testing.T) {
+	testCases := []struct {
+		desc    string
+		cfg     *Config
+		outcome bool
 	}{
 		{
-			name: "with no attributes",
-			labels: LabelsConfig{
-				Attributes:         map[string]string{},
-				ResourceAttributes: map[string]string{},
-			},
-			errorMessage: "\"labels.attributes\", \"labels.resource\", or \"labels.record\" must be configured with at least one attribute",
-			shouldError:  true,
-		},
-		{
-			name: "with valid attribute label map",
-			labels: LabelsConfig{
-				Attributes: map[string]string{
-					"some.attribute": "some_attribute",
+			// the default mode for an empty config is the new logic
+			desc: "not legacy",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://loki.example.com",
 				},
 			},
-			shouldError: false,
+			outcome: false,
 		},
 		{
-			name: "with valid resource label map",
-			labels: LabelsConfig{
-				ResourceAttributes: map[string]string{
-					"other.attribute": "other",
+			desc: "format is set to body",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://loki.example.com",
 				},
+				Format: stringp("body"),
 			},
-			shouldError: false,
+			outcome: true,
 		},
 		{
-			name: "with invalid attribute label map",
-			labels: LabelsConfig{
-				Attributes: map[string]string{
-					"some.attribute": "invalid.label.name",
+			desc: "a label is specified",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://loki.example.com",
+				},
+				Labels: &LabelsConfig{
+					Attributes: map[string]string{"some_attribute": "some_value"},
 				},
 			},
-			errorMessage: "the label `invalid.label.name` in \"labels.attributes\" is not a valid label name. Label names must match " + model.LabelNameRE.String(),
-			shouldError:  true,
+			outcome: true,
 		},
 		{
-			name: "with invalid resource label map",
-			labels: LabelsConfig{
-				ResourceAttributes: map[string]string{
-					"other.attribute": "invalid.label.name",
+			desc: "a tenant is specified",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://loki.example.com",
+				},
+				Tenant: &Tenant{
+					Source: "static",
+					Value:  "acme",
 				},
 			},
-			errorMessage: "the label `invalid.label.name` in \"labels.resource\" is not a valid label name. Label names must match " + model.LabelNameRE.String(),
-			shouldError:  true,
+			outcome: true,
 		},
 		{
-			name: "with attribute having an invalid label name and no map configured",
-			labels: LabelsConfig{
-				Attributes: map[string]string{
-					"invalid.attribute": "",
+			desc: "a tenant ID is specified",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://loki.example.com",
 				},
+				TenantID: stringp("acme"),
 			},
-			errorMessage: "the label `invalid.attribute` in \"labels.attributes\" is not a valid label name. Label names must match " + model.LabelNameRE.String(),
-			shouldError:  true,
+			outcome: true,
 		},
 	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			assert.Equal(t, tC.outcome, tC.cfg.isLegacy())
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.labels.validate()
-			if (err != nil) != tt.shouldError {
-				t.Errorf("validate() error = %v, shouldError %v", err, tt.shouldError)
-				return
-			}
-
-			if tt.shouldError {
-				assert.Error(t, err)
-				if len(tt.errorMessage) != 0 {
-					assert.Equal(t, tt.errorMessage, err.Error())
-				}
-			}
+			// all configs from this table test are valid:
+			assert.NoError(t, tC.cfg.Validate())
 		})
 	}
 }
 
-func TestLabelsConfig_getAttributes(t *testing.T) {
-	tests := []struct {
-		name            string
-		labels          LabelsConfig
-		expectedMapping map[string]model.LabelName
-	}{
-		{
-			name: "with attributes without label mapping",
-			labels: LabelsConfig{
-				Attributes: map[string]string{
-					"attribute_1": "",
-					"attribute_2": "",
-				},
-			},
-			expectedMapping: map[string]model.LabelName{
-				"attribute_1": model.LabelName("attribute_1"),
-				"attribute_2": model.LabelName("attribute_2"),
-			},
-		},
-		{
-			name: "with attributes and label mapping",
-			labels: LabelsConfig{
-				Attributes: map[string]string{
-					"attribute.1": "attribute_1",
-					"attribute.2": "attribute_2",
-				},
-			},
-			expectedMapping: map[string]model.LabelName{
-				"attribute.1": model.LabelName("attribute_1"),
-				"attribute.2": model.LabelName("attribute_2"),
-			},
-		},
-		{
-			name: "with attributes and without label mapping",
-			labels: LabelsConfig{
-				Attributes: map[string]string{
-					"attribute.1": "attribute_1",
-					"attribute2":  "",
-				},
-			},
-			expectedMapping: map[string]model.LabelName{
-				"attribute.1": model.LabelName("attribute_1"),
-				"attribute2":  model.LabelName("attribute2"),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mapping := tt.labels.getAttributes(tt.labels.Attributes)
-
-			assert.Equal(t, tt.expectedMapping, mapping)
-		})
-	}
+func stringp(str string) *string {
+	return &str
 }
 
-func TestResourcesConfig_getAttributes(t *testing.T) {
-	tests := []struct {
-		name            string
-		labels          LabelsConfig
-		expectedMapping map[string]model.LabelName
+func TestConfigValidate(t *testing.T) {
+	testCases := []struct {
+		desc string
+		cfg  *Config
+		err  error
 	}{
 		{
-			name: "with attributes without label mapping",
-			labels: LabelsConfig{
-				ResourceAttributes: map[string]string{
-					"attribute_1": "",
-					"attribute_2": "",
-				},
-			},
-			expectedMapping: map[string]model.LabelName{
-				"attribute_1": model.LabelName("attribute_1"),
-				"attribute_2": model.LabelName("attribute_2"),
-			},
+			desc: "QueueSettings are invalid",
+			cfg:  &Config{QueueSettings: exporterhelper.QueueSettings{QueueSize: -1, Enabled: true}},
+			err:  fmt.Errorf("queue settings has invalid configuration"),
 		},
 		{
-			name: "with attributes and label mapping",
-			labels: LabelsConfig{
-				ResourceAttributes: map[string]string{
-					"attribute.1": "attribute_1",
-					"attribute.2": "attribute_2",
-				},
-			},
-			expectedMapping: map[string]model.LabelName{
-				"attribute.1": model.LabelName("attribute_1"),
-				"attribute.2": model.LabelName("attribute_2"),
-			},
+			desc: "Endpoint is invalid",
+			cfg:  &Config{},
+			err:  fmt.Errorf("\"endpoint\" must be a valid URL"),
 		},
 		{
-			name: "with attributes and without label mapping",
-			labels: LabelsConfig{
-				ResourceAttributes: map[string]string{
-					"attribute.1": "attribute_1",
-					"attribute2":  "",
+			desc: "Config is valid",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://loki.example.com",
 				},
 			},
-			expectedMapping: map[string]model.LabelName{
-				"attribute.1": model.LabelName("attribute_1"),
-				"attribute2":  model.LabelName("attribute2"),
-			},
+			err: nil,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mapping := tt.labels.getAttributes(tt.labels.ResourceAttributes)
-
-			assert.Equal(t, tt.expectedMapping, mapping)
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			err := tc.cfg.Validate()
+			if tc.err != nil {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.err.Error())
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }

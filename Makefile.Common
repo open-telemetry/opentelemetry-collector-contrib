@@ -1,28 +1,71 @@
+# In order to ensure make instructions fail if there is command that fails a pipe (ie: `go test ... | tee -a ./test_results.txt`)
+# the value `-o pipefail` (or `set -o pipefail`) is added to each shell command that make runs
+# otherwise in the example command pipe, only the exit code of `tee` is recorded instead of `go test` which can cause 
+# test to pass in CI when they should not.
+SHELL = /bin/bash
+ifeq ($(shell uname -s),Windows)
+	.SHELLFLAGS = /o pipefile /c
+else 
+	.SHELLFLAGS = -o pipefail -c
+endif
+
 # SRC_ROOT is the top of the source tree.
-SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+SRC_ROOT := $(shell git rev-parse --show-toplevel)
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
-GOTEST_OPT?= -race -v -timeout 300s --tags=$(GO_BUILD_TAGS)
-GOTEST_INTEGRATION_OPT?= -race -timeout 120s
+GOTEST_OPT?= -race -timeout 300s -parallel 4 --tags=$(GO_BUILD_TAGS)
+GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
-GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -v -tags=integration,$(GO_BUILD_TAGS) -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
+GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS) -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
 GOCMD?= go
 GOTEST=$(GOCMD) test
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
-ADDLICENCESE= addlicense
-MISSPELL=misspell -error
-MISSPELL_CORRECTION=misspell -w
-LINT=golangci-lint
-IMPI=impi
+
+# In order to help reduce toil related to managing tooling for the open telemetry collector
+# this section of the makefile looks at only requiring command definitions to be defined
+# as part of $(TOOLS_MOD_DIR)/tools.go, following the existing practice.
+# Modifying the tools' `go.mod` file will trigger a rebuild of the tools to help
+# ensure that all contributors are using the most recent version to make builds repeatable everywhere.
+TOOLS_MOD_DIR    := $(SRC_ROOT)/internal/tools
+TOOLS_MOD_REGEX  := "\s+_\s+\".*\""
+TOOLS_PKG_NAMES  := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"")
+TOOLS_BIN_DIR    := $(SRC_ROOT)/.tools
+TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
+
+.PHONY: install-tools
+install-tools: $(TOOLS_BIN_NAMES)
+
+$(TOOLS_BIN_DIR):
+	mkdir -p $@
+
+$(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+
+ADDLICENCESE        := $(TOOLS_BIN_DIR)/addlicense
+MDLINKCHECK         := $(TOOLS_BIN_DIR)/markdown-link-check
+MISSPELL            := $(TOOLS_BIN_DIR)/misspell -error
+MISSPELL_CORRECTION := $(TOOLS_BIN_DIR)/misspell -w
+LINT                := $(TOOLS_BIN_DIR)/golangci-lint
+MULITMOD            := $(TOOLS_BIN_DIR)/multimod
+CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
+GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
+PORTO               := $(TOOLS_BIN_DIR)/porto
+CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
+CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
+GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report 
+BUILDER             := $(TOOLS_BIN_DIR)/builder
+
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
+RUNNING_ON_GITHUB_ACTION=$(GITHUB_ACTIONS)
 
 ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | sort)
 
 ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -not -path '*/third_party/*' \
+                                -not -path '*/local/*' \
                                 -type f | sort)
 
 # All source code and documents. Used in spell check.
@@ -48,22 +91,34 @@ all-pkg-dirs:
 .DEFAULT_GOAL := common
 
 .PHONY: common
-common: checklicense impi lint misspell
+common: checklicense lint misspell
 
 .PHONY: test
 test:
-	$(GOTEST) $(GOTEST_OPT) ./...
-
+	if [ "$(RUNNING_ON_GITHUB_ACTION)" = "true" ]; then \
+		$(GOTEST) $(GOTEST_OPT) -v ./... 2>&1 | tee -a ./foresight-test-report.txt; \
+	else \
+		$(GOTEST) $(GOTEST_OPT) ./...; \
+	fi
+	
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover:
 	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
-	@$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./...
+	@if [ "$(RUNNING_ON_GITHUB_ACTION)" = "true" ]; then \
+		$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) -v ./... 2>&1 | tee -a ./foresight-test-report-unit-tests-with-cover.txt; \
+	else \
+		$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./...; \
+	fi
 	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover:
 	@echo "running $(GOCMD) integration test ./... + coverage in `pwd`"
-	@$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./...
+	@if [ "$(RUNNING_ON_GITHUB_ACTION)" = "true" ]; then \
+		$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) -v ./... 2>&1 | tee -a ./foresight-test-report-integration-tests-with-cover.txt; \
+	else \
+		$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./...; \
+	fi
 	@if [ -e integration-coverage.txt ]; then \
   		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
   	fi
@@ -73,7 +128,7 @@ benchmark:
 	$(GOTEST) -bench=. -run=notests --tags=$(GO_BUILD_TAGS) $(ALL_PKGS)
 
 .PHONY: addlicense
-addlicense:
+addlicense: $(ADDLICENCESE)
 	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
@@ -84,7 +139,7 @@ addlicense:
 		fi
 
 .PHONY: checklicense
-checklicense:
+checklicense: $(ADDLICENCESE)
 	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
@@ -95,32 +150,34 @@ checklicense:
 			echo "Check License finished successfully"; \
 		fi
 
+.PHONY: checklinks
+checklinks:
+	command -v $(MDLINKCHECK) >/dev/null 2>&1 || { echo >&2 "$(MDLINKCHECK) not installed. Run 'npm install -g markdown-link-check'"; exit 1; }
+	find . -name \*.md -print0 | xargs -0 -n1 \
+		$(MDLINKCHECK) -q -c $(SRC_ROOT)/.github/workflows/check_links_config.json || true
+
 .PHONY: fmt
-fmt:
+fmt: $(GOIMPORTS)
 	gofmt  -w -s ./
-	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+	$(GOIMPORTS) -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
-lint: checklicense impi misspell
-	$(LINT) run --allow-parallel-runners
+lint: $(LINT) checklicense misspell
+	$(LINT) run --allow-parallel-runners --build-tags integration
 
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.17
+	$(GOCMD) mod tidy -compat=1.19
 
 .PHONY: misspell
-misspell:
+misspell: $(TOOLS_BIN_DIR)/misspell
 	@echo "running $(MISSPELL)"
 	@$(MISSPELL) $(ALL_SRC_AND_DOC)
 
 .PHONY: misspell-correction
-misspell-correction:
+misspell-correction: $(TOOLS_BIN_DIR)/misspell
 	$(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
-
-.PHONY: impi
-impi:
-	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal $(ALL_PKGS)
 
 .PHONY: moddownload
 moddownload:

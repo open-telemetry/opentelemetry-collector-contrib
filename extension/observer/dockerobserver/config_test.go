@@ -21,56 +21,69 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	require.Len(t, cfg.Extensions, 6)
-
-	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
-
-	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "all_settings")]
-	assert.Equal(t,
-		&Config{
-			Endpoint:              "unix:///var/run/docker.sock",
-			ExtensionSettings:     config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
-			CacheSyncInterval:     5 * time.Minute,
-			Timeout:               20 * time.Second,
-			ExcludedImages:        []string{"excluded", "image"},
-			UseHostnameIfPresent:  true,
-			UseHostBindings:       true,
-			IgnoreNonHostBindings: true,
-			DockerAPIVersion:      1.22,
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id:       component.NewID(typeStr),
+			expected: NewFactory().CreateDefaultConfig(),
 		},
-		ext1)
+		{
+			id: component.NewIDWithName(typeStr, "all_settings"),
+			expected: &Config{
+				Endpoint:              "unix:///var/run/docker.sock",
+				CacheSyncInterval:     5 * time.Minute,
+				Timeout:               20 * time.Second,
+				ExcludedImages:        []string{"excluded", "image"},
+				UseHostnameIfPresent:  true,
+				UseHostBindings:       true,
+				IgnoreNonHostBindings: true,
+				DockerAPIVersion:      1.22,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cfg := loadConfig(t, tt.id)
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestValidateConfig(t *testing.T) {
 	cfg := &Config{}
-	assert.Equal(t, "endpoint must be specified", cfg.Validate().Error())
+	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{Endpoint: "someEndpoint"}
-	assert.Equal(t, "api_version must be at least 1.22", cfg.Validate().Error())
+	assert.Equal(t, "api_version must be at least 1.22", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: 1.22}
-	assert.Equal(t, "timeout must be specified", cfg.Validate().Error())
+	assert.Equal(t, "timeout must be specified", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: 1.22, Timeout: 5 * time.Minute}
-	assert.Equal(t, "cache_sync_interval must be specified", cfg.Validate().Error())
+	assert.Equal(t, "cache_sync_interval must be specified", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: 1.22, Timeout: 5 * time.Minute, CacheSyncInterval: 5 * time.Minute}
-	assert.Nil(t, cfg.Validate())
+	assert.Nil(t, component.ValidateConfig(cfg))
+}
+
+func loadConfig(t testing.TB, id component.ID) *Config {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub(id.String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	return cfg.(*Config)
 }

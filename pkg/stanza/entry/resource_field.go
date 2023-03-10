@@ -177,7 +177,7 @@ func (f ResourceField) Delete(entry *Entry) (interface{}, bool) {
 func (f *ResourceField) UnmarshalJSON(raw []byte) error {
 	var value string
 	if err := json.Unmarshal(raw, &value); err != nil {
-		return fmt.Errorf("the field is not a string: %s", err)
+		return fmt.Errorf("the field is not a string: %w", err)
 	}
 
 	keys, err := fromJSONDot(value)
@@ -191,19 +191,13 @@ func (f *ResourceField) UnmarshalJSON(raw []byte) error {
 
 	*f = ResourceField{keys[1:]}
 	return nil
-}
-
-// MarshalJSON will marshal the field for JSON.
-func (f ResourceField) MarshalJSON() ([]byte, error) {
-	json := fmt.Sprintf(`"%s"`, toJSONDot(ResourcePrefix, f.Keys))
-	return []byte(json), nil
 }
 
 // UnmarshalYAML will attempt to unmarshal a field from YAML.
 func (f *ResourceField) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var value string
 	if err := unmarshal(&value); err != nil {
-		return fmt.Errorf("the field is not a string: %s", err)
+		return fmt.Errorf("the field is not a string: %w", err)
 	}
 
 	keys, err := fromJSONDot(value)
@@ -219,7 +213,17 @@ func (f *ResourceField) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-// MarshalYAML will marshal the field for YAML.
-func (f ResourceField) MarshalYAML() (interface{}, error) {
-	return toJSONDot(ResourcePrefix, f.Keys), nil
+// UnmarshalText will unmarshal a field from text
+func (f *ResourceField) UnmarshalText(text []byte) error {
+	keys, err := fromJSONDot(string(text))
+	if err != nil {
+		return err
+	}
+
+	if keys[0] != ResourcePrefix {
+		return fmt.Errorf("must start with 'resource': %s", text)
+	}
+
+	*f = ResourceField{keys[1:]}
+	return nil
 }

@@ -16,35 +16,40 @@ package filterprocessor
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	pType := factory.Type()
 
-	assert.Equal(t, pType, config.Type("filter"))
+	assert.Equal(t, pType, component.Type("filter"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ErrorMode: ottl.PropagateError,
 	})
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateProcessors(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		configName string
 		succeed    bool
@@ -70,31 +75,55 @@ func TestCreateProcessors(t *testing.T) {
 		}, {
 			configName: "config_logs_record_attributes_regexp.yaml",
 			succeed:    true,
+		}, {
+			configName: "config_traces.yaml",
+			succeed:    true,
+		}, {
+			configName: "config_traces_invalid.yaml",
+			succeed:    false,
 		},
 	}
 
-	for _, test := range tests {
-		factories, err := componenttest.NopFactories()
-		assert.Nil(t, err)
+	for _, tt := range tests {
+		t.Run(tt.configName, func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.configName))
+			require.NoError(t, err)
 
-		factory := NewFactory()
-		factories.Processors[typeStr] = factory
-		cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configName), factories)
-		assert.Nil(t, err)
-
-		for name, cfg := range cfg.Processors {
-			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
+			for k := range cm.ToStringMap() {
+				// Check if all processor variations that are defined in test config can be actually created
 				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
 
-				tp, tErr := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-				// Not implemented error
-				assert.NotNil(t, tErr)
-				assert.Nil(t, tp)
+				sub, err := cm.Sub(k)
+				require.NoError(t, err)
+				require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-				mp, mErr := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-				assert.Equal(t, test.succeed, mp != nil)
-				assert.Equal(t, test.succeed, mErr == nil)
-			})
-		}
+				tp, tErr := factory.CreateTracesProcessor(
+					context.Background(),
+					processortest.NewNopCreateSettings(),
+					cfg, consumertest.NewNop(),
+				)
+				mp, mErr := factory.CreateMetricsProcessor(
+					context.Background(),
+					processortest.NewNopCreateSettings(),
+					cfg,
+					consumertest.NewNop(),
+				)
+				if strings.Contains(tt.configName, "traces") {
+					assert.Equal(t, tt.succeed, tp != nil)
+					assert.Equal(t, tt.succeed, tErr == nil)
+
+					assert.NotNil(t, mp)
+					assert.Nil(t, mErr)
+				} else {
+					// Should not break configs with no trace data
+					assert.NotNil(t, tp)
+					assert.Nil(t, tErr)
+
+					assert.Equal(t, tt.succeed, mp != nil)
+					assert.Equal(t, tt.succeed, mErr == nil)
+				}
+			}
+		})
 	}
 }

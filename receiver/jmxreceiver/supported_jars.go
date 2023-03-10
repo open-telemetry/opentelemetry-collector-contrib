@@ -39,7 +39,33 @@ func oldFormatProperties(c *Config, j supportedJar) error {
 	return nil
 }
 
+// If you change this variable name, please open an issue in opentelemetry-java-contrib
+// so that repository's release automation can be updated
 var jmxMetricsGathererVersions = map[string]supportedJar{
+	"af15e12aa1edb0f694408cbf0b7fae7fb8d36e7904d9b68c93c7645101769f63": {
+		version: "1.23.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"b90f675c5722931d2ebbb4bae959841b78fe5f87fe461a23a8837f95dec517ff": {
+		version: "1.22.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"ca176a2cb59884f4436139587ff891e47160449354dcbc9b7b71ed26d4185962": {
+		version: "1.21.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"7150bd5f2d594aa9fff9572d5aefeed5ca9d6465d2c967befe00cae6a1b13416": {
+		version: "1.20.1-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"ef4267c2ff607200c40a87233eb7a3c6457ffaa190463faa83fdcc331d6161d8": {
+		version: "1.20.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"3c46cff8521cdb0d36bb2891b15cbc1bb2fcbca7c5344253403ab30fe9f693a6": {
+		version: "1.15.0",
+		jar:     "JMX metrics gatherer",
+	},
 	"0646639df98404bd9b1263b46e2fd4612bc378f9951a561f0a0be9725718db36": {
 		version: "1.14.0",
 		jar:     "JMX metrics gatherer",
@@ -213,6 +239,10 @@ var wildflyJarVersions = map[string]supportedJar{
 	},
 	"86b65d22d3904e6fa7a9016e574b67ad1caf0548d7bc51b229f9026ed459738f": {
 		version: "26.1.0",
+		jar:     "wildfly jboss client",
+	},
+	"8dd73d59bc458457f95abb2532d24650ac1025b6150fa7d4a24c674ab309eb02": {
+		version: "26.1.1",
 		jar:     "wildfly jboss client",
 	},
 }

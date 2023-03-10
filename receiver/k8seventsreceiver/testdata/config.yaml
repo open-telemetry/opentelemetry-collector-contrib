@@ -1,17 +1,3 @@
-receivers:
-  k8s_events:
-  k8s_events/all_settings:
-    namespaces: [default, my_namespace]
-
-processors:
-  nop:
-
-exporters:
-  nop:
-
-service:
-  pipelines:
-    logs:
-      receivers: [k8s_events]
-      processors: [nop]
-      exporters: [nop]
+k8s_events:
+k8s_events/all_settings:
+  namespaces: [ default, my_namespace ]

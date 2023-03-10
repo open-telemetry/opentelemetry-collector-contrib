@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package googlecloudpubsubexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter"
 
 import (
@@ -23,6 +22,7 @@ import (
 	"time"
 
 	pubsub "cloud.google.com/go/pubsub/apiv1"
+	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
-	pubsubpb "google.golang.org/genproto/googleapis/pubsub/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -148,8 +147,7 @@ func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding,
 		attributes["ce-type"] = "org.opentelemetry.otlp.logs.v1"
 		attributes["content-type"] = "application/protobuf"
 	}
-	switch ex.ceCompression {
-	case gZip:
+	if ex.ceCompression == gZip {
 		attributes["content-encoding"] = "gzip"
 		data, err = ex.compress(data)
 		if err != nil {
@@ -169,8 +167,7 @@ func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding,
 }
 
 func (ex *pubsubExporter) compress(payload []byte) ([]byte, error) {
-	switch ex.ceCompression {
-	case gZip:
+	if ex.ceCompression == gZip {
 		var buf bytes.Buffer
 		writer := gzip.NewWriter(&buf)
 		_, err := writer.Write(payload)

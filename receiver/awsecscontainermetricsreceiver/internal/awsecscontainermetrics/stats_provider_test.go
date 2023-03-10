@@ -16,7 +16,7 @@ package awsecscontainermetrics
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,7 +46,7 @@ func (f testRestClient) GetResponse(path string) ([]byte, error) {
 	}
 
 	if path == TaskStatsPath {
-		return ioutil.ReadFile("../../testdata/task_stats.json")
+		return os.ReadFile("../../testdata/task_stats.json")
 	}
 
 	return nil, nil

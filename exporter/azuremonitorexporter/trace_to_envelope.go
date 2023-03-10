@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
 // Contains code common to both trace and metrics exporters
+
 import (
 	"errors"
 	"net/url"
@@ -28,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -38,8 +40,7 @@ const (
 	messagingSpanType spanType = 4
 	faasSpanType      spanType = 5
 
-	instrumentationLibraryName    string = "instrumentationlibrary.name"
-	instrumentationLibraryVersion string = "instrumentationlibrary.version"
+	exceptionSpanEventName string = "exception"
 )
 
 var (
@@ -50,13 +51,14 @@ var (
 // Used to identify the type of a received Span
 type spanType int8
 
-// Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into an AppInsights contracts.Envelope
+// Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into one or more of AppInsights contracts.Envelope
 // This is the only method that should be targeted in the unit tests
-func spanToEnvelope(
+func spanToEnvelopes(
 	resource pcommon.Resource,
 	instrumentationScope pcommon.InstrumentationScope,
 	span ptrace.Span,
-	logger *zap.Logger) (*contracts.Envelope, error) {
+	spanEventsEnabled bool,
+	logger *zap.Logger) ([]*contracts.Envelope, error) {
 
 	spanKind := span.Kind()
 
@@ -74,15 +76,14 @@ func spanToEnvelope(
 		return nil, errUnsupportedSpanType
 	}
 
-	envelope := contracts.NewEnvelope()
-	envelope.Tags = make(map[string]string)
-	envelope.Time = toTime(span.StartTimestamp()).Format(time.RFC3339Nano)
-	envelope.Tags[contracts.OperationId] = span.TraceID().HexString()
-	envelope.Tags[contracts.OperationParentId] = span.ParentSpanID().HexString()
-
-	data := contracts.NewData()
+	var envelopes []*contracts.Envelope
 	var dataSanitizeFunc func() []string
 	var dataProperties map[string]string
+
+	// First map the span itself
+	envelope := newEnvelope(span, toTime(span.StartTimestamp()).Format(time.RFC3339Nano))
+
+	data := contracts.NewData()
 
 	if spanKind == ptrace.SpanKindServer || spanKind == ptrace.SpanKindConsumer {
 		requestData := spanToRequestData(span, incomingSpanType)
@@ -108,52 +109,82 @@ func spanToEnvelope(
 	}
 
 	// Record the raw Span status values as properties
-	dataProperties[attributeOtelStatusCode] = span.Status().Code().String()
+	dataProperties[attributeOtelStatusCode] = traceutil.StatusCodeStr(span.Status().Code())
 	statusMessage := span.Status().Message()
 	if len(statusMessage) > 0 {
 		dataProperties[attributeOtelStatusDescription] = statusMessage
 	}
 
 	envelope.Data = data
+
 	resourceAttributes := resource.Attributes()
-
-	// Copy all the resource labels into the base data properties. Resource values are always strings
-	resourceAttributes.Range(func(k string, v pcommon.Value) bool {
-		dataProperties[k] = v.StringVal()
-		return true
-	})
-
-	// Copy the instrumentation properties
-	if instrumentationScope.Name() != "" {
-		dataProperties[instrumentationLibraryName] = instrumentationScope.Name()
-	}
-
-	if instrumentationScope.Version() != "" {
-		dataProperties[instrumentationLibraryVersion] = instrumentationScope.Version()
-	}
-
-	// Extract key service.* labels from the Resource labels and construct CloudRole and CloudRoleInstance envelope tags
-	// https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/resource/semantic_conventions
-	if serviceName, serviceNameExists := resourceAttributes.Get(conventions.AttributeServiceName); serviceNameExists {
-		cloudRole := serviceName.StringVal()
-
-		if serviceNamespace, serviceNamespaceExists := resourceAttributes.Get(conventions.AttributeServiceNamespace); serviceNamespaceExists {
-			cloudRole = serviceNamespace.StringVal() + "." + cloudRole
-		}
-
-		envelope.Tags[contracts.CloudRole] = cloudRole
-	}
-
-	if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstanceID); exists {
-		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.StringVal()
-	}
+	applyResourcesToDataProperties(dataProperties, resourceAttributes)
+	applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
+	applyCloudTagsToEnvelope(envelope, resourceAttributes)
 
 	// Sanitize the base data, the envelope and envelope tags
 	sanitize(dataSanitizeFunc, logger)
 	sanitize(func() []string { return envelope.Sanitize() }, logger)
 	sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) }, logger)
 
-	return envelope, nil
+	envelopes = append(envelopes, envelope)
+
+	// Now add the span events. We always export exception events.
+	for i := 0; i < span.Events().Len(); i++ {
+		spanEvent := span.Events().At(i)
+
+		// skip non-exception events if configured
+		if spanEvent.Name() != exceptionSpanEventName && !spanEventsEnabled {
+			continue
+		}
+
+		spanEventEnvelope := newEnvelope(span, toTime(spanEvent.Timestamp()).Format(time.RFC3339Nano))
+
+		data := contracts.NewData()
+
+		// Exceptions are a special case of span event.
+		// See https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/exceptions/#recording-an-exception
+		if spanEvent.Name() == exceptionSpanEventName {
+			exceptionData := spanEventToExceptionData(spanEvent)
+			dataSanitizeFunc = exceptionData.Sanitize
+			dataProperties = exceptionData.Properties
+			data.BaseData = exceptionData
+			data.BaseType = exceptionData.BaseType()
+			spanEventEnvelope.Name = exceptionData.EnvelopeName("")
+		} else {
+			messageData := spanEventToMessageData(spanEvent)
+			dataSanitizeFunc = messageData.Sanitize
+			dataProperties = messageData.Properties
+			data.BaseData = messageData
+			data.BaseType = messageData.BaseType()
+			spanEventEnvelope.Name = messageData.EnvelopeName("")
+		}
+
+		spanEventEnvelope.Data = data
+
+		applyResourcesToDataProperties(dataProperties, resourceAttributes)
+		applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
+		applyCloudTagsToEnvelope(spanEventEnvelope, resourceAttributes)
+
+		// Sanitize the base data, the envelope and envelope tags
+		sanitize(dataSanitizeFunc, logger)
+		sanitize(func() []string { return spanEventEnvelope.Sanitize() }, logger)
+		sanitize(func() []string { return contracts.SanitizeTags(spanEventEnvelope.Tags) }, logger)
+
+		envelopes = append(envelopes, spanEventEnvelope)
+	}
+
+	return envelopes, nil
+}
+
+// Creates a new envelope with some basic tags populated
+func newEnvelope(span ptrace.Span, time string) *contracts.Envelope {
+	envelope := contracts.NewEnvelope()
+	envelope.Tags = make(map[string]string)
+	envelope.Time = time
+	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(span.TraceID())
+	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())
+	return envelope
 }
 
 // Maps Server/Consumer Span to AppInsights RequestData
@@ -161,7 +192,7 @@ func spanToRequestData(span ptrace.Span, incomingSpanType spanType) *contracts.R
 	// See https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/requestdata.go
 	// Start with some reasonable default for server spans.
 	data := contracts.NewRequestData()
-	data.Id = span.SpanID().HexString()
+	data.Id = traceutil.SpanIDToHexOrEmptyString(span.SpanID())
 	data.Name = span.Name()
 	data.Duration = formatSpanDuration(span)
 	data.Properties = make(map[string]string)
@@ -187,7 +218,7 @@ func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *co
 	// https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/remotedependencydata.go
 	// Start with some reasonable default for dependent spans.
 	data := contracts.NewRemoteDependencyData()
-	data.Id = span.SpanID().HexString()
+	data.Id = traceutil.SpanIDToHexOrEmptyString(span.SpanID())
 	data.Name = span.Name()
 	data.ResultCode, data.Success = getDefaultFormattedSpanStatus(span.Status())
 	data.Duration = formatSpanDuration(span)
@@ -207,6 +238,36 @@ func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *co
 		copyAttributesWithoutMapping(span.Attributes(), data.Properties, data.Measurements)
 	}
 
+	return data
+}
+
+// Maps SpanEvent to AppInsights ExceptionData
+func spanEventToExceptionData(spanEvent ptrace.SpanEvent) *contracts.ExceptionData {
+	data := contracts.NewExceptionData()
+	data.Properties = make(map[string]string)
+	data.Measurements = make(map[string]float64)
+
+	attrs := copyAndExtractExceptionAttributes(spanEvent.Attributes(), data.Properties, data.Measurements)
+
+	details := contracts.NewExceptionDetails()
+	details.TypeName = attrs.ExceptionType
+	details.Message = attrs.ExceptionMessage
+	details.Stack = attrs.ExceptionStackTrace
+	details.HasFullStack = details.Stack != ""
+	details.ParsedStack = []*contracts.StackFrame{}
+
+	data.Exceptions = []*contracts.ExceptionDetails{details}
+	data.SeverityLevel = contracts.Error
+	return data
+}
+
+// Maps SpanEvent to AppInsights MessageData
+func spanEventToMessageData(spanEvent ptrace.SpanEvent) *contracts.MessageData {
+	data := contracts.NewMessageData()
+	data.Message = spanEvent.Name()
+	data.Properties = make(map[string]string)
+
+	copyAttributesWithoutMapping(spanEvent.Attributes(), data.Properties, nil)
 	return data
 }
 
@@ -261,13 +322,14 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 		netHostPortAsString = strconv.FormatInt(attrs.NetworkAttributes.NetHostPort, 10)
 	}
 
-	if attrs.HTTPScheme != "" && attrs.HTTPHost != "" && attrs.HTTPTarget != "" {
+	switch {
+	case attrs.HTTPScheme != "" && attrs.HTTPHost != "" && attrs.HTTPTarget != "":
 		sb.WriteString(attrs.HTTPScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.HTTPHost)
 		sb.WriteString(attrs.HTTPTarget)
 		data.Url = sb.String()
-	} else if attrs.HTTPScheme != "" && attrs.HTTPServerName != "" && netHostPortAsString != "" && attrs.HTTPTarget != "" {
+	case attrs.HTTPScheme != "" && attrs.HTTPServerName != "" && netHostPortAsString != "" && attrs.HTTPTarget != "":
 		sb.WriteString(attrs.HTTPScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.HTTPServerName)
@@ -275,7 +337,7 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 		sb.WriteString(netHostPortAsString)
 		sb.WriteString(attrs.HTTPTarget)
 		data.Url = sb.String()
-	} else if attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetHostName != "" && netHostPortAsString != "" && attrs.HTTPTarget != "" {
+	case attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetHostName != "" && netHostPortAsString != "" && attrs.HTTPTarget != "":
 		sb.WriteString(attrs.HTTPScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.NetworkAttributes.NetHostName)
@@ -283,7 +345,7 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 		sb.WriteString(netHostPortAsString)
 		sb.WriteString(attrs.HTTPTarget)
 		data.Url = sb.String()
-	} else if attrs.HTTPURL != "" {
+	case attrs.HTTPURL != "":
 		if _, err := url.Parse(attrs.HTTPURL); err == nil {
 			data.Url = attrs.HTTPURL
 		}
@@ -345,19 +407,20 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		netPeerPortAsString = strconv.FormatInt(attrs.NetworkAttributes.NetPeerPort, 10)
 	}
 
-	if attrs.HTTPURL != "" {
+	switch {
+	case attrs.HTTPURL != "":
 		if u, err := url.Parse(attrs.HTTPURL); err == nil {
 			data.Data = attrs.HTTPURL
 			data.Target = u.Host
 		}
-	} else if attrs.HTTPScheme != "" && attrs.HTTPHost != "" && attrs.HTTPTarget != "" {
+	case attrs.HTTPScheme != "" && attrs.HTTPHost != "" && attrs.HTTPTarget != "":
 		sb.WriteString(attrs.HTTPScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.HTTPHost)
 		sb.WriteString(attrs.HTTPTarget)
 		data.Data = sb.String()
 		data.Target = attrs.HTTPHost
-	} else if attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetPeerName != "" && netPeerPortAsString != "" && attrs.HTTPTarget != "" {
+	case attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetPeerName != "" && netPeerPortAsString != "" && attrs.HTTPTarget != "":
 		sb.WriteString(attrs.HTTPScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.NetworkAttributes.NetPeerName)
@@ -371,7 +434,7 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.WriteString(":")
 		sb.WriteString(netPeerPortAsString)
 		data.Target = sb.String()
-	} else if attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetPeerIP != "" && netPeerPortAsString != "" && attrs.HTTPTarget != "" {
+	case attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetPeerIP != "" && netPeerPortAsString != "" && attrs.HTTPTarget != "":
 		sb.WriteString(attrs.HTTPScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.NetworkAttributes.NetPeerIP)
@@ -580,6 +643,22 @@ func copyAndExtractMessagingAttributes(
 	return attrs
 }
 
+// Attribute extraction logic for Span event exception attributes
+func copyAndExtractExceptionAttributes(
+	attributeMap pcommon.Map,
+	properties map[string]string,
+	measurements map[string]float64) *ExceptionAttributes {
+
+	attrs := &ExceptionAttributes{}
+	copyAndMapAttributes(
+		attributeMap,
+		properties,
+		measurements,
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+
+	return attrs
+}
+
 func formatSpanDuration(span ptrace.Span) string {
 	startTime := toTime(span.StartTimestamp())
 	endTime := toTime(span.EndTimestamp())
@@ -621,7 +700,7 @@ func mapIncomingSpanToType(attributeMap pcommon.Map) spanType {
 }
 
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
-func getDefaultFormattedSpanStatus(spanStatus ptrace.SpanStatus) (statusCodeAsString string, success bool) {
+func getDefaultFormattedSpanStatus(spanStatus ptrace.Status) (statusCodeAsString string, success bool) {
 	code := spanStatus.Code()
 
 	return strconv.FormatInt(int64(code), 10), code != ptrace.StatusCodeError
@@ -641,6 +720,8 @@ func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *NetworkAt
 	}
 }
 
+// Sets the attribute value as a property or measurement.
+// Int and floats go to measurements if measurements is not nil, otherwise everything goes to properties.
 func setAttributeValueAsPropertyOrMeasurement(
 	key string,
 	attributeValue pcommon.Value,
@@ -649,16 +730,24 @@ func setAttributeValueAsPropertyOrMeasurement(
 
 	switch attributeValue.Type() {
 	case pcommon.ValueTypeBool:
-		properties[key] = strconv.FormatBool(attributeValue.BoolVal())
+		properties[key] = strconv.FormatBool(attributeValue.Bool())
 
-	case pcommon.ValueTypeString:
-		properties[key] = attributeValue.StringVal()
+	case pcommon.ValueTypeStr:
+		properties[key] = attributeValue.Str()
 
 	case pcommon.ValueTypeInt:
-		measurements[key] = float64(attributeValue.IntVal())
+		if measurements == nil {
+			properties[key] = strconv.FormatInt(attributeValue.Int(), 10)
+		} else {
+			measurements[key] = float64(attributeValue.Int())
+		}
 
 	case pcommon.ValueTypeDouble:
-		measurements[key] = attributeValue.DoubleVal()
+		if measurements == nil {
+			properties[key] = strconv.FormatFloat(attributeValue.Double(), 'f', -1, 64)
+		} else {
+			measurements[key] = attributeValue.Double()
+		}
 	}
 }
 

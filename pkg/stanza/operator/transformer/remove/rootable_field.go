@@ -52,6 +52,11 @@ func (f *rootableField) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return f.unmarshalCheckString(s)
 }
 
+// UnmarshalText will unmarshal a field from text
+func (f *rootableField) UnmarshalText(text []byte) error {
+	return f.unmarshalCheckString(string(text))
+}
+
 func (f *rootableField) unmarshalCheckString(s string) error {
 	if s == entry.ResourcePrefix {
 		*f = rootableField{allResource: true}

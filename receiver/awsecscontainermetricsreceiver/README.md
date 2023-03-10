@@ -1,5 +1,11 @@
 # AWS ECS Container Metrics Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 ## Overview
 
 AWS ECS Container Metrics Receiver (`awsecscontainermetrics`) reads task metadata and [docker stats](https://docs.docker.com/engine/api/v1.30/#operation/ContainerStats) from [Amazon ECS Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html), and generates resource usage metrics (such as CPU, memory, network, and disk) from them. To get the full list of metrics, see the [Available Metrics](#available-metrics) section below.
@@ -88,7 +94,7 @@ processors:
 
   metricstransform:
     transforms:
-      - metric_name: ecs.task.memory.utilized
+      - include: ecs.task.memory.utilized
         action: update
         new_name: MemoryUtilized
 
@@ -187,28 +193,28 @@ processors:
           - ecs.task.storage.write_bytes
   metricstransform: # update metric names
     transforms:
-      - metric_name: ecs.task.memory.utilized
+      - include: ecs.task.memory.utilized
         action: update
         new_name: MemoryUtilized
-      - metric_name: ecs.task.memory.reserved
+      - include: ecs.task.memory.reserved
         action: update
         new_name: MemoryReserved
-      - metric_name: ecs.task.cpu.utilized
+      - include: ecs.task.cpu.utilized
         action: update
         new_name: CpuUtilized
-      - metric_name: ecs.task.cpu.reserved
+      - include: ecs.task.cpu.reserved
         action: update
         new_name: CpuReserved
-      - metric_name: ecs.task.network.rate.rx
+      - include: ecs.task.network.rate.rx
         action: update
         new_name: NetworkRxBytes
-      - metric_name: ecs.task.network.rate.tx
+      - include: ecs.task.network.rate.tx
         action: update
         new_name: NetworkTxBytes
-      - metric_name: ecs.task.storage.read_bytes
+      - include: ecs.task.storage.read_bytes
         action: update
         new_name: StorageReadBytes
-      - metric_name: ecs.task.storage.write_bytes
+      - include: ecs.task.storage.write_bytes
         action: update
         new_name: StorageWriteBytes
   resource:
@@ -277,28 +283,28 @@ processors:
                     - .*storage.write_bytes
     metricstransform:
         transforms:
-            - metric_name: ecs.task.memory.utilized
+            - include: ecs.task.memory.utilized
               action: update
               new_name: MemoryUtilized
-            - metric_name: ecs.task.memory.reserved
+            - include: ecs.task.memory.reserved
               action: update
               new_name: MemoryReserved
-            - metric_name: ecs.task.cpu.utilized
+            - include: ecs.task.cpu.utilized
               action: update
               new_name: CpuUtilized
-            - metric_name: ecs.task.cpu.reserved
+            - include: ecs.task.cpu.reserved
               action: update
               new_name: CpuReserved
-            - metric_name: ecs.task.network.rate.rx
+            - include: ecs.task.network.rate.rx
               action: update
               new_name: NetworkRxBytes
-            - metric_name: ecs.task.network.rate.tx
+            - include: ecs.task.network.rate.tx
               action: update
               new_name: NetworkTxBytes
-            - metric_name: ecs.task.storage.read_bytes
+            - include: ecs.task.storage.read_bytes
               action: update
               new_name: StorageReadBytes
-            - metric_name: ecs.task.storage.write_bytes
+            - include: ecs.task.storage.write_bytes
               action: update
               new_name: StorageWriteBytes
     resource:
@@ -361,3 +367,6 @@ service:
 ## Reference
 1. [Setup OpenTelemetry Collector on Amazon ECS](https://aws-otel.github.io/docs/setup/ecs)
 2. [Getting Started with ECS Container Metrics Receiver in the OpenTelemetry Collector](https://aws-otel.github.io/docs/components/ecs-metrics-receiver)
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

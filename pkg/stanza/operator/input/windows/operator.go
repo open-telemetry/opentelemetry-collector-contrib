@@ -29,17 +29,35 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "windows_eventlog_input"
+
 func init() {
-	operator.Register("windows_eventlog_input", func() operator.Builder { return NewConfig() })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
+}
+
+// NewConfig will return an event log config with default values.
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfig will return an event log config with default values.
+func NewConfigWithID(operatorID string) *Config {
+	return &Config{
+		InputConfig:  helper.NewInputConfig(operatorID, operatorType),
+		MaxReads:     100,
+		StartAt:      "end",
+		PollInterval: 1 * time.Second,
+	}
 }
 
 // Config is the configuration of a windows event log operator.
 type Config struct {
-	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
-	Channel            string          `mapstructure:"channel" json:"channel" yaml:"channel"`
-	MaxReads           int             `mapstructure:"max_reads,omitempty" json:"max_reads,omitempty" yaml:"max_reads,omitempty"`
-	StartAt            string          `mapstructure:"start_at,omitempty" json:"start_at,omitempty" yaml:"start_at,omitempty"`
-	PollInterval       helper.Duration `mapstructure:"poll_interval,omitempty" json:"poll_interval,omitempty" yaml:"poll_interval,omitempty"`
+	helper.InputConfig `mapstructure:",squash"`
+	Channel            string        `mapstructure:"channel"`
+	MaxReads           int           `mapstructure:"max_reads,omitempty"`
+	StartAt            string        `mapstructure:"start_at,omitempty"`
+	PollInterval       time.Duration `mapstructure:"poll_interval,omitempty"`
+	Raw                bool          `mapstructure:"raw,omitempty"`
 }
 
 // Build will build a windows event log operator.
@@ -68,19 +86,8 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		maxReads:      c.MaxReads,
 		startAt:       c.StartAt,
 		pollInterval:  c.PollInterval,
+		raw:           c.Raw,
 	}, nil
-}
-
-// NewConfig will return an event log config with default values.
-func NewConfig() *Config {
-	return &Config{
-		InputConfig: helper.NewInputConfig("", "windows_eventlog_input"),
-		MaxReads:    100,
-		StartAt:     "end",
-		PollInterval: helper.Duration{
-			Duration: 1 * time.Second,
-		},
-	}
 }
 
 // Input is an operator that creates entries using the windows event log api.
@@ -92,7 +99,8 @@ type Input struct {
 	channel      string
 	maxReads     int
 	startAt      string
-	pollInterval helper.Duration
+	raw          bool
+	pollInterval time.Duration
 	persister    operator.Persister
 	cancel       context.CancelFunc
 	wg           sync.WaitGroup
@@ -114,13 +122,13 @@ func (e *Input) Start(persister operator.Persister) error {
 
 	if offsetXML != "" {
 		if err := e.bookmark.Open(offsetXML); err != nil {
-			return fmt.Errorf("failed to open bookmark: %s", err)
+			return fmt.Errorf("failed to open bookmark: %w", err)
 		}
 	}
 
 	e.subscription = NewSubscription()
 	if err := e.subscription.Open(e.channel, e.startAt, e.bookmark); err != nil {
-		return fmt.Errorf("failed to open subscription: %s", err)
+		return fmt.Errorf("failed to open subscription: %w", err)
 	}
 
 	e.wg.Add(1)
@@ -134,11 +142,11 @@ func (e *Input) Stop() error {
 	e.wg.Wait()
 
 	if err := e.subscription.Close(); err != nil {
-		return fmt.Errorf("failed to close subscription: %s", err)
+		return fmt.Errorf("failed to close subscription: %w", err)
 	}
 
 	if err := e.bookmark.Close(); err != nil {
-		return fmt.Errorf("failed to close bookmark: %s", err)
+		return fmt.Errorf("failed to close bookmark: %w", err)
 	}
 
 	return nil
@@ -148,7 +156,7 @@ func (e *Input) Stop() error {
 func (e *Input) readOnInterval(ctx context.Context) {
 	defer e.wg.Done()
 
-	ticker := time.NewTicker(e.pollInterval.Raw())
+	ticker := time.NewTicker(e.pollInterval)
 	defer ticker.Stop()
 
 	for {
@@ -196,6 +204,15 @@ func (e *Input) read(ctx context.Context) int {
 
 // processEvent will process and send an event retrieved from windows event log.
 func (e *Input) processEvent(ctx context.Context, event Event) {
+	if e.raw {
+		rawEvent, err := event.RenderRaw(e.buffer)
+		if err != nil {
+			e.Errorf("Failed to render raw event: %s", err)
+			return
+		}
+		e.sendEventRaw(ctx, rawEvent)
+		return
+	}
 	simpleEvent, err := event.RenderSimple(e.buffer)
 	if err != nil {
 		e.Errorf("Failed to render simple event: %s", err)
@@ -231,6 +248,19 @@ func (e *Input) sendEvent(ctx context.Context, eventXML EventXML) {
 
 	entry.Timestamp = eventXML.parseTimestamp()
 	entry.Severity = eventXML.parseRenderedSeverity()
+	e.Write(ctx, entry)
+}
+
+func (e *Input) sendEventRaw(ctx context.Context, eventRaw EventRaw) {
+	body := eventRaw.parseBody()
+	entry, err := e.NewEntry(body)
+	if err != nil {
+		e.Errorf("Failed to create entry: %s", err)
+		return
+	}
+
+	entry.Timestamp = eventRaw.parseTimestamp()
+	entry.Severity = eventRaw.parseRenderedSeverity()
 	e.Write(ctx, entry)
 }
 

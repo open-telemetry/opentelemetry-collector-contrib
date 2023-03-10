@@ -24,22 +24,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "severity_parser"
+
 func init() {
-	operator.Register("severity_parser", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new severity parser config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new severity parser config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, "severity_parser"),
-		Config:            helper.NewConfig(),
+		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
+		SeverityConfig:    helper.NewSeverityConfig(),
 	}
 }
 
 // Config is the configuration of a severity parser operator.
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
-	helper.Config            `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	helper.SeverityConfig    `mapstructure:",omitempty,squash"`
 }
 
 // Build will build a severity parser operator.
@@ -49,7 +56,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	severityParser, err := c.Config.Build(logger)
+	severityParser, err := c.SeverityConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

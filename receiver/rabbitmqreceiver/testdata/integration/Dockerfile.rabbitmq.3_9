@@ -1,0 +1,6 @@
+FROM rabbitmq:3.9-management
+
+COPY scripts/setup.sh /setup.sh
+RUN chmod +x /setup.sh
+
+EXPOSE 15672

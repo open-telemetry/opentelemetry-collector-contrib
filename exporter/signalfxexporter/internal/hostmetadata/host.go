@@ -20,7 +20,6 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -153,13 +152,13 @@ func getLinuxVersion() (string, error) {
 	if value, err := getStringFromFile(`PRETTY_NAME="(.*)"`, filepath.Join(etc, "os-release")); err == nil {
 		return value, nil
 	}
-	if value, err := ioutil.ReadFile(filepath.Join(etc, "centos-release")); err == nil {
+	if value, err := os.ReadFile(filepath.Join(etc, "centos-release")); err == nil {
 		return string(value), nil
 	}
-	if value, err := ioutil.ReadFile(filepath.Join(etc, "redhat-release")); err == nil {
+	if value, err := os.ReadFile(filepath.Join(etc, "redhat-release")); err == nil {
 		return string(value), nil
 	}
-	if value, err := ioutil.ReadFile(filepath.Join(etc, "system-release")); err == nil {
+	if value, err := os.ReadFile(filepath.Join(etc, "system-release")); err == nil {
 		return string(value), nil
 	}
 	return "", errors.New("unable to find linux version")
@@ -192,7 +191,7 @@ func getStringFromFile(pattern string, path string) (string, error) {
 	var err error
 	var file []byte
 	var reg = regexp.MustCompile(pattern)
-	if file, err = ioutil.ReadFile(path); err == nil {
+	if file, err = os.ReadFile(path); err == nil {
 		if match := reg.FindSubmatch(file); len(match) > 1 {
 			return string(match[1]), nil
 		}

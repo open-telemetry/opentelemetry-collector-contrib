@@ -16,28 +16,25 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 )
 
 func TestValidConfig(t *testing.T) {
-	err := configtest.CheckConfigStruct(createDefaultConfig())
+	err := componenttest.CheckConfigStruct(createDefaultConfig())
 	require.NoError(t, err)
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	os.Unsetenv(endpoints.TaskMetadataEndpointV4EnvVar)
-
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -46,11 +43,11 @@ func TestCreateMetricsReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiverWithEnv(t *testing.T) {
-	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://www.test.com")
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://www.test.com")
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -59,11 +56,11 @@ func TestCreateMetricsReceiverWithEnv(t *testing.T) {
 }
 
 func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
-	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "bad-url-format")
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "bad-url-format")
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -74,7 +71,7 @@ func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		createDefaultConfig(),
 		nil,
 	)

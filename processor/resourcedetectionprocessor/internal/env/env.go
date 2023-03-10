@@ -26,8 +26,8 @@ import (
 	"regexp"
 	"strings"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -48,7 +48,7 @@ var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct{}
 
-func NewDetector(component.ProcessorCreateSettings, internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(processor.CreateSettings, internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{}, nil
 }
 
@@ -78,7 +78,6 @@ var labelRegex = regexp.MustCompile(`\s*([[:ascii:]]{1,256}?)\s*=\s*([[:ascii:]]
 
 func initializeAttributeMap(am pcommon.Map, s string) error {
 	matches := labelRegex.FindAllStringSubmatchIndex(s, -1)
-
 	for len(matches) == 0 {
 		return fmt.Errorf("invalid resource format: %q", s)
 	}
@@ -95,9 +94,9 @@ func initializeAttributeMap(am pcommon.Map, s string) error {
 
 		var err error
 		if value, err = url.QueryUnescape(value); err != nil {
-			return fmt.Errorf("invalid resource format in attribute: %q, err: %s", s[match[0]:match[1]], err)
+			return fmt.Errorf("invalid resource format in attribute: %q, err: %w", s[match[0]:match[1]], err)
 		}
-		am.InsertString(key, value)
+		am.PutStr(key, value)
 
 		prevIndex = match[1]
 	}

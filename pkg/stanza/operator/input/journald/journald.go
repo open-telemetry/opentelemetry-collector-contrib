@@ -36,13 +36,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "journald_input"
+
 func init() {
-	operator.Register("journald_input", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-func NewConfig(operatorID string) *Config {
+// NewConfig creates a new input config with default values
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new input config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "journald_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		StartAt:     "end",
 		Priority:    "info",
 	}
@@ -50,13 +58,13 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a journald input operator
 type Config struct {
-	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash"`
 
-	Directory *string  `mapstructure:"directory,omitempty" json:"directory,omitempty" yaml:"directory,omitempty"`
-	Files     []string `mapstructure:"files,omitempty"     json:"files,omitempty"     yaml:"files,omitempty"`
-	StartAt   string   `mapstructure:"start_at,omitempty"  json:"start_at,omitempty"  yaml:"start_at,omitempty"`
-	Units     []string `mapstructure:"units,omitempty"     json:"units,omitempty"     yaml:"units,omitempty"`
-	Priority  string   `mapstructure:"priority,omitempty"  json:"priority,omitempty"  yaml:"priority,omitempty"`
+	Directory *string  `mapstructure:"directory,omitempty"`
+	Files     []string `mapstructure:"files,omitempty"`
+	StartAt   string   `mapstructure:"start_at,omitempty"`
+	Units     []string `mapstructure:"units,omitempty"`
+	Priority  string   `mapstructure:"priority,omitempty"`
 }
 
 // Build will build a journald input operator from the supplied configuration
@@ -140,7 +148,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 	// Start from a cursor if there is a saved offset
 	cursor, err := persister.Get(ctx, lastReadCursorKey)
 	if err != nil {
-		return fmt.Errorf("failed to get journalctl state: %s", err)
+		return fmt.Errorf("failed to get journalctl state: %w", err)
 	}
 
 	operator.persister = persister
@@ -149,11 +157,11 @@ func (operator *Input) Start(persister operator.Persister) error {
 	journal := operator.newCmd(ctx, cursor)
 	stdout, err := journal.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get journalctl stdout: %s", err)
+		return fmt.Errorf("failed to get journalctl stdout: %w", err)
 	}
 	err = journal.Start()
 	if err != nil {
-		return fmt.Errorf("start journalctl: %s", err)
+		return fmt.Errorf("start journalctl: %w", err)
 	}
 
 	// Start the reader goroutine
@@ -166,7 +174,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 		for {
 			line, err := stdoutBuf.ReadBytes('\n')
 			if err != nil {
-				if err != io.EOF {
+				if !errors.Is(err, io.EOF) {
 					operator.Errorw("Received error reading from journalctl stdout", zap.Error(err))
 				}
 				return
@@ -206,7 +214,7 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 
 	timestampInt, err := strconv.ParseInt(timestampString, 10, 64)
 	if err != nil {
-		return nil, "", fmt.Errorf("parse timestamp: %s", err)
+		return nil, "", fmt.Errorf("parse timestamp: %w", err)
 	}
 
 	delete(body, "__REALTIME_TIMESTAMP")
@@ -223,7 +231,7 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 
 	entry, err := operator.NewEntry(body)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to create entry: %s", err)
+		return nil, "", fmt.Errorf("failed to create entry: %w", err)
 	}
 
 	entry.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds

@@ -17,14 +17,14 @@ package metricstransformprocessor
 import (
 	"regexp"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type metricsTransformTest struct {
 	name       string // test name
 	transforms []internalTransform
-	in         []*metricspb.Metric
-	out        []*metricspb.Metric
+	in         []pmetric.Metric
+	out        []pmetric.Metric
 }
 
 var (
@@ -40,13 +40,11 @@ var (
 					NewName:             "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("new/metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric1").build(),
 			},
 		},
 		{
@@ -63,17 +61,13 @@ var (
 					NewName:             "new/metric2",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("new/metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
-				metricBuilder().setName("new/metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric1").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric2").build(),
 			},
 		},
 		{
@@ -90,21 +84,15 @@ var (
 					NewName:             "new/new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("new/new/metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
-				metricBuilder().setName("new/metric/2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "new/new/metric1").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric/2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").build(),
 			},
 		},
 		{
@@ -116,13 +104,11 @@ var (
 					NewName:             "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").build(),
 			},
 		},
 		{
@@ -142,19 +128,13 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
-					setLabels([]string{"label1"}).
-					addTimeseries(1, []string{"value1"}).
-					addInt64Point(0, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 3, "value1").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
-					setLabels([]string{"new/label1"}).
-					addTimeseries(1, []string{"value1"}).
-					addInt64Point(0, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "new/label1").
+					addIntDatapoint(1, 2, 3, "value1").build(),
 			},
 		},
 		{
@@ -176,23 +156,72 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
-					addTimeseries(1, []string{"label1-value1"}).
-					addInt64Point(0, 3, 2).
-					addTimeseries(1, []string{"label1-value2"}).
-					addInt64Point(1, 3, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 3, "label1-value1").
+					addIntDatapoint(1, 2, 3, "label1-value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
-					addTimeseries(1, []string{"new/label1-value1"}).
-					addInt64Point(0, 3, 2).
-					addTimeseries(1, []string{"label1-value2"}).
-					addInt64Point(1, 3, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 3, "new/label1-value1").
+					addIntDatapoint(1, 2, 3, "label1-value2").build(),
+			},
+		},
+		{
+			name: "metric_label_update_label_and_label_value",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:   UpdateLabel,
+								Label:    "label1",
+								NewLabel: "new/label1",
+							},
+							valueActionsMapping: map[string]string{"label1-value1": "new/label1-value1"},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 3, "label1-value1").build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "new/label1").
+					addIntDatapoint(1, 2, 3, "new/label1-value1").build(),
+			},
+		},
+		{
+			name: "metric_label_update_with_regexp_filter",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^matched.*$")},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: UpdateLabel,
+								Label:  "label1",
+							},
+							valueActionsMapping: map[string]string{"label1-value1": "new/label1-value1"},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "matched-metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "unmatched-metric2", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "matched-metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "new/label1-value1", "label2-value1").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "unmatched-metric2", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").build(),
 			},
 		},
 		{
@@ -213,23 +242,14 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(2, []string{"label1-value1", "label2-value1"}).
-					addInt64Point(0, 3, 2).
-					addTimeseries(2, []string{"label1-value1", "label2-value2"}).
-					addInt64Point(1, 1, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(2, []string{"label1-value1"}).
-					addInt64Point(0, 4, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 4, "label1-value1").build(),
 			},
 		},
 		{
@@ -250,22 +270,14 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1"}).
-					addInt64Point(0, 2, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 2, "label1-value1").build(),
 			},
 		},
 		{
@@ -286,23 +298,15 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
-					addInt64Point(0, 1, 2).addInt64Point(1, 3, 2).addInt64Point(2, 1, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value1").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value2").
+					addIntDatapoint(1, 2, 2, "label1-value1", "label2-value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1"}).
-					addInt64Point(0, 3, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 3, "label1-value1").build(),
 			},
 		},
 		{
@@ -323,25 +327,15 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
-					addInt64Point(0, 3, 2).
-					addInt64Point(1, 1, 2).
-					addInt64Point(2, 3, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value1").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value2").
+					addIntDatapoint(1, 2, 2, "label1-value1", "label2-value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1"}).
-					addInt64Point(0, 1, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 1, "label1-value1").build(),
 			},
 		},
 		{
@@ -362,23 +356,14 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addDoublePoint(0, 3, 2).
-					addDoublePoint(1, 1, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, []string{"label1-value1"}).
-					addDoublePoint(0, 4, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 4, "label1-value1").build(),
 			},
 		},
 		{
@@ -399,21 +384,14 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addDoublePoint(0, 3, 2).
-					addDoublePoint(1, 1, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addDoubleDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+					addDoubleDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, []string{"label1-value1"}).
-					addDoublePoint(0, 2, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addDoubleDatapoint(1, 2, 2, "label1-value1").build(),
 			},
 		},
 		{
@@ -434,22 +412,14 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addDoublePoint(0, 3, 2).
-					addDoublePoint(1, 1, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addDoubleDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+					addDoubleDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, []string{"label1-value1"}).
-					addDoublePoint(0, 3, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addDoubleDatapoint(1, 2, 3, "label1-value1").build(),
 			},
 		},
 		{
@@ -470,20 +440,55 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(2, []string{"label1-value2", "label2-value2"}).addDoublePoint(0, 3, 2).
-					addTimeseries(0, []string{"label1-value0", "label2-value0"}).addDoublePoint(1, 4, 2).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addDoublePoint(2, 1, 2).
-					addTimeseries(1, []string{"label1-value1", "label2-value2"}).addDoublePoint(3, 3, 2).
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addDoubleDatapoint(2, 2, 3, "label1-value2", "label2-value2").
+					addDoubleDatapoint(0, 2, 4, "label1-value0", "label2-value0").
+					addDoubleDatapoint(1, 2, 1, "label1-value1", "label2-value1").
+					addDoubleDatapoint(1, 2, 3, "label1-value1", "label2-value2").build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addDoubleDatapoint(2, 2, 3, "label1-value2").
+					addDoubleDatapoint(0, 2, 4, "label1-value0").
+					addDoubleDatapoint(1, 2, 1, "label1-value1").build(),
+			},
+		},
+		{
+			name: "metric_label_aggregation_insert_sum_with_several_attrs_match",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"label0": strictMatcher("label0-value1")}},
+					Action:  Insert,
+					NewName: "new/metric1",
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Sum,
+								LabelSet:        []string{"label1", "label2"},
+							},
+							labelSetMap: map[string]bool{"label1": true, "label2": true},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label0", "label1", "label2", "label3").
+					addDoubleDatapoint(1, 2, 3, "label0-value1", "label1-value1", "label2-value1", "label3-value1").
+					addDoubleDatapoint(1, 2, 1, "label0-value1", "label1-value1", "label2-value1", "label3-value2").
+					addDoubleDatapoint(1, 2, 1, "label0-value2", "label1-value1", "label2-value1", "label3-value1").
 					build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, []string{"label1-value1"}).addDoublePoint(0, 1, 2).
-					addTimeseries(2, []string{"label1-value2"}).addDoublePoint(1, 3, 2).
-					addTimeseries(0, []string{"label1-value0"}).addDoublePoint(2, 4, 2).
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label0", "label1", "label2", "label3").
+					addDoubleDatapoint(1, 2, 3, "label0-value1", "label1-value1", "label2-value1", "label3-value1").
+					addDoubleDatapoint(1, 2, 1, "label0-value1", "label1-value1", "label2-value1", "label3-value2").
+					addDoubleDatapoint(1, 2, 1, "label0-value2", "label1-value1", "label2-value1", "label3-value1").
 					build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric1", "label1", "label2").
+					addDoubleDatapoint(1, 2, 4, "label1-value1", "label2-value1").build(),
 			},
 		},
 		{
@@ -505,30 +510,19 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, []string{"label1-value1", "label2-value1"}).
-					addInt64Point(0, 3, 2).
-					addTimeseries(3, []string{"label1-value1", "label2-value2"}).
-					addInt64Point(1, 1, 2).addInt64Point(1, 2, 3).
-					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
-					addInt64Point(2, 1, 2).
-					addTimeseries(0, []string{"label1-value1", "label2-value4"}).
-					addInt64Point(3, 4, 2).
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(0, 2, 3, "label1-value1", "label2-value1").
+					addIntDatapoint(0, 2, 1, "label1-value1", "label2-value2").
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value3").
+					addIntDatapoint(2, 2, 4, "label1-value1", "label2-value4").
 					build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
-					addInt64Point(0, 1, 2).
-					addTimeseries(3, []string{"label1-value1", "new/label2-value"}).
-					addInt64Point(1, 4, 2).
-					addTimeseries(3, []string{"label1-value1", "new/label2-value"}).
-					addInt64Point(2, 2, 3).
-					addTimeseries(0, []string{"label1-value1", "label2-value4"}).
-					addInt64Point(3, 4, 2).
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(0, 2, 4, "label1-value1", "new/label2-value").
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value3").
+					addIntDatapoint(2, 2, 4, "label1-value1", "label2-value4").
 					build(),
 			},
 		},
@@ -551,22 +545,52 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
-					addDistributionPoints(0, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}).  // pointGroup1: {1, 2, 3}, SumOfSquaredDeviation = 2
-					addDistributionPoints(1, 5, 10, []float64{1, 2, 3}, []int64{0, 2, 1, 2}). // pointGroup2: {1, 2, 3, 3, 1}, SumOfSquaredDeviation = 4
-					addDistributionPoints(2, 7, 14, []float64{1, 2, 3}, []int64{0, 3, 1, 3}). // pointGroup3: {1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 6
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1", "label2").
+					addHistogramDatapoint(0, 1, 3, 6, []float64{1, 2, 3}, []uint64{0, 1, 1, 1}, "label1-value1",
+						"label2-value1"). // pointGroup1: {1, 2, 3}, SumOfSquaredDeviation = 2
+					addHistogramDatapoint(0, 1, 5, 10, []float64{1, 2, 3}, []uint64{0, 2, 1, 2}, "label1-value1",
+						"label2-value2"). // pointGroup2: {1, 2, 3, 3, 1}, SumOfSquaredDeviation = 4
+					addHistogramDatapoint(1, 1, 7, 14, []float64{1, 2, 3}, []uint64{0, 3, 1, 3}, "label1-value1",
+						"label2-value3"). // pointGroup3: {1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 6
 					build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
-					addTimeseries(1, []string{"label1-value1"}).
-					addDistributionPoints(0, 15, 30, []float64{1, 2, 3}, []int64{0, 6, 3, 6}). // pointGroupCombined: {1, 2, 3, 1, 2, 3, 3, 1, 1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 12
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1").
+					addHistogramDatapoint(0, 1, 15, 30, []float64{1, 2, 3}, []uint64{0, 6, 3, 6},
+						"label1-value1"). // pointGroupCombined: {1, 2, 3, 1, 2, 3, 3, 1, 1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 12
+					build(),
+			},
+		},
+		{
+			name: "metric_label_aggregation_ignored_for_partial_metric_match",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("label1-value1")}},
+					Action: Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Sum,
+								LabelSet:        []string{"label1"},
+							},
+							labelSetMap: map[string]bool{"label1": true},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+					addIntDatapoint(0, 2, 1, "label1-value2", "label2-value2").
+					build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+					addIntDatapoint(0, 2, 1, "label1-value2", "label2-value2").
 					build(),
 			},
 		},
@@ -588,18 +612,15 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
-					addDistributionPoints(0, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}).
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1", "label2").
+					addHistogramDatapoint(1, 2, 3, 6, []float64{1, 2, 3}, []uint64{0, 1, 1, 1}, "label1-value1",
+						"label2-value1").
 					build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
-					addTimeseries(1, []string{"label1-value1"}).
-					addDistributionPoints(0, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}).
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1").
+					addHistogramDatapoint(1, 2, 3, 6, []float64{1, 2, 3}, []uint64{0, 1, 1, 1}, "label1-value1").
 					build(),
 			},
 		},
@@ -613,15 +634,12 @@ var (
 					NewName:             "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
-				metricBuilder().setName("new/metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric1").build(),
 			},
 		},
 		{
@@ -638,312 +656,240 @@ var (
 					NewName:             "new/metric2",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
-				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
-				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
-				metricBuilder().setName("new/metric1").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
-				metricBuilder().setName("new/metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric1").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric2").build(),
 			},
 		},
 		{
 			name: "metric_name_insert_with_match_label_strict",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]StringMatcher{"label1": strictMatcher("value1")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("value1")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 3, 2, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
-				metricBuilder().setName("new/metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 3, 2, "value1", "value2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric1", "label1", "label2").
+					addIntDatapoint(1, 3, 2, "value1", "value2").build(),
 			},
 		},
 		{
 			name: "metric_name_insert_with_match_label_regexp",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile(`(.|\s)*\S(.|\s)*`)}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile(`(.|\s)*\S(.|\s)*`)}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
-				metricBuilder().setName("new/metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
 		},
 		{
 			name: "metric_name_insert_with_match_label_regexp_two_datapoints_positive",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile("value3")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile("value3")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addTimeseries(2, []string{"value3", "value4"}).
-					addInt64Point(0, 3, 2).
-					addInt64Point(1, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").
+					addIntDatapoint(2, 2, 3, "value3", "value4").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addTimeseries(2, []string{"value3", "value4"}).
-					addInt64Point(0, 3, 2).
-					addInt64Point(1, 3, 2).build(),
-				metricBuilder().setName("new/metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(2, []string{"value3", "value4"}).
-					addInt64Point(0, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").
+					addIntDatapoint(2, 2, 3, "value3", "value4").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric1", "label1", "label2").
+					addIntDatapoint(2, 2, 3, "value3", "value4").build(),
 			},
 		},
 		{
 			name: "metric_name_insert_with_match_label_regexp_two_datapoints_negative",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile("value3")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile("value3")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addTimeseries(2, []string{"value11", "value22"}).
-					addInt64Point(0, 3, 2).
-					addInt64Point(1, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").
+					addIntDatapoint(2, 2, 3, "value11", "value22").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addTimeseries(2, []string{"value11", "value22"}).
-					addInt64Point(0, 3, 2).
-					addInt64Point(1, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").
+					addIntDatapoint(2, 2, 3, "value11", "value22").build(),
 			},
 		},
 		{
 			name: "metric_name_insert_with_match_label_regexp_with_full_value",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile("value1")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile("value1")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
-				metricBuilder().setName("new/metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
 		},
 		{
 			name: "metric_name_insert_with_match_label_strict_negative",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]StringMatcher{"label1": strictMatcher("wrong_value")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("wrong_value")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
 		},
 		{
 			name: "metric_name_insert_with_match_label_regexp_negative",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile(".*wrong_ending")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile(".*wrong_ending")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
 		},
 		{
 			name: "metric_name_insert_with_match_label_strict_missing_key",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]StringMatcher{"missing_key": strictMatcher("value1")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"missing_key": strictMatcher("value1")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
 		},
 		{
 			name: "metric_name_insert_with_match_label_regexp_missing_key",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"missing_key": regexp.MustCompile("value1")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"missing_key": regexp.MustCompile("value1")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
 		},
 		{
 			name: "metric_name_insert_with_match_label_regexp_missing_and_present_key",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile("value1"), "missing_key": regexp.MustCompile("value2")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile("value1"),
+							"missing_key": regexp.MustCompile("value2")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
 		},
 		{
 			name: "metric_name_insert_with_match_label_regexp_missing_key_with_empty_expression",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile("value1"), "missing_key": regexp.MustCompile("^$")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile("value1"),
+							"missing_key": regexp.MustCompile("^$")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
-				metricBuilder().setName("new/metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
 		},
 		{
@@ -964,24 +910,15 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).build(),
-				metricBuilder().setName("new/metric1").
-					setLabels([]string{"label2", "new/label1"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value2", "value1"}).
-					addInt64Point(0, 3, 2).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric1", "new/label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
 		},
 		{
@@ -1002,34 +939,18 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1"}).
-					addInt64Point(0, 3, 2).
-					addTimeseries(1, []string{"label1-value2"}).
-					addInt64Point(1, 4, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 3, "label1-value1").
+					addIntDatapoint(1, 2, 4, "label1-value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1"}).
-					addInt64Point(0, 3, 2).
-					addTimeseries(1, []string{"label1-value2"}).
-					addInt64Point(1, 4, 2).
-					build(),
-
-				metricBuilder().setName("new/metric1").
-					setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"new/label1-value1"}).
-					addInt64Point(0, 3, 2).
-					addTimeseries(1, []string{"label1-value2"}).
-					addInt64Point(1, 4, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 3, "label1-value1").
+					addIntDatapoint(1, 2, 4, "label1-value2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new/metric1", "label1").
+					addIntDatapoint(1, 2, 3, "new/label1-value1").
+					addIntDatapoint(1, 2, 4, "label1-value2").build(),
 			},
 		},
 		{
@@ -1050,29 +971,17 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
-					build(),
-				metricBuilder().setName("metric1").
-					setLabels([]string{"label1"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1"}).
-					addInt64Point(0, 4, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 4, "label1-value1").build(),
 			},
 		},
 		{
@@ -1094,21 +1003,17 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
-					build(),
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1", "new/label2-value"}).
-					addInt64Point(0, 4, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 4, "label1-value1", "new/label2-value").build(),
 			},
 		},
 		{
@@ -1129,23 +1034,21 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addDistributionPoints(0, 3, 6, []float64{1, 2}, []int64{0, 1, 2}).
-					addDistributionPoints(1, 5, 10, []float64{1, 2}, []int64{1, 1, 3}).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1", "label2").
+					addHistogramDatapoint(1, 2, 3, 6, []float64{1, 2}, []uint64{0, 1, 2}, "label1-value1",
+						"label2-value1").
+					addHistogramDatapoint(1, 2, 5, 10, []float64{1, 2}, []uint64{1, 1, 3}, "label1-value1",
+						"label2-value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addDistributionPoints(0, 3, 6, []float64{1, 2}, []int64{0, 1, 2}).
-					addDistributionPoints(1, 5, 10, []float64{1, 2}, []int64{1, 1, 3}).
-					build(),
-				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
-					addTimeseries(1, []string{"label1-value1"}).
-					addDistributionPoints(0, 8, 16, []float64{1, 2}, []int64{1, 2, 5}).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1", "label2").
+					addHistogramDatapoint(1, 2, 3, 6, []float64{1, 2}, []uint64{0, 1, 2}, "label1-value1",
+						"label2-value1").
+					addHistogramDatapoint(1, 2, 5, 10, []float64{1, 2}, []uint64{1, 1, 3}, "label1-value1",
+						"label2-value2").build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1").
+					addHistogramDatapoint(1, 2, 8, 16, []float64{1, 2}, []uint64{1, 2, 5}, "label1-value1").build(),
 			},
 		},
 		// COMBINE
@@ -1159,31 +1062,16 @@ var (
 					SubmatchCase:        "lower",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("Metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(2, nil).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "Metric1").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 2).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
-				metricBuilder().setName("new").
-					setLabels([]string{"$1", "namedsubmatch"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"metric", "1"}).addInt64Point(0, 1, 1).
-					addTimeseries(2, []string{"metric", "2"}).addInt64Point(1, 2, 1).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new", "$1", "namedsubmatch").
+					addIntDatapoint(1, 1, 1, "metric", "1").
+					addIntDatapoint(1, 1, 2, "metric", "2").build(),
 			},
 		},
 		{
@@ -1195,33 +1083,15 @@ var (
 					NewName:             "new",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(2, nil).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 2).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(2, nil).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 2).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
 		},
 		{
@@ -1234,34 +1104,15 @@ var (
 					SubmatchCase:        "upper",
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("Metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(2, nil).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "Metric1").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 2).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(2, nil).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
-				metricBuilder().setName("new").
-					setLabels([]string{"$1", "namedsubmatch"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"METRIC", "1"}).addInt64Point(0, 1, 1).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 2).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new", "$1", "namedsubmatch").addIntDatapoint(1, 1, 1, "METRIC", "1").build(),
 			},
 		},
 		{
@@ -1274,29 +1125,14 @@ var (
 					AggregationType:     Sum,
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 2).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
-				metricBuilder().setName("new").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 3, 1).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new").addIntDatapoint(1, 1, 3).build(),
 			},
 		},
 		{
@@ -1325,30 +1161,15 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 2).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
-				metricBuilder().setName("new").
-					setLabels([]string{"$1", "new_label"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"metric", "new_label_value"}).addInt64Point(0, 3, 1).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "new", "$1", "new_label").
+					addIntDatapoint(1, 1, 3, "metric", "new_label_value").build(),
 			},
 		},
 		{
@@ -1361,33 +1182,15 @@ var (
 					AggregationType:     Sum,
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, nil).addDoublePoint(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeSum, "metric2").addIntDatapoint(1, 1, 2).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, nil).addDoublePoint(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeSum, "metric2").addIntDatapoint(1, 1, 2).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
 		},
 		{
@@ -1400,33 +1203,15 @@ var (
 					AggregationType:     Sum,
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).setUnit("ms").
-					addTimeseries(1, nil).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).setUnit("s").
-					addTimeseries(1, nil).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").setUnit("s").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").setUnit("ms").addIntDatapoint(1, 1, 2).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).setUnit("ms").
-					addTimeseries(1, nil).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).setUnit("s").
-					addTimeseries(1, nil).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").setUnit("s").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").setUnit("ms").addIntDatapoint(1, 1, 2).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
 		},
 		{
@@ -1439,37 +1224,17 @@ var (
 					AggregationType:     Sum,
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"a", "b"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"1", "2"}).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setLabels([]string{"a", "b", "c"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"1", "2", "3"}).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "a", "b").addIntDatapoint(1, 1, 1, "1", "2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2", "a", "b", "c").
+					addIntDatapoint(1, 1, 2, "1", "2", "3").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"a", "b"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"1", "2"}).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setLabels([]string{"a", "b", "c"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"1", "2", "3"}).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "a", "b").addIntDatapoint(1, 1, 1, "1", "2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2", "a", "b", "c").
+					addIntDatapoint(1, 1, 2, "1", "2", "3").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
 		},
 		{
@@ -1482,37 +1247,15 @@ var (
 					AggregationType:     Sum,
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"a", "b"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"1", "2"}).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setLabels([]string{"a", "c"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"1", "3"}).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "a", "b").addIntDatapoint(1, 1, 1, "1", "2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2", "a", "c").addIntDatapoint(1, 1, 2, "1", "3").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setLabels([]string{"a", "b"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"1", "2"}).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").
-					setLabels([]string{"a", "c"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"1", "3"}).addInt64Point(0, 2, 1).
-					build(),
-				metricBuilder().setName("metric3").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, nil).addInt64Point(0, 3, 1).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "a", "b").addIntDatapoint(1, 1, 1, "1", "2").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2", "a", "c").addIntDatapoint(1, 1, 2, "1", "3").build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 			},
 		},
 		// Toggle Data Type
@@ -1542,13 +1285,13 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).build(),
-				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeSum, "metric1").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 1).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).build(),
-				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeSum, "metric1").addDoubleDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addDoubleDatapoint(1, 1, 1).build(),
 			},
 		},
 		{
@@ -1577,17 +1320,13 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE).build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeSum, "metric1").addDoubleDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addDoubleDatapoint(1, 1, 1).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).build(),
-				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeSum, "metric1").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 1).build(),
 			},
 		},
 		{
@@ -1605,13 +1344,13 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1").
+					addHistogramDatapoint(0, 2, 3, 6, []float64{1, 2, 3}, []uint64{0, 1, 1, 1}).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1").
+					addHistogramDatapoint(0, 2, 3, 6, []float64{1, 2, 3}, []uint64{0, 1, 1, 1}).build(),
 			},
 		},
 		// Scale Value
@@ -1643,21 +1382,13 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 3, 1).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeSum, "metric1").addIntDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 3).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 100, 1).
-					build(),
-				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).addInt64Point(0, 30, 1).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeSum, "metric1").addIntDatapoint(1, 1, 100).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 30).build(),
 			},
 		},
 		{
@@ -1688,26 +1419,166 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE).
-					addTimeseries(1, nil).addDoublePoint(0, 1, 1).
-					build(),
-				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, nil).addDoublePoint(0, 300, 1).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeSum, "metric1").addDoubleDatapoint(1, 1, 1).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addDoubleDatapoint(1, 1, 300).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE).
-					addTimeseries(1, nil).addDoublePoint(0, 100, 1).
-					build(),
-				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, nil).addDoublePoint(0, 30, 1).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeSum, "metric1").addDoubleDatapoint(1, 1, 100).build(),
+				metricBuilder(pmetric.MetricTypeGauge, "metric2").addDoubleDatapoint(1, 1, 30).build(),
+			},
+		},
+		{
+			name: "metric_experimental_scale_value_histogram",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  100,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric2"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  .1,
+							},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1").
+					addHistogramDatapoint(1, 1, 1, 1, []float64{1}, []uint64{1, 1}).build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2").
+					addHistogramDatapoint(1, 1, 2, 400, []float64{200}, []uint64{1, 2}).build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1").
+					addHistogramDatapoint(1, 1, 1, 100, []float64{100}, []uint64{1, 1}).build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2").
+					addHistogramDatapoint(1, 1, 2, 40, []float64{20}, []uint64{1, 2}).build(),
+			},
+		},
+		{
+			name: "metric_experimental_scale_value_histogram_with_exemplars",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  100,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric2"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  .1,
+							},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1").
+					addHistogramDatapointWithMinMaxAndExemplars(1, 1, 1, 1, 1, 1, []float64{1}, []uint64{1, 1}, []float64{1}).build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2").
+					addHistogramDatapointWithMinMaxAndExemplars(2, 2, 2, 400, 100, 300, []float64{200}, []uint64{1, 2}, []float64{100, 300}).build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeHistogram, "metric1").
+					addHistogramDatapointWithMinMaxAndExemplars(1, 1, 1, 100, 100, 100, []float64{100}, []uint64{1, 1}, []float64{100}).build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2").
+					addHistogramDatapointWithMinMaxAndExemplars(2, 2, 2, 40, 10, 30, []float64{20}, []uint64{1, 2}, []float64{10, 30}).build(),
+			},
+		},
+		{
+			name: "metric_experimental_scale_with_attr_filtering",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("value1")}},
+					Action: Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  100,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric2",
+						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("value1")}},
+					Action: Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  10,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric3",
+						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("value1")}},
+					Action: Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  0.1,
+							},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeSum, "metric1", "label1").
+					addIntDatapoint(1, 1, 1, "value1").
+					addIntDatapoint(1, 1, 3, "value2").build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2", "label1").
+					addHistogramDatapoint(1, 1, 1, 1, []float64{1}, []uint64{1, 1}, "value1").
+					addHistogramDatapoint(1, 1, 2, 4, []float64{2}, []uint64{1, 2}, "value2").build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric3", "label1").
+					addHistogramDatapointWithMinMaxAndExemplars(1, 1, 1, 1, 1, 1, []float64{1}, []uint64{1, 1}, []float64{1}, "value1").
+					addHistogramDatapointWithMinMaxAndExemplars(2, 2, 1, 1, 1, 1, []float64{1}, []uint64{1, 1}, []float64{1}, "value2").build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeSum, "metric1", "label1").
+					addIntDatapoint(1, 1, 100, "value1").
+					addIntDatapoint(1, 1, 3, "value2").build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric2", "label1").
+					addHistogramDatapoint(1, 1, 1, 10, []float64{10}, []uint64{1, 1}, "value1").
+					addHistogramDatapoint(1, 1, 2, 4, []float64{2}, []uint64{1, 2}, "value2").build(),
+				metricBuilder(pmetric.MetricTypeHistogram, "metric3", "label1").
+					addHistogramDatapointWithMinMaxAndExemplars(1, 1, 1, 0.1, 0.1, 0.1, []float64{0.1}, []uint64{1, 1}, []float64{0.1}, "value1").
+					addHistogramDatapointWithMinMaxAndExemplars(2, 2, 1, 1, 1, 1, []float64{1}, []uint64{1, 1}, []float64{1}, "value2").build(),
 			},
 		},
 		// Add Label to a metric
 		{
-			name: "update existing metric by adding a new label when there are no labels",
+			name: "update_existing_metric_by_adding_a_new_label_when_there_are_no_labels",
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
@@ -1723,23 +1594,15 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, nil).
-					addInt64Point(0, 3, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").addIntDatapoint(1, 2, 3).build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"foo"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"bar"}).
-					addInt64Point(0, 3, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "foo").addIntDatapoint(1, 2, 3, "bar").build(),
 			},
 		},
 		{
-			name: "update existing metric by adding a new label when there are labels",
+			name: "update_existing_metric_by_adding_a_new_label_when_there_are_labels",
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
@@ -1755,23 +1618,17 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"foo", "label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"bar", "value1", "value2"}).
-					addInt64Point(0, 3, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2", "foo").
+					addIntDatapoint(1, 2, 3, "value1", "value2", "bar").build(),
 			},
 		},
 		{
-			name: "update existing metric by adding a label that is duplicated in the list",
+			name: "update_existing_metric_by_adding_a_label_that_is_duplicated_in_the_list",
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
@@ -1787,19 +1644,13 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
 		},
 		{
@@ -1819,19 +1670,13 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"value1", "value2"}).
-					addInt64Point(0, 3, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "value1", "value2").build(),
 			},
 		},
 		// delete label value
@@ -1852,22 +1697,38 @@ var (
 					},
 				},
 			},
-			in: []*metricspb.Metric{
-				metricBuilder().setName("metric").setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1value1", "label2value"}).
-					addInt64Point(0, 3, 2).
-					addTimeseries(1, []string{"label1value2", "label2value"}).
-					addInt64Point(1, 4, 2).
-					build(),
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1value1", "label2value").
+					addIntDatapoint(1, 2, 4, "label1value2", "label2value").build(),
 			},
-			out: []*metricspb.Metric{
-				metricBuilder().setName("metric").setLabels([]string{"label1", "label2"}).
-					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1value2", "label2value"}).
-					addInt64Point(0, 4, 2).
-					build(),
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric", "label1", "label2").
+					addIntDatapoint(1, 2, 4, "label1value2", "label2value").build(),
 			},
+		},
+		{
+			name: "delete_all_metric_datapoints",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:     DeleteLabelValue,
+								Label:      "label1",
+								LabelValue: "label1value1",
+							},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric", "label1", "label2").
+					addIntDatapoint(1, 2, 3, "label1value1", "label2value").build(),
+			},
+			out: []pmetric.Metric{},
 		},
 	}
 )

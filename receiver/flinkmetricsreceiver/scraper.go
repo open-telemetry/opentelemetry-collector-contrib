@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -44,11 +45,11 @@ type flinkmetricsScraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func newflinkScraper(config *Config, settings component.ReceiverCreateSettings) *flinkmetricsScraper {
+func newflinkScraper(config *Config, settings receiver.CreateSettings) *flinkmetricsScraper {
 	return &flinkmetricsScraper{
 		settings: settings.TelemetrySettings,
 		cfg:      config,
-		mb:       metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
 }
 

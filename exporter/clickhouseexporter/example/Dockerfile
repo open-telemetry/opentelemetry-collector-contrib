@@ -1,7 +1,7 @@
 FROM alpine:latest as certs
 RUN apk --update add ca-certificates
 
-FROM scratch
+FROM golang:latest
 
 ARG USER_UID=10001
 USER ${USER_UID}

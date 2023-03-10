@@ -1,0 +1,11 @@
+k8sobjects:
+  objects:
+    - name: events
+      mode: watch
+      group: events.k8s.io
+      namespaces: [default]
+    - name: events
+      mode: watch
+      group: events.k8s.io
+      namespaces: [default]
+      resource_version: "2"

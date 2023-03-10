@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
 import (
@@ -56,6 +55,8 @@ var (
 			return &hash
 		},
 	}
+
+	eventTagKey = tag.MustNewKey("event")
 )
 
 type eventType int
@@ -250,8 +251,7 @@ func workerIndexForTraceID(traceID pcommon.TraceID, numWorkers int) uint64 {
 		hashPool.Put(hash)
 	}()
 
-	bytes := traceID.Bytes()
-	hash.Write(bytes[:])
+	_, _ = hash.Write(traceID[:])
 	return hash.Sum64() % uint64(numWorkers)
 }
 
@@ -300,8 +300,7 @@ func (em *eventMachine) handleEventWithObservability(event string, do func() err
 	succeeded, err := doWithTimeout(time.Second, do)
 	duration := time.Since(start)
 
-	ctx, _ := tag.New(context.Background(), tag.Upsert(tag.MustNewKey("event"), event))
-	stats.Record(ctx, mEventLatency.M(duration.Milliseconds()))
+	_ = stats.RecordWithTags(context.Background(), []tag.Mutator{tag.Upsert(eventTagKey, event)}, mEventLatency.M(duration.Milliseconds()))
 
 	if err != nil {
 		em.logger.Error("failed to process event", zap.Error(err), zap.String("event", event))
@@ -366,17 +365,17 @@ func doWithTimeout(timeout time.Duration, do func() error) (bool, error) {
 func getTraceID(td ptrace.Traces) (pcommon.TraceID, error) {
 	rss := td.ResourceSpans()
 	if rss.Len() == 0 {
-		return pcommon.InvalidTraceID(), errNoTraceID
+		return pcommon.NewTraceIDEmpty(), errNoTraceID
 	}
 
 	ilss := rss.At(0).ScopeSpans()
 	if ilss.Len() == 0 {
-		return pcommon.InvalidTraceID(), errNoTraceID
+		return pcommon.NewTraceIDEmpty(), errNoTraceID
 	}
 
 	spans := ilss.At(0).Spans()
 	if spans.Len() == 0 {
-		return pcommon.InvalidTraceID(), errNoTraceID
+		return pcommon.NewTraceIDEmpty(), errNoTraceID
 	}
 
 	return spans.At(0).TraceID(), nil

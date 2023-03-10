@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -37,7 +37,7 @@ func (f fakeRestClient) GetResponse(path string) ([]byte, error) {
 		return body, err
 	}
 	if path == awsecscontainermetrics.TaskStatsPath {
-		return ioutil.ReadFile("testdata/task_stats.json")
+		return os.ReadFile("testdata/task_stats.json")
 	}
 	return nil, nil
 }

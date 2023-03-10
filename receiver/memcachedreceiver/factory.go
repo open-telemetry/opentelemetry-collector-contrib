@@ -19,49 +19,53 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
 )
 
 const (
-	typeStr = "memcached"
+	typeStr                   = "memcached"
+	stability                 = component.StabilityLevelBeta
+	defaultEndpoint           = "localhost:11211"
+	defaultTimeout            = 10 * time.Second
+	defaultCollectionInterval = 10 * time.Second
 )
 
 // NewFactory creates a factory for memcached receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			CollectionInterval: 10 * time.Second,
+			CollectionInterval: defaultCollectionInterval,
 		},
-		Timeout: 10 * time.Second,
+		Timeout: defaultTimeout,
 		NetAddr: confignet.NetAddr{
-			Endpoint: "localhost:11211",
+			Endpoint: defaultEndpoint,
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	params receiver.CreateSettings,
+	rConf component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 
 	ms := newMemcachedScraper(params, cfg)
+
 	scraper, err := scraperhelper.NewScraper(typeStr, ms.scrape)
 	if err != nil {
 		return nil, err

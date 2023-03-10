@@ -169,7 +169,7 @@ func (f BodyField) Delete(entry *Entry) (interface{}, bool) {
 func (f *BodyField) UnmarshalJSON(raw []byte) error {
 	var value string
 	if err := json.Unmarshal(raw, &value); err != nil {
-		return fmt.Errorf("the field is not a string: %s", err)
+		return fmt.Errorf("the field is not a string: %w", err)
 	}
 
 	keys, err := fromJSONDot(value)
@@ -183,19 +183,13 @@ func (f *BodyField) UnmarshalJSON(raw []byte) error {
 
 	*f = BodyField{keys[1:]}
 	return nil
-}
-
-// MarshalJSON will marshal the field for JSON.
-func (f BodyField) MarshalJSON() ([]byte, error) {
-	json := fmt.Sprintf(`"%s"`, toJSONDot(BodyPrefix, f.Keys))
-	return []byte(json), nil
 }
 
 // UnmarshalYAML will attempt to unmarshal a field from YAML.
 func (f *BodyField) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var value string
 	if err := unmarshal(&value); err != nil {
-		return fmt.Errorf("the field is not a string: %s", err)
+		return fmt.Errorf("the field is not a string: %w", err)
 	}
 
 	keys, err := fromJSONDot(value)
@@ -211,7 +205,17 @@ func (f *BodyField) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-// MarshalYAML will marshal the field for YAML.
-func (f BodyField) MarshalYAML() (interface{}, error) {
-	return toJSONDot(BodyPrefix, f.Keys), nil
+// UnmarshalText will unmarshal a field from text
+func (f *BodyField) UnmarshalText(text []byte) error {
+	keys, err := fromJSONDot(string(text))
+	if err != nil {
+		return err
+	}
+
+	if keys[0] != BodyPrefix {
+		return fmt.Errorf("must start with 'body': %s", text)
+	}
+
+	*f = BodyField{keys[1:]}
+	return nil
 }

@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
@@ -263,7 +263,7 @@ func testMatcherOptions() matcherOptions {
 }
 
 func mustReadFile(t *testing.T, p string) []byte {
-	b, err := ioutil.ReadFile(p)
+	b, err := os.ReadFile(p)
 	require.NoError(t, err, p)
 	return b
 }

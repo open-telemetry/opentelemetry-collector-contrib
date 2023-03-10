@@ -20,4 +20,22 @@ type ValuePoint struct {
 	ObservedTimestamp pcommon.Timestamp
 	FloatValue        float64
 	IntValue          int64
+	HistogramValue    *HistogramPoint
+}
+
+type HistogramPoint struct {
+	Count   uint64
+	Sum     float64
+	Buckets []uint64
+}
+
+func (point *HistogramPoint) Clone() HistogramPoint {
+	bucketValues := make([]uint64, len(point.Buckets))
+	copy(bucketValues, point.Buckets)
+
+	return HistogramPoint{
+		Count:   point.Count,
+		Sum:     point.Sum,
+		Buckets: bucketValues,
+	}
 }

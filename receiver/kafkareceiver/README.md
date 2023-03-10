@@ -1,8 +1,12 @@
 # Kafka Receiver
 
-Kafka receiver receives traces, metrics, and logs from Kafka. Message payload encoding is configurable.
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [beta]                |
+| Supported pipeline types | metrics, traces, logs |
+| Distributions            | [contrib]             |
 
-Supported pipeline types: metrics, traces, logs
+Kafka receiver receives traces, metrics, and logs from Kafka. Message payload encoding is configurable.
 
 Note that metrics and logs only support OTLP.
 
@@ -16,13 +20,14 @@ The following settings can be optionally configured:
 
 - `brokers` (default = localhost:9092): The list of kafka brokers
 - `topic` (default = otlp_spans): The name of the kafka topic to read from
-- `encoding` (default = otlp_proto): The encoding of the payload sent to kafka. Available encodings:
-  - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`.
+- `encoding` (default = otlp_proto): The encoding of the payload received from kafka. Available encodings:
+  - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`, `ExportLogsServiceRequest` or `ExportMetricsServiceRequest` respectively.
   - `jaeger_proto`: the payload is deserialized to a single Jaeger proto `Span`.
   - `jaeger_json`: the payload is deserialized to a single Jaeger JSON Span using `jsonpb`.
   - `zipkin_proto`: the payload is deserialized into a list of Zipkin proto spans.
   - `zipkin_json`: the payload is deserialized into a list of Zipkin V2 JSON spans.
   - `zipkin_thrift`: the payload is deserialized into a list of Zipkin Thrift spans.
+  - `raw`: (logs only) the payload's bytes are inserted as the body of a log record.
 - `group_id` (default = otel-collector):  The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `auth`
@@ -70,3 +75,6 @@ receivers:
   kafka:
     protocol_version: 2.0.0
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

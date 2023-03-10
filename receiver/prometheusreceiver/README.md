@@ -1,15 +1,13 @@
 # Prometheus Receiver
 
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [beta]            |
+| Supported pipeline types | metrics           |
+| Distributions            | [core], [contrib] |
+
 Receives metric data in [Prometheus](https://prometheus.io/) format. See the
 [Design](DESIGN.md) for additional information on this receiver.
-
-Supported pipeline types: metrics
-
-## ❗️ Important note
-
-Starting from version 0.49.0, the receiver consumes 30% more memory when there is a lot of target churn.
-The issue is currently being investigated and will be fixed in one of the new releases. More details:
-https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 
 ## ⚠️ Warning
 
@@ -52,6 +50,16 @@ you must escape them using `$$`.
 prometheus --config.file=prom.yaml
 ```
 
+**Feature gates**:
+
+- `receiver.prometheusreceiver.UseCreatedMetric`: Start time for Summary, Histogram 
+  and Sum metrics can be retrieved from `_created` metrics. Currently, this behaviour
+  is disabled by default. To enable it, use the following feature gate option:
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
+```
+
 You can copy and paste that same configuration under:
 
 ```yaml
@@ -84,4 +92,27 @@ receivers:
               action: keep
 ```
 
+## OpenTelemetry Operator 
+Additional to this static job definitions this receiver allows to query a list of jobs from the 
+OpenTelemetryOperators TargetAllocator or a compatible endpoint. 
+
+```yaml
+receivers:
+  prometheus:
+    target_allocator:
+      endpoint: http://my-targetallocator-service
+      interval: 30s
+      collector_id: collector-1
+```
+## Exemplars
+This receiver accepts exemplars coming in Prometheus format and converts it to OTLP format.
+1. Value is expected to be received in `float64` format
+2. Timestamp is expected to be received in `ms`
+3. Labels with key `span_id` in prometheus exemplars are set as OTLP `span id` and labels with key `trace_id` are set as `trace id`
+4. Rest of the labels are copied as it is to OTLP format
+
 [sc]: https://github.com/prometheus/prometheus/blob/v2.28.1/docs/configuration/configuration.md#scrape_config
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

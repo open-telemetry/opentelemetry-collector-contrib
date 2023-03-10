@@ -14,15 +14,14 @@
 
 //lint:file-ignore U1000 t.Skip() flaky test causes unused function warning.
 
-// nolint:errcheck
 package opencensusreceiver
 
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -39,8 +38,8 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -48,6 +47,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -59,14 +59,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
-var ocReceiverID = config.NewComponentIDWithName(typeStr, "receiver_test")
+var ocReceiverID = component.NewIDWithName(typeStr, "receiver_test")
 
 func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := new(consumertest.TracesSink)
-	ocr, err := newOpenCensusReceiver(ocReceiverID, "tcp", addr, sink, nil, componenttest.NewNopReceiverCreateSettings())
+	ocr, err := newOpenCensusReceiver("tcp", addr, sink, nil, receivertest.NewNopCreateSettings())
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
 	err = ocr.Start(context.Background(), componenttest.NewNopHost())
@@ -80,7 +80,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
 
 	// Verify that CORS is not enabled by default, but that it gives a method not allowed error.
-	verifyCorsResp(t, url, "origin.com", http.StatusMethodNotAllowed, false)
+	verifyCorsResp(t, url, "origin.com", http.StatusNotImplemented, false)
 
 	traceJSON := []byte(`
     {
@@ -100,7 +100,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
           }
        ]
     }`)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(traceJSON))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(traceJSON))
 	require.NoError(t, err, "Error creating trace POST request: %v", err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -108,24 +108,14 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	resp, err := client.Do(req)
 	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Errorf("Error reading response from trace grpc-gateway, %v", err)
-	}
+	respBytes, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
 	respStr := string(respBytes)
 
-	err = resp.Body.Close()
-	if err != nil {
-		t.Errorf("Error closing response body, %v", err)
-	}
+	require.NoError(t, resp.Body.Close())
 
-	if resp.StatusCode != 200 {
-		t.Errorf("Unexpected status from trace grpc-gateway: %v", resp.StatusCode)
-	}
-
-	if respStr != "" {
-		t.Errorf("Got unexpected response from trace grpc-gateway: %v", respStr)
-	}
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Empty(t, respStr)
 
 	got := sink.AllTraces()
 	require.Len(t, got, 1)
@@ -162,7 +152,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	corsOrigins := []string{"allowed-*.com"}
 
-	ocr, err := newOpenCensusReceiver(ocReceiverID, "tcp", addr, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), withCorsOrigins(corsOrigins))
+	ocr, err := newOpenCensusReceiver("tcp", addr, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), withCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
@@ -186,7 +176,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	corsOrigins := []string{"allowed-*.com"}
 
-	ocr, err := newOpenCensusReceiver(ocReceiverID, "tcp", addr, nil, consumertest.NewNop(), componenttest.NewNopReceiverCreateSettings(), withCorsOrigins(corsOrigins))
+	ocr, err := newOpenCensusReceiver("tcp", addr, nil, consumertest.NewNop(), receivertest.NewNopCreateSettings(), withCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
@@ -207,7 +197,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 }
 
 func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
-	req, err := http.NewRequest("OPTIONS", url, nil)
+	req, err := http.NewRequest(http.MethodOptions, url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
 	req.Header.Set("Access-Control-Request-Method", "POST")
@@ -221,9 +211,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 		t.Errorf("Error closing OPTIONS response body, %v", err)
 	}
 
-	if resp.StatusCode != wantStatus {
-		t.Errorf("Unexpected status from OPTIONS: %v", resp.StatusCode)
-	}
+	assert.Equal(t, wantStatus, resp.StatusCode)
 
 	gotAllowOrigin := resp.Header.Get("Access-Control-Allow-Origin")
 	gotAllowMethods := resp.Header.Get("Access-Control-Allow-Methods")
@@ -235,17 +223,13 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 		wantAllowMethods = "POST"
 	}
 
-	if gotAllowOrigin != wantAllowOrigin {
-		t.Errorf("Unexpected Access-Control-Allow-Origin: %v", gotAllowOrigin)
-	}
-	if gotAllowMethods != wantAllowMethods {
-		t.Errorf("Unexpected Access-Control-Allow-Methods: %v", gotAllowMethods)
-	}
+	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
+	assert.Equal(t, wantAllowMethods, gotAllowMethods)
 }
 
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	ocr, err := newOpenCensusReceiver(ocReceiverID, "tcp", addr, nil, nil, componenttest.NewNopReceiverCreateSettings())
+	ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receivertest.NewNopCreateSettings())
 	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
 	// Stop it before ever invoking Start*.
 	require.NoError(t, ocr.Shutdown(context.Background()))
@@ -257,14 +241,14 @@ func TestNewPortAlreadyUsed(t *testing.T) {
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r, err := newOpenCensusReceiver(ocReceiverID, "tcp", addr, nil, nil, componenttest.NewNopReceiverCreateSettings())
+	r, err := newOpenCensusReceiver("tcp", addr, nil, nil, receivertest.NewNopCreateSettings())
 	require.Error(t, err)
 	require.Nil(t, r)
 }
 
 func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	r, err := newOpenCensusReceiver(ocReceiverID, "tcp", addr, consumertest.NewNop(), consumertest.NewNop(), componenttest.NewNopReceiverCreateSettings())
+	r, err := newOpenCensusReceiver("tcp", addr, consumertest.NewNop(), consumertest.NewNop(), receivertest.NewNopCreateSettings())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
@@ -274,7 +258,7 @@ func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 
 func TestStartWithoutConsumersShouldFail(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	r, err := newOpenCensusReceiver(ocReceiverID, "tcp", addr, nil, nil, componenttest.NewNopReceiverCreateSettings())
+	r, err := newOpenCensusReceiver("tcp", addr, nil, nil, receivertest.NewNopCreateSettings())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
@@ -282,7 +266,7 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 }
 
 func tempSocketName(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "sock")
+	tmpfile, err := os.CreateTemp("", "sock")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()
@@ -293,7 +277,7 @@ func tempSocketName(t *testing.T) string {
 func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 	socketName := tempSocketName(t)
 	cbts := consumertest.NewNop()
-	r, err := newOpenCensusReceiver(ocReceiverID, "unix", socketName, cbts, nil, componenttest.NewNopReceiverCreateSettings())
+	r, err := newOpenCensusReceiver("unix", socketName, cbts, nil, receivertest.NewNopCreateSettings())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -404,7 +388,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		if err == nil {
 			for {
 				if _, err = stream.Recv(); err != nil {
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						err = nil
 					}
 					break
@@ -416,28 +400,30 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	}
 
 	exporters := []struct {
-		receiverID config.ComponentID
+		receiverID component.ID
 		exportFn   func(
 			t *testing.T,
 			cc *grpc.ClientConn,
 			msg *agenttracepb.ExportTraceServiceRequest) error
 	}{
 		{
-			receiverID: config.NewComponentIDWithName(typeStr, "traces"),
+			receiverID: component.NewIDWithName(typeStr, "traces"),
 			exportFn:   exportBidiFn,
 		},
 	}
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				testTel, err := obsreporttest.SetupTelemetry()
+				testTel, err := obsreporttest.SetupTelemetry(exporter.receiverID)
 				require.NoError(t, err)
-				defer testTel.Shutdown(context.Background())
+				defer func() {
+					require.NoError(t, testTel.Shutdown(context.Background()))
+				}()
 
 				sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, componenttest.NewNopReceiverCreateSettings(), opts...)
+				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, testTel.ToReceiverCreateSettings(), opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 
@@ -466,7 +452,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
-				require.NoError(t, obsreporttest.CheckReceiverTraces(testTel, exporter.receiverID, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
+				require.NoError(t, testTel.CheckReceiverTraces("grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
 			})
 		}
 	}
@@ -553,7 +539,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 		if err == nil {
 			for {
 				if _, err = stream.Recv(); err != nil {
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						err = nil
 					}
 					break
@@ -565,28 +551,30 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 	}
 
 	exporters := []struct {
-		receiverID config.ComponentID
+		receiverID component.ID
 		exportFn   func(
 			t *testing.T,
 			cc *grpc.ClientConn,
 			msg *agentmetricspb.ExportMetricsServiceRequest) error
 	}{
 		{
-			receiverID: config.NewComponentIDWithName(typeStr, "metrics"),
+			receiverID: component.NewIDWithName(typeStr, "metrics"),
 			exportFn:   exportBidiFn,
 		},
 	}
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				testTel, err := obsreporttest.SetupTelemetry()
+				testTel, err := obsreporttest.SetupTelemetry(exporter.receiverID)
 				require.NoError(t, err)
-				defer testTel.Shutdown(context.Background())
+				defer func() {
+					require.NoError(t, testTel.Shutdown(context.Background()))
+				}()
 
 				sink := &errOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, componenttest.NewNopReceiverCreateSettings(), opts...)
+				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, testTel.ToReceiverCreateSettings(), opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 
@@ -615,7 +603,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllMetrics()))
-				require.NoError(t, obsreporttest.CheckReceiverMetrics(testTel, exporter.receiverID, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
+				require.NoError(t, testTel.CheckReceiverMetrics("grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
 			})
 		}
 	}
@@ -623,7 +611,6 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 func TestInvalidTLSCredentials(t *testing.T) {
 	cfg := Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
@@ -636,7 +623,7 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	assert.NotNil(t, opt)
 
 	addr := testutil.GetAvailableLocalAddress(t)
-	ocr, err := newOpenCensusReceiver(config.NewComponentIDWithName(typeStr, "invalidtls"), "tcp", addr, nil, nil, componenttest.NewNopReceiverCreateSettings(), opt...)
+	ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receivertest.NewNopCreateSettings(), opt...)
 	assert.NoError(t, err)
 	assert.NotNil(t, ocr)
 

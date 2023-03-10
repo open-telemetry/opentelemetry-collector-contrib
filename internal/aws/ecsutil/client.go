@@ -16,12 +16,11 @@ package ecsutil // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
-	cconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 
@@ -34,10 +33,11 @@ type Client interface {
 }
 
 // NewClientProvider creates the default rest client provider
-func NewClientProvider(baseURL url.URL, clientSettings confighttp.HTTPClientSettings, settings component.TelemetrySettings) ClientProvider {
+func NewClientProvider(baseURL url.URL, clientSettings confighttp.HTTPClientSettings, host component.Host, settings component.TelemetrySettings) ClientProvider {
 	return &defaultClientProvider{
 		baseURL:        baseURL,
 		clientSettings: clientSettings,
+		host:           host,
 		settings:       settings,
 	}
 }
@@ -50,6 +50,7 @@ type ClientProvider interface {
 type defaultClientProvider struct {
 	baseURL        url.URL
 	clientSettings confighttp.HTTPClientSettings
+	host           component.Host
 	settings       component.TelemetrySettings
 }
 
@@ -57,6 +58,7 @@ func (dcp *defaultClientProvider) BuildClient() (Client, error) {
 	return defaultClient(
 		dcp.baseURL,
 		dcp.clientSettings,
+		dcp.host,
 		dcp.settings,
 	)
 }
@@ -64,9 +66,10 @@ func (dcp *defaultClientProvider) BuildClient() (Client, error) {
 func defaultClient(
 	baseURL url.URL,
 	clientSettings confighttp.HTTPClientSettings,
+	host component.Host,
 	settings component.TelemetrySettings,
 ) (*clientImpl, error) {
-	client, err := clientSettings.ToClient(map[cconfig.ComponentID]component.Extension{}, settings)
+	client, err := clientSettings.ToClient(host, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +106,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 			c.settings.Logger.Warn("Failed to close response body", zap.Error(closeErr))
 		}
 	}()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body %w", err)
 	}
@@ -116,7 +119,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 
 func (c *clientImpl) buildReq(path string) (*http.Request, error) {
 	url := c.baseURL.String() + path
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}

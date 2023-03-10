@@ -19,24 +19,14 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
-	// Port is the port used to publish the health check status.
-	// The default value is 13133.
-	// Deprecated: use Endpoint instead.
-	Port uint16 `mapstructure:"port"`
-
-	// TCPAddr represents a tcp endpoint address that is to publish the health
-	// check status.
-	// The default endpoint is "0.0.0.0:13133".
-	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
+	confighttp.HTTPServerSettings `mapstructure:",squash"`
 
 	// Path represents the path the health check service will serve.
 	// The default path is "/".
@@ -46,7 +36,7 @@ type Config struct {
 	CheckCollectorPipeline checkCollectorPipelineSettings `mapstructure:"check_collector_pipeline"`
 }
 
-var _ config.Extension = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 var (
 	errNoEndpointProvided                      = errors.New("bad config: endpoint must be specified")
 	errInvalidExporterFailureThresholdProvided = errors.New("bad config: exporter_failure_threshold expects a positive number")
@@ -59,7 +49,7 @@ func (cfg *Config) Validate() error {
 	if err != nil {
 		return err
 	}
-	if cfg.TCPAddr.Endpoint == "" {
+	if cfg.Endpoint == "" {
 		return errNoEndpointProvided
 	}
 	if cfg.CheckCollectorPipeline.ExporterFailureThreshold <= 0 {

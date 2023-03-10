@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -177,11 +177,12 @@ func TestGetTagFromSpanKind(t *testing.T) {
 func TestAttributesToJaegerProtoTags(t *testing.T) {
 
 	attributes := pcommon.NewMap()
-	attributes.InsertBool("bool-val", true)
-	attributes.InsertInt("int-val", 123)
-	attributes.InsertString("string-val", "abc")
-	attributes.InsertDouble("double-val", 1.23)
-	attributes.InsertString(conventions.AttributeServiceName, "service-name")
+	attributes.PutBool("bool-val", true)
+	attributes.PutInt("int-val", 123)
+	attributes.PutStr("string-val", "abc")
+	attributes.PutDouble("double-val", 1.23)
+	attributes.PutEmptyBytes("bytes-val").FromRaw([]byte{1, 2, 3, 4})
+	attributes.PutStr(conventions.AttributeServiceName, "service-name")
 
 	expected := []model.KeyValue{
 		{
@@ -205,6 +206,11 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 			VFloat64: 1.23,
 		},
 		{
+			Key:   "bytes-val",
+			VType: model.ValueType_STRING,
+			VStr:  "AQIDBA==", // base64 encoding of the byte array [1,2,3,4]
+		},
+		{
 			Key:   conventions.AttributeServiceName,
 			VType: model.ValueType_STRING,
 			VStr:  "service-name",
@@ -216,7 +222,7 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 
 	// The last item in expected ("service-name") must be skipped in resource tags translation
 	got = appendTagsFromResourceAttributes(make([]model.KeyValue, 0, len(expected)-1), attributes)
-	require.EqualValues(t, expected[:4], got)
+	require.EqualValues(t, expected[:5], got)
 }
 
 func TestInternalTracesToJaegerProto(t *testing.T) {
@@ -283,7 +289,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
-					generateProtoChildSpanWithErrorTags(),
+					generateProtoChildSpan(),
 				},
 			},
 			err: nil,
@@ -316,6 +322,20 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 				},
 			},
 			err: nil,
+		},
+		{
+			name: "a-spans-with-two-parent",
+			jb: &model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNoServiceName,
+				},
+				Spans: []*model.Span{
+					generateProtoSpan(),
+					generateProtoFollowerSpan(),
+					generateProtoTwoParentsSpan(),
+				},
+			},
+			td: generateTracesSpanWithTwoParents(),
 		},
 	}
 
@@ -351,7 +371,7 @@ func generateTracesOneSpanNoResourceWithEventAttribute() ptrace.Traces {
 	td := generateTracesOneSpanNoResource()
 	event := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0)
 	event.SetName("must-be-ignorred")
-	event.Attributes().InsertString("event", "must-be-used-instead-of-event-name")
+	event.Attributes().PutStr("event", "must-be-used-instead-of-event-name")
 	return td
 }
 
@@ -369,25 +389,6 @@ func generateJProtoSpanWithEventAttribute() *model.Span {
 			VStr:  "must-be-used-instead-of-event-name",
 		},
 	}
-	return span
-}
-
-// generateProtoChildSpanWithErrorTags generates a jaeger span to be used in
-// internal->jaeger translation test. It supposed to be the same as generateProtoChildSpan
-// that used in jaeger->internal, but jaeger->internal translation infers status code from http status if
-// status.code is not set, so the pipeline jaeger->internal->jaeger adds two more tags as the result in that case.
-func generateProtoChildSpanWithErrorTags() *model.Span {
-	span := generateProtoChildSpan()
-	span.Tags = append(span.Tags, model.KeyValue{
-		Key:   conventions.OtelStatusCode,
-		VType: model.ValueType_STRING,
-		VStr:  statusError,
-	})
-	span.Tags = append(span.Tags, model.KeyValue{
-		Key:   tracetranslator.TagError,
-		VBool: true,
-		VType: model.ValueType_BOOL,
-	})
 	return span
 }
 

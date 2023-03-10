@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
@@ -22,13 +21,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -46,11 +44,10 @@ const (
 )
 
 type emfExporter struct {
-	//Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
-	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
-	svcStructuredLog       *cwlogs.Client
-	config                 config.Exporter
-	logger                 *zap.Logger
+	pusherMap        map[cwlogs.PusherKey]cwlogs.Pusher
+	svcStructuredLog *cwlogs.Client
+	config           component.Config
+	logger           *zap.Logger
 
 	metricTranslator metricTranslator
 
@@ -61,9 +58,9 @@ type emfExporter struct {
 
 // newEmfPusher func creates an EMF Exporter instance with data push callback func
 func newEmfPusher(
-	config config.Exporter,
-	params component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
+	config component.Config,
+	params exporter.CreateSettings,
+) (*emfExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
@@ -79,10 +76,8 @@ func newEmfPusher(
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
+	svcStructuredLog := cwlogs.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, session)
 	collectorIdentifier, _ := uuid.NewRandom()
-
-	expConfig.Validate()
 
 	emfExporter := &emfExporter{
 		svcStructuredLog: svcStructuredLog,
@@ -92,26 +87,28 @@ func newEmfPusher(
 		logger:           logger,
 		collectorID:      collectorIdentifier.String(),
 	}
-	emfExporter.groupStreamToPusherMap = map[string]map[string]cwlogs.Pusher{}
+	emfExporter.pusherMap = map[cwlogs.PusherKey]cwlogs.Pusher{}
 
 	return emfExporter, nil
 }
 
 // newEmfExporter creates a new exporter using exporterhelper
 func newEmfExporter(
-	config config.Exporter,
-	set component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
-	exp, err := newEmfPusher(config, set)
+	config component.Config,
+	set exporter.CreateSettings,
+) (exporter.Metrics, error) {
+	emfPusher, err := newEmfPusher(config, set)
 	if err != nil {
 		return nil, err
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
-		config,
+		context.TODO(),
 		set,
-		exp.(*emfExporter).pushMetricsData,
-		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),
+		config,
+		emfPusher.pushMetricsData,
+		exporterhelper.WithShutdown(emfPusher.shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 	if err != nil {
 		return nil, err
@@ -127,7 +124,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		am := rm.Resource().Attributes()
 		if am.Len() > 0 {
 			am.Range(func(k string, v pcommon.Value) bool {
-				labels[k] = v.StringVal()
+				labels[k] = v.Str()
 				return true
 			})
 		}
@@ -140,8 +137,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	outputDestination := expConfig.OutputDestination
 
 	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-		err := emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
+		err := emf.metricTranslator.translateOTelToGroupedMetric(rms.At(i), groupedMetrics, expConfig)
 		if err != nil {
 			return err
 		}
@@ -160,11 +156,14 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 				logStream = defaultLogStream
 			}
 
-			emfPusher := emf.getPusher(logGroup, logStream)
+			emfPusher := emf.getPusher(cwlogs.PusherKey{
+				LogGroupName:  logGroup,
+				LogStreamName: logStream,
+			})
 			if emfPusher != nil {
 				returnError := emfPusher.AddLogEntry(putLogEvent)
 				if returnError != nil {
-					return wrapErrorIfBadRequest(&returnError)
+					return wrapErrorIfBadRequest(returnError)
 				}
 			}
 		}
@@ -174,8 +173,8 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		for _, emfPusher := range emf.listPushers() {
 			returnError := emfPusher.ForceFlush()
 			if returnError != nil {
-				//TODO now we only have one logPusher, so it's ok to return after first error occurred
-				err := wrapErrorIfBadRequest(&returnError)
+				// TODO now we only have one logPusher, so it's ok to return after first error occurred
+				err := wrapErrorIfBadRequest(returnError)
 				if err != nil {
 					emf.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(err))
 				}
@@ -189,48 +188,32 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	return nil
 }
 
-func (emf *emfExporter) getPusher(logGroup, logStream string) cwlogs.Pusher {
-	emf.pusherMapLock.Lock()
-	defer emf.pusherMapLock.Unlock()
+func (emf *emfExporter) getPusher(key cwlogs.PusherKey) cwlogs.Pusher {
 
 	var ok bool
-	var streamToPusherMap map[string]cwlogs.Pusher
-	if streamToPusherMap, ok = emf.groupStreamToPusherMap[logGroup]; !ok {
-		streamToPusherMap = map[string]cwlogs.Pusher{}
-		emf.groupStreamToPusherMap[logGroup] = streamToPusherMap
+	if _, ok = emf.pusherMap[key]; !ok {
+		emf.pusherMap[key] = cwlogs.NewPusher(key, emf.retryCnt, *emf.svcStructuredLog, emf.logger)
 	}
-
-	var emfPusher cwlogs.Pusher
-	if emfPusher, ok = streamToPusherMap[logStream]; !ok {
-		emfPusher = cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), emf.retryCnt, *emf.svcStructuredLog, emf.logger)
-		streamToPusherMap[logStream] = emfPusher
-	}
-	return emfPusher
+	return emf.pusherMap[key]
 }
 
 func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 	emf.pusherMapLock.Lock()
 	defer emf.pusherMapLock.Unlock()
 
-	pushers := []cwlogs.Pusher{}
-	for _, pusherMap := range emf.groupStreamToPusherMap {
-		for _, pusher := range pusherMap {
-			pushers = append(pushers, pusher)
-		}
+	var pushers []cwlogs.Pusher
+	for _, pusher := range emf.pusherMap {
+		pushers = append(pushers, pusher)
 	}
 	return pushers
 }
 
-func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return emf.pushMetricsData(ctx, md)
-}
-
-// Shutdown stops the exporter and is invoked during shutdown.
-func (emf *emfExporter) Shutdown(ctx context.Context) error {
+// shutdown stops the exporter and is invoked during shutdown.
+func (emf *emfExporter) shutdown(ctx context.Context) error {
 	for _, emfPusher := range emf.listPushers() {
 		returnError := emfPusher.ForceFlush()
 		if returnError != nil {
-			err := wrapErrorIfBadRequest(&returnError)
+			err := wrapErrorIfBadRequest(returnError)
 			if err != nil {
 				emf.logger.Error("Error when gracefully shutting down emf_exporter. Skipping to next logPusher.", zap.Error(err))
 			}
@@ -240,19 +223,10 @@ func (emf *emfExporter) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (emf *emfExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-// Start
-func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
-	return nil
-}
-
-func wrapErrorIfBadRequest(err *error) error {
-	_, ok := (*err).(awserr.RequestFailure)
-	if ok && (*err).(awserr.RequestFailure).StatusCode() < 500 {
-		return consumererror.NewPermanent(*err)
+func wrapErrorIfBadRequest(err error) error {
+	var rfErr awserr.RequestFailure
+	if errors.As(err, &rfErr) && rfErr.StatusCode() < 500 {
+		return consumererror.NewPermanent(err)
 	}
-	return *err
+	return err
 }

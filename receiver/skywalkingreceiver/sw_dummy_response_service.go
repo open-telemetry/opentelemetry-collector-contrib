@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package skywalkingreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 
 import (
@@ -55,7 +54,7 @@ func (d *dummyReportService) FetchConfigurations(_ context.Context, req *v3c.Con
 	return &common.Commands{}, nil
 }
 
-//for sw profile
+// for sw profile
 func (d *dummyReportService) GetProfileTaskCommands(_ context.Context, q *profile.ProfileTaskCommandQuery) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }

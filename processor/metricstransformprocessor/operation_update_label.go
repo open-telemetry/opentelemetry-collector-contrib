@@ -15,27 +15,33 @@
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // updateLabelOp updates labels and label values in metric based on given operation
-func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, mtpOp internalOperation) {
+func updateLabelOp(metric pmetric.Metric, mtpOp internalOperation, f internalFilter) {
 	op := mtpOp.configOperation
-	for idx, label := range metric.MetricDescriptor.LabelKeys {
-		if label.Key != op.Label {
-			continue
+	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
+		if !f.matchAttrs(attrs) {
+			return true
+		}
+
+		attrKey := op.Label
+		attrVal, ok := attrs.Get(attrKey)
+		if !ok {
+			return true
 		}
 
 		if op.NewLabel != "" {
-			label.Key = op.NewLabel
+			attrVal.CopyTo(attrs.PutEmpty(op.NewLabel))
+			attrs.Remove(attrKey)
+			attrKey = op.NewLabel
 		}
 
-		labelValuesMapping := mtpOp.valueActionsMapping
-		for _, timeseries := range metric.Timeseries {
-			newValue, ok := labelValuesMapping[timeseries.LabelValues[idx].Value]
-			if ok {
-				timeseries.LabelValues[idx].Value = newValue
-			}
+		if newValue, ok := mtpOp.valueActionsMapping[attrVal.Str()]; ok {
+			attrs.PutStr(attrKey, newValue)
 		}
-	}
+		return true
+	})
 }

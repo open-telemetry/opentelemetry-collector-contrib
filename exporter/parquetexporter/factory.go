@@ -18,45 +18,45 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "parquet"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelDevelopment
 )
 
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
-	Path                    string `mapstructure:"path"`
+	Path string `mapstructure:"path"`
 }
 
 // NewFactory creates a factory for the Parquet exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter))
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
-	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
 func createTracesExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.TracesExporter, error) {
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
 	fe := &parquetExporter{path: cfg.(*Config).Path}
 	return exporterhelper.NewTracesExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		fe.consumeTraces,
 		exporterhelper.WithStart(fe.start),
 		exporterhelper.WithShutdown(fe.shutdown),
@@ -64,14 +64,15 @@ func createTracesExporter(
 }
 
 func createMetricsExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.MetricsExporter, error) {
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
 	fe := &parquetExporter{path: cfg.(*Config).Path}
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		fe.consumeMetrics,
 		exporterhelper.WithStart(fe.start),
 		exporterhelper.WithShutdown(fe.shutdown),
@@ -79,14 +80,15 @@ func createMetricsExporter(
 }
 
 func createLogsExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.LogsExporter, error) {
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Logs, error) {
 	fe := &parquetExporter{path: cfg.(*Config).Path}
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		fe.consumeLogs,
 		exporterhelper.WithStart(fe.start),
 		exporterhelper.WithShutdown(fe.shutdown),

@@ -16,10 +16,11 @@ package subprocessmanager
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -28,13 +29,11 @@ func TestFormatEnvSlice(t *testing.T) {
 		name     string
 		envSlice *[]EnvConfig
 		want     []string
-		wantNil  bool
 	}{
 		{
 			name:     "empty slice",
 			envSlice: &[]EnvConfig{},
 			want:     nil,
-			wantNil:  true,
 		},
 		{
 			name: "one entry",
@@ -47,7 +46,6 @@ func TestFormatEnvSlice(t *testing.T) {
 			want: []string{
 				"DATA_SOURCE=password:username",
 			},
-			wantNil: false,
 		},
 		{
 			name: "three entries",
@@ -70,20 +68,13 @@ func TestFormatEnvSlice(t *testing.T) {
 				"=",
 				"john=doe",
 			},
-			wantNil: false,
 		},
 	}
 
 	for _, test := range formatEnvSliceTests {
 		t.Run(test.name, func(t *testing.T) {
 			got := formatEnvSlice(test.envSlice)
-			if test.wantNil && got != nil {
-				t.Errorf("formatEnvSlice() got = %v, wantNil %v", got, test.wantNil)
-				return
-			}
-			if !reflect.DeepEqual(got, test.want) {
-				t.Errorf("formatEnvSlice() got = %v, want %v", got, test.want)
-			}
+			assert.Equal(t, test.want, got)
 		})
 	}
 }
@@ -176,13 +167,12 @@ func TestRun(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logger, _ := zap.NewProduction()
 			got, err := test.process.Run(context.Background(), logger)
-			if test.wantErr && err == nil {
-				t.Errorf("Run() got = %v, wantErr %v", got, test.wantErr)
+			if test.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if got < test.wantElapsed {
-				t.Errorf("Run() got = %v, want larger than %v", got, test.wantElapsed)
-			}
+			require.NoError(t, err)
+			assert.Less(t, test.wantElapsed, got)
 		})
 	}
 }

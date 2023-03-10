@@ -26,13 +26,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 )
 
 type testHost struct {
@@ -47,19 +46,28 @@ func (h *testHost) ReportFatalError(err error) {
 
 var _ component.Host = (*testHost)(nil)
 
-func paramsAndContext(t *testing.T) (component.ExtensionCreateSettings, context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
-	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	settings := componenttest.NewNopExtensionCreateSettings()
-	settings.Logger = logger
-	return settings, ctx, cancel
-}
-
 func TestObserverEmitsEndpointsIntegration(t *testing.T) {
-	c := containertest.New(t)
 	image := "docker.io/library/nginx"
 	tag := "1.17"
-	cntr := c.StartImage(fmt.Sprintf("%s:%s", image, tag), containertest.WithPortReady(80))
+
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        fmt.Sprintf("%s:%s", image, tag),
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		SkipReaper:   true, // skipping the reaper to avoid creating two endpoints
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	defer func() {
+		err := container.Terminate(ctx)
+		require.Nil(t, err)
+	}()
+	require.NotNil(t, container)
+
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.CacheSyncInterval = 1 * time.Second
 	config.UseHostBindings = true
@@ -72,17 +80,34 @@ func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 	require.Equal(t, len(endpoints), 1)
 	for _, e := range endpoints {
 		require.Equal(t, uint16(80), e.Details.Env()["alternate_port"])
-		require.Equal(t, string(cntr.ID), e.Details.Env()["container_id"])
+		require.Equal(t, container.GetContainerID(), e.Details.Env()["container_id"])
 		require.Equal(t, image, e.Details.Env()["image"])
 		require.Equal(t, tag, e.Details.Env()["tag"])
 	}
 }
 
 func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
-	c := containertest.New(t)
 	image := "docker.io/library/nginx"
 	tag := "1.17"
-	cntr := c.StartImage(fmt.Sprintf("%s:%s", image, tag), containertest.WithPortReady(80))
+
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        fmt.Sprintf("%s:%s", image, tag),
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		SkipReaper:   true, // skipping the reaper to avoid creating two endpoints
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	defer func() {
+		err = container.Terminate(ctx)
+		require.Nil(t, err)
+	}()
+	require.NotNil(t, container)
+
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserver(t, mn)
 	defer stopObserver(t, obvs)
@@ -91,12 +116,16 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	require.Equal(t, len(endpoints), 1)
 	for _, e := range endpoints {
 		require.Equal(t, uint16(80), e.Details.Env()["port"])
-		require.Equal(t, string(cntr.ID), e.Details.Env()["container_id"])
+		require.Equal(t, container.GetContainerID(), e.Details.Env()["container_id"])
 		require.Equal(t, image, e.Details.Env()["image"])
 		require.Equal(t, tag, e.Details.Env()["tag"])
 	}
 
-	c.RenameContainer(cntr, "nginx-updated")
+	tcDockerClient, _, _, err := testcontainers.NewDockerClient()
+	require.Nil(t, err)
+
+	require.NoError(t, tcDockerClient.ContainerRename(context.Background(), container.GetContainerID(), "nginx-updated"))
+
 	require.Eventually(t, func() bool { return mn.ChangeCount() == 1 }, 3*time.Second, 10*time.Millisecond)
 	require.Equal(t, 1, mn.AddCount())
 
@@ -104,17 +133,30 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	for _, e := range endpoints {
 		require.Equal(t, "nginx-updated", e.Details.Env()["name"])
 		require.Equal(t, uint16(80), e.Details.Env()["port"])
-		require.Equal(t, string(cntr.ID), e.Details.Env()["container_id"])
+		require.Equal(t, container.GetContainerID(), e.Details.Env()["container_id"])
 		require.Equal(t, image, e.Details.Env()["image"])
 		require.Equal(t, tag, e.Details.Env()["tag"])
 	}
 }
 
 func TestObserverRemovesEndpointsIntegration(t *testing.T) {
-	c := containertest.New(t)
 	image := "docker.io/library/nginx"
 	tag := "1.17"
-	tmpCntr := c.StartImage(fmt.Sprintf("%s:%s", image, tag), containertest.WithPortReady(80))
+
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        fmt.Sprintf("%s:%s", image, tag),
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		SkipReaper:   true, // skipping the reaper to avoid creating two endpoints
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	require.NotNil(t, container)
+
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserver(t, mn)
 	defer stopObserver(t, obvs)
@@ -123,18 +165,36 @@ func TestObserverRemovesEndpointsIntegration(t *testing.T) {
 	require.Equal(t, len(endpoints), 1)
 	for _, e := range endpoints {
 		require.Equal(t, uint16(80), e.Details.Env()["port"])
-		require.Equal(t, string(tmpCntr.ID), e.Details.Env()["container_id"])
+		require.Equal(t, container.GetContainerID(), e.Details.Env()["container_id"])
 		require.Equal(t, image, e.Details.Env()["image"])
 		require.Equal(t, tag, e.Details.Env()["tag"])
 	}
-	c.RemoveContainer(tmpCntr)
+
+	err = container.Terminate(ctx)
+	require.Nil(t, err)
+
 	require.Eventually(t, func() bool { return mn.RemoveCount() == 1 }, 3*time.Second, 10*time.Millisecond)
 	require.Empty(t, mn.EndpointsMap())
 }
 
 func TestObserverExcludesImagesIntegration(t *testing.T) {
-	c := containertest.New(t)
-	c.StartImage("docker.io/library/nginx:1.17", containertest.WithPortReady(80))
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "docker.io/library/nginx:1.17",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		SkipReaper:   true,
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	defer func() {
+		err := container.Terminate(ctx)
+		require.Nil(t, err)
+	}()
+	require.NotNil(t, container)
 
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.ExcludedImages = []string{"*nginx*"}
@@ -177,12 +237,18 @@ func stopObserver(t *testing.T, obvs *dockerObserver) {
 	assert.NoError(t, obvs.Shutdown(context.Background()))
 }
 
+var _ observer.Notify = (*mockNotifier)(nil)
+
 type mockNotifier struct {
 	sync.Mutex
 	endpointsMap map[observer.EndpointID]observer.Endpoint
 	addCount     int
 	removeCount  int
 	changeCount  int
+}
+
+func (m *mockNotifier) ID() observer.NotifyID {
+	return "mockNotifier"
 }
 
 func (m *mockNotifier) AddCount() int {

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 
 import (
@@ -27,9 +26,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/models"
 )
@@ -120,7 +120,7 @@ func TestScraperScrape(t *testing.T) {
 		Metrics: *jobmanagerMetricsResponse,
 	}
 
-	taskmanagerMetricsInstances := []*models.TaskmanagerMetrics{}
+	var taskmanagerMetricsInstances []*models.TaskmanagerMetrics
 	taskmanagerMetricsInstances = append(taskmanagerMetricsInstances, &models.TaskmanagerMetrics{
 		Host:          "mock-host",
 		TaskmanagerID: "mock-taskmanager-id",
@@ -132,7 +132,7 @@ func TestScraperScrape(t *testing.T) {
 		Metrics:       *taskmanagerMetricsResponse,
 	})
 
-	jobsMetricsInstances := []*models.JobMetrics{}
+	var jobsMetricsInstances []*models.JobMetrics
 	jobsMetricsInstances = append(jobsMetricsInstances, &models.JobMetrics{
 		Host:    "mock-host",
 		JobName: "mock-job-name",
@@ -144,7 +144,7 @@ func TestScraperScrape(t *testing.T) {
 		Metrics: *jobsMetricsResponse,
 	})
 
-	subtaskMetricsInstances := []*models.SubtaskMetrics{}
+	var subtaskMetricsInstances []*models.SubtaskMetrics
 	subtaskMetricsInstances = append(subtaskMetricsInstances, &models.SubtaskMetrics{
 		Host:          "mock-host",
 		TaskmanagerID: "mock-taskmanager-id",
@@ -224,8 +224,8 @@ func TestScraperScrape(t *testing.T) {
 			desc: "Successful Collection no jobs running",
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
-				jobsEmptyInstances := []*models.JobMetrics{}
-				subtaskEmptyInstances := []*models.SubtaskMetrics{}
+				var jobsEmptyInstances []*models.JobMetrics
+				var subtaskEmptyInstances []*models.SubtaskMetrics
 				require.NoError(t, err)
 				mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(&jobmanagerMetrics, nil)
 				mockClient.On("GetTaskmanagersMetrics", mock.Anything).Return(taskmanagerMetricsInstances, nil)
@@ -256,7 +256,7 @@ func TestScraperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newflinkScraper(createDefaultConfig().(*Config), componenttest.NewNopReceiverCreateSettings())
+			scraper := newflinkScraper(createDefaultConfig().(*Config), receivertest.NewNopCreateSettings())
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
 
@@ -269,7 +269,8 @@ func TestScraperScrape(t *testing.T) {
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricFile)
 			require.NoError(t, err)
 
-			scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
 }

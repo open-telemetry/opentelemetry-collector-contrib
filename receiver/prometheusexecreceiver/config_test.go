@@ -20,91 +20,92 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
 
-var (
-	wantReceiver2 = &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "test")),
-		ScrapeInterval:   60 * time.Second,
-		ScrapeTimeout:    10 * time.Second,
-		Port:             9104,
-		SubprocessConfig: subprocessmanager.SubprocessConfig{
-			Command: "mysqld_exporter",
-			Env:     []subprocessmanager.EnvConfig{},
-		},
-	}
+func TestLoadConfig(t *testing.T) {
+	t.Parallel()
 
-	wantReceiver3 = &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "test2")),
-		ScrapeInterval:   90 * time.Second,
-		ScrapeTimeout:    10 * time.Second,
-		SubprocessConfig: subprocessmanager.SubprocessConfig{
-			Command: "postgres_exporter",
-			Env:     []subprocessmanager.EnvConfig{},
-		},
-	}
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
-	wantReceiver4 = &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "end_to_end_test/1")),
-		ScrapeInterval:   1 * time.Second,
-		ScrapeTimeout:    1 * time.Second,
-		Port:             9999,
-		SubprocessConfig: subprocessmanager.SubprocessConfig{
-			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
-			Env: []subprocessmanager.EnvConfig{
-				{
-					Name:  "DATA_SOURCE_NAME",
-					Value: "user:password@(hostname:port)/dbname",
+	tests := []struct {
+		id          component.ID
+		expected    component.Config
+		expectedErr error
+	}{
+		{
+			id: component.NewIDWithName(typeStr, "test"),
+			expected: &Config{
+				ScrapeInterval: 60 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
+				Port:           9104,
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "mysqld_exporter",
+					Env:     []subprocessmanager.EnvConfig{},
 				},
-				{
-					Name:  "SECONDARY_PORT",
-					Value: "1234",
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "test2"),
+			expected: &Config{
+				ScrapeInterval: 90 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "postgres_exporter",
+					Env:     []subprocessmanager.EnvConfig{},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "end_to_end_test/1"),
+			expected: &Config{
+				ScrapeInterval: 1 * time.Second,
+				ScrapeTimeout:  1 * time.Second,
+				Port:           9999,
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
+					Env: []subprocessmanager.EnvConfig{
+						{
+							Name:  "DATA_SOURCE_NAME",
+							Value: "user:password@(hostname:port)/dbname",
+						},
+						{
+							Name:  "SECONDARY_PORT",
+							Value: "1234",
+						},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "end_to_end_test/2"),
+			expected: &Config{
+				ScrapeInterval: 1 * time.Second,
+				ScrapeTimeout:  1 * time.Second,
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
+					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
 		},
 	}
 
-	wantReceiver5 = &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "end_to_end_test/2")),
-		ScrapeInterval:   1 * time.Second,
-		ScrapeTimeout:    1 * time.Second,
-		SubprocessConfig: subprocessmanager.SubprocessConfig{
-			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
-			Env:     []subprocessmanager.EnvConfig{},
-		},
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
 	}
-)
-
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
-
-	assert.Equal(t, 5, len(cfg.Receivers))
-
-	receiver1 := cfg.Receivers[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), receiver1)
-
-	receiver2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "test")]
-	assert.Equal(t, wantReceiver2, receiver2)
-
-	receiver3 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "test2")]
-	assert.Equal(t, wantReceiver3, receiver3)
-
-	receiver4 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "end_to_end_test/1")]
-	assert.Equal(t, wantReceiver4, receiver4)
-
-	receiver5 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "end_to_end_test/2")]
-	assert.Equal(t, wantReceiver5, receiver5)
 }

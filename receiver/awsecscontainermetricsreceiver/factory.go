@@ -20,9 +20,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
@@ -33,22 +33,24 @@ const (
 	// Key to invoke this receiver (awsecscontainermetrics)
 	typeStr = "awsecscontainermetrics"
 
+	// Stability level of the receiver
+	stability = component.StabilityLevelBeta
+
 	// Default collection interval. Every 20s the receiver will collect metrics from Amazon ECS Task Metadata Endpoint
 	defaultCollectionInterval = 20 * time.Second
 )
 
 // NewFactory creates a factory for AWS ECS Container Metrics receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
 // createDefaultConfig returns a default config for the receiver.
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		CollectionInterval: defaultCollectionInterval,
 	}
 }
@@ -56,10 +58,10 @@ func createDefaultConfig() config.Receiver {
 // CreateMetricsReceiver creates an AWS ECS Container Metrics receiver.
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
-	baseCfg config.Receiver,
+	params receiver.CreateSettings,
+	baseCfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	endpoint, err := endpoints.GetTMEV4FromEnv()
 	if err != nil || endpoint == nil {
 		return nil, fmt.Errorf("unable to detect task metadata endpoint: %w", err)

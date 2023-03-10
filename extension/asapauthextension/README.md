@@ -1,5 +1,10 @@
 # ASAP Client Authentication Extension
 
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Distributions            | [contrib]             |
+
 This extension provides [Atlassian Service Authentication Protocol](https://s2sauth.bitbucket.io/) (ASAP) client 
 credentials for HTTP or gRPC based exporters. 
 
@@ -17,7 +22,7 @@ extensions:
       - someservice
       - someotherservice
     # The private key of the client, used to sign the token. For an example, see `testdata/config.yaml`.
-    private_key: ${ASAP_PRIVATE_KEY}
+    private_key: ${env:ASAP_PRIVATE_KEY}
     # The time until expiry of each given token. The token will be cached and then re-provisioned upon expiry. 
     # For more info see the "exp" claim in the asap specification: https://s2sauth.bitbucket.io/spec/#access-token-generation
     ttl: 60s
@@ -34,3 +39,6 @@ exporters:
     auth:
       authenticator: asapclient    
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

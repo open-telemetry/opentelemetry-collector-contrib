@@ -16,12 +16,13 @@ package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/xray"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -34,12 +35,12 @@ const (
 	maxSegmentsPerPut = int(50) // limit imposed by PutTraceSegments API
 )
 
-// newTracesExporter creates an component.TracesExporter that converts to an X-Ray PutTraceSegments
+// newTracesExporter creates an exporter.Traces that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
 func newTracesExporter(
-	config config.Exporter, set component.ExporterCreateSettings, cn awsutil.ConnAttr) (component.TracesExporter, error) {
-	typeLog := zap.String("type", string(config.ID().Type()))
-	nameLog := zap.String("name", config.ID().String())
+	config component.Config, set exporter.CreateSettings, cn awsutil.ConnAttr) (exporter.Traces, error) {
+	typeLog := zap.String("type", string(set.ID.Type()))
+	nameLog := zap.String("name", set.ID.String())
 	logger := set.Logger
 	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &config.(*Config).AWSSessionSettings)
 	if err != nil {
@@ -47,8 +48,9 @@ func newTracesExporter(
 	}
 	xrayClient := newXRay(logger, awsConfig, set.BuildInfo, session)
 	return exporterhelper.NewTracesExporter(
-		config,
+		context.TODO(),
 		set,
+		config,
 		func(ctx context.Context, td ptrace.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
@@ -67,7 +69,7 @@ func newTracesExporter(
 				output, localErr := xrayClient.PutTraceSegments(&input)
 				if localErr != nil {
 					logger.Debug("response error", zap.Error(localErr))
-					err = wrapErrorIfBadRequest(&localErr) // record error
+					err = wrapErrorIfBadRequest(localErr) // record error
 				}
 				if output != nil {
 					logger.Debug("response: " + output.String())
@@ -85,16 +87,20 @@ func newTracesExporter(
 	)
 }
 
-func extractResourceSpans(config config.Exporter, logger *zap.Logger, td ptrace.Traces) []*string {
+func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace.Traces) []*string {
 	documents := make([]*string, 0, td.SpanCount())
+
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		resource := rspans.Resource()
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			spans := rspans.ScopeSpans().At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
-				document, localErr := translator.MakeSegmentDocumentString(spans.At(k), resource,
-					config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
+				document, localErr := translator.MakeSegmentDocumentString(
+					spans.At(k), resource,
+					config.(*Config).IndexedAttributes,
+					config.(*Config).IndexAllAttributes,
+					config.(*Config).LogGroupNames)
 				if localErr != nil {
 					logger.Debug("Error translating span.", zap.Error(localErr))
 					continue
@@ -106,10 +112,10 @@ func extractResourceSpans(config config.Exporter, logger *zap.Logger, td ptrace.
 	return documents
 }
 
-func wrapErrorIfBadRequest(err *error) error {
-	_, ok := (*err).(awserr.RequestFailure)
-	if ok && (*err).(awserr.RequestFailure).StatusCode() < 500 {
-		return consumererror.NewPermanent(*err)
+func wrapErrorIfBadRequest(err error) error {
+	var rfErr awserr.RequestFailure
+	if errors.As(err, &rfErr) && rfErr.StatusCode() < 500 {
+		return consumererror.NewPermanent(err)
 	}
-	return *err
+	return err
 }

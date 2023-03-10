@@ -1,12 +1,16 @@
 # Prometheus Remote Write Exporter
 
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [beta]            |
+| Supported pipeline types | metrics           |
+| Distributions            | [core], [contrib] |
+
 Prometheus Remote Write Exporter sends OpenTelemetry metrics
 to Prometheus [remote write compatible
 backends](https://prometheus.io/docs/operating/integrations/)
-such as Cortex and Thanos.
+such as Cortex, Mimir, and Thanos.
 By default, this exporter requires TLS and offers queued retry capabilities.
-
-Supported pipeline types: metrics
 
 :warning: Non-cumulative monotonic, histogram, and summary OTLP metrics are
 dropped by this exporter.
@@ -35,13 +39,21 @@ As a result, the following parameters are also required under `tls:`:
 The following settings can be optionally configured:
 
 - `external_labels`: map of labels names and values to be attached to each metric data point
-- `headers`: additional headers attached to each HTTP request. 
+- `headers`: additional headers attached to each HTTP request.
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `enabled`: enable the sending queue
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false`
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests.
+- `resource_to_telemetry_conversion`
+  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
+- `target_info`: customize `target_info` metric
+  - `enabled` (default = true): If `enabled` is `true`, a `target_info` metric will be generated for each resource metric (see https://github.com/open-telemetry/opentelemetry-specification/pull/2381).
+- `export_created_metric`:
+  - `enabled` (default = false): If `enabled` is `true`, a `_created` metric is
+    exported for Summary, Histogram, and Monotonic Sum metric points if
+    `StartTimeUnixNano` is set.
 
 Example:
 
@@ -53,6 +65,8 @@ exporters:
       directory: ./prom_rw # The directory to store the WAL in
       buffer_size: 100 # Optional count of elements to be read from the WAL before truncating; default of 300
       truncate_frequency: 45s # Optional frequency for how often the WAL should be truncated. It is a time.ParseDuration; default of 1m
+    resource_to_telemetry_conversion:
+      enabled: true # Convert resource attributes to metric labels
 ```
 
 Example:
@@ -63,7 +77,7 @@ exporters:
     endpoint: "https://my-cortex:7900/api/v1/push"
     external_labels:
       label_name1: label_value1
-      label_name2: label_value2      
+      label_name2: label_value2
 ```
 
 ## Advanced Configuration
@@ -73,3 +87,11 @@ Several helper files are leveraged to provide additional capabilities automatica
 - [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), note that the exporter doesn't support `sending_queue` but provides `remote_write_queue`.
+
+## Metric names and labels normalization
+
+OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in the Prometheus translator module](../../pkg/translator/prometheus/).
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

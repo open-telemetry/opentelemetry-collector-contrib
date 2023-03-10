@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package kube
 
 import (
@@ -124,11 +123,12 @@ func Test_fakeInformer(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
 	i := NewFakeInformer(c, "ns", nil, nil)
-	i.AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{}, time.Second)
+	_, err = i.AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{}, time.Second)
+	assert.NoError(t, err)
 	i.HasSynced()
 	i.LastSyncResourceVersion()
 	store := i.GetStore()
-	store.Add(api_v1.Pod{})
+	assert.NoError(t, store.Add(api_v1.Pod{}))
 }
 
 func Test_fakeNamespaceInformer(t *testing.T) {
@@ -136,9 +136,10 @@ func Test_fakeNamespaceInformer(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
 	i := NewFakeNamespaceInformer(c)
-	i.AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{}, time.Second)
+	_, err = i.AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{}, time.Second)
+	assert.NoError(t, err)
 	i.HasSynced()
 	i.LastSyncResourceVersion()
 	store := i.GetStore()
-	store.Add(api_v1.Namespace{})
+	assert.NoError(t, store.Add(api_v1.Namespace{}))
 }

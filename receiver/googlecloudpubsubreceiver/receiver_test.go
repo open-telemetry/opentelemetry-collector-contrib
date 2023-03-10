@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package googlecloudpubsubreceiver
 
 import (
@@ -20,16 +19,17 @@ import (
 	"testing"
 	"time"
 
+	pb "cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"cloud.google.com/go/pubsub/pstest"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	pb "google.golang.org/genproto/googleapis/pubsub/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/testdata"
 )
@@ -45,8 +45,8 @@ func TestStartReceiverNoSubscription(t *testing.T) {
 		userAgent: "test-user-agent",
 
 		config: &Config{
-			endpoint:  srv.Addr,
-			insecure:  true,
+			Endpoint:  srv.Addr,
+			Insecure:  true,
 			ProjectID: "my-project",
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 12 * time.Second,
@@ -54,7 +54,9 @@ func TestStartReceiverNoSubscription(t *testing.T) {
 			Subscription: "projects/my-project/subscriptions/otlp",
 		},
 	}
-	defer receiver.Shutdown(ctx)
+	defer func() {
+		assert.NoError(t, receiver.Shutdown(ctx))
+	}()
 	receiver.tracesConsumer = consumertest.NewNop()
 	receiver.metricsConsumer = consumertest.NewNop()
 	receiver.logsConsumer = consumertest.NewNop()
@@ -80,23 +82,27 @@ func TestReceiver(t *testing.T) {
 	assert.NoError(t, err)
 
 	core, _ := observer.New(zap.WarnLevel)
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 	traceSink := new(consumertest.TracesSink)
 	metricSink := new(consumertest.MetricsSink)
 	logSink := new(consumertest.LogsSink)
+
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             component.NewID(typeStr),
+		Transport:              reportTransport,
+		LongLivedCtx:           false,
+		ReceiverCreateSettings: params,
+	})
+	require.NoError(t, err)
+
 	receiver := &pubsubReceiver{
-		logger: zap.New(core),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.NewComponentID(typeStr),
-			Transport:              reportTransport,
-			LongLivedCtx:           false,
-			ReceiverCreateSettings: params,
-		}),
+		logger:    zap.New(core),
+		obsrecv:   obsrecv,
 		userAgent: "test-user-agent",
 
 		config: &Config{
-			endpoint:  srv.Addr,
-			insecure:  true,
+			Endpoint:  srv.Addr,
+			Insecure:  true,
 			ProjectID: "my-project",
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 1 * time.Second,

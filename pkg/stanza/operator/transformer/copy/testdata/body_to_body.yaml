@@ -1,3 +1,0 @@
-type: copy
-from: body.key
-to: body.key2

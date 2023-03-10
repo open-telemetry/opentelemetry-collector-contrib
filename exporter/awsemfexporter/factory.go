@@ -18,7 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -26,37 +27,36 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "awsemf"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for AWS EMF exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter))
+		exporter.WithMetrics(createMetricsExporter, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings:                config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AWSSessionSettings:              awsutil.CreateDefaultSessionConfig(),
 		LogGroupName:                    "",
 		LogStreamName:                   "",
 		Namespace:                       "",
 		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
-		ParseJSONEncodedAttributeValues: make([]string, 0),
-		MetricDeclarations:              make([]*MetricDeclaration, 0),
-		MetricDescriptors:               make([]MetricDescriptor, 0),
+		RetainInitialValueOfDeltaMetric: false,
 		OutputDestination:               "cloudwatch",
-		logger:                          nil,
+		logger:                          zap.NewNop(),
 	}
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(_ context.Context,
-	params component.ExporterCreateSettings,
-	config config.Exporter) (component.MetricsExporter, error) {
+	params exporter.CreateSettings,
+	config component.Config) (exporter.Metrics, error) {
 
 	expCfg := config.(*Config)
 

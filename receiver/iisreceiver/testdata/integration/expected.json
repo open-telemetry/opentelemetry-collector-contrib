@@ -1,7 +1,16 @@
 {
    "resourceMetrics": [
       {
-         "resource": {},
+         "resource": {
+            "attributes": [
+               {
+                  "key": "iis.site",
+                  "value": {
+                     "stringValue": "Default Web Site"
+                  }
+               }
+            ]
+         },
          "scopeMetrics": [
             {
                "metrics": [
@@ -9,12 +18,12 @@
                      "description": "Number of active connections.",
                      "name": "iis.connection.active",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
                            }
                         ]
                      },
@@ -24,12 +33,12 @@
                      "description": "Number of connections established anonymously.",
                      "name": "iis.connection.anonymous",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
-                              "asInt": "5",
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
+                              "asInt": "0",
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
                            }
                         ],
                         "isMonotonic": true
@@ -40,12 +49,12 @@
                      "description": "Total number of attempts to connect to the server.",
                      "name": "iis.connection.attempt.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
-                              "asInt": "3",
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
+                              "asInt": "0",
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
                            }
                         ],
                         "isMonotonic": true
@@ -56,12 +65,12 @@
                      "description": "Number of bytes blocked due to bandwidth throttling.",
                      "name": "iis.network.blocked",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
                            }
                         ],
                         "isMonotonic": true
@@ -72,8 +81,21 @@
                      "description": "Number of transmitted files.",
                      "name": "iis.network.file.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "direction",
+                                    "value": {
+                                       "stringValue": "sent"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
+                           },
                            {
                               "asInt": "0",
                               "attributes": [
@@ -84,21 +106,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
-                           },
-                           {
-                              "asInt": "4",
-                              "attributes": [
-                                 {
-                                    "key": "direction",
-                                    "value": {
-                                       "stringValue": "sent"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
                            }
                         ],
                         "isMonotonic": true
@@ -109,10 +118,10 @@
                      "description": "Total amount of bytes sent and received.",
                      "name": "iis.network.io",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
-                              "asInt": "1934",
+                              "asInt": "0",
                               "attributes": [
                                  {
                                     "key": "direction",
@@ -121,11 +130,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
                            },
                            {
-                              "asInt": "106804",
+                              "asInt": "0",
                               "attributes": [
                                  {
                                     "key": "direction",
@@ -134,8 +143,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
                            }
                         ],
                         "isMonotonic": true
@@ -146,73 +155,8 @@
                      "description": "Total number of requests of a given type.",
                      "name": "iis.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "request",
-                                    "value": {
-                                       "stringValue": "delete"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
-                           },
-                           {
-                              "asInt": "5",
-                              "attributes": [
-                                 {
-                                    "key": "request",
-                                    "value": {
-                                       "stringValue": "get"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "request",
-                                    "value": {
-                                       "stringValue": "head"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "request",
-                                    "value": {
-                                       "stringValue": "options"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "request",
-                                    "value": {
-                                       "stringValue": "post"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
-                           },
                            {
                               "asInt": "0",
                               "attributes": [
@@ -223,8 +167,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
                            },
                            {
                               "asInt": "0",
@@ -236,8 +180,73 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": "get"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": "options"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": "post"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": "head"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
                            }
                         ],
                         "isMonotonic": true
@@ -245,15 +254,51 @@
                      "unit": "{requests}"
                   },
                   {
+                     "description": "The amount of time the server has been up.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "471",
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
+                           }
+                        ]
+                     },
+                     "name": "iis.uptime",
+                     "unit": "s"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/iisreceiver",
+                  "version": "latest"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "iis.application_pool",
+                  "value": {
+                     "stringValue": "---1"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
                      "description": "Current number of requests in the queue.",
                      "name": "iis.request.queue.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
                            }
                         ]
                      },
@@ -263,46 +308,100 @@
                      "description": "Total number of requests rejected.",
                      "name": "iis.request.rejected",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
                            }
                         ],
                         "isMonotonic": true
                      },
                      "unit": "{requests}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/iisreceiver",
+                  "version": "latest"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "iis.application_pool",
+                  "value": {
+                     "stringValue": "DefaultAppPool"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "Current number of requests in the queue.",
+                     "name": "iis.request.queue.count",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
+                           }
+                        ]
+                     },
+                     "unit": "{requests}"
                   },
+                  {
+                     "description": "Total number of requests rejected.",
+                     "name": "iis.request.rejected",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{requests}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/iisreceiver",
+                  "version": "latest"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": []
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
                   {
                      "description": "Current number of active threads.",
                      "name": "iis.thread.active",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
-                              "asInt": "4724",
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
+                              "asInt": "1266",
+                              "startTimeUnixNano": "1664375532837715300",
+                              "timeUnixNano": "1664375533465547100"
                            }
                         ]
                      },
                      "unit": "{threads}"
-                  },
-                  {
-                     "description": "The amount of time the server has been up.",
-                     "gauge": {
-                        "dataPoints": [
-                           {
-                              "asInt": "1029516",
-                              "startTimeUnixNano": "1650295321014331300",
-                              "timeUnixNano": "1650295321456400500"
-                           }
-                        ]
-                     },
-                     "name": "iis.uptime",
-                     "unit": "s"
                   }
                ],
                "scope": {

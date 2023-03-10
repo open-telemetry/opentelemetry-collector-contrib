@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
+
 import (
 	"errors"
 	"fmt"
@@ -29,9 +30,10 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
-	Username                                string                   `mapstructure:"username"`
-	Password                                string                   `mapstructure:"password"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
+	ResourceAttributes                      metadata.ResourceAttributesSettings `mapstructure:",squash"`
+	Username                                string                              `mapstructure:"username"`
+	Password                                string                              `mapstructure:"password"`
 }
 
 // Validate returns if the NSX configuration is valid

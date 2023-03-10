@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -31,7 +31,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, "dotnet_diagnostics", string(f.Type()))
 	cfg := f.CreateDefaultConfig()
 	assert.NotNil(t, cfg)
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(
 		t,
 		[]string{"System.Runtime", "Microsoft.AspNetCore.Hosting"},
@@ -42,7 +42,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestNewFactory(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig()
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, r)

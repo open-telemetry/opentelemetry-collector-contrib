@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -29,8 +29,9 @@ import (
 
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -67,14 +68,15 @@ func TestEndToEndSummarySupport(t *testing.T) {
 
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
 	exporterCfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		Namespace:        "test",
-		Endpoint:         ":8787",
+		Namespace: "test",
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: ":8787",
+		},
 		SendTimestamps:   true,
 		MetricExpiration: 2 * time.Hour,
 	}
 	exporterFactory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exporter, err := exporterFactory.CreateMetricsExporter(ctx, set, exporterCfg)
 	if err != nil {
 		t.Fatal(err)
@@ -103,10 +105,9 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 
 	receiverFactory := prometheusreceiver.NewFactory()
-	receiverCreateSet := componenttest.NewNopReceiverCreateSettings()
+	receiverCreateSet := receivertest.NewNopCreateSettings()
 	rcvCfg := &prometheusreceiver.Config{
 		PrometheusConfig: receiverConfig,
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("prometheus")),
 	}
 	// 3.5 Create the Prometheus receiver and pass in the previously created Prometheus exporter.
 	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateSet, rcvCfg, exporter)
@@ -125,7 +126,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to scrape from the exporter: %v", err)
 	}
-	prometheusExporterScrape, err := ioutil.ReadAll(res.Body)
+	prometheusExporterScrape, err := io.ReadAll(res.Body)
 	res.Body.Close()
 	if err != nil {
 		t.Fatal(err)
@@ -167,6 +168,9 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`. HELP test_up The scraping was successful`,
 		`. TYPE test_up gauge`,
 		`test_up.instance="127.0.0.1:.*",job="otel-collector". 1 .*`,
+		`. HELP test_target_info Target metadata`,
+		`. TYPE test_target_info gauge`,
+		`test_target_info.http_scheme="http",instance="127.0.0.1:.*",job="otel-collector",net_host_port=".*". 1`,
 	}
 
 	// 5.5: Perform a complete line by line prefix verification to ensure we extract back the inputs

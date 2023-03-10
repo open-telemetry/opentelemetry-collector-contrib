@@ -29,7 +29,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -87,7 +86,7 @@ zv9WEy+9p05Aet+12x3dzRu93+yRIEYbSZ35NOUWfQ+gspF5rGgpxA==
 
 func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 	return func(t *testing.T) {
-		cfg := NewConfig("test_id")
+		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = ":0"
 
 		op, err := cfg.Build(testutil.Logger(t))
@@ -135,7 +134,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 
 func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) {
 	return func(t *testing.T) {
-		cfg := NewConfig("test_id")
+		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = ":0"
 		cfg.AddAttributes = true
 
@@ -216,14 +215,14 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 		require.NoError(t, err)
 		f.Close()
 
-		cfg := NewConfig("test_id")
+		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = ":0"
-		cfg.TLS = helper.NewTLSServerConfig(&configtls.TLSServerSetting{
+		cfg.TLS = &configtls.TLSServerSetting{
 			TLSSetting: configtls.TLSSetting{
 				CertFile: "test.crt",
 				KeyFile:  "test.key",
 			},
-		})
+		}
 
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
@@ -337,7 +336,12 @@ func TestBuild(t *testing.T) {
 				BaseConfig: BaseConfig{
 					MaxLogSize:    65536,
 					ListenAddress: "10.0.0.1:9000",
-					TLS:           createTLSConfig("/tmp/cert/missing", "/tmp/key/missing"),
+					TLS: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "/tmp/cert/missing",
+							KeyFile:  "/tmp/key/missing",
+						},
+					},
 				},
 			},
 			true,
@@ -346,7 +350,7 @@ func TestBuild(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfig("test_id")
+			cfg := NewConfigWithID("test_id")
 			cfg.ListenAddress = tc.inputBody.ListenAddress
 			cfg.MaxLogSize = tc.inputBody.MaxLogSize
 			cfg.TLS = tc.inputBody.TLS
@@ -393,7 +397,7 @@ func TestFailToBind(t *testing.T) {
 	}
 
 	var startTCP = func(int) (*Input, error) {
-		cfg := NewConfig("test_id")
+		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
@@ -419,7 +423,7 @@ func TestFailToBind(t *testing.T) {
 }
 
 func BenchmarkTCPInput(b *testing.B) {
-	cfg := NewConfig("test_id")
+	cfg := NewConfigWithID("test_id")
 	cfg.ListenAddress = ":0"
 
 	op, err := cfg.Build(testutil.Logger(b))
@@ -460,13 +464,4 @@ func BenchmarkTCPInput(b *testing.B) {
 	}
 
 	defer close(done)
-}
-
-func createTLSConfig(cert string, key string) *helper.TLSServerConfig {
-	return helper.NewTLSServerConfig(&configtls.TLSServerSetting{
-		TLSSetting: configtls.TLSSetting{
-			CertFile: cert,
-			KeyFile:  key,
-		},
-	})
 }

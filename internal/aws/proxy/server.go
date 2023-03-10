@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -155,7 +154,7 @@ func consume(body io.ReadCloser) (io.ReadSeeker, error) {
 	}
 
 	// Consume body
-	buf, err := ioutil.ReadAll(body)
+	buf, err := io.ReadAll(body)
 	if err != nil {
 		return nil, err
 	}

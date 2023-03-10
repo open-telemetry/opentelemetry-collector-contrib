@@ -27,7 +27,7 @@ import (
 // metrics with the corresponding number/type of attributes and pass into MetricsFromCfg to generate metrics.
 type MetricsCfg struct {
 	// The type of metric to generate
-	MetricDescriptorType pmetric.MetricDataType
+	MetricDescriptorType pmetric.MetricType
 	// MetricValueType is the type of the numeric value: int or double.
 	MetricValueType pmetric.NumberDataPointValueType
 	// If MetricDescriptorType is one of the Sum, this describes if the sum is monotonic or not.
@@ -58,7 +58,7 @@ type MetricsCfg struct {
 // (but boring) metrics, and can be used as a starting point for making alterations.
 func DefaultCfg() MetricsCfg {
 	return MetricsCfg{
-		MetricDescriptorType: pmetric.MetricDataTypeGauge,
+		MetricDescriptorType: pmetric.MetricTypeGauge,
 		MetricValueType:      pmetric.NumberDataPointValueTypeInt,
 		MetricNamePrefix:     "",
 		NumILMPerResource:    1,
@@ -95,9 +95,9 @@ func (g *metricGenerator) genMetricFromCfg(cfg MetricsCfg) pmetric.Metrics {
 		rm := rms.AppendEmpty()
 		resource := rm.Resource()
 		for j := 0; j < cfg.NumResourceAttrs; j++ {
-			resource.Attributes().Insert(
+			resource.Attributes().PutStr(
 				fmt.Sprintf("resource-attr-name-%d", j),
-				pcommon.NewValueString(fmt.Sprintf("resource-attr-val-%d", j)),
+				fmt.Sprintf("resource-attr-val-%d", j),
 			)
 		}
 		g.populateIlm(cfg, rm)
@@ -121,20 +121,21 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pmetric.ScopeMetri
 		metric := metrics.AppendEmpty()
 		g.populateMetricDesc(cfg, metric)
 		switch cfg.MetricDescriptorType {
-		case pmetric.MetricDataTypeGauge:
-			metric.SetDataType(pmetric.MetricDataTypeGauge)
-			populateNumberPoints(cfg, metric.Gauge().DataPoints())
-		case pmetric.MetricDataTypeSum:
-			metric.SetDataType(pmetric.MetricDataTypeSum)
-			sum := metric.Sum()
+		case pmetric.MetricTypeGauge:
+			populateNumberPoints(cfg, metric.SetEmptyGauge().DataPoints())
+		case pmetric.MetricTypeSum:
+			sum := metric.SetEmptySum()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
-			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			populateNumberPoints(cfg, sum.DataPoints())
-		case pmetric.MetricDataTypeHistogram:
-			metric.SetDataType(pmetric.MetricDataTypeHistogram)
-			histo := metric.Histogram()
-			histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		case pmetric.MetricTypeHistogram:
+			histo := metric.SetEmptyHistogram()
+			histo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			populateDoubleHistogram(cfg, histo)
+		case pmetric.MetricTypeExponentialHistogram:
+			histo := metric.SetEmptyExponentialHistogram()
+			histo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			populateExpoHistogram(cfg, histo)
 		}
 	}
 }
@@ -154,9 +155,9 @@ func populateNumberPoints(cfg MetricsCfg, pts pmetric.NumberDataPointSlice) {
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		switch cfg.MetricValueType {
 		case pmetric.NumberDataPointValueTypeInt:
-			pt.SetIntVal(int64(cfg.PtVal + i))
+			pt.SetIntValue(int64(cfg.PtVal + i))
 		case pmetric.NumberDataPointValueTypeDouble:
-			pt.SetDoubleVal(float64(cfg.PtVal + i))
+			pt.SetDoubleValue(float64(cfg.PtVal + i))
 		default:
 			panic("Should not happen")
 		}
@@ -183,19 +184,21 @@ func populateDoubleHistogram(cfg MetricsCfg, dh pmetric.Histogram) {
 }
 
 func setDoubleHistogramBounds(hdp pmetric.HistogramDataPoint, bounds ...float64) {
-	hdp.SetMBucketCounts(make([]uint64, len(bounds)))
-	hdp.SetMExplicitBounds(bounds)
+	counts := make([]uint64, len(bounds))
+	hdp.BucketCounts().FromRaw(counts)
+	hdp.ExplicitBounds().FromRaw(bounds)
 }
 
 func addDoubleHistogramVal(hdp pmetric.HistogramDataPoint, val float64) {
 	hdp.SetCount(hdp.Count() + 1)
 	hdp.SetSum(hdp.Sum() + val)
-	buckets := hdp.MBucketCounts()
-	bounds := hdp.MExplicitBounds()
-	for i := 0; i < len(bounds); i++ {
-		bound := bounds[i]
+	// TODO: HasSum, Min, HasMin, Max, HasMax are not covered in tests.
+	buckets := hdp.BucketCounts()
+	bounds := hdp.ExplicitBounds()
+	for i := 0; i < bounds.Len(); i++ {
+		bound := bounds.At(i)
 		if val <= bound {
-			buckets[i]++
+			buckets.SetAt(i, buckets.At(i)+1)
 			break
 		}
 	}
@@ -205,10 +208,31 @@ func populatePtAttributes(cfg MetricsCfg, lm pcommon.Map) {
 	for i := 0; i < cfg.NumPtLabels; i++ {
 		k := fmt.Sprintf("pt-label-key-%d", i)
 		v := fmt.Sprintf("pt-label-val-%d", i)
-		lm.InsertString(k, v)
+		lm.PutStr(k, v)
 	}
 }
 
 func getTimestamp(startTime uint64, stepSize uint64, i int) pcommon.Timestamp {
 	return pcommon.Timestamp(startTime + (stepSize * uint64(i+1)))
+}
+
+func populateExpoHistogram(cfg MetricsCfg, dh pmetric.ExponentialHistogram) {
+	pts := dh.DataPoints()
+	pts.EnsureCapacity(cfg.NumPtsPerMetric)
+	for i := 0; i < cfg.NumPtsPerMetric; i++ {
+		pt := pts.AppendEmpty()
+		pt.SetStartTimestamp(pcommon.Timestamp(cfg.StartTime))
+		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
+		pt.SetTimestamp(ts)
+		populatePtAttributes(cfg, pt.Attributes())
+
+		pt.SetSum(100 * float64(cfg.PtVal))
+		pt.SetCount(uint64(cfg.PtVal))
+		pt.SetScale(int32(cfg.PtVal))
+		pt.SetZeroCount(uint64(cfg.PtVal))
+		pt.SetMin(float64(cfg.PtVal))
+		pt.SetMax(float64(cfg.PtVal))
+		pt.Positive().SetOffset(int32(cfg.PtVal))
+		pt.Positive().BucketCounts().FromRaw([]uint64{uint64(cfg.PtVal)})
+	}
 }

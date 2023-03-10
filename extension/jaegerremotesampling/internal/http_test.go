@@ -31,19 +31,16 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-func TestMissingClientConfigManager(t *testing.T) {
-	// test
+func TestMissingClientConfigManagerHTTP(t *testing.T) {
 	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, nil)
-
-	// verify
 	assert.Equal(t, errMissingStrategyStore, err)
 	assert.Nil(t, s)
 }
 
-func TestStartAndStop(t *testing.T) {
+func TestStartAndStopHTTP(t *testing.T) {
 	// prepare
 	srvSettings := confighttp.HTTPServerSettings{
-		Endpoint: ":0",
+		Endpoint: "127.0.0.1:0",
 	}
 	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), srvSettings, &mockCfgMgr{})
 	require.NoError(t, err)
@@ -59,10 +56,6 @@ func TestEndpointsAreWired(t *testing.T) {
 		desc     string
 		endpoint string
 	}{
-		{
-			desc:     "legacy",
-			endpoint: "/",
-		},
 		{
 			desc:     "new",
 			endpoint: "/sampling",
@@ -138,15 +131,4 @@ func TestErrorFromClientConfigManager(t *testing.T) {
 	// verify
 	body, _ := io.ReadAll(rw.Body)
 	assert.Contains(t, string(body), "failed to get sampling strategy for service")
-}
-
-type mockCfgMgr struct {
-	getSamplingStrategyFunc func(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error)
-}
-
-func (m *mockCfgMgr) GetSamplingStrategy(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error) {
-	if m.getSamplingStrategyFunc != nil {
-		return m.getSamplingStrategyFunc(ctx, serviceName)
-	}
-	return sampling.NewSamplingStrategyResponse(), nil
 }

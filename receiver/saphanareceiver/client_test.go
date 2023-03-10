@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package saphanareceiver
 
 import (
@@ -44,7 +43,7 @@ func (m *testResultWrapper) Scan(dest ...interface{}) error {
 		*d = m.contents[m.current][i]
 	}
 
-	m.current = m.current + 1
+	m.current++
 	return nil
 }
 
@@ -72,9 +71,9 @@ func (m *testDBWrapper) QueryContext(ctx context.Context, query string) (resultW
 }
 
 func (m *testDBWrapper) mockQueryResult(query string, results [][]*string, err error) {
-	nullableResult := [][]sql.NullString{}
+	var nullableResult [][]sql.NullString
 	for _, row := range results {
-		nullableRow := []sql.NullString{}
+		var nullableRow []sql.NullString
 		for _, field := range row {
 			if field == nil {
 				nullableRow = append(nullableRow, sql.NullString{Valid: false})
@@ -149,15 +148,17 @@ func TestSimpleQueryOutput(t *testing.T) {
 			{
 				key: "value",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, t pcommon.Timestamp, val string,
-					m map[string]string) {
+					m map[string]string) error {
 					// Function is a no-op as it's not required for this test
+					return nil
 				},
 			},
 			{
 				key: "rate",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, t pcommon.Timestamp, val string,
-					m map[string]string) {
+					m map[string]string) error {
 					// Function is a no-op as it's not required for this test
+					return nil
 				},
 			},
 		},
@@ -203,15 +204,17 @@ func TestNullOutput(t *testing.T) {
 			{
 				key: "value",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, t pcommon.Timestamp, val string,
-					m map[string]string) {
+					m map[string]string) error {
 					// Function is a no-op as it's not required for this test
+					return nil
 				},
 			},
 			{
 				key: "rate",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, t pcommon.Timestamp, val string,
-					m map[string]string) {
+					m map[string]string) error {
 					// Function is a no-op as it's not required for this test
+					return nil
 				},
 			},
 		},

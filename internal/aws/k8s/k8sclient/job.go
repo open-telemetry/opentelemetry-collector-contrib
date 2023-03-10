@@ -126,7 +126,7 @@ func newJobClient(clientSet kubernetes.Interface, logger *zap.Logger, options ..
 
 	ctx := context.Background()
 	if _, err := clientSet.BatchV1().Jobs(metav1.NamespaceAll).List(ctx, metav1.ListOptions{}); err != nil {
-		return nil, fmt.Errorf("cannot list Job. err: %v", err)
+		return nil, fmt.Errorf("cannot list Job. err: %w", err)
 	}
 
 	c.store = NewObjStore(transformFuncJob, logger)

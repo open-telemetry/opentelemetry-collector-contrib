@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package k8sobserver
 
 import (
@@ -32,6 +31,10 @@ type endpointSink struct {
 	changed []observer.Endpoint
 }
 
+func (e *endpointSink) ID() observer.NotifyID {
+	return "endpointSink"
+}
+
 func (e *endpointSink) OnAdd(added []observer.Endpoint) {
 	e.Lock()
 	defer e.Unlock()
@@ -47,7 +50,8 @@ func (e *endpointSink) OnRemove(removed []observer.Endpoint) {
 func (e *endpointSink) OnChange(changed []observer.Endpoint) {
 	e.Lock()
 	defer e.Unlock()
-	e.changed = append(e.removed, changed...)
+	e.changed = e.removed
+	e.changed = append(e.changed, changed...)
 }
 
 var _ observer.Notify = (*endpointSink)(nil)
@@ -57,5 +61,5 @@ func requireSink(t *testing.T, sink *endpointSink, f func() bool) {
 		sink.Lock()
 		defer sink.Unlock()
 		return f()
-	}, 1*time.Second, 100*time.Millisecond)
+	}, 2*time.Second, 100*time.Millisecond)
 }

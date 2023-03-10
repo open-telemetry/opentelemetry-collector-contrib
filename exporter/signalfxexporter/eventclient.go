@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package signalfxexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"path"
 	"strings"
@@ -94,7 +92,7 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld plog.Logs) (int, e
 	}
 
 	defer func() {
-		io.Copy(ioutil.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 	}()
 
@@ -119,8 +117,8 @@ func (s *sfxEventClient) encodeBody(events []*sfxpb.Event) (bodyReader io.Reader
 
 func (s *sfxEventClient) retrieveAccessToken(rl plog.ResourceLogs) string {
 	attrs := rl.Resource().Attributes()
-	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok && accessToken.Type() == pcommon.ValueTypeString {
-		return accessToken.StringVal()
+	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok && accessToken.Type() == pcommon.ValueTypeStr {
+		return accessToken.Str()
 	}
 	return ""
 }

@@ -27,7 +27,7 @@ func NewIdentifierConfig() IdentifierConfig {
 
 // IdentifierConfig is the configuration of a resource identifier
 type IdentifierConfig struct {
-	Resource map[string]ExprStringConfig `mapstructure:"resource" json:"resource" yaml:"resource"`
+	Resource map[string]ExprStringConfig `mapstructure:"resource"`
 }
 
 // Build will build an identifier from the supplied configuration

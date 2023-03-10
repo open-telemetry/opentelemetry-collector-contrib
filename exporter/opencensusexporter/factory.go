@@ -18,31 +18,31 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "opencensus"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for OTLP exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter))
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			Headers: map[string]string{},
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
@@ -50,7 +50,7 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (exporter.Traces, error) {
 	oCfg := cfg.(*Config)
 	oce, err := newTracesExporter(ctx, oCfg, set.TelemetrySettings)
 	if err != nil {
@@ -58,8 +58,9 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 	}
 
 	return exporterhelper.NewTracesExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		oce.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
@@ -68,7 +69,7 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 		exporterhelper.WithShutdown(oce.shutdown))
 }
 
-func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (exporter.Metrics, error) {
 	oCfg := cfg.(*Config)
 	oce, err := newMetricsExporter(ctx, oCfg, set.TelemetrySettings)
 	if err != nil {
@@ -76,8 +77,9 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 	}
 
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),

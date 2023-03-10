@@ -12,13 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+//go:build !windows
+// +build !windows
+
 package configschema
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/otelcol"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 )
@@ -71,7 +75,7 @@ func TestGetConfig(t *testing.T) {
 	}
 }
 
-func testComponents() component.Factories {
+func testComponents() otelcol.Factories {
 	cmps, err := components.Components()
 	if err != nil {
 		panic(err)

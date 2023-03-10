@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package loadbalancingexporter
 
 import (
@@ -20,6 +19,7 @@ import (
 	"errors"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,7 +30,7 @@ import (
 
 func TestInitialDNSResolution(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{
@@ -48,8 +48,10 @@ func TestInitialDNSResolution(t *testing.T) {
 	res.onChange(func(endpoints []string) {
 		resolved = endpoints
 	})
-	res.start(context.Background())
-	defer res.shutdown(context.Background())
+	require.NoError(t, res.start(context.Background()))
+	defer func() {
+		require.NoError(t, res.shutdown(context.Background()))
+	}()
 
 	// verify
 	assert.Len(t, resolved, 3)
@@ -60,7 +62,7 @@ func TestInitialDNSResolution(t *testing.T) {
 
 func TestInitialDNSResolutionWithPort(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "55690")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "55690", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{
@@ -78,8 +80,10 @@ func TestInitialDNSResolutionWithPort(t *testing.T) {
 	res.onChange(func(endpoints []string) {
 		resolved = endpoints
 	})
-	res.start(context.Background())
-	defer res.shutdown(context.Background())
+	require.NoError(t, res.start(context.Background()))
+	defer func() {
+		require.NoError(t, res.shutdown(context.Background()))
+	}()
 
 	// verify
 	assert.Len(t, resolved, 3)
@@ -90,7 +94,7 @@ func TestInitialDNSResolutionWithPort(t *testing.T) {
 
 func TestErrNoHostname(t *testing.T) {
 	// test
-	res, err := newDNSResolver(zap.NewNop(), "", "")
+	res, err := newDNSResolver(zap.NewNop(), "", "", 5*time.Second, 1*time.Second)
 
 	// verify
 	assert.Nil(t, res)
@@ -99,7 +103,7 @@ func TestErrNoHostname(t *testing.T) {
 
 func TestCantResolve(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
@@ -110,7 +114,7 @@ func TestCantResolve(t *testing.T) {
 	}
 
 	// test
-	err = res.start(context.Background())
+	require.NoError(t, res.start(context.Background()))
 
 	// verify
 	assert.NoError(t, err)
@@ -118,7 +122,7 @@ func TestCantResolve(t *testing.T) {
 
 func TestOnChange(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	resolve := []net.IPAddr{
@@ -131,25 +135,29 @@ func TestOnChange(t *testing.T) {
 	}
 
 	// test
-	counter := 0
+	counter := &atomic.Int64{}
 	res.onChange(func(endpoints []string) {
-		counter++
+		counter.Add(1)
 	})
-	res.start(context.Background())
-	defer res.shutdown(context.Background())
-	require.Equal(t, 1, counter)
+	require.NoError(t, res.start(context.Background()))
+	defer func() {
+		require.NoError(t, res.shutdown(context.Background()))
+	}()
+	require.Equal(t, int64(1), counter.Load())
 
 	// now, we run it with the same IPs being resolved, which shouldn't trigger a onChange call
-	res.resolve(context.Background())
-	require.Equal(t, 1, counter)
+	_, err = res.resolve(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, int64(1), counter.Load())
 
 	// change what the resolver will resolve and trigger a resolution
 	resolve = []net.IPAddr{
 		{IP: net.IPv4(127, 0, 0, 2)},
 		{IP: net.IPv4(127, 0, 0, 3)},
 	}
-	res.resolve(context.Background())
-	assert.Equal(t, 2, counter)
+	_, err = res.resolve(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), counter.Load())
 }
 
 func TestEqualStringSlice(t *testing.T) {
@@ -181,10 +189,10 @@ func TestEqualStringSlice(t *testing.T) {
 
 func TestPeriodicallyResolve(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second)
 	require.NoError(t, err)
 
-	counter := 0
+	counter := &atomic.Int64{}
 	resolve := [][]net.IPAddr{
 		{
 			{IP: net.IPv4(127, 0, 0, 1)},
@@ -200,15 +208,15 @@ func TestPeriodicallyResolve(t *testing.T) {
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
 			defer func() {
-				counter++
+				counter.Add(1)
 			}()
 			// for second call, return the second result
-			if counter == 2 {
+			if counter.Load() == 2 {
 				return resolve[1], nil
 			}
 			// for subsequent calls, return the last result, because we need more two periodic results
 			// to confirm that it works as expected.
-			if counter >= 3 {
+			if counter.Load() >= 3 {
 				return resolve[2], nil
 			}
 
@@ -216,7 +224,6 @@ func TestPeriodicallyResolve(t *testing.T) {
 			return resolve[0], nil
 		},
 	}
-	res.resInterval = 10 * time.Millisecond
 
 	wg := sync.WaitGroup{}
 	res.onChange(func(backends []string) {
@@ -225,37 +232,39 @@ func TestPeriodicallyResolve(t *testing.T) {
 
 	// test
 	wg.Add(3)
-	res.start(context.Background())
-	defer res.shutdown(context.Background())
+	require.NoError(t, res.start(context.Background()))
+	defer func() {
+		require.NoError(t, res.shutdown(context.Background()))
+	}()
 
 	// wait for three resolutions: from the start, and two periodic resolutions
 	wg.Wait()
 
 	// verify
-	assert.GreaterOrEqual(t, counter, 3)
+	assert.GreaterOrEqual(t, counter.Load(), int64(3))
 	assert.Len(t, res.endpoints, 3)
 }
 
 func TestPeriodicallyResolveFailure(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
 	wg := sync.WaitGroup{}
-	counter := 0
+	counter := &atomic.Int64{}
 	resolve := []net.IPAddr{{IP: net.IPv4(127, 0, 0, 1)}}
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
-			counter++
+			counter.Add(1)
 
 			// count down at most two times
-			if counter <= 2 {
+			if counter.Load() <= 2 {
 				wg.Done()
 			}
 
 			// for subsequent calls, return the error
-			if counter >= 2 {
+			if counter.Load() >= 2 {
 				return nil, expectedErr
 			}
 
@@ -263,29 +272,30 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 			return resolve, nil
 		},
 	}
-	res.resInterval = 10 * time.Millisecond
 
 	// test
 	wg.Add(2)
-	res.start(context.Background())
-	defer res.shutdown(context.Background())
+	require.NoError(t, res.start(context.Background()))
+	defer func() {
+		require.NoError(t, res.shutdown(context.Background()))
+	}()
 
 	// wait for two resolutions: from the start, and one periodic
 	wg.Wait()
 
 	// verify
-	assert.GreaterOrEqual(t, 2, counter)
+	assert.GreaterOrEqual(t, counter.Load(), int64(2))
 	assert.Len(t, res.endpoints, 1) // no change to the list of endpoints
 }
 
 func TestShutdownClearsCallbacks(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{}
 	res.onChange(func(s []string) {})
-	res.start(context.Background())
+	require.NoError(t, res.start(context.Background()))
 
 	// sanity check
 	require.Len(t, res.onChangeCallbacks, 1)

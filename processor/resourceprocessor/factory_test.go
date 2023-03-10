@@ -20,9 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 )
@@ -30,51 +29,38 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.NotNil(t, cfg)
 }
 
 func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		AttributesActions: []attraction.ActionKeyValue{
 			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
 		},
 	}
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
-}
-
-func TestInvalidEmptyActions(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	_, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-	assert.Error(t, err)
-
-	_, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-	assert.Error(t, err)
 }
 
 func TestInvalidAttributeActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		AttributesActions: []attraction.ActionKeyValue{
 			{Key: "k", Value: "v", Action: "invalid-action"},
 		},
 	}
 
-	_, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
+	_, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, nil)
 	assert.Error(t, err)
 
-	_, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, nil)
 	assert.Error(t, err)
 }

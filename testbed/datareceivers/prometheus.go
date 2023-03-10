@@ -22,9 +22,10 @@ import (
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -32,7 +33,7 @@ import (
 
 type prometheusDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.MetricsReceiver
+	receiver receiver.Metrics
 }
 
 func NewPrometheusDataReceiver(port int) testbed.DataReceiver {
@@ -42,7 +43,7 @@ func NewPrometheusDataReceiver(port int) testbed.DataReceiver {
 func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	factory := prometheusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
-	addr := fmt.Sprintf("0.0.0.0:%d", dr.Port)
+	addr := fmt.Sprintf("127.0.0.1:%d", dr.Port)
 	cfg.PrometheusConfig = &promconfig.Config{
 		ScrapeConfigs: []*promconfig.ScrapeConfig{{
 			JobName:        "testbed-job",
@@ -62,7 +63,7 @@ func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 		}},
 	}
 	var err error
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	dr.receiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc)
 	if err != nil {
 		return err
@@ -77,7 +78,7 @@ func (dr *prometheusDataReceiver) Stop() error {
 func (dr *prometheusDataReceiver) GenConfigYAMLStr() string {
 	format := `
   prometheus:
-    endpoint: "localhost:%d"
+    endpoint: "127.0.0.1:%d"
 `
 	return fmt.Sprintf(format, dr.Port)
 }

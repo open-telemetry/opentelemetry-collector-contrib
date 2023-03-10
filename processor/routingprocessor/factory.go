@@ -18,51 +18,52 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "routing"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for the routing processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
-		component.WithMetricsProcessor(createMetricsProcessor),
-		component.WithLogsProcessor(createLogsProcessor),
+		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithMetrics(createMetricsProcessor, stability),
+		processor.WithLogs(createLogsProcessor, stability),
 	)
 }
 
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		AttributeSource:   defaultAttributeSource,
+		AttributeSource: defaultAttributeSource,
 	}
 }
 
-func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newProcessor(params.Logger, cfg), nil
+	return newTracesProcessor(params.TelemetrySettings, cfg), nil
 }
 
-func createMetricsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
+func createMetricsProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newProcessor(params.Logger, cfg), nil
+	return newMetricProcessor(params.TelemetrySettings, cfg), nil
 }
 
-func createLogsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
+func createLogsProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newProcessor(params.Logger, cfg), nil
+	return newLogProcessor(params.TelemetrySettings, cfg), nil
 }
 
 func warnIfNotLastInPipeline(nextConsumer interface{}, logger *zap.Logger) {
-	_, ok := nextConsumer.(component.Processor)
+	_, ok := nextConsumer.(component.Component)
 	if ok {
 		logger.Warn("another processor has been defined after the routing processor: it will NOT receive any data!")
 	}

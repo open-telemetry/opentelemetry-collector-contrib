@@ -78,7 +78,7 @@ func (utp *UAATokenProvider) ProvideToken() (string, error) {
 
 	token, expiresInSeconds, err := utp.client.GetAuthTokenWithExpiresIn(utp.username, utp.password, utp.tlsSkipVerify)
 	if err != nil {
-		return "", fmt.Errorf("get auth token from UAA: %v", err)
+		return "", fmt.Errorf("get auth token from UAA: %w", err)
 	}
 
 	if expiresInSeconds > 0 {

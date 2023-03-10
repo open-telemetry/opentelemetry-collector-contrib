@@ -1,23 +1,26 @@
 ## Windows Log Event Receiver
 
+| Status                   |         |
+| ------------------------ |---------|
+| Stability                | [alpha] |
+| Supported pipeline types | logs    |
+| Distributions            | none    |
+
 Tails and parses logs from windows event log API using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
-
-Supported pipeline types: logs
-
-> :construction: This receiver is in alpha and configuration fields are subject to change.
 
 ### Configuration Fields
 
-| Field           | Default                  | Description                                                                                                                    |
-| ---             | ---                      | ---                                                                                                                            |
-| `channel`       | required                 | The windows event log channel to monitor                                                                                       |
-| `max_reads`     | 100                      | The maximum number of records read into memory, before beginning a new batch                                                   |
-| `start_at`      | `end`                    | On first startup, where to start reading logs from the API. Options are `beginning` or `end`                                   |
-| `poll_interval` | 1s                       | The interval at which the channel is checked for new log entries. This check begins again after all new bodies have been read. |
-| `attributes`    | {}                       | A map of `key: value` pairs to add to the entry's attributes. |
-| `resource`      | {}                       | A map of `key: value` pairs to add to the entry's resource. |
-| `operators`            | []               | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details |
-| `converter`            | <pre lang="jsonp">{<br>  max_flush_count: 100,<br>  flush_interval: 100ms,<br>  worker_count: max(1,runtime.NumCPU()/4)<br>}</pre> | A map of `key: value` pairs to configure the [`entry.Entry`][entry_link] to [`pdata.LogRecord`][pdata_logrecord_link] converter, more info can be found [here][converter_link] |
+| Field           | Default  | Description                                                                                                                                                                                                                                    |
+|-----------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `channel`       | required | The windows event log channel to monitor                                                                                                                                                                                                       |
+| `max_reads`     | 100      | The maximum number of records read into memory, before beginning a new batch                                                                                                                                                                   |
+| `start_at`      | `end`    | On first startup, where to start reading logs from the API. Options are `beginning` or `end`                                                                                                                                                   |
+| `poll_interval` | 1s       | The interval at which the channel is checked for new log entries. This check begins again after all new bodies have been read.                                                                                                                 |
+| `attributes`    | {}       | A map of `key: value` pairs to add to the entry's attributes.                                                                                                                                                                                  |
+| `resource`      | {}       | A map of `key: value` pairs to add to the entry's resource.                                                                                                                                                                                    |
+| `operators`     | []       | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details                                                            |
+| `raw`           | false    | If true, the windows events are not processed and sent as XML.                                                                                                                                                                                 |
+| `storage`       | none     | The ID of a storage extension to be used to store bookmarks. Bookmarks allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage bookmarks in memory only. |
 
 ### Operators
 
@@ -42,8 +45,9 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 
 Configuration:
 ```yaml
-- type: windowseventlog
-  channel: application
+receivers:
+    windowseventlog:
+        channel: application
 ```
 
 Output entry sample:
@@ -71,3 +75,4 @@ Output entry sample:
     "task": ""
 }
 ```
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha

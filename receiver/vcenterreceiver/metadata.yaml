@@ -3,21 +3,27 @@ name: vcenterreceiver
 resource_attributes:
   vcenter.cluster.name:
     description: The name of the vCenter Cluster.
+    enabled: true
     type: string
   vcenter.host.name:
     description: The hostname of the vCenter ESXi host.
+    enabled: true
     type: string
   vcenter.resource_pool.name:
     description: The name of the resource pool.
+    enabled: true
     type: string
   vcenter.datastore.name:
     description: The name of the vCenter datastore.
+    enabled: true
     type: string
   vcenter.vm.name:
     description: The name of the virtual machine.
+    enabled: true
     type: string
   vcenter.vm.id:
     description: The instance UUID of the virtual machine.
+    enabled: true
     type: string
 
 attributes:
@@ -34,33 +40,25 @@ attributes:
       - virtual
       - physical
   host_effective:
-    value: effective
-    description: Whether the host is effective in the vCenter cluster.
     type: bool
-    enum:
-      - "true"
-      - "false"
+    name_override: effective
+    description: Whether the host is effective in the vCenter cluster.
   disk_direction:
-    value: direction
+    name_override: direction
     description: The direction of disk latency.
+    type: string
     enum:
       - read
       - write
-  latency_type:
-    value: type
-    description: The type of disk latency being reported.
-    enum:
-      - kernel
-      - device
   throughput_direction:
-    value: direction
+    name_override: direction
     description: The direction of network throughput.
     type: string
     enum:
       - transmitted
       - received
   vm_count_power_state:
-    value: power_state
+    name_override: power_state
     description: Whether the virtual machines are powered on or off.
     type: string
     enum:
@@ -165,8 +163,8 @@ metrics:
     attributes: []
   vcenter.host.disk.throughput:
     enabled: true
-    description: Average number of kilobytes read from the disk each second.
-    unit: "{KBy/s}"
+    description: Average number of kilobytes read from or written to the disk each second.
+    unit: "{KiBy/s}"
     sum:
       monotonic: false
       value_type: int
@@ -199,7 +197,7 @@ metrics:
   vcenter.host.memory.usage:
     enabled: true
     description: The amount of memory the host system is using.
-    unit: MBy
+    unit: MiBy
     sum:
       monotonic: false
       value_type: int
@@ -207,8 +205,8 @@ metrics:
     attributes: []
   vcenter.host.network.throughput:
     enabled: true
-    description: The amount of data that was sent or received over the network by the host.
-    unit: "{KBy/s}"
+    description: The amount of data that was transmitted or received over the network by the host.
+    unit: "{KiBy/s}"
     sum:
       monotonic: false
       value_type: int
@@ -218,7 +216,7 @@ metrics:
   vcenter.host.network.usage:
     enabled: true
     description: The sum of the data transmitted and received for all the NIC instances of the host.
-    unit: "{KBy/s}"
+    unit: "{KiBy/s}"
     sum:
       monotonic: false
       value_type: int
@@ -236,7 +234,7 @@ metrics:
     extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.network.packet.count:
     enabled: true
-    description: The number of packets sent and received, as measured over the most recent 20s interval.
+    description: The number of packets transmitted and received, as measured over the most recent 20s interval.
     unit: "{packets/sec}"
     sum:
       monotonic: false
@@ -246,7 +244,7 @@ metrics:
   vcenter.resource_pool.memory.usage:
     enabled: true
     description: The usage of the memory by the resource pool.
-    unit: MBy
+    unit: MiBy
     sum:
       monotonic: false
       value_type: int
@@ -282,7 +280,7 @@ metrics:
   vcenter.vm.memory.ballooned:
     enabled: true
     description: The amount of memory that is ballooned due to virtualization.
-    unit: By
+    unit: MiBy
     sum:
       monotonic: false
       value_type: int
@@ -291,18 +289,29 @@ metrics:
   vcenter.vm.memory.usage:
     enabled: true
     description: The amount of memory that is used by the virtual machine.
-    unit: MBy
+    unit: MiBy
     sum:
       monotonic: false
       value_type: int
       aggregation: cumulative
     attributes: []
-  vcenter.vm.cpu.utilization:
+  vcenter.vm.memory.swapped:
     enabled: true
-    description: The CPU utilization of the virtual machine.
-    unit: "%"
-    gauge:
-      value_type: double
+    description: The portion of memory that is granted to this VM from the host's swap space.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: []
+  vcenter.vm.memory.swapped_ssd:
+    enabled: true
+    description: The amount of memory swapped to fast disk device such as SSD.
+    unit: KiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
     attributes: []
   vcenter.vm.disk.usage:
     enabled: true
@@ -346,7 +355,7 @@ metrics:
     attributes: []
   vcenter.vm.network.throughput:
     enabled: true
-    description: The amount of data that was received or sent over the network of the virtual machine.
+    description: The amount of data that was transmitted or received over the network of the virtual machine.
     unit: By/sec
     sum:
       monotonic: false
@@ -366,7 +375,7 @@ metrics:
   vcenter.vm.network.usage:
     enabled: true
     description: The network utilization combined transmit and receive rates during an interval.
-    unit: "{KBy/s}"
+    unit: "{KiBy/s}"
     sum:
       monotonic: false
       value_type: int

@@ -18,28 +18,31 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // This file implements Factory for WindowsPerfCounters receiver.
 
-// The value of "type" key in configuration.
-const typeStr = "windowsperfcounters"
+const (
+	// The value of "type" key in configuration.
+	typeStr = "windowsperfcounters"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
+)
 
 // NewFactory creates a new factory for windows perf counters receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: time.Minute,
 		},
 	}

@@ -19,18 +19,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"sync"
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
 	cds "skywalking.apache.org/repo/goapi/collect/agent/configuration/v3"
@@ -53,7 +53,6 @@ type configuration struct {
 // This receiver is basically a Skywalking collector.
 type swReceiver struct {
 	nextConsumer consumer.Traces
-	id           config.ComponentID
 
 	config *configuration
 
@@ -62,7 +61,7 @@ type swReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 
 	grpcObsrecv          *obsreport.Receiver
 	httpObsrecv          *obsreport.Receiver
@@ -78,27 +77,35 @@ const (
 
 // newSkywalkingReceiver creates a TracesReceiver that receives traffic as a Skywalking collector
 func newSkywalkingReceiver(
-	id config.ComponentID,
 	config *configuration,
 	nextConsumer consumer.Traces,
-	set component.ReceiverCreateSettings,
-) *swReceiver {
+	set receiver.CreateSettings,
+) (*swReceiver, error) {
+
+	grpcObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             set.ID,
+		Transport:              grpcTransport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+	httpObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             set.ID,
+		Transport:              collectorHTTPTransport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &swReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
-		id:           id,
 		settings:     set,
-		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              grpcTransport,
-			ReceiverCreateSettings: set,
-		}),
-		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              collectorHTTPTransport,
-			ReceiverCreateSettings: set,
-		}),
-	}
+		grpcObsrecv:  grpcObsrecv,
+		httpObsrecv:  httpObsrecv,
+	}, nil
 }
 
 func (sr *swReceiver) collectorGRPCAddr() string {
@@ -145,7 +152,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 	if sr.collectorHTTPEnabled() {
 		cln, cerr := sr.config.CollectorHTTPSettings.ToListener()
 		if cerr != nil {
-			return fmt.Errorf("failed to bind to Collector address %q: %v",
+			return fmt.Errorf("failed to bind to Collector address %q: %w",
 				sr.config.CollectorHTTPSettings.Endpoint, cerr)
 		}
 
@@ -166,16 +173,16 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 	}
 
 	if sr.collectorGRPCEnabled() {
-		opts, err := sr.config.CollectorGRPCServerSettings.ToServerOption(host, sr.settings.TelemetrySettings)
+		var err error
+		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(host, sr.settings.TelemetrySettings)
 		if err != nil {
-			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %v", err)
+			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %w", err)
 		}
 
-		sr.grpc = grpc.NewServer(opts...)
 		gaddr := sr.collectorGRPCAddr()
 		gln, gerr := net.Listen("tcp", gaddr)
 		if gerr != nil {
-			return fmt.Errorf("failed to bind to gRPC address %q: %v", gaddr, gerr)
+			return fmt.Errorf("failed to bind to gRPC address %q: %w", gaddr, gerr)
 		}
 
 		sr.segmentReportService = &traceSegmentReportService{sr: sr}
@@ -210,7 +217,7 @@ type Response struct {
 
 func (sr *swReceiver) httpHandler(rsp http.ResponseWriter, r *http.Request) {
 	rsp.Header().Set("Content-Type", "application/json")
-	b, err := ioutil.ReadAll(r.Body)
+	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		response := &Response{Status: failing, Msg: err.Error()}
 		ResponseWithJSON(rsp, response, http.StatusBadRequest)
@@ -222,7 +229,7 @@ func (sr *swReceiver) httpHandler(rsp http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, segment := range data {
-		err = consumeTraces(context.Background(), segment, sr.nextConsumer)
+		err = consumeTraces(r.Context(), segment, sr.nextConsumer)
 		if err != nil {
 			fmt.Printf("cannot consume traces, %v", err)
 		}

@@ -45,10 +45,10 @@ func TestHTTPAttributeMapping(t *testing.T) {
 		conventions.AttributeHTTPClientIP:   conventions.AttributeHTTPClientIP,
 	}
 
-	attributeMap := pcommon.NewMapFromRaw(httpAttributeValues)
+	attributeMap := pcommon.NewMap()
+	assert.NoError(t, attributeMap.FromRaw(httpAttributeValues))
 
-	// Add all the network attributes
-	appendToAttributeMap(attributeMap, getNetworkAttributes())
+	addNetworkAttributes(attributeMap)
 
 	httpAttributes := &HTTPAttributes{}
 	attributeMap.Range(httpAttributes.MapAttribute)
@@ -80,10 +80,10 @@ func TestRPCPAttributeMapping(t *testing.T) {
 		conventions.AttributeRPCMethod:  conventions.AttributeRPCMethod,
 	}
 
-	attributeMap := pcommon.NewMapFromRaw(rpcAttributeValues)
+	attributeMap := pcommon.NewMap()
+	assert.NoError(t, attributeMap.FromRaw(rpcAttributeValues))
 
-	// Add all the network attributes
-	appendToAttributeMap(attributeMap, getNetworkAttributes())
+	addNetworkAttributes(attributeMap)
 
 	rpcAttributes := &RPCAttributes{}
 	attributeMap.Range(rpcAttributes.MapAttribute)
@@ -110,10 +110,10 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 		conventions.AttributeDBMongoDBCollection:   conventions.AttributeDBMongoDBCollection,
 	}
 
-	attributeMap := pcommon.NewMapFromRaw(databaseAttributeValues)
+	attributeMap := pcommon.NewMap()
+	assert.NoError(t, attributeMap.FromRaw(databaseAttributeValues))
 
-	// Add all the network attributes
-	appendToAttributeMap(attributeMap, getNetworkAttributes())
+	addNetworkAttributes(attributeMap)
 
 	databaseAttributes := &DatabaseAttributes{}
 	attributeMap.Range(databaseAttributes.MapAttribute)
@@ -147,10 +147,10 @@ func TestMessagingAttributeMapping(t *testing.T) {
 		conventions.AttributeMessagingOperation:                         conventions.AttributeMessagingOperation,
 	}
 
-	attributeMap := pcommon.NewMapFromRaw(messagingAttributeValues)
+	attributeMap := pcommon.NewMap()
+	assert.NoError(t, attributeMap.FromRaw(messagingAttributeValues))
 
-	// Add all the network attributes
-	appendToAttributeMap(attributeMap, getNetworkAttributes())
+	addNetworkAttributes(attributeMap)
 
 	messagingAttributes := &MessagingAttributes{}
 	attributeMap.Range(messagingAttributes.MapAttribute)
@@ -172,12 +172,8 @@ func TestMessagingAttributeMapping(t *testing.T) {
 
 // Tests what happens when an attribute that should be an int is not
 func TestAttributeMappingWithSomeBadValues(t *testing.T) {
-	// Try this out with any attribute struct with an int value
-	values := map[string]interface{}{
-		conventions.AttributeNetPeerPort: "xx",
-	}
-
-	attributeMap := pcommon.NewMapFromRaw(values)
+	attributeMap := pcommon.NewMap()
+	attributeMap.PutStr(conventions.AttributeNetPeerPort, "xx")
 
 	attrs := &NetworkAttributes{}
 	attributeMap.Range(attrs.MapAttribute)
@@ -186,16 +182,14 @@ func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 	assert.Equal(t, int64(0), attrs.NetPeerPort)
 }
 
-func getNetworkAttributes() pcommon.Map {
-	return pcommon.NewMapFromRaw(map[string]interface{}{
-		conventions.AttributeNetTransport: conventions.AttributeNetTransport,
-		conventions.AttributeNetPeerIP:    conventions.AttributeNetPeerIP,
-		conventions.AttributeNetPeerPort:  1,
-		conventions.AttributeNetPeerName:  conventions.AttributeNetPeerName,
-		conventions.AttributeNetHostIP:    conventions.AttributeNetHostIP,
-		conventions.AttributeNetHostPort:  2,
-		conventions.AttributeNetHostName:  conventions.AttributeNetHostName,
-	})
+func addNetworkAttributes(m pcommon.Map) {
+	m.PutStr(conventions.AttributeNetTransport, conventions.AttributeNetTransport)
+	m.PutStr(conventions.AttributeNetPeerIP, conventions.AttributeNetPeerIP)
+	m.PutInt(conventions.AttributeNetPeerPort, 1)
+	m.PutStr(conventions.AttributeNetPeerName, conventions.AttributeNetPeerName)
+	m.PutStr(conventions.AttributeNetHostIP, conventions.AttributeNetHostIP)
+	m.PutInt(conventions.AttributeNetHostPort, 2)
+	m.PutStr(conventions.AttributeNetHostName, conventions.AttributeNetHostName)
 }
 
 func networkAttributesValidations(t *testing.T, networkAttributes NetworkAttributes) {

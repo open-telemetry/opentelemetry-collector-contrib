@@ -4,19 +4,16 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-// nolint:errcheck
 package k8sclient
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
@@ -69,7 +66,7 @@ func TestReplicaSetClient_ReplicaSetToDeployment(t *testing.T) {
 	for i := range replicaSetArray {
 		replicaSets[i] = replicaSetArray[i]
 	}
-	client.store.Replace(replicaSets, "")
+	assert.NoError(t, client.store.Replace(replicaSets, ""))
 
 	expectedMap := map[string]string{
 		"cloudwatch-agent-statsd-7f8459d648": "cloudwatch-agent-statsd",
@@ -80,7 +77,7 @@ func TestReplicaSetClient_ReplicaSetToDeployment(t *testing.T) {
 		"cloudwatch-agent-statsd-d6487f8459": time.Now().Add(-24 * time.Hour),
 	}
 	resultMap := client.ReplicaSetToDeployment()
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }

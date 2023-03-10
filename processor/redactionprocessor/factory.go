@@ -19,51 +19,51 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "redaction"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for the redaction processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
+		processor.WithTraces(createTracesProcessor, stability),
 	)
 }
 
-func createDefaultConfig() config.Processor {
-	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
 // createTracesProcessor creates an instance of redaction for processing traces
 func createTracesProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
-	cfg config.Processor,
+	set processor.CreateSettings,
+	cfg component.Config,
 	next consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
-	redaction, err := newRedaction(ctx, oCfg, params.Logger, next)
+	redaction, err := newRedaction(ctx, oCfg, set.Logger)
 	if err != nil {
 		// TODO: Placeholder for an error metric in the next PR
 		return nil, fmt.Errorf("error creating a redaction processor: %w", err)
 	}
 
 	return processorhelper.NewTracesProcessor(
+		ctx,
+		set,
 		cfg,
 		next,
 		redaction.processTraces,
-		processorhelper.WithCapabilities(redaction.Capabilities()),
-		processorhelper.WithStart(redaction.Start),
-		processorhelper.WithShutdown(redaction.Shutdown))
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }

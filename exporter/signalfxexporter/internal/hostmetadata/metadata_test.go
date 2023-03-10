@@ -17,7 +17,6 @@ package hostmetadata
 import (
 	"context"
 	"errors"
-	"os"
 	"sync"
 	"testing"
 
@@ -251,8 +250,7 @@ func TestSyncMetadata(t *testing.T) {
 			syncer := NewSyncer(logger, dimClient)
 
 			// mock system stats calls.
-			os.Setenv("HOST_ETC", ".")
-			defer os.Unsetenv("HOST_ETC")
+			t.Setenv("HOST_ETC", ".")
 			cpuInfo = func(context.Context) ([]cpu.InfoStat, error) {
 				return []cpu.InfoStat{tt.cpuStat}, tt.cpuStatErr
 			}
@@ -310,7 +308,7 @@ func generateSampleMetricsData(attrs map[string]string) pmetric.Metrics {
 	rm := m.ResourceMetrics()
 	res := rm.AppendEmpty().Resource()
 	for k, v := range attrs {
-		res.Attributes().InsertString(k, v)
+		res.Attributes().PutStr(k, v)
 	}
 	return m
 }

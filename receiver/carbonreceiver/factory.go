@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
@@ -31,19 +31,20 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "carbon"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for Carbon receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:2003",
 			Transport: "tcp",
@@ -58,10 +59,10 @@ func createDefaultConfig() config.Receiver {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	params receiver.CreateSettings,
+	cfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 
 	rCfg := cfg.(*Config)
 	return New(params, *rCfg, consumer)

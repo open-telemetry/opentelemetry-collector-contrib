@@ -20,69 +20,69 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
-
-	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
-	assert.Equal(t,
-		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "localhost:13",
-			},
-			CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
-			Path:                   "/",
-		},
-		ext1)
-
-	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
-}
-
-func TestLoadConfigError(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
 	tests := []struct {
-		configName  string
+		id          component.ID
+		expected    component.Config
 		expectedErr error
 	}{
 		{
-			"missingendpoint",
-			errNoEndpointProvided,
+			id:       component.NewID(typeStr),
+			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			"invalidthreshold",
-			errInvalidExporterFailureThresholdProvided,
+			id: component.NewIDWithName(typeStr, "1"),
+			expected: &Config{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: "localhost:13",
+					TLSSetting: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile:   "/path/to/ca",
+							CertFile: "/path/to/cert",
+							KeyFile:  "/path/to/key",
+						},
+					},
+				},
+				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+				Path:                   "/",
+			},
 		},
 		{
-			"invalidpath",
-			errInvalidPath,
+			id:          component.NewIDWithName(typeStr, "missingendpoint"),
+			expectedErr: errNoEndpointProvided,
+		},
+		{
+			id:          component.NewIDWithName(typeStr, "invalidthreshold"),
+			expectedErr: errInvalidExporterFailureThresholdProvided,
+		},
+		{
+			id:          component.NewIDWithName(typeStr, "invalidpath"),
+			expectedErr: errInvalidPath,
 		},
 	}
 	for _, tt := range tests {
-		factory := NewFactory()
-		factories.Extensions[typeStr] = factory
-		cfg, _ := servicetest.LoadConfig(filepath.Join("testdata", "config_bad.yaml"), factories)
-		extension := cfg.Extensions[config.NewComponentIDWithName(typeStr, tt.configName)]
-		err := extension.Validate()
-		require.ErrorIs(t, err, tt.expectedErr)
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			if tt.expectedErr != nil {
+				assert.ErrorIs(t, component.ValidateConfig(cfg), tt.expectedErr)
+				return
+			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
 	}
 }

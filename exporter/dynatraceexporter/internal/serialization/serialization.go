@@ -31,102 +31,34 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 	ce := logger.Check(zap.DebugLevel, "SerializeMetric")
 	var points int
 
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
-		points = metric.Gauge().DataPoints().Len()
-		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
-			dp := metric.Gauge().DataPoints().At(i)
-
-			line, err := serializeGauge(
-				metric.Name(),
-				prefix,
-				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
-				dp,
-			)
-
-			if err != nil {
-				logger.Sugar().Warnw("Error serializing gauge data point",
-					"name", metric.Name(),
-					"value-type", dp.ValueType().String(),
-					"error", err,
-				)
-			}
-
-			if line != "" {
-				metricLines = append(metricLines, line)
-			}
-		}
-	case pmetric.MetricDataTypeSum:
-		points = metric.Sum().DataPoints().Len()
-		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
-			dp := metric.Sum().DataPoints().At(i)
-
-			line, err := serializeSum(
-				metric.Name(),
-				prefix,
-				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
-				metric.Sum().AggregationTemporality(),
-				dp,
-				prev,
-			)
-
-			if err != nil {
-				logger.Sugar().Warnw("Error serializing sum data point",
-					"name", metric.Name(),
-					"value-type", dp.ValueType().String(),
-					"error", err,
-				)
-			}
-
-			if line != "" {
-				metricLines = append(metricLines, line)
-			}
-		}
-	case pmetric.MetricDataTypeHistogram:
-		points = metric.Histogram().DataPoints().Len()
-		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
-			dp := metric.Histogram().DataPoints().At(i)
-
-			line, err := serializeHistogram(
-				metric.Name(),
-				prefix,
-				makeCombinedDimensions(dp.Attributes(), defaultDimensions, staticDimensions),
-				metric.Histogram().AggregationTemporality(),
-				dp,
-			)
-
-			if err != nil {
-				logger.Sugar().Warnw("Error serializing histogram data point",
-					"name", metric.Name(),
-					"error", err,
-				)
-			}
-
-			if line != "" {
-				metricLines = append(metricLines, line)
-			}
-		}
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
+		metricLines = serializeGauge(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
+	case pmetric.MetricTypeSum:
+		metricLines = serializeSum(logger, prefix, metric, defaultDimensions, staticDimensions, prev, metricLines)
+	case pmetric.MetricTypeHistogram:
+		metricLines = serializeHistogram(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
 	default:
-		return nil, fmt.Errorf("metric type %s unsupported", metric.DataType().String())
+		return nil, fmt.Errorf("metric type %s unsupported", metric.Type().String())
 	}
 
 	if ce != nil {
-		ce.Write(zap.String("DataType", metric.DataType().String()), zap.Int("points", points))
+		ce.Write(zap.String("DataType", metric.Type().String()), zap.Int("points", points))
 	}
 
 	return metricLines, nil
 }
 
-func makeCombinedDimensions(labels pcommon.Map, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
-	dimsFromLabels := []dimensions.Dimension{}
+func makeCombinedDimensions(defaultDimensions dimensions.NormalizedDimensionList, dataPointAttributes pcommon.Map, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
+	dimsFromAttributes := make([]dimensions.Dimension, 0, dataPointAttributes.Len())
 
-	labels.Range(func(k string, v pcommon.Value) bool {
-		dimsFromLabels = append(dimsFromLabels, dimensions.NewDimension(k, v.AsString()))
+	dataPointAttributes.Range(func(k string, v pcommon.Value) bool {
+		dimsFromAttributes = append(dimsFromAttributes, dimensions.NewDimension(k, v.AsString()))
 		return true
 	})
 	return dimensions.MergeLists(
 		defaultDimensions,
-		dimensions.NewNormalizedDimensionList(dimsFromLabels...),
+		dimensions.NewNormalizedDimensionList(dimsFromAttributes...),
 		staticDimensions,
 	)
 }

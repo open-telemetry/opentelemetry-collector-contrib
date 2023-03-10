@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package datareceivers // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 
 import (
 	"context"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -35,7 +34,7 @@ import (
 // MockAwsXrayDataReceiver implements AwsXray format receiver.
 type MockAwsXrayDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.TracesReceiver
+	receiver receiver.Traces
 }
 
 // NewMockAwsXrayDataReceiver creates a new  MockDataReceiver
@@ -43,7 +42,7 @@ func NewMockAwsXrayDataReceiver(port int) *MockAwsXrayDataReceiver {
 	return &MockAwsXrayDataReceiver{DataReceiverBase: testbed.DataReceiverBase{Port: port}}
 }
 
-//Start listening on the specified port
+// Start listening on the specified port
 func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	var err error
 	os.Setenv("AWS_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID")
@@ -53,7 +52,7 @@ func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics,
 	if rootCAs == nil {
 		rootCAs = x509.NewCertPool()
 	}
-	certs, err := ioutil.ReadFile("../mockdatareceivers/mockawsxrayreceiver/server.crt")
+	certs, err := os.ReadFile("../mockdatareceivers/mockawsxrayreceiver/server.crt")
 
 	if err != nil {
 		log.Fatalf("Failed to append %q to RootCAs: %v", "../mockdatareceivers/mockawsxrayreceiver/server.crt", err)
@@ -65,13 +64,13 @@ func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics,
 	}
 
 	mockDatareceiverCFG := mockawsxrayreceiver.Config{
-		Endpoint: fmt.Sprintf("localhost:%d", ar.Port),
+		Endpoint: fmt.Sprintf("127.0.0.1:%d", ar.Port),
 		TLSCredentials: &configtls.TLSSetting{
 			CertFile: "../mockdatareceivers/mockawsxrayreceiver/server.crt",
 			KeyFile:  "../mockdatareceivers/mockawsxrayreceiver/server.key",
 		},
 	}
-	ar.receiver, err = mockawsxrayreceiver.New(tc, componenttest.NewNopReceiverCreateSettings(), &mockDatareceiverCFG)
+	ar.receiver, err = mockawsxrayreceiver.New(tc, receivertest.NewNopCreateSettings(), &mockDatareceiverCFG)
 
 	if err != nil {
 		return err
@@ -89,7 +88,7 @@ func (ar *MockAwsXrayDataReceiver) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   awsxray:
     local_mode: true
-    endpoint: localhost:%d
+    endpoint: 127.0.0.1:%d
     no_verify_ssl: true
     region: us-west-2`, ar.Port)
 }

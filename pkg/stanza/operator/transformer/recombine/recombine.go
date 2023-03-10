@@ -30,17 +30,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const (
+	operatorType       = "recombine"
+	defaultCombineWith = "\n"
+)
+
 func init() {
-	operator.Register("recombine", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new recombine config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new recombine config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, "recombine"),
+		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
 		MaxBatchSize:      1000,
 		MaxSources:        1000,
-		CombineWith:       "\n",
+		CombineWith:       defaultCombineWith,
 		OverwriteWith:     "oldest",
 		ForceFlushTimeout: 5 * time.Second,
 		SourceIdentifier:  entry.NewAttributeField("file.path"),
@@ -49,23 +59,24 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a recombine operator
 type Config struct {
-	helper.TransformerConfig `yaml:",inline"`
-	IsFirstEntry             string        `json:"is_first_entry"     yaml:"is_first_entry"`
-	IsLastEntry              string        `json:"is_last_entry"      yaml:"is_last_entry"`
-	MaxBatchSize             int           `json:"max_batch_size"     yaml:"max_batch_size"`
-	CombineField             entry.Field   `json:"combine_field"      yaml:"combine_field"`
-	CombineWith              string        `json:"combine_with"       yaml:"combine_with"`
-	SourceIdentifier         entry.Field   `json:"source_identifier"  yaml:"source_identifier"`
-	OverwriteWith            string        `json:"overwrite_with"     yaml:"overwrite_with"`
-	ForceFlushTimeout        time.Duration `json:"force_flush_period" yaml:"force_flush_period"`
-	MaxSources               int           `json:"max_sources"        yaml:"max_sources"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	IsFirstEntry             string          `mapstructure:"is_first_entry"`
+	IsLastEntry              string          `mapstructure:"is_last_entry"`
+	MaxBatchSize             int             `mapstructure:"max_batch_size"`
+	CombineField             entry.Field     `mapstructure:"combine_field"`
+	CombineWith              string          `mapstructure:"combine_with"`
+	SourceIdentifier         entry.Field     `mapstructure:"source_identifier"`
+	OverwriteWith            string          `mapstructure:"overwrite_with"`
+	ForceFlushTimeout        time.Duration   `mapstructure:"force_flush_period"`
+	MaxSources               int             `mapstructure:"max_sources"`
+	MaxLogSize               helper.ByteSize `mapstructure:"max_log_size,omitempty"`
 }
 
 // Build creates a new Transformer from a config
 func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformer, err := c.TransformerConfig.Build(logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build transformer config: %s", err)
+		return nil, fmt.Errorf("failed to build transformer config: %w", err)
 	}
 
 	if c.IsLastEntry != "" && c.IsFirstEntry != "" {
@@ -82,13 +93,13 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		matchesFirst = true
 		prog, err = expr.Compile(c.IsFirstEntry, expr.AsBool(), expr.AllowUndefinedVariables())
 		if err != nil {
-			return nil, fmt.Errorf("failed to compile is_first_entry: %s", err)
+			return nil, fmt.Errorf("failed to compile is_first_entry: %w", err)
 		}
 	} else {
 		matchesFirst = false
 		prog, err = expr.Compile(c.IsLastEntry, expr.AsBool(), expr.AllowUndefinedVariables())
 		if err != nil {
-			return nil, fmt.Errorf("failed to compile is_last_entry: %s", err)
+			return nil, fmt.Errorf("failed to compile is_last_entry: %w", err)
 		}
 	}
 
@@ -113,13 +124,14 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		maxBatchSize:        c.MaxBatchSize,
 		maxSources:          c.MaxSources,
 		overwriteWithOldest: overwriteWithOldest,
-		batchMap:            make(map[string][]*entry.Entry),
+		batchMap:            make(map[string]*sourceBatch),
 		combineField:        c.CombineField,
 		combineWith:         c.CombineWith,
 		forceFlushTimeout:   c.ForceFlushTimeout,
 		ticker:              time.NewTicker(c.ForceFlushTimeout),
 		chClose:             make(chan struct{}),
 		sourceIdentifier:    c.SourceIdentifier,
+		maxLogSize:          int64(c.MaxLogSize),
 	}, nil
 }
 
@@ -140,7 +152,14 @@ type Transformer struct {
 	sourceIdentifier    entry.Field
 
 	sync.Mutex
-	batchMap map[string][]*entry.Entry
+	batchMap   map[string]*sourceBatch
+	maxLogSize int64
+}
+
+// sourceBatch contains the status info of a batch
+type sourceBatch struct {
+	entries    []*entry.Entry
+	recombined strings.Builder
 }
 
 func (r *Transformer) Start(_ operator.Persister) error {
@@ -155,8 +174,9 @@ func (r *Transformer) flushLoop() {
 		case <-r.ticker.C:
 			r.Lock()
 			timeNow := time.Now()
-			for source, entries := range r.batchMap {
-				lastEntryTs := entries[len(entries)-1].Timestamp
+			for source, batch := range r.batchMap {
+				entries := batch.entries
+				lastEntryTs := entries[len(entries)-1].ObservedTimestamp
 				timeSinceLastEntry := timeNow.Sub(lastEntryTs)
 				if timeSinceLastEntry < r.forceFlushTimeout {
 					continue
@@ -236,7 +256,7 @@ func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	case matches && r.matchIndicatesLast():
 		fallthrough
 	// When matching on first entry, never batch partial first. Just emit immediately
-	case !matches && r.matchIndicatesFirst() && len(r.batchMap[s]) == 0:
+	case !matches && r.matchIndicatesFirst() && r.batchMap[s] == nil:
 		r.addToBatch(ctx, e, s)
 		return r.flushSource(s)
 	}
@@ -257,21 +277,41 @@ func (r *Transformer) matchIndicatesLast() bool {
 
 // addToBatch adds the current entry to the current batch of entries that will be combined
 func (r *Transformer) addToBatch(_ context.Context, e *entry.Entry, source string) {
-	if _, ok := r.batchMap[source]; !ok {
-		r.batchMap[source] = []*entry.Entry{e}
+	batch, ok := r.batchMap[source]
+	if !ok {
+		batch = &sourceBatch{
+			entries:    []*entry.Entry{e},
+			recombined: strings.Builder{},
+		}
+		r.batchMap[source] = batch
 		if len(r.batchMap) >= r.maxSources {
 			r.Error("Batched source exceeds max source size. Flushing all batched logs. Consider increasing max_sources parameter")
 			r.flushUncombined(context.Background())
+			return
 		}
-		return
+	} else {
+		batch.entries = append(batch.entries, e)
 	}
 
-	r.batchMap[source] = append(r.batchMap[source], e)
-	if len(r.batchMap[source]) >= r.maxBatchSize {
+	// Combine the combineField of each entry in the batch,
+	// separated by newlines
+	var s string
+	err := e.Read(r.combineField, &s)
+	if err != nil {
+		r.Errorf("entry does not contain the combine_field")
+		return
+	}
+	if batch.recombined.Len() > 0 {
+		batch.recombined.WriteString(r.combineWith)
+	}
+	batch.recombined.WriteString(s)
+
+	if (r.maxLogSize > 0 && int64(batch.recombined.Len()) > r.maxLogSize) || len(batch.entries) >= r.maxBatchSize {
 		if err := r.flushSource(source); err != nil {
 			r.Errorf("there was error flushing combined logs %s", err)
 		}
 	}
+
 }
 
 // flushUncombined flushes all the logs in the batch individually to the
@@ -279,25 +319,26 @@ func (r *Transformer) addToBatch(_ context.Context, e *entry.Entry, source strin
 // or at shutdown to avoid dropping the logs.
 func (r *Transformer) flushUncombined(ctx context.Context) {
 	for source := range r.batchMap {
-		for _, entry := range r.batchMap[source] {
+		for _, entry := range r.batchMap[source].entries {
 			r.Write(ctx, entry)
 		}
 	}
-	r.batchMap = make(map[string][]*entry.Entry)
+	r.batchMap = make(map[string]*sourceBatch)
 	r.ticker.Reset(r.forceFlushTimeout)
 }
 
 // flushSource combines the entries currently in the batch into a single entry,
 // then forwards them to the next operator in the pipeline
 func (r *Transformer) flushSource(source string) error {
+	batch := r.batchMap[source]
 	// Skip flushing a combined log if the batch is empty
-	if len(r.batchMap[source]) == 0 {
+	if batch == nil {
 		return nil
 	}
 
 	// Choose which entry we want to keep the rest of the fields from
 	var base *entry.Entry
-	entries := r.batchMap[source]
+	entries := batch.entries
 
 	if r.overwriteWithOldest {
 		base = entries[0]
@@ -305,25 +346,8 @@ func (r *Transformer) flushSource(source string) error {
 		base = entries[len(entries)-1]
 	}
 
-	// Combine the combineField of each entry in the batch,
-	// separated by newlines
-	var recombined strings.Builder
-	for i, e := range entries {
-		var s string
-		err := e.Read(r.combineField, &s)
-		if err != nil {
-			r.Errorf("entry does not contain the combine_field, so is being dropped")
-			continue
-		}
-
-		recombined.WriteString(s)
-		if i != len(entries)-1 {
-			recombined.WriteString(r.combineWith)
-		}
-	}
-
 	// Set the recombined field on the entry
-	err := base.Set(r.combineField, recombined.String())
+	err := base.Set(r.combineField, batch.recombined.String())
 	if err != nil {
 		return err
 	}

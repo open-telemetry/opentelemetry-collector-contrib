@@ -16,7 +16,7 @@ package windows
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -51,18 +51,18 @@ func TestParseSecurity(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc, func(t *testing.T) {
 			testDir := filepath.Join("testdata", "security", tc)
-			messageBytes, err := ioutil.ReadFile(filepath.Join(testDir, "message.in"))
+			messageBytes, err := os.ReadFile(filepath.Join(testDir, "message.in"))
 			require.NoError(t, err, "problem reading input file")
 
 			message, details := parseSecurity(string(messageBytes))
 
 			// initTestResult(testDir, message, details)
 
-			expectedMessageBytes, err := ioutil.ReadFile(filepath.Join(testDir, "message.out"))
+			expectedMessageBytes, err := os.ReadFile(filepath.Join(testDir, "message.out"))
 			require.NoError(t, err, "problem reading expected message")
 			expectedMessage := string(expectedMessageBytes)
 
-			expectedDetailsBytes, err := ioutil.ReadFile(filepath.Join(testDir, "details.out"))
+			expectedDetailsBytes, err := os.ReadFile(filepath.Join(testDir, "details.out"))
 			require.NoError(t, err, "problem reading expected details")
 
 			// This is a little silly, but if we rely on unmarshaling

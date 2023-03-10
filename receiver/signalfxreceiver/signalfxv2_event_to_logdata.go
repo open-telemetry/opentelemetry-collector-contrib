@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 
 import (
@@ -33,55 +32,53 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice
 		lr := lrs.AppendEmpty()
 
 		attrs := lr.Attributes()
-		attrs.Clear()
 		attrs.EnsureCapacity(2 + len(event.Dimensions) + len(event.Properties))
 
-		// The EventType field is stored as an attribute.
-		if event.EventType != "" {
-			attrs.InsertString(splunk.SFxEventType, event.EventType)
+		for _, dim := range event.Dimensions {
+			attrs.PutStr(dim.Key, dim.Value)
 		}
+
+		// The EventType field is stored as an attribute.
+		eventType := event.EventType
+		if eventType == "" {
+			eventType = "unknown"
+		}
+		attrs.PutStr(splunk.SFxEventType, eventType)
 
 		// SignalFx timestamps are in millis so convert to nanos by multiplying
 		// by 1 million.
 		lr.SetTimestamp(pcommon.Timestamp(event.Timestamp * 1e6))
 
 		if event.Category != nil {
-			attrs.InsertInt(splunk.SFxEventCategoryKey, int64(*event.Category))
+			attrs.PutInt(splunk.SFxEventCategoryKey, int64(*event.Category))
 		} else {
 			// This gives us an unambiguous way of determining that a log record
 			// represents a SignalFx event, even if category is missing from the
 			// event.
-			attrs.InsertNull(splunk.SFxEventCategoryKey)
-		}
-
-		for _, dim := range event.Dimensions {
-			attrs.InsertString(dim.Key, dim.Value)
+			attrs.PutEmpty(splunk.SFxEventCategoryKey)
 		}
 
 		if len(event.Properties) > 0 {
-			propMapVal := pcommon.NewValueMap()
-			propMap := propMapVal.MapVal()
+			propMap := attrs.PutEmptyMap(splunk.SFxEventPropertiesKey)
 			propMap.EnsureCapacity(len(event.Properties))
-
 			for _, prop := range event.Properties {
 				// No way to tell what value type is without testing each
 				// individually.
-				if prop.Value.StrValue != nil {
-					propMap.InsertString(prop.Key, prop.Value.GetStrValue())
-				} else if prop.Value.IntValue != nil {
-					propMap.InsertInt(prop.Key, prop.Value.GetIntValue())
-				} else if prop.Value.DoubleValue != nil {
-					propMap.InsertDouble(prop.Key, prop.Value.GetDoubleValue())
-				} else if prop.Value.BoolValue != nil {
-					propMap.InsertBool(prop.Key, prop.Value.GetBoolValue())
-				} else {
+				switch {
+				case prop.Value.StrValue != nil:
+					propMap.PutStr(prop.Key, prop.Value.GetStrValue())
+				case prop.Value.IntValue != nil:
+					propMap.PutInt(prop.Key, prop.Value.GetIntValue())
+				case prop.Value.DoubleValue != nil:
+					propMap.PutDouble(prop.Key, prop.Value.GetDoubleValue())
+				case prop.Value.BoolValue != nil:
+					propMap.PutBool(prop.Key, prop.Value.GetBoolValue())
+				default:
 					// If there is no property value, just insert a null to
 					// record that the key was present.
-					propMap.InsertNull(prop.Key)
+					propMap.PutEmpty(prop.Key)
 				}
 			}
-
-			attrs.Insert(splunk.SFxEventPropertiesKey, propMapVal)
 		}
 	}
 }

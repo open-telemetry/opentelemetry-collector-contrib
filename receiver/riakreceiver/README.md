@@ -1,10 +1,16 @@
 # Riak Receiver
 
-Riak metrics will be collected from the [/stats](https://docs.riak.com/riak/kv/2.2.3/developing/api/http/status.1.html) endpoint.
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics  |
+| Distributions            | [contrib] |
+
+
+<!-- markdown-link-check-disable --><!-- Failing due to "unable to verify the first certificate" -->
+Riak metrics will be collected from the [/stats](https://docs.riak.com/riak/kv/2.2.3/developing/api/http/status) endpoint.
 
 This Riak receiver will collect metrics for [3.x+](https://github.com/basho/riak/releases)
-
-Supported pipeline types: `metrics`
 
 ## Configuration
 
@@ -26,11 +32,14 @@ receivers:
   riak:
     endpoint: http://localhost:8098
     username: otelu
-    password: $RIAK_PASSWORD
+    password: ${env:RIAK_PASSWORD}
     collection_interval: 60s
 ```
 
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 

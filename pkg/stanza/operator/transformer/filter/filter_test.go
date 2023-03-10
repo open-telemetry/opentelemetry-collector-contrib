@@ -18,7 +18,6 @@ import (
 	"context"
 	"io"
 	"math/big"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -30,8 +29,7 @@ import (
 )
 
 func TestTransformer(t *testing.T) {
-	os.Setenv("TEST_FILTER_OPERATOR_ENV", "foo")
-	defer os.Unsetenv("TEST_FILTER_OPERATOR_ENV")
+	t.Setenv("TEST_FILTER_OPERATOR_ENV", "foo")
 
 	cases := []struct {
 		name       string
@@ -169,7 +167,7 @@ func TestTransformer(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfig("test")
+			cfg := NewConfigWithID("test")
 			cfg.Expression = tc.expression
 
 			op, err := cfg.Build(testutil.Logger(t))
@@ -194,7 +192,7 @@ func TestTransformer(t *testing.T) {
 }
 
 func TestFilterDropRatio(t *testing.T) {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.Expression = `body.message == "test_message"`
 	cfg.DropRatio = 0.5
 	op, err := cfg.Build(testutil.Logger(t))

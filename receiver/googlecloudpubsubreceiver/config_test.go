@@ -21,40 +21,52 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	factory := NewFactory()
-	factories.Receivers[config.Type(typeStr)] = factory
-	cfg, err := servicetest.LoadConfig(
-		filepath.Join("testdata", "config.yaml"), factories,
-	)
-
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
-
-	assert.Equal(t, len(cfg.Receivers), 2)
-
-	defaultConfig := factory.CreateDefaultConfig().(*Config)
-	assert.Equal(t, cfg.Receivers[config.NewComponentID(typeStr)], defaultConfig)
-
-	customConfig := factory.CreateDefaultConfig().(*Config)
-	customConfig.SetIDName("customname")
-
-	customConfig.ProjectID = "my-project"
-	customConfig.UserAgent = "opentelemetry-collector-contrib {{version}}"
-	customConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
-		Timeout: 20 * time.Second,
+	tests := []struct {
+		id          component.ID
+		expected    component.Config
+		expectedErr error
+	}{
+		{
+			id:       component.NewIDWithName(typeStr, ""),
+			expected: &Config{},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "customname"),
+			expected: &Config{
+				ProjectID: "my-project",
+				UserAgent: "opentelemetry-collector-contrib {{version}}",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 20 * time.Second,
+				},
+				Subscription: "projects/my-project/subscriptions/otlp-subscription",
+			},
+		},
 	}
-	customConfig.Subscription = "projects/my-project/subscriptions/otlp-subscription"
-	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")], customConfig)
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestConfigValidation(t *testing.T) {

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package ecsinfo // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/ecsInfo"
 
 import (
@@ -67,7 +66,7 @@ func newECSTaskInfo(ctx context.Context, ecsTaskEndpointProvider hostIPProvider,
 	}
 
 	shouldRefresh := func() bool {
-		//keep refreshing to update task info and running task number
+		// keep refreshing to update task info and running task number
 		return true
 	}
 	go host.RefreshUntil(ctx, ti.refresh, ti.refreshInterval, shouldRefresh, 0)
@@ -94,7 +93,7 @@ func (ti *taskInfo) refresh(ctx context.Context) {
 
 	ecsTasksInfo := ti.getTasksInfo(ctx)
 	runningTaskCount := int64(0)
-	tasks := []ECSTask{}
+	var tasks []ECSTask
 	for _, task := range ecsTasksInfo.Tasks {
 		if task.KnownStatus != taskStatusRunning {
 			continue
@@ -108,7 +107,7 @@ func (ti *taskInfo) refresh(ctx context.Context) {
 	ti.runningTaskCount = runningTaskCount
 	ti.runningTasksInfo = tasks
 
-	//notify cgroups that the task info is ready
+	// notify cgroups that the task info is ready
 	if len(ti.runningTasksInfo) != 0 && ti.runningTaskCount != 0 && !isClosed(ti.readyC) {
 		close(ti.readyC)
 	}

@@ -39,24 +39,23 @@ const (
 // Examples:
 //
 // 1. Rule:
-//        - regexp: "(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds"
-//          name_prefix: cpu_seconds
-//          labels:
-//            k: v
-//    Metric path: "service_name.host00.cpu.seconds"
-//    Resulting metric:
-//        name: cpu_seconds
-//        label keys: {"svc", "host", "k"}
-//        label values: {"service_name", "host00", "k"}
+//   - regexp: "(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds"
+//     name_prefix: cpu_seconds
+//     labels:
+//     k: v
+//     Metric path: "service_name.host00.cpu.seconds"
+//     Resulting metric:
+//     name: cpu_seconds
+//     label keys: {"svc", "host", "k"}
+//     label values: {"service_name", "host00", "k"}
 //
 // 2. Rule:
-//        - regexp: "^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$"
-//    Metric path: "svc_02.host02.avg.duration"
-//    Resulting metric:
-//        name: avgduration
-//        label keys: {"svc", "host"}
-//        label values: {"svc_02", "host02"}
-//
+//   - regexp: "^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$"
+//     Metric path: "svc_02.host02.avg.duration"
+//     Resulting metric:
+//     name: avgduration
+//     label keys: {"svc", "host"}
+//     label values: {"svc_02", "host02"}
 type RegexParserConfig struct {
 	// Rules contains the regular expression rules to be used by the parser.
 	// The first rule that matches and applies the transformations configured in
@@ -76,7 +75,7 @@ type RegexParserConfig struct {
 type RegexRule struct {
 	// Regular expression from which named matches are used to extract label
 	// keys and values from Carbon metric paths.
-	Regexp string `mapstrucutre:"regexp"`
+	Regexp string `mapstructure:"regexp"`
 
 	// NamePrefix is the prefix added to the metric name after extracting the
 	// parts that will form labels and final metric name.
@@ -123,7 +122,7 @@ func compileRegexRules(rules []*RegexRule) error {
 	for i, r := range rules {
 		regex, err := regexp.Compile(r.Regexp)
 		if err != nil {
-			return fmt.Errorf("error compiling %d-th rule: %v", i, err)
+			return fmt.Errorf("error compiling %d-th rule: %w", i, err)
 		}
 
 		switch TargetMetricType(r.MetricType) {

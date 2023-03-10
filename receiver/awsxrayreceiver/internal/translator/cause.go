@@ -28,7 +28,7 @@ import (
 // TODO: Remove this when collector defines this semantic convention.
 const ExceptionEventName = "exception"
 
-func addCause(seg *awsxray.Segment, span *ptrace.Span) {
+func addCause(seg *awsxray.Segment, span ptrace.Span) {
 	if seg.Cause == nil {
 		return
 	}
@@ -66,21 +66,20 @@ func addCause(seg *awsxray.Segment, span *ptrace.Span) {
 			evt := evts.AppendEmpty()
 			evt.SetName(ExceptionEventName)
 			attrs := evt.Attributes()
-			attrs.Clear()
 			attrs.EnsureCapacity(8)
 
 			// ID is a required field
-			attrs.UpsertString(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
-			addString(excp.Message, conventions.AttributeExceptionMessage, &attrs)
-			addString(excp.Type, conventions.AttributeExceptionType, &attrs)
-			addBool(excp.Remote, awsxray.AWSXrayExceptionRemoteAttribute, &attrs)
-			addInt64(excp.Truncated, awsxray.AWSXrayExceptionTruncatedAttribute, &attrs)
-			addInt64(excp.Skipped, awsxray.AWSXrayExceptionSkippedAttribute, &attrs)
-			addString(excp.Cause, awsxray.AWSXrayExceptionCauseAttribute, &attrs)
+			attrs.PutStr(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
+			addString(excp.Message, conventions.AttributeExceptionMessage, attrs)
+			addString(excp.Type, conventions.AttributeExceptionType, attrs)
+			addBool(excp.Remote, awsxray.AWSXrayExceptionRemoteAttribute, attrs)
+			addInt64(excp.Truncated, awsxray.AWSXrayExceptionTruncatedAttribute, attrs)
+			addInt64(excp.Skipped, awsxray.AWSXrayExceptionSkippedAttribute, attrs)
+			addString(excp.Cause, awsxray.AWSXrayExceptionCauseAttribute, attrs)
 
 			if len(excp.Stack) > 0 {
 				stackTrace := convertStackFramesToStackTraceStr(excp)
-				attrs.UpsertString(conventions.AttributeExceptionStacktrace, stackTrace)
+				attrs.PutStr(conventions.AttributeExceptionStacktrace, stackTrace)
 			}
 		}
 	}
@@ -90,11 +89,13 @@ func convertStackFramesToStackTraceStr(excp awsxray.Exception) string {
 	// resulting stacktrace looks like:
 	// "<*excp.Type>: <*excp.Message>\n" +
 	// "\tat <*frameN.Label>(<*frameN.Path>: <*frameN.Line>)\n"
+	exceptionType := awsxray.StringOrEmpty(excp.Type)
+	exceptionMessage := awsxray.StringOrEmpty(excp.Message)
 	var b strings.Builder
-	b.Grow(len(*excp.Type) + len(": ") + len(*excp.Message) + len("\n"))
-	b.WriteString(*excp.Type)
+	b.Grow(len(exceptionType) + len(": ") + len(exceptionMessage) + len("\n"))
+	b.WriteString(exceptionType)
 	b.WriteString(": ")
-	b.WriteString(*excp.Message)
+	b.WriteString(exceptionMessage)
 	b.WriteString("\n")
 	for _, frame := range excp.Stack {
 		label := awsxray.StringOrEmpty(frame.Label)

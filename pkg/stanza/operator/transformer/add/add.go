@@ -28,22 +28,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "add"
+
 func init() {
-	operator.Register("add", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new add operator config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new add operator config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, "add"),
+		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
 	}
 }
 
 // Config is the configuration of an add operator
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
-	Field                    entry.Field `mapstructure:"field" json:"field" yaml:"field"`
-	Value                    interface{} `mapstructure:"value,omitempty" json:"value,omitempty" yaml:"value,omitempty"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	Field                    entry.Field `mapstructure:"field"`
+	Value                    interface{} `mapstructure:"value,omitempty"`
 }
 
 // Build will build an add operator from the supplied configuration
@@ -99,7 +106,7 @@ func (p *Transformer) Transform(e *entry.Entry) error {
 
 		result, err := vm.Run(p.program, env)
 		if err != nil {
-			return fmt.Errorf("evaluate value_expr: %s", err)
+			return fmt.Errorf("evaluate value_expr: %w", err)
 		}
 		return e.Set(p.Field, result)
 	}

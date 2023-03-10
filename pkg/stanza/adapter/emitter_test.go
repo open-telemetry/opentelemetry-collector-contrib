@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package adapter
 
 import (
@@ -27,13 +26,13 @@ import (
 )
 
 func TestLogEmitter(t *testing.T) {
-	emitter := NewLogEmitter(
-		LogEmitterWithLogger(zaptest.NewLogger(t).Sugar()),
-	)
+	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
 
-	emitter.Start(nil)
+	require.NoError(t, emitter.Start(nil))
 
-	defer emitter.Stop()
+	defer func() {
+		require.NoError(t, emitter.Stop())
+	}()
 
 	in := entry.New()
 
@@ -49,68 +48,24 @@ func TestLogEmitter(t *testing.T) {
 	}
 }
 
-func TestLogEmitterRespectsMaxBatchSize(t *testing.T) {
-	const (
-		numEntries   = 1111
-		maxBatchSize = 100
-		timeout      = time.Second
-	)
-	emitter := NewLogEmitter(
-		LogEmitterWithLogger(zaptest.NewLogger(t).Sugar()),
-		LogEmitterWithMaxBatchSize(maxBatchSize),
-		LogEmitterWithFlushInterval(100*time.Millisecond),
-	)
-
-	emitter.Start(nil)
-	defer emitter.Stop()
-
-	entries := complexEntries(numEntries)
-
-	go func() {
-		ctx := context.Background()
-		for _, e := range entries {
-			emitter.Process(ctx, e)
-		}
-	}()
-
-	entriesReceived := 0
-	timeoutChan := time.After(timeout)
-
-	for entriesReceived < numEntries {
-		select {
-		case recv := <-emitter.logChan:
-			entriesReceived += len(recv)
-			if len(recv) > maxBatchSize {
-				require.FailNow(t, "Expected only %d entries per batch, but got %d", maxBatchSize, entriesReceived)
-			}
-		case <-timeoutChan:
-			require.FailNow(t, "Failed to receive all log entries before timeout")
-		}
-	}
-
-	require.Equal(t, numEntries, entriesReceived)
-}
-
 func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 	const (
 		maxBatchSize = 100
 		timeout      = time.Second
 	)
-	emitter := NewLogEmitter(
-		LogEmitterWithLogger(zaptest.NewLogger(t).Sugar()),
-		LogEmitterWithMaxBatchSize(maxBatchSize),
-		LogEmitterWithFlushInterval(time.Hour),
-	)
+	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
 
-	emitter.Start(nil)
-	defer emitter.Stop()
+	require.NoError(t, emitter.Start(nil))
+	defer func() {
+		require.NoError(t, emitter.Stop())
+	}()
 
 	entries := complexEntries(maxBatchSize)
 
 	go func() {
 		ctx := context.Background()
 		for _, e := range entries {
-			emitter.Process(ctx, e)
+			require.NoError(t, emitter.Process(ctx, e))
 		}
 	}()
 
@@ -129,20 +84,18 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 		flushInterval = 100 * time.Millisecond
 		timeout       = time.Second
 	)
-	emitter := NewLogEmitter(
-		LogEmitterWithLogger(zaptest.NewLogger(t).Sugar()),
-		LogEmitterWithMaxBatchSize(100),
-		LogEmitterWithFlushInterval(flushInterval),
-	)
+	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
 
-	emitter.Start(nil)
-	defer emitter.Stop()
+	require.NoError(t, emitter.Start(nil))
+	defer func() {
+		require.NoError(t, emitter.Stop())
+	}()
 
 	entry := complexEntry()
 
 	go func() {
 		ctx := context.Background()
-		emitter.Process(ctx, entry)
+		require.NoError(t, emitter.Process(ctx, entry))
 	}()
 
 	timeoutChan := time.After(timeout)

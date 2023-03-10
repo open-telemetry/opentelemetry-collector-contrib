@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,10 +16,18 @@ package saphanareceiver
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
 )
 
 func TestValidate(t *testing.T) {
@@ -68,8 +76,33 @@ func TestValidate(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			tC.defaultConfigModifier(cfg)
-			actual := cfg.Validate()
+			actual := component.ValidateConfig(cfg)
 			require.Equal(t, tC.expected, actual)
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
+	expected.MetricsBuilderConfig.Metrics.SaphanaCPUUsed.Enabled = false
+	expected.Endpoint = "example.com:30015"
+	expected.Username = "otel"
+	expected.Password = "password"
+	expected.CollectionInterval = 2 * time.Minute
+
+	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{})); diff != "" {
+		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+	}
+
 }

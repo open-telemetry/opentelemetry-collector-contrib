@@ -17,7 +17,6 @@ package filestorage
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -25,9 +24,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestExtensionIntegrity(t *testing.T) {
@@ -36,7 +34,7 @@ func TestExtensionIntegrity(t *testing.T) {
 
 	type mockComponent struct {
 		kind component.Kind
-		name config.ComponentID
+		name component.ID
 	}
 
 	components := []mockComponent{
@@ -51,7 +49,7 @@ func TestExtensionIntegrity(t *testing.T) {
 	}
 
 	// Make a client for each component
-	clients := make(map[config.ComponentID]storage.Client)
+	clients := make(map[component.ID]storage.Client)
 	for _, c := range components {
 		client, err := se.GetClient(ctx, c.kind, c.name, "")
 		require.NoError(t, err)
@@ -62,7 +60,7 @@ func TestExtensionIntegrity(t *testing.T) {
 		clients[c.name] = client
 	}
 
-	thrashClient := func(wg *sync.WaitGroup, n config.ComponentID, c storage.Client) {
+	thrashClient := func(wg *sync.WaitGroup, n component.ID, c storage.Client) {
 		// keys and values
 		keys := []string{"a", "b", "c", "d", "e"}
 		myBytes := []byte(n.Name())
@@ -207,7 +205,7 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -233,7 +231,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = t.TempDir()
 
-	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -242,8 +240,8 @@ func newTestExtension(t *testing.T) storage.Extension {
 	return se
 }
 
-func newTestEntity(name string) config.ComponentID {
-	return config.NewComponentIDWithName("nop", name)
+func newTestEntity(name string) component.ID {
+	return component.NewIDWithName("nop", name)
 }
 
 func TestCompaction(t *testing.T) {
@@ -255,7 +253,7 @@ func TestCompaction(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -272,7 +270,7 @@ func TestCompaction(t *testing.T) {
 		require.NoError(t, client.Close(ctx))
 	})
 
-	files, err := ioutil.ReadDir(tempDir)
+	files, err := os.ReadDir(tempDir)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(files))
 
@@ -300,10 +298,10 @@ func TestCompaction(t *testing.T) {
 	// compact the db
 	c, ok := client.(*fileStorageClient)
 	require.True(t, ok)
-	fsClient1, err := c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	err = c.Compact(tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, fsClient1.Close(ctx))
+		require.NoError(t, client.Close(ctx))
 	})
 
 	// check size after compaction
@@ -314,15 +312,17 @@ func TestCompaction(t *testing.T) {
 	// remove data from database
 	for i = 0; i < numEntries; i++ {
 		key = fmt.Sprintf("key_%d", i)
-		err = fsClient1.Delete(ctx, key)
+		err = c.Delete(ctx, key)
 		require.NoError(t, err)
 	}
 
 	// compact after data removal
-	fsClient2, err := fsClient1.Compact(ctx, tempDir, cfg.Timeout, 1)
+	c, ok = client.(*fileStorageClient)
+	require.True(t, ok)
+	err = c.Compact(tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, fsClient2.Close(ctx))
+		require.NoError(t, client.Close(ctx))
 	})
 
 	// check size
@@ -343,7 +343,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -361,7 +361,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	})
 
 	// check if only db exists in tempDir
-	files, err := ioutil.ReadDir(tempDir)
+	files, err := os.ReadDir(tempDir)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(files))
 	fileName := files[0].Name()
@@ -369,14 +369,14 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	// perform compaction in the same directory
 	c, ok := client.(*fileStorageClient)
 	require.True(t, ok)
-	fsClient1, err := c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	err = c.Compact(tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, fsClient1.Close(ctx))
+		require.NoError(t, client.Close(ctx))
 	})
 
 	// check if only db exists in tempDir
-	files, err = ioutil.ReadDir(tempDir)
+	files, err = os.ReadDir(tempDir)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(files))
 	require.Equal(t, fileName, files[0].Name())
@@ -384,14 +384,16 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	// perform compaction in different directory
 	emptyTempDir := t.TempDir()
 
-	fsClient2, err := fsClient1.Compact(ctx, emptyTempDir, cfg.Timeout, 1)
+	c, ok = client.(*fileStorageClient)
+	require.True(t, ok)
+	err = c.Compact(emptyTempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, fsClient2.Close(ctx))
+		require.NoError(t, client.Close(ctx))
 	})
 
 	// check if emptyTempDir is empty after compaction
-	files, err = ioutil.ReadDir(emptyTempDir)
+	files, err = os.ReadDir(emptyTempDir)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(files))
 }

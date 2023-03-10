@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,10 +16,14 @@ package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/multierr"
 )
 
@@ -97,4 +101,24 @@ func TestValidate(t *testing.T) {
 			require.Equal(t, tc.expectedErr, actualErr)
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Endpoint = "http://localhost:5984"
+	expected.Username = "otelu"
+	expected.Password = "${env:COUCHDB_PASSWORD}"
+	expected.CollectionInterval = time.Minute
+
+	require.Equal(t, expected, cfg)
 }

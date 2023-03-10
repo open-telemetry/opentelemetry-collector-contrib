@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package awscontainerinsightreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver"
 
 import (
@@ -23,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -33,13 +33,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 )
 
-var _ component.MetricsReceiver = (*awsContainerInsightReceiver)(nil)
+var _ receiver.Metrics = (*awsContainerInsightReceiver)(nil)
 
 type metricsProvider interface {
 	GetMetrics() []pmetric.Metrics
 }
 
-// awsContainerInsightReceiver implements the component.MetricsReceiver
+// awsContainerInsightReceiver implements the receiver.Metrics
 type awsContainerInsightReceiver struct {
 	settings     component.TelemetrySettings
 	nextConsumer consumer.Metrics
@@ -53,7 +53,7 @@ type awsContainerInsightReceiver struct {
 func newAWSContainerInsightReceiver(
 	settings component.TelemetrySettings,
 	config *Config,
-	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -68,7 +68,7 @@ func newAWSContainerInsightReceiver(
 
 // Start collecting metrics from cadvisor and k8s api server (if it is an elected leader)
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
-	ctx, acir.cancel = context.WithCancel(context.Background())
+	ctx, acir.cancel = context.WithCancel(ctx)
 
 	hostinfo, err := hostInfo.NewInfo(acir.config.ContainerOrchestrator, acir.config.CollectionInterval, acir.settings.Logger)
 	if err != nil {
@@ -93,7 +93,7 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 	}
 	if acir.config.ContainerOrchestrator == ci.ECS {
 
-		ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostinfo, acir.settings)
+		ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostinfo, host, acir.settings)
 		if err != nil {
 			return err
 		}
@@ -107,9 +107,9 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 	}
 
 	go func() {
-		//cadvisor collects data at dynamical intervals (from 1 to 15 seconds). If the ticker happens
-		//at beginning of a minute, it might read the data collected at end of last minute. To avoid this,
-		//we want to wait until at least two cadvisor collection intervals happens before collecting the metrics
+		// cadvisor collects data at dynamical intervals (from 1 to 15 seconds). If the ticker happens
+		// at beginning of a minute, it might read the data collected at end of last minute. To avoid this,
+		// we want to wait until at least two cadvisor collection intervals happens before collecting the metrics
 		secondsInMin := time.Now().Second()
 		if secondsInMin < 30 {
 			time.Sleep(time.Duration(30-secondsInMin) * time.Second)
@@ -120,7 +120,7 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 		for {
 			select {
 			case <-ticker.C:
-				acir.collectData(ctx)
+				_ = acir.collectData(ctx)
 			case <-ctx.Done():
 				return
 			}
@@ -132,6 +132,9 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 
 // Shutdown stops the awsContainerInsightReceiver receiver.
 func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
+	if acir.cancel == nil {
+		return nil
+	}
 	acir.cancel()
 	return nil
 }

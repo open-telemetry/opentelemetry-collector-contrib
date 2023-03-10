@@ -17,73 +17,52 @@ package logstransformprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "logstransform"
+	// The stability level of the processor.
+	stability = component.StabilityLevelDevelopment
 )
 
-var processorCapabilities = consumer.Capabilities{MutatesData: true}
-
 // NewFactory returns a new factory for the Logs Transform processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsProcessor(createLogsProcessor))
+		processor.WithLogs(createLogsProcessor, stability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
-			Operators: adapter.OperatorConfigs{},
-			Converter: adapter.ConverterConfig{
-				MaxFlushCount: 100,
-				FlushInterval: 100 * time.Millisecond,
-			},
+			Operators: []operator.Config{},
 		},
 	}
 }
 
 func createLogsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
-	cfg config.Processor,
-	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs) (processor.Logs, error) {
 	pCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("could not initialize logs transform processor")
 	}
 
-	operators, err := pCfg.BaseConfig.DecodeOperatorConfigs()
-	if err != nil {
-		return nil, err
-	}
-	if len(operators) == 0 {
+	if len(pCfg.BaseConfig.Operators) == 0 {
 		return nil, errors.New("no operators were configured for this logs transform processor")
 	}
 
-	proc := &logsTransformProcessor{
-		id:     cfg.ID(),
-		logger: params.Logger,
-		config: pCfg,
-	}
-	return processorhelper.NewLogsProcessor(
-		cfg,
-		nextConsumer,
-		proc.processLogs,
-		processorhelper.WithStart(proc.Start),
-		processorhelper.WithShutdown(proc.Shutdown),
-		processorhelper.WithCapabilities(processorCapabilities))
+	return newProcessor(pCfg, nextConsumer, set.Logger)
 }

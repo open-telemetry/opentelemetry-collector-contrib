@@ -1,10 +1,12 @@
 # Syslog Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
+
 Parses Syslogs received over TCP or UDP.
-
-Supported pipeline types: logs
-
-> :construction: This receiver is in alpha and configuration fields are subject to change.
 
 ## Configuration
 
@@ -14,6 +16,8 @@ Supported pipeline types: logs
 | `udp`      |`nil`                | Defined udp_input operator. (see the UDP configuration section)  |
 | `protocol`    | required         | The protocol to parse the syslog messages as. Options are `rfc3164` and `rfc5424` |
 | `location`    | `UTC`            | The geographic location (timezone) to use when parsing the timestamp (Syslog RFC 3164 only). The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
+| `enable_octet_counting`              | `false`          | Wether or not to enable [RFC 6587](https://www.rfc-editor.org/rfc/rfc6587#section-3.4.1) Octet Counting on syslog parsing (Syslog RFC 5424 and TCP only).  |
+| `non_transparent_framing_trailer`    | `nil`            | The framing trailer, either `LF` or `NUL`, when using [RFC 6587](https://www.rfc-editor.org/rfc/rfc6587#section-3.4.2) Non-Transparent-Framing (Syslog RFC 5424 and TCP only). |
 | `timestamp`   | `nil`            | An optional [timestamp](../../pkg/stanza/docs/types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator                                                                                               |
 | `severity`    | `nil`            | An optional [severity](../../pkg/stanza/docs/types/severity.md) block which will parse a severity field before passing the entry to the output operator
 | `attributes`   | {}               | A map of `key: value` labels to add to the entry's attributes    |
@@ -59,8 +63,10 @@ The `tcp_input` operator supports TLS, disabled by default.
 - An [entry](../../pkg/stanza/docs/types/entry.md) is the base representation of log data as it moves through a pipeline. All operators either create, modify, or consume entries.
 - A [field](../../pkg/stanza/docs/types/field.md) is used to reference values in an entry.
 - A common [expression](../../pkg/stanza/docs/types/expression.md) syntax is used in several operators. For example, expressions can be used to [filter](../../pkg/stanza/docs/operators/filter.md) or [route](../../pkg/stanza/docs/operators/router.md) entries.
-- [timestamp](../../pkg/stanza/docs/types/timestamp.md) parsing is available as a block within all parser operators, and also as a standalone operator. Many common timestamp layouts are supported.
-- [severity](../../pkg/stanza/docs/types/severity.md) parsing is available as a block within all parser operators, and also as a standalone operator. Stanza uses a flexible severity representation which is automatically interpreted by the stanza receiver.
+
+### Parsers with Embedded Operations
+
+Many parsers operators can be configured to embed certain followup operations such as timestamp and severity parsing. For more information, see [complex parsers](../../pkg/stanza/docs/types/parsers.md#complex-parsers).
 
 ## Example Configurations
 
@@ -84,3 +90,5 @@ receivers:
     protocol: rfc3164
     location: UTC
 ```
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

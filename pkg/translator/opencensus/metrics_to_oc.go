@@ -93,14 +93,14 @@ func collectLabelKeysAndValueType(metric pmetric.Metric) *labelKeysAndType {
 	// First, collect a set of all labels present in the metric
 	keySet := make(map[string]struct{})
 	allNumberDataPointValueInt := false
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		allNumberDataPointValueInt = collectLabelKeysNumberDataPoints(metric.Gauge().DataPoints(), keySet)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		allNumberDataPointValueInt = collectLabelKeysNumberDataPoints(metric.Sum().DataPoints(), keySet)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		collectLabelKeysHistogramDataPoints(metric.Histogram().DataPoints(), keySet)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		collectLabelKeysSummaryDataPoints(metric.Summary().DataPoints(), keySet)
 	}
 
@@ -168,22 +168,22 @@ func addLabelKeys(keySet map[string]struct{}, attributes pcommon.Map) {
 }
 
 func descriptorTypeToOC(metric pmetric.Metric, allNumberDataPointValueInt bool) ocmetrics.MetricDescriptor_Type {
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		return gaugeType(allNumberDataPointValueInt)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		sd := metric.Sum()
-		if sd.IsMonotonic() && sd.AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative {
+		if sd.IsMonotonic() && sd.AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
 			return cumulativeType(allNumberDataPointValueInt)
 		}
 		return gaugeType(allNumberDataPointValueInt)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		hd := metric.Histogram()
-		if hd.AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative {
+		if hd.AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return ocmetrics.MetricDescriptor_SUMMARY
 	}
 	return ocmetrics.MetricDescriptor_UNSPECIFIED
@@ -204,14 +204,14 @@ func cumulativeType(allNumberDataPointValueInt bool) ocmetrics.MetricDescriptor_
 }
 
 func dataPointsToTimeseries(metric pmetric.Metric, labelKeys *labelKeysAndType) []*ocmetrics.TimeSeries {
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		return numberDataPointsToOC(metric.Gauge().DataPoints(), labelKeys)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		return numberDataPointsToOC(metric.Sum().DataPoints(), labelKeys)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		return doubleHistogramPointToOC(metric.Histogram().DataPoints(), labelKeys)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return doubleSummaryPointToOC(metric.Summary().DataPoints(), labelKeys)
 	}
 
@@ -231,11 +231,11 @@ func numberDataPointsToOC(dps pmetric.NumberDataPointSlice, labelKeys *labelKeys
 		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
 			point.Value = &ocmetrics.Point_Int64Value{
-				Int64Value: dp.IntVal(),
+				Int64Value: dp.IntValue(),
 			}
 		case pmetric.NumberDataPointValueTypeDouble:
 			point.Value = &ocmetrics.Point_DoubleValue{
-				DoubleValue: dp.DoubleVal(),
+				DoubleValue: dp.DoubleValue(),
 			}
 		}
 		ts := &ocmetrics.TimeSeries{
@@ -255,8 +255,8 @@ func doubleHistogramPointToOC(dps pmetric.HistogramDataPointSlice, labelKeys *la
 	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		buckets := histogramBucketsToOC(dp.MBucketCounts())
-		exemplarsToOC(dp.MExplicitBounds(), buckets, dp.Exemplars())
+		buckets := histogramBucketsToOC(dp.BucketCounts())
+		exemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
 
 		ts := &ocmetrics.TimeSeries{
 			StartTimestamp: timestampAsTimestampPb(dp.StartTimestamp()),
@@ -269,7 +269,7 @@ func doubleHistogramPointToOC(dps pmetric.HistogramDataPointSlice, labelKeys *la
 							Count:                 int64(dp.Count()),
 							Sum:                   dp.Sum(),
 							SumOfSquaredDeviation: 0,
-							BucketOptions:         histogramExplicitBoundsToOC(dp.MExplicitBounds()),
+							BucketOptions:         histogramExplicitBoundsToOC(dp.ExplicitBounds()),
 							Buckets:               buckets,
 						},
 					},
@@ -281,29 +281,29 @@ func doubleHistogramPointToOC(dps pmetric.HistogramDataPointSlice, labelKeys *la
 	return timeseries
 }
 
-func histogramExplicitBoundsToOC(bounds []float64) *ocmetrics.DistributionValue_BucketOptions {
-	if len(bounds) == 0 {
+func histogramExplicitBoundsToOC(bounds pcommon.Float64Slice) *ocmetrics.DistributionValue_BucketOptions {
+	if bounds.Len() == 0 {
 		return nil
 	}
 
 	return &ocmetrics.DistributionValue_BucketOptions{
 		Type: &ocmetrics.DistributionValue_BucketOptions_Explicit_{
 			Explicit: &ocmetrics.DistributionValue_BucketOptions_Explicit{
-				Bounds: bounds,
+				Bounds: bounds.AsRaw(),
 			},
 		},
 	}
 }
 
-func histogramBucketsToOC(bcts []uint64) []*ocmetrics.DistributionValue_Bucket {
-	if len(bcts) == 0 {
+func histogramBucketsToOC(bcts pcommon.UInt64Slice) []*ocmetrics.DistributionValue_Bucket {
+	if bcts.Len() == 0 {
 		return nil
 	}
 
-	ocBuckets := make([]*ocmetrics.DistributionValue_Bucket, 0, len(bcts))
-	for _, bucket := range bcts {
+	ocBuckets := make([]*ocmetrics.DistributionValue_Bucket, 0, bcts.Len())
+	for i := 0; i < bcts.Len(); i++ {
 		ocBuckets = append(ocBuckets, &ocmetrics.DistributionValue_Bucket{
-			Count: int64(bucket),
+			Count: int64(bcts.At(i)),
 		})
 	}
 	return ocBuckets
@@ -341,7 +341,7 @@ func doubleSummaryPointToOC(dps pmetric.SummaryDataPointSlice, labelKeys *labelK
 	return timeseries
 }
 
-func summaryPercentilesToOC(qtls pmetric.ValueAtQuantileSlice) []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile {
+func summaryPercentilesToOC(qtls pmetric.SummaryDataPointValueAtQuantileSlice) []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile {
 	if qtls.Len() == 0 {
 		return nil
 	}
@@ -357,7 +357,7 @@ func summaryPercentilesToOC(qtls pmetric.ValueAtQuantileSlice) []*ocmetrics.Summ
 	return ocPercentiles
 }
 
-func exemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bucket, exemplars pmetric.ExemplarSlice) {
+func exemplarsToOC(bounds pcommon.Float64Slice, ocBuckets []*ocmetrics.DistributionValue_Bucket, exemplars pmetric.ExemplarSlice) {
 	if exemplars.Len() == 0 {
 		return
 	}
@@ -367,13 +367,13 @@ func exemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bu
 		var val float64
 		switch exemplar.ValueType() {
 		case pmetric.ExemplarValueTypeInt:
-			val = float64(exemplar.IntVal())
+			val = float64(exemplar.IntValue())
 		case pmetric.ExemplarValueTypeDouble:
-			val = exemplar.DoubleVal()
+			val = exemplar.DoubleValue()
 		}
 		pos := 0
-		for ; pos < len(bounds); pos++ {
-			if val > bounds[pos] {
+		for ; pos < bounds.Len(); pos++ {
+			if val > bounds.At(pos) {
 				continue
 			}
 			break

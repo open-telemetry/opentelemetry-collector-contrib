@@ -22,7 +22,6 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -57,7 +56,7 @@ func TestBuild(t *testing.T) {
 		{
 			"basic",
 			func() (*Config, error) {
-				cfg := NewConfig("test_id")
+				cfg := NewConfigWithID("test_id")
 				parseFrom, err := entry.NewField("body.app_time")
 				if err != nil {
 					return cfg, err
@@ -98,7 +97,7 @@ func TestProcess(t *testing.T) {
 		{
 			name: "promote",
 			config: func() (*Config, error) {
-				cfg := NewConfig("test_id")
+				cfg := NewConfigWithID("test_id")
 				parseFrom, err := entry.NewField("body.app_time")
 				if err != nil {
 					return nil, err
@@ -544,7 +543,7 @@ func runLossyTimeParseTest(_ *testing.T, cfg *Config, ent *entry.Entry, buildErr
 }
 
 func parseTimeTestConfig(layoutType, layout string, parseFrom entry.Field) *Config {
-	cfg := NewConfig("test_operator_id")
+	cfg := NewConfigWithID("test_operator_id")
 	cfg.OutputIDs = []string{"output1"}
 	cfg.TimeParser = helper.TimeParser{
 		LayoutType: layoutType,
@@ -552,40 +551,4 @@ func parseTimeTestConfig(layoutType, layout string, parseFrom entry.Field) *Conf
 		ParseFrom:  &parseFrom,
 	}
 	return cfg
-}
-
-func TestConfig(t *testing.T) {
-	expect := parseTimeTestConfig(helper.GotimeKey, "Mon Jan 2 15:04:05 MST 2006", entry.NewBodyField("from"))
-	t.Run("mapstructure", func(t *testing.T) {
-		input := map[string]interface{}{
-			"id":          "test_operator_id",
-			"type":        "time_parser",
-			"output":      []string{"output1"},
-			"on_error":    "send",
-			"layout":      "Mon Jan 2 15:04:05 MST 2006",
-			"layout_type": "gotime",
-			"parse_from":  "body.from",
-		}
-		var actual Config
-		err := helper.UnmarshalMapstructure(input, &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
-
-	t.Run("yaml", func(t *testing.T) {
-		input := `
-type: time_parser
-id: test_operator_id
-on_error: "send"
-parse_from: body.from
-layout_type: gotime
-layout: "Mon Jan 2 15:04:05 MST 2006"
-output:
-  - output1
-`
-		var actual Config
-		err := yaml.Unmarshal([]byte(input), &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
 }

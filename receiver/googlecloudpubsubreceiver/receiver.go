@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package googlecloudpubsubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 
 import (
@@ -21,11 +20,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 	"sync"
 
 	pubsub "cloud.google.com/go/pubsub/apiv1"
+	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -35,7 +35,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
-	pubsubpb "google.golang.org/genproto/googleapis/pubsub/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -80,16 +79,16 @@ func (receiver *pubsubReceiver) generateClientOptions() (copts []option.ClientOp
 	if receiver.userAgent != "" {
 		copts = append(copts, option.WithUserAgent(receiver.userAgent))
 	}
-	if receiver.config.endpoint != "" {
-		if receiver.config.insecure {
+	if receiver.config.Endpoint != "" {
+		if receiver.config.Insecure {
 			var dialOpts []grpc.DialOption
 			if receiver.userAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(receiver.userAgent))
 			}
-			conn, _ := grpc.Dial(receiver.config.endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+			conn, _ := grpc.Dial(receiver.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 			copts = append(copts, option.WithGRPCConn(conn))
 		} else {
-			copts = append(copts, option.WithEndpoint(receiver.config.endpoint))
+			copts = append(copts, option.WithEndpoint(receiver.config.Endpoint))
 		}
 	}
 	return copts
@@ -116,9 +115,9 @@ func (receiver *pubsubReceiver) Start(ctx context.Context, _ component.Host) err
 			return
 		}
 	})
-	receiver.tracesUnmarshaler = ptrace.NewProtoUnmarshaler()
-	receiver.metricsUnmarshaler = pmetric.NewProtoUnmarshaler()
-	receiver.logsUnmarshaler = plog.NewProtoUnmarshaler()
+	receiver.tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
+	receiver.metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
+	receiver.logsUnmarshaler = &plog.ProtoUnmarshaler{}
 	return startErr
 }
 
@@ -143,19 +142,18 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 	ills := rls.ScopeLogs().AppendEmpty()
 	lr := ills.LogRecords().AppendEmpty()
 
-	lr.Body().SetStringVal(data)
+	lr.Body().SetStr(data)
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(timestamp.AsTime()))
 	return receiver.logsConsumer.ConsumeLogs(ctx, out)
 }
 
 func decompress(payload []byte, compression compression) ([]byte, error) {
-	switch compression {
-	case gZip:
+	if compression == gZip {
 		reader, err := gzip.NewReader(bytes.NewReader(payload))
 		if err != nil {
 			return nil, err
 		}
-		return ioutil.ReadAll(reader)
+		return io.ReadAll(reader)
 	}
 	return payload, nil
 }
@@ -241,14 +239,12 @@ func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (en
 	}
 
 	ceContentEncoding := attributes["content-encoding"]
-	switch ceContentEncoding {
-	case "gzip":
+	if ceContentEncoding == "gzip" {
 		otlpCompression = gZip
 	}
 
 	if otlpCompression == uncompressed && receiver.config.Compression != "" {
-		switch receiver.config.Compression {
-		case "gzip":
+		if receiver.config.Compression == "gzip" {
 			otlpCompression = gZip
 		}
 	}

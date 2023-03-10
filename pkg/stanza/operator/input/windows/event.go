@@ -18,8 +18,12 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
+	"errors"
 	"fmt"
 )
+
+// errUnknownNextFrame is an error returned when a systemcall indicates the next frame is 0 bytes.
+var errUnknownNextFrame = errors.New("the buffer size needed by the next frame of a render syscall was 0, unable to determine size of next frame")
 
 // Event is an event stored in windows event log.
 type Event struct {
@@ -39,12 +43,12 @@ func (e *Event) RenderSimple(buffer Buffer) (EventXML, error) {
 	}
 
 	if err != nil {
-		return EventXML{}, fmt.Errorf("syscall to 'EvtRender' failed: %s", err)
+		return EventXML{}, fmt.Errorf("syscall to 'EvtRender' failed: %w", err)
 	}
 
 	bytes, err := buffer.ReadBytes(*bufferUsed)
 	if err != nil {
-		return EventXML{}, fmt.Errorf("failed to read bytes from buffer: %s", err)
+		return EventXML{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
 	}
 
 	return unmarshalEventXML(bytes)
@@ -56,20 +60,24 @@ func (e *Event) RenderFormatted(buffer Buffer, publisher Publisher) (EventXML, e
 		return EventXML{}, fmt.Errorf("event handle does not exist")
 	}
 
-	var bufferUsed uint32
-	err := evtFormatMessage(publisher.handle, e.handle, 0, 0, 0, EvtFormatMessageXML, buffer.SizeWide(), buffer.FirstByte(), &bufferUsed)
+	bufferUsed, err := evtFormatMessage(publisher.handle, e.handle, 0, 0, 0, EvtFormatMessageXML, buffer.SizeWide(), buffer.FirstByte())
 	if err == ErrorInsufficientBuffer {
-		buffer.UpdateSizeWide(bufferUsed)
+		// If the bufferUsed is 0 return an error as we don't want to make a recursive call with no buffer
+		if *bufferUsed == 0 {
+			return EventXML{}, errUnknownNextFrame
+		}
+
+		buffer.UpdateSizeWide(*bufferUsed)
 		return e.RenderFormatted(buffer, publisher)
 	}
 
 	if err != nil {
-		return EventXML{}, fmt.Errorf("syscall to 'EvtFormatMessage' failed: %s", err)
+		return EventXML{}, fmt.Errorf("syscall to 'EvtFormatMessage' failed: %w", err)
 	}
 
-	bytes, err := buffer.ReadWideChars(bufferUsed)
+	bytes, err := buffer.ReadWideChars(*bufferUsed)
 	if err != nil {
-		return EventXML{}, fmt.Errorf("failed to read bytes from buffer: %s", err)
+		return EventXML{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
 	}
 
 	return unmarshalEventXML(bytes)
@@ -82,11 +90,34 @@ func (e *Event) Close() error {
 	}
 
 	if err := evtClose(e.handle); err != nil {
-		return fmt.Errorf("failed to close event handle: %s", err)
+		return fmt.Errorf("failed to close event handle: %w", err)
 	}
 
 	e.handle = 0
 	return nil
+}
+
+func (e *Event) RenderRaw(buffer Buffer) (EventRaw, error) {
+	if e.handle == 0 {
+		return EventRaw{}, fmt.Errorf("event handle does not exist")
+	}
+
+	bufferUsed, _, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
+	if err == ErrorInsufficientBuffer {
+		// If the bufferUsed is 0 return an error as we don't want to make a recursive call with no buffer
+		if *bufferUsed == 0 {
+			return EventRaw{}, errUnknownNextFrame
+		}
+
+		buffer.UpdateSizeBytes(*bufferUsed)
+		return e.RenderRaw(buffer)
+	}
+	bytes, err := buffer.ReadWideChars(*bufferUsed)
+	if err != nil {
+		return EventRaw{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
+	}
+
+	return unmarshalEventRaw(bytes)
 }
 
 // NewEvent will create a new event from an event handle.

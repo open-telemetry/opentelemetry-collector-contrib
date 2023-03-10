@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package awsecscontainermetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 
 import (
@@ -21,15 +20,16 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 )
 
-var _ component.MetricsReceiver = (*awsEcsContainerMetricsReceiver)(nil)
+var _ receiver.Metrics = (*awsEcsContainerMetricsReceiver)(nil)
 
-// awsEcsContainerMetricsReceiver implements the component.MetricsReceiver for aws ecs container metrics.
+// awsEcsContainerMetricsReceiver implements the receiver.Metrics for aws ecs container metrics.
 type awsEcsContainerMetricsReceiver struct {
 	logger       *zap.Logger
 	nextConsumer consumer.Metrics
@@ -44,7 +44,7 @@ func newAWSECSContainermetrics(
 	logger *zap.Logger,
 	config *Config,
 	nextConsumer consumer.Metrics,
-	rest ecsutil.RestClient) (component.MetricsReceiver, error) {
+	rest ecsutil.RestClient) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -68,7 +68,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host com
 		for {
 			select {
 			case <-ticker.C:
-				aecmr.collectDataFromEndpoint(ctx)
+				_ = aecmr.collectDataFromEndpoint(ctx)
 			case <-ctx.Done():
 				return
 			}
@@ -79,7 +79,9 @@ func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host com
 
 // Shutdown stops the awsecscontainermetricsreceiver receiver.
 func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
-	aecmr.cancel()
+	if aecmr.cancel != nil {
+		aecmr.cancel()
+	}
 	return nil
 }
 

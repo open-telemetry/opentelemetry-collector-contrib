@@ -16,7 +16,6 @@
 // +build !windows
 
 // TODO review if tests should succeed on Windows
-// nolint:errcheck
 package proxy
 
 import (
@@ -25,7 +24,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -46,9 +44,7 @@ const (
 func TestHappyCase(t *testing.T) {
 	logger, recordedLogs := logSetup()
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(regionEnvVarName, regionEnvVar)
+	t.Setenv(regionEnvVarName, regionEnvVar)
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
@@ -56,9 +52,12 @@ func TestHappyCase(t *testing.T) {
 	cfg.ProxyAddress = "https://example.com"
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
-	go srv.ListenAndServe()
-	assert.NoError(t, err, "NewServer should succeed")
-	defer srv.Shutdown(context.Background())
+	go func() {
+		_ = srv.ListenAndServe()
+	}()
+	defer func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	}()
 
 	assert.Eventuallyf(t, func() bool {
 		_, err := net.DialTimeout("tcp", tcpAddr, time.Second)
@@ -75,11 +74,9 @@ func TestHappyCase(t *testing.T) {
 func TestHandlerHappyCase(t *testing.T) {
 	logger, _ := logSetup()
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(regionEnvVarName, regionEnvVar)
-	os.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
+	t.Setenv(regionEnvVarName, regionEnvVar)
+	t.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
@@ -102,11 +99,9 @@ func TestHandlerHappyCase(t *testing.T) {
 func TestHandlerIoReadSeekerCreationFailed(t *testing.T) {
 	logger, recordedLogs := logSetup()
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(regionEnvVarName, regionEnvVar)
-	os.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
+	t.Setenv(regionEnvVarName, regionEnvVar)
+	t.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
@@ -133,11 +128,9 @@ func TestHandlerIoReadSeekerCreationFailed(t *testing.T) {
 func TestHandlerNilBodyIsOk(t *testing.T) {
 	logger, recordedLogs := logSetup()
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(regionEnvVarName, regionEnvVar)
-	os.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
+	t.Setenv(regionEnvVarName, regionEnvVar)
+	t.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
@@ -161,9 +154,7 @@ func TestHandlerNilBodyIsOk(t *testing.T) {
 func TestHandlerSignerErrorsOut(t *testing.T) {
 	logger, recordedLogs := logSetup()
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(regionEnvVarName, regionEnvVar)
+	t.Setenv(regionEnvVarName, regionEnvVar)
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
@@ -187,9 +178,7 @@ func TestHandlerSignerErrorsOut(t *testing.T) {
 func TestTCPEndpointInvalid(t *testing.T) {
 	logger, _ := logSetup()
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(regionEnvVarName, regionEnvVar)
+	t.Setenv(regionEnvVarName, regionEnvVar)
 
 	cfg := DefaultConfig()
 	cfg.TCPAddr.Endpoint = "invalid\n"
@@ -200,9 +189,7 @@ func TestTCPEndpointInvalid(t *testing.T) {
 func TestCantGetAWSConfigSession(t *testing.T) {
 	logger, _ := logSetup()
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(regionEnvVarName, regionEnvVar)
+	t.Setenv(regionEnvVarName, regionEnvVar)
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
@@ -224,9 +211,7 @@ func TestCantGetAWSConfigSession(t *testing.T) {
 func TestCantGetServiceEndpoint(t *testing.T) {
 	logger, _ := logSetup()
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(regionEnvVarName, "not a region")
+	t.Setenv(regionEnvVarName, "not a region")
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
@@ -240,9 +225,7 @@ func TestCantGetServiceEndpoint(t *testing.T) {
 func TestAWSEndpointInvalid(t *testing.T) {
 	logger, _ := logSetup()
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(regionEnvVarName, regionEnvVar)
+	t.Setenv(regionEnvVarName, regionEnvVar)
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
@@ -257,9 +240,7 @@ func TestAWSEndpointInvalid(t *testing.T) {
 func TestCanCreateTransport(t *testing.T) {
 	logger, _ := logSetup()
 
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(regionEnvVarName, regionEnvVar)
+	t.Setenv(regionEnvVarName, regionEnvVar)
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)

@@ -21,9 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
@@ -31,25 +30,24 @@ import (
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		TCPAddr: confignet.TCPAddr{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
 		Path:                   "/",
 	}, cfg)
 
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
-	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
 
 func TestFactory_CreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.TCPAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }

@@ -1,5 +1,11 @@
 # Receiver Creator
 
+| Status                   |                       |
+|--------------------------|-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | metrics               |
+| Distributions            | [contrib]             |
+
 This receiver can instantiate other receivers at runtime based on whether
 observed endpoints match a configured rule. To use the receiver creator, you
 must first configure one or more
@@ -56,7 +62,18 @@ config:
    endpoint: '`endpoint`:8080'
 ```
 
-**receivers.&lt;receiver_type/id&gt;.resource_attributes**
+If your target receiver provides an `endpoint` config field and you aren't
+manually setting it like the above example, the observer endpoint target value
+will automatically be sourced. If no `endpoint` field is available you are
+required to specify any necessary fields.
+
+**receivers.resource_attributes**
+
+```yaml
+resource_attributes:
+  <endpoint type>:
+    <attribute>: <attribute value>
+```
 
 This setting controls what resource attributes are set on metrics emitted from the created receiver. These attributes can be set from [values in the endpoint](#rule-expressions) that was matched by the `rule`. These attributes vary based on the endpoint type. These defaults can be disabled by setting the attribute to be removed to an empty value. Note that the values can be dynamic and processed the same as in `config`.
 
@@ -98,6 +115,18 @@ None
 
 See `redis/2` in [examples](#examples).
 
+
+**receivers.&lt;receiver_type/id&gt;.resource_attributes**
+
+```yaml
+receivers:
+  <receiver_type>:
+    resource_attributes:
+      <attribute>: <attribute string value>
+```
+
+Similar to the per-endpoint type `resource_attributes` described above but for individual receiver instances. Duplicate attribute entries (including the empty string) in this receiver-specific mapping take precedence. These attribute values also support expansion from endpoint environment content. At this time their values must be strings.
+
 ## Rule Expressions
 
 Each rule must start with `type == ("pod"|"port"|"hostport"|"container") &&` such that the rule matches
@@ -109,6 +138,7 @@ targeting it will have different variables available.
 | Variable    | Description                       |
 |-------------|-----------------------------------|
 | type        | `"pod"`                           |
+| id          | ID of source endpoint             |
 | name        | name of the pod                   |
 | namespace   | namespace of the pod              |
 | uid         | unique id of the pod              |
@@ -120,6 +150,7 @@ targeting it will have different variables available.
 | Variable        | Description                             |
 |-----------------|-----------------------------------------|
 | type            | `"port"`                                |
+| id              | ID of source endpoint                   |
 | name            | container port name                     |
 | port            | port number                             |
 | protocol        | The transport protocol ("TCP" or "UDP") |
@@ -134,6 +165,7 @@ targeting it will have different variables available.
 | Variable      | Description                                      |
 |---------------|--------------------------------------------------|
 | type          | `"hostport"`                                     |
+| id            | ID of source endpoint                            |
 | process_name  | Name of the process                              |
 | command       | Command line with the used to invoke the process |
 | is_ipv6       | true if endpoint is IPv6, otherwise false        |
@@ -145,6 +177,7 @@ targeting it will have different variables available.
 | Variable       | Description                                                       |
 |----------------|-------------------------------------------------------------------|
 | type           | `"container"`                                                     |
+| id             | ID of source endpoint                                             |
 | name           | Primary name of the container                                     |
 | image          | Name of the container image                                       |
 | port           | Exposed port of the container                                     |
@@ -160,6 +193,7 @@ targeting it will have different variables available.
 | Variable       | Description                                                       |
 |----------------|-------------------------------------------------------------------|
 | type                  | `"k8s.node"`                                                                                                           |
+| id                    | ID of source endpoint                                                                                                  |
 | name                  | The name of the Kubernetes node                                                                                        |
 | uid                   | The unique ID for the node                                                                                             |
 | hostname              | The node's hostname as reported by its Status object                                                                   |
@@ -190,6 +224,10 @@ receivers:
         config:
           metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
           endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'
+        resource_attributes:
+          an.attribute: a.value
+          # Dynamic configuration values
+          app.version: '`labels["app_version"]`'
 
       redis/1:
         # If this rule matches an instance of this receiver will be started.
@@ -204,8 +242,12 @@ receivers:
         # Set a resource attribute based on endpoint value.
         rule: type == "port" && port == 6379
 
-      resource_attributes:
-        # Dynamic configuration values
+    resource_attributes:
+      # Dynamic configuration values, overwriting default attributes`
+      pod:
+        service.name: '`labels["service_name"]`'
+        app: '`labels["app"]`'
+      port:
         service.name: '`pod.labels["service_name"]`'
         app: '`pod.labels["app"]`'
   receiver_creator/2:
@@ -215,8 +257,8 @@ receivers:
       redis/on_host:
         # If this rule matches an instance of this receiver will be started.
         rule: type == "port" && port == 6379 && is_ipv6 == true
-    resource_attributes:
-      service.name: redis_on_host
+        resource_attributes:
+          service.name: redis_on_host
   receiver_creator/3:
     watch_observers: [k8s_observer]
     receivers:
@@ -250,3 +292,6 @@ service:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

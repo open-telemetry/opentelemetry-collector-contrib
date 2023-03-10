@@ -22,9 +22,9 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // This file implements factory for SignalFx receiver.
@@ -32,23 +32,24 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "signalfx"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":9943"
 )
 
 // NewFactory creates a factory for SignalFx receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
-		component.WithLogsReceiver(createLogsReceiver))
+		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithLogs(createLogsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -60,11 +61,11 @@ func createDefaultConfig() config.Receiver {
 func extractPortFromEndpoint(endpoint string) (int, error) {
 	_, portStr, err := net.SplitHostPort(endpoint)
 	if err != nil {
-		return 0, fmt.Errorf("endpoint is not formatted correctly: %s", err.Error())
+		return 0, fmt.Errorf("endpoint is not formatted correctly: %w", err)
 	}
 	port, err := strconv.ParseInt(portStr, 10, 0)
 	if err != nil {
-		return 0, fmt.Errorf("endpoint port is not a number: %s", err.Error())
+		return 0, fmt.Errorf("endpoint port is not a number: %w", err)
 	}
 	if port < 1 || port > 65535 {
 		return 0, fmt.Errorf("port number must be between 1 and 65535")
@@ -72,37 +73,23 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 	return int(port), nil
 }
 
-// verify that the configured port is not 0
-func (rCfg *Config) validate() error {
-	if rCfg.Endpoint == "" {
-		return errEmptyEndpoint
-	}
-
-	_, err := extractPortFromEndpoint(rCfg.Endpoint)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	params receiver.CreateSettings,
+	cfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
-
-	err := rCfg.validate()
-	if err != nil {
-		return nil, err
-	}
 
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
-		r = newReceiver(params, *rCfg)
+		var err error
+		r, err = newReceiver(params, *rCfg)
+		if err != nil {
+			return nil, err
+		}
 		receivers[rCfg] = r
 	}
 	receiverLock.Unlock()
@@ -115,21 +102,20 @@ func createMetricsReceiver(
 // createLogsReceiver creates a logs receiver based on provided config.
 func createLogsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	params receiver.CreateSettings,
+	cfg component.Config,
 	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	rCfg := cfg.(*Config)
-
-	err := rCfg.validate()
-	if err != nil {
-		return nil, err
-	}
 
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
-		r = newReceiver(params, *rCfg)
+		var err error
+		r, err = newReceiver(params, *rCfg)
+		if err != nil {
+			return nil, err
+		}
 		receivers[rCfg] = r
 	}
 	receiverLock.Unlock()

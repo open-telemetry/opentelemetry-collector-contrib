@@ -20,7 +20,7 @@ package perfcounters // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 // MockPerfCounterScraperError is an implementation of PerfCounterScraper that returns
@@ -29,16 +29,20 @@ type MockPerfCounterScraperError struct {
 	scrapeErr    error
 	getObjectErr error
 	getValuesErr error
+	initError    error
 }
 
 // NewMockPerfCounterScraperError returns a MockPerfCounterScraperError that will return
 // the specified errors on subsequent function calls.
-func NewMockPerfCounterScraperError(scrapeErr, getObjectErr, getValuesErr error) *MockPerfCounterScraperError {
-	return &MockPerfCounterScraperError{scrapeErr: scrapeErr, getObjectErr: getObjectErr, getValuesErr: getValuesErr}
+func NewMockPerfCounterScraperError(scrapeErr, getObjectErr, getValuesErr, initError error) *MockPerfCounterScraperError {
+	return &MockPerfCounterScraperError{scrapeErr: scrapeErr, getObjectErr: getObjectErr, getValuesErr: getValuesErr, initError: initError}
 }
 
 // start is a no-op
 func (p *MockPerfCounterScraperError) Initialize(objects ...string) error {
+	if p.initError != nil {
+		return p.initError
+	}
 	return nil
 }
 
@@ -85,12 +89,12 @@ func (obj mockPerfDataObjectError) GetValues(counterNames ...string) ([]*Counter
 //
 // Example Usage:
 //
-// s := NewMockPerfCounterScraper(map[string]map[string][]int64{
-//     "Object1": map[string][]int64{
-//         "Counter1": []int64{1, 2},
-//         "Counter2": []int64{4},
-//     },
-// })
+//	s := NewMockPerfCounterScraper(map[string]map[string][]int64{
+//	    "Object1": map[string][]int64{
+//	        "Counter1": []int64{1, 2},
+//	        "Counter2": []int64{4},
+//	    },
+//	})
 //
 // s.scrape().GetObject("Object1").GetValues("Counter1", "Counter2")
 //

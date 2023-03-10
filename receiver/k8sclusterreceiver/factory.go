@@ -15,14 +15,10 @@
 package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 
 import (
-	"context"
-	"fmt"
 	"time"
 
-	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -30,6 +26,8 @@ import (
 const (
 	// Value of "type" key in configuration.
 	typeStr = "k8s_cluster"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
 
 	// supported distributions
 	distributionKubernetes = "kubernetes"
@@ -42,9 +40,8 @@ const (
 
 var defaultNodeConditionsToReport = []string{"Ready"}
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Distribution:               defaultDistribution,
 		CollectionInterval:         defaultCollectionInterval,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
@@ -54,36 +51,10 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
-func createMetricsReceiver(
-	_ context.Context, params component.ReceiverCreateSettings, cfg config.Receiver,
-	consumer consumer.Metrics) (component.MetricsReceiver, error) {
-	rCfg := cfg.(*Config)
-
-	k8sClient, err := rCfg.getK8sClient()
-	if err != nil {
-		return nil, err
-	}
-
-	var osQuotaClient quotaclientset.Interface
-	switch rCfg.Distribution {
-	case distributionOpenShift:
-		osQuotaClient, err = rCfg.getOpenShiftQuotaClient()
-		if err != nil {
-			return nil, err
-		}
-	case distributionKubernetes:
-		// default case, nothing to initialize
-	default:
-		return nil, fmt.Errorf("\"%s\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", rCfg.Distribution)
-	}
-
-	return newReceiver(params, rCfg, consumer, k8sClient, osQuotaClient)
-}
-
 // NewFactory creates a factory for k8s_cluster receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		receiver.WithMetrics(newReceiver, stability))
 }

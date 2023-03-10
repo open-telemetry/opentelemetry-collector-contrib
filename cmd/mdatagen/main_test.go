@@ -15,68 +15,38 @@
 package main
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-)
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-const (
-	validMetadata = `
-name: metricreceiver
-attributes:
-  cpu_type:
-    value: type
-    description: The type of CPU consumption
-    enum:
-    - user
-    - io_wait
-    - system
-  host:
-    description: The type of CPU consumption
-metrics:
-  system.cpu.time:
-    enabled: true
-    description: Total CPU seconds broken down by different states.
-    extended_documentation: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
-    unit: s
-    sum:
-      aggregation: cumulative
-      value_type: double
-    attributes: [host, cpu_type]
-`
+	md "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen/internal/metadata"
 )
 
 func Test_runContents(t *testing.T) {
-	type args struct {
-		yml       string
-		useExpGen bool
-	}
 	tests := []struct {
-		name                  string
-		args                  args
-		expectedDocumentation string
-		want                  string
-		wantErr               string
+		name    string
+		yml     string
+		wantErr bool
 	}{
 		{
-			name:                  "valid metadata",
-			args:                  args{validMetadata, false},
-			expectedDocumentation: "testdata/documentation_v1.md",
-			want:                  "",
-		},
-		{
-			name:                  "valid metadata v2",
-			args:                  args{validMetadata, true},
-			expectedDocumentation: "testdata/documentation_v2.md",
-			want:                  "",
+			name: "valid metadata",
+			yml: `
+name: metricreceiver
+metrics:
+  metric:
+    enabled: true
+    description: Description.
+    unit: s
+    gauge:
+      value_type: double`,
 		},
 		{
 			name:    "invalid yaml",
-			args:    args{"invalid", false},
-			want:    "",
-			wantErr: "cannot unmarshal",
+			yml:     "invalid",
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -84,33 +54,17 @@ func Test_runContents(t *testing.T) {
 			tmpdir := t.TempDir()
 
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
-			require.NoError(t, ioutil.WriteFile(metadataFile, []byte(tt.args.yml), 0600))
+			require.NoError(t, os.WriteFile(metadataFile, []byte(tt.yml), 0600))
 
-			err := run(metadataFile, tt.args.useExpGen)
-
-			if tt.wantErr != "" {
-				require.Regexp(t, tt.wantErr, err)
-			} else {
-				require.NoError(t, err)
-
-				genFilePath := filepath.Join(tmpdir, "internal/metadata/generated_metrics.go")
-				if tt.args.useExpGen {
-					genFilePath = filepath.Join(tmpdir, "internal/metadata/generated_metrics_v2.go")
-				}
-				require.FileExists(t, genFilePath)
-
-				actualDocumentation := filepath.Join(tmpdir, "documentation.md")
-				require.FileExists(t, actualDocumentation)
-				if tt.expectedDocumentation != "" {
-					expectedFileBytes, err := ioutil.ReadFile(tt.expectedDocumentation)
-					require.NoError(t, err)
-
-					actualFileBytes, err := ioutil.ReadFile(actualDocumentation)
-					require.NoError(t, err)
-
-					require.Equal(t, expectedFileBytes, actualFileBytes)
-				}
+			err := run(metadataFile)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
 			}
+			require.NoError(t, err)
+
+			require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics.go"))
+			require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
 		})
 	}
 }
@@ -137,9 +91,16 @@ func Test_run(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := run(tt.args.ymlPath, false); (err != nil) != tt.wantErr {
+			if err := run(tt.args.ymlPath); (err != nil) != tt.wantErr {
 				t.Errorf("run() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
+}
+
+// TestGenerated verifies that the internal/metadata API is generated correctly.
+func TestGenerated(t *testing.T) {
+	mb := md.NewMetricsBuilder(md.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	m := mb.Emit()
+	require.Equal(t, 0, m.ResourceMetrics().Len())
 }

@@ -18,51 +18,51 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "alibabacloud_logservice"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for AlibabaCloud LogService exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter))
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() config.Exporter {
-	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
 func createTracesExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.TracesExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
 	return newTracesExporter(set, cfg)
 }
 
 func createMetricsExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (exp component.MetricsExporter, err error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exp exporter.Metrics, err error) {
 	return newMetricsExporter(set, cfg)
 }
 
 func createLogsExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (exp component.LogsExporter, err error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exp exporter.Logs, err error) {
 	return newLogsExporter(set, cfg)
 }

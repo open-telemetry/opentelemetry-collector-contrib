@@ -1,0 +1,3 @@
+chrony/custom:
+  endpoint: "udp://localhost:3030"
+  timeout: 10s

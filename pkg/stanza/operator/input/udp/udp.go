@@ -30,18 +30,25 @@ import (
 )
 
 const (
+	operatorType = "udp_input"
+
 	// Maximum UDP packet size
 	MaxUDPSize = 64 * 1024
 )
 
 func init() {
-	operator.Register("udp_input", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new UDP input config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new UDP input config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "udp_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
 			Encoding: helper.NewEncodingConfig(),
 			Multiline: helper.MultilineConfig{
@@ -54,16 +61,18 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a udp input operator.
 type Config struct {
-	helper.InputConfig `yaml:",inline"`
-	BaseConfig         `yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash"`
+	BaseConfig         `mapstructure:",squash"`
 }
 
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
-	ListenAddress string                 `mapstructure:"listen_address,omitempty"        json:"listen_address,omitempty"       yaml:"listen_address,omitempty"`
-	AddAttributes bool                   `mapstructure:"add_attributes,omitempty"        json:"add_attributes,omitempty"       yaml:"add_attributes,omitempty"`
-	Encoding      helper.EncodingConfig  `mapstructure:",squash,omitempty"               json:",inline,omitempty"              yaml:",inline,omitempty"`
-	Multiline     helper.MultilineConfig `mapstructure:"multiline,omitempty"             json:"multiline,omitempty"            yaml:"multiline,omitempty"`
+	ListenAddress               string                 `mapstructure:"listen_address,omitempty"`
+	AddAttributes               bool                   `mapstructure:"add_attributes,omitempty"`
+	Encoding                    helper.EncodingConfig  `mapstructure:",squash,omitempty"`
+	Multiline                   helper.MultilineConfig `mapstructure:"multiline,omitempty"`
+	PreserveLeadingWhitespaces  bool                   `mapstructure:"preserve_leading_whitespaces,omitempty"`
+	PreserveTrailingWhitespaces bool                   `mapstructure:"preserve_trailing_whitespaces,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -79,7 +88,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	address, err := net.ResolveUDPAddr("udp", c.ListenAddress)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve listen_address: %s", err)
+		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
 	encoding, err := c.Encoding.Build()
@@ -88,7 +97,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, nil, MaxUDPSize)
+	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, MaxUDPSize)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +142,7 @@ func (u *Input) Start(persister operator.Persister) error {
 
 	conn, err := net.ListenUDP("udp", u.address)
 	if err != nil {
-		return fmt.Errorf("failed to open connection: %s", err)
+		return fmt.Errorf("failed to open connection: %w", err)
 	}
 	u.connection = conn
 
@@ -173,7 +182,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 					continue
 				}
 
-				entry, err := u.NewEntry(decoded)
+				entry, err := u.NewEntry(string(decoded))
 				if err != nil {
 					u.Errorw("Failed to create entry", zap.Error(err))
 					continue
@@ -221,6 +230,9 @@ func (u *Input) readMessage() ([]byte, net.Addr, error) {
 
 // Stop will stop listening for udp messages.
 func (u *Input) Stop() error {
+	if u.cancel == nil {
+		return nil
+	}
 	u.cancel()
 	if u.connection != nil {
 		if err := u.connection.Close(); err != nil {

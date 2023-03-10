@@ -19,10 +19,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -30,31 +28,32 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "prometheus"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a new Prometheus exporter factory.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter))
+		exporter.WithMetrics(createMetricsExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings:  config.NewExporterSettings(config.NewComponentID(typeStr)),
 		ConstLabels:       map[string]string{},
 		SendTimestamps:    false,
 		MetricExpiration:  time.Minute * 5,
-		skipSanitizeLabel: featuregate.GetRegistry().IsEnabled(dropSanitizationGate.ID),
+		EnableOpenMetrics: false,
 	}
 }
 
 func createMetricsExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.MetricsExporter, error) {
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
 	pcfg := cfg.(*Config)
 
 	prometheus, err := newPrometheusExporter(pcfg, set)
@@ -63,10 +62,10 @@ func createMetricsExporter(
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		prometheus.ConsumeMetrics,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(prometheus.Start),
 		exporterhelper.WithShutdown(prometheus.Shutdown),
 	)
@@ -75,12 +74,12 @@ func createMetricsExporter(
 	}
 
 	return &wrapMetricsExporter{
-		MetricsExporter: resourcetotelemetry.WrapMetricsExporter(pcfg.ResourceToTelemetrySettings, exporter),
-		exporter:        prometheus,
+		Metrics:  resourcetotelemetry.WrapMetricsExporter(pcfg.ResourceToTelemetrySettings, exporter),
+		exporter: prometheus,
 	}, nil
 }
 
 type wrapMetricsExporter struct {
-	component.MetricsExporter
+	exporter.Metrics
 	exporter *prometheusExporter
 }

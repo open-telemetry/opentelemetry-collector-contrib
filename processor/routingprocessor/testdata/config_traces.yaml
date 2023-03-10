@@ -1,36 +1,13 @@
-receivers:
-  nop:
-
-processors:
-  routing:
-    default_exporters:
-    - otlp
-    attribute_source: context
-    from_attribute: X-Tenant
-    table:
-    - value: acme
-      exporters:
-      - jaeger/acme
-      - otlp/acme
-    - value: globex
-      exporters:
-      - otlp/globex
-
-exporters:
-  otlp:
-  otlp/acme:
-  otlp/globex:
-  jaeger/acme:
-    endpoint: localhost:14250
-
-service:
-  pipelines:
-    traces:
-      receivers:
-      - nop
-      processors:
-      - routing
-      exporters:
-      - jaeger/acme
-      - otlp/acme
-      - otlp/globex
+routing:
+  default_exporters:
+  - otlp
+  attribute_source: context
+  from_attribute: X-Tenant
+  table:
+  - value: acme
+    exporters:
+    - jaeger/acme
+    - otlp/acme
+  - value: globex
+    exporters:
+    - otlp/globex

@@ -24,9 +24,9 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -54,7 +54,7 @@ func (z *zookeeperMetricsScraper) Name() string {
 	return typeStr
 }
 
-func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, config *Config) (*zookeeperMetricsScraper, error) {
+func newZookeeperMetricsScraper(settings receiver.CreateSettings, config *Config) (*zookeeperMetricsScraper, error) {
 	_, _, err := net.SplitHostPort(config.TCPAddr.Endpoint)
 	if err != nil {
 		return nil, err
@@ -64,14 +64,16 @@ func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, confi
 		return nil, errors.New("timeout must be a positive duration")
 	}
 
-	return &zookeeperMetricsScraper{
+	z := &zookeeperMetricsScraper{
 		logger:                settings.Logger,
 		config:                config,
-		mb:                    metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:                    metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		closeConnection:       closeConnection,
 		setConnectionDeadline: setConnectionDeadline,
 		sendCmd:               sendCmd,
-	}, nil
+	}
+
+	return z, nil
 }
 
 func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {

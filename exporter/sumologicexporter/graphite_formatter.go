@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
@@ -35,18 +34,15 @@ const (
 )
 
 // newGraphiteFormatter creates new formatter for given SourceFormat template
-func newGraphiteFormatter(template string) (graphiteFormatter, error) {
-	r, err := regexp.Compile(sourceRegex)
-	if err != nil {
-		return graphiteFormatter{}, err
-	}
+func newGraphiteFormatter(template string) graphiteFormatter {
+	r := regexp.MustCompile(sourceRegex)
 
 	sf := newSourceFormat(r, template)
 
 	return graphiteFormatter{
 		template: sf,
 		replacer: strings.NewReplacer(`.`, `_`, ` `, `_`),
-	}, nil
+	}
 }
 
 // escapeGraphiteString replaces dot and space using replacer,
@@ -85,13 +81,13 @@ func (gf *graphiteFormatter) numberRecord(fs fields, name string, dataPoint pmet
 	case pmetric.NumberDataPointValueTypeDouble:
 		return fmt.Sprintf("%s %g %d",
 			gf.format(fs, name),
-			dataPoint.DoubleVal(),
+			dataPoint.DoubleValue(),
 			dataPoint.Timestamp()/pcommon.Timestamp(time.Second),
 		)
 	case pmetric.NumberDataPointValueTypeInt:
 		return fmt.Sprintf("%s %d %d",
 			gf.format(fs, name),
-			dataPoint.IntVal(),
+			dataPoint.IntValue(),
 			dataPoint.Timestamp()/pcommon.Timestamp(time.Second),
 		)
 	}
@@ -104,22 +100,22 @@ func (gf *graphiteFormatter) metric2String(record metricPair) string {
 	fs := newFields(record.attributes)
 	name := record.metric.Name()
 
-	switch record.metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch record.metric.Type() {
+	case pmetric.MetricTypeGauge:
 		dps := record.metric.Gauge().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, gf.numberRecord(fs, name, dps.At(i)))
 		}
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dps := record.metric.Sum().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, gf.numberRecord(fs, name, dps.At(i)))
 		}
 	// Skip complex metrics
-	case pmetric.MetricDataTypeHistogram:
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeHistogram:
+	case pmetric.MetricTypeSummary:
 	}
 
 	return strings.Join(nextLines, "\n")

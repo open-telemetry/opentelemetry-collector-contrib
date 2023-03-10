@@ -17,58 +17,126 @@ package logzioexporter
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, 2, len(cfg.Exporters))
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	cfgExp := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
-	assert.Equal(t, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-		TracesToken:      "logzioTESTtoken",
-		Region:           "eu",
-		CustomEndpoint:   "https://some-url.com:8888",
-		DrainInterval:    5,
-		QueueCapacity:    500,
-		QueueMaxLength:   500,
-	}, cfgExp)
+	expected := &Config{
+		Token:  "token",
+		Region: "eu",
+	}
+	expected.RetrySettings = exporterhelper.NewDefaultRetrySettings()
+	expected.RetrySettings.MaxInterval = 5 * time.Second
+	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
+	expected.QueueSettings.Enabled = false
+	expected.HTTPClientSettings = confighttp.HTTPClientSettings{
+		Endpoint: "",
+		Timeout:  30 * time.Second,
+		Headers:  map[string]configopaque.String{},
+		// Default to gzip compression
+		Compression: configcompression.Gzip,
+		// We almost read 0 bytes, so no need to tune ReadBufferSize.
+		WriteBufferSize: 512 * 1024,
+	}
+	assert.Equal(t, expected, cfg)
 }
 
 func TestDefaultLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "configd.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "configd.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, 2, len(cfg.Exporters))
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	cfgExp := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
-	assert.Equal(t, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-		TracesToken:      "logzioTESTtoken",
-		DrainInterval:    3,
-		QueueCapacity:    20 * 1024 * 1024,
-		QueueMaxLength:   500000,
-	}, cfgExp)
+	expected := &Config{
+		Token: "logzioTESTtoken",
+	}
+	expected.RetrySettings = exporterhelper.NewDefaultRetrySettings()
+	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
+	expected.HTTPClientSettings = confighttp.HTTPClientSettings{
+		Endpoint: "",
+		Timeout:  30 * time.Second,
+		Headers:  map[string]configopaque.String{},
+		// Default to gzip compression
+		Compression: configcompression.Gzip,
+		// We almost read 0 bytes, so no need to tune ReadBufferSize.
+		WriteBufferSize: 512 * 1024,
+	}
+	assert.Equal(t, expected, cfg)
+}
+
+func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
+	// Config with legacy options
+	actualCfg := &Config{
+		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:  exporterhelper.NewDefaultRetrySettings(),
+		Token:          "logzioTESTtoken",
+		CustomEndpoint: "https://api.example.com",
+		QueueMaxLength: 10,
+		DrainInterval:  10,
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "",
+			Timeout:  10 * time.Second,
+			Headers:  map[string]configopaque.String{},
+			// Default to gzip compression
+			Compression: configcompression.Gzip,
+			// We almost read 0 bytes, so no need to tune ReadBufferSize.
+			WriteBufferSize: 512 * 1024,
+		},
+	}
+	params := exportertest.NewNopCreateSettings()
+	logger := hclog2ZapLogger{
+		Zap:  params.Logger,
+		name: loggerName,
+	}
+	actualCfg.checkAndWarnDeprecatedOptions(&logger)
+
+	expected := &Config{
+		Token:          "logzioTESTtoken",
+		CustomEndpoint: "https://api.example.com",
+		QueueMaxLength: 10,
+		DrainInterval:  10,
+		RetrySettings:  exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "https://api.example.com",
+			Timeout:  10 * time.Second,
+			Headers:  map[string]configopaque.String{},
+			// Default to gzip compression
+			Compression: configcompression.Gzip,
+			// We almost read 0 bytes, so no need to tune ReadBufferSize.
+			WriteBufferSize: 512 * 1024,
+		},
+	}
+	expected.QueueSettings.QueueSize = 10
+	assert.Equal(t, expected, actualCfg)
+}
+
+func TestNullTokenConfig(tester *testing.T) {
+	cfg := Config{
+		Region: "eu",
+	}
+	assert.Error(tester, cfg.Validate(), "Empty token should produce error")
 }

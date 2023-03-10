@@ -5,9 +5,11 @@ sem_conv_version: 1.9.0
 attributes:
   device:
     description: Name of the disk.
+    type: string
 
   direction:
     description: Direction of flow of bytes/operations (read or write).
+    type: string
     enum: [read, write]
 
 metrics:
@@ -20,7 +22,6 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
-
   system.disk.operations:
     enabled: true
     description: Disk operations count.
@@ -40,7 +41,6 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [device]
-
   system.disk.operation_time:
     enabled: true
     description: Time spent in disk operations.
@@ -50,7 +50,6 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
-
   system.disk.weighted_io_time:
     enabled: true
     description: Time disk spent activated multiplied by the queue length.
@@ -70,10 +69,9 @@ metrics:
       aggregation: cumulative
       monotonic: false
     attributes: [device]
-
   system.disk.merged:
     enabled: true
-    description: The number of disk reads merged into single physical disk access operations.
+    description: The number of disk reads/writes merged into single physical disk access operations.
     unit: "{operations}"
     sum:
       value_type: int

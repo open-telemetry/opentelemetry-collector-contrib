@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package deltatorateprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 
 import (
@@ -20,47 +19,48 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "deltatorate"
+	// The stability level of the processor.
+	stability = component.StabilityLevelDevelopment
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Delta to Rate processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsProcessor(createMetricsProcessor))
+		processor.WithMetrics(createMetricsProcessor, stability))
 }
 
-func createDefaultConfig() config.Processor {
-	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
-	cfg config.Processor,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	processorConfig, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	processorConfig.Validate()
-	metricsProcessor := newDeltaToRateProcessor(processorConfig, params.Logger)
+	metricsProcessor := newDeltaToRateProcessor(processorConfig, set.Logger)
 
 	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,

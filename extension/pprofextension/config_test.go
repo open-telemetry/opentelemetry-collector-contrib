@@ -20,36 +20,43 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
-
-	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
-	assert.Equal(t,
-		&Config{
-			ExtensionSettings:    config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
-			TCPAddr:              confignet.TCPAddr{Endpoint: "0.0.0.0:1777"},
-			BlockProfileFraction: 3,
-			MutexProfileFraction: 5,
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id:       component.NewID(typeStr),
+			expected: NewFactory().CreateDefaultConfig(),
 		},
-		ext1)
+		{
+			id: component.NewIDWithName(typeStr, "1"),
+			expected: &Config{
+				TCPAddr:              confignet.TCPAddr{Endpoint: "127.0.0.1:1777"},
+				BlockProfileFraction: 3,
+				MutexProfileFraction: 5,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }

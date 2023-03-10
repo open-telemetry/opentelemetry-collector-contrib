@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package httpforwarder
 
 import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -30,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -49,7 +48,7 @@ func TestExtension(t *testing.T) {
 		config                      *Config
 		expectedbackendStatusCode   int
 		expectedBackendResponseBody []byte
-		expectedHeaders             map[string]string
+		expectedHeaders             map[string]configopaque.String
 		httpErrorFromBackend        bool
 		requestErrorAtForwarder     bool
 		clientRequestArgs           clientRequestArgs
@@ -65,7 +64,7 @@ func TestExtension(t *testing.T) {
 			},
 			expectedbackendStatusCode:   http.StatusAccepted,
 			expectedBackendResponseBody: []byte("hello world"),
-			expectedHeaders: map[string]string{
+			expectedHeaders: map[string]configopaque.String{
 				"header": "value",
 			},
 			clientRequestArgs: clientRequestArgs{
@@ -84,14 +83,14 @@ func TestExtension(t *testing.T) {
 					Endpoint: listenAt,
 				},
 				Egress: confighttp.HTTPClientSettings{
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"key": "value",
 					},
 				},
 			},
 			expectedbackendStatusCode:   http.StatusAccepted,
 			expectedBackendResponseBody: []byte("hello world with additional headers"),
-			expectedHeaders: map[string]string{
+			expectedHeaders: map[string]configopaque.String{
 				"header": "value",
 			},
 			clientRequestArgs: clientRequestArgs{
@@ -106,7 +105,7 @@ func TestExtension(t *testing.T) {
 					Endpoint: listenAt,
 				},
 				Egress: confighttp.HTTPClientSettings{
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"key": "value",
 					},
 				},
@@ -126,7 +125,7 @@ func TestExtension(t *testing.T) {
 					Endpoint: listenAt,
 				},
 				Egress: confighttp.HTTPClientSettings{
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"key": "value",
 					},
 				},
@@ -186,17 +185,18 @@ func TestExtension(t *testing.T) {
 				// Assert additional headers added by forwarder.
 				for k, v := range test.config.Egress.Headers {
 					got := r.Header.Get(k)
-					assert.Equal(t, v, got)
+					assert.Equal(t, string(v), got)
 				}
 
 				// Assert Via header added by the forwarder on all requests.
 				assert.Equal(t, fmt.Sprintf("%s %s", r.Proto, listenAt), r.Header.Get("Via"))
 
 				for k, v := range test.expectedHeaders {
-					w.Header().Set(k, v)
+					w.Header().Set(k, string(v))
 				}
 				w.WriteHeader(test.expectedbackendStatusCode)
-				w.Write(test.expectedBackendResponseBody)
+				_, err := w.Write(test.expectedBackendResponseBody)
+				assert.NoError(t, err)
 			}))
 			defer backend.Close()
 
@@ -243,8 +243,11 @@ func TestExtension(t *testing.T) {
 				got := response.Header.Get(k)
 				header := strings.ToLower(k)
 				if want, ok := test.expectedHeaders[header]; ok {
-					assert.Equal(t, want, got)
-				} else if k == "Content-Length" || k == "Content-Type" || k == "X-Content-Type-Options" || k == "Date" || k == "Via" {
+					assert.Equal(t, want, configopaque.String(got))
+					continue
+				}
+
+				if k == "Content-Length" || k == "Content-Type" || k == "X-Content-Type-Options" || k == "Date" || k == "Via" {
 					// Content-Length, Content-Type, X-Content-Type-Options and Date are certain headers added by default.
 					// Assertion for Via is done above.
 					continue
@@ -259,7 +262,7 @@ func TestExtension(t *testing.T) {
 }
 
 func httpRequest(t *testing.T, args clientRequestArgs) *http.Request {
-	r, err := http.NewRequest(args.method, args.url, ioutil.NopCloser(strings.NewReader(args.body)))
+	r, err := http.NewRequest(args.method, args.url, io.NopCloser(strings.NewReader(args.body)))
 	require.NoError(t, err)
 
 	for k, v := range args.headers {
@@ -270,7 +273,7 @@ func httpRequest(t *testing.T, args clientRequestArgs) *http.Request {
 }
 
 func readBody(body io.ReadCloser) []byte {
-	out, _ := ioutil.ReadAll(body)
+	out, _ := io.ReadAll(body)
 	return out
 }
 

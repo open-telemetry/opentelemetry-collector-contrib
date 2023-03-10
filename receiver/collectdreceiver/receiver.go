@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package collectdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 
 import (
@@ -20,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -28,14 +27,15 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
-var _ component.MetricsReceiver = (*collectdReceiver)(nil)
+var _ receiver.Metrics = (*collectdReceiver)(nil)
 
-// collectdReceiver implements the component.MetricsReceiver for CollectD protocol.
+// collectdReceiver implements the receiver.Metrics for CollectD protocol.
 type collectdReceiver struct {
 	logger             *zap.Logger
 	addr               string
@@ -50,7 +50,7 @@ func newCollectdReceiver(
 	addr string,
 	timeout time.Duration,
 	defaultAttrsPrefix string,
-	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -74,7 +74,7 @@ func newCollectdReceiver(
 func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		if err := cdr.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %v", err))
+			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %w", err))
 		}
 	}()
 	return nil
@@ -95,7 +95,7 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		recordRequestErrors()
 		w.WriteHeader(http.StatusBadRequest)
@@ -125,7 +125,13 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		cdr.handleHTTPErr(w, err, "unable to process metrics")
 		return
 	}
-	w.Write([]byte("OK"))
+
+	_, err = w.Write([]byte("OK"))
+	if err != nil {
+		cdr.handleHTTPErr(w, err, "unable to write response")
+		return
+	}
+
 }
 
 func (cdr *collectdReceiver) defaultAttributes(req *http.Request) map[string]string {

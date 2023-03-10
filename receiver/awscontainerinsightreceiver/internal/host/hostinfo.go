@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package host // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 
 import (
@@ -82,14 +81,14 @@ func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger
 
 	nodeCapacity, err := mInfo.nodeCapacityCreator(logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize NodeCapacity: %v", err)
+		return nil, fmt.Errorf("failed to initialize NodeCapacity: %w", err)
 	}
 	mInfo.nodeCapacity = nodeCapacity
 
 	defaultSessionConfig := awsutil.CreateDefaultSessionConfig()
 	_, session, err := mInfo.awsSessionCreator(logger, &awsutil.Conn{}, &defaultSessionConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create aws session: %v", err)
+		return nil, fmt.Errorf("failed to create aws session: %w", err)
 	}
 	mInfo.awsSession = session
 
@@ -101,16 +100,16 @@ func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger
 }
 
 func (m *Info) lazyInitEBSVolume(ctx context.Context) {
-	//wait until the instance id is ready
+	// wait until the instance id is ready
 	<-m.instanceIDReadyC
-	//Because ebs volumes only change occasionally, we refresh every 5 collection intervals to reduce ec2 api calls
+	// Because ebs volumes only change occasionally, we refresh every 5 collection intervals to reduce ec2 api calls
 	m.ebsVolume = m.ebsVolumeCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(),
 		5*m.refreshInterval, m.logger)
 	close(m.ebsVolumeReadyC)
 }
 
 func (m *Info) lazyInitEC2Tags(ctx context.Context) {
-	//wait until the instance id is ready
+	// wait until the instance id is ready
 	<-m.instanceIDReadyC
 	m.ec2Tags = m.ec2TagsCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(), m.containerOrchestrator, m.refreshInterval, m.logger)
 	close(m.ec2TagsReadyC)
@@ -131,7 +130,7 @@ func (m *Info) GetRegion() string {
 	return m.ec2Metadata.getRegion()
 }
 
-//GetInstanceIP returns the IP address of the host
+// GetInstanceIP returns the IP address of the host
 func (m *Info) GetInstanceIP() string {
 	return m.ec2Metadata.getInstanceIP()
 }
@@ -164,7 +163,7 @@ func (m *Info) GetClusterName() string {
 	return ""
 }
 
-//GetInstanceIPReadyC returns the channel to show the status of host IP
+// GetInstanceIPReadyC returns the channel to show the status of host IP
 func (m *Info) GetInstanceIPReadyC() chan bool {
 	return m.instanceIPReadyC
 }

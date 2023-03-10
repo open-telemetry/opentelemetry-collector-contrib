@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,83 +15,30 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
-	"fmt"
-
-	"go.opentelemetry.io/collector/pdata/pmetric"
-
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 // registry is a map of names to functions for metrics pipelines
-var registry = map[string]interface{}{
-	"convert_sum_to_gauge": convertSumToGauge,
-	"convert_gauge_to_sum": convertGaugeToSum,
+var datapointRegistry = map[string]interface{}{
+	"convert_sum_to_gauge":             convertSumToGauge,
+	"convert_gauge_to_sum":             convertGaugeToSum,
+	"convert_summary_sum_val_to_sum":   convertSummarySumValToSum,
+	"convert_summary_count_val_to_sum": convertSummaryCountValToSum,
 }
 
 func init() {
 	// Init metrics registry with default functions common to all signals
-	for k, v := range common.DefaultFunctions() {
-		registry[k] = v
+	for k, v := range common.Functions[ottldatapoint.TransformContext]() {
+		datapointRegistry[k] = v
 	}
 }
 
-func DefaultFunctions() map[string]interface{} {
-	return registry
+func DataPointFunctions() map[string]interface{} {
+	return datapointRegistry
 }
 
-func convertSumToGauge() (common.ExprFunc, error) {
-	return func(ctx common.TransformContext) interface{} {
-		mtc, ok := ctx.(metricTransformContext)
-		if !ok {
-			return nil
-		}
-
-		metric := mtc.GetMetric()
-		if metric.DataType() != pmetric.MetricDataTypeSum {
-			return nil
-		}
-
-		dps := metric.Sum().DataPoints()
-
-		metric.SetDataType(pmetric.MetricDataTypeGauge)
-		// Setting the data type removed all the data points, so we must copy them back to the metric.
-		dps.CopyTo(metric.Gauge().DataPoints())
-
-		return nil
-	}, nil
-}
-
-func convertGaugeToSum(stringAggTemp string, monotonic bool) (common.ExprFunc, error) {
-	var aggTemp pmetric.MetricAggregationTemporality
-	switch stringAggTemp {
-	case "delta":
-		aggTemp = pmetric.MetricAggregationTemporalityDelta
-	case "cumulative":
-		aggTemp = pmetric.MetricAggregationTemporalityCumulative
-	default:
-		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
-	}
-
-	return func(ctx common.TransformContext) interface{} {
-		mtc, ok := ctx.(metricTransformContext)
-		if !ok {
-			return nil
-		}
-
-		metric := mtc.GetMetric()
-		if metric.DataType() != pmetric.MetricDataTypeGauge {
-			return nil
-		}
-
-		dps := metric.Gauge().DataPoints()
-
-		metric.SetDataType(pmetric.MetricDataTypeSum)
-		metric.Sum().SetAggregationTemporality(aggTemp)
-		metric.Sum().SetIsMonotonic(monotonic)
-
-		// Setting the data type removed all the data points, so we must copy them back to the metric.
-		dps.CopyTo(metric.Sum().DataPoints())
-
-		return nil
-	}, nil
+func MetricFunctions() map[string]interface{} {
+	return common.Functions[ottlmetric.TransformContext]()
 }

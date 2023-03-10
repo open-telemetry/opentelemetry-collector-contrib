@@ -16,6 +16,7 @@ package errors // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap/zapcore"
@@ -59,7 +60,8 @@ func (e AgentError) WithDetails(keyValues ...string) AgentError {
 
 // WithDetails will add details to an agent error
 func WithDetails(err error, keyValues ...string) AgentError {
-	if agentErr, ok := err.(AgentError); ok {
+	var agentErr AgentError
+	if errors.As(err, &agentErr) {
 		if len(keyValues) > 0 {
 			for i := 0; i+1 < len(keyValues); i += 2 {
 				agentErr.Details[keyValues[i]] = keyValues[i+1]
@@ -72,7 +74,8 @@ func WithDetails(err error, keyValues ...string) AgentError {
 
 // Wrap adds context to the description for richer logs
 func Wrap(err error, context string) AgentError {
-	if agentErr, ok := err.(AgentError); ok {
+	var agentErr AgentError
+	if errors.As(err, &agentErr) {
 		agentErr.Description = fmt.Sprintf("%s: %s", context, agentErr.Description)
 		return agentErr
 	}

@@ -1,8 +1,12 @@
 # PostgreSQL Receiver
 
-This receiver queries the PostgreSQL [statistics collector](https://www.postgresql.org/docs/9.6/monitoring-stats.html).
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
-Supported pipeline types: `metrics`
+This receiver queries the PostgreSQL [statistics collector](https://www.postgresql.org/docs/9.6/monitoring-stats.html).
 
 > :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
 
@@ -41,13 +45,13 @@ receivers:
     endpoint: localhost:5432
     transport: tcp
     username: otel
-    password: $POSTGRESQL_PASSWORD
+    password: ${env:POSTGRESQL_PASSWORD}
     databases:
       - otel
     collection_interval: 10s
     tls:
       insecure: false
-      unsecure_skip_verify: false
+      insecure_skip_verify: false
       ca_file: /home/otel/authorities.crt
       cert_file: /home/otel/mypostgrescert.crt
       key_file: /home/otel/mypostgreskey.key
@@ -58,3 +62,35 @@ The full list of settings exposed for this receiver are documented [here](./conf
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+
+### Feature gate configurations
+
+#### Transition from metrics without "resource_attributes"
+
+All metrics are being transitioning to moving the metric attributes `table` and `database` to resource attributes `postgresql.table` and `postgresql.database` respectively. This effort is motivated via the resource specification found [in the metrics data model](https://github.com/open-telemetry/opentelemetry-specification/blob/141a3ef0bf1eba0b6d260335bbe0ce7af9387cfc/specification/metrics/data-model.md#resource-attributes-1).
+
+Eventually the move will be finalized, but there will be a transitional period where metrics will emit with resource attributes behind a feature gate.
+
+##### Transition Schedule
+
+1. v0.58.0, August 2022:
+
+   - The version of the metrics receiver with resource attributes will be available via feature gates.
+   - The old metrics with `table` and `database` metric attributes are deprecated with a warning.
+   - `receiver.postgresql.emitMetricsWithResourceAttributes` is *disabled* by default.
+   - `receiver.postgresql.emitMetricsWithoutResourceAttributes` is *enabled* by default.
+
+2. v0.60.0, September 2022:
+
+   - The new collection method with resource attributes is enabled by default. The old metrics with the `table` and `database` metric attributes is disabled by default.
+   - `receiver.postgresql.emitMetricsWithResourceAttributes` is *enabled* by default.
+   - `receiver.postgresql.emitMetricsWithoutResourceAttributes` is *disabled* by default.
+
+3. v0.62.0, October 2022:
+
+   - The feature gates are removed.
+   - Metrics collection using resource attributes are always emitted
+   - Metrics collection using the `database` and `table` metric attributes are no longer available.

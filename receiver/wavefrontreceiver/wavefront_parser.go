@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package wavefrontreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
 
 import (
@@ -56,7 +55,7 @@ func (wp *WavefrontParser) BuildParser() (protocol.Parser, error) {
 //
 // Each line received represents a Wavefront metric in the following format:
 //
-// 	"<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]"
+//	"<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]"
 //
 // Detailed description of each element is available on the link above.
 func (wp *WavefrontParser) Parse(line string) (*metricspb.Metric, error) {
@@ -80,7 +79,7 @@ func (wp *WavefrontParser) Parse(line string) (*metricspb.Metric, error) {
 	} else {
 		dblVal, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
-			return nil, fmt.Errorf("invalid wavefront metric value [%s]: %v", line, err)
+			return nil, fmt.Errorf("invalid wavefront metric value [%s]: %w", line, err)
 		}
 		metricType = metricspb.MetricDescriptor_GAUGE_DOUBLE
 		point.Value = &metricspb.Point_DoubleValue{DoubleValue: dblVal}
@@ -115,7 +114,7 @@ func (wp *WavefrontParser) Parse(line string) (*metricspb.Metric, error) {
 		var err error
 		labelKeys, labelValues, err = buildLabels(tags)
 		if err != nil {
-			return nil, fmt.Errorf("invalid wavefront metric [%s]: %v", line, err)
+			return nil, fmt.Errorf("invalid wavefront metric [%s]: %w", line, err)
 		}
 	}
 
@@ -152,7 +151,7 @@ func (wp *WavefrontParser) injectCollectDLabels(
 		metricName, toAddDims = collectdreceiver.LabelsFromName(&metricName)
 		if len(toAddDims) == 0 {
 			if index == -1 {
-				metricName = strings.Replace(metricName, "..", ".", -1)
+				metricName = strings.ReplaceAll(metricName, "..", ".")
 			}
 
 			break

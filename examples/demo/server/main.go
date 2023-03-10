@@ -28,16 +28,13 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/propagation"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -52,37 +49,6 @@ var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 func initProvider() func() {
 	ctx := context.Background()
 
-	otelAgentAddr, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
-	if !ok {
-		otelAgentAddr = "0.0.0.0:4317"
-	}
-
-	metricClient := otlpmetricgrpc.NewClient(
-		otlpmetricgrpc.WithInsecure(),
-		otlpmetricgrpc.WithEndpoint(otelAgentAddr))
-	metricExp, err := otlpmetric.New(ctx, metricClient)
-	handleErr(err, "Failed to create the collector metric exporter")
-
-	pusher := controller.New(
-		processor.NewFactory(
-			simple.NewWithHistogramDistribution(),
-			metricExp,
-		),
-		controller.WithExporter(metricExp),
-		controller.WithCollectPeriod(2*time.Second),
-	)
-	global.SetMeterProvider(pusher)
-
-	err = pusher.Start(ctx)
-	handleErr(err, "Failed to start metric pusher")
-
-	traceClient := otlptracegrpc.NewClient(
-		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint(otelAgentAddr),
-		otlptracegrpc.WithDialOption(grpc.WithBlock()))
-	traceExp, err := otlptrace.New(ctx, traceClient)
-	handleErr(err, "Failed to create the collector trace exporter")
-
 	res, err := resource.New(ctx,
 		resource.WithFromEnv(),
 		resource.WithProcess(),
@@ -94,6 +60,35 @@ func initProvider() func() {
 		),
 	)
 	handleErr(err, "failed to create resource")
+
+	otelAgentAddr, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if !ok {
+		otelAgentAddr = "0.0.0.0:4317"
+	}
+
+	metricExp, err := otlpmetricgrpc.New(
+		ctx,
+		otlpmetricgrpc.WithInsecure(),
+		otlpmetricgrpc.WithEndpoint(otelAgentAddr))
+	handleErr(err, "Failed to create the collector metric exporter")
+
+	meterProvider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(
+			sdkmetric.NewPeriodicReader(
+				metricExp,
+				sdkmetric.WithInterval(2*time.Second),
+			),
+		),
+	)
+	global.SetMeterProvider(meterProvider)
+
+	traceClient := otlptracegrpc.NewClient(
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint(otelAgentAddr),
+		otlptracegrpc.WithDialOption(grpc.WithBlock()))
+	traceExp, err := otlptrace.New(ctx, traceClient)
+	handleErr(err, "Failed to create the collector trace exporter")
 
 	bsp := sdktrace.NewBatchSpanProcessor(traceExp)
 	tracerProvider := sdktrace.NewTracerProvider(
@@ -113,7 +108,7 @@ func initProvider() func() {
 			otel.Handle(err)
 		}
 		// pushes any last exports to the receiver
-		if err := pusher.Stop(cxt); err != nil {
+		if err := meterProvider.Shutdown(cxt); err != nil {
 			otel.Handle(err)
 		}
 	}
@@ -132,7 +127,7 @@ func main() {
 	meter := global.Meter("demo-server-meter")
 	serverAttribute := attribute.String("server-attribute", "foo")
 	commonLabels := []attribute.KeyValue{serverAttribute}
-	requestCount, _ := meter.SyncInt64().Counter(
+	requestCount, _ := meter.Int64Counter(
 		"demo_server/request_counts",
 		instrument.WithDescription("The number of requests received"),
 	)
@@ -160,7 +155,7 @@ func main() {
 		span := trace.SpanFromContext(ctx)
 		bag := baggage.FromContext(ctx)
 
-		baggageAttributes := []attribute.KeyValue{}
+		var baggageAttributes []attribute.KeyValue
 		baggageAttributes = append(baggageAttributes, serverAttribute)
 		for _, member := range bag.Members() {
 			baggageAttributes = append(baggageAttributes, attribute.String("baggage key:"+member.Key(), member.Value()))
@@ -173,12 +168,14 @@ func main() {
 		}
 
 	})
-	wrappedHandler := otelhttp.NewHandler(handler, "/hello")
 
-	// serve up the wrapped handler
-	http.Handle("/hello", wrappedHandler)
-	if err := http.ListenAndServe(":7080", nil); err != nil {
+	mux := http.NewServeMux()
+	mux.Handle("/hello", otelhttp.NewHandler(handler, "/hello"))
+	server := &http.Server{
+		Addr:    ":7080",
+		Handler: mux,
+	}
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		handleErr(err, "server failed to serve")
 	}
-
 }

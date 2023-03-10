@@ -24,42 +24,32 @@ import (
 
 type ByteSize int64
 
-func (h *ByteSize) UnmarshalJSON(raw []byte) error {
-	return h.unmarshalShared(func(i interface{}) error {
-		return json.Unmarshal(raw, &i)
-	})
-}
-
-func (h *ByteSize) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	return h.unmarshalShared(unmarshal)
-}
+var byteSizeRegex = regexp.MustCompile(`^([0-9]+\.?[0-9]*)\s*([kKmMgGtTpP]i?[bB])?$`)
 
 func (h *ByteSize) UnmarshalText(text []byte) (err error) {
 	slice := make([]byte, 1, 2+len(text))
 	slice[0] = byte('"')
 	slice = append(slice, text...)
 	slice = append(slice, byte('"'))
-	return h.UnmarshalJSON(slice)
-}
+	unmarshal := func(i interface{}) error {
+		return json.Unmarshal(slice, &i)
+	}
 
-var byteSizeRegex = regexp.MustCompile(`^([0-9]+\.?[0-9]*)\s*([kKmMgGtTpP]i?[bB])?$`)
-
-func (h *ByteSize) unmarshalShared(unmarshal func(interface{}) error) error {
 	var intType int64
-	if err := unmarshal(&intType); err == nil {
+	if err = unmarshal(&intType); err == nil {
 		*h = ByteSize(intType)
 		return nil
 	}
 
 	var floatType float64
-	if err := unmarshal(&floatType); err == nil {
+	if err = unmarshal(&floatType); err == nil {
 		*h = ByteSize(int64(floatType))
 		return nil
 	}
 
 	var stringType string
-	if err := unmarshal(&stringType); err != nil {
-		return fmt.Errorf("failed to unmarshal to int64, float64, or string: %s", err)
+	if err = unmarshal(&stringType); err != nil {
+		return fmt.Errorf("failed to unmarshal to int64, float64, or string: %w", err)
 	}
 
 	matches := byteSizeRegex.FindStringSubmatch(stringType)

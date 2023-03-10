@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -57,7 +56,7 @@ func TestRoundTrip(t *testing.T) {
 			"error_round_tripper",
 			errorRoundTripper,
 			true,
-			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn"}},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}},
 		},
 	}
 
@@ -70,7 +69,7 @@ func TestRoundTrip(t *testing.T) {
 				assert.Equal(t, awsSDKInfo, r.Header.Get("User-Agent"))
 
 				reqBody := r.Body
-				content, err := ioutil.ReadAll(reqBody)
+				content, err := io.ReadAll(reqBody)
 
 				assert.NoError(t, err)
 				assert.Equal(t, body, string(content))
@@ -148,14 +147,14 @@ func TestInferServiceAndRegion(t *testing.T) {
 		{
 			"no_match_with_config",
 			req4,
-			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn"}},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}},
 			"service",
 			"region",
 		},
 		{
 			"match_with_config",
 			req5,
-			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn"}},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}},
 			"service",
 			"region",
 		},

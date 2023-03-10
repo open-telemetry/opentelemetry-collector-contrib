@@ -21,10 +21,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -36,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -70,13 +69,13 @@ func (suite *JMXIntegrationSuite) TearDownSuite() {
 }
 
 func downloadJMXMetricGathererJAR(url string) (string, error) {
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
 
-	file, err := ioutil.TempFile("", "jmx-metrics.jar")
+	file, err := os.CreateTemp("", "jmx-metrics.jar")
 	if err != nil {
 		return "", err
 	}
@@ -90,7 +89,7 @@ func cassandraContainer(t *testing.T) testcontainers.Container {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    filepath.Join("testdata"),
+			Context:    "testdata",
 			Dockerfile: "Dockerfile.cassandra",
 		},
 		ExposedPorts: []string{"7199:7199"},
@@ -133,16 +132,23 @@ func getLogsOnFailure(t *testing.T, logObserver *observer.ObservedLogs) {
 	}
 }
 
+// Workaround to avoid unused errors
+var skip = func(t *testing.T, why string) {
+	t.Skip(why)
+}
+
 func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 
 	for version, jar := range suite.VersionToJar {
 		t := suite.T()
 		// Run one test per JMX receiver version we're integrating with.
 		t.Run(version, func(t *testing.T) {
-			t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/5874")
+			skip(t, "https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/5874")
 
 			cassandra := cassandraContainer(t)
-			defer cassandra.Terminate(context.Background())
+			defer func() {
+				require.NoError(t, cassandra.Terminate(context.Background()))
+			}()
 			hostname, err := cassandra.Host(context.Background())
 			require.NoError(t, err)
 
@@ -150,7 +156,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 			defer getLogsOnFailure(t, logObserver)
 
 			logger := zap.New(logCore)
-			params := componenttest.NewNopReceiverCreateSettings()
+			params := receivertest.NewNopCreateSettings()
 			params.Logger = logger
 
 			cfg := &Config{
@@ -172,7 +178,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				},
 				LogLevel: "debug",
 			}
-			require.NoError(t, cfg.validate())
+			require.NoError(t, cfg.Validate())
 
 			consumer := new(consumertest.MetricsSink)
 			require.NotNil(t, consumer)
@@ -199,23 +205,23 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				attributes := resource.Attributes()
 				lang, ok := attributes.Get("telemetry.sdk.language")
 				require.True(t, ok)
-				require.Equal(t, "java", lang.StringVal())
+				require.Equal(t, "java", lang.Str())
 
 				sdkName, ok := attributes.Get("telemetry.sdk.name")
 				require.True(t, ok)
-				require.Equal(t, "opentelemetry", sdkName.StringVal())
+				require.Equal(t, "opentelemetry", sdkName.Str())
 
 				version, ok := attributes.Get("telemetry.sdk.version")
 				require.True(t, ok)
-				require.NotEmpty(t, version.StringVal())
+				require.NotEmpty(t, version.Str())
 
 				customAttr, ok := attributes.Get("myattr")
 				require.True(t, ok)
-				require.Equal(t, "myvalue", customAttr.StringVal())
+				require.Equal(t, "myvalue", customAttr.Str())
 
 				anotherCustomAttr, ok := attributes.Get("myotherattr")
 				require.True(t, ok)
-				require.Equal(t, "myothervalue", anotherCustomAttr.StringVal())
+				require.Equal(t, "myothervalue", anotherCustomAttr.Str())
 
 				ilm := rm.ScopeMetrics().At(0)
 				require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.Scope().Name())
@@ -228,7 +234,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				require.Equal(t, "By", met.Unit())
 
 				// otel-java only uses int sum w/ non-monotonic for up down counters instead of gauge
-				require.Equal(t, pmetric.MetricDataTypeSum, met.DataType())
+				require.Equal(t, pmetric.MetricTypeSum, met.Type())
 				sum := met.Sum()
 				require.False(t, sum.IsMonotonic())
 
@@ -239,10 +245,10 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 }
 
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
-		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
+		Endpoint:           "service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi",
 		JARPath:            "/notavalidpath",
 		TargetSystem:       "jvm",
 		OTLPExporterConfig: otlpExporterConfig{

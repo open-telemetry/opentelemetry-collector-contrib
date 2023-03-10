@@ -27,26 +27,33 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "regex_parser"
+
 func init() {
-	operator.Register("regex_parser", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new regex parser config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new regex parser config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		ParserConfig: helper.NewParserConfig(operatorID, "regex_parser"),
+		ParserConfig: helper.NewParserConfig(operatorID, operatorType),
 	}
 }
 
 // Config is the configuration of a regex parser operator.
 type Config struct {
-	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
+	helper.ParserConfig `mapstructure:",squash"`
 
-	Regex string `mapstructure:"regex" json:"regex" yaml:"regex"`
+	Regex string `mapstructure:"regex"`
 
 	Cache struct {
-		Size uint16 `json:"size" yaml:"size"`
-	} `mapstructure:"cache" json:"cache" yaml:"cache"`
+		Size uint16 `mapstructure:"size"`
+	} `mapstructure:"cache"`
 }
 
 // Build will build a regex parser operator.
@@ -62,7 +69,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	r, err := regexp.Compile(c.Regex)
 	if err != nil {
-		return nil, fmt.Errorf("compiling regex: %s", err)
+		return nil, fmt.Errorf("compiling regex: %w", err)
 	}
 
 	namedCaptureGroups := 0

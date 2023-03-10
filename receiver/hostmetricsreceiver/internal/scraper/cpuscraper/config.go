@@ -21,6 +21,6 @@ import (
 
 // Config relating to CPU Metric Scraper.
 type Config struct {
-	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	Metrics                 metadata.MetricsSettings `mapstructure:"metrics"`
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	internal.ScraperConfig
 }

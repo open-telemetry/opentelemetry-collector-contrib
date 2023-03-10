@@ -15,54 +15,48 @@
 package tencentcloudlogserviceexporter
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
-	require.Error(t, err)
-	require.NotNil(t, cfg)
-
-	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
-
-	// Endpoint doesn't have a default value so set it directly.
-	defaultCfg := factory.CreateDefaultConfig().(*Config)
-	defaultCfg.Region = "ap-beijing"
-
-	assert.Equal(t, defaultCfg, e0)
-
-	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
-	expectedCfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-		Region:           "ap-beijing",
-		LogSet:           "demo-logset",
-		Topic:            "demo-topic",
-		SecretID:         "demo-secret-id",
-		SecretKey:        "demo-secret-key",
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id: component.NewIDWithName(typeStr, "2"),
+			expected: &Config{
+				Region:    "ap-beijing",
+				LogSet:    "demo-logset",
+				Topic:     "demo-topic",
+				SecretID:  "demo-secret-id",
+				SecretKey: "demo-secret-key",
+			},
+		},
 	}
-	assert.Equal(t, &expectedCfg, e1)
 
-	params := componenttest.NewNopExporterCreateSettings()
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	le, err := factory.CreateLogsExporter(context.Background(), params, e0)
-	require.NoError(t, err)
-	require.NotNil(t, le)
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	le, err = factory.CreateLogsExporter(context.Background(), params, e1)
-	require.NoError(t, err)
-	require.NotNil(t, le)
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }

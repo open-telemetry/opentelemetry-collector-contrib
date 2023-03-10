@@ -17,6 +17,7 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -84,7 +85,6 @@ func NewCorrectTestValidator(senderName string, receiverName string, provider Da
 	// TODO: Fix Jaeger span links attributes and tracestate.
 	return &CorrectnessTestValidator{
 		dataProvider:         provider,
-		assertionFailures:    make([]*TraceAssertionFailure, 0),
 		ignoreSpanLinksAttrs: senderName == "jaeger" || receiverName == "jaeger",
 	}
 }
@@ -161,52 +161,52 @@ func (v *CorrectnessTestValidator) diffSpan(sentSpan ptrace.Span, recdSpan ptrac
 }
 
 func (v *CorrectnessTestValidator) diffSpanTraceID(sentSpan ptrace.Span, recdSpan ptrace.Span) {
-	if sentSpan.TraceID().HexString() != recdSpan.TraceID().HexString() {
+	if sentSpan.TraceID() != recdSpan.TraceID() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name(),
 			fieldPath:     "TraceId",
-			expectedValue: sentSpan.TraceID().HexString(),
-			actualValue:   recdSpan.TraceID().HexString(),
+			expectedValue: sentSpan.TraceID(),
+			actualValue:   recdSpan.TraceID(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
 }
 
 func (v *CorrectnessTestValidator) diffSpanSpanID(sentSpan ptrace.Span, recdSpan ptrace.Span) {
-	if sentSpan.SpanID().HexString() != recdSpan.SpanID().HexString() {
+	if sentSpan.SpanID() != recdSpan.SpanID() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name(),
 			fieldPath:     "SpanId",
-			expectedValue: sentSpan.SpanID().HexString(),
-			actualValue:   recdSpan.SpanID().HexString(),
+			expectedValue: sentSpan.SpanID(),
+			actualValue:   recdSpan.SpanID(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
 }
 
 func (v *CorrectnessTestValidator) diffSpanTraceState(sentSpan ptrace.Span, recdSpan ptrace.Span) {
-	if sentSpan.TraceState() != recdSpan.TraceState() {
+	if sentSpan.TraceState().AsRaw() != recdSpan.TraceState().AsRaw() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name(),
 			fieldPath:     "TraceState",
-			expectedValue: sentSpan.TraceState,
-			actualValue:   recdSpan.TraceState,
+			expectedValue: sentSpan.TraceState().AsRaw(),
+			actualValue:   recdSpan.TraceState().AsRaw(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
 }
 
 func (v *CorrectnessTestValidator) diffSpanParentSpanID(sentSpan ptrace.Span, recdSpan ptrace.Span) {
-	if sentSpan.ParentSpanID().HexString() != recdSpan.ParentSpanID().HexString() {
+	if sentSpan.ParentSpanID() != recdSpan.ParentSpanID() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name(),
 			fieldPath:     "ParentSpanId",
-			expectedValue: sentSpan.ParentSpanID().HexString(),
-			actualValue:   recdSpan.ParentSpanID().HexString(),
+			expectedValue: sentSpan.ParentSpanID(),
+			actualValue:   recdSpan.ParentSpanID(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
@@ -365,7 +365,7 @@ func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan ptrace.Span, recdSpan 
 				if v.ignoreSpanLinksAttrs {
 					return
 				}
-				if sentLink.TraceState() != recdLink.TraceState() {
+				if sentLink.TraceState().AsRaw() != recdLink.TraceState().AsRaw() {
 					af := &TraceAssertionFailure{
 						typeName:      "Span",
 						dataComboName: sentSpan.Name(),
@@ -442,7 +442,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 
 func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pcommon.Value, recdVal pcommon.Value,
 	fmtStr string, attrKey string) {
-	if !sentVal.Equal(recdVal) {
+	if reflect.DeepEqual(sentVal.AsRaw(), recdVal.AsRaw()) {
 		sentStr := sentVal.AsString()
 		recdStr := recdVal.AsString()
 		if !strings.EqualFold(sentStr, recdStr) {
@@ -462,8 +462,8 @@ func (v *CorrectnessTestValidator) compareKeyValueList(
 	spanName string, sentVal pcommon.Value, recdVal pcommon.Value, fmtStr string, attrKey string) {
 	switch recdVal.Type() {
 	case pcommon.ValueTypeMap:
-		v.diffAttributeMap(spanName, sentVal.MapVal(), recdVal.MapVal(), fmtStr)
-	case pcommon.ValueTypeString:
+		v.diffAttributeMap(spanName, sentVal.Map(), recdVal.Map(), fmtStr)
+	case pcommon.ValueTypeStr:
 		v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, attrKey)
 	default:
 		af := &TraceAssertionFailure{
@@ -530,5 +530,5 @@ func populateSpansMap(spansMap map[string]ptrace.Span, tds []ptrace.Traces) {
 }
 
 func traceIDAndSpanIDToString(traceID pcommon.TraceID, spanID pcommon.SpanID) string {
-	return fmt.Sprintf("%s-%s", traceID.HexString(), spanID.HexString())
+	return fmt.Sprintf("%s-%s", traceID, spanID)
 }

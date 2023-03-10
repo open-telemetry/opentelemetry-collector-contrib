@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -64,6 +64,7 @@ func TestDefaultLogsMarshalers(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
 		"otlp_json",
+		"raw",
 	}
 	marshalers := logsMarshalers()
 	assert.Equal(t, len(expectedEncodings), len(marshalers))
@@ -97,8 +98,8 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 	span.SetName(t.Name())
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Second)))
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7}))
-	span.SetParentSpanID(pcommon.NewSpanID([8]byte{8, 9, 10, 11, 12, 13, 14}))
+	span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
+	span.SetParentSpanID([8]byte{8, 9, 10, 11, 12, 13, 14})
 
 	marshaler, ok := tracesMarshalers()["otlp_json"]
 	require.True(t, ok, "Must have otlp json marshaller")
@@ -126,7 +127,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 								"spanId":            "0001020304050607",
 								"parentSpanId":      "08090a0b0c0d0e00",
 								"name":              t.Name(),
-								"kind":              ptrace.SpanKindInternal.String(),
+								"kind":              float64(ptrace.SpanKindInternal),
 								"startTimeUnixNano": fmt.Sprint(now.UnixNano()),
 								"endTimeUnixNano":   fmt.Sprint(now.Add(time.Second).UnixNano()),
 								"status":            map[string]interface{}{},

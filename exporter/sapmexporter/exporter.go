@@ -17,12 +17,14 @@ package sapmexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jaegertracing/jaeger/model"
 	sapmclient "github.com/signalfx/sapm-proto/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -50,11 +52,7 @@ func (se *sapmExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func newSAPMExporter(cfg *Config, params component.ExporterCreateSettings) (sapmExporter, error) {
-	err := cfg.validate()
-	if err != nil {
-		return sapmExporter{}, err
-	}
+func newSAPMExporter(cfg *Config, params exporter.CreateSettings) (sapmExporter, error) {
 
 	client, err := sapmclient.New(cfg.clientOptions()...)
 	if err != nil {
@@ -68,15 +66,16 @@ func newSAPMExporter(cfg *Config, params component.ExporterCreateSettings) (sapm
 	}, err
 }
 
-func newSAPMTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+func newSAPMTracesExporter(cfg *Config, set exporter.CreateSettings) (exporter.Traces, error) {
 	se, err := newSAPMExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
 
 	te, err := exporterhelper.NewTracesExporter(
-		cfg,
+		context.TODO(),
 		set,
+		cfg,
 		se.pushTraceData,
 		exporterhelper.WithShutdown(se.Shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
@@ -118,9 +117,18 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td ptrace.Traces) err
 	// so need to remove that after conversion.
 	filterToken(batches)
 
-	err = se.client.ExportWithAccessToken(ctx, batches, accessToken)
+	ingestResponse, err := se.client.ExportWithAccessTokenAndGetResponse(ctx, batches, accessToken)
+	if se.config.LogDetailedResponse && ingestResponse != nil {
+		if ingestResponse.Err != nil {
+			se.logger.Debug("Failed to get response from trace ingest", zap.Error(ingestResponse.Err))
+		} else {
+			se.logger.Debug("Detailed response from ingest", zap.ByteString("response", ingestResponse.Body))
+		}
+	}
+
 	if err != nil {
-		if sendErr, ok := err.(*sapmclient.ErrSend); ok && sendErr.Permanent {
+		sendErr := &sapmclient.ErrSend{}
+		if errors.As(err, &sendErr) && sendErr.Permanent {
 			return consumererror.NewPermanent(sendErr)
 		}
 		return err
@@ -137,7 +145,7 @@ func (se *sapmExporter) retrieveAccessToken(md ptrace.ResourceSpans) string {
 
 	attrs := md.Resource().Attributes()
 	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
-		return accessToken.StringVal()
+		return accessToken.Str()
 	}
 	return ""
 }

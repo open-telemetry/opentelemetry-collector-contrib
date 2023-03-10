@@ -92,7 +92,7 @@ func Test_userConfigMap_resolve(t *testing.T) {
 		name    string
 		cm      userConfigMap
 		args    args
-		want    map[string]interface{}
+		want    userConfigMap
 		wantErr bool
 	}{
 		// Note:
@@ -100,7 +100,7 @@ func Test_userConfigMap_resolve(t *testing.T) {
 			"one": map[string]interface{}{
 				"two": "`endpoint`",
 			},
-		}, args{observer.EndpointEnv{"endpoint": "localhost"}}, map[string]interface{}{
+		}, args{observer.EndpointEnv{"endpoint": "localhost"}}, userConfigMap{
 			"one": map[string]interface{}{
 				"two": "localhost",
 			},
@@ -108,14 +108,65 @@ func Test_userConfigMap_resolve(t *testing.T) {
 		{
 			"single level map", userConfigMap{
 				"endpoint": "`endpoint`:6379",
-			}, args{observer.EndpointEnv{"endpoint": "localhost"}}, map[string]interface{}{
+			}, args{observer.EndpointEnv{"endpoint": "localhost"}}, userConfigMap{
 				"endpoint": "localhost:6379",
+			}, false,
+		},
+		{
+			"nested slices and maps", userConfigMap{
+				"one": []interface{}{
+					"`one`:6379",
+					map[string]interface{}{
+						"two": []interface{}{
+							"`two`:6379",
+						},
+						"three": []interface{}{
+							map[string]interface{}{
+								"three": "abc`three`xyz",
+							},
+							map[string]interface{}{
+								"four": []string{
+									"`first`",
+									"second",
+									"abc `third` xyz",
+								},
+							},
+						},
+					},
+				},
+			}, args{observer.EndpointEnv{
+				"one":   "one.value",
+				"two":   "two.value",
+				"three": "three.value",
+				"first": "first.value",
+				"third": "third.value",
+			}}, userConfigMap{
+				"one": []interface{}{
+					"one.value:6379",
+					map[string]interface{}{
+						"two": []interface{}{
+							"two.value:6379",
+						},
+						"three": []interface{}{
+							map[string]interface{}{
+								"three": "abcthree.valuexyz",
+							},
+							map[string]interface{}{
+								"four": []interface{}{
+									"first.value",
+									"second",
+									"abc third.value xyz",
+								},
+							},
+						},
+					},
+				},
 			}, false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := expandMap(tt.cm, tt.args.env)
+			got, err := expandConfig(tt.cm, tt.args.env)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("resolve() error = %v, wantErr %v", err, tt.wantErr)
 				return

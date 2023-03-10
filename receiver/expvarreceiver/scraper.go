@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
@@ -37,21 +38,21 @@ type expVar struct {
 
 type expVarScraper struct {
 	cfg    *Config
-	set    *component.ReceiverCreateSettings
+	set    *receiver.CreateSettings
 	client *http.Client
 	mb     *metadata.MetricsBuilder
 }
 
-func newExpVarScraper(cfg *Config, set component.ReceiverCreateSettings) *expVarScraper {
+func newExpVarScraper(cfg *Config, set receiver.CreateSettings) *expVarScraper {
 	return &expVarScraper{
 		cfg: cfg,
 		set: &set,
-		mb:  metadata.NewMetricsBuilder(cfg.MetricsConfig, set.BuildInfo),
+		mb:  metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, set),
 	}
 }
 
 func (e *expVarScraper) start(_ context.Context, host component.Host) error {
-	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.set.TelemetrySettings)
+	client, err := e.cfg.HTTPClientSettings.ToClient(host, e.set.TelemetrySettings)
 	if err != nil {
 		return err
 	}
@@ -76,7 +77,7 @@ func (e *expVarScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	result, err := decodeResponseBody(resp.Body)
 	if err != nil {
-		return emptyMetrics, fmt.Errorf("could not decode response body to JSON: %v", err)
+		return emptyMetrics, fmt.Errorf("could not decode response body to JSON: %w", err)
 	}
 	memStats := result.MemStats
 	if memStats == nil {
@@ -101,7 +102,7 @@ func (e *expVarScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	e.mb.RecordProcessRuntimeMemstatsMspanInuseDataPoint(now, int64(memStats.MSpanInuse))
 	e.mb.RecordProcessRuntimeMemstatsMspanSysDataPoint(now, int64(memStats.MSpanSys))
 	e.mb.RecordProcessRuntimeMemstatsMcacheInuseDataPoint(now, int64(memStats.MCacheInuse))
-	e.mb.RecordProcessRuntimeMemstatsMspanSysDataPoint(now, int64(memStats.MCacheSys))
+	e.mb.RecordProcessRuntimeMemstatsMcacheSysDataPoint(now, int64(memStats.MCacheSys))
 	e.mb.RecordProcessRuntimeMemstatsBuckHashSysDataPoint(now, int64(memStats.BuckHashSys))
 	e.mb.RecordProcessRuntimeMemstatsGcSysDataPoint(now, int64(memStats.GCSys))
 	e.mb.RecordProcessRuntimeMemstatsOtherSysDataPoint(now, int64(memStats.OtherSys))

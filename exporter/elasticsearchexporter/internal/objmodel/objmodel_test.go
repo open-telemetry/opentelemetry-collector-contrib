@@ -40,37 +40,37 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		},
 		"from map": {
 			build: func() Document {
-				return DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
-					"i":   42,
-					"str": "test",
-				}))
+				m := pcommon.NewMap()
+				m.PutInt("i", 42)
+				m.PutStr("str", "test")
+				return DocumentFromAttributes(m)
 			},
 			want: Document{[]field{{"i", IntValue(42)}, {"str", StringValue("test")}}},
 		},
 		"ignores nil values": {
 			build: func() Document {
-				return DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
-					"null": nil,
-					"str":  "test",
-				}))
+				m := pcommon.NewMap()
+				m.PutEmpty("null")
+				m.PutStr("str", "test")
+				return DocumentFromAttributes(m)
 			},
 			want: Document{[]field{{"str", StringValue("test")}}},
 		},
 		"from map with prefix": {
 			build: func() Document {
-				return DocumentFromAttributesWithPath("prefix", pcommon.NewMapFromRaw(map[string]interface{}{
-					"i":   42,
-					"str": "test",
-				}))
+				m := pcommon.NewMap()
+				m.PutInt("i", 42)
+				m.PutStr("str", "test")
+				return DocumentFromAttributesWithPath("prefix", m)
 			},
 			want: Document{[]field{{"prefix.i", IntValue(42)}, {"prefix.str", StringValue("test")}}},
 		},
 		"add attributes with key": {
 			build: func() (doc Document) {
-				doc.AddAttributes("prefix", pcommon.NewMapFromRaw(map[string]interface{}{
-					"i":   42,
-					"str": "test",
-				}))
+				m := pcommon.NewMap()
+				m.PutInt("i", 42)
+				m.PutStr("str", "test")
+				doc.AddAttributes("prefix", m)
 				return doc
 			},
 			want: Document{[]field{{"prefix.i", IntValue(42)}, {"prefix.str", StringValue("test")}}},
@@ -78,9 +78,9 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		"add attribute flattens a map value": {
 			build: func() (doc Document) {
 				mapVal := pcommon.NewValueMap()
-				m := mapVal.MapVal()
-				m.InsertInt("i", 42)
-				m.InsertString("str", "test")
+				m := mapVal.Map()
+				m.PutInt("i", 42)
+				m.PutStr("str", "test")
 				doc.AddAttribute("prefix", mapVal)
 				return doc
 			},
@@ -155,26 +155,20 @@ func TestObjectModel_Dedup(t *testing.T) {
 		},
 		"duplicate after flattening from map: namespace object at end": {
 			build: func() Document {
-				namespace := pcommon.NewValueMap()
-				namespace.MapVal().InsertInt("a", 23)
-
 				am := pcommon.NewMap()
-				am.InsertInt("namespace.a", 42)
-				am.InsertString("toplevel", "test")
-				am.Insert("namespace", namespace)
+				am.PutInt("namespace.a", 42)
+				am.PutStr("toplevel", "test")
+				am.PutEmptyMap("namespace").PutInt("a", 23)
 				return DocumentFromAttributes(am)
 			},
 			want: Document{[]field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(23)}, {"toplevel", StringValue("test")}}},
 		},
 		"duplicate after flattening from map: namespace object at beginning": {
 			build: func() Document {
-				namespace := pcommon.NewValueMap()
-				namespace.MapVal().InsertInt("a", 23)
-
 				am := pcommon.NewMap()
-				am.Insert("namespace", namespace)
-				am.InsertInt("namespace.a", 42)
-				am.InsertString("toplevel", "test")
+				am.PutEmptyMap("namespace").PutInt("a", 23)
+				am.PutInt("namespace.a", 42)
+				am.PutStr("toplevel", "test")
 				return DocumentFromAttributes(am)
 			},
 			want: Document{[]field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(42)}, {"toplevel", StringValue("test")}}},
@@ -234,7 +228,7 @@ func TestValue_FromAttribute(t *testing.T) {
 			want: nilValue,
 		},
 		"string": {
-			in:   pcommon.NewValueString("test"),
+			in:   pcommon.NewValueStr("test"),
 			want: StringValue("test"),
 		},
 		"int": {
@@ -256,7 +250,7 @@ func TestValue_FromAttribute(t *testing.T) {
 		"non-empty array": {
 			in: func() pcommon.Value {
 				v := pcommon.NewValueSlice()
-				tgt := v.SliceVal().AppendEmpty()
+				tgt := v.Slice().AppendEmpty()
 				pcommon.NewValueInt(1).CopyTo(tgt)
 				return v
 			}(),
@@ -269,8 +263,7 @@ func TestValue_FromAttribute(t *testing.T) {
 		"non-empty map": {
 			in: func() pcommon.Value {
 				v := pcommon.NewValueMap()
-				m := v.MapVal()
-				m.Insert("a", pcommon.NewValueInt(1))
+				v.Map().PutInt("a", 1)
 				return v
 			}(),
 			want: Value{kind: KindObject, doc: Document{[]field{{"a", IntValue(1)}}}},
@@ -287,46 +280,46 @@ func TestValue_FromAttribute(t *testing.T) {
 
 func TestDocument_Serialize_Flat(t *testing.T) {
 	tests := map[string]struct {
-		doc  Document
-		want string
+		attrs map[string]interface{}
+		want  string
 	}{
 		"no nesting with multiple fields": {
-			doc: DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"a": "test",
 				"b": 1,
-			})),
+			},
 			want: `{"a":"test","b":1}`,
 		},
 		"shared prefix": {
-			doc: DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"a.str": "test",
 				"a.i":   1,
-			})),
+			},
 			want: `{"a.i":1,"a.str":"test"}`,
 		},
 		"multiple namespaces with dot": {
-			doc: DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"a.str": "test",
 				"b.i":   1,
-			})),
+			},
 			want: `{"a.str":"test","b.i":1}`,
 		},
 		"nested maps": {
-			doc: DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"a": map[string]interface{}{
 					"str": "test",
 					"i":   1,
 				},
-			})),
+			},
 			want: `{"a.i":1,"a.str":"test"}`,
 		},
 		"multi-level nested namespace maps": {
-			doc: DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"a": map[string]interface{}{
 					"b.str": "test",
 					"i":     1,
 				},
-			})),
+			},
 			want: `{"a.b.str":"test","a.i":1}`,
 		},
 	}
@@ -334,8 +327,11 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var buf strings.Builder
-			test.doc.Dedup()
-			err := test.doc.Serialize(&buf, false)
+			m := pcommon.NewMap()
+			assert.NoError(t, m.FromRaw(test.attrs))
+			doc := DocumentFromAttributes(m)
+			doc.Dedup()
+			err := doc.Serialize(&buf, false)
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want, buf.String())
@@ -345,46 +341,46 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 
 func TestDocument_Serialize_Dedot(t *testing.T) {
 	tests := map[string]struct {
-		doc  Document
-		want string
+		attrs map[string]interface{}
+		want  string
 	}{
 		"no nesting with multiple fields": {
-			doc: DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"a": "test",
 				"b": 1,
-			})),
+			},
 			want: `{"a":"test","b":1}`,
 		},
 		"shared prefix": {
-			doc: DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"a.str": "test",
 				"a.i":   1,
-			})),
+			},
 			want: `{"a":{"i":1,"str":"test"}}`,
 		},
 		"multiple namespaces": {
-			doc: DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"a.str": "test",
 				"b.i":   1,
-			})),
+			},
 			want: `{"a":{"str":"test"},"b":{"i":1}}`,
 		},
 		"nested maps": {
-			doc: DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"a": map[string]interface{}{
 					"str": "test",
 					"i":   1,
 				},
-			})),
+			},
 			want: `{"a":{"i":1,"str":"test"}}`,
 		},
 		"multi-level nested namespace maps": {
-			doc: DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"a": map[string]interface{}{
 					"b.c.str": "test",
 					"i":       1,
 				},
-			})),
+			},
 			want: `{"a":{"b":{"c":{"str":"test"}},"i":1}}`,
 		},
 	}
@@ -392,8 +388,11 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var buf strings.Builder
-			test.doc.Dedup()
-			err := test.doc.Serialize(&buf, true)
+			m := pcommon.NewMap()
+			assert.NoError(t, m.FromRaw(test.attrs))
+			doc := DocumentFromAttributes(m)
+			doc.Dedup()
+			err := doc.Serialize(&buf, true)
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want, buf.String())

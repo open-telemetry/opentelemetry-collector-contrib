@@ -16,7 +16,6 @@ package network
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,7 +43,7 @@ func TestBlobWriter(t *testing.T) {
 		w.append(p, size)
 		w.flush()
 	}
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	require.NoError(t, err)
 	assert.Equal(t, maxFiles, len(files))
 	_ = os.RemoveAll(dir)

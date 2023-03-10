@@ -21,15 +21,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
@@ -37,92 +34,100 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "signalfx"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 
 	defaultHTTPTimeout = time.Second * 5
+
+	defaultMaxConns = 100
 )
 
 // NewFactory creates a factory for SignalFx exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter),
-		component.WithTracesExporter(createTracesExporter),
+		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability),
+		exporter.WithTraces(createTracesExporter, stability),
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
+	maxConnCount := defaultMaxConns
+	idleConnTimeout := 30 * time.Second
+
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultHTTPTimeout},
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout:             defaultHTTPTimeout,
+			MaxIdleConns:        &maxConnCount,
+			MaxIdleConnsPerHost: &maxConnCount,
+			IdleConnTimeout:     &idleConnTimeout,
+		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
 		DeltaTranslationTTL:           3600,
 		Correlation:                   correlation.DefaultConfig(),
 		NonAlphanumericDimensionChars: "_-.",
-		MaxConnections:                100,
 	}
 }
 
 func createTracesExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	eCfg config.Exporter,
-) (component.TracesExporter, error) {
+	ctx context.Context,
+	set exporter.CreateSettings,
+	eCfg component.Config,
+) (exporter.Traces, error) {
 	cfg := eCfg.(*Config)
 	corrCfg := cfg.Correlation
 
-	if corrCfg.Endpoint == "" {
+	if corrCfg.HTTPClientSettings.Endpoint == "" {
 		apiURL, err := cfg.getAPIURL()
 		if err != nil {
-			return nil, fmt.Errorf("unable to create API URL: %v", err)
+			return nil, fmt.Errorf("unable to create API URL: %w", err)
 		}
-		corrCfg.Endpoint = apiURL.String()
+		corrCfg.HTTPClientSettings.Endpoint = apiURL.String()
 	}
 	if cfg.AccessToken == "" {
 		return nil, errors.New("access_token is required")
 	}
-	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.Endpoint))
+	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.HTTPClientSettings.Endpoint))
 	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, set)
 
 	return exporterhelper.NewTracesExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		tracker.AddSpans,
 		exporterhelper.WithStart(tracker.Start),
 		exporterhelper.WithShutdown(tracker.Shutdown))
 }
 
 func createMetricsExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	config config.Exporter,
-) (component.MetricsExporter, error) {
+	ctx context.Context,
+	set exporter.CreateSettings,
+	config component.Config,
+) (exporter.Metrics, error) {
+	cfg := config.(*Config)
 
-	expCfg := config.(*Config)
-
-	err := setDefaultExcludes(expCfg)
-	if err != nil {
-		return nil, err
-	}
-
-	exp, err := newSignalFxExporter(expCfg, set.Logger)
+	exp, err := newSignalFxExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
 
 	me, err := exporterhelper.NewMetricsExporter(
-		expCfg,
+		ctx,
 		set,
+		cfg,
 		exp.pushMetrics,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings))
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.shutdown))
 
 	if err != nil {
 		return nil, err
@@ -130,7 +135,7 @@ func createMetricsExporter(
 
 	// If AccessTokenPassthrough enabled, split the incoming Metrics data by splunk.SFxAccessTokenLabel,
 	// this ensures that we get batches of data for the same token when pushing to the backend.
-	if expCfg.AccessTokenPassthrough {
+	if cfg.AccessTokenPassthrough {
 		me = &baseMetricsExporter{
 			Component: me,
 			Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(splunk.SFxAccessTokenLabel, me),
@@ -138,67 +143,33 @@ func createMetricsExporter(
 	}
 
 	return &signalfMetadataExporter{
-		MetricsExporter: me,
-		pushMetadata:    exp.pushMetadata,
+		Metrics:  me,
+		exporter: exp,
 	}, nil
 }
 
-func loadDefaultTranslationRules() ([]translation.Rule, error) {
-	cfg, err := loadConfig([]byte(translation.DefaultTranslationRulesYaml))
-	return cfg.TranslationRules, err
-}
-
-// setDefaultExcludes appends default metrics to be excluded to the exclude_metrics option.
-func setDefaultExcludes(cfg *Config) error {
-	defaultExcludeMetrics, err := loadDefaultExcludes()
-	if err != nil {
-		return err
-	}
-	if cfg.ExcludeMetrics == nil || len(cfg.ExcludeMetrics) > 0 {
-		cfg.ExcludeMetrics = append(cfg.ExcludeMetrics, defaultExcludeMetrics...)
-	}
-	return nil
-}
-
-func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
-	cfg, err := loadConfig([]byte(translation.DefaultExcludeMetricsYaml))
-	return cfg.ExcludeMetrics, err
-}
-
-func loadConfig(bytes []byte) (Config, error) {
-	var cfg Config
-	var data map[string]interface{}
-	if err := yaml.Unmarshal(bytes, &data); err != nil {
-		return cfg, err
-	}
-
-	if err := confmap.NewFromStringMap(data).UnmarshalExact(&cfg); err != nil {
-		return cfg, fmt.Errorf("failed to load default exclude metrics: %v", err)
-	}
-
-	return cfg, nil
-}
-
 func createLogsExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.LogsExporter, error) {
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Logs, error) {
 	expCfg := cfg.(*Config)
 
-	exp, err := newEventExporter(expCfg, set.Logger)
+	exp, err := newEventExporter(expCfg, set)
 	if err != nil {
 		return nil, err
 	}
 
 	le, err := exporterhelper.NewLogsExporter(
-		expCfg,
+		ctx,
 		set,
+		cfg,
 		exp.pushLogs,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings))
+		exporterhelper.WithQueue(expCfg.QueueSettings),
+		exporterhelper.WithStart(exp.startLogs))
 
 	if err != nil {
 		return nil, err

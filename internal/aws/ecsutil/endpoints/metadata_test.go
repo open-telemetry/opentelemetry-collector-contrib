@@ -15,7 +15,6 @@
 package endpoints
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,9 +22,8 @@ import (
 )
 
 func Test_ecsPrefersLatestTME(t *testing.T) {
-	os.Clearenv()
-	os.Setenv(TaskMetadataEndpointV3EnvVar, "http://3")
-	os.Setenv(TaskMetadataEndpointV4EnvVar, "http://4")
+	t.Setenv(TaskMetadataEndpointV3EnvVar, "http://3")
+	t.Setenv(TaskMetadataEndpointV4EnvVar, "http://4")
 
 	tme, err := GetTMEFromEnv()
 	require.NoError(t, err)

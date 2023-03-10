@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ package mockserver // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -45,8 +45,8 @@ type soapEnvelope struct {
 }
 
 // MockServer has access to recorded SOAP responses and will serve them over http based off the scraper's API calls
-func MockServer(t *testing.T) *httptest.Server {
-	vsphereMock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func MockServer(t *testing.T, useTLS bool) *httptest.Server {
+	handlerFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// converting to JSON in order to iterate over map keys
 		jsonified, err := xj.Convert(r.Body)
 		require.NoError(t, err)
@@ -69,8 +69,13 @@ func MockServer(t *testing.T) *httptest.Server {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/xml")
 		_, _ = w.Write(body)
-	}))
-	return vsphereMock
+	})
+
+	if useTLS {
+		return httptest.NewTLSServer(handlerFunc)
+	}
+
+	return httptest.NewServer(handlerFunc)
 }
 
 func routeBody(t *testing.T, requestType string, body map[string]interface{}) ([]byte, error) {
@@ -244,5 +249,5 @@ func routePerformanceQuery(t *testing.T, body map[string]interface{}) ([]byte, e
 }
 
 func loadResponse(filename string) ([]byte, error) {
-	return ioutil.ReadFile(filepath.Join("internal", "mockserver", "responses", filename))
+	return os.ReadFile(filepath.Join("internal", "mockserver", "responses", filename))
 }

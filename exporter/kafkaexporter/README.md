@@ -1,10 +1,14 @@
 # Kafka Exporter
 
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | [contrib]             |
+
 Kafka exporter exports logs, metrics, and traces to Kafka. This exporter uses a synchronous producer
 that blocks and does not batch messages, therefore it should be used with batch and queued retry
 processors for higher throughput and resiliency. Message payload encoding is configurable.
-
-Supported pipeline types: logs, metrics, traces
 
 The following settings are required:
 - `protocol_version` (no default): Kafka protocol version e.g. 2.0.0
@@ -17,7 +21,9 @@ The following settings can be optionally configured:
   - `otlp_json`:  ** EXPERIMENTAL ** payload is JSON serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics or `ExportLogsServiceRequest` for logs. 
   - The following encodings are valid *only* for **traces**.
     - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
-    - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.
+    - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.\
+  - The following encodings are valid *only* for **logs**.
+    - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
 - `auth`
   - `plain_text`
     - `username`: The username to use.
@@ -79,3 +85,6 @@ exporters:
       - localhost:9092
     protocol_version: 2.0.0
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

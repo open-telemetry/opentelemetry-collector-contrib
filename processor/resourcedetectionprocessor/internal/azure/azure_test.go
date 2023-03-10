@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
@@ -30,7 +30,7 @@ import (
 )
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
+	d, err := NewDetector(processortest.NewNopCreateSettings(), nil)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
@@ -52,22 +52,21 @@ func TestDetectAzureAvailable(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mp.AssertExpectations(t)
-	res.Attributes().Sort()
 
-	expected := internal.NewResource(map[string]interface{}{
+	expected := map[string]any{
 		conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
 		conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformAzureVM,
 		conventions.AttributeHostName:       "name",
 		conventions.AttributeCloudRegion:    "location",
 		conventions.AttributeHostID:         "vmID",
 		conventions.AttributeCloudAccountID: "subscriptionID",
+		"azure.vm.name":                     "name",
 		"azure.vm.size":                     "vmSize",
 		"azure.resourcegroup.name":          "resourceGroup",
 		"azure.vm.scaleset.name":            "myScaleset",
-	})
-	expected.Attributes().Sort()
+	}
 
-	assert.Equal(t, expected, res)
+	assert.Equal(t, expected, res.Attributes().AsRaw())
 }
 
 func TestDetectError(t *testing.T) {

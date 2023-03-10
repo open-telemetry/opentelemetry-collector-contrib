@@ -72,23 +72,21 @@ func newOcExporter(_ context.Context, cfg *Config, settings component.TelemetryS
 
 	oce := &ocExporter{
 		cfg:      cfg,
-		metadata: metadata.New(cfg.GRPCClientSettings.Headers),
+		metadata: metadata.New(nil),
 		settings: settings,
+	}
+	for k, v := range cfg.GRPCClientSettings.Headers {
+		oce.metadata.Set(k, string(v))
 	}
 	return oce, nil
 }
 
 // start creates the gRPC client Connection
 func (oce *ocExporter) start(ctx context.Context, host component.Host) error {
-	dialOpts, err := oce.cfg.GRPCClientSettings.ToDialOptions(host, oce.settings)
+	clientConn, err := oce.cfg.GRPCClientSettings.ToClientConn(ctx, host, oce.settings)
 	if err != nil {
 		return err
 	}
-	var clientConn *grpc.ClientConn
-	if clientConn, err = grpc.DialContext(ctx, oce.cfg.GRPCClientSettings.Endpoint, dialOpts...); err != nil {
-		return err
-	}
-
 	oce.grpcClientConn = clientConn
 
 	if oce.tracesClients != nil {
@@ -250,7 +248,7 @@ func (oce *ocExporter) createTraceServiceRPC() (*tracesClientWithCancel, error) 
 	// Initiate the trace service by sending over node identifier info.
 	ctx, cancel := context.WithCancel(context.Background())
 	if len(oce.cfg.Headers) > 0 {
-		ctx = metadata.NewOutgoingContext(ctx, metadata.New(oce.cfg.Headers))
+		ctx = metadata.NewOutgoingContext(ctx, oce.metadata.Copy())
 	}
 	// Cannot use grpc.WaitForReady(cfg.WaitForReady) because will block forever.
 	traceClient, err := oce.traceSvcClient.Export(ctx)
@@ -265,7 +263,7 @@ func (oce *ocExporter) createMetricsServiceRPC() (*metricsClientWithCancel, erro
 	// Initiate the trace service by sending over node identifier info.
 	ctx, cancel := context.WithCancel(context.Background())
 	if len(oce.cfg.Headers) > 0 {
-		ctx = metadata.NewOutgoingContext(ctx, metadata.New(oce.cfg.Headers))
+		ctx = metadata.NewOutgoingContext(ctx, oce.metadata.Copy())
 	}
 	// Cannot use grpc.WaitForReady(cfg.WaitForReady) because will block forever.
 	metricsClient, err := oce.metricsSvcClient.Export(ctx)

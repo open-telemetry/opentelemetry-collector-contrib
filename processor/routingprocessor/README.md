@@ -1,14 +1,22 @@
 # Routing processor
 
+| Status                   |                       |
+|--------------------------|-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [contrib]             |
+
 Routes logs, metrics or traces to specific exporters.
 
 This processor will either read a header from the incoming HTTP request (gRPC or plain HTTP), or it will read a resource attribute, and direct the trace information to specific exporters based on the value read.
 
-This processor *does not* let traces to continue through the pipeline and will emit a warning in case other processor(s) are defined after this one.
+This processor *does not* let traces/metrics/logs to continue through the pipeline and will emit a warning in case other processor(s) are defined after this one.
 Similarly, exporters defined as part of the pipeline are not authoritative: if you add an exporter to the pipeline, make sure you add it to this processor *as well*, otherwise it won't be used at all.
 All exporters defined as part of this processor *must also* be defined as part of the pipeline's exporters.
 
 Given that this processor depends on information provided by the client via HTTP headers or resource attributes, caution must be taken when processors that aggregate data like `batch` or `groupbytrace` are used as part of the pipeline.
+
+## Configuration
 
 The following settings are required:
 
@@ -43,10 +51,60 @@ exporters:
     endpoint: localhost:24250
 ```
 
+### Tech Preview: OpenTelemetry Transformation Language statements as routing conditions
+
+Alternatively, it is possible to use subset of the [OpenTelemetry Transformation Language (OTTL)](../../pkg/ottl/README.md) statements as routing conditions.
+
+To configure the routing processor with [OTTL] routing conditions use the following options:
+
+- `table (required)`: the routing table for this processor.
+- `table.statement (required)`: the routing condition provided as the [OTTL] statement.
+- `table.exporters (required)`: the list of exporters to use when the routing condition is met.
+- `default_exporters (optional)`: contains the list of exporters to use when a record
+does not meet any of specified conditions.
+
+```yaml
+
+processors:
+  routing:
+    default_exporters:
+    - jaeger
+    table:
+      - statement: route() where resource.attributes["X-Tenant"] == "acme"
+        exporters: [jaeger/acme]
+      - statement: delete_key(resource.attributes, "X-Tenant") where IsMatch(resource.attributes["X-Tenant"], ".*corp") == true
+        exporters: [jaeger/ecorp]
+
+exporters:
+  jaeger:
+    endpoint: localhost:14250
+  jaeger/acme:
+    endpoint: localhost:24250
+  jaeger/ecorp:
+    endpoint: localhost:34250
+```
+
+A signal may get matched by routing conditions of more than one routing table entry. In this case, the signal will be routed to all exporters of matching routes.
+Respectively, if none of the routing conditions met, then a signal is routed to default exporters.
+
+It is also possible to mix both the conventional routing configuration and the routing configuration with [OTTL] conditions.
+
+#### Limitations:
+
+- [OTTL] statements can be applied only to resource attributes.
+- Currently, it is not possible to specify the boolean statements without function invocation as the routing condition. It is required to provide the NOOP `route()` or any other supported function as part of the routing statement, see [#13545](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545) for more information.
+- Supported [OTTL] functions:
+  - [IsMatch](../../pkg/ottl/ottlfuncs/README.md#IsMatch)
+  - [delete_key](../../pkg/ottl/ottlfuncs/README.md#delete_key)
+  - [delete_matching_keys](../../pkg/ottl/ottlfuncs/README.md#delete_matching_keys)
+
 The full list of settings exposed for this processor are documented [here](./config.go) with detailed sample configuration files:
 
 - [logs](./testdata/config_logs.yaml)
 - [metrics](./testdata/config_metrics.yaml)
 - [traces](./testdata/config_traces.yaml)
 
-[context_docs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/context.md
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[context_docs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/README.md
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[OTTL]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language

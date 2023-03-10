@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -27,20 +27,22 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "sapm"
+	// The stability level of the exporter.
+	stability         = component.StabilityLevelBeta
+	defaultNumWorkers = 8
 )
 
 // NewFactory creates a factory for SAPM exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter))
+		exporter.WithTraces(createTracesExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		NumWorkers:       defaultNumWorkers,
+		NumWorkers: defaultNumWorkers,
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
@@ -52,9 +54,9 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.TracesExporter, error) {
+	params exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
 	eCfg := cfg.(*Config)
 	return newSAPMTracesExporter(eCfg, params)
 }

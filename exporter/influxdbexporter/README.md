@@ -1,21 +1,31 @@
 # InfluxDB Exporter
 
-This exporter supports sending tracing, metrics, and logging data to [InfluxDB](https://www.influxdata.com/products/).
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | [contrib]             |
 
-Supported pipeline types: traces, metrics, logs
+This exporter supports sending tracing, metrics, and logging data to [InfluxDB](https://www.influxdata.com/products/).
 
 ## Configuration
 
 The following configuration options are supported:
 
-* `endpoint` (required) HTTP destination for line protocol
+* `endpoint` (required) HTTP/S destination for line protocol
+  - if path is set to root (/) or is unspecified, it will be changed to /api/v2/write.
 * `timeout` (default = 5s) Timeout for requests
 * `headers`: (optional) additional headers attached to each HTTP request
   - header `User-Agent` is `OpenTelemetry -> Influx` by default
   - if `token` (below) is set, then header `Authorization` will overridden with the given token
 * `org` (required) Name of InfluxDB organization that owns the destination bucket
-* `bucket` (required) InfluxDB bucket name to where signals will 
+* `bucket` (required) name of InfluxDB bucket to which signals will be written
 * `token` (optional) The authentication token for InfluxDB
+* `v1_compatibility` (optional) Options for exporting to InfluxDB v1.x
+  * `enabled` (optional) Use InfluxDB v1.x API if enabled
+  * `db` (required if enabled) Name of the InfluxDB database to which signals will be written
+  * `username` (optional) Basic auth username for authenticating with InfluxDB v1.x
+  * `password` (optional) Basic auth password for authenticating with InfluxDB v1.x
 * `metrics_schema` (default = telegraf-prometheus-v1) The chosen metrics schema to write; must be one of:
   * `telegraf-prometheus-v1`
   * `telegraf-prometheus-v2`
@@ -28,7 +38,7 @@ The following configuration options are supported:
   * `initial_interval` (default = 5s) Time to wait after the first failure before retrying
   * `max_interval` (default = 30s) Upper bound on backoff interval
   * `max_elapsed_time` (default = 120s) Maximum amount of time (including retries) spent trying to send a request/batch
-  
+
 The full list of settings exposed for this exporter are documented in [config.go](config.go).
 
 Example:
@@ -115,3 +125,6 @@ logs fluent.tag="fluent.info",pid=18i,ppid=9i,worker=0i 1613769568895331700
 logs fluent.tag="fluent.debug",instance=1720i,queue_size=0i,stage_size=0i 1613769568895697200
 logs fluent.tag="fluent.info",worker=0i 1613769568896515100
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

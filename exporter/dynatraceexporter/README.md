@@ -1,13 +1,29 @@
+[Dynatrace](https://www.dynatrace.com/integrations/opentelemetry/) can receive OpenTelemetry metrics in the following ways:
+
+- Using OTLP/HTTP (OpenTelemetry Protocol) metrics exporter (recommended)
+- Using Dynatrace OpenTelemetry metrics exporter described below
+
+More information on exporting metrics to Dynatrace can be found in the
+[Dynatrace documentation for OpenTelemetry metrics](https://www.dynatrace.com/support/help/shortlink/opentelemetry-metrics).
+
+For ingesting traces (spans) into Dynatrace, use the generic OTLP/HTTP exporter shipped with the Collector.  
+More information on exporting traces to Dynatrace can be found in the
+[Dynatrace documentation for OpenTelemetry traces](https://www.dynatrace.com/support/help/extend-dynatrace/opentelemetry/opentelemetry-traces/opentelemetry-ingest).
+
 # Dynatrace Exporter
 
-The [Dynatrace](https://dynatrace.com) metrics exporter exports metrics to the [metrics API v2](https://www.dynatrace.com/support/help/dynatrace-api/environment-api/metric-v2/post-ingest-metrics/)
+| Status                   |                  |
+| ------------------------ |------------------|
+| Stability                | [beta]           |
+| Supported pipeline types | metrics          |
+| Distributions            | [contrib], [AWS] |
+
+The Dynatrace metrics exporter exports metrics to the [Metrics API v2](https://www.dynatrace.com/support/help/dynatrace-api/environment-api/metric-v2/post-ingest-metrics/)
 using the [metrics ingestion protocol](https://www.dynatrace.com/support/help/how-to-use-dynatrace/metrics/metric-ingestion/metric-ingestion-protocol/).
-This enables Dynatrace to receive metrics collected by the OpenTelemetry Collector.
 
-The requests sent to Dynatrace are authenticated using an API token mechanism documented [here](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/).
-
+> The requests sent to Dynatrace are authenticated using an API token mechanism documented [here](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/).  
 > Please review the Collector's [security
-> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md),
 > which contains recommendations on securing sensitive information such as the
 > API key required by this exporter.
 
@@ -45,7 +61,7 @@ exporters:
 
 If you run the Collector on a host or VM without a OneAgent you will need to configure the Metrics v2 API endpoint of your Dynatrace environment to send the metrics to as well as an API token.
 
-Find out how to create a token in the [Dynatrace documentation](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/) or navigate to **Settings > Integration > Dynatrace API** in your Dynatrace environment and create a token with the 'Ingest metrics' (`metrics.ingest`) scope enabled. It is recommended to limit token scope to only this permission.
+Find out how to create a token in the [Dynatrace documentation](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/) or navigate to **Access tokens** in your Dynatrace environment and create a token with the 'Ingest metrics' (`metrics.ingest`) scope enabled. It is recommended to limit token scope to only this permission.
 
 The endpoint for the Dynatrace Metrics API v2 is:
 
@@ -152,6 +168,8 @@ exporters:
       enabled: true
       num_consumers: 10
       queue_size: 5000
+    resource_to_telemetry_conversion:
+      enabled: false
 service:
   extensions:
   pipelines:
@@ -250,21 +268,75 @@ User should calculate this as `num_seconds * requests_per_second` where:
 
 Default: `5000`
 
+### resource_to_telemetry_conversion (Optional)
+
+When `resource_to_telemetry_conversion.enabled` is set to `true`, all resource
+attributes will be included as metric dimensions in Dynatrace in addition to the
+attributes present on the metric data point.
+
+Default: `false`
+
+> :warning: **Please note** that the Dynatrace API has a limit of `50` attributes
+> per metric data point and any data point which exceeds this limit will be dropped.
+
+If you think you might exceed this limit, you should use the
+[transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
+to apply a filter, so only a select subset of your resource attributes are converted.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+processors:
+  transform:
+    metrics:
+      queries:
+        - keep_keys(resource.attributes, "key1", "key2", "key3")
+exporters:
+  dynatrace:
+    endpoint: https://ab12345.live.dynatrace.com
+    api_token: <api token must have metrics.write permission>
+    resource_to_telemetry_conversion:
+      enabled: true
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [transform]
+      exporters: [dynatrace]
+```
+
 ### tags (Deprecated, Optional)
 
 **Deprecated: Please use [default_dimensions](#default_dimensions-optional) instead**
 
-# Considerations when exporting Cumulative Data Points
+# Temporality
 
-When receiving Sum or Histogram metrics with CUMULATIVE temporality, this exporter
-performs CUMULATIVE to DELTA conversion. This conversion can lead to missing
-or inconsistent data, as described below:
+If possible when configuring your SDK, use DELTA temporality for Counter, Asynchronous Counter, and Histogram metrics.
+Use CUMULATIVE temporality for UpDownCounter and Asynchronous UpDownCounter metrics.
+When using OpenTelemetry SDKs to gather metrics data, setting the
+`OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` environment variable to `delta`
+should correctly set temporality for all metrics.
+You can check the [spec compliance matrix](https://github.com/open-telemetry/opentelemetry-specification/blob/main/spec-compliance-matrix.md#environment-variables)
+if you are unsure if the SDK you are using supports this configuration.
+You can read more about this and other configurations at
+[OpenTelemetry Metrics Exporter - OTLP](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/sdk_exporters/otlp.md#additional-configuration).
 
-## First Data Points are dropped
+## Considerations when exporting Cumulative Data Points
 
-Due to the conversion, the exporter will drop the first received data point,
-as there is no previous data point to compare it to. This can be circumvented
-by configuring the OpenTelemetry SDK to export DELTA values.
+Histogram metrics with CUMULATIVE temporality are NOT SUPPORTED and will NOT be exported.
+
+When possible, Sum metrics should use DELTA temporality.
+When receiving Sum metrics with CUMULATIVE temporality, this exporter performs CUMULATIVE to DELTA conversion.
+This conversion can lead to missing or inconsistent data, as described below:
+
+### First Data Points are dropped
+
+Due to the conversion, the exporter will drop the first received data point
+after a counter is created or reset as there is no previous data point to compare it to.
+This can be circumvented by configuring the OpenTelemetry SDK to export DELTA values.
 
 ## Multi-instance collector deployment
 
@@ -272,3 +344,7 @@ In a multiple-instance deployment of the OpenTelemetry Collector, the conversion
 can produce inconsistent data unless it can be guaranteed that metrics from the 
 same source are processed by the same collector instance. This can be circumvented 
 by configuring the OpenTelemetry SDK to export DELTA values.
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[AWS]:https://aws-otel.github.io/docs/partners/dynatrace

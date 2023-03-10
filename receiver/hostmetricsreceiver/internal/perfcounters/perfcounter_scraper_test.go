@@ -24,16 +24,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 func Test_PerfCounterScraper(t *testing.T) {
 	type testCase struct {
 		name string
 		// NewPerfCounter
-		objects       []string
-		newErr        string
-		expectIndices []string
+		objects         []string
+		expectIndices   []string
+		newErr          string
+		newErrIsPartial bool
 		// Filter
 		includeFS    filterset.FilterSet
 		excludeFS    filterset.FilterSet
@@ -81,9 +82,19 @@ func Test_PerfCounterScraper(t *testing.T) {
 			excludedInstanceNames: excludedCommonDrives,
 		},
 		{
-			name:    "New Error",
-			objects: []string{"Memory", "Invalid Object 1", "Invalid Object 2"},
-			newErr:  `Failed to retrieve perf counter object "Invalid Object 1"`,
+			name:                  "Initialize partially fails",
+			objects:               []string{"Memory", "Invalid Object 1", "Invalid Object 2"},
+			newErr:                `failed to init counters: Invalid Object 1; Invalid Object 2`,
+			newErrIsPartial:       true,
+			expectIndices:         []string{"4"},
+			getObject:             "Memory",
+			getCounters:           []string{"Committed Bytes"},
+			expectedInstanceNames: []string{""},
+		},
+		{
+			name:    "Initialize fully fails",
+			objects: []string{"Invalid Object 1", "Invalid Object 2"},
+			newErr:  "failed to init counters: Invalid Object 1; Invalid Object 2",
 		},
 		{
 			name:          "Get Object Error",
@@ -108,9 +119,12 @@ func Test_PerfCounterScraper(t *testing.T) {
 			err := s.Initialize(test.objects...)
 			if test.newErr != "" {
 				assert.EqualError(t, err, test.newErr)
-				return
+				if !test.newErrIsPartial {
+					return
+				}
+			} else {
+				require.NoError(t, err, "Failed to create new perf counter scraper: %v", err)
 			}
-			require.NoError(t, err, "Failed to create new perf counter scraper: %v", err)
 
 			assert.ElementsMatch(t, test.expectIndices, strings.Split(s.objectIndices, " "))
 
@@ -151,10 +165,7 @@ func Test_PerfCounterScraper(t *testing.T) {
 			if len(test.excludedInstanceNames) > 0 {
 				for _, excludedName := range test.excludedInstanceNames {
 					for _, cv := range counterValues {
-						if cv.InstanceName == excludedName {
-							assert.Fail(t, "", "Excluded Instance %q was returned", excludedName)
-							break
-						}
+						require.NotEqual(t, excludedName, cv.InstanceName)
 					}
 				}
 			}

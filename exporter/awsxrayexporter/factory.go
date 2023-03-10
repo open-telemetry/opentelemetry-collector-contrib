@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -26,28 +26,29 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "awsxray"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for AWS-Xray exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter))
+		exporter.WithTraces(createTracesExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 	}
 }
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.TracesExporter, error) {
+	params exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
 	eCfg := cfg.(*Config)
 	return newTracesExporter(eCfg, params, &awsutil.Conn{})
 }

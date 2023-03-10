@@ -1,25 +1,6 @@
-receivers:
-  nop:
-
-processors:
-  batch:
-  groupbyattrs/grouping:
-    keys:
-      - key1
-      - key2
-  groupbyattrs/compaction:
-  groupbytrace:
-
-exporters:
-  nop:
-
-service:
-  pipelines:
-    traces:
-      receivers: [nop]
-      processors: [groupbyattrs/grouping]
-      exporters: [nop]
-    traces/compaction:
-      receivers: [nop]
-      processors: [groupbytrace, batch, groupbyattrs/compaction]
-      exporters: [nop]
+groupbyattrs/grouping:
+  keys:
+    - key1
+    - key2
+groupbyattrs/compaction:
+groupbytrace:

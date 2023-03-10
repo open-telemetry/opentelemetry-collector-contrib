@@ -27,8 +27,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/confignet"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
@@ -42,14 +41,14 @@ func ensureServerRunning(url string) func() bool {
 
 func TestHealthCheckExtensionUsageWithoutCheckCollectorPipeline(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
 		Path:                   "/",
 	}
 
-	hcExt := newServer(config, zap.NewNop())
+	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -59,7 +58,7 @@ func TestHealthCheckExtensionUsageWithoutCheckCollectorPipeline(t *testing.T) {
 	runtime.Gosched()
 
 	client := &http.Client{}
-	url := "http://" + config.TCPAddr.Endpoint
+	url := "http://" + config.Endpoint
 	resp0, err := client.Get(url)
 	require.NoError(t, err)
 	defer resp0.Body.Close()
@@ -81,22 +80,22 @@ func TestHealthCheckExtensionUsageWithoutCheckCollectorPipeline(t *testing.T) {
 
 func TestHealthCheckExtensionUsageWithCustomizedPathWithoutCheckCollectorPipeline(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
 		Path:                   "/health",
 	}
 
-	hcExt := newServer(config, zap.NewNop())
+	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
-	require.Eventuallyf(t, ensureServerRunning(config.TCPAddr.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
+	require.Eventuallyf(t, ensureServerRunning(config.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
 
 	client := &http.Client{}
-	url := "http://" + config.TCPAddr.Endpoint + config.Path
+	url := "http://" + config.Endpoint + config.Path
 	resp0, err := client.Get(url)
 	require.NoError(t, err)
 	require.NoError(t, resp0.Body.Close(), "Must be able to close the response")
@@ -118,7 +117,7 @@ func TestHealthCheckExtensionUsageWithCustomizedPathWithoutCheckCollectorPipelin
 
 func TestHealthCheckExtensionUsageWithCheckCollectorPipeline(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: checkCollectorPipelineSettings{
@@ -129,7 +128,7 @@ func TestHealthCheckExtensionUsageWithCheckCollectorPipeline(t *testing.T) {
 		Path: "/",
 	}
 
-	hcExt := newServer(config, zap.NewNop())
+	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -155,7 +154,7 @@ func TestHealthCheckExtensionUsageWithCheckCollectorPipeline(t *testing.T) {
 	}
 
 	client := &http.Client{}
-	url := "http://" + config.TCPAddr.Endpoint
+	url := "http://" + config.Endpoint
 	resp0, err := client.Get(url)
 	require.NoError(t, err)
 	defer resp0.Body.Close()
@@ -183,7 +182,7 @@ func TestHealthCheckExtensionUsageWithCheckCollectorPipeline(t *testing.T) {
 
 func TestHealthCheckExtensionUsageWithCustomPathWithCheckCollectorPipeline(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: checkCollectorPipelineSettings{
@@ -194,7 +193,7 @@ func TestHealthCheckExtensionUsageWithCustomPathWithCheckCollectorPipeline(t *te
 		Path: "/health",
 	}
 
-	hcExt := newServer(config, zap.NewNop())
+	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -202,7 +201,7 @@ func TestHealthCheckExtensionUsageWithCustomPathWithCheckCollectorPipeline(t *te
 
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
-	require.Eventuallyf(t, ensureServerRunning(config.TCPAddr.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
+	require.Eventuallyf(t, ensureServerRunning(config.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
 
 	newView := view.View{Name: exporterFailureView}
 
@@ -221,7 +220,7 @@ func TestHealthCheckExtensionUsageWithCustomPathWithCheckCollectorPipeline(t *te
 	}
 
 	client := &http.Client{}
-	url := "http://" + config.TCPAddr.Endpoint + config.Path
+	url := "http://" + config.Endpoint + config.Path
 	resp0, err := client.Get(url)
 	require.NoError(t, err)
 	require.NoError(t, resp0.Body.Close(), "Must be able to close the response")
@@ -258,12 +257,12 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: endpoint,
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
 	}
-	hcExt := newServer(config, zap.NewNop())
+	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
 	mh := newAssertNoErrorHost(t)
@@ -272,14 +271,14 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestHealthCheckMultipleStarts(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
 		Path:                   "/",
 	}
 
-	hcExt := newServer(config, zap.NewNop())
+	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
 	mh := newAssertNoErrorHost(t)
@@ -291,14 +290,14 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 
 func TestHealthCheckMultipleShutdowns(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
 		Path:                   "/",
 	}
 
-	hcExt := newServer(config, zap.NewNop())
+	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -308,13 +307,13 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
 	}
 
-	hcExt := newServer(config, zap.NewNop())
+	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Shutdown(context.Background()))

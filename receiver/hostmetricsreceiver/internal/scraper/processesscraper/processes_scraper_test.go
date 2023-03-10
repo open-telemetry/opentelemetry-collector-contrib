@@ -24,9 +24,11 @@ import (
 	"github.com/shirou/gopsutil/v3/load"
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -73,12 +75,11 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			assert := assert.New(t)
-			scraper := newProcessesScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+			scraper := newProcessesScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
-			assert.NoError(err, "Failed to initialize processes scraper: %v", err)
+			assert.NoError(t, err, "Failed to initialize processes scraper: %v", err)
 
 			// Override scraper methods if we are mocking out for this test case
 			if test.getMiscStats != nil {
@@ -99,22 +100,24 @@ func TestScrape(t *testing.T) {
 			}
 
 			if (expectProcessesCountMetric || expectProcessesCreatedMetric) && test.expectedErr != "" {
-				assert.EqualError(err, test.expectedErr)
+				assert.EqualError(t, err, test.expectedErr)
 
 				isPartial := scrapererror.IsPartialScrapeError(err)
-				assert.Truef(isPartial, "expected partial scrape error, have %+v", err)
+				assert.Truef(t, isPartial, "expected partial scrape error, have %+v", err)
 				if isPartial {
-					assert.Equal(expectedMetricCount, err.(scrapererror.PartialScrapeError).Failed)
+					var scraperErr scrapererror.PartialScrapeError
+					require.ErrorAs(t, err, &scraperErr)
+					assert.Equal(t, expectedMetricCount, scraperErr.Failed)
 				}
 
 				return
 			}
 
 			if test.expectedErr == "" {
-				assert.NoErrorf(err, "Failed to scrape metrics: %v", err)
+				assert.NoErrorf(t, err, "Failed to scrape metrics: %v", err)
 			}
 
-			assert.Equal(expectedMetricCount, md.MetricCount())
+			assert.Equal(t, expectedMetricCount, md.MetricCount())
 
 			if expectedMetricCount > 0 {
 				metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
@@ -129,23 +132,21 @@ func TestScrape(t *testing.T) {
 }
 
 func validateRealData(t *testing.T, metrics pmetric.MetricSlice) {
-	assert := assert.New(t)
-
 	metricIndex := 0
 	if expectProcessesCountMetric {
 		countMetric := metrics.At(metricIndex)
 		metricIndex++
-		assert.Equal("system.processes.count", countMetric.Name())
+		assert.Equal(t, "system.processes.count", countMetric.Name())
 
 		assertContainsStatus := func(statusVal string) {
 			points := countMetric.Sum().DataPoints()
 			for i := 0; i < points.Len(); i++ {
 				v, ok := points.At(i).Attributes().Get("status")
-				if ok && v.StringVal() == statusVal {
+				if ok && v.Str() == statusVal {
 					return
 				}
 			}
-			assert.Failf("missing-metric", "metric is missing %q status label", statusVal)
+			assert.Failf(t, "missing-metric", "metric is missing %q status label", statusVal)
 		}
 		assertContainsStatus(metadata.AttributeStatusRunning.String())
 		assertContainsStatus(metadata.AttributeStatusBlocked.String())
@@ -153,11 +154,11 @@ func validateRealData(t *testing.T, metrics pmetric.MetricSlice) {
 
 	if expectProcessesCreatedMetric {
 		createdMetric := metrics.At(metricIndex)
-		assert.Equal("system.processes.created", createdMetric.Name())
+		assert.Equal(t, "system.processes.created", createdMetric.Name())
 		createdMetric = metrics.At(1)
-		assert.Equal("system.processes.created", createdMetric.Name())
-		assert.Equal(1, createdMetric.Sum().DataPoints().Len())
-		assert.Equal(0, createdMetric.Sum().DataPoints().At(0).Attributes().Len())
+		assert.Equal(t, "system.processes.created", createdMetric.Name())
+		assert.Equal(t, 1, createdMetric.Sum().DataPoints().Len())
+		assert.Equal(t, 0, createdMetric.Sum().DataPoints().At(0).Attributes().Len())
 	}
 }
 
@@ -198,23 +199,22 @@ func (f fakeProcess) Status() ([]string, error) {
 }
 
 func validateFakeData(t *testing.T, metrics pmetric.MetricSlice) {
-	assert := assert.New(t)
 	metricIndex := 0
 	if expectProcessesCountMetric {
 		countMetric := metrics.At(metricIndex)
 		metricIndex++
-		assert.Equal("system.processes.count", countMetric.Name())
+		assert.Equal(t, "system.processes.count", countMetric.Name())
 
 		points := countMetric.Sum().DataPoints()
 		attrs := map[string]int64{}
 		for i := 0; i < points.Len(); i++ {
 			point := points.At(i)
 			val, ok := point.Attributes().Get("status")
-			assert.Truef(ok, "Missing status attribute in data point %d", i)
-			attrs[val.StringVal()] = point.IntVal()
+			assert.Truef(t, ok, "Missing status attribute in data point %d", i)
+			attrs[val.Str()] = point.IntValue()
 		}
 
-		assert.Equal(attrs, map[string]int64{
+		assert.Equal(t, attrs, map[string]int64{
 			metadata.AttributeStatusBlocked.String():  3,
 			metadata.AttributeStatusPaging.String():   1,
 			metadata.AttributeStatusRunning.String():  2,
@@ -227,8 +227,8 @@ func validateFakeData(t *testing.T, metrics pmetric.MetricSlice) {
 
 	if expectProcessesCreatedMetric {
 		createdMetric := metrics.At(metricIndex)
-		assert.Equal("system.processes.created", createdMetric.Name())
-		assert.Equal(1, createdMetric.Sum().DataPoints().Len())
-		assert.Equal(0, createdMetric.Sum().DataPoints().At(0).Attributes().Len())
+		assert.Equal(t, "system.processes.created", createdMetric.Name())
+		assert.Equal(t, 1, createdMetric.Sum().DataPoints().Len())
+		assert.Equal(t, 0, createdMetric.Sum().DataPoints().At(0).Attributes().Len())
 	}
 }

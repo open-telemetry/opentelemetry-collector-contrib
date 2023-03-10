@@ -18,55 +18,48 @@
 package windowseventlogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 
 import (
-	"errors"
+	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-const typeStr = "windowseventlog"
+const (
+	typeStr   = "windowseventlog"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a factory for windowseventlog receiver
-func NewFactory() component.ReceiverFactory {
-	return adapter.NewFactory(ReceiverType{})
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		receiver.WithLogs(createLogsReceiver, stability))
 }
 
-// ReceiverType implements adapter.LogReceiverType
-// to create a file tailing receiver
-type ReceiverType struct{}
-
-// Type is the receiver type
-func (f ReceiverType) Type() config.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
-			Converter:        adapter.ConverterConfig{},
+			Operators: []operator.Config{},
 		},
-		Input: adapter.InputConfig{},
 	}
 }
 
-// BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
-	return cfg.(*WindowsLogConfig).BaseConfig
-}
-
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	return nil, errors.New("the windows eventlog receiver is only supported on Windows")
+func createLogsReceiver(
+	_ context.Context,
+	params receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Logs,
+) (receiver.Logs, error) {
+	return nil, fmt.Errorf("windows eventlog receiver is only supported on Windows")
 }
 
 // WindowsLogConfig defines configuration for the windowseventlog receiver
 type WindowsLogConfig struct {
 	adapter.BaseConfig `mapstructure:",squash"`
-	Input              adapter.InputConfig `mapstructure:",remain"`
 }

@@ -20,15 +20,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
 	expected := &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		Attribute:         defaultAttribute,
+		Attribute: defaultAttribute,
 	}
 
 	// test
@@ -36,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	// verify
 	assert.Equal(t, expected, cfg)
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateExtension(t *testing.T) {
@@ -44,7 +42,7 @@ func TestCreateExtension(t *testing.T) {
 	cfg.Audience = "collector"
 	cfg.IssuerURL = "https://auth.example.com"
 
-	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 }

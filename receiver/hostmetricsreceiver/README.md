@@ -1,7 +1,7 @@
 # Host Metrics Receiver
 
 | Status                   |                   |
-| ------------------------ |-------------------|
+| ------------------------ | ----------------- |
 | Stability                | [beta]            |
 | Supported pipeline types | metrics           |
 | Distributions            | [core], [contrib] |
@@ -12,12 +12,13 @@ deployed as an agent.
 
 ## Getting Started
 
-The collection interval and the categories of metrics to be scraped can be
+The collection interval, root path, and the categories of metrics to be scraped can be
 configured:
 
 ```yaml
 hostmetrics:
   collection_interval: <duration> # default = 1m
+  root_path: <string>
   scrapers:
     <scraper1>:
     <scraper2>:
@@ -26,17 +27,27 @@ hostmetrics:
 
 The available scrapers are:
 
-| Scraper    | Supported OSs                | Description                                            |
-|------------|------------------------------|--------------------------------------------------------|
-| cpu        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
-| disk       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
-| load       | All                          | CPU load metrics                                       |
-| filesystem | All                          | File System utilization metrics                        |
-| memory     | All                          | Memory utilization metrics                             |
-| network    | All                          | Network interface I/O metrics & TCP connection metrics |
-| paging     | All                          | Paging/Swap space utilization and I/O metrics
-| processes  | Linux                        | Process count metrics                                  |
-| process    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
+| Scraper      | Supported OSs                | Description                                            |
+| ------------ | ---------------------------- | ------------------------------------------------------ |
+| [cpu]        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
+| [disk]       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
+| [load]       | All                          | CPU load metrics                                       |
+| [filesystem] | All                          | File System utilization metrics                        |
+| [memory]     | All                          | Memory utilization metrics                             |
+| [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
+| [paging]     | All                          | Paging/Swap space utilization and I/O metrics          |
+| [processes]  | Linux, Mac                   | Process count metrics                                  |
+| [process]    | Linux, Windows, Mac          | Per process CPU, Memory, and Disk I/O metrics          |
+
+[cpu]: ./internal/scraper/cpuscraper/documentation.md
+[disk]: ./internal/scraper/diskscraper/documentation.md
+[filesystem]: ./internal/scraper/filesystemscraper/documentation.md
+[load]: ./internal/scraper/loadscraper/documentation.md
+[memory]: ./internal/scraper/memoryscraper/documentation.md
+[network]: ./internal/scraper/networkscraper/documentation.md
+[paging]: ./internal/scraper/pagingscraper/documentation.md
+[processes]: ./internal/scraper/processesscraper/documentation.md
+[process]: ./internal/scraper/processscraper/documentation.md
 
 ### Notes
 
@@ -94,6 +105,7 @@ process:
     names: [ <process name>, ... ]
     match_type: <strict|regexp>
   mute_process_name_error: <true|false>
+  scrape_process_delay: <time>
 ```
 
 ## Advanced Configuration
@@ -130,7 +142,41 @@ service:
       receivers: [hostmetrics, hostmetrics/disk]
 ```
 
+### Collecting host metrics from inside a container (Linux only)
+
+Host metrics are collected from the Linux system directories on the filesystem.
+You likely want to collect metrics about the host system and not the container.
+This is achievable by following these steps: 
+
+#### 1. Bind mount the host filesystem
+
+The simplest configuration is to mount the entire host filesystem when running 
+the container. e.g. `docker run -v /:/hostfs ...`.
+
+You can also choose which parts of the host filesystem to mount, if you know 
+exactly what you'll need. e.g. `docker run -v /proc:/hostfs/proc`.
+
+#### 2. Configure `root_path`
+
+Configure `root_path` so the hostmetrics receiver knows where the root filesystem is.
+Note: if running multiple instances of the host metrics receiver, they must all have
+the same `root_path`.
+
+Example:
+```yaml
+receivers:
+  hostmetrics:
+    root_path: /hostfs
+```
+
+## Resource attributes
+
+Currently, the hostmetrics receiver does not set any Resource attributes on the exported metrics. However, if you want to set Resource attributes, you can provide them via environment variables via the [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#environment-variable) processor. For example, you can add the following resource attributes to adhere to [Resource Semantic Conventions](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/):
+
+```
+export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service.namespace=<the namespace of your service>,service.instance.id=<uuid of the instance>"
+```
+
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
-

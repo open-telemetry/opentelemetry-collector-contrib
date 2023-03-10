@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
 	"bufio"
+	"encoding/hex"
 	"net/textproto"
 	"regexp"
 	"strconv"
@@ -37,9 +37,7 @@ const ExceptionEventName = "exception"
 func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource pcommon.Resource) (isError, isFault, isThrottle bool,
 	filtered map[string]pcommon.Value, cause *awsxray.CauseData) {
 	status := span.Status()
-	if status.Code() != ptrace.StatusCodeError {
-		return false, false, false, attributes, nil
-	}
+
 	filtered = attributes
 
 	var (
@@ -56,13 +54,14 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
-	if hasExceptions {
+	switch {
+	case hasExceptions:
 		language := ""
 		if val, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
-			language = val.StringVal()
+			language = val.Str()
 		}
 
-		exceptions := make([]awsxray.Exception, 0)
+		var exceptions []awsxray.Exception
 		for i := 0; i < span.Events().Len(); i++ {
 			event := span.Events().At(i)
 			if event.Name() == ExceptionEventName {
@@ -71,15 +70,15 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 				stacktrace := ""
 
 				if val, ok := event.Attributes().Get(conventions.AttributeExceptionType); ok {
-					exceptionType = val.StringVal()
+					exceptionType = val.Str()
 				}
 
 				if val, ok := event.Attributes().Get(conventions.AttributeExceptionMessage); ok {
-					message = val.StringVal()
+					message = val.Str()
 				}
 
 				if val, ok := event.Attributes().Get(conventions.AttributeExceptionStacktrace); ok {
-					stacktrace = val.StringVal()
+					stacktrace = val.Str()
 				}
 
 				parsed := parseException(exceptionType, message, stacktrace, language)
@@ -90,7 +89,11 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			Type: awsxray.CauseTypeObject,
 			CauseObject: awsxray.CauseObject{
 				Exceptions: exceptions}}
-	} else {
+
+	case status.Code() != ptrace.StatusCodeError:
+		cause = nil
+
+	default:
 		// Use OpenCensus behavior if we didn't find any exception events to ease migration.
 		message = status.Message()
 		filtered = make(map[string]pcommon.Value)
@@ -98,7 +101,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			switch key {
 			case "http.status_text":
 				if message == "" {
-					message = value.StringVal()
+					message = value.Str()
 				}
 			default:
 				filtered[key] = value
@@ -106,15 +109,13 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 
 		if message != "" {
-			id := newSegmentID()
-			hexID := id.HexString()
-
+			segmentID := newSegmentID()
 			cause = &awsxray.CauseData{
 				Type: awsxray.CauseTypeObject,
 				CauseObject: awsxray.CauseObject{
 					Exceptions: []awsxray.Exception{
 						{
-							ID:      aws.String(hexID),
+							ID:      aws.String(hex.EncodeToString(segmentID[:])),
 							Type:    aws.String(errorKind),
 							Message: aws.String(message),
 						},
@@ -124,8 +125,15 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
-	if val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode); ok {
-		code := val.IntVal()
+	val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode)
+
+	switch {
+	case status.Code() != ptrace.StatusCodeError:
+		isError = false
+		isThrottle = false
+		isFault = false
+	case ok:
+		code := val.Int()
 		// We only differentiate between faults (server errors) and errors (client errors) for HTTP spans.
 		if code >= 400 && code <= 499 {
 			isError = true
@@ -138,18 +146,20 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			isThrottle = false
 			isFault = true
 		}
-	} else {
+	default:
 		isError = false
 		isThrottle = false
 		isFault = true
 	}
+
 	return isError, isFault, isThrottle, filtered, cause
 }
 
 func parseException(exceptionType string, message string, stacktrace string, language string) []awsxray.Exception {
 	exceptions := make([]awsxray.Exception, 0, 1)
+	segmentID := newSegmentID()
 	exceptions = append(exceptions, awsxray.Exception{
-		ID:      aws.String(newSegmentID().HexString()),
+		ID:      aws.String(hex.EncodeToString(segmentID[:])),
 		Type:    aws.String(exceptionType),
 		Message: aws.String(message),
 	})
@@ -180,16 +190,19 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
-	// Skip first line containing top level exception / message
-	r.ReadLine()
+	// Skip first line containing top level message
 	exception := &exceptions[0]
+	_, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
 	var line string
-	line, err := r.ReadLine()
+	line, err = r.ReadLine()
 	if err != nil {
 		return exceptions
 	}
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		if strings.HasPrefix(line, "\tat ") {
 			parenIdx := strings.IndexByte(line, '(')
@@ -243,11 +256,12 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 					causeMessage += line
 				}
 			}
+			segmentID := newSegmentID()
 			exceptions = append(exceptions, awsxray.Exception{
-				ID:      aws.String(newSegmentID().HexString()),
+				ID:      aws.String(hex.EncodeToString(segmentID[:])),
 				Type:    aws.String(causeType),
 				Message: aws.String(causeMessage),
-				Stack:   make([]awsxray.StackFrame, 0),
+				Stack:   nil,
 			})
 			// when append causes `exceptions` to outgrow its existing
 			// capacity, re-allocation will happen so the place
@@ -286,7 +300,7 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 	line := lines[lineIdx]
 	exception := &exceptions[0]
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		if strings.HasPrefix(line, "  File ") {
 			parts := strings.Split(line, ",")
@@ -338,11 +352,11 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 
 			causeType := message[0:colonIdx]
 			causeMessage := message[colonIdx+2:]
+			segmentID := newSegmentID()
 			exceptions = append(exceptions, awsxray.Exception{
-				ID:      aws.String(newSegmentID().HexString()),
+				ID:      aws.String(hex.EncodeToString(segmentID[:])),
 				Type:    aws.String(causeType),
 				Message: aws.String(causeMessage),
-				Stack:   make([]awsxray.StackFrame, 0),
 			})
 			// when append causes `exceptions` to outgrow its existing
 			// capacity, re-allocation will happen so the place
@@ -371,16 +385,19 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
-	// Skip first line containing top level exception / message
-	r.ReadLine()
+	// Skip first line containing top level message
 	exception := &exceptions[0]
+	_, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
 	var line string
-	line, err := r.ReadLine()
+	line, err = r.ReadLine()
 	if err != nil {
 		return exceptions
 	}
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		if strings.HasPrefix(line, "    at ") {
 			parenIdx := strings.IndexByte(line, '(')
@@ -427,23 +444,27 @@ func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception)
 func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
-	// Skip first line containing top level exception / message
-	r.ReadLine()
+	// Skip first line containing top level message
 	exception := &exceptions[0]
+	_, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
 	var line string
-	line, err := r.ReadLine()
+	line, err = r.ReadLine()
 	if err != nil {
 		return exceptions
 	}
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
-		if strings.HasPrefix(line, "\tat ") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "at ") {
 			index := strings.Index(line, " in ")
 			if index >= 0 {
 				parts := strings.Split(line, " in ")
 
-				label := parts[0][len("\tat "):]
+				label := parts[0][len("at "):]
 				path := parts[1]
 				lineNumber := 0
 
@@ -468,7 +489,7 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 			} else {
 				idx := strings.LastIndexByte(line, ')')
 				if idx >= 0 {
-					label := line[len("\tat ") : idx+1]
+					label := line[len("at ") : idx+1]
 					path := ""
 					lineNumber := 0
 
@@ -502,15 +523,18 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
-	// Skip first line containing top level exception / message
-	_, _ = r.ReadLine()
+	// Skip first line containing top level message
 	exception := &exceptions[0]
-	line, err := r.ReadLine()
+	_, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
+	line, err = r.ReadLine()
 	if err != nil {
 		return exceptions
 	}
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		match := re.Match([]byte(line))
 		if match {

@@ -123,7 +123,7 @@ func newReplicaSetClient(clientSet kubernetes.Interface, logger *zap.Logger, opt
 
 	ctx := context.Background()
 	if _, err := clientSet.AppsV1().ReplicaSets(metav1.NamespaceAll).List(ctx, metav1.ListOptions{}); err != nil {
-		return nil, fmt.Errorf("cannot list ReplicaSet. err: %v", err)
+		return nil, fmt.Errorf("cannot list ReplicaSet. err: %w", err)
 	}
 
 	c.stopChan = make(chan struct{})

@@ -12,28 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package spanmetricsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"math"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 	"unicode"
 
+	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/cache"
 )
 
@@ -43,81 +44,107 @@ const (
 	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
-	traceIDKey         = "trace_id"
+
+	metricLatency    = "latency"
+	metricCallsTotal = "calls_total"
 
 	defaultDimensionsCacheSize = 1000
 )
 
-var (
-	maxDuration   = time.Duration(math.MaxInt64)
-	maxDurationMs = durationToMillis(maxDuration)
+var defaultLatencyHistogramBucketsMs = []float64{
+	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
+}
 
-	defaultLatencyHistogramBucketsMs = []float64{
-		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000, maxDurationMs,
-	}
-)
-
-type exemplarData struct {
+type exemplar struct {
 	traceID pcommon.TraceID
+	spanID  pcommon.SpanID
 	value   float64
 }
 
 type metricKey string
 
 type processorImp struct {
-	lock   sync.RWMutex
+	lock   sync.Mutex
 	logger *zap.Logger
 	config Config
 
-	metricsExporter component.MetricsExporter
-	nextConsumer    consumer.Traces
+	metricsConsumer consumer.Metrics
+	tracesConsumer  consumer.Traces
 
 	// Additional dimensions to add to metrics.
-	dimensions []Dimension
+	dimensions []dimension
 
 	// The starting time of the data points.
-	startTime time.Time
+	startTimestamp pcommon.Timestamp
 
-	// Call & Error counts.
-	callSum map[metricKey]int64
+	// Histogram.
+	histograms    map[metricKey]*histogram
+	latencyBounds []float64
 
-	// Latency histogram.
-	latencyCount         map[metricKey]uint64
-	latencySum           map[metricKey]float64
-	latencyBucketCounts  map[metricKey][]uint64
-	latencyBounds        []float64
-	latencyExemplarsData map[metricKey][]exemplarData
+	keyBuf *bytes.Buffer
 
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions *cache.Cache
+	metricKeyToDimensions *cache.Cache[metricKey, pcommon.Map]
+
+	ticker  *clock.Ticker
+	done    chan struct{}
+	started bool
+
+	shutdownOnce sync.Once
 }
 
-func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
-	logger.Info("Building spanmetricsprocessor")
+type dimension struct {
+	name  string
+	value *pcommon.Value
+}
+
+func newDimensions(cfgDims []Dimension) []dimension {
+	if len(cfgDims) == 0 {
+		return nil
+	}
+	dims := make([]dimension, len(cfgDims))
+	for i := range cfgDims {
+		dims[i].name = cfgDims[i].Name
+		if cfgDims[i].Default != nil {
+			val := pcommon.NewValueStr(*cfgDims[i].Default)
+			dims[i].value = &val
+		}
+	}
+	return dims
+}
+
+type histogram struct {
+	attributes pcommon.Map
+
+	count        uint64
+	sum          float64
+	bucketCounts []uint64
+	exemplars    []exemplar
+
+	latencyBounds []float64
+}
+
+// observe a measurement and adds an exemplar.
+func (h *histogram) observe(latencyMs float64, traceID pcommon.TraceID, spanID pcommon.SpanID) {
+	h.sum += latencyMs
+	h.count++
+	// Binary search to find the latencyMs bucket index.
+	index := sort.SearchFloat64s(h.latencyBounds, latencyMs)
+	h.bucketCounts[index]++
+	h.exemplars = append(h.exemplars, exemplar{traceID: traceID, spanID: spanID, value: latencyMs})
+}
+
+func newProcessor(logger *zap.Logger, config component.Config, ticker *clock.Ticker) (*processorImp, error) {
+	logger.Info("Building spanmetrics")
 	pConfig := config.(*Config)
 
 	bounds := defaultLatencyHistogramBucketsMs
 	if pConfig.LatencyHistogramBuckets != nil {
 		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
-
-		// "Catch-all" bucket.
-		if bounds[len(bounds)-1] != maxDurationMs {
-			bounds = append(bounds, maxDurationMs)
-		}
 	}
 
-	if err := validateDimensions(pConfig.Dimensions, pConfig.skipSanitizeLabel); err != nil {
-		return nil, err
-	}
-
-	if pConfig.DimensionsCacheSize <= 0 {
-		return nil, fmt.Errorf(
-			"invalid cache size: %v, the maximum number of the items in the cache should be positive",
-			pConfig.DimensionsCacheSize,
-		)
-	}
-	metricKeyToDimensionsCache, err := cache.NewCache(pConfig.DimensionsCacheSize)
+	metricKeyToDimensionsCache, err := cache.NewCache[metricKey, pcommon.Map](pConfig.DimensionsCacheSize)
 	if err != nil {
 		return nil, err
 	}
@@ -125,16 +152,14 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 	return &processorImp{
 		logger:                logger,
 		config:                *pConfig,
-		startTime:             time.Now(),
-		callSum:               make(map[metricKey]int64),
+		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
 		latencyBounds:         bounds,
-		latencySum:            make(map[metricKey]float64),
-		latencyCount:          make(map[metricKey]uint64),
-		latencyBucketCounts:   make(map[metricKey][]uint64),
-		latencyExemplarsData:  make(map[metricKey][]exemplarData),
-		nextConsumer:          nextConsumer,
-		dimensions:            pConfig.Dimensions,
+		histograms:            make(map[metricKey]*histogram),
+		dimensions:            newDimensions(pConfig.Dimensions),
+		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
+		ticker:                ticker,
+		done:                  make(chan struct{}),
 	}, nil
 }
 
@@ -152,35 +177,6 @@ func mapDurationsToMillis(vs []time.Duration) []float64 {
 	return vsm
 }
 
-// validateDimensions checks duplicates for reserved dimensions and additional dimensions. Considering
-// the usage of Prometheus related exporters, we also validate the dimensions after sanitization.
-func validateDimensions(dimensions []Dimension, skipSanitizeLabel bool) error {
-	labelNames := make(map[string]struct{})
-	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey} {
-		labelNames[key] = struct{}{}
-		labelNames[sanitize(key, skipSanitizeLabel)] = struct{}{}
-	}
-	labelNames[operationKey] = struct{}{}
-
-	for _, key := range dimensions {
-		if _, ok := labelNames[key.Name]; ok {
-			return fmt.Errorf("duplicate dimension name %s", key.Name)
-		}
-		labelNames[key.Name] = struct{}{}
-
-		sanitizedName := sanitize(key.Name, skipSanitizeLabel)
-		if sanitizedName == key.Name {
-			continue
-		}
-		if _, ok := labelNames[sanitizedName]; ok {
-			return fmt.Errorf("duplicate dimension name %s after sanitization", sanitizedName)
-		}
-		labelNames[sanitizedName] = struct{}{}
-	}
-
-	return nil
-}
-
 // Start implements the component.Component interface.
 func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 	p.logger.Info("Starting spanmetricsprocessor")
@@ -189,8 +185,8 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 	var availableMetricsExporters []string
 
 	// The available list of exporters come from any configured metrics pipelines' exporters.
-	for k, exp := range exporters[config.MetricsDataType] {
-		metricsExp, ok := exp.(component.MetricsExporter)
+	for k, exp := range exporters[component.DataTypeMetrics] {
+		metricsExp, ok := exp.(exporter.Metrics)
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
 		}
@@ -202,22 +198,42 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 			zap.Any("available-exporters", availableMetricsExporters),
 		)
 		if k.String() == p.config.MetricsExporter {
-			p.metricsExporter = metricsExp
+			p.metricsConsumer = metricsExp
 			p.logger.Info("Found exporter", zap.String("spanmetrics-exporter", p.config.MetricsExporter))
 			break
 		}
 	}
-	if p.metricsExporter == nil {
+	if p.metricsConsumer == nil {
 		return fmt.Errorf("failed to find metrics exporter: '%s'; please configure metrics_exporter from one of: %+v",
 			p.config.MetricsExporter, availableMetricsExporters)
 	}
-	p.logger.Info("Started spanmetricsprocessor")
+
+	p.started = true
+	go func() {
+		for {
+			select {
+			case <-p.done:
+				return
+			case <-p.ticker.C:
+				p.exportMetrics(ctx)
+			}
+		}
+	}()
+
 	return nil
 }
 
 // Shutdown implements the component.Component interface.
-func (p *processorImp) Shutdown(ctx context.Context) error {
-	p.logger.Info("Shutting down spanmetricsprocessor")
+func (p *processorImp) Shutdown(context.Context) error {
+	p.shutdownOnce.Do(func() {
+		p.logger.Info("Shutting down spanmetricsprocessor")
+		if p.started {
+			p.logger.Info("Stopping ticker")
+			p.ticker.Stop()
+			p.done <- struct{}{}
+			p.started = false
+		}
+	})
 	return nil
 }
 
@@ -230,125 +246,93 @@ func (p *processorImp) Capabilities() consumer.Capabilities {
 // It aggregates the trace data to generate metrics, forwarding these metrics to the discovered metrics exporter.
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
+	p.lock.Lock()
 	p.aggregateMetrics(traces)
+	p.lock.Unlock()
 
-	m, err := p.buildMetrics()
-	if err != nil {
-		return err
+	// Forward trace data unmodified and propagate trace pipeline errors, if any.
+	return p.tracesConsumer.ConsumeTraces(ctx, traces)
+}
+
+func (p *processorImp) exportMetrics(ctx context.Context) {
+	p.lock.Lock()
+
+	m := p.buildMetrics()
+
+	// Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
+	// regardless of error while building metrics, before the next batch of spans is received.
+	p.resetExemplars()
+
+	// If delta metrics, reset accumulated data
+	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+		p.histograms = make(map[metricKey]*histogram)
+		p.metricKeyToDimensions.Purge()
+	} else {
+		p.metricKeyToDimensions.RemoveEvictedItems()
 	}
 
-	// Firstly, export metrics to avoid being impacted by downstream trace processor errors/latency.
-	if err := p.metricsExporter.ConsumeMetrics(ctx, *m); err != nil {
-		return err
+	// This component no longer needs to read the metrics once built, so it is safe to unlock.
+	p.lock.Unlock()
+
+	if err := p.metricsConsumer.ConsumeMetrics(ctx, m); err != nil {
+		p.logger.Error("Failed ConsumeMetrics", zap.Error(err))
+		return
 	}
-
-	p.resetExemplarData()
-
-	// Forward trace data unmodified.
-	return p.nextConsumer.ConsumeTraces(ctx, traces)
 }
 
 // buildMetrics collects the computed raw metrics data, builds the metrics object and
 // writes the raw metrics data into the metrics object.
-func (p *processorImp) buildMetrics() (*pmetric.Metrics, error) {
+func (p *processorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName("spanmetricsprocessor")
 
-	// Obtain write lock to reset data
-	p.lock.Lock()
+	p.collectCallMetrics(ilm)
+	p.collectLatencyMetrics(ilm)
 
-	if err := p.collectCallMetrics(ilm); err != nil {
-		p.lock.Unlock()
-		return nil, err
-	}
-
-	if err := p.collectLatencyMetrics(ilm); err != nil {
-		p.lock.Unlock()
-		return nil, err
-	}
-
-	p.metricKeyToDimensions.RemoveEvictedItems()
-
-	// If delta metrics, reset accumulated data
-	if p.config.GetAggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
-		p.resetAccumulatedMetrics()
-	}
-	p.resetExemplarData()
-
-	p.lock.Unlock()
-
-	return &m, nil
+	return m
 }
 
 // collectLatencyMetrics collects the raw latency metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
-	for key := range p.latencyCount {
-		mLatency := ilm.Metrics().AppendEmpty()
-		mLatency.SetDataType(pmetric.MetricDataTypeHistogram)
-		mLatency.SetName("latency")
-		mLatency.Histogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
-
-		timestamp := pcommon.NewTimestampFromTime(time.Now())
-
-		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
-		dpLatency.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
+	mLatency := ilm.Metrics().AppendEmpty()
+	mLatency.SetName(buildMetricName(p.config.Namespace, metricLatency))
+	mLatency.SetUnit("ms")
+	mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
+	dps := mLatency.Histogram().DataPoints()
+	dps.EnsureCapacity(len(p.histograms))
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	for _, hist := range p.histograms {
+		dpLatency := dps.AppendEmpty()
+		dpLatency.SetStartTimestamp(p.startTimestamp)
 		dpLatency.SetTimestamp(timestamp)
-		dpLatency.SetMExplicitBounds(p.latencyBounds)
-		dpLatency.SetMBucketCounts(p.latencyBucketCounts[key])
-		dpLatency.SetCount(p.latencyCount[key])
-		dpLatency.SetSum(p.latencySum[key])
-
-		setLatencyExemplars(p.latencyExemplarsData[key], timestamp, dpLatency.Exemplars())
-
-		dimensions, err := p.getDimensionsByMetricKey(key)
-		if err != nil {
-			p.logger.Error(err.Error())
-			return err
-		}
-
-		dimensions.CopyTo(dpLatency.Attributes())
+		dpLatency.ExplicitBounds().FromRaw(p.latencyBounds)
+		dpLatency.BucketCounts().FromRaw(hist.bucketCounts)
+		dpLatency.SetCount(hist.count)
+		dpLatency.SetSum(hist.sum)
+		setExemplars(hist.exemplars, timestamp, dpLatency.Exemplars())
+		hist.attributes.CopyTo(dpLatency.Attributes())
 	}
-	return nil
 }
 
 // collectCallMetrics collects the raw call count metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
-	for key := range p.callSum {
-		mCalls := ilm.Metrics().AppendEmpty()
-		mCalls.SetDataType(pmetric.MetricDataTypeSum)
-		mCalls.SetName("calls_total")
-		mCalls.Sum().SetIsMonotonic(true)
-		mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
-
-		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
-		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
-		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		dpCalls.SetIntVal(p.callSum[key])
-
-		dimensions, err := p.getDimensionsByMetricKey(key)
-		if err != nil {
-			p.logger.Error(err.Error())
-			return err
-		}
-
-		dimensions.CopyTo(dpCalls.Attributes())
+func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
+	mCalls := ilm.Metrics().AppendEmpty()
+	mCalls.SetName(buildMetricName(p.config.Namespace, metricCallsTotal))
+	mCalls.SetEmptySum().SetIsMonotonic(true)
+	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
+	dps := mCalls.Sum().DataPoints()
+	dps.EnsureCapacity(len(p.histograms))
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	for _, hist := range p.histograms {
+		dpCalls := dps.AppendEmpty()
+		dpCalls.SetStartTimestamp(p.startTimestamp)
+		dpCalls.SetTimestamp(timestamp)
+		dpCalls.SetIntValue(int64(hist.count))
+		hist.attributes.CopyTo(dpCalls.Attributes())
 	}
-	return nil
-}
-
-// getDimensionsByMetricKey gets dimensions from `metricKeyToDimensions` cache.
-func (p *processorImp) getDimensionsByMetricKey(k metricKey) (*pcommon.Map, error) {
-	if item, ok := p.metricKeyToDimensions.Get(k); ok {
-		if attributeMap, ok := item.(pcommon.Map); ok {
-			return &attributeMap, nil
-		}
-		return nil, fmt.Errorf("type assertion of metricKeyToDimensions attributes failed, the key is %q", k)
-	}
-
-	return nil, fmt.Errorf("value not found in metricKeyToDimensions cache by key %q", k)
 }
 
 // aggregateMetrics aggregates the raw metrics from the input trace data.
@@ -358,111 +342,88 @@ func (p *processorImp) getDimensionsByMetricKey(k metricKey) (*pcommon.Map, erro
 func (p *processorImp) aggregateMetrics(traces ptrace.Traces) {
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
-		r := rspans.Resource()
-
-		attr, ok := r.Attributes().Get(conventions.AttributeServiceName)
+		resourceAttr := rspans.Resource().Attributes()
+		serviceAttr, ok := resourceAttr.Get(conventions.AttributeServiceName)
 		if !ok {
 			continue
 		}
-		serviceName := attr.StringVal()
-		p.aggregateMetricsForServiceSpans(rspans, serviceName)
-	}
-}
+		serviceName := serviceAttr.Str()
+		ilsSlice := rspans.ScopeSpans()
+		for j := 0; j < ilsSlice.Len(); j++ {
+			ils := ilsSlice.At(j)
+			spans := ils.Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				// Protect against end timestamps before start timestamps. Assume 0 duration.
+				latencyMs := float64(0)
+				startTime := span.StartTimestamp()
+				endTime := span.EndTimestamp()
+				if endTime > startTime {
+					latencyMs = float64(endTime-startTime) / float64(time.Millisecond.Nanoseconds())
+				}
 
-func (p *processorImp) aggregateMetricsForServiceSpans(rspans ptrace.ResourceSpans, serviceName string) {
-	ilsSlice := rspans.ScopeSpans()
-	for j := 0; j < ilsSlice.Len(); j++ {
-		ils := ilsSlice.At(j)
-		spans := ils.Spans()
-		for k := 0; k < spans.Len(); k++ {
-			span := spans.At(k)
-			p.aggregateMetricsForSpan(serviceName, span, rspans.Resource().Attributes())
+				// Always reset the buffer before re-using.
+				p.keyBuf.Reset()
+				buildKey(p.keyBuf, serviceName, span, p.dimensions, resourceAttr)
+				key := metricKey(p.keyBuf.String())
+
+				attributes, ok := p.metricKeyToDimensions.Get(key)
+				if !ok {
+					attributes = p.buildAttributes(serviceName, span, resourceAttr)
+					p.metricKeyToDimensions.Add(key, attributes)
+				}
+
+				h := p.getOrCreateHistogram(key, attributes)
+				h.observe(latencyMs, span.TraceID(), span.SpanID())
+			}
 		}
 	}
 }
 
-func (p *processorImp) aggregateMetricsForSpan(serviceName string, span ptrace.Span, resourceAttr pcommon.Map) {
-	latencyInMilliseconds := float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
-
-	// Binary search to find the latencyInMilliseconds bucket index.
-	index := sort.SearchFloat64s(p.latencyBounds, latencyInMilliseconds)
-
-	key := buildKey(serviceName, span, p.dimensions, resourceAttr)
-
-	p.lock.Lock()
-	p.cache(serviceName, span, key, resourceAttr)
-	p.updateCallMetrics(key)
-	p.updateLatencyMetrics(key, latencyInMilliseconds, index)
-	p.updateLatencyExemplars(key, latencyInMilliseconds, span.TraceID())
-	p.lock.Unlock()
-}
-
-// updateCallMetrics increments the call count for the given metric key.
-func (p *processorImp) updateCallMetrics(key metricKey) {
-	p.callSum[key]++
-}
-
-// resetAccumulatedMetrics resets the internal maps used to store created metric data. Also purge the cache for
-// metricKeyToDimensions.
-func (p *processorImp) resetAccumulatedMetrics() {
-	p.callSum = make(map[metricKey]int64)
-	p.latencyCount = make(map[metricKey]uint64)
-	p.latencySum = make(map[metricKey]float64)
-	p.latencyBucketCounts = make(map[metricKey][]uint64)
-	p.metricKeyToDimensions.Purge()
-}
-
-// updateLatencyExemplars sets the histogram exemplars for the given metric key and append the exemplar data.
-func (p *processorImp) updateLatencyExemplars(key metricKey, value float64, traceID pcommon.TraceID) {
-	if _, ok := p.latencyExemplarsData[key]; !ok {
-		p.latencyExemplarsData[key] = []exemplarData{}
+func (p *processorImp) getOrCreateHistogram(k metricKey, attr pcommon.Map) *histogram {
+	h, ok := p.histograms[k]
+	if !ok {
+		h = &histogram{
+			attributes:    attr,
+			bucketCounts:  make([]uint64, len(p.latencyBounds)+1),
+			latencyBounds: p.latencyBounds,
+			exemplars:     []exemplar{},
+		}
+		p.histograms[k] = h
 	}
 
-	e := exemplarData{
-		traceID: traceID,
-		value:   value,
-	}
-	p.latencyExemplarsData[key] = append(p.latencyExemplarsData[key], e)
+	return h
 }
 
-// resetExemplarData resets the entire exemplars map so the next trace will recreate all
+// resetExemplars resets the entire exemplars map so the next trace will recreate all
 // the data structure. An exemplar is a punctual value that exists at specific moment in time
 // and should be not considered like a metrics that persist over time.
-func (p *processorImp) resetExemplarData() {
-	p.latencyExemplarsData = make(map[metricKey][]exemplarData)
-}
-
-// updateLatencyMetrics increments the histogram counts for the given metric key and bucket index.
-func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, index int) {
-	if _, ok := p.latencyBucketCounts[key]; !ok {
-		p.latencyBucketCounts[key] = make([]uint64, len(p.latencyBounds))
+func (p *processorImp) resetExemplars() {
+	for _, histo := range p.histograms {
+		histo.exemplars = nil
 	}
-	p.latencySum[key] += latency
-	p.latencyCount[key]++
-	p.latencyBucketCounts[key][index]++
 }
 
-func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, optionalDims []Dimension, resourceAttrs pcommon.Map) pcommon.Map {
-	dims := pcommon.NewMap()
-	dims.UpsertString(serviceNameKey, serviceName)
-	dims.UpsertString(operationKey, span.Name())
-	dims.UpsertString(spanKindKey, span.Kind().String())
-	dims.UpsertString(statusCodeKey, span.Status().Code().String())
-	for _, d := range optionalDims {
+func (p *processorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {
+	attr := pcommon.NewMap()
+	attr.EnsureCapacity(4 + len(p.dimensions))
+	attr.PutStr(serviceNameKey, serviceName)
+	attr.PutStr(operationKey, span.Name())
+	attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
+	attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
+	for _, d := range p.dimensions {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			dims.Upsert(d.Name, v)
+			v.CopyTo(attr.PutEmpty(d.name))
 		}
 	}
-	return dims
+	return attr
 }
 
-func concatDimensionValue(metricKeyBuilder *strings.Builder, value string, prefixSep bool) {
-	// It's worth noting that from pprof benchmarks, WriteString is the most expensive operation of this processor.
-	// Specifically, the need to grow the underlying []byte slice to make room for the appended string.
+func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 	if prefixSep {
-		metricKeyBuilder.WriteString(metricKeySeparator)
+		dest.WriteString(metricKeySeparator)
 	}
-	metricKeyBuilder.WriteString(value)
+	dest.WriteString(value)
 }
 
 // buildKey builds the metric key from the service name and span metadata such as operation, kind, status_code and
@@ -470,21 +431,17 @@ func concatDimensionValue(metricKeyBuilder *strings.Builder, value string, prefi
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func buildKey(serviceName string, span ptrace.Span, optionalDims []Dimension, resourceAttrs pcommon.Map) metricKey {
-	var metricKeyBuilder strings.Builder
-	concatDimensionValue(&metricKeyBuilder, serviceName, false)
-	concatDimensionValue(&metricKeyBuilder, span.Name(), true)
-	concatDimensionValue(&metricKeyBuilder, span.Kind().String(), true)
-	concatDimensionValue(&metricKeyBuilder, span.Status().Code().String(), true)
+func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []dimension, resourceAttrs pcommon.Map) {
+	concatDimensionValue(dest, serviceName, false)
+	concatDimensionValue(dest, span.Name(), true)
+	concatDimensionValue(dest, traceutil.SpanKindStr(span.Kind()), true)
+	concatDimensionValue(dest, traceutil.StatusCodeStr(span.Status().Code()), true)
 
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			concatDimensionValue(&metricKeyBuilder, v.AsString(), true)
+			concatDimensionValue(dest, v.AsString(), true)
 		}
 	}
-
-	k := metricKey(metricKeyBuilder.String())
-	return k
 }
 
 // getDimensionValue gets the dimension value for the given configured dimension.
@@ -494,26 +451,19 @@ func buildKey(serviceName string, span ptrace.Span, optionalDims []Dimension, re
 //
 // The ok flag indicates if a dimension value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
-func getDimensionValue(d Dimension, spanAttr pcommon.Map, resourceAttr pcommon.Map) (v pcommon.Value, ok bool) {
+func getDimensionValue(d dimension, spanAttr pcommon.Map, resourceAttr pcommon.Map) (v pcommon.Value, ok bool) {
 	// The more specific span attribute should take precedence.
-	if attr, exists := spanAttr.Get(d.Name); exists {
+	if attr, exists := spanAttr.Get(d.name); exists {
 		return attr, true
 	}
-	if attr, exists := resourceAttr.Get(d.Name); exists {
+	if attr, exists := resourceAttr.Get(d.name); exists {
 		return attr, true
 	}
 	// Set the default if configured, otherwise this metric will have no value set for the dimension.
-	if d.Default != nil {
-		return pcommon.NewValueString(*d.Default), true
+	if d.value != nil {
+		return *d.value, true
 	}
 	return v, ok
-}
-
-// cache the dimension key-value map for the metricKey if there is a cache miss.
-// This enables a lookup of the dimension key-value map when constructing the metric like so:
-//   LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
-func (p *processorImp) cache(serviceName string, span ptrace.Span, k metricKey, resourceAttrs pcommon.Map) {
-	p.metricKeyToDimensions.ContainsOrAdd(k, p.buildDimensionKVs(serviceName, span, p.dimensions, resourceAttrs))
 }
 
 // copied from prometheus-go-metric-exporter
@@ -530,11 +480,11 @@ func sanitize(s string, skipSanitizeLabel bool) string {
 	if unicode.IsDigit(rune(s[0])) {
 		s = "key_" + s
 	}
-	//replace labels starting with _ only when skipSanitizeLabel is disabled
+	// replace labels starting with _ only when skipSanitizeLabel is disabled
 	if !skipSanitizeLabel && strings.HasPrefix(s, "_") {
 		s = "key" + s
 	}
-	//labels starting with __ are reserved in prometheus
+	// labels starting with __ are reserved in prometheus
 	if strings.HasPrefix(s, "__") {
 		s = "key" + s
 	}
@@ -551,14 +501,15 @@ func sanitizeRune(r rune) rune {
 	return '_'
 }
 
-// setLatencyExemplars sets the histogram exemplars.
-func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timestamp, exemplars pmetric.ExemplarSlice) {
+// setExemplars sets the histogram exemplars.
+func setExemplars(exemplarsData []exemplar, timestamp pcommon.Timestamp, exemplars pmetric.ExemplarSlice) {
 	es := pmetric.NewExemplarSlice()
 	es.EnsureCapacity(len(exemplarsData))
 
 	for _, ed := range exemplarsData {
 		value := ed.value
 		traceID := ed.traceID
+		spanID := ed.spanID
 
 		exemplar := es.AppendEmpty()
 
@@ -566,10 +517,19 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timesta
 			continue
 		}
 
-		exemplar.SetDoubleVal(value)
+		exemplar.SetDoubleValue(value)
 		exemplar.SetTimestamp(timestamp)
-		exemplar.FilteredAttributes().Insert(traceIDKey, pcommon.NewValueString(traceID.HexString()))
+		exemplar.SetTraceID(traceID)
+		exemplar.SetSpanID(spanID)
 	}
 
 	es.CopyTo(exemplars)
+}
+
+// buildMetricName builds the namespace prefix for the metric name.
+func buildMetricName(namespace string, name string) string {
+	if namespace != "" {
+		return namespace + "." + name
+	}
+	return name
 }

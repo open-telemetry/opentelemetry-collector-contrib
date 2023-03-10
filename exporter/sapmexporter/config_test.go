@@ -19,57 +19,78 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
-	facotries, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	facotries.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), facotries)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Exporters), 2)
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id: component.NewIDWithName(typeStr, ""),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Endpoint = "http://example.com"
+				return cfg
+			}(),
+		},
+		{
+			id: component.NewIDWithName(typeStr, "customname"),
+			expected: &Config{
+				Endpoint:            "https://example.com",
+				AccessToken:         "abcd1234",
+				NumWorkers:          3,
+				MaxConnections:      45,
+				LogDetailedResponse: true,
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: false,
+				},
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 10 * time.Second,
+				},
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
+				},
+			},
+		},
+	}
 
-	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
-	assert.Equal(t, r1,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
-			Endpoint:         "test-endpoint",
-			AccessToken:      "abcd1234",
-			NumWorkers:       3,
-			MaxConnections:   45,
-			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
-				AccessTokenPassthrough: false,
-			},
-			TimeoutSettings: exporterhelper.TimeoutSettings{
-				Timeout: 10 * time.Second,
-			},
-			RetrySettings: exporterhelper.RetrySettings{
-				Enabled:         true,
-				InitialInterval: 10 * time.Second,
-				MaxInterval:     1 * time.Minute,
-				MaxElapsedTime:  10 * time.Minute,
-			},
-			QueueSettings: exporterhelper.QueueSettings{
-				Enabled:      true,
-				NumConsumers: 2,
-				QueueSize:    10,
-			},
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
 		})
+	}
 }
 
 func TestInvalidConfig(t *testing.T) {
@@ -78,7 +99,7 @@ func TestInvalidConfig(t *testing.T) {
 		NumWorkers:     3,
 		MaxConnections: 45,
 	}
-	noEndpointErr := invalid.validate()
+	noEndpointErr := invalid.Validate()
 	require.Error(t, noEndpointErr)
 
 	invalid = Config{
@@ -87,7 +108,7 @@ func TestInvalidConfig(t *testing.T) {
 		NumWorkers:     3,
 		MaxConnections: 45,
 	}
-	invalidURLErr := invalid.validate()
+	invalidURLErr := invalid.Validate()
 	require.Error(t, invalidURLErr)
 
 	invalid = Config{
@@ -97,5 +118,6 @@ func TestInvalidConfig(t *testing.T) {
 			QueueSize: -1,
 		},
 	}
-	require.Error(t, invalid.Validate())
+
+	require.Error(t, component.ValidateConfig(invalid))
 }

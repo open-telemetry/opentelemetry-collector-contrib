@@ -9,7 +9,7 @@
                      "description": "The number of binds per second serviced by this domain controller.",
                      "name": "active_directory.ds.bind.rate",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asDouble": 20,
@@ -59,7 +59,7 @@
                      "description": "The number of successful LDAP binds per second.",
                      "name": "active_directory.ds.ldap.bind.rate",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asDouble": 30,
@@ -74,7 +74,7 @@
                      "description": "The number of connected LDAP client sessions.",
                      "name": "active_directory.ds.ldap.client.session.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "28",
@@ -89,7 +89,7 @@
                      "description": "The number of LDAP searches per second.",
                      "name": "active_directory.ds.ldap.search.rate",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asDouble": 31,
@@ -118,7 +118,7 @@
                      "description": "The number of pending update notifications that have been queued to push to clients.",
                      "name": "active_directory.ds.notification.queued",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "23",
@@ -133,7 +133,7 @@
                      "description": "The number of operations performed per second.",
                      "name": "active_directory.ds.operation.rate",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asDouble": 17,
@@ -182,7 +182,7 @@
                      "description": "The amount of network data transmitted by the Directory Replication Agent.",
                      "name": "active_directory.ds.replication.network.io",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -269,7 +269,7 @@
                      "description": "The number of objects transmitted by the Directory Replication Agent per second.",
                      "name": "active_directory.ds.replication.object.rate",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asDouble": 5,
@@ -305,7 +305,7 @@
                      "description": "The number of pending replication operations for the Directory Replication Agent.",
                      "name": "active_directory.ds.replication.operation.pending",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "13",
@@ -320,7 +320,7 @@
                      "description": "The number of properties transmitted by the Directory Replication Agent per second.",
                      "name": "active_directory.ds.replication.property.rate",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asDouble": 7,
@@ -356,7 +356,7 @@
                      "description": "The number of sync requests made by the Directory Replication Agent.",
                      "name": "active_directory.ds.replication.sync.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "14",
@@ -406,7 +406,7 @@
                      "description": "The number of values transmitted by the Directory Replication Agent per second.",
                      "name": "active_directory.ds.replication.value.rate",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asDouble": 11,
@@ -454,7 +454,7 @@
                      "description": "The number of security descriptor propagation events that are queued for processing.",
                      "name": "active_directory.ds.security_descriptor_propagations_event.queued",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "24",
@@ -469,7 +469,7 @@
                      "description": "The rate of sub-operations performed.",
                      "name": "active_directory.ds.suboperation.rate",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asDouble": 26,
@@ -505,7 +505,7 @@
                      "description": "The number of threads in use by the directory service.",
                      "name": "active_directory.ds.thread.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "27",

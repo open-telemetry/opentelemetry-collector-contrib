@@ -1,2 +1,0 @@
-type: flatten
-field: body.nested

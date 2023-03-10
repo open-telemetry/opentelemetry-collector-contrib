@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
@@ -39,7 +40,7 @@ func (b *Buffer) ReadBytes(offset uint32) ([]byte, error) {
 	utf16 := b.buffer[:offset]
 	utf8, err := unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewDecoder().Bytes(utf16)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert buffer contents to utf8: %s", err)
+		return nil, fmt.Errorf("failed to convert buffer contents to utf8: %w", err)
 	}
 
 	return bytes.Trim(utf8, "\u0000"), nil

@@ -99,7 +99,7 @@ func TestNewECSInfo(t *testing.T) {
 	taskinfoCreatorOpt := func(ei *EcsInfo) {
 		ei.ecsTaskInfoCreator = func(context.Context, hostIPProvider, time.Duration, *zap.Logger, doer,
 			chan bool) ecsTaskInfoProvider {
-			tasks := []ECSTask{}
+			var tasks []ECSTask
 			return &MockTaskInfo{
 				tasks:            tasks,
 				runningTaskCount: int64(2),
@@ -118,7 +118,7 @@ func TestNewECSInfo(t *testing.T) {
 	}
 	hostIPProvider := &FakehostInfo{}
 
-	ecsinfo, _ := NewECSInfo(time.Minute, hostIPProvider, componenttest.NewNopTelemetrySettings(), containerInstanceInfoCreatorOpt, taskinfoCreatorOpt, cgroupScannerCreatorOpt)
+	ecsinfo, _ := NewECSInfo(time.Minute, hostIPProvider, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), containerInstanceInfoCreatorOpt, taskinfoCreatorOpt, cgroupScannerCreatorOpt)
 	assert.NotNil(t, ecsinfo)
 
 	<-ecsinfo.taskInfoTestReadyC

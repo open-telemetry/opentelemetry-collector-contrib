@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
@@ -38,18 +39,18 @@ type nginxScraper struct {
 }
 
 func newNginxScraper(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	cfg *Config,
 ) *nginxScraper {
 	return &nginxScraper{
 		settings: settings.TelemetrySettings,
 		cfg:      cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
 
 func (r *nginxScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(host.GetExtensions(), r.settings)
+	httpClient, err := r.cfg.ToClient(host, r.settings)
 	if err != nil {
 		return err
 	}

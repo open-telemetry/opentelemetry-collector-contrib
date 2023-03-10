@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
+
 import (
 	"context"
 	"encoding/json"
@@ -51,7 +52,7 @@ var (
 )
 
 func newClient(c *Config, settings component.TelemetrySettings, host component.Host, logger *zap.Logger) (*nsxClient, error) {
-	client, err := c.HTTPClientSettings.ToClient(host.GetExtensions(), settings)
+	client, err := c.HTTPClientSettings.ToClient(host, settings)
 	if err != nil {
 		return nil, err
 	}

@@ -19,9 +19,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
@@ -29,6 +29,7 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr                    = "statsd"
+	stability                  = component.StabilityLevelBeta
 	defaultBindEndpoint        = "localhost:8125"
 	defaultTransport           = "udp"
 	defaultAggregationInterval = 60 * time.Second
@@ -41,17 +42,16 @@ var (
 )
 
 // NewFactory creates a factory for the StatsD receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
+		receiver.WithMetrics(createMetricsReceiver, stability),
 	)
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		NetAddr: confignet.NetAddr{
 			Endpoint:  defaultBindEndpoint,
 			Transport: defaultTransport,
@@ -65,14 +65,10 @@ func createDefaultConfig() config.Receiver {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	params receiver.CreateSettings,
+	cfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	c := cfg.(*Config)
-	err := c.validate()
-	if err != nil {
-		return nil, err
-	}
 	return New(params, *c, consumer)
 }

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
@@ -152,12 +151,14 @@ func TestGetNodeStats(t *testing.T) {
 
 		if strings.Contains(r.URL.Path, "/invalid_json") {
 			w.WriteHeader(200)
-			w.Write([]byte(`{"}`))
+			_, err := w.Write([]byte(`{"}`))
+			require.NoError(t, err)
 			return
 		}
 		if strings.Contains(r.URL.Path, "/_stats/couchdb") {
 			w.WriteHeader(200)
-			w.Write([]byte(`{"key":["value"]}`))
+			_, err := w.Write([]byte(`{"key":["value"]}`))
+			require.NoError(t, err)
 			return
 		}
 		w.WriteHeader(404)

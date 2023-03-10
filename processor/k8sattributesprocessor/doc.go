@@ -18,25 +18,31 @@
 // extracted metadata to the relevant spans, metrics and logs. The processor uses the kubernetes API to discover all pods
 // running in a cluster, keeps a record of their IP addresses, pod UIDs and interesting metadata.
 // The rules for associating the data passing through the processor (spans, metrics and logs) with specific Pod Metadata are configured via "pod_association" key.
-// It represents a list of rules that are executed in the specified order until the first one is able to do the match.
-// Each rule is specified as a pair of from (representing the rule type) and name (representing the extracted key name).
+// It represents a list of associations that are executed in the specified order until the first one is able to do the match.
+//
+// Each association is specified as a list of sources of association.
+// Sources represents list of rules. All rules are going to be executed and combination of result is going to be a pod metadata cache key.
+// In order to get an association applied, all the data defined in each source has to be successfully fetched from a log, trace or metric.
+//
+// Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `From` is set to `resource_attribute`).
 // Following rule types are available:
-//   from: "resource_attribute" - allows to specify the attribute name to lookup up in the list of attributes of the received Resource. The specified attribute, if it is present, identifies the Pod that is represented by the Resource.
-//     (the value can contain either IP address or Pod UID)
-//   from: "connection" - takes the IP attribute from connection context (if available) and automatically
-//     associates it with "k8s.pod.ip" attribute
+//
+//	from: "connection" - takes the IP attribute from connection context (if available)
+//	from: "resource_attribute" - allows to specify the attribute name to lookup up in the list of attributes of the received Resource.
+//	                             Semantic convention should be used for naming.
+//
 // Pod association configuration.
-// pod_association:
-//  - from: resource_attribute
-//    name: ip
-//  - from: resource_attribute
-//    name: k8s.pod.ip
-//  - from: resource_attribute
-//    name: host.name
-//  - from: connection
-//    name: ip
-//  - from: resource_attribute
-//    name: k8s.pod.uid
+//
+//	pod_association:
+//	  - sources:
+//	      - from: resource_attribute
+//	        name: k8s.pod.ip
+//	  # below association matches for pair `k8s.pod.name` and `k8s.namespace.name`
+//	  - sources:
+//	      - from: resource_attribute
+//	        name: k8s.pod.name
+//	      - from: resource_attribute
+//	        name: k8s.namespace.name
 //
 // If Pod association rules are not configured resources are associated with metadata only by connection's IP Address.
 //
@@ -50,105 +56,111 @@
 //   - k8s.pod.start_time
 //   - k8s.deployment.name
 //   - k8s.node.name
+//
 // Not all the attributes are guaranteed to be added.
 //
+// Only attribute names from `metadata` should be used for pod_association's `resource_attribute`,
+// because empty or non-existing values will be ignored.
+//
 // The following container level attributes require additional attributes to identify a particular container in a pod:
-//   1. Container spec attributes - will be set only if container identifying attribute `k8s.container.name` is set
-//      as a resource attribute (similar to all other attributes, pod has to be identified as well):
+//  1. Container spec attributes - will be set only if container identifying attribute `k8s.container.name` is set
+//     as a resource attribute (similar to all other attributes, pod has to be identified as well):
 //     - container.image.name
 //     - container.image.tag
-//   2. Container status attributes - in addition to pod identifier and `k8s.container.name` attribute, these attributes
-//     require identifier of a particular container run set as `k8s.container.restart_count` in resource attributes:
-//     - container.id
+//  2. Container ID attribute - in addition to pod identifier and `k8s.container.name` attribute, `container.id` must
+//     be explicitly requested in `metadata`. Specifying `k8s.container.restart_count` in the resource
+//     attributes will match only the specified container run; if omitted, the current instance is assumed.
 //
-//The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
-//The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
-//This config represents a list of annotations/labels that are extracted from pods/namespaces and added to spans, metrics and logs.
-//Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
-//key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
-//The "from" field has only two possible values "pod" and "namespace" and defaults to "pod" if none is specified.
+// The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
+// The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
+// This config represents a list of annotations/labels that are extracted from pods/namespaces and added to spans, metrics and logs.
+// Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
+// key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
+// The "from" field has only two possible values "pod" and "namespace" and defaults to "pod" if none is specified.
 //
-//A few examples to use this config are as follows:
-//annotations:
-//  - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
-//	  key: annotation-one
-//	  from: pod
-//  - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
-//	  key: annotation-two
-//	  regex: field=(?P<value>.+)
-//	  from: namespace
-//labels:
-//  - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
-//	  key: label1
-//	  from: namespace
-//  - tag_name: l2 # extracts value of label from pods with key `label1` with regexp and inserts it as a tag with key `l2`
-//	  key: label2
-//	  regex: field=(?P<value>.+)
-//	  from: pod
+// A few examples to use this config are as follows:
 //
-// RBAC
+//	annotations:
+//	  - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
+//	    key: annotation-one
+//	    from: pod
+//	  - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
+//	    key: annotation-two
+//	    regex: field=(?P<value>.+)
+//	    from: namespace
+//
+//	labels:
+//	  - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
+//	    key: label1
+//	    from: namespace
+//	  - tag_name: l2 # extracts value of label from pods with key `label2` with regexp and inserts it as a tag with key `l2`
+//	    key: label2
+//	    regex: field=(?P<value>.+)
+//	    from: pod
+//
+// # RBAC
 //
 // The k8sattributesprocessor needs `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters.
 // Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
 //
-//      apiVersion: v1
-//      kind: ServiceAccount
-//      metadata:
-//        name: collector
-//        namespace: <OTEL_COL_NAMESPACE>
-//      ---
-//      apiVersion: rbac.authorization.k8s.io/v1
-//      kind: ClusterRole
-//      metadata:
-//        name: otel-collector
-//      rules:
-//      - apiGroups: [""]
-//        resources: ["pods", "namespaces"]
-//        verbs: ["get", "watch", "list"]
-//      ---
-//      apiVersion: rbac.authorization.k8s.io/v1
-//      kind: ClusterRoleBinding
-//      metadata:
-//        name: otel-collector
-//      subjects:
-//      - kind: ServiceAccount
-//        name: collector
-//        namespace: <OTEL_COL_NAMESPACE>
-//      roleRef:
-//        kind: ClusterRole
-//        name: otel-collector
-//        apiGroup: rbac.authorization.k8s.io
+//	apiVersion: v1
+//	kind: ServiceAccount
+//	metadata:
+//	  name: collector
+//	  namespace: <OTEL_COL_NAMESPACE>
+//	---
+//	apiVersion: rbac.authorization.k8s.io/v1
+//	kind: ClusterRole
+//	metadata:
+//	  name: otel-collector
+//	rules:
+//	- apiGroups: [""]
+//	  resources: ["pods", "namespaces"]
+//	  verbs: ["get", "watch", "list"]
+//	---
+//	apiVersion: rbac.authorization.k8s.io/v1
+//	kind: ClusterRoleBinding
+//	metadata:
+//	  name: otel-collector
+//	subjects:
+//	- kind: ServiceAccount
+//	  name: collector
+//	  namespace: <OTEL_COL_NAMESPACE>
+//	roleRef:
+//	  kind: ClusterRole
+//	  name: otel-collector
+//	  apiGroup: rbac.authorization.k8s.io
 //
 // Config
 //
-//      k8sattributes:
-//      k8sattributes/2:
-//        auth_type: "serviceAccount"
-//        passthrough: false
-//        filter:
-//          node_from_env_var: KUBE_NODE_NAME
+//	k8sattributes:
+//	k8sattributes/2:
+//	  auth_type: "serviceAccount"
+//	  passthrough: false
+//	  filter:
+//	    node_from_env_var: KUBE_NODE_NAME
 //
-//        extract:
-//          metadata:
-//            - k8s.pod.name
-//            - k8s.pod.uid
-//            - k8s.deployment.name
-//            - k8s.namespace.name
-//            - k8s.node.name
-//            - k8s.pod.start_time
+//	  extract:
+//	    metadata:
+//	      - k8s.pod.name
+//	      - k8s.pod.uid
+//	      - k8s.deployment.name
+//	      - k8s.namespace.name
+//	      - k8s.node.name
+//	      - k8s.pod.start_time
 //
-//        pod_association:
-//         - from: resource_attribute
-//           name: k8s.pod.ip
-//         - from: resource_attribute
-//           name: k8s.pod.uid
-//         - from: connection
+//	  pod_association:
+//	   - from: resource_attribute
+//	     name: k8s.pod.ip
+//	   - from: resource_attribute
+//	     name: k8s.pod.uid
+//	   - from: connection
 //
-// Deployment scenarios
+// # Deployment scenarios
 //
 // The processor supports running both in agent and collector mode.
 //
-// As an agent
+// # As an agent
 //
 // When running as an agent, the processor detects IP addresses of pods sending spans, metrics or logs to the agent
 // and uses this information to extract metadata from pods. When running as an agent, it is important to apply
@@ -165,28 +177,28 @@
 // 1. Use the downward API to inject the node name as an environment variable.
 // Add the following snippet under the pod env section of the OpenTelemetry container.
 //
-//    spec:
-//      containers:
-//      - env:
-//        - name: KUBE_NODE_NAME
-//          valueFrom:
-//            fieldRef:
-//              apiVersion: v1
-//              fieldPath: spec.nodeName
+//	spec:
+//	  containers:
+//	  - env:
+//	    - name: KUBE_NODE_NAME
+//	      valueFrom:
+//	        fieldRef:
+//	          apiVersion: v1
+//	          fieldPath: spec.nodeName
 //
 // This will inject a new environment variable to the OpenTelemetry container with the value as the
 // name of the node the pod was scheduled to run on.
 //
 // 2. Set "filter.node_from_env_var" to the name of the environment variable holding the node name.
 //
-//    k8sattributes:
-//      filter:
-//        node_from_env_var: KUBE_NODE_NAME # this should be same as the var name used in previous step
+//	k8sattributes:
+//	  filter:
+//	    node_from_env_var: KUBE_NODE_NAME # this should be same as the var name used in previous step
 //
 // This will restrict each OpenTelemetry agent to query pods running on the same node only dramatically reducing
 // resource requirements for very large clusters.
 //
-// As a collector
+// # As a collector
 //
 // The processor can be deployed both as an agent or as a collector.
 //
@@ -201,9 +213,9 @@
 // 1. Setup agents in passthrough mode
 // Configure the agents' k8sattributes processors to run in passthrough mode.
 //
-//    # k8sattributes config for agent
-//    k8sattributes:
-//      passthrough: true
+//	# k8sattributes config for agent
+//	k8sattributes:
+//	  passthrough: true
 //
 // This will ensure that the agents detect the IP address as add it as an attribute to all telemetry resources.
 // Agents will not make any k8s API calls, do any discovery of pods or extract any metadata.
@@ -212,23 +224,20 @@
 // No special configuration changes are needed to be made on the collector. It'll automatically detect
 // the IP address of spans, logs and metrics sent by the agents as well as directly by other services/pods.
 //
-//
-// Caveats
+// # Caveats
 //
 // There are some edge-cases and scenarios where k8sattributes will not work properly.
 //
-//
-// Host networking mode
+// # Host networking mode
 //
 // The processor cannot correct identify pods running in the host network mode and
-// enriching telemetry data generated by such pods is not supported at the moment, unless the attributes contain
-// information about the source IP.
+// enriching telemetry data generated by such pods is not supported at the moment, unless the association
+// rule is not based on IP attribute.
 //
-// As a sidecar
+// # As a sidecar
 //
 // The processor does not support detecting containers from the same pods when running
 // as a sidecar. While this can be done, we think it is simpler to just use the kubernetes
 // downward API to inject environment variables into the pods and directly use their values
 // as tags.
-// nolint:gocritic
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"

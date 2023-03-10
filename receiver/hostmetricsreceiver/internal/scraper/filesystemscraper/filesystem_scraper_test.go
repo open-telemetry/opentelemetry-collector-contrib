@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -27,9 +28,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
@@ -38,6 +40,7 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name                     string
 		config                   Config
+		rootPath                 string
 		bootTimeFunc             func() (uint64, error)
 		partitionsFunc           func(bool) ([]disk.PartitionStat, error)
 		usageFunc                func(string) (*disk.UsageStat, error)
@@ -47,19 +50,21 @@ func TestScrape(t *testing.T) {
 		newErrRegex              string
 		initializationErr        string
 		expectedErr              string
+		failedMetricsLen         *int
+		continueOnErr            bool
 	}
 
 	testCases := []testCase{
 		{
 			name:          "Standard",
-			config:        Config{Metrics: metadata.DefaultMetricsSettings()},
+			config:        Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
 			expectMetrics: true,
 		},
 		{
 			name: "Include single device filter",
 			config: Config{
-				Metrics:        metadata.DefaultMetricsSettings(),
-				IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				IncludeDevices:       DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}},
 			},
 			partitionsFunc: func(bool) ([]disk.PartitionStat, error) {
 				return []disk.PartitionStat{{Device: "a"}, {Device: "b"}}, nil
@@ -73,15 +78,35 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Include Device Filter that matches nothing",
 			config: Config{
-				Metrics:        metadata.DefaultMetricsSettings(),
-				IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				IncludeDevices:       DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
 			expectMetrics: false,
 		},
 		{
+			name: "Include device filtering that includes virtual partitions",
+			config: Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				IncludeVirtualFS:     true,
+				IncludeFSTypes:       FSTypeMatchConfig{Config: filterset.Config{MatchType: filterset.Strict}, FSTypes: []string{"tmpfs"}},
+			},
+			partitionsFunc: func(includeVirtual bool) (paritions []disk.PartitionStat, err error) {
+				paritions = append(paritions, disk.PartitionStat{Device: "root-device", Fstype: "ext4"})
+				if includeVirtual {
+					paritions = append(paritions, disk.PartitionStat{Device: "shm", Fstype: "tmpfs"})
+				}
+				return paritions, err
+			},
+			usageFunc: func(s string) (*disk.UsageStat, error) {
+				return &disk.UsageStat{}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 1,
+		},
+		{
 			name: "Include filter with devices, filesystem type and mount points",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				IncludeDevices: DeviceMatchConfig{
 					Config: filterset.Config{
 						MatchType: filterset.Strict,
@@ -134,64 +159,98 @@ func TestScrape(t *testing.T) {
 			expectedDeviceDataPoints: 2,
 			expectedDeviceAttributes: []map[string]pcommon.Value{
 				{
-					"device":     pcommon.NewValueString("device_a"),
-					"mountpoint": pcommon.NewValueString("mount_point_a"),
-					"type":       pcommon.NewValueString("fs_type_a"),
-					"mode":       pcommon.NewValueString("unknown"),
+					"device":     pcommon.NewValueStr("device_a"),
+					"mountpoint": pcommon.NewValueStr("mount_point_a"),
+					"type":       pcommon.NewValueStr("fs_type_a"),
+					"mode":       pcommon.NewValueStr("unknown"),
 				},
 				{
-					"device":     pcommon.NewValueString("device_b"),
-					"mountpoint": pcommon.NewValueString("mount_point_d"),
-					"type":       pcommon.NewValueString("fs_type_c"),
-					"mode":       pcommon.NewValueString("unknown"),
+					"device":     pcommon.NewValueStr("device_b"),
+					"mountpoint": pcommon.NewValueStr("mount_point_d"),
+					"type":       pcommon.NewValueStr("fs_type_c"),
+					"mode":       pcommon.NewValueStr("unknown"),
+				},
+			},
+		},
+		{
+			name: "RootPath at /hostfs",
+			config: Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
+			rootPath: filepath.Join("/", "hostfs"),
+			usageFunc: func(s string) (*disk.UsageStat, error) {
+				if s != filepath.Join("/hostfs", "mount_point_a") {
+					return nil, errors.New("mountpoint not translated according to RootPath")
+				}
+				return &disk.UsageStat{
+					Fstype: "fs_type_a",
+				}, nil
+			},
+			partitionsFunc: func(b bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_a",
+						Fstype:     "fs_type_a",
+					},
+				}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 1,
+			expectedDeviceAttributes: []map[string]pcommon.Value{
+				{
+					"device":     pcommon.NewValueStr("device_a"),
+					"mountpoint": pcommon.NewValueStr("mount_point_a"),
+					"type":       pcommon.NewValueStr("fs_type_a"),
+					"mode":       pcommon.NewValueStr("unknown"),
 				},
 			},
 		},
 		{
 			name: "Invalid Include Device Filter",
 			config: Config{
-				Metrics:        metadata.DefaultMetricsSettings(),
-				IncludeDevices: DeviceMatchConfig{Devices: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				IncludeDevices:       DeviceMatchConfig{Devices: []string{"test"}},
 			},
 			newErrRegex: "^error creating include_devices filter:",
 		},
 		{
 			name: "Invalid Exclude Device Filter",
 			config: Config{
-				Metrics:        metadata.DefaultMetricsSettings(),
-				ExcludeDevices: DeviceMatchConfig{Devices: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ExcludeDevices:       DeviceMatchConfig{Devices: []string{"test"}},
 			},
 			newErrRegex: "^error creating exclude_devices filter:",
 		},
 		{
 			name: "Invalid Include Filesystems Filter",
 			config: Config{
-				Metrics:        metadata.DefaultMetricsSettings(),
-				IncludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				IncludeFSTypes:       FSTypeMatchConfig{FSTypes: []string{"test"}},
 			},
 			newErrRegex: "^error creating include_fs_types filter:",
 		},
 		{
 			name: "Invalid Exclude Filesystems Filter",
 			config: Config{
-				Metrics:        metadata.DefaultMetricsSettings(),
-				ExcludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ExcludeFSTypes:       FSTypeMatchConfig{FSTypes: []string{"test"}},
 			},
 			newErrRegex: "^error creating exclude_fs_types filter:",
 		},
 		{
 			name: "Invalid Include Moountpoints Filter",
 			config: Config{
-				Metrics:            metadata.DefaultMetricsSettings(),
-				IncludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				IncludeMountPoints:   MountPointMatchConfig{MountPoints: []string{"test"}},
 			},
 			newErrRegex: "^error creating include_mount_points filter:",
 		},
 		{
 			name: "Invalid Exclude Moountpoints Filter",
 			config: Config{
-				Metrics:            metadata.DefaultMetricsSettings(),
-				ExcludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ExcludeMountPoints:   MountPointMatchConfig{MountPoints: []string{"test"}},
 			},
 			newErrRegex: "^error creating exclude_mount_points filter:",
 		},
@@ -201,6 +260,62 @@ func TestScrape(t *testing.T) {
 			expectedErr:    "err1",
 		},
 		{
+			name: "Partitions and error provided",
+			config: Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				IncludeDevices: DeviceMatchConfig{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+					Devices: []string{"device_a", "device_b"},
+				},
+				ExcludeFSTypes: FSTypeMatchConfig{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+					FSTypes: []string{"fs_type_b"},
+				},
+			},
+			usageFunc: func(s string) (*disk.UsageStat, error) {
+				return &disk.UsageStat{
+					Fstype: "fs_type_a",
+				}, nil
+			},
+			partitionsFunc: func(b bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_a",
+						Fstype:     "fs_type_a",
+					},
+					{
+						Device:     "device_b",
+						Mountpoint: "mount_point_d",
+						Fstype:     "fs_type_c",
+					},
+				}, errors.New("invalid partitions collection")
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 2,
+			expectedDeviceAttributes: []map[string]pcommon.Value{
+				{
+					"device":     pcommon.NewValueStr("device_a"),
+					"mountpoint": pcommon.NewValueStr("mount_point_a"),
+					"type":       pcommon.NewValueStr("fs_type_a"),
+					"mode":       pcommon.NewValueStr("unknown"),
+				},
+				{
+					"device":     pcommon.NewValueStr("device_b"),
+					"mountpoint": pcommon.NewValueStr("mount_point_d"),
+					"type":       pcommon.NewValueStr("fs_type_c"),
+					"mode":       pcommon.NewValueStr("unknown"),
+				},
+			},
+			expectedErr:      "failed collecting partitions information: invalid partitions collection",
+			failedMetricsLen: new(int),
+			continueOnErr:    true,
+		},
+		{
 			name:        "Usage Error",
 			usageFunc:   func(string) (*disk.UsageStat, error) { return nil, errors.New("err2") },
 			expectedErr: "err2",
@@ -208,8 +323,11 @@ func TestScrape(t *testing.T) {
 	}
 
 	for _, test := range testCases {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newFileSystemScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
+			t.Parallel()
+			test.config.SetRootPath(test.rootPath)
+			scraper, err := newFileSystemScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config)
 			if test.newErrRegex != "" {
 				require.Error(t, err)
 				require.Regexp(t, test.newErrRegex, err)
@@ -241,12 +359,20 @@ func TestScrape(t *testing.T) {
 				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)
 				if isPartial {
-					assert.Equal(t, metricsLen, err.(scrapererror.PartialScrapeError).Failed)
+					var scraperErr scrapererror.PartialScrapeError
+					require.ErrorAs(t, err, &scraperErr)
+					expectedFailedMetricsLen := metricsLen
+					if test.failedMetricsLen != nil {
+						expectedFailedMetricsLen = *test.failedMetricsLen
+					}
+					assert.Equal(t, expectedFailedMetricsLen, scraperErr.Failed)
 				}
-
-				return
+				if !test.continueOnErr {
+					return
+				}
+			} else {
+				require.NoError(t, err, "Failed to scrape metrics: %v", err)
 			}
-			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			if !test.expectMetrics {
 				assert.Equal(t, 0, md.MetricCount())
@@ -322,14 +448,14 @@ func assertFileSystemUsageMetricValid(
 		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), fileSystemStatesLen)
 	}
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
-		pcommon.NewValueString(metadata.AttributeStateUsed.String()))
+		pcommon.NewValueStr(metadata.AttributeStateUsed.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state",
-		pcommon.NewValueString(metadata.AttributeStateFree.String()))
+		pcommon.NewValueStr(metadata.AttributeStateFree.String()))
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
 	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state",
-		pcommon.NewValueString(metadata.AttributeStateReserved.String()))
+		pcommon.NewValueStr(metadata.AttributeStateReserved.String()))
 }
 
 func isUnix() bool {

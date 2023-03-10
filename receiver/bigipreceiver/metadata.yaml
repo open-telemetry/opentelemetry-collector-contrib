@@ -4,51 +4,62 @@ resource_attributes:
   bigip.virtual_server.name:
     description: The name of the Big-IP Virtual Server.
     type: string
+    enabled: true
   bigip.virtual_server.destination:
     description: The destination for the Big-IP Virtual Server.
     type: string
+    enabled: true
   bigip.pool.name:
     description: The name of the Big-IP Pool.
     type: string
+    enabled: true
   bigip.pool_member.name:
     description: The name of the Big-IP Pool Member.
     type: string
+    enabled: true
   bigip.pool_member.ip_address:
     description: The IP Address of the Big-IP Pool Member.
     type: string
+    enabled: true
   bigip.node.name:
     description: The name of the Big-IP Node.
     type: string
+    enabled: true
   bigip.node.ip_address:
     description: The IP Address of the Big-IP Node.
     type: string
+    enabled: true
 
 attributes:
   direction:
-    value: direction
     description: The direction of data.
+    type: string
     enum:
       - sent
       - received
   availability.status:
-    value: status
+    name_override: status
     description: The availability status.
+    type: string
     enum:
       - offline
       - unknown
       - available
   enabled.status:
-    value: status
+    name_override: status
     description: The enabled status.
+    type: string
     enum:
       - disabled
       - enabled
   active.status:
-    value: status
+    name_override: status
     description: The active status.
+    type: string
     enum:
       - active
       - inactive
+
 metrics:
   bigip.virtual_server.data.transmitted:
     description: Amount of data transmitted to and from the virtual server.

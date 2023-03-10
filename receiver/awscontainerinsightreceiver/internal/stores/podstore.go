@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package stores // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 
 import (
@@ -102,7 +101,7 @@ type podClient interface {
 
 type PodStore struct {
 	cache            *mapWithExpiry
-	prevMeasurements map[string]*mapWithExpiry //preMeasurements per each Type (Pod, Container, etc)
+	prevMeasurements map[string]*mapWithExpiry // preMeasurements per each Type (Pod, Container, etc)
 	podClient        podClient
 	k8sClient        replicaSetInfoProvider
 	lastRefreshed    time.Time
@@ -121,7 +120,7 @@ func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel 
 
 	// Try to detect kubelet permission issue here
 	if _, err := podClient.ListPods(); err != nil {
-		return nil, fmt.Errorf("cannot get pod from kubelet, err: %v", err)
+		return nil, fmt.Errorf("cannot get pod from kubelet, err: %w", err)
 	}
 
 	k8sClient := k8sclient.Get(logger)
@@ -438,19 +437,21 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 		if containerName := metric.GetTag(ci.ContainerNamekey); containerName != "" {
 			for _, containerStatus := range pod.Status.ContainerStatuses {
 				if containerStatus.Name == containerName {
-					if containerStatus.State.Running != nil {
+					switch {
+					case containerStatus.State.Running != nil:
 						metric.AddTag(ci.ContainerStatus, "Running")
-					} else if containerStatus.State.Waiting != nil {
+					case containerStatus.State.Waiting != nil:
 						metric.AddTag(ci.ContainerStatus, "Waiting")
 						if containerStatus.State.Waiting.Reason != "" {
 							metric.AddTag(ci.ContainerStatusReason, containerStatus.State.Waiting.Reason)
 						}
-					} else if containerStatus.State.Terminated != nil {
+					case containerStatus.State.Terminated != nil:
 						metric.AddTag(ci.ContainerStatus, "Terminated")
 						if containerStatus.State.Terminated.Reason != "" {
 							metric.AddTag(ci.ContainerStatusReason, containerStatus.State.Terminated.Reason)
 						}
 					}
+
 					if containerStatus.LastTerminationState.Terminated != nil && containerStatus.LastTerminationState.Terminated.Reason != "" {
 						metric.AddTag(ci.ContainerLastTerminationReason, containerStatus.LastTerminationState.Terminated.Reason)
 					}

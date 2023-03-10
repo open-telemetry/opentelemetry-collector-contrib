@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	dtconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
@@ -29,23 +29,24 @@ import (
 const (
 	// typeStr is the type of the exporter
 	typeStr = "dynatrace"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a Dynatrace exporter factory
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exp.Factory {
+	return exp.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter),
+		exp.WithMetrics(createMetricsExporter, stability),
 	)
 }
 
 // createDefaultConfig creates the default exporter configuration
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &dtconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: false,
 		},
@@ -61,17 +62,18 @@ func createDefaultConfig() config.Exporter {
 // createMetricsExporter creates a metrics exporter based on this
 func createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	c config.Exporter,
-) (component.MetricsExporter, error) {
+	set exp.CreateSettings,
+	c component.Config,
+) (exp.Metrics, error) {
 
 	cfg := c.(*dtconfig.Config)
 
 	exp := newMetricsExporter(set, cfg)
 
 	exporter, err := exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		exp.PushMetricsData,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),

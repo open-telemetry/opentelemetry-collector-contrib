@@ -16,12 +16,12 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
@@ -31,9 +31,12 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr            = "splunk_hec"
-	defaultMaxIdleCons = 100
-	defaultHTTPTimeout = 10 * time.Second
+	typeStr = "splunk_hec"
+	// The stability level of the exporter.
+	stability            = component.StabilityLevelBeta
+	defaultMaxIdleCons   = 100
+	defaultHTTPTimeout   = 10 * time.Second
+	defaultSplunkAppName = "OpenTelemetry Collector Contrib"
 )
 
 // TODO: Find a place for this to be shared.
@@ -49,30 +52,32 @@ type baseLogsExporter struct {
 }
 
 // NewFactory creates a factory for Splunk HEC exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter))
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
+	defaultMaxConns := defaultMaxIdleCons
 	return &Config{
 		LogDataEnabled:       true,
 		ProfilingDataEnabled: true,
-		ExporterSettings:     config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings: exporterhelper.TimeoutSettings{
-			Timeout: defaultHTTPTimeout,
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout:             defaultHTTPTimeout,
+			MaxIdleConnsPerHost: &defaultMaxConns,
+			MaxIdleConns:        &defaultMaxConns,
 		},
+		SplunkAppName:           defaultSplunkAppName,
 		RetrySettings:           exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:           exporterhelper.NewDefaultQueueSettings(),
 		DisableCompression:      false,
-		MaxConnections:          defaultMaxIdleCons,
-		MaxContentLengthLogs:    maxContentLengthLogsLimit,
-		MaxContentLengthMetrics: maxContentLengthMetricsLimit,
-		MaxContentLengthTraces:  maxContentLengthTracesLimit,
+		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
+		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
+		MaxContentLengthTraces:  defaultContentLengthTracesLimit,
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
@@ -82,64 +87,65 @@ func createDefaultConfig() config.Exporter {
 		HecFields: OtelToHecFields{
 			SeverityText:   splunk.DefaultSeverityTextLabel,
 			SeverityNumber: splunk.DefaultSeverityNumberLabel,
-			Name:           splunk.DefaultNameLabel,
 		},
+		HealthPath:            splunk.DefaultHealthPath,
+		HecHealthCheckEnabled: false,
+		ExportRaw:             false,
 	}
 }
 
 func createTracesExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	config config.Exporter,
-) (component.TracesExporter, error) {
-	if config == nil {
-		return nil, errors.New("nil config")
-	}
-	expCfg := config.(*Config)
+	ctx context.Context,
+	set exporter.CreateSettings,
+	config component.Config,
+) (exporter.Traces, error) {
+	cfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
-	if err != nil {
-		return nil, err
+	c := &client{
+		config:            cfg,
+		logger:            set.Logger,
+		telemetrySettings: set.TelemetrySettings,
+		buildInfo:         set.BuildInfo,
 	}
 
 	return exporterhelper.NewTracesExporter(
-		expCfg,
+		ctx,
 		set,
-		exp.pushTraceData,
+		cfg,
+		c.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings),
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.stop))
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(c.start),
+		exporterhelper.WithShutdown(c.stop))
 }
 
 func createMetricsExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	config config.Exporter,
-) (component.MetricsExporter, error) {
-	if config == nil {
-		return nil, errors.New("nil config")
-	}
-	expCfg := config.(*Config)
+	ctx context.Context,
+	set exporter.CreateSettings,
+	config component.Config,
+) (exporter.Metrics, error) {
+	cfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
-
-	if err != nil {
-		return nil, err
+	c := &client{
+		config:            cfg,
+		logger:            set.Logger,
+		telemetrySettings: set.TelemetrySettings,
+		buildInfo:         set.BuildInfo,
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
-		expCfg,
+		ctx,
 		set,
-		exp.pushMetricsData,
+		cfg,
+		c.pushMetricsData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings),
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.stop))
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(c.start),
+		exporterhelper.WithShutdown(c.stop))
 	if err != nil {
 		return nil, err
 	}
@@ -153,31 +159,30 @@ func createMetricsExporter(
 }
 
 func createLogsExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	config config.Exporter,
-) (exporter component.LogsExporter, err error) {
-	if config == nil {
-		return nil, errors.New("nil config")
-	}
-	expCfg := config.(*Config)
+	ctx context.Context,
+	set exporter.CreateSettings,
+	config component.Config,
+) (exporter exporter.Logs, err error) {
+	cfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
-
-	if err != nil {
-		return nil, err
+	c := &client{
+		config:            cfg,
+		logger:            set.Logger,
+		telemetrySettings: set.TelemetrySettings,
+		buildInfo:         set.BuildInfo,
 	}
 
 	logsExporter, err := exporterhelper.NewLogsExporter(
-		expCfg,
+		ctx,
 		set,
-		exp.pushLogData,
+		cfg,
+		c.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings),
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.stop))
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(c.start),
+		exporterhelper.WithShutdown(c.stop))
 
 	if err != nil {
 		return nil, err

@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -25,7 +23,6 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -42,18 +39,6 @@ var (
 	sfxMetricTypeCumulativeCounter = sfxpb.MetricType_CUMULATIVE_COUNTER
 	sfxMetricTypeCounter           = sfxpb.MetricType_COUNTER
 )
-
-const prometheusCompatible = "exporter.signalfxexporter.PrometheusCompatible"
-
-var prometheusCompatibleGate = featuregate.Gate{
-	ID:          prometheusCompatible,
-	Enabled:     true,
-	Description: "Controls if conversion should follow prometheus compatibility for histograms and summaries.",
-}
-
-func init() {
-	featuregate.GetRegistry().MustRegister(prometheusCompatibleGate)
-}
 
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
 // MetricTranslator to translate SFx metrics using translation rules.
@@ -83,7 +68,7 @@ func NewMetricsConverter(
 		metricTranslator:   t,
 		filterSet:          fs,
 		datapointValidator: newDatapointValidator(logger, nonAlphanumericDimChars),
-		translator:         &signalfx.FromTranslator{PrometheusCompatible: featuregate.GetRegistry().IsEnabled(prometheusCompatible)},
+		translator:         &signalfx.FromTranslator{},
 	}, nil
 }
 
@@ -100,11 +85,15 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.Data
 
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
+			var initialDps []*sfxpb.DataPoint
+
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				dps := c.translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
-				dps = c.translateAndFilter(dps)
-				sfxDataPoints = append(sfxDataPoints, dps...)
+				initialDps = append(initialDps, dps...)
 			}
+
+			// Translate and filter all metrics within the current ScopeMetric
+			sfxDataPoints = append(sfxDataPoints, c.translateAndFilter(initialDps)...)
 		}
 	}
 
@@ -124,7 +113,7 @@ func (c *MetricsConverter) translateAndFilter(dps []*sfxpb.DataPoint) []*sfxpb.D
 			}
 			resultSliceLen++
 		} else {
-			c.logger.Debug("Datapoint does not match filter, skipping", zap.String("dp", DatapointToString(dp)))
+			c.logger.Debug("Datapoint does not match filter, skipping", zap.Stringer("dp", dp))
 		}
 	}
 	dps = dps[:resultSliceLen]
@@ -184,6 +173,7 @@ const (
 	maxMetricNameLength     = 256
 	maxDimensionNameLength  = 128
 	maxDimensionValueLength = 256
+	maxNumberOfDimensions   = 36
 )
 
 var (
@@ -193,6 +183,8 @@ var (
 		"dimension name longer than %d characters", maxDimensionNameLength)
 	invalidDimensionValueReason = fmt.Sprintf(
 		"dimension value longer than %d characters", maxDimensionValueLength)
+	invalidNumberOfDimensions = fmt.Sprintf(
+		"number of dimensions is larger than %d", maxNumberOfDimensions)
 )
 
 type datapointValidator struct {
@@ -201,16 +193,16 @@ type datapointValidator struct {
 }
 
 func newDatapointValidator(logger *zap.Logger, nonAlphanumericDimChars string) *datapointValidator {
-	return &datapointValidator{logger: createSampledLogger(logger), nonAlphanumericDimChars: nonAlphanumericDimChars}
+	return &datapointValidator{logger: CreateSampledLogger(logger), nonAlphanumericDimChars: nonAlphanumericDimChars}
 }
 
 // sanitizeDataPoints sanitizes datapoints prior to dispatching them to the backend.
 // Datapoints that do not conform to the requirements are removed. This method drops
-// datapoints with metric name greater than 256 characters.
+// datapoints with metric name greater than 256 characters and number of dimensions greater than 36.
 func (dpv *datapointValidator) sanitizeDataPoints(dps []*sfxpb.DataPoint) []*sfxpb.DataPoint {
 	resultDatapointsLen := 0
 	for dpIndex, dp := range dps {
-		if dpv.isValidMetricName(dp.Metric) {
+		if dpv.isValidMetricName(dp.Metric) && dpv.isValidNumberOfDimension(dp) {
 			dp.Dimensions = dpv.sanitizeDimensions(dp.Dimensions)
 			if resultDatapointsLen < dpIndex {
 				dps[resultDatapointsLen] = dp
@@ -244,10 +236,22 @@ func (dpv *datapointValidator) sanitizeDimensions(dimensions []*sfxpb.Dimension)
 
 func (dpv *datapointValidator) isValidMetricName(name string) bool {
 	if len(name) > maxMetricNameLength {
-		dpv.logger.Warn("dropping datapoint",
+		dpv.logger.Debug("dropping datapoint",
 			zap.String("reason", invalidMetricNameReason),
 			zap.String("metric_name", name),
 			zap.Int("metric_name_length", len(name)),
+		)
+		return false
+	}
+	return true
+}
+
+func (dpv *datapointValidator) isValidNumberOfDimension(dp *sfxpb.DataPoint) bool {
+	if len(dp.Dimensions) > maxNumberOfDimensions {
+		dpv.logger.Debug("dropping datapoint",
+			zap.String("reason", invalidNumberOfDimensions),
+			zap.Stringer("datapoint", dp),
+			zap.Int("number_of_dimensions", len(dp.Dimensions)),
 		)
 		return false
 	}
@@ -260,7 +264,7 @@ func (dpv *datapointValidator) isValidDimension(dimension *sfxpb.Dimension) bool
 
 func (dpv *datapointValidator) isValidDimensionName(name string) bool {
 	if len(name) > maxDimensionNameLength {
-		dpv.logger.Warn("dropping dimension",
+		dpv.logger.Debug("dropping dimension",
 			zap.String("reason", invalidDimensionNameReason),
 			zap.String("dimension_name", name),
 			zap.Int("dimension_name_length", len(name)),
@@ -272,7 +276,7 @@ func (dpv *datapointValidator) isValidDimensionName(name string) bool {
 
 func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
 	if len(value) > maxDimensionValueLength {
-		dpv.logger.Warn("dropping dimension",
+		dpv.logger.Debug("dropping dimension",
 			zap.String("dimension_name", name),
 			zap.String("reason", invalidDimensionValueReason),
 			zap.String("dimension_value", value),
@@ -283,8 +287,8 @@ func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
 	return true
 }
 
-// Copied from https://github.com/open-telemetry/opentelemetry-collector/blob/v0.26.0/exporter/exporterhelper/queued_retry.go#L108
-func createSampledLogger(logger *zap.Logger) *zap.Logger {
+// CreateSampledLogger was copied from https://github.com/open-telemetry/opentelemetry-collector/blob/v0.26.0/exporter/exporterhelper/queued_retry.go#L108
+func CreateSampledLogger(logger *zap.Logger) *zap.Logger {
 	if logger.Core().Enabled(zapcore.DebugLevel) {
 		// Debugging is enabled. Don't do any sampling.
 		return logger
@@ -301,33 +305,4 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 		)
 	})
 	return logger.WithOptions(opts)
-}
-
-func DatapointToString(dp *sfxpb.DataPoint) string {
-	var tsStr string
-	if dp.Timestamp != 0 {
-		tsStr = strconv.FormatInt(dp.Timestamp, 10)
-	}
-
-	var dimsStr string
-	for _, dim := range dp.Dimensions {
-		dimsStr = dimsStr + dim.String()
-	}
-
-	return fmt.Sprintf("%s: %s (%s) %s\n%s", dp.Metric, dp.Value.String(), dpTypeToString(*dp.MetricType), tsStr, dimsStr)
-}
-
-func dpTypeToString(t sfxpb.MetricType) string {
-	switch t {
-	case sfxpb.MetricType_GAUGE:
-		return "Gauge"
-	case sfxpb.MetricType_COUNTER:
-		return "Counter"
-	case sfxpb.MetricType_ENUM:
-		return "Enum"
-	case sfxpb.MetricType_CUMULATIVE_COUNTER:
-		return "Cumulative Counter"
-	default:
-		return fmt.Sprintf("unsupported type %d", t)
-	}
 }

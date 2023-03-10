@@ -294,7 +294,7 @@ func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 			{
 				attrCount:      0,
 				attrSizeByte:   0,
-				expectedMaxCPU: 30,
+				expectedMaxCPU: 60,
 				expectedMaxRAM: 2200,
 				resultsSummary: performanceResultsSummary,
 			},
@@ -345,7 +345,7 @@ func verifySingleSpan(
 	// Send one span.
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, serviceName)
+	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName)
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(idutils.UInt64ToTraceID(0, 1))
 	span.SetSpanID(idutils.UInt64ToSpanID(1))
@@ -459,7 +459,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 				require.Equal(t, span.Attributes().Len(), 1)
 				attrVal, ok := span.Attributes().Get("new_attr")
 				assert.True(t, ok)
-				assert.EqualValues(t, "string value", attrVal.StringVal())
+				assert.EqualValues(t, "string value", attrVal.Str())
 			}
 
 			verifySingleSpan(t, tc, nodeToInclude, spanToInclude, verifySpan)

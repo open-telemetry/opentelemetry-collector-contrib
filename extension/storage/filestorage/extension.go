@@ -18,33 +18,25 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 )
 
 type localFileStorage struct {
-	directory           string
-	timeout             time.Duration
-	logger              *zap.Logger
-	compactionDirectory string
-	compactOnStart      bool
-	maxCompactionSize   int64
+	cfg    *Config
+	logger *zap.Logger
 }
 
 // Ensure this storage extension implements the appropriate interface
 var _ storage.Extension = (*localFileStorage)(nil)
 
-func newLocalFileStorage(logger *zap.Logger, config *Config) (component.Extension, error) {
+func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extension, error) {
 	return &localFileStorage{
-		directory:           filepath.Clean(config.Directory),
-		compactionDirectory: filepath.Clean(config.Compaction.Directory),
-		compactOnStart:      config.Compaction.OnStart,
-		timeout:             config.Timeout,
-		logger:              logger,
+		cfg:    config,
+		logger: logger,
 	}, nil
 }
 
@@ -61,7 +53,7 @@ func (lfs *localFileStorage) Shutdown(context.Context) error {
 }
 
 // GetClient returns a storage client for an individual component
-func (lfs *localFileStorage) GetClient(ctx context.Context, kind component.Kind, ent config.ComponentID, name string) (storage.Client, error) {
+func (lfs *localFileStorage) GetClient(ctx context.Context, kind component.Kind, ent component.ID, name string) (storage.Client, error) {
 	var rawName string
 	if name == "" {
 		rawName = fmt.Sprintf("%s_%s_%s", kindString(kind), ent.Type(), ent.Name())
@@ -69,16 +61,22 @@ func (lfs *localFileStorage) GetClient(ctx context.Context, kind component.Kind,
 		rawName = fmt.Sprintf("%s_%s_%s_%s", kindString(kind), ent.Type(), ent.Name(), name)
 	}
 	// TODO sanitize rawName
-	absoluteName := filepath.Join(lfs.directory, rawName)
-	client, err := newClient(absoluteName, lfs.timeout)
+	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
+	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction)
 
-	// return if compaction is not required
-	if err != nil || !lfs.compactOnStart {
-		return client, err
+	if err != nil {
+		return nil, err
 	}
 
-	// perform compaction and returns client
-	return client.Compact(ctx, lfs.compactionDirectory, lfs.timeout, lfs.maxCompactionSize)
+	// return if compaction is not required
+	if lfs.cfg.Compaction.OnStart {
+		compactionErr := client.Compact(lfs.cfg.Compaction.Directory, lfs.cfg.Timeout, lfs.cfg.Compaction.MaxTransactionSize)
+		if compactionErr != nil {
+			lfs.logger.Error("compaction on start failed", zap.Error(compactionErr))
+		}
+	}
+
+	return client, nil
 }
 
 func kindString(k component.Kind) string {

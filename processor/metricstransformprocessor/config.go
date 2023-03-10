@@ -12,12 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
-
-import (
-	"go.opentelemetry.io/collector/config"
-)
 
 const (
 	// IncludeFieldName is the mapstructure field name for Include field
@@ -25,9 +20,6 @@ const (
 
 	// MatchTypeFieldName is the mapstructure field name for MatchType field
 	MatchTypeFieldName = "match_type"
-
-	// MetricNameFieldName is the mapstructure field name for MetricName field
-	MetricNameFieldName = "metric_name"
 
 	// ActionFieldName is the mapstructure field name for Action field
 	ActionFieldName = "action"
@@ -59,7 +51,6 @@ const (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Transform specifies a list of transforms on metrics with each transform focusing on one metric.
 	Transforms []Transform `mapstructure:"transforms"`
@@ -73,10 +64,6 @@ type Transform struct {
 	// MetricIncludeFilter is used to select the metric(s) to operate on.
 	// REQUIRED
 	MetricIncludeFilter FilterConfig `mapstructure:",squash"`
-
-	// MetricName is used to select the metric to operate on.
-	// DEPRECATED. Use MetricIncludeFilter instead.
-	MetricName string `mapstructure:"metric_name"`
 
 	// --- SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S) ---
 
@@ -197,12 +184,16 @@ type OperationAction string
 
 const (
 	// AddLabel adds a new label to an existing metric.
+	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
+	// otherwise the operation will be ignored.
 	AddLabel OperationAction = "add_label"
 
 	// UpdateLabel applies name changes to label and/or label values.
 	UpdateLabel OperationAction = "update_label"
 
 	// DeleteLabelValue deletes a label value by also removing all the points associated with this label value
+	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
+	// otherwise the operation will be ignored.
 	DeleteLabelValue OperationAction = "delete_label_value"
 
 	// ToggleScalarDataType changes the data type from int64 to double, or vice-versa
@@ -213,10 +204,14 @@ const (
 
 	// AggregateLabels aggregates away all labels other than the ones in Operation.LabelSet
 	// by the method indicated by Operation.AggregationType.
+	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
+	// otherwise the operation will be ignored.
 	AggregateLabels OperationAction = "aggregate_labels"
 
 	// AggregateLabelValues aggregates away the values in Operation.AggregatedValues
 	// by the method indicated by Operation.AggregationType.
+	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
+	// otherwise the operation will be ignored.
 	AggregateLabelValues OperationAction = "aggregate_label_values"
 )
 

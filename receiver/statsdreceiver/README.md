@@ -1,12 +1,14 @@
 # StatsD Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 StatsD receiver for ingesting StatsD messages(https://github.com/statsd/statsd/blob/master/docs/metric_types.md) into the OpenTelemetry Collector.
 
-Supported pipeline types: metrics
-
 Use case: it does not support horizontal pool of collectors. Desired work case is that customers use the receiver as an agent with a single input at the same time.
-
-> :construction: This receiver is currently in **BETA**.
 
 ## Configuration
 
@@ -28,9 +30,9 @@ The Following settings are optional:
 
 `"statsd_type"` specifies received Statsd data type. Possible values for this setting are `"timing"`, `"timer"` and `"histogram"`.
 
-`"observer_type"` specifies OTLP data type to convert to. We support `"gauge"` and `"summary"`. For `"gauge"`, it does not perform any aggregation.
-For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description(the same metric name with the same tags). It will send percentile 0, 10, 50, 90, 95, 100 to the downstream. 
-TODO: Add a new option to use a smoothed summary like Promethetheus: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3261 
+`"observer_type"` specifies OTLP data type to convert to. We support `"gauge"`, `"summary"`, and `"histogram"`. For `"gauge"`, it does not perform any aggregation.
+For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description (the same metric name with the same tags). It will send percentile 0, 10, 50, 90, 95, 100 to the downstream.  The `"histogram"` setting selects an [auto-scaling exponential histogram configured with only a maximum size](https://github.com/lightstep/go-expohisto#readme), as shown in the example below.
+TODO: Add a new option to use a smoothed summary like Prometheus: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3261 
 
 Example:
 
@@ -46,7 +48,9 @@ receivers:
       - statsd_type: "histogram"
         observer_type: "gauge"
       - statsd_type: "timing"
-        observer_type: "gauge"
+        observer_type: "histogram"
+        histogram: 
+          max_size: 100
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
@@ -121,9 +125,11 @@ receivers:
     is_monotonic_counter: false # default
     timer_histogram_mapping:
       - statsd_type: "histogram"
-        observer_type: "gauge"
+        observer_type: "histogram"
+        histogram:
+          max_size: 50
       - statsd_type: "timing"
-        observer_type: "gauge"
+        observer_type: "summary"
 
 exporters:
   file:
@@ -141,3 +147,8 @@ service:
 A simple way to send a metric to `localhost:8125`:
 
 `echo "test.metric:42|c|#myKey:myVal" | nc -w 1 -u localhost 8125`
+
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+

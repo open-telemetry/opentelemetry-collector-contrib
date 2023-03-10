@@ -16,14 +16,11 @@ package producer_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/kinesis"
-	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -34,36 +31,33 @@ import (
 )
 
 type MockKinesisAPI struct {
-	kinesisiface.KinesisAPI
+	producer.Kinesis
 
 	op func(*kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error)
 }
 
-var _ kinesisiface.KinesisAPI = (*MockKinesisAPI)(nil)
-
-func (mka *MockKinesisAPI) PutRecordsWithContext(ctx context.Context, r *kinesis.PutRecordsInput, opts ...request.Option) (*kinesis.PutRecordsOutput, error) {
+func (mka *MockKinesisAPI) PutRecords(ctx context.Context, r *kinesis.PutRecordsInput, optFns ...func(*kinesis.Options)) (*kinesis.PutRecordsOutput, error) {
 	return mka.op(r)
 }
 
-func SetPutRecordsOperation(op func(r *kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error)) kinesisiface.KinesisAPI {
+func SetPutRecordsOperation(op func(r *kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error)) producer.Kinesis {
 	return &MockKinesisAPI{op: op}
 }
 
 func SuccessfulPutRecordsOperation(_ *kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error) {
 	return &kinesis.PutRecordsOutput{
-		FailedRecordCount: aws.Int64(0),
-		Records: []*kinesis.PutRecordsResultEntry{
+		FailedRecordCount: aws.Int32(0),
+		Records: []types.PutRecordsResultEntry{
 			{ShardId: aws.String("0000000000000000000001"), SequenceNumber: aws.String("0000000000000000000001")},
 		},
 	}, nil
 }
 
 func HardFailedPutRecordsOperation(r *kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error) {
-	return &kinesis.PutRecordsOutput{FailedRecordCount: aws.Int64(int64(len(r.Records)))}, awserr.New(
-		kinesis.ErrCodeResourceNotFoundException,
-		"testing incorrect kinesis configuration",
-		errors.New("test case failure"),
-	)
+	return &kinesis.PutRecordsOutput{
+			FailedRecordCount: aws.Int32(int32(len(r.Records))),
+		},
+		&types.ResourceNotFoundException{Message: aws.String("testing incorrect kinesis configuration")}
 }
 
 func TransiantPutRecordsOperation(recoverAfter int) func(_ *kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error) {
@@ -71,11 +65,10 @@ func TransiantPutRecordsOperation(recoverAfter int) func(_ *kinesis.PutRecordsIn
 	return func(r *kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error) {
 		if attempt < recoverAfter {
 			attempt++
-			return &kinesis.PutRecordsOutput{FailedRecordCount: aws.Int64(int64(len(r.Records)))}, awserr.New(
-				kinesis.ErrCodeProvisionedThroughputExceededException,
-				"testing throttled kinesis operation",
-				errors.New("test case throttled"),
-			)
+			return &kinesis.PutRecordsOutput{
+					FailedRecordCount: aws.Int32(int32(len(r.Records))),
+				},
+				&types.ProvisionedThroughputExceededException{Message: aws.String("testing throttled kinesis operation")}
 		}
 		return SuccessfulPutRecordsOperation(r)
 	}

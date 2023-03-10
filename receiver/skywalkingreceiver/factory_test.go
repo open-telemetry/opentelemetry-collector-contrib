@@ -23,13 +23,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestTypeStr(t *testing.T) {
@@ -42,7 +41,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
@@ -55,7 +54,7 @@ func TestCreateReceiver(t *testing.T) {
 			Transport: "tcp",
 		},
 	}
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
@@ -66,25 +65,21 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestCreateReceiverGeneralConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	rCfg, ok := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")]
-	require.True(t, ok)
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "customname").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	set := componenttest.NewNopReceiverCreateSettings()
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, rCfg, nil)
+	set := receivertest.NewNopCreateSettings()
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, rCfg, nil)
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
 	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }
@@ -99,7 +94,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 			Transport: "tcp",
 		},
 	}
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
@@ -122,7 +117,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 			},
 		},
 	}
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 
 	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NoError(t, err, "tls-enabled receiver creation failed")
@@ -142,7 +137,7 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 		},
 	}
 
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 
 	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NoError(t, err, "tls-enabled receiver creation failed")
@@ -155,7 +150,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	cfg.(*Config).Protocols.HTTP = &confighttp.HTTPServerSettings{
 		Endpoint: defaultHTTPBindEndpoint,
 	}
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")

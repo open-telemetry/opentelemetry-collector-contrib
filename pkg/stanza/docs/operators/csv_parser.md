@@ -4,19 +4,25 @@ The `csv_parser` operator parses the string-type field selected by `parse_from` 
 
 ### Configuration Fields
 
-| Field              | Default                                  | Description  |
-| ---                | ---                                      | ---          |
-| `id`               | `csv_parser`                             | A unique identifier for the operator. |
-| `output`           | Next in pipeline                         | The connected operator(s) that will receive all outbound entries. |
-| `header`           | required when `header_attribute` not set | A string of delimited field names |
-| `header_attribute` | required when `header` not set           | An attribute name to read the header field from, to support dynamic field names |
-| `delimiter`        | `,`                                      | A character that will be used as a delimiter. Values `\r` and `\n` cannot be used as a delimiter. |
-| `lazy_quotes`      | `false`                                  | If true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field. |
-| `parse_from`       | `body`                                   | The [field](../types/field.md) from which the value will be parsed. |
-| `parse_to`         | `body`                                   | The [field](../types/field.md) to which the value will be parsed. |
-| `on_error`         | `send`                                   | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
-| `timestamp`        | `nil`                                    | An optional [timestamp](../types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator. |
-| `severity`         | `nil`                                    | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator. |
+| Field              | Default                                  | Description                                                                                                                                       |
+|--------------------|------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `id`               | `csv_parser`                             | A unique identifier for the operator.                                                                                                             |
+| `output`           | Next in pipeline                         | The connected operator(s) that will receive all outbound entries.                                                                                 |
+| `header`           | required when `header_attribute` not set | A string of delimited field names                                                                                                                 |
+| `header_attribute` | required when `header` not set           | An attribute name to read the header field from, to support dynamic field names                                                                   |
+| `delimiter`        | `,`                                      | A character that will be used as a delimiter. Values `\r` and `\n` cannot be used as a delimiter.                                                 |
+| `header_delimiter` | value of `delimiter`                     | A character that will be used as a delimiter for headers. Values `\r` and `\n` cannot be used as a delimiter.                                       |
+| `lazy_quotes`      | `false`                                  | If true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field. Cannot be true if `ignore_quotes` is true. |
+| `ignore_quotes`    | `false`                                  | If true, all quotes are ignored, and fields are simply split on the delimiter. Cannot be true if `lazy_quotes` is true.                           |
+| `parse_from`       | `body`                                   | The [field](../types/field.md) from which the value will be parsed.                                                                               |
+| `parse_to`         | `attributes`                             | The [field](../types/field.md) to which the value will be parsed.                                                                                 |
+| `on_error`         | `send`                                   | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md).                                                     |
+| `timestamp`        | `nil`                                    | An optional [timestamp](../types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator.          |
+| `severity`         | `nil`                                    | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator.             |
+
+### Embedded Operations
+
+The `csv_parser` can be configured to embed certain operations such as timestamp and severity parsing. For more information, see [complex parsers](../types/parsers.md#complex-parsers).
 
 ### Example Configurations
 
@@ -134,71 +140,6 @@ Configuration:
   "body": {
     "severity": "debug",
     "message": "Debug Message"
-  }
-}
-```
-
-</td>
-</tr>
-</table>
-
-#### Parse the field `message` using dynamic field names
-
-Dynamic field names can be had when leveraging file_input's `label_regex`.
-
-Configuration:
-
-```yaml
-- type: file_input
-  include:
-  - ./dynamic.log
-  start_at: beginning
-  label_regex: '^#(?P<key>.*?): (?P<value>.*)'
-
-- type: csv_parser
-  delimiter: ","
-  header_attribute: Fields
-```
-
-Input File:
-
-```
-#Fields: "id,severity,message"
-1,debug,Hello
-```
-
-<table>
-<tr><td> Input record </td> <td> Output record </td></tr>
-<tr>
-<td>
-
-Entry (from file_input):
-
-```json
-{
-  "timestamp": "",
-  "labels": {
-    "fields": "id,severity,message"
-  },
-  "record": {
-    "message": "1,debug,Hello"
-  }
-}
-```
-
-</td>
-<td>
-
-```json
-{
-  "timestamp": "",
-  "labels": {
-    "fields": "id,severity,message"
-  },
-  "record": {
-    "id": "1",
-    "severity": "debug",
-    "message": "Hello"
   }
 }
 ```

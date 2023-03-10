@@ -6,19 +6,34 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+env:
+  # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
+  # Cache downloads for this workflow consistently run in under 2 minutes
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
+
 jobs:
   setup-environment:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
+      - name: Collect Workflow Telemetry
+        if: always()
+        uses: runforesight/foresight-workflow-kit-action@v1
+        with:
+          api_key: ${{ secrets.FORESIGHT_API_KEY }}
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -34,7 +49,7 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
-      - run: make otelcontribcol-testbed
+      - run: make oteltestbedcol
       - name: Upload Collector Binaries
         uses: actions/upload-artifact@v3
         with:
@@ -51,25 +66,17 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
     steps:
+      - name: Collect Workflow Telemetry
+        if: always()
+        uses: runforesight/foresight-workflow-kit-action@v1
+        with:
+          api_key: ${{ secrets.FORESIGHT_API_KEY }}
       - name: Checkout Repo
         uses: actions/checkout@v3
-      - run: sudo chmod 0777 -R /opt
-      - name: Fluentbit Cache
-        id: fluentbit-cache
-        uses: actions/cache@v3
-        with:
-          path: /opt/td-agent-bit
-          key: fluentbit-cache-1.5.3
-      - run: sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
-      - name: Install fluentbit
-        if: steps.fluentbit-cache.outputs.cache-hit != 'true'
-        run: |
-          wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
-          sudo dpkg -i ./td-agent-bit*.deb
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -98,7 +105,7 @@ jobs:
           TEST_ARGS: "-test.run=${{ matrix.test }}"
       - name: Set results filename
         id: filename
-        run: echo "::set-output name=name::$(echo '${{ matrix.test }}' | sed -e 's/|/_/g')"
+        run: echo "name=$(echo '${{ matrix.test }}' | sed -e 's/|/_/g')" >> $GITHUB_OUTPUT
       - name: Create Test Result Archive
         if: ${{ failure() || success() }}
         continue-on-error: true
@@ -109,6 +116,15 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           path: ./*.tar
+      - name: Analyze Test and/or Coverage Results
+        if: always()
+        uses: runforesight/foresight-test-kit-action@v1
+        with:
+          api_key: ${{ secrets.FORESIGHT_API_KEY }}
+          test_framework: JUNIT
+          test_format: JUNIT
+          test_path: |
+            ./testbed/tests/results/junit/*.xml
       - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
         run: issuegenerator $TEST_RESULTS

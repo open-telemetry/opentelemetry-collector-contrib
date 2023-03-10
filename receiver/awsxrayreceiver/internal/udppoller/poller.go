@@ -21,9 +21,8 @@ import (
 	"net"
 	"sync"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
@@ -66,14 +65,12 @@ type RawSegment struct {
 // Config represents the configurations needed to
 // start the UDP poller
 type Config struct {
-	ReceiverID         config.ComponentID
 	Transport          string
 	Endpoint           string
 	NumOfPollerToStart int
 }
 
 type poller struct {
-	receiverID           config.ComponentID
 	udpSock              socketconn.SocketConn
 	logger               *zap.Logger
 	wg                   sync.WaitGroup
@@ -90,7 +87,7 @@ type poller struct {
 }
 
 // New creates a new UDP poller
-func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
+func New(cfg *Config, set receiver.CreateSettings) (Poller, error) {
 	if cfg.Transport != Transport {
 		return nil, fmt.Errorf(
 			"X-Ray receiver only supports ingesting spans through UDP, provided: %s",
@@ -109,19 +106,23 @@ func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
 	set.Logger.Info("Listening on endpoint for X-Ray segments",
 		zap.String(Transport, addr.String()))
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             set.ID,
+		Transport:              cfg.Transport,
+		LongLivedCtx:           true,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &poller{
-		receiverID:     cfg.ReceiverID,
 		udpSock:        sock,
 		logger:         set.Logger,
 		maxPollerCount: cfg.NumOfPollerToStart,
 		shutDown:       make(chan struct{}),
 		segChan:        make(chan RawSegment, segChanSize),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             cfg.ReceiverID,
-			Transport:              cfg.Transport,
-			LongLivedCtx:           true,
-			ReceiverCreateSettings: set,
-		}),
+		obsrecv:        obsrecv,
 	}, nil
 }
 
@@ -153,14 +154,13 @@ func (p *poller) read(buf *[]byte) (int, error) {
 	if err == nil {
 		return rlen, nil
 	}
-	switch terr := err.(type) {
-	case net.Error:
-		if !terr.Timeout() {
-			return -1, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrIrrecoverable{Err: terr})
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		if !netErr.Timeout() {
+			return -1, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrIrrecoverable{Err: netErr})
 		}
-	default:
-		return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrRecoverable{Err: terr})
 	}
+
 	return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrRecoverable{Err: err})
 }
 
@@ -221,6 +221,7 @@ func (p *poller) poll() {
 				Payload: copybody,
 				Ctx:     ctx,
 			}
+			p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, nil)
 		}
 	}
 }

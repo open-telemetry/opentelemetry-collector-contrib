@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,14 +24,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 /*
-	TestIntegration test scraping metrics from a running Active Directory domain controller.
-	The domain controller must be set up locally outside of this test in order for it to pass.
+TestIntegration test scraping metrics from a running Active Directory domain controller.
+The domain controller must be set up locally outside of this test in order for it to pass.
 */
 func TestIntegration(t *testing.T) {
 	t.Parallel()
@@ -39,7 +40,7 @@ func TestIntegration(t *testing.T) {
 	fact := NewFactory()
 
 	consumer := &consumertest.MetricsSink{}
-	recv, err := fact.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), fact.CreateDefaultConfig(), consumer)
+	recv, err := fact.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), fact.CreateDefaultConfig(), consumer)
 
 	require.NoError(t, err)
 
@@ -54,8 +55,8 @@ func TestIntegration(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(goldenScrapePath)
 	require.NoError(t, err)
 
-	err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
-	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
 	err = recv.Shutdown(context.Background())
 	require.NoError(t, err)

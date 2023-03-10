@@ -17,6 +17,7 @@ package transport // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net"
 	"strings"
@@ -78,8 +79,9 @@ func (u *udpServer) ListenAndServe(
 				"UDP Transport (%s) - ReadFrom error: %v",
 				u.packetConn.LocalAddr(),
 				err)
-			if netErr, ok := err.(net.Error); ok {
-				if netErr.Temporary() { // nolint SA1019
+			var netErr net.Error
+			if errors.As(err, &netErr) {
+				if netErr.Timeout() {
 					continue
 				}
 			}
@@ -105,7 +107,7 @@ func (u *udpServer) handlePacket(
 	buf := bytes.NewBuffer(data)
 	for {
 		bytes, err := buf.ReadBytes((byte)('\n'))
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			if len(bytes) == 0 {
 				// Completed without errors.
 				break

@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package prometheusreceiver
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -24,13 +22,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const testDir = "./testdata/openmetrics/"
 
-// nolint:unused
 var skippedTests = map[string]struct{}{
 	"bad_clashing_names_0": {}, "bad_clashing_names_1": {}, "bad_clashing_names_2": {},
 	"bad_counter_values_0": {}, "bad_counter_values_1": {}, "bad_counter_values_2": {},
@@ -55,7 +54,7 @@ var skippedTests = map[string]struct{}{
 	"bad_timestamp_4": {}, "bad_timestamp_5": {}, "bad_timestamp_7": {}, "bad_unit_6": {}, "bad_unit_7": {},
 }
 
-func verifyPositiveTarget(t *testing.T, _ *testData, mds []*pmetric.ResourceMetrics) {
+func verifyPositiveTarget(t *testing.T, _ *testData, mds []pmetric.ResourceMetrics) {
 	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 1, metrics)
@@ -67,7 +66,7 @@ func TestOpenMetricsPositive(t *testing.T) {
 		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10148")
 	}
 	targetsMap := getOpenMetricsTestData(false)
-	targets := make([]*testData, 0)
+	var targets []*testData
 	for k, v := range targetsMap {
 		testData := &testData{
 			name: k,
@@ -80,11 +79,10 @@ func TestOpenMetricsPositive(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
-// nolint:unused
-func verifyNegativeTarget(t *testing.T, td *testData, mds []*pmetric.ResourceMetrics) {
+func verifyNegativeTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
 	// failing negative tests are skipped since prometheus scrape package is currently not fully
 	// compatible with OpenMetrics tests and successfully scrapes some invalid metrics
 	// see: https://github.com/prometheus/prometheus/issues/9699
@@ -99,10 +97,9 @@ func verifyNegativeTarget(t *testing.T, td *testData, mds []*pmetric.ResourceMet
 
 // Test open metrics negative test cases
 func TestOpenMetricsNegative(t *testing.T) {
-	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9119")
 
 	targetsMap := getOpenMetricsTestData(true)
-	targets := make([]*testData, 0)
+	var targets []*testData
 	for k, v := range targetsMap {
 		testData := &testData{
 			name: k,
@@ -115,10 +112,10 @@ func TestOpenMetricsNegative(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
-//reads test data from testdata/openmetrics directory
+// reads test data from testdata/openmetrics directory
 func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
 	testDir, err := os.Open(testDir)
 	if err != nil {
@@ -126,12 +123,12 @@ func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
 	}
 	defer testDir.Close()
 
-	//read all test file names in testdata/openmetrics
+	// read all test file names in testdata/openmetrics
 	testList, _ := testDir.Readdirnames(0)
 
 	targetsData := make(map[string]string)
 	for _, testName := range testList {
-		//ignore hidden files
+		// ignore hidden files
 		if strings.HasPrefix(testName, ".") {
 			continue
 		}
@@ -149,10 +146,122 @@ func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
 
 func readTestCase(testName string) (string, error) {
 	filePath := filepath.Join(testDir, testName, "metrics")
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Printf("failed opening file: %s", filePath)
 		return "", err
 	}
 	return string(content), nil
+}
+
+// info and stateset metrics are converted to non-monotonic sums
+var infoAndStatesetMetrics = `# TYPE foo info
+foo_info{entity="controller",name="prettyname",version="8.2.7"} 1.0
+foo_info{entity="replica",name="prettiername",version="8.1.9"} 1.0
+# TYPE bar stateset
+bar{entity="controller",foo="a"} 1.0
+bar{entity="controller",foo="bb"} 0.0
+bar{entity="controller",foo="ccc"} 0.0
+bar{entity="replica",foo="a"} 1.0
+bar{entity="replica",foo="bb"} 0.0
+bar{entity="replica",foo="ccc"} 1.0
+# EOF
+`
+
+// TestInfoStatesetMetrics validates the translation of info and stateset
+// metrics
+func TestInfoStatesetMetrics(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: infoAndStatesetMetrics, useOpenMetrics: true},
+			},
+			validateFunc:    verifyInfoStatesetMetrics,
+			validateScrapes: true,
+		},
+	}
+
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+
+}
+
+func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, resourceMetrics)
+	m1 := resourceMetrics[0]
+
+	// m1 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m1))
+
+	wantAttributes := td.attributes
+
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
+	ts1 := getTS(metrics1)
+	e1 := []testExpectation{
+		assertMetricPresent("foo",
+			compareMetricIsMonotonic(false),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+						compareAttributes(map[string]string{"entity": "controller", "name": "prettyname", "version": "8.2.7"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+						compareAttributes(map[string]string{"entity": "replica", "name": "prettiername", "version": "8.1.9"}),
+					},
+				},
+			}),
+		assertMetricPresent("bar",
+			compareMetricIsMonotonic(false),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+						compareAttributes(map[string]string{"entity": "controller", "foo": "a"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(0.0),
+						compareAttributes(map[string]string{"entity": "controller", "foo": "bb"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(0.0),
+						compareAttributes(map[string]string{"entity": "controller", "foo": "ccc"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+						compareAttributes(map[string]string{"entity": "replica", "foo": "a"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(0.0),
+						compareAttributes(map[string]string{"entity": "replica", "foo": "bb"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+						compareAttributes(map[string]string{"entity": "replica", "foo": "ccc"}),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape-infostatesetmetrics-1", wantAttributes, m1, e1)
 }

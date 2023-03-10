@@ -15,14 +15,13 @@
 package pprofextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
 
 import (
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 )
 
 // Config has the configuration for the extension enabling the golang
 // net/http/pprof (Performance Profiler) extension.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// TCPAddr is the address and port in which the pprof will be listening to.
 	// Use localhost:<port> to make it available only locally, or ":<port>" to
@@ -43,7 +42,7 @@ type Config struct {
 	SaveToFile string `mapstructure:"save_to_file"`
 }
 
-var _ config.Extension = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {

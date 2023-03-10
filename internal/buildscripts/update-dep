@@ -1,6 +1,8 @@
-#!/bin/sh -x
+#!/bin/bash -x
 
 # Updates MODULE inside go.mod if it is already present to version VERSION.
+
+source `git rev-parse --show-toplevel`/internal/buildscripts/modules
 
 set -e
 
@@ -8,15 +10,21 @@ if grep -q "$MODULE " go.mod; then
   go get "$MODULE"@"$VERSION"
 fi
 
-# If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/semconv"
-# and "go.opentelemetry.io/collector/pdata" as well.
+# If MODULE is "go.opentelemetry.io/collector" need to update additional $modules as well
 if [ "$MODULE" == "go.opentelemetry.io/collector" ]; then
-  SEMCONV=$MODULE"/semconv"
-  if grep -q "$SEMCONV " go.mod; then
-    go get -d "$SEMCONV"@"$VERSION"
-  fi
-  PDATA=$MODULE"/pdata"
-  if grep -q "$PDATA " go.mod; then
-    go get "$PDATA"@"$VERSION"
-  fi
+  for mod in ${beta_modules[@]}; do
+    if grep -q "$mod " go.mod; then
+      go get -d "$mod"@"$VERSION"
+    fi
+  done
+  for mod in ${rc_modules[@]}; do
+    if grep -q "$mod " go.mod; then
+      go get -d "$mod"@"$RC_VERSION"
+    fi
+  done
+  for mod in ${stable_modules[@]}; do
+    if grep -q "$mod " go.mod; then
+      go get -d "$mod"@"$STABLE_VERSION"
+    fi
+  done
 fi

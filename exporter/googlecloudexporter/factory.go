@@ -20,74 +20,63 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/featuregate"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr                  = "googlecloud"
-	defaultTimeout           = 12 * time.Second // Consistent with Cloud Monitoring's timeout
-	pdataExporterFeatureGate = "exporter.googlecloud.OTLPDirect"
+	typeStr = "googlecloud"
+	// The stability level of the exporter.
+	stability      = component.StabilityLevelBeta
+	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 )
 
-func init() {
-	featuregate.GetRegistry().MustRegister(featuregate.Gate{
-		ID:          pdataExporterFeatureGate,
-		Description: "When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus.",
-		Enabled:     true,
-	})
-}
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"exporter.googlecloud.OTLPDirect",
+	featuregate.StageStable,
+	featuregate.WithRegisterDescription("When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7132"),
+	featuregate.WithRegisterRemovalVersion("v0.69.0"),
+)
 
 // NewFactory creates a factory for the googlecloud exporter
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter),
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability),
 	)
 }
 
 // createDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() config.Exporter {
-	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
-		return &LegacyConfig{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-			TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-			UserAgent:        "opentelemetry-collector-contrib {{version}}",
-		}
-	}
+func createDefaultConfig() component.Config {
+	retrySettings := exporterhelper.NewDefaultRetrySettings()
+	retrySettings.Enabled = false
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		Config:           collector.DefaultConfig(),
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		RetrySettings:   retrySettings,
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		Config:          collector.DefaultConfig(),
 	}
 }
 
 func createLogsExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
-	cfg config.Exporter) (component.LogsExporter, error) {
-	var eCfg *Config
-	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
-		eCfg = toNewConfig(cfg.(*LegacyConfig))
-	} else {
-		eCfg = cfg.(*Config)
-	}
+	params exporter.CreateSettings,
+	cfg component.Config) (exporter.Logs, error) {
+	eCfg := cfg.(*Config)
 	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		ctx,
 		params,
+		cfg,
 		logsExporter.PushLogs,
 		exporterhelper.WithShutdown(logsExporter.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
@@ -100,21 +89,17 @@ func createLogsExporter(
 // createTracesExporter creates a trace exporter based on this config.
 func createTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
-	cfg config.Exporter) (component.TracesExporter, error) {
-	var eCfg *Config
-	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
-		eCfg = toNewConfig(cfg.(*LegacyConfig))
-	} else {
-		eCfg = cfg.(*Config)
-	}
+	params exporter.CreateSettings,
+	cfg component.Config) (exporter.Traces, error) {
+	eCfg := cfg.(*Config)
 	tExp, err := collector.NewGoogleCloudTracesExporter(ctx, eCfg.Config, params.BuildInfo.Version, eCfg.Timeout)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewTracesExporter(
-		cfg,
+		ctx,
 		params,
+		cfg,
 		tExp.PushTraces,
 		exporterhelper.WithShutdown(tExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
@@ -127,20 +112,17 @@ func createTracesExporter(
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
-	cfg config.Exporter) (component.MetricsExporter, error) {
-	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
-		eCfg := cfg.(*LegacyConfig)
-		return newLegacyGoogleCloudMetricsExporter(eCfg, params)
-	}
+	params exporter.CreateSettings,
+	cfg component.Config) (exporter.Metrics, error) {
 	eCfg := cfg.(*Config)
 	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.BuildInfo.Version, eCfg.Timeout)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		params,
+		cfg,
 		mExp.PushMetrics,
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism

@@ -16,7 +16,6 @@ package pprofextension
 
 import (
 	"context"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -123,7 +122,7 @@ func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 }
 
 func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
-	tmpFile, err := ioutil.TempFile("", "pprof*.yaml")
+	tmpFile, err := os.CreateTemp("", "pprof*.yaml")
 	require.NoError(t, err)
 	defer func() {
 		os.Remove(tmpFile.Name())

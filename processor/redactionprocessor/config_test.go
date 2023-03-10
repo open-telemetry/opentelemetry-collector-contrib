@@ -15,39 +15,52 @@
 package redactionprocessor
 
 import (
-	"path"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factories.Processors[typeStr] = NewFactory()
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id: component.NewIDWithName(typeStr, ""),
+			expected: &Config{
+				AllowAllKeys:  false,
+				AllowedKeys:   []string{"description", "group", "id", "name"},
+				IgnoredKeys:   []string{"safe_attribute"},
+				BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
+				Summary:       debug,
+			},
+		},
+		{
+			id:       component.NewIDWithName(typeStr, "empty"),
+			expected: createDefaultConfig(),
+		},
+	}
 
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
 
-func TestLoadConfigEmpty(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "empty.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	p0 := cfg.Processors[config.NewComponentID(typeStr)]
-	assert.Equal(t, p0, createDefaultConfig())
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }

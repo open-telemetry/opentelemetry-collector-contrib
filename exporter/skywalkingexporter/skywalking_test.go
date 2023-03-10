@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package skywalkingexporter
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"sync"
@@ -25,11 +25,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"google.golang.org/grpc"
 	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
@@ -41,8 +41,7 @@ import (
 func TestSwExporter(t *testing.T) {
 	server, addr, handler := initializeGRPCTestServer(t, grpc.MaxConcurrentStreams(10))
 	tt := &Config{
-		NumStreams:       10,
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		NumStreams: 10,
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
@@ -53,8 +52,9 @@ func TestSwExporter(t *testing.T) {
 
 	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
 	got, err := exporterhelper.NewLogsExporter(
+		context.Background(),
+		exportertest.NewNopCreateSettings(),
 		tt,
-		componenttest.NewNopExporterCreateSettings(),
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(tt.RetrySettings),
@@ -81,20 +81,20 @@ func TestSwExporter(t *testing.T) {
 		go func() {
 			defer w1.Done()
 			l := testdata.GenerateLogsOneLogRecordNoResource()
-			l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetIntVal(0)
+			l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetInt(0)
 			e := got.ConsumeLogs(context.Background(), l)
 			assert.NoError(t, e)
 		}()
 	}
 	w1.Wait()
-	logs := make([]*logpb.LogData, 0)
+	var logs []*logpb.LogData
 	for i := 0; i < 200; i++ {
 		logs = append(logs, <-handler.logChan)
 	}
 	assert.Equal(t, 200, len(logs))
 	assert.Equal(t, 10, len(oce.logsClients))
 
-	//when grpc server stops
+	// when grpc server stops
 	server.Stop()
 	w2 := &sync.WaitGroup{}
 	for i = 0; i < 200; i++ {
@@ -102,7 +102,7 @@ func TestSwExporter(t *testing.T) {
 		go func() {
 			defer w2.Done()
 			l := testdata.GenerateLogsOneLogRecordNoResource()
-			l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetIntVal(0)
+			l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetInt(0)
 			e := got.ConsumeLogs(context.Background(), l)
 			if e != nil {
 				return
@@ -114,8 +114,7 @@ func TestSwExporter(t *testing.T) {
 
 	server, addr, handler2 := initializeGRPCTestServerMetric(t, grpc.MaxConcurrentStreams(10))
 	tt = &Config{
-		NumStreams:       10,
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		NumStreams: 10,
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
@@ -126,8 +125,9 @@ func TestSwExporter(t *testing.T) {
 
 	oce = newMetricsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
 	got2, err2 := exporterhelper.NewMetricsExporter(
+		context.Background(),
+		exportertest.NewNopCreateSettings(),
 		tt,
-		componenttest.NewNopExporterCreateSettings(),
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(tt.RetrySettings),
@@ -158,14 +158,14 @@ func TestSwExporter(t *testing.T) {
 		}()
 	}
 	w1.Wait()
-	metrics := make([]*metricpb.MeterDataCollection, 0)
+	var metrics []*metricpb.MeterDataCollection
 	for i := 0; i < 200; i++ {
 		metrics = append(metrics, <-handler2.metricChan)
 	}
 	assert.Equal(t, 200, len(metrics))
 	assert.Equal(t, 10, len(oce.metricsClients))
 
-	//when grpc server stops
+	// when grpc server stops
 	server.Stop()
 	w3 := &sync.WaitGroup{}
 	for i = 0; i < 200; i++ {
@@ -225,7 +225,7 @@ type mockLogHandler struct {
 func (h *mockLogHandler) Collect(stream logpb.LogReportService_CollectServer) error {
 	for {
 		r, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return stream.SendAndClose(&v3.Commands{})
 		}
 		if err == nil {
@@ -242,7 +242,7 @@ type mockMetricHandler struct {
 func (h *mockMetricHandler) CollectBatch(stream metricpb.MeterReportService_CollectBatchServer) error {
 	for {
 		r, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return stream.SendAndClose(&v3.Commands{})
 		}
 		if err == nil {

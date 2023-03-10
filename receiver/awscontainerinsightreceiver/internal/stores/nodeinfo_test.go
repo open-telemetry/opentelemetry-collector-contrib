@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package stores
 
 import (
@@ -42,11 +41,11 @@ func TestSetGetCPUCapacity(t *testing.T) {
 	nodeInfo.setCPUCapacity(uint64(2))
 	assert.Equal(t, uint64(2), nodeInfo.getCPUCapacity())
 
-	//with invalid type
+	// with invalid type
 	nodeInfo.setCPUCapacity("2")
 	assert.Equal(t, uint64(0), nodeInfo.getCPUCapacity())
 
-	//with negative value
+	// with negative value
 	nodeInfo.setCPUCapacity(int64(-2))
 	assert.Equal(t, uint64(0), nodeInfo.getCPUCapacity())
 	nodeInfo.setCPUCapacity(int(-3))
@@ -75,11 +74,11 @@ func TestSetGetMemCapacity(t *testing.T) {
 	nodeInfo.setMemCapacity(uint64(1024))
 	assert.Equal(t, uint64(1024), nodeInfo.getMemCapacity())
 
-	//with invalid type
+	// with invalid type
 	nodeInfo.setMemCapacity("2")
 	assert.Equal(t, uint64(0), nodeInfo.getMemCapacity())
 
-	//with negative value
+	// with negative value
 	nodeInfo.setMemCapacity(int64(-2))
 	assert.Equal(t, uint64(0), nodeInfo.getMemCapacity())
 }

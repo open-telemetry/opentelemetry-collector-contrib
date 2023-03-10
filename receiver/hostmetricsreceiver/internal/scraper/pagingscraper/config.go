@@ -21,8 +21,7 @@ import (
 
 // Config relating to Paging Metric Scraper.
 type Config struct {
-	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
-	// Metrics allows customizing scraped metrics representation.
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	internal.ScraperConfig
 }
