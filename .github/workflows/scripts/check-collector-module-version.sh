@@ -72,7 +72,7 @@ check_collector_versions_correct() {
    fi
 }
 
-MAIN_MOD_FILE="./go.mod"
+MAIN_MOD_FILE="./cmd/otelcontribcol/go.mod"
 
 # Note space at end of string. This is so it filters for the exact string
 # only and does not return string which contains this string as a substring.
