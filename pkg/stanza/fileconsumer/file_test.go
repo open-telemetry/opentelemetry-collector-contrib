@@ -27,9 +27,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -857,88 +854,6 @@ func TestManyLogsDelivered(t *testing.T) {
 	expectNoTokens(t, emitCalls)
 }
 
-func TestFileBatching(t *testing.T) {
-	t.Parallel()
-
-	files := 100
-	linesPerFile := 10
-	maxConcurrentFiles := 20
-	maxBatchFiles := maxConcurrentFiles / 2
-
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	cfg.MaxConcurrentFiles = maxConcurrentFiles
-	cfg.MaxBatches = maxBatches
-	emitCalls := make(chan *emitParams, files*linesPerFile)
-	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
-
-	core, observedLogs := observer.New(zap.DebugLevel)
-	operator.SugaredLogger = zap.New(core).Sugar()
-
-	temps := make([]*os.File, 0, files)
-	for i := 0; i < files; i++ {
-		temps = append(temps, openTemp(t, tempDir))
-	}
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-	// Write logs to each file
-	expectedTokens := make([][]byte, 0, files*linesPerFile)
-	for i, temp := range temps {
-		for j := 0; j < linesPerFile; j++ {
-			message := fmt.Sprintf("%s %d %d", tokenWithLength(100), i, j)
-			_, err := temp.WriteString(message + "\n")
-			require.NoError(t, err)
-			expectedTokens = append(expectedTokens, []byte(message))
-		}
-	}
-
-	// Poll and wait for all lines
-	operator.poll(context.Background())
-	actualTokens := make([][]byte, 0, files*linesPerFile)
-	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, len(expectedTokens))...)
-	require.ElementsMatch(t, expectedTokens, actualTokens)
-
-	// During the first poll, we expect one log per file
-	require.Equal(t, files, observedLogs.Len())
-	logNum := 0
-
-	for f := 0; f < files; f++ {
-		log := observedLogs.All()[logNum]
-		require.Equal(t, "Started watching file", log.Message)
-		require.Equal(t, zapcore.InfoLevel, log.Level)
-		logNum++
-	}
-
-	// Write more logs to each file so we can validate that all files are still known
-	expectedTokens = make([][]byte, 0, files*linesPerFile)
-	for i, temp := range temps {
-		for j := 0; j < linesPerFile; j++ {
-			message := fmt.Sprintf("%s %d %d", tokenWithLength(20), i, j)
-			_, err := temp.WriteString(message + "\n")
-			require.NoError(t, err)
-			expectedTokens = append(expectedTokens, []byte(message))
-		}
-	}
-
-	// Poll again and wait for all new lines
-	operator.poll(context.Background())
-	actualTokens = make([][]byte, 0, files*linesPerFile)
-	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, len(expectedTokens))...)
-	require.ElementsMatch(t, expectedTokens, actualTokens)
-
-	// During the second poll, we only expect one log per poll
-	require.Equal(t, files, observedLogs.Len())
-	for b := logNum; b < observedLogs.Len(); b++ {
-		log := observedLogs.All()[logNum]
-		require.Equal(t, "Consuming files", log.Message)
-		require.Equal(t, zapcore.DebugLevel, log.Level)
-		logNum++
-	}
-}
-
 func TestFileReader_FingerprintUpdated(t *testing.T) {
 	t.Parallel()
 
@@ -1239,93 +1154,6 @@ func TestDeleteAfterRead(t *testing.T) {
 	}
 }
 
-func TestMaxBatching(t *testing.T) {
-	t.Parallel()
-
-	files := 50
-	linesPerFile := 10
-	maxConcurrentFiles := 20
-	maxBatchFiles := maxConcurrentFiles / 2
-	maxBatches := 2
-
-	expectedBatches := maxBatches
-	expectedMaxFilesPerPoll := maxBatches * maxBatchFiles
-
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	cfg.MaxConcurrentFiles = maxConcurrentFiles
-	cfg.MaxBatches = maxBatches
-	emitCalls := make(chan *emitParams, files*linesPerFile)
-	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
-	operator.persister = testutil.NewMockPersister("test")
-
-	core, observedLogs := observer.New(zap.DebugLevel)
-	operator.SugaredLogger = zap.New(core).Sugar()
-
-	temps := make([]*os.File, 0, files)
-	for i := 0; i < files; i++ {
-		temps = append(temps, openTemp(t, tempDir))
-	}
-
-	// Write logs to each file
-	numExpectedTokens := expectedMaxFilesPerPoll * linesPerFile
-	for i, temp := range temps {
-		for j := 0; j < linesPerFile; j++ {
-			message := fmt.Sprintf("%s %d %d", tokenWithLength(100), i, j)
-			_, err := temp.WriteString(message + "\n")
-			require.NoError(t, err)
-		}
-	}
-
-	// Poll and wait for all lines
-	operator.poll(context.Background())
-	actualTokens := make([][]byte, 0, numExpectedTokens)
-	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, numExpectedTokens)...)
-	require.Len(t, actualTokens, numExpectedTokens)
-
-	// During the first poll, we expect one log per batch and one log per file
-	require.Equal(t, expectedMaxFilesPerPoll+expectedBatches, observedLogs.Len())
-	logNum := 0
-	for b := 0; b < expectedBatches; b++ {
-		log := observedLogs.All()[logNum]
-		require.Equal(t, "Consuming files", log.Message)
-		require.Equal(t, zapcore.DebugLevel, log.Level)
-		logNum++
-
-		for f := 0; f < maxBatchFiles; f++ {
-			log = observedLogs.All()[logNum]
-			require.Equal(t, "Started watching file", log.Message)
-			require.Equal(t, zapcore.InfoLevel, log.Level)
-			logNum++
-		}
-	}
-
-	// Write more logs to each file so we can validate that all files are still known
-	for i, temp := range temps {
-		for j := 0; j < linesPerFile; j++ {
-			message := fmt.Sprintf("%s %d %d", tokenWithLength(20), i, j)
-			_, err := temp.WriteString(message + "\n")
-			require.NoError(t, err)
-		}
-	}
-
-	// Poll again and wait for all new lines
-	operator.poll(context.Background())
-	actualTokens = make([][]byte, 0, numExpectedTokens)
-	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, numExpectedTokens)...)
-	require.Len(t, actualTokens, numExpectedTokens)
-
-	// During the second poll, we only expect one log per batch
-	require.Equal(t, expectedMaxFilesPerPoll+expectedBatches*2, observedLogs.Len())
-	for b := logNum; b < observedLogs.Len(); b++ {
-		log := observedLogs.All()[logNum]
-		require.Equal(t, "Consuming files", log.Message)
-		require.Equal(t, zapcore.DebugLevel, log.Level)
-		logNum++
-	}
-}
-
 // TestReadExistingLogsWithHeader tests that, when starting from beginning, we
 // read all the lines that are already there, and parses the headers
 func TestReadExistingLogsWithHeader(t *testing.T) {
@@ -1393,13 +1221,13 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	// Wait until the only line in the short file and
 	// at least one line from the long file have been consumed
 	var shortOne, longOne bool
-	ctx, cancel := context.WithCancel(context.Background())
 
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		operator.poll(ctx)
+		err := operator.Start(testutil.NewMockPersister("test"))
+		require.NoError(t, err)
 	}()
 
 	for !(shortOne && longOne) {
@@ -1411,8 +1239,10 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	}
 
 	// Stop consuming before long file has been fully consumed
-	cancel()
-	wg.Wait()
+	operator.cancel()
+	operator.wg.Wait()
+	close(operator.readerChan)
+	operator.workerWg.Wait()
 
 	// short file was fully consumed and should have been deleted
 	require.NoFileExists(t, shortFile.Name())
@@ -1492,7 +1322,8 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 
 	// The operator will poll at fixed time intervals, but we just want to make sure at least
 	// one poll operation occurs between now and when we stop.
-	op1.poll(context.Background())
+	op1.poll(op1.ctx)
+	op1.poll(op1.ctx)
 
 	require.NoError(t, op1.Stop())
 

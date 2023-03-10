@@ -47,6 +47,15 @@ A Reader contains the following:
 - File path
 - Decoder (dedicated instance to avoid concurrency issues)
 
+# Reader Wrapper
+
+These are struct which are sent through a channel to the threadpool.
+
+### Contents of Reader Wrapper
+
+- Reader
+- File path associated with the wrapper
+
 ### Functionality
 
 As implied by the name, Readers are responsible for consuming data as it is written to a file.
@@ -70,6 +79,10 @@ Readers are maintained for a fixed period of time, and then discarded.
 
 When the `file_input` operator makes use of a persistence mechanism to save and recall its state, it is simply Setting and Getting a slice of Readers. These Readers contain all the information necessary to pick up exactly where the operator left off.
 
+# Thread pooling
+
+Before starting the poller, the main function kicks off a number of goroutines which will listen
+to the channel
 
 # Polling
 
@@ -87,47 +100,40 @@ Each poll cycle runs through a series of steps which are presented below.
     1. The file system is searched for files with a path that matches the `include` setting.
     2. Files that match the `exclude` setting are discarded.
     3. As a special case, on the first poll cycle, a warning is printed if no files are matched. Execution continues regardless.
-4. Queueing
-    1. If the number of matched files is less than or equal to the maximum degree of concurrency, as defined by the `max_concurrent_files` setting, then no queueing occurs.
-    2. Else, queueing occurs, which means the following:
-        - Matched files are split into two sets, such that the first is small enough to respect `max_concurrent_files`, and the second contains the remaining files (called the queue).
-        - The current poll interval will begin processing the first set of files, just as if they were the only ones found during the matching phase.
-        - Subsequent poll cycles will pull matches off of the queue, until the queue is empty.
-        - The `max_concurrent_files` setting is respected at all times.
-5. Opening
-    1. Each of the matched files is opened. Note:
+4. Opening
+    1. Each of the matched files is opened sequentially. Note:
         - A small amount of time has passed since the file was matched.
         - It is possible that it has been moved or deleted by this point.
         - Only a minimum set of operations should occur between file matching and opening.
         - If an error occurs while opening, it is logged.
-6. Fingerprinting
+5. Fingerprinting
     1. The first `N` bytes of each file are read. (See fingerprinting section above.)
-7. Exclusion
+6. Exclusion
     1. Empty files are closed immediately and discarded. (There is nothing to read.)
     2. Fingerprints found in this batch are cross referenced against each other to detect duplicates. Duplicate files are closed immediately and discarded.
         - In the vast majority of cases, this occurs during file rotation that uses the copy/truncate method. (See fingerprinting section above.)
-8. Reader Creation
+7. Reader Creation
     1. Each file handle is wrapped into a `Reader` along with some metadata. (See Reader section above)
         - During the creation of a `Reader`, the file's fingerprint is cross referenced with previously known fingerprints.
         - If a file's fingerprint matches one that has recently been seen, then metadata is copied over from the previous iteration of the Reader. Most importantly, the offset is accurately maintained in this way.
         - If a file's fingerprint does not match any recently seen files, then its offset is initialized according to the `start_at` setting.
-9. Detection of Lost Files
+8. Detection of Lost Files
     1. Fingerprints are used to cross reference the matched files from this poll cycle against the matched file from the previous poll cycle. Files that were matched in the previous cycle but were not matched in this cycle are referred to as "lost files".
     2. File become "lost" for several reasons:
         - The file may have been deleted, typically due to rotation limits or ttl-based pruning.
         - The file may have been rotated to another location.
             - If the file was moved, the open file handle from the previous poll cycle may be useful.
-10. Consumption
+9. Consumption
     1. Lost files are consumed. In some cases, such as deletion, this operation will fail. However, if a file was moved, we may be able to consume the remainder of its content. 
         - We do not expect to match this file again, so the best we can do is finish consuming their current contents.
         - We can reasonably expect in most cases that these files are no longer being written to.
-    2. Matched files (from this poll cycle) are consumed.
+    2. Matched files (from this poll cycle) are sent to the channel and will be consumed asynchronously by the goroutines.
         - These file handles will be left open until the next poll cycle, when they will be used to detect and potentially consume lost files.
         - Typically, we can expect to find most of these files again. However, these files are consumed greedily in case we do not see them again.
     3. All open files are consumed concurrently. This includes both the lost files from the previous cycle, and the matched files from this cycle.
-11. Closing
+10. Closing
     1. All files from the previous poll cycle are closed.
-12. Archiving
+11. Archiving
     1. Readers created in the current poll cycle are added to the historical record.
     2. The same Readers are also retained as a separate slice, for easy access in the next poll cycle.
 13. Pruning
@@ -146,6 +152,7 @@ Each poll cycle runs through a series of steps which are presented below.
 
 Whenever the operator starts, it:
 - Requests the historical record of Readers, as described in steps 12-14 of the poll cycle.
+- Kicks off the goroutine workers
 - Starts the polling timer.
 
 ### Shutdown Logic
@@ -155,6 +162,7 @@ When the operator shuts down, the following occurs:
 - Otherwise, the current poll cycle is signaled to stop immediately, which in turn signals all Readers to stop immediately.
     - If a Reader is idle or in between log entries, it will return immediately. Otherwise it will return after consuming one final log entry.
     - Once all Readers have stopped, the remainder of the poll cycle completes as usual, which includes the steps labeled `Closing`, `Archiving`, `Pruning`, and `Persistence`.
+- The routine then closes the channel and waits for the goroutine to finish executing.
 
 The net effect of the shut down routine is that all files are checkpointed in a normal manner (i.e. not in the middle of a log entry), and all checkpoints are persisted.
 

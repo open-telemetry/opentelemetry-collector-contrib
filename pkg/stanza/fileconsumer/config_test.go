@@ -356,14 +356,6 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
-				Name: "max_batches_1",
-				Expect: func() *mockOperatorConfig {
-					cfg := NewConfig()
-					cfg.MaxBatches = 1
-					return newMockOperatorConfig(cfg)
-				}(),
-			},
-			{
 				Name: "header_config",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
@@ -518,24 +510,6 @@ func TestBuild(t *testing.T) {
 			},
 			require.Error,
 			nil,
-		},
-		{
-			"InvalidMaxBatches",
-			func(f *Config) {
-				f.MaxBatches = -1
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"ValidMaxBatches",
-			func(f *Config) {
-				f.MaxBatches = 6
-			},
-			require.NoError,
-			func(t *testing.T, m *Manager) {
-				require.Equal(t, 6, m.maxBatches)
-			},
 		},
 		{
 			"HeaderConfigNoFlag",
