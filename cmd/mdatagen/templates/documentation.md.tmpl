@@ -41,8 +41,8 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [{{ .Status.Stability }}]   |
-| Supported pipeline types | {{ stringsJoin .Status.Pipelines ", " }} |
-| Distributions            | [{{ distroJoin .Status.Distributions "], [" }}] |
+| Supported pipeline types | {{ stringsJoin .Status.Pipelines "," }}   |
+| Distributions            | [{{ stringsJoin .Status.Distributions "], [" }}] |
 {{ end }}
 ## Default Metrics
 
@@ -100,6 +100,6 @@ metrics:
 {{if ne .Status.Stability "" }}
 [{{ .Status.Stability }}]: https://github.com/open-telemetry/opentelemetry-collector#{{ .Status.Stability }}
 {{range .Status.Distributions }}
-[{{.Name}}]: {{.URL}}
+[{{.}}]: {{ distroURL . }}
 {{end}}
 {{- end -}}

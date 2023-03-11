@@ -4,9 +4,7 @@ status:
   type: receiver
   stability: alpha
   pipelines: [metrics]
-  distributions:
-    - name: contrib
-      url: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+  distributions: [contrib]
 
 resource_attributes:
   haproxy.url:

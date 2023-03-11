@@ -14,14 +14,14 @@
 
 package main
 
-type Distribution struct {
-	Name string `mapstructure:"name"`
-	URL  string `mapstructure:"url"`
+var distros map[string]string = map[string]string{
+	"core":    "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol",
+	"contrib": "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib",
 }
 
 type Status struct {
-	Stability     string         `mapstructure:"stability"`
-	Pipelines     []string       `mapstructure:"pipelines"`
-	Distributions []Distribution `mapstructure:"distributions"`
-	Type          string         `mapstructure:"type"`
+	Stability     string   `mapstructure:"stability"`
+	Pipelines     []string `mapstructure:"pipelines"`
+	Distributions []string `mapstructure:"distributions"`
+	Type          string   `mapstructure:"type"`
 }

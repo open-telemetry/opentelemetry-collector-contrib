@@ -122,18 +122,8 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 					}
 					return "Undefined"
 				},
-				"distroJoin": func(d []Distribution, sep string) string {
-					if len(d) == 1 {
-						return d[0].Name
-					}
-					output := ""
-					for idx, distro := range d {
-						if idx > 0 {
-							output += sep
-						}
-						output += distro.Name
-					}
-					return output
+				"distroURL": func(name string) string {
+					return distros[name]
 				},
 				// ParseFS delegates the parsing of the files to `Glob`
 				// which uses the `\` as a special character.

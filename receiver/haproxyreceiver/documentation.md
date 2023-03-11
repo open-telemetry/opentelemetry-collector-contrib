@@ -5,7 +5,7 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [alpha]   |
-| Supported pipeline types | metrics,   |
+| Supported pipeline types | metrics   |
 | Distributions            | [contrib] |
 
 ## Default Metrics
