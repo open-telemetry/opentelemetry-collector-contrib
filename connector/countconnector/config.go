@@ -86,7 +86,7 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("spanevents condition: metric %q: %w", name, err)
 		}
 		if err := info.validateAttributes(); err != nil {
-			return fmt.Errorf("spans attributes: metric %q: %w", name, err)
+			return fmt.Errorf("spanevents attributes: metric %q: %w", name, err)
 		}
 	}
 	for name, info := range c.Metrics {
@@ -132,7 +132,7 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("logs condition: metric %q: %w", name, err)
 		}
 		if err := info.validateAttributes(); err != nil {
-			return fmt.Errorf("spans attributes: metric %q: %w", name, err)
+			return fmt.Errorf("logs attributes: metric %q: %w", name, err)
 		}
 	}
 	return nil
