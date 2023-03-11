@@ -28,9 +28,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
@@ -58,31 +56,7 @@ var (
 	}
 )
 
-func SimpleAPITest(t *testing.T, baseURL string) {
-	client, err := newElasticsearchClient(componenttest.NewNopTelemetrySettings(), Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: baseURL},
-	}, componenttest.NewNopHost())
-	require.NoError(t, err)
-	ctx := context.Background()
-
-	_, err = client.Nodes(ctx, []string{})
-	require.NoError(t, err, "Failed to get Nodes metrics from elasticsearch API")
-	_, err = client.NodeStats(ctx, []string{})
-	require.NoError(t, err, "Failed to get NodeStats metrics from elasticsearch API")
-	_, err = client.ClusterHealth(ctx)
-	require.NoError(t, err, "Failed to get ClusterHealth metrics from elasticsearch API")
-	_, err = client.IndexStats(ctx, []string{})
-	require.NoError(t, err, "Failed to get IndexStats metrics from elasticsearch API")
-	_, err = client.ClusterMetadata(ctx)
-	require.NoError(t, err, "Failed to get ClusterMetadata metrics from elasticsearch API")
-	_, err = client.ClusterStats(ctx, []string{"_all"})
-	require.NoError(t, err, "Failed to get ClusterStats metrics from elasticsearch API")
-}
-
 func TestElasticsearchIntegration(t *testing.T) {
-	// Let this test check if it works with the features disabled and the unit test will test the feature enabled.
-	require.NoError(t, featuregate.GlobalRegistry().Set(emitNodeVersionAttr.ID(), false))
-
 	// Starts an elasticsearch docker container
 	t.Run("Running elasticsearch 7.9", func(t *testing.T) {
 		t.Parallel()
@@ -97,7 +71,6 @@ func TestElasticsearchIntegration(t *testing.T) {
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Endpoint = fmt.Sprintf("http://%s:9200", hostname)
 
-		SimpleAPITest(t, cfg.Endpoint)
 		consumer := new(consumertest.MetricsSink)
 		settings := receivertest.NewNopCreateSettings()
 		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
@@ -115,10 +88,15 @@ func TestElasticsearchIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
-			pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"),
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+		))
 	})
 	t.Run("Running elasticsearch 7.16.3", func(t *testing.T) {
 		t.Parallel()
@@ -150,10 +128,15 @@ func TestElasticsearchIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
-			pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"),
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+		))
 	})
 }
 
