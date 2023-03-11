@@ -698,7 +698,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+<<<<<<< HEAD
     directory: "/receiver/apachesparkreceiver"
+=======
+    directory: "/receiver/awscloudwatchmetricsreceiver"
+>>>>>>> 55c82fee11 (Chore: make gendependabot)
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1099,6 +1103,41 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/vcenterreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/wavefrontreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/webhookeventreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/windowseventlogreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/windowsperfcountersreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/zipkinreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/zookeeperreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/testbed"
     schedule:
       interval: "weekly"
       day: "wednesday"
