@@ -66,17 +66,17 @@ func SimpleAPITest(t *testing.T, baseURL string) {
 	ctx := context.Background()
 
 	_, err = client.Nodes(ctx, []string{})
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to get Nodes metrics from elasticsearch API")
 	_, err = client.NodeStats(ctx, []string{})
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to get NodeStats metrics from elasticsearch API")
 	_, err = client.ClusterHealth(ctx)
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to get ClusterHealth metrics from elasticsearch API")
 	_, err = client.IndexStats(ctx, []string{})
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to get IndexStats metrics from elasticsearch API")
 	_, err = client.ClusterMetadata(ctx)
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to get ClusterMetadata metrics from elasticsearch API")
 	_, err = client.ClusterStats(ctx, []string{"_all"})
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to get ClusterStats metrics from elasticsearch API")
 }
 
 func TestElasticsearchIntegration(t *testing.T) {
@@ -115,10 +115,10 @@ func TestElasticsearchIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name")))
 	})
 	t.Run("Running elasticsearch 7.16.3", func(t *testing.T) {
 		t.Parallel()
@@ -150,10 +150,10 @@ func TestElasticsearchIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name")))
 	})
 }
 
