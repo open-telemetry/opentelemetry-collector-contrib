@@ -149,10 +149,10 @@ github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb/go.mod h1:+NfK9FKe
 github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d/go.mod h1:+NfK9FKeTrX5uv1uIXGdwYDTeHna2qgaIlx54MXqjAM=
 github.com/hjson/hjson-go/v4 v4.0.0 h1:wlm6IYYqHjOdXH1gHev4VoXCaW20HdQAGCxdOEEg2cs=
 github.com/hjson/hjson-go/v4 v4.0.0/go.mod h1:KaYt3bTw3zhBjYqnXkYywcYctk0A2nxeEFTse3rH13E=
-github.com/influxdata/influxdb-observability/common v0.3.1 h1:bfF9wYn9JocWM5H+GRjCot+yhG5FzkwhmKTczI1HhBA=
-github.com/influxdata/influxdb-observability/common v0.3.1/go.mod h1:YQWL/mn2SmAvGJfL5uKjDxcwS5M7GgCvDmP+Yk1n3+Q=
-github.com/influxdata/influxdb-observability/influx2otel v0.3.1 h1:+629fEDRTBl0/dgvuqr6vJQ4Qv4eV3SOz6kh5cmnBLs=
-github.com/influxdata/influxdb-observability/influx2otel v0.3.1/go.mod h1:s2xfQkuaKVw3h9nKWfuXfz4mQKZQ8OvaD6GOUvnOMFo=
+github.com/influxdata/influxdb-observability/common v0.3.3 h1:fzsgJKiV/bucNPRYggLE1F6UgpePQaYh72Lqj1rPEmI=
+github.com/influxdata/influxdb-observability/common v0.3.3/go.mod h1:A5u+Gwx4pL71M59eQMgzwu4QZa+UY8xQR+kjWOhNiEw=
+github.com/influxdata/influxdb-observability/influx2otel v0.3.3 h1:KWesgMC0sqRLfvPZXnCzJauCZ82XoHtKTFJVKmEk63M=
+github.com/influxdata/influxdb-observability/influx2otel v0.3.3/go.mod h1:/7F4LjKVytOTclZWMYkqBNVpv4gv5Uz6Bm5ifT+k638=
 github.com/influxdata/line-protocol-corpus v0.0.0-20210519164801-ca6fa5da0184/go.mod h1:03nmhxzZ7Xk2pdG+lmMd7mHDfeVOYFyhOgwO61qWU98=
 github.com/influxdata/line-protocol-corpus v0.0.0-20210922080147-aa28ccfb8937 h1:MHJNQ+p99hFATQm6ORoLmpUCF7ovjwEFshs/NHzAbig=
 github.com/influxdata/line-protocol-corpus v0.0.0-20210922080147-aa28ccfb8937/go.mod h1:BKR9c0uHSmRgM/se9JhFHtTT7JTO67X23MtKMHtZcpo=
@@ -229,7 +229,7 @@ github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRW
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/npillmayer/nestext v0.1.3/go.mod h1:h2lrijH8jpicr25dFY+oAJLyzlya6jhnuG+zWp9L0Uk=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.70.0 h1:wXQghT6BfHdSzCNv9WnVd+zjtyykE71akJZ7tl/X1I0=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.73.0 h1:OSzBQJtz311E32x8NiQ64TVtjKBuRZPHykYtDFq65Z4=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pascaldekloe/goe v0.1.0/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.7.0/go.mod h1:vwGMzjaWMwyfHwgIBhI2YUM4fB6nL6lVAvS1LBMMhTE=

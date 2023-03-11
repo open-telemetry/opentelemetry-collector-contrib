@@ -12,19 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
-
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestResourceNamespace(t *testing.T) {
-	assert.False(t, ResourceNamespace.MatchString("foo"))
-	assert.False(t, ResourceNamespace.MatchString("foo.bar"))
-	assert.True(t, ResourceNamespace.MatchString("service.name"))
-	assert.False(t, ResourceNamespace.MatchString("service.foo"))
-	assert.True(t, ResourceNamespace.MatchString("faas.instance"))
-	assert.False(t, ResourceNamespace.MatchString("faas.execution"))
-}
+package webhookeventreceiver

@@ -19,23 +19,23 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/atomic"
 	"go.uber.org/zap/zaptest"
 )
 
 func TestExporter_pushMetricsData(t *testing.T) {
 	t.Parallel()
 	t.Run("push success", func(t *testing.T) {
-		var items atomic.Int32
+		items := &atomic.Int32{}
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
-				items.Inc()
+				items.Add(1)
 			}
 			return nil
 		})
@@ -56,10 +56,10 @@ func TestExporter_pushMetricsData(t *testing.T) {
 		require.Error(t, err)
 	})
 	t.Run("check Resource metadata and scope metadata", func(t *testing.T) {
-		var items atomic.Int32
+		items := &atomic.Int32{}
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
-				items.Inc()
+				items.Add(1)
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_exponential_histogram") {
 					require.Equal(t, "Resource SchemaUrl 1", values[1])
 					require.Equal(t, "Scope name 1", values[2])

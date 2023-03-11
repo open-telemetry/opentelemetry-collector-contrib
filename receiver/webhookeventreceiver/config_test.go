@@ -12,7 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package otel2influx is temporarily copied from github.com/influxdata/influxdb-observability/otel2influx
-// to unblock the collector release. Once https://github.com/influxdata/influxdb-observability/pull/182 is merged,
-// this package can be removed.
-package otel2influx // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx/otel2influx"
+package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/genericwebhookreceiver"

@@ -45,6 +45,7 @@ func createDefaultConfig() component.Config {
 		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
 		DimensionsCacheSize:    defaultDimensionsCacheSize,
 		MetricsFlushInterval:   15 * time.Second,
+		Histogram:              HistogramConfig{Unit: defaultUnit},
 	}
 }
 

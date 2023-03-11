@@ -12,7 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package common is temporarily copied from github.com/influxdata/influxdb-observability/common
-// to unblock the collector release. Once https://github.com/influxdata/influxdb-observability/pull/182 is merged,
-// this package can be removed.
-package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx/common"
+package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
+
+import (
+	"errors"
+
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+)
+
+func newLogsReceiver(params receiver.CreateSettings, cfg Config, consumer consumer.Logs) (receiver.Logs, error) {
+	return nil, errors.New("unimplemented")
+}

@@ -100,7 +100,6 @@ extension/storage/filestorage/                           @open-telemetry/collect
 
 internal/aws/                                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 internal/docker/                                         @open-telemetry/collector-contrib-approvers @rmfitzpatrick @jamesmoessis
-internal/influx/                                         @open-telemetry/collector-contrib-approvers @jacobmarble @dmitryax
 internal/k8sconfig/                                      @open-telemetry/collector-contrib-approvers @dmitryax
 internal/kubelet/                                        @open-telemetry/collector-contrib-approvers @dmitryax
 internal/metadataproviders/                              @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
@@ -231,6 +230,7 @@ receiver/tcplogreceiver/                                 @open-telemetry/collect
 receiver/udplogreceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/vcenterreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/wavefrontreceiver/                              @open-telemetry/collector-contrib-approvers @pjanotti
+receiver/webhookeventreceiver/                           @open-telemetry/collector-contrib-approvers @atoulme @shalper2
 receiver/windowseventlogreceiver/                        @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi
 receiver/windowsperfcountersreceiver/                    @open-telemetry/collector-contrib-approvers @dashpole
 receiver/zipkinreceiver/                                 @open-telemetry/collector-contrib-approvers

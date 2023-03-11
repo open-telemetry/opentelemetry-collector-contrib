@@ -12,18 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otel2influx // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/influx/otel2influx"
+package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
 
 import (
-	"context"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-type DependencyGraph interface {
-	Start(ctx context.Context, host component.Host) error
-	ReportSpan(ctx context.Context, span ptrace.Span, resource pcommon.Resource)
-	Shutdown(ctx context.Context) error
+// Config defines configuration for the Generic Webhook receiver.
+type Config struct {
+	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }

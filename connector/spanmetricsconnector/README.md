@@ -23,7 +23,7 @@ a user wishes to view call counts just on `service.name` and `span.name`.
 **Error** counts are computed from the Request counts which have an `Error` Status Code metric dimension.
 
 **Duration** is computed from the difference between the span start and end times and inserted into the
-relevant latency histogram time bucket for each unique set dimensions.
+relevant duration histogram time bucket for each unique set dimensions.
 
 Each metric will have _at least_ the following dimensions because they are common
 across all spans:
@@ -41,14 +41,14 @@ visit the [Connectors README].
 The following settings can be optionally configured:
 
 - `histogram` (default: `explicit_buckets`): Use to configure the type of histogram to record
-  calculated from spans latency measurements.
+  calculated from spans duration measurements.
+  - `unit` (default: `ms`, allowed values: `ms`, `s`): The time unit for recording duration measurements.
+  calculated from spans duration measurements.
   - `explicit`:
-    - `buckets`: the list of durations defining the latency histogram buckets. Default
+    - `buckets`: the list of durations defining the duration histogram buckets. Default
       buckets: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
   - `exponential`:
     - `max_size` (default: 160) the maximum number of buckets per positive or negative number range.
-- `latency_histogram_buckets` (deprecated): the list of durations defining the latency histogram buckets.
-  - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
 - `dimensions`: the list of dimensions to add together with the default dimensions defined above.
   
   Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or

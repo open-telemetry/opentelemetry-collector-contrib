@@ -6,6 +6,7 @@ require (
 	github.com/hashicorp/golang-lru v0.6.0
 	github.com/lightstep/go-expohisto v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.73.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.73.0
 	github.com/stretchr/testify v1.8.2
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector v0.73.0
@@ -21,6 +22,7 @@ require (
 
 require (
 	github.com/benbjohnson/clock v1.3.0 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -51,3 +53,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
