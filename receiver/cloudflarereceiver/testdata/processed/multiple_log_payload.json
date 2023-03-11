@@ -10,12 +10,42 @@
                     "logRecords": [
                         {
                             "timeUnixNano": "1677821345000000000",
-                            "observedTimeUnixNano": "1678479732097596000",
+                            "observedTimeUnixNano": "1678503547396296000",
                             "severityNumber": 9,
                             "severityText": "Info",
                             "body": {
                                 "kvlistValue": {
                                     "values": [
+                                        {
+                                            "key": "ClientIP",
+                                            "value": {
+                                                "stringValue": "89.163.253.200"
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientRequestMethod",
+                                            "value": {
+                                                "stringValue": "GET"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeStartTimestamp",
+                                            "value": {
+                                                "stringValue": "2023-03-03T05:29:05Z"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeResponseStatus",
+                                            "value": {
+                                                "doubleValue": 200
+                                            }
+                                        },
+                                        {
+                                            "key": "RayID",
+                                            "value": {
+                                                "stringValue": "3a6050bcbe121a87"
+                                            }
+                                        },
                                         {
                                             "key": "ClientRequestHost",
                                             "value": {
@@ -39,36 +69,6 @@
                                             "value": {
                                                 "doubleValue": 69045
                                             }
-                                        },
-                                        {
-                                            "key": "EdgeResponseStatus",
-                                            "value": {
-                                                "doubleValue": 200
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeStartTimestamp",
-                                            "value": {
-                                                "stringValue": "2023-03-03T05:29:05Z"
-                                            }
-                                        },
-                                        {
-                                            "key": "RayID",
-                                            "value": {
-                                                "stringValue": "3a6050bcbe121a87"
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientIP",
-                                            "value": {
-                                                "stringValue": "89.163.253.200"
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientRequestMethod",
-                                            "value": {
-                                                "stringValue": "GET"
-                                            }
                                         }
                                     ]
                                 }
@@ -86,12 +86,30 @@
                         },
                         {
                             "timeUnixNano": "1677821345000000000",
-                            "observedTimeUnixNano": "1678479732097596000",
+                            "observedTimeUnixNano": "1678503547396296000",
                             "severityNumber": 9,
                             "severityText": "Info",
                             "body": {
                                 "kvlistValue": {
                                     "values": [
+                                        {
+                                            "key": "EdgeResponseStatus",
+                                            "value": {
+                                                "doubleValue": 200
+                                            }
+                                        },
+                                        {
+                                            "key": "RayID",
+                                            "value": {
+                                                "stringValue": "3a6050bcbe121a87"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeEndTimestamp",
+                                            "value": {
+                                                "stringValue": "2023-03-03T05:30:05Z"
+                                            }
+                                        },
                                         {
                                             "key": "ClientRequestHost",
                                             "value": {
@@ -111,39 +129,21 @@
                                             }
                                         },
                                         {
-                                            "key": "RayID",
-                                            "value": {
-                                                "stringValue": "3a6050bcbe121a87"
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientIP",
-                                            "value": {
-                                                "stringValue": "89.163.253.201"
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeEndTimestamp",
-                                            "value": {
-                                                "stringValue": "2023-03-03T05:30:05Z"
-                                            }
-                                        },
-                                        {
                                             "key": "EdgeResponseBytes",
                                             "value": {
                                                 "doubleValue": 69045
                                             }
                                         },
                                         {
-                                            "key": "EdgeResponseStatus",
-                                            "value": {
-                                                "doubleValue": 200
-                                            }
-                                        },
-                                        {
                                             "key": "EdgeStartTimestamp",
                                             "value": {
                                                 "stringValue": "2023-03-03T05:29:05Z"
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientIP",
+                                            "value": {
+                                                "stringValue": "89.163.253.201"
                                             }
                                         }
                                     ]
@@ -159,10 +159,31 @@
                             ],
                             "traceId": "",
                             "spanId": ""
-                        },
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "cloudflare.zone",
+                        "value": {
+                            "stringValue": "example.com"
+                        }
+                    }
+                ]
+            },
+            "scopeLogs": [
+                {
+                    "scope": {
+                        "name": "otelcol/cloudflare"
+                    },
+                    "logRecords": [
                         {
                             "timeUnixNano": "1677821345000000000",
-                            "observedTimeUnixNano": "1678479732097596000",
+                            "observedTimeUnixNano": "1678503547396296000",
                             "severityNumber": 9,
                             "severityText": "Info",
                             "body": {
@@ -181,27 +202,9 @@
                                             }
                                         },
                                         {
-                                            "key": "EdgeEndTimestamp",
-                                            "value": {
-                                                "stringValue": "2023-03-03T05:30:05Z"
-                                            }
-                                        },
-                                        {
                                             "key": "EdgeResponseBytes",
                                             "value": {
                                                 "doubleValue": 69045
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeResponseStatus",
-                                            "value": {
-                                                "doubleValue": 200
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeStartTimestamp",
-                                            "value": {
-                                                "stringValue": "2023-03-03T05:29:05Z"
                                             }
                                         },
                                         {
@@ -221,6 +224,30 @@
                                             "value": {
                                                 "stringValue": "/static/img/testimonial-hipster.png"
                                             }
+                                        },
+                                        {
+                                            "key": "EdgeEndTimestamp",
+                                            "value": {
+                                                "stringValue": "2023-03-03T05:30:05Z"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeResponseStatus",
+                                            "value": {
+                                                "doubleValue": 200
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeStartTimestamp",
+                                            "value": {
+                                                "stringValue": "2023-03-03T05:29:05Z"
+                                            }
+                                        },
+                                        {
+                                            "key": "ZoneName",
+                                            "value": {
+                                                "stringValue": "example.com"
+                                            }
                                         }
                                     ]
                                 }
@@ -238,16 +265,34 @@
                         },
                         {
                             "timeUnixNano": "1677821345000000000",
-                            "observedTimeUnixNano": "1678479732097596000",
+                            "observedTimeUnixNano": "1678503547396296000",
                             "severityNumber": 9,
                             "severityText": "Info",
                             "body": {
                                 "kvlistValue": {
                                     "values": [
                                         {
-                                            "key": "ClientRequestHost",
+                                            "key": "EdgeEndTimestamp",
                                             "value": {
-                                                "stringValue": "www.theburritobot3.com"
+                                                "stringValue": "2023-03-03T05:30:05Z"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeStartTimestamp",
+                                            "value": {
+                                                "stringValue": "2023-03-03T05:29:05Z"
+                                            }
+                                        },
+                                        {
+                                            "key": "RayID",
+                                            "value": {
+                                                "stringValue": "3a6050bcbe121a87"
+                                            }
+                                        },
+                                        {
+                                            "key": "ZoneName",
+                                            "value": {
+                                                "stringValue": "example.com"
                                             }
                                         },
                                         {
@@ -263,79 +308,15 @@
                                             }
                                         },
                                         {
+                                            "key": "EdgeResponseBytes",
+                                            "value": {
+                                                "doubleValue": 69045
+                                            }
+                                        },
+                                        {
                                             "key": "EdgeResponseStatus",
                                             "value": {
                                                 "doubleValue": 200
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeStartTimestamp",
-                                            "value": {
-                                                "stringValue": "2023-03-03T05:29:05Z"
-                                            }
-                                        },
-                                        {
-                                            "key": "ClientIP",
-                                            "value": {
-                                                "stringValue": "89.163.253.203"
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeEndTimestamp",
-                                            "value": {
-                                                "stringValue": "2023-03-03T05:30:05Z"
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeResponseBytes",
-                                            "value": {
-                                                "doubleValue": 69045
-                                            }
-                                        },
-                                        {
-                                            "key": "RayID",
-                                            "value": {
-                                                "stringValue": "3a6050bcbe121a87"
-                                            }
-                                        }
-                                    ]
-                                }
-                            },
-                            "attributes": [
-                                {
-                                    "key": "http_request.client_ip",
-                                    "value": {
-                                        "stringValue": "89.163.253.203"
-                                    }
-                                }
-                            ],
-                            "traceId": "",
-                            "spanId": ""
-                        },
-                        {
-                            "timeUnixNano": "1677821345000000000",
-                            "observedTimeUnixNano": "1678479732097596000",
-                            "severityNumber": 9,
-                            "severityText": "Info",
-                            "body": {
-                                "kvlistValue": {
-                                    "values": [
-                                        {
-                                            "key": "EdgeEndTimestamp",
-                                            "value": {
-                                                "stringValue": "2023-03-03T05:30:05Z"
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeResponseBytes",
-                                            "value": {
-                                                "doubleValue": 69045
-                                            }
-                                        },
-                                        {
-                                            "key": "EdgeStartTimestamp",
-                                            "value": {
-                                                "stringValue": "2023-03-03T05:29:05Z"
                                             }
                                         },
                                         {
@@ -349,11 +330,96 @@
                                             "value": {
                                                 "stringValue": "www.theburritobot4.com"
                                             }
+                                        }
+                                    ]
+                                }
+                            },
+                            "attributes": [
+                                {
+                                    "key": "http_request.client_ip",
+                                    "value": {
+                                        "stringValue": "89.163.253.204"
+                                    }
+                                }
+                            ],
+                            "traceId": "",
+                            "spanId": ""
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "cloudflare.zone",
+                        "value": {
+                            "stringValue": "abc.com"
+                        }
+                    }
+                ]
+            },
+            "scopeLogs": [
+                {
+                    "scope": {
+                        "name": "otelcol/cloudflare"
+                    },
+                    "logRecords": [
+                        {
+                            "timeUnixNano": "1677821345000000000",
+                            "observedTimeUnixNano": "1678503547396296000",
+                            "severityNumber": 9,
+                            "severityText": "Info",
+                            "body": {
+                                "kvlistValue": {
+                                    "values": [
+                                        {
+                                            "key": "EdgeResponseBytes",
+                                            "value": {
+                                                "doubleValue": 69045
+                                            }
+                                        },
+                                        {
+                                            "key": "RayID",
+                                            "value": {
+                                                "stringValue": "3a6050bcbe121a87"
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientIP",
+                                            "value": {
+                                                "stringValue": "89.163.253.203"
+                                            }
                                         },
                                         {
                                             "key": "ClientRequestMethod",
                                             "value": {
                                                 "stringValue": "GET"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeEndTimestamp",
+                                            "value": {
+                                                "stringValue": "2023-03-03T05:30:05Z"
+                                            }
+                                        },
+                                        {
+                                            "key": "EdgeStartTimestamp",
+                                            "value": {
+                                                "stringValue": "2023-03-03T05:29:05Z"
+                                            }
+                                        },
+                                        {
+                                            "key": "ZoneName",
+                                            "value": {
+                                                "stringValue": "abc.com"
+                                            }
+                                        },
+                                        {
+                                            "key": "ClientRequestHost",
+                                            "value": {
+                                                "stringValue": "www.theburritobot3.com"
                                             }
                                         },
                                         {
@@ -367,12 +433,6 @@
                                             "value": {
                                                 "doubleValue": 200
                                             }
-                                        },
-                                        {
-                                            "key": "RayID",
-                                            "value": {
-                                                "stringValue": "3a6050bcbe121a87"
-                                            }
                                         }
                                     ]
                                 }
@@ -381,7 +441,7 @@
                                 {
                                     "key": "http_request.client_ip",
                                     "value": {
-                                        "stringValue": "89.163.253.204"
+                                        "stringValue": "89.163.253.203"
                                     }
                                 }
                             ],

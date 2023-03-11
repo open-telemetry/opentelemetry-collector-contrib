@@ -70,7 +70,7 @@ func TestReceiverTLS(t *testing.T) {
 						Endpoint: testAddr,
 						TLS: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
-								CertFile: filepath.Join("testdata", "cert", "server.bundle.crt"),
+								CertFile: filepath.Join("testdata", "cert", "server.crt"),
 								KeyFile:  filepath.Join("testdata", "cert", "server.key"),
 							},
 						},
@@ -97,13 +97,13 @@ func TestReceiverTLS(t *testing.T) {
 			req, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
 			require.NoError(t, err)
 
-			client, err := clientWithCert(filepath.Join("testdata", "cert", "CAroot.crt"))
+			client, err := clientWithCert(filepath.Join("testdata", "cert", "ca.crt"))
 			require.NoError(t, err)
 
 			// try first without secret to see failure
 			resp, err := client.Do(req)
 			require.NoError(t, err)
-			require.Equal(t, resp.StatusCode, http.StatusUnauthorized)
+			require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 			resp.Body.Close()
 
 			// add header to see success
@@ -112,7 +112,7 @@ func TestReceiverTLS(t *testing.T) {
 			require.NoError(t, err)
 			resp.Body.Close()
 
-			require.Equal(t, resp.StatusCode, http.StatusOK)
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 
 			require.Eventually(t, func() bool {
 				return sink.LogRecordCount() > 0
