@@ -1930,14 +1930,6 @@ github.com/onsi/gomega v1.17.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAl
 github.com/onsi/gomega v1.18.1/go.mod h1:0q+aL8jAiMXy9hbwj2mr5GziHiwhAIQpFmmtT5hitRs=
 github.com/onsi/gomega v1.23.0 h1:/oxKu9c2HVap+F3PfKort2Hw5DEU+HGlW8n+tguWsys=
 github.com/op/go-logging v0.0.0-20160315200505-970db520ece7/go.mod h1:HzydrMdWErDVzsI23lYNej1Htcns9BCg93Dk0bBINWk=
-github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.73.0 h1:Xso7m0yi6sUP1cP8qCzXPNowaK/Zegd5AHTiD/y0VcA=
-github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.73.0/go.mod h1:r9YlfZpVh3hr0sLdEN1aOeuIapNMa6sJ/AviGrgSg+Q=
-github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver v0.73.0 h1:i78DJmpSMt3Lwppm4LPIWT9hnicsupUkElaVWlg1rO8=
-github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver v0.73.0/go.mod h1:w2ZUBLVpEz8JW/RRP1jaUSuiH8ShsZY/tfj+5NVzeCA=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver v0.73.0 h1:CV9iIuKWt70tPz6ERRS1/rIEvY6v9v6wEm+Bvj1S+g8=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver v0.73.0/go.mod h1:YsoTFNRh2xPxI30nwYudypZG03wnrkpwgP1jfmfNQjA=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.73.0 h1:GTOw9QBtxHTt3SjFGP7Tv7Q5TkPQnhgQw3D1aX7N2jQ=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.73.0/go.mod h1:muaC+B9sWCbXQpgolEvrtPV8e/8cTHzNkQ+Va4/pUk4=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.0.2/go.mod h1:BtxoFyWECRxE4U/7sNtV5W15zMzWCbyJoFRP3s7yZA0=
