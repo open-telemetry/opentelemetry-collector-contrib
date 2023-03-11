@@ -111,18 +111,11 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (p
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) {
 	service, _ := resource.Attributes().Get("service.name")
 	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
-	kp.logger.Info("[fatsheep9146] extract pod identifier", zap.Any("identifier", podIdentifierValue), zap.Any("service", service.AsString()))
-
-	if podIdentifierValue.IsNotEmpty() {
-		kp.logger.Info("[fatsheep9146] pod identifier catched", zap.Any("service", service.AsString()))
-	} else {
-		kp.logger.Info("[fatsheep9146] pod identifier missed", zap.Any("service", service.AsString()))
-	}
+	kp.logger.Info("[TEMPORARY] extract pod identifier", zap.Any("identifier", podIdentifierValue), zap.Any("service", service.AsString()))
 
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
 			if _, found := resource.Attributes().Get(kube.K8sIPLabelName); !found {
-				kp.logger.Info("[fatsheep9146] put ip attribute to resource", zap.Any("service", service.AsString()), zap.Any(kube.K8sIPLabelName, podIdentifierValue[i].Value))
 				resource.Attributes().PutStr(kube.K8sIPLabelName, podIdentifierValue[i].Value)
 			}
 			break
@@ -135,20 +128,19 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	if podIdentifierValue.IsNotEmpty() {
 		if pod, ok := kp.kc.GetPod(podIdentifierValue); ok {
 			kp.logger.Debug("getting the pod", zap.Any("pod", pod))
-			kp.logger.Info("[fatsheep9146] get the pod", zap.Any("service", service.AsString()), zap.Any("pod", pod.Name))
+			kp.logger.Info("[TEMPORARY] get the pod from cache", zap.Any("service", service.AsString()), zap.Any("pod", pod.Name))
 
 			for key, val := range pod.Attributes {
 				if _, found := resource.Attributes().Get(key); !found {
-					kp.logger.Info("[fatsheep9146] put pod attribute to resource", zap.Any("service", service.AsString()), zap.Any(key, val))
 					resource.Attributes().PutStr(key, val)
 				}
 			}
 			kp.addContainerAttributes(resource.Attributes(), pod)
 		} else {
-			kp.logger.Info("[fatsheep9146] failed get the pod", zap.Any("service", service.AsString()), zap.Any("identifier", podIdentifierValue))
+			kp.logger.Info("[TEMPORARY] failed get the pod from cache", zap.Any("service", service.AsString()), zap.Any("identifier", podIdentifierValue))
 		}
 	} else {
-		kp.logger.Info("[fatsheep9146] pod indentifier is empty", zap.Any("service", service.AsString()))
+		kp.logger.Info("[TEMPORARY] pod indentifier is empty", zap.Any("service", service.AsString()))
 	}
 
 	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNamespaceName)
