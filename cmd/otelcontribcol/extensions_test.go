@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -35,6 +34,8 @@ import (
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
@@ -224,7 +225,7 @@ func TestDefaultExtensions(t *testing.T) {
 
 	extensionCount := 0
 	expectedExtensions := map[component.Type]struct{}{}
-	for k, _ := range extFactories {
+	for k := range extFactories {
 		expectedExtensions[k] = struct{}{}
 	}
 	for _, tt := range tests {

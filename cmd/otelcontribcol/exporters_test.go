@@ -455,7 +455,7 @@ func TestDefaultExporters(t *testing.T) {
 
 	exporterCount := 0
 	expectedExporters := map[component.Type]struct{}{}
-	for k, _ := range expFactories {
+	for k := range expFactories {
 		expectedExporters[k] = struct{}{}
 	}
 	for _, tt := range tests {

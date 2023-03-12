@@ -149,7 +149,7 @@ func TestDefaultProcessors(t *testing.T) {
 
 	processorCount := 0
 	expectedProcessors := map[component.Type]struct{}{}
-	for proc, _ := range procFactories {
+	for proc := range procFactories {
 		expectedProcessors[proc] = struct{}{}
 	}
 	for _, tt := range tests {
