@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -36,15 +35,22 @@ const (
 type inTraceSamplerProcessor struct {
 	logger             *zap.Logger
 	config             Config
+	scopeLeavesMap     map[string]struct{}
 	scaledSamplingRate uint32
 	hashSeedBytes      []byte
 }
 
 func newInTraceSamplerSpansProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 
+	scopeLeavesMap := make(map[string]struct{})
+	for i := 0; i < len(cfg.ScopeLeaves); i++ {
+		scopeLeavesMap[cfg.ScopeLeaves[i]] = struct{}{}
+	}
+
 	its := &inTraceSamplerProcessor{
 		logger:             set.Logger,
 		config:             *cfg,
+		scopeLeavesMap:     scopeLeavesMap,
 		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
 		hashSeedBytes:      i32tob(cfg.HashSeed),
 	}
@@ -162,7 +168,7 @@ func (its *inTraceSamplerProcessor) getScopeBranchesToUnsampleRec(traceTreeData 
 
 	// currrent span should be unsampled if it's in the unsampledScopes map
 	// and all its children are also unsampled.
-	currentUnsampled := slices.Contains(its.config.ScopeLeaves, currentScopeName)
+	_, currentUnsampled := its.scopeLeavesMap[currentScopeName]
 	for _, childSpanID := range traceTreeData.children[currentSpanID] {
 		childUnsampled := its.getScopeBranchesToUnsampleRec(traceTreeData, childSpanID, unsampledScopes)
 		currentUnsampled = currentUnsampled && childUnsampled
