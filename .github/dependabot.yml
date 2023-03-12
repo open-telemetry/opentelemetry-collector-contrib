@@ -736,6 +736,7 @@ updates:
     directory: "/receiver/cloudflarereceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/cloudfoundryreceiver"
     schedule:
@@ -1098,11 +1099,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/testbed"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/testbed/mockdatareceivers/mockawsxrayreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"
