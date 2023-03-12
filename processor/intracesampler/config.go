@@ -30,7 +30,7 @@ type Config struct {
 	// different sampling rates, configuring different seeds avoids that.
 	HashSeed uint32 `mapstructure:"hash_seed"`
 
-	// will unsample spans from this scope, if they have no sampled descendants
+	// ScopeLeaves will unsample spans from this scope, if they have no sampled descendants
 	ScopeLeaves []string `mapstructure:"scope_leaves"`
 }
 
