@@ -88,6 +88,12 @@ func TestDefaultExporters(t *testing.T) {
 		skipLifecycle bool
 	}{
 		{
+			exporter: "awscloudwatchlogs",
+			getConfigFn: func() component.Config {
+				return expFactories["awscloudwatchlogs"].CreateDefaultConfig()
+			},
+		},
+		{
 			exporter: "file",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["file"].CreateDefaultConfig().(*fileexporter.Config)
@@ -447,13 +453,22 @@ func TestDefaultExporters(t *testing.T) {
 		},
 	}
 
-	assert.Len(t, tests, len(expFactories), "All user configurable components must be added to the lifecycle test")
+	exporterCount := 0
+	expectedExporters := map[component.Type]struct{}{}
+	for k, _ := range expFactories {
+		expectedExporters[k] = struct{}{}
+	}
 	for _, tt := range tests {
+		_, ok := expFactories[tt.exporter]
+		if !ok {
+			// not part of the distro, skipping.
+			continue
+		}
+		exporterCount++
+		delete(expectedExporters, tt.exporter)
 		t.Run(string(tt.exporter), func(t *testing.T) {
 			t.Parallel()
-
-			factory, ok := expFactories[tt.exporter]
-			require.True(t, ok)
+			factory := expFactories[tt.exporter]
 			assert.Equal(t, tt.exporter, factory.Type())
 
 			verifyExporterShutdown(t, factory, tt.getConfigFn)
@@ -461,8 +476,10 @@ func TestDefaultExporters(t *testing.T) {
 			if !tt.skipLifecycle {
 				verifyExporterLifecycle(t, factory, tt.getConfigFn)
 			}
+
 		})
 	}
+	assert.Len(t, expFactories, exporterCount, "All user configurable components must be added to the lifecycle test", expectedExporters)
 }
 
 // GetExporterConfigFn is used customize the configuration passed to the verification.
