@@ -425,6 +425,28 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				isMonotonic:  []bool{true, true},
 			}),
 		},
+		{
+			name: "cumulative_to_delta_restart_detected",
+			include: MatchMetrics{
+				Metrics: []string{".*"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1"},
+				metricValues: [][]float64{{100, 105, 120, 100, 110}},
+				isCumulative: []bool{true},
+				isMonotonic:  []bool{true},
+			}),
+			outMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1"},
+				metricValues: [][]float64{{5, 15, 10}},
+				isCumulative: []bool{false},
+				isMonotonic:  []bool{true},
+			}),
+		},
 	}
 
 	for _, test := range testCases {

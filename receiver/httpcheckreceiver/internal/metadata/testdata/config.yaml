@@ -1,15 +1,19 @@
 default:
-all_metrics:
-  httpcheck.duration:
-    enabled: true
-  httpcheck.error:
-    enabled: true
-  httpcheck.status:
-    enabled: true
-no_metrics:
-  httpcheck.duration:
-    enabled: false
-  httpcheck.error:
-    enabled: false
-  httpcheck.status:
-    enabled: false
+all_set:
+  metrics:
+    httpcheck.duration:
+      enabled: true
+    httpcheck.error:
+      enabled: true
+    httpcheck.status:
+      enabled: true
+  resource_attributes:
+none_set:
+  metrics:
+    httpcheck.duration:
+      enabled: false
+    httpcheck.error:
+      enabled: false
+    httpcheck.status:
+      enabled: false
+  resource_attributes:

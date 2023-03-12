@@ -100,7 +100,7 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		Granularity:               defaultGranularity,
 		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
-		Metrics:                   metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 		Alerts: AlertConfig{
 			Enabled:      defaultAlertsEnabled,
 			Mode:         alertModeListen,

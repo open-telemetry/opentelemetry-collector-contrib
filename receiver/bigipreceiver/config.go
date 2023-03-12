@@ -39,9 +39,9 @@ const defaultEndpoint = "https://localhost:443"
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	Username                                string                   `mapstructure:"username"`
-	Password                                string                   `mapstructure:"password"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
+	Username                                string `mapstructure:"username"`
+	Password                                string `mapstructure:"password"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields
