@@ -58,7 +58,7 @@ func newInTraceSamplerSpansProcessor(ctx context.Context, set processor.CreateSe
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-type FullSpan struct {
+type fullSpan struct {
 	resource pcommon.Resource
 	scope    pcommon.InstrumentationScope
 	span     ptrace.Span
@@ -67,7 +67,7 @@ type FullSpan struct {
 type TraceTreeData struct {
 
 	// map each span id to a full span object with scope and resource
-	fullSpans map[pcommon.SpanID]FullSpan
+	fullSpans map[pcommon.SpanID]fullSpan
 
 	// map each span id to its children ids
 	// this enables fast leaf detection and traversal of the tree from roots
@@ -81,7 +81,7 @@ type TraceTreeData struct {
 // it also generates a span object that contains the resource and scope all at once
 // this is useful for the sampler to be able to make decisions on spans
 func spansToTraceTree(td ptrace.Traces) TraceTreeData {
-	fullSpans := make(map[pcommon.SpanID]FullSpan)
+	fullSpans := make(map[pcommon.SpanID]fullSpan)
 	spanChildren := make(map[pcommon.SpanID][]pcommon.SpanID)
 
 	rss := td.ResourceSpans()
@@ -96,7 +96,7 @@ func spansToTraceTree(td ptrace.Traces) TraceTreeData {
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 
-				fullspan := FullSpan{
+				fullspan := fullSpan{
 					resource: resource,
 					scope:    scope,
 					span:     span,
