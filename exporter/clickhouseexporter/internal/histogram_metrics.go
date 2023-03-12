@@ -98,7 +98,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	histogramValueCounts = 25
 )
 
-var histogramPlaceholders = newPlaceholder(25)
+var histogramPlaceholders = newPlaceholder(histogramValueCounts)
 
 type histogramModel struct {
 	metricName        string
