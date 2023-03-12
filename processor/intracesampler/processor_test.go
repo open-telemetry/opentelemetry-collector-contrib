@@ -27,6 +27,8 @@ import (
 )
 
 func TestNewTracesProcessor(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name         string
 		nextConsumer consumer.Traces
@@ -73,6 +75,8 @@ func TestNewTracesProcessor(t *testing.T) {
 
 // when a span is in the scope list, and it is leaf, it should be unsampled (removed)
 func Test_intracesampler_ScopeLeaves(t *testing.T) {
+	t.Parallel()
+
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
 		ScopeLeaves:        []string{"foo"},
@@ -104,6 +108,7 @@ func Test_intracesampler_ScopeLeaves(t *testing.T) {
 
 // a span is in the scope names, but it is not removed because it is not a leaf
 func Test_intracesampler_ScopeLeaves_NotLeaf(t *testing.T) {
+	t.Parallel()
 
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
@@ -139,6 +144,7 @@ func Test_intracesampler_ScopeLeaves_NotLeaf(t *testing.T) {
 // trace has 2 spans in a scope, and they are child-parent
 // since both are leafs for this scope, they should both be removed
 func Test_intracesampler_ScopeLeaves_MultipleLeafs(t *testing.T) {
+	t.Parallel()
 
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
@@ -177,6 +183,7 @@ func Test_intracesampler_ScopeLeaves_MultipleLeafs(t *testing.T) {
 // this test asserts that when the processor got spans which are not all from same trace
 // it does not attempt to process these spans
 func Test_intracesampler_MultipleTraces(t *testing.T) {
+	t.Parallel()
 
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
@@ -212,6 +219,7 @@ func Test_intracesampler_MultipleTraces(t *testing.T) {
 }
 
 func Test_intracesampler_Empty(t *testing.T) {
+	t.Parallel()
 
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
@@ -231,6 +239,8 @@ func Test_intracesampler_Empty(t *testing.T) {
 }
 
 func Test_intracesampler_ScopeLeaves_MultipleScopes(t *testing.T) {
+	t.Parallel()
+
 	traceID := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
 
 	sink := new(consumertest.TracesSink)
@@ -265,6 +275,7 @@ func Test_intracesampler_ScopeLeaves_MultipleScopes(t *testing.T) {
 }
 
 func Test_intracesampler_SamplingPercentage(t *testing.T) {
+	t.Parallel()
 
 	traceID := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
 

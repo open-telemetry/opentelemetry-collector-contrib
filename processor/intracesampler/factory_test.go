@@ -25,12 +25,14 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
+	t.Parallel()
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateProcessor(t *testing.T) {
+	t.Parallel()
 	cfg := createDefaultConfig()
 	set := processortest.NewNopCreateSettings()
 	tp, err := createTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())

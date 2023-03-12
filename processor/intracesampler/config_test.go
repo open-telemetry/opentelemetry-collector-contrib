@@ -26,6 +26,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
+	t.Parallel()
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	processors, err := cm.Sub("processors")
@@ -49,6 +50,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadInvalidConfig(t *testing.T) {
+	t.Parallel()
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
