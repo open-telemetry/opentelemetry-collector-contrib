@@ -165,10 +165,6 @@ jobs:
         run: |
           make -j2 goporto
           git diff --exit-code || (echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.' && exit 1)
-      - name: crosslink
-        run: |
-          make crosslink
-          git diff --exit-code || (echo 'Replace statements are out of date, please run "make crosslink" and commit the changes in this PR.' && exit 1)
       - name: Check for go mod dependency changes
         run: |
           make gotidy

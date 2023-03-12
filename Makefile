@@ -376,11 +376,6 @@ multimod-sync: $(MULITMOD)
 	$(MULITMOD) sync -a=true -s=true -o ../opentelemetry-collector
 	$(MAKE) gotidy
 
-.PHONY: crosslink
-crosslink: $(CROSSLINK)
-	@echo "Executing crosslink"
-	$(CROSSLINK) --root=$(shell pwd) --prune
-
 .PHONY: clean
 clean:
 	@echo "Removing coverage files"
