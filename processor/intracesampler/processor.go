@@ -64,7 +64,7 @@ type fullSpan struct {
 	span     ptrace.Span
 }
 
-type TraceTreeData struct {
+type traceTreeData struct {
 
 	// map each span id to a full span object with scope and resource
 	fullSpans map[pcommon.SpanID]fullSpan
@@ -80,7 +80,7 @@ type TraceTreeData struct {
 // this map enable us to find the parent span of a span in O(1), and all the children of a givin span
 // it also generates a span object that contains the resource and scope all at once
 // this is useful for the sampler to be able to make decisions on spans
-func spansToTraceTree(td ptrace.Traces) TraceTreeData {
+func spansToTraceTree(td ptrace.Traces) traceTreeData {
 	fullSpans := make(map[pcommon.SpanID]fullSpan)
 	spanChildren := make(map[pcommon.SpanID][]pcommon.SpanID)
 
@@ -118,7 +118,7 @@ func spansToTraceTree(td ptrace.Traces) TraceTreeData {
 		}
 	}
 
-	traceTreeData := TraceTreeData{
+	traceTreeData := traceTreeData{
 		fullSpans: fullSpans,
 		children:  spanChildren,
 		roots:     roots,
@@ -156,7 +156,7 @@ func getSingleTraceID(td ptrace.Traces) *pcommon.TraceID {
 	return traceID
 }
 
-func (its *inTraceSamplerProcessor) getScopeBranchesToUnsampleRec(traceTreeData TraceTreeData, currentSpanID pcommon.SpanID, unsampledScopes map[pcommon.SpanID]bool) bool {
+func (its *inTraceSamplerProcessor) getScopeBranchesToUnsampleRec(traceTreeData traceTreeData, currentSpanID pcommon.SpanID, unsampledScopes map[pcommon.SpanID]bool) bool {
 	currentFullSpan := traceTreeData.fullSpans[currentSpanID]
 	currentScopeName := currentFullSpan.scope.Name()
 
@@ -174,7 +174,7 @@ func (its *inTraceSamplerProcessor) getScopeBranchesToUnsampleRec(traceTreeData 
 	return currentUnsampled
 }
 
-func (its *inTraceSamplerProcessor) getScopeBranchesToUnsample(traceTreeData TraceTreeData) map[pcommon.SpanID]bool {
+func (its *inTraceSamplerProcessor) getScopeBranchesToUnsample(traceTreeData traceTreeData) map[pcommon.SpanID]bool {
 	unsampledScopes := make(map[pcommon.SpanID]bool, 0)
 	for _, rootSpanID := range traceTreeData.roots {
 		its.getScopeBranchesToUnsampleRec(traceTreeData, rootSpanID, unsampledScopes)
