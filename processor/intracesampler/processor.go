@@ -124,13 +124,13 @@ func spansToTraceTree(td ptrace.Traces) traceTreeData {
 		}
 	}
 
-	traceTreeData := traceTreeData{
+	ttd := traceTreeData{
 		fullSpans: fullSpans,
 		children:  spanChildren,
 		roots:     roots,
 	}
 
-	return traceTreeData
+	return ttd
 }
 
 // check if all spans in td are from the span trace id.
