@@ -45,7 +45,7 @@ func (s *scraper) recordMemoryUtilizationMetric(now pcommon.Timestamp, memInfo *
 }
 
 func (s *scraper) recordMemoryUtilizationMetricAdditionalStates(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Used)/float64(memInfo.Total), metadata.AttributeStateUsed)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Sreclaimable)/float64(memInfo.Total), metadata.AttributeStateSlabReclaimable)
 	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Sunreclaim)/float64(memInfo.Total), metadata.AttributeStateSlabUnreclaimable)
 	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Available)/float64(memInfo.Total), metadata.AttributeStateAvailable)
 }
