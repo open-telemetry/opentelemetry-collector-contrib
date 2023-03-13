@@ -14,7 +14,7 @@
 
 package main
 
-var distros map[string]string = map[string]string{
+var distros = map[string]string{
 	"core":    "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol",
 	"contrib": "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib",
 }
