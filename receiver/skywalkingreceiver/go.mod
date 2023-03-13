@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rc7
 	go.opentelemetry.io/collector/receiver v0.73.0
 	go.opentelemetry.io/collector/semconv v0.73.0
-	go.uber.org/multierr v1.9.0
+	go.uber.org/multierr v1.10.0
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.1
 	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f
