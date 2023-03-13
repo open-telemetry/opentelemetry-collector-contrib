@@ -43,7 +43,6 @@ type Manager struct {
 	persister     operator.Persister
 
 	pollInterval    time.Duration
-	maxBatches      int
 	maxBatchFiles   int
 	deleteAfterRead bool
 
@@ -253,7 +252,7 @@ func (m *Manager) makeReader(filePath string) *Reader {
 		return nil
 	}
 	if len(fp.FirstBytes) == 0 {
-		if err := file.Close(); err != nil {
+		if err = file.Close(); err != nil {
 			m.Errorf("problem closing file", "file", file.Name())
 		}
 		// Empty file, don't read it until we can compare its fingerprint
@@ -266,12 +265,11 @@ func (m *Manager) makeReader(filePath string) *Reader {
 		fp2 := m.currentFps[i]
 		if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
 			// Exclude
-			if err := file.Close(); err != nil {
+			if err = file.Close(); err != nil {
 				m.Errorf("problem closing file", "file", file.Name())
 			}
 			m.currentFiles = m.currentFiles[:len(m.currentFiles)-1]
 			m.currentFps = m.currentFps[:len(m.currentFps)-1]
-			i--
 			return nil
 		}
 	}
