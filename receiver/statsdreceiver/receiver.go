@@ -116,8 +116,8 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 			case <-ticker.C:
 				batchMetrics := r.parser.GetMetrics()
 				for _, batch := range batchMetrics {
-					ctx := client.NewContext(ctx, batch.Info)
-					r.Flush(ctx, batch.Metrics, r.nextConsumer)
+					batchCtx := client.NewContext(ctx, batch.Info)
+					r.Flush(batchCtx, batch.Metrics, r.nextConsumer)
 				}
 			case metric := <-transferChan:
 				_ = r.parser.Aggregate(metric.Raw, metric.Addr)
