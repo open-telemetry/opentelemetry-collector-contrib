@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerosp
 go 1.19
 
 require (
-	github.com/aerospike/aerospike-client-go/v6 v6.10.0
+	github.com/aerospike/aerospike-client-go/v6 v6.11.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.73.0
 	github.com/stretchr/testify v1.8.2
