@@ -5,7 +5,7 @@ change_type: bug_fix
 component: probabilisticsamplerprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix panic in probabilisticsampler processor if a log attribute to be sampled on is not of type Bytes.
+note: Fix panic in probabilisticsampler processor if a log attribute to be sampled on is of type String.
 
 # One or more tracking issues related to the change
 issues: [18222]
