@@ -532,23 +532,23 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 
 func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	newPod := c.podFromAPI(pod)
-
+	c.logger.Info("[TEMPORARY] watch pod info", zap.Any("info", *newPod))
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	for _, id := range c.getIdentifiersFromAssoc(newPod) {
+	for i, id := range c.getIdentifiersFromAssoc(newPod) {
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
 		// and only replace old pod if scheduled time of new pod is newer or equal.
 		// This should fix the case where scheduler has assigned the same attributes (like IP address)
 		// to a new pod but update event for the old pod came in later.
-		c.logger.Info("[TEMPORARY] try to add pod identifier to cache", zap.Any("pod", pod.Name), zap.Any("identifier", id))
+		c.logger.Info(fmt.Sprintf("[TEMPORARY] try to add [%d]th pod identifier to cache", i), zap.Any("pod", pod.Name), zap.Any("identifier", id))
 		if p, ok := c.Pods[id]; ok {
 			if pod.Status.StartTime.Before(p.StartTime) {
 				continue
 			}
 		}
 		c.Pods[id] = newPod
-		c.logger.Info("[TEMPORARY] added pod identifier to cache", zap.Any("pod", pod.Name), zap.Any("identifier", id))
+		c.logger.Info(fmt.Sprintf("[TEMPORARY] added [%d]th pod identifier to cache", i), zap.Any("pod", pod.Name), zap.Any("identifier", id))
 	}
 }
 
