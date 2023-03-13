@@ -354,7 +354,8 @@ CERT_DIRS := receiver/sapmreceiver/testdata \
              receiver/signalfxreceiver/testdata \
              receiver/splunkhecreceiver/testdata \
              receiver/mongodbatlasreceiver/testdata/alerts/cert \
-             receiver/mongodbreceiver/testdata/certs
+             receiver/mongodbreceiver/testdata/certs \
+             receiver/cloudflarereceiver/testdata/cert
 
 # Generate certificates for unit tests relying on certificates.
 .PHONY: certs
