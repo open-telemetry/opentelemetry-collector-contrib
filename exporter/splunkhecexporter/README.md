@@ -35,7 +35,7 @@ The following configuration options can also be configured:
 - `max_content_length_metrics` (default: 2097152): Maximum metric payload size in bytes. Metric batches of bigger size
   will be broken down into several requests. Default value is 2097152 bytes (2 MiB). Maximum allowed value is 838860800
   (~ 800 MB). When set to 0, it will treat as infinite length and it will create only one request per batch.
-- `max_content_length_metrics` (default: 2097152): Maximum trace payload size in bytes. Trace batches of bigger size
+- `max_content_length_traces` (default: 2097152): Maximum trace payload size in bytes. Trace batches of bigger size
   will be broken down into several requests. Default value is 2097152 bytes (2 MiB). Maximum allowed value is 838860800
   (~ 800 MB). When set to 0, it will treat as infinite length and it will create only one request per batch.
 - `splunk_app_name` (default: "OpenTelemetry Collector Contrib") App name is used to track telemetry information for Splunk App's using HEC by App name.
