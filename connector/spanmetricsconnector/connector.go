@@ -321,17 +321,39 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 type resourceKey [16]byte
 
 func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {
-	key := resourceKey(pdatautil.MapHash(attr))
+	key, attributes := resourceKeyAndAttributes(attr, p.config.Resources)
 	v, ok := p.resourceMetrics[key]
 	if !ok {
 		v = &resourceMetrics{
 			histograms: p.initHistogramMetrics(),
 			sums:       metrics.NewSumMetrics(),
-			attributes: attr,
+			attributes: attributes,
 		}
 		p.resourceMetrics[key] = v
 	}
 	return v
+}
+
+func resourceKeyAndAttributes(resourceAttr pcommon.Map, config ResourceConfig) (resourceKey, pcommon.Map) {
+	attributes := pcommon.NewMap()
+	key := resourceKey{}
+	if !config.Enable {
+		return key, attributes
+	}
+
+	if len(config.Attributes.Keep) > 0 {
+		r := make(map[string]any)
+		for _, k := range config.Attributes.Keep {
+			if v, ok := resourceAttr.Get(k); ok {
+				r[k] = v.AsRaw()
+			}
+		}
+		_ = attributes.FromRaw(r)
+	} else {
+		attributes = resourceAttr
+	}
+
+	return pdatautil.MapHash(attributes), attributes
 }
 
 func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {

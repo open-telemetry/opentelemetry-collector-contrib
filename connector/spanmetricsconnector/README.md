@@ -40,6 +40,10 @@ visit the [Connectors README].
 
 The following settings can be optionally configured:
 
+- `resources`: Use to configure generation of the metrics resource attributes.
+  - `enable` (default: `true`): Use to toggle on/off generation of the metrics resource attributes.
+  - `attributes`:
+    - `keep`: A list of attribute keys to keep in the resource attributes.
 - `histogram` (default: `explicit_buckets`): Use to configure the type of histogram to record
   calculated from spans duration measurements.
   - `unit` (default: `ms`, allowed values: `ms`, `s`): The time unit for recording duration measurements.

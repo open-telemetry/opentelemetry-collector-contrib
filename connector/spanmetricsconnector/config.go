@@ -42,6 +42,9 @@ type Dimension struct {
 
 // Config defines the configuration options for spanmetricsconnector.
 type Config struct {
+	// Use to configure metrics resource attributes generation
+	Resources ResourceConfig `mapstructure:"resources"`
+
 	// Dimensions defines the list of additional dimensions on top of the provided:
 	// - service.name
 	// - span.kind
@@ -65,6 +68,15 @@ type Config struct {
 
 	// Namespace is the namespace of the metrics emitted by the connector.
 	Namespace string `mapstructure:"namespace"`
+}
+
+type ResourceConfig struct {
+	Enable     bool       `mapstructure:"enable"`
+	Attributes Attributes `mapstructure:"attributes"`
+}
+
+type Attributes struct {
+	Keep []string `mapstructure:"keep"`
 }
 
 type HistogramConfig struct {
@@ -100,6 +112,13 @@ func (c Config) Validate() error {
 
 	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
+	}
+
+	if !c.Resources.Enable {
+		if len(c.Resources.Attributes.Keep) != 0 {
+			return errors.New("resource attributes generation is disabled." +
+				" You cannot use resource attributes configuration options")
+		}
 	}
 	return nil
 }

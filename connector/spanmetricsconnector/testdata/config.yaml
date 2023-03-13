@@ -8,6 +8,12 @@ spanmetrics/default_explicit_histogram:
 
 # configuration with all possible parameters
 spanmetrics/full:
+  resources:
+    enable: true
+    attributes:
+      keep:
+        - service.name
+        - service.namespace
   histogram:
     unit: "s"
     explicit:
@@ -55,3 +61,11 @@ spanmetrics/exponential_and_explicit_histogram:
 spanmetrics/invalid_histogram_unit:
   histogram:
     unit: "h"
+
+spanmetrics/disabled_resource_generation_and_filter_options:
+  resources:
+    enable: false
+    attributes:
+      keep:
+        - service.name
+        - service.namespace

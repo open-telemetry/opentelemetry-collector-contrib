@@ -52,6 +52,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "full"),
 			expected: &Config{
+				Resources: ResourceConfig{
+					Enable: true,
+					Attributes: Attributes{
+						Keep: []string{"service.name", "service.namespace"},
+					},
+				},
 				AggregationTemporality: delta,
 				Dimensions: []Dimension{
 					{Name: "http.method", Default: &defaultMethod},
@@ -93,8 +99,11 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(typeStr, "invalid_histogram_unit"),
 			errorMessage: "unknown Unit \"h\"",
 		},
+		{
+			id:           component.NewIDWithName(typeStr, "disabled_resource_generation_and_filter_options"),
+			errorMessage: "resource attributes generation is disabled. You cannot use resource attributes configuration options",
+		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			factory := NewFactory()

@@ -773,6 +773,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 
 func newConnectorImp(t *testing.T, mcon consumer.Metrics, defaultNullValue *string, histogramConfig func() HistogramConfig, temporality string, logger *zap.Logger, ticker *clock.Ticker) *connectorImp {
 	cfg := &Config{
+		Resources:              ResourceConfig{Enable: true},
 		AggregationTemporality: temporality,
 		Histogram:              histogramConfig(),
 		DimensionsCacheSize:    DimensionsCacheSize,
@@ -982,6 +983,89 @@ func TestConnector_durationsToUnits(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			got := durationsToUnits(tt.input, unitDivider(tt.unit))
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestConnector_resourceKeyAndAttributes(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    func() pcommon.Map
+		cfg      ResourceConfig
+		wantAttr func() pcommon.Map
+		wantKey  resourceKey
+	}{
+		{
+			name: "disable resource attributes",
+			input: func() pcommon.Map {
+				m := pcommon.NewMap()
+				_ = m.FromRaw(map[string]any{
+					"key1": "test",
+					"key2": "test",
+				})
+				return m
+			},
+			cfg: ResourceConfig{
+				Enable: false,
+			},
+			wantAttr: func() pcommon.Map {
+				return pcommon.NewMap()
+			},
+			wantKey: resourceKey{},
+		},
+		{
+			name: "enable resource attributes",
+			input: func() pcommon.Map {
+				m := pcommon.NewMap()
+				_ = m.FromRaw(map[string]any{
+					"key1": "test",
+				})
+				return m
+			},
+			cfg: ResourceConfig{
+				Enable: true,
+			},
+			wantAttr: func() pcommon.Map {
+				m := pcommon.NewMap()
+				_ = m.FromRaw(map[string]any{
+					"key1": "test",
+				})
+				return m
+			},
+			wantKey: resourceKey{0xb6, 0x5a, 0xba, 0x58, 0xad, 0x1, 0xd2, 0xed, 0x86, 0xf2, 0x28, 0x12, 0xfe, 0xf6, 0x4c, 0xeb},
+		},
+		{
+			name: "enable resource attributes with attributes keep config",
+			input: func() pcommon.Map {
+				m := pcommon.NewMap()
+				_ = m.FromRaw(map[string]any{
+					"key1": "test",
+					"key2": "test",
+					"key3": "test",
+				})
+				return m
+			},
+			cfg: ResourceConfig{
+				Enable: true,
+				Attributes: Attributes{
+					Keep: []string{"key2"},
+				},
+			},
+			wantAttr: func() pcommon.Map {
+				m := pcommon.NewMap()
+				_ = m.FromRaw(map[string]any{
+					"key2": "test",
+				})
+				return m
+			},
+			wantKey: resourceKey{0xe2, 0xc0, 0x13, 0x69, 0xe5, 0x48, 0x68, 0x9d, 0x92, 0xaf, 0xb9, 0xf7, 0xb6, 0x44, 0x1d, 0x8e},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotKey, gotAttr := resourceKeyAndAttributes(tt.input(), tt.cfg)
+			assert.Equal(t, tt.wantKey, gotKey)
+			assert.Equal(t, tt.wantAttr(), gotAttr)
 		})
 	}
 }
