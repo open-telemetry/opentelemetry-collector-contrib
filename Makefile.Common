@@ -92,7 +92,7 @@ all-pkg-dirs:
 .DEFAULT_GOAL := common
 
 .PHONY: common
-common: checklicense lint vulncheck misspell
+common: lint
 
 .PHONY: test
 test:
@@ -167,7 +167,7 @@ lint: $(LINT) checklicense misspell vulncheck
 	$(LINT) run --allow-parallel-runners --build-tags integration
 
 .PHONY: vulncheck
-vulncheck: $(LINT) checklicense misspell vulncheck
+vulncheck:
 	$(VULNCHECK)
 
 .PHONY: tidy
