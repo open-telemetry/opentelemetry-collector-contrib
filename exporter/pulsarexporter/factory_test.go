@@ -17,6 +17,7 @@ package pulsarexporter
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,9 +33,12 @@ func Test_createDefaultConfig(t *testing.T) {
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		Endpoint:        defaultBroker,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:          "",
-		Encoding:       defaultEncoding,
-		Authentication: Authentication{},
+		Topic:                   "",
+		Encoding:                defaultEncoding,
+		Authentication:          Authentication{},
+		MaxConnectionsPerBroker: 1,
+		ConnectionTimeout:       5 * time.Second,
+		OperationTimeout:        30 * time.Second,
 	})
 }
 

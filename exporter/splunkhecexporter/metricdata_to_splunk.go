@@ -15,9 +15,12 @@
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
+	"hash/fnv"
 	"math"
 	"strconv"
+	"strings"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -232,7 +235,20 @@ func createEvent(timestamp pcommon.Timestamp, host string, source string, source
 		Event:      splunk.HecEventMetricType,
 		Fields:     fields,
 	}
+}
 
+func copyEventWithoutValues(event *splunk.Event) *splunk.Event {
+	return &splunk.Event{
+		Time:       event.Time,
+		Host:       event.Host,
+		Source:     event.Source,
+		SourceType: event.SourceType,
+		Index:      event.Index,
+		Event:      event.Event,
+		Fields: cloneMapWithSelector(event.Fields, func(key string) bool {
+			return !strings.HasPrefix(key, splunkMetricValue)
+		}),
+	}
 }
 
 func populateAttributes(fields map[string]interface{}, attributeMap pcommon.Map) {
@@ -246,6 +262,16 @@ func cloneMap(fields map[string]interface{}) map[string]interface{} {
 	newFields := make(map[string]interface{}, len(fields))
 	for k, v := range fields {
 		newFields[k] = v
+	}
+	return newFields
+}
+
+func cloneMapWithSelector(fields map[string]interface{}, selector func(string) bool) map[string]interface{} {
+	newFields := make(map[string]interface{}, len(fields))
+	for k, v := range fields {
+		if selector(k) {
+			newFields[k] = v
+		}
 	}
 	return newFields
 }
@@ -266,4 +292,37 @@ func timestampToSecondsWithMillisecondPrecision(ts pcommon.Timestamp) *float64 {
 
 func float64ToDimValue(f float64) string {
 	return strconv.FormatFloat(f, 'g', -1, 64)
+}
+
+// merge metric events to adhere to the multimetric format event.
+func mergeEventsToMultiMetricFormat(events []*splunk.Event) ([]*splunk.Event, error) {
+	hashes := map[uint32]*splunk.Event{}
+	hasher := fnv.New32a()
+	var merged []*splunk.Event
+
+	for _, e := range events {
+		cloned := copyEventWithoutValues(e)
+		data, err := jsoniter.Marshal(cloned)
+		if err != nil {
+			return nil, err
+		}
+		_, err = hasher.Write(data)
+		if err != nil {
+			return nil, err
+		}
+		hashed := hasher.Sum32()
+		hasher.Reset()
+		src, ok := hashes[hashed]
+		if !ok {
+			hashes[hashed] = e
+			merged = append(merged, e)
+		} else {
+			for field, value := range e.Fields {
+				if strings.HasPrefix(field, splunkMetricValue) {
+					src.Fields[field] = value
+				}
+			}
+		}
+	}
+	return merged, nil
 }
