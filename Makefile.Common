@@ -168,7 +168,7 @@ lint: $(LINT) checklicense misspell vulncheck
 
 .PHONY: vulncheck
 vulncheck:
-	$(VULNCHECK)
+	$(GOVULNCHECK) ./...
 
 .PHONY: tidy
 tidy:
