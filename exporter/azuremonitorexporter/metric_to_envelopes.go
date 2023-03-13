@@ -135,6 +135,8 @@ func (m scalarMetric) getTimedDataPoints() []*timedMetricDataPoint {
 			dataPoint.Value = numberDataPoint.DoubleValue()
 		case pmetric.NumberDataPointValueTypeInt:
 			dataPoint.Value = float64(numberDataPoint.IntValue())
+		case pmetric.NumberDataPointValueTypeEmpty:
+			dataPoint.Value = 0
 		}
 		dataPoint.Count = 1
 		dataPoint.Kind = contracts.Measurement
