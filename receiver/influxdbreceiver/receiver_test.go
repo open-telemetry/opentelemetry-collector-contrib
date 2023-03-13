@@ -16,9 +16,11 @@ package influxdbreceiver
 
 import (
 	"context"
-	"github.com/influxdata/influxdb-client-go/v2"
+	"testing"
+	"time"
+
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	influxdb1 "github.com/influxdata/influxdb1-client/v2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -26,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"testing"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestWriteLineProtocol_v2API(t *testing.T) {
@@ -39,8 +41,8 @@ func TestWriteLineProtocol_v2API(t *testing.T) {
 	}
 	nextConsumer := new(mockConsumer)
 
-	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, nextConsumer)
-	require.NoError(t, err)
+	receiver, outerErr := NewFactory().CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, nextConsumer)
+	require.NoError(t, outerErr)
 	require.NotNil(t, receiver)
 
 	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
@@ -80,7 +82,7 @@ func TestWriteLineProtocol_v2API(t *testing.T) {
 		client := influxdb2.NewClient("http://"+addr, "")
 		t.Cleanup(client.Close)
 
-		err = client.WriteAPIBlocking("my-org", "my-bucket").WriteRecord(context.Background(), "cpu_temp,foo=bar gauge=87.332")
+		err := client.WriteAPIBlocking("my-org", "my-bucket").WriteRecord(context.Background(), "cpu_temp,foo=bar gauge=87.332")
 		require.NoError(t, err)
 
 		metrics := nextConsumer.lastMetricsConsumed
