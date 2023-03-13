@@ -37,10 +37,10 @@ func TestReceiver(t *testing.T) {
 	}
 	err := r.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	const numExpectedMetrics = 10
 	assert.Eventually(t, func() bool {
-		return assert.Equal(t, numExpectedMetrics, tc.numConsumed())
-	}, time.Second, 10*time.Millisecond)
+		const numExpectedMetrics = 10
+		return numExpectedMetrics == tc.numConsumed()
+	}, 2*time.Second, 100*time.Millisecond)
 	err = r.Shutdown(context.Background())
 	assert.NoError(t, err)
 }

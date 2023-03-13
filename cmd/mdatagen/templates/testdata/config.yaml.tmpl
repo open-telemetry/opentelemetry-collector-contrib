@@ -1,11 +1,23 @@
 default:
-all_metrics:
-  {{- range $name, $_ := .Metrics }}
-  {{ $name }}:
-    enabled: true
-  {{- end }}
-no_metrics:
-  {{- range $name, $_ := .Metrics }}
-  {{ $name }}:
-    enabled: false
-  {{- end }}
+all_set:
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+none_set:
+  metrics:
+    {{- range $name, $_ := .Metrics }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  resource_attributes:
+    {{- range $name, $_ := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}

@@ -1323,6 +1323,36 @@ func TestMaxBatching(t *testing.T) {
 	}
 }
 
+// TestReadExistingLogsWithHeader tests that, when starting from beginning, we
+// read all the lines that are already there, and parses the headers
+func TestReadExistingLogsWithHeader(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), false))
+	})
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
+
+	operator, emitCalls := buildTestManager(t, cfg)
+
+	// Create a file, then start
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "#headerField: headerValue\ntestlog\n")
+
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	waitForTokenHeaderAttributes(t, emitCalls, []byte("testlog"), map[string]any{
+		"header_key":   "headerField",
+		"header_value": "headerValue",
+	})
+}
+
 func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	bytesPerLine := 100
 	shortFileLine := tokenWithLength(bytesPerLine - 1)
@@ -1393,4 +1423,91 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.Equal(t, longFile.Name(), reader.file.Name())
 	require.Greater(t, reader.Offset, int64(0))
 	require.Less(t, reader.Offset, int64(longFileSize))
+}
+
+func TestHeaderPersistance(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), false))
+	})
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
+
+	op1, emitCalls1 := buildTestManager(t, cfg)
+
+	// Create a file, then start
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "#headerField: headerValue\nlog line\n")
+
+	persister := testutil.NewUnscopedMockPersister()
+	require.NoError(t, op1.Start(persister))
+
+	waitForTokenHeaderAttributes(t, emitCalls1, []byte("log line"), map[string]any{
+		"header_key":   "headerField",
+		"header_value": "headerValue",
+	})
+
+	require.NoError(t, op1.Stop())
+
+	writeString(t, temp, "log line 2\n")
+
+	op2, emitCalls2 := buildTestManager(t, cfg)
+
+	require.NoError(t, op2.Start(persister))
+
+	waitForTokenHeaderAttributes(t, emitCalls2, []byte("log line 2"), map[string]any{
+		"header_key":   "headerField",
+		"header_value": "headerValue",
+	})
+
+	require.NoError(t, op2.Stop())
+
+}
+
+func TestHeaderPersistanceInHeader(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), false))
+	})
+
+	tempDir := t.TempDir()
+	cfg1 := NewConfig().includeDir(tempDir)
+	cfg1.StartAt = "beginning"
+	cfg1 = cfg1.withHeader(`^\|`, "headerField1: (?P<header_value_1>[A-z0-9]+)")
+
+	op1, _ := buildTestManager(t, cfg1)
+
+	// Create a file, then start
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "|headerField1: headerValue1\n")
+
+	persister := testutil.NewUnscopedMockPersister()
+	require.NoError(t, op1.Start(persister))
+
+	// The operator will poll at fixed time intervals, but we just want to make sure at least
+	// one poll operation occurs between now and when we stop.
+	op1.poll(context.Background())
+
+	require.NoError(t, op1.Stop())
+
+	writeString(t, temp, "|headerField2: headerValue2\nlog line\n")
+
+	cfg2 := NewConfig().includeDir(tempDir)
+	cfg2.StartAt = "beginning"
+	cfg2 = cfg2.withHeader(`^\|`, "headerField2: (?P<header_value_2>[A-z0-9]+)")
+
+	op2, emitCalls := buildTestManager(t, cfg2)
+
+	require.NoError(t, op2.Start(persister))
+
+	waitForTokenHeaderAttributes(t, emitCalls, []byte("log line"), map[string]any{
+		"header_value_1": "headerValue1",
+		"header_value_2": "headerValue2",
+	})
+
+	require.NoError(t, op2.Stop())
+
 }

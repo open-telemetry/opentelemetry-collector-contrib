@@ -67,6 +67,15 @@ func TestConfig(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "header_delimiter",
+				Expect: func() *Config {
+					p := NewConfig()
+					p.Header = "id\tseverity\tmessage"
+					p.HeaderDelimiter = "\t"
+					return p
+				}(),
+			},
+			{
 				Name: "header_attribute",
 				Expect: func() *Config {
 					p := NewConfig()

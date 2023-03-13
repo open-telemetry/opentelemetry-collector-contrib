@@ -46,7 +46,7 @@ func TestNewFactory(t *testing.T) {
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: 10 * time.Second,
 					},
-					Metrics: metadata.DefaultMetricsSettings(),
+					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"go.uber.org/atomic"
 	"golang.org/x/text/message"
 )
 
@@ -127,7 +127,7 @@ func (lg *LoadGenerator) DataItemsSent() uint64 {
 // reports to use their own counter and load generator and other sending sources
 // to contribute to this counter. This could be done as a future improvement.
 func (lg *LoadGenerator) IncDataItemsSent() {
-	lg.dataItemsSent.Inc()
+	lg.dataItemsSent.Add(1)
 }
 
 func (lg *LoadGenerator) generate() {
