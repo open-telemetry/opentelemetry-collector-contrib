@@ -99,10 +99,22 @@ processors:
     override: false
 ```
 
-### Heroku dyno id
+### Heroku metadata
 
-In a Heroku application, the [dyno id](https://devcenter.heroku.com/articles/dyno-metadata) is the identifier of the virtualized environment ("dyno") where the application runs.
+When [Heroku dyno metadata is active](https://devcenter.heroku.com/articles/dyno-metadata), Heroku applications publish information through environment variables.
 
+We map these environment variables to resource attributes as follows:
+
+| Dyno metadata environment variable | Resource attribute                  |
+|------------------------------------|-------------------------------------|
+| `HEROKU_APP_ID`                    | `heroku.app.id`                     |
+| `HEROKU_APP_NAME`                  | `service.name`                      |
+| `HEROKU_DYNO_ID`                   | `service.instance.id`               |
+| `HEROKU_RELEASE_CREATED_AT`        | `heroku.release.creation_timestamp` |
+| `HEROKU_RELEASE_VERSION`           | `service.version`                   |
+| `HEROKU_SLUG_COMMIT`               | `heroku.release.commit`             |
+
+For more information, see the [Heroku cloud provider documentation](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/heroku.md) under the [OpenTelemetry specification semantic conventions](https://github.com/open-telemetry/opentelemetry-specification).
 
 ```yaml
 processors:
