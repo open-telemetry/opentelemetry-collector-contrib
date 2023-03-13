@@ -1,0 +1,20 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: breaking
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: hostmetricsreceiver
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Data points for slab_reclaimable and slab_unreclaimable memory states are now disabled by default.
+
+# One or more tracking issues related to the change
+issues: [7417]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The old behavior can be preserved by setting the enable_additional_memory_states config option to true. 
+  NOTE: When either of slab_reclaimable, slab_unreclaimable or available memory states is enabled,
+  all the memory states don't sum up well (the result exceeds `total` memory).
+  For more details, see the discussion https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7417.
