@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.73.0
-	github.com/prometheus/common v0.41.0
+	github.com/prometheus/common v0.42.0
 	github.com/prometheus/prometheus v0.42.1-0.20230210113933-af1d9e01c7e4
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.73.0
