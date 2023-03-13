@@ -1722,8 +1722,8 @@ github.com/linkedin/goavro/v2 v2.9.8 h1:jN50elxBsGBDGVDEKqUlDuU1cFwJ11K/yrJCBMe/
 github.com/linkedin/goavro/v2 v2.9.8/go.mod h1:UgQUb2N/pmueQYH9bfqFioWxzYCZXSfF8Jw03O5sjqA=
 github.com/linode/linodego v1.12.0 h1:33mOIrZ+gVva14gyJMKPZ85mQGovAvZCEP1ftgmFBjA=
 github.com/linode/linodego v1.12.0/go.mod h1:NJlzvlNtdMRRkXb0oN6UWzUkj6t+IBsyveHgZ5Ppjyk=
-github.com/logicmonitor/lm-data-sdk-go v0.8.0 h1:G6WVxld0Zp/ldBRraWFdm9R5usSGkzFvPIJZ3KIGCqA=
-github.com/logicmonitor/lm-data-sdk-go v0.8.0/go.mod h1:eY1lZvccWG0Nm9Y68VKdmvqbmEUcTIHg3KG41U4M1Po=
+github.com/logicmonitor/lm-data-sdk-go v1.0.0 h1:2eiz7kq3G0rLc/hqVpsk1c2B0PMjp6nLhHzc5SmTn80=
+github.com/logicmonitor/lm-data-sdk-go v1.0.0/go.mod h1:XvYS9xp/0WrPpc6ge2O3ZPn2dgbKO46PnfCfbKaeUu8=
 github.com/logrusorgru/aurora v0.0.0-20181002194514-a7b3b318ed4e/go.mod h1:7rIyQOR62GCctdiQpZ/zOJlFyk6y+94wXzv6RNZgaR4=
 github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0/go.mod h1:zJYVVT2jmtg6P3p1VtQj7WsuWi/y4VnjVBn7F8KPB3I=
 github.com/lufia/plan9stats v0.0.0-20220517141722-cf486979b281 h1:aczX6NMOtt6L4YT0fQvKkDK6LZEtdOso9sUH89V1+P0=
