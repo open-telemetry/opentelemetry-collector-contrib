@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.73.0
 	go.opentelemetry.io/collector/exporter v0.73.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc7
-	go.uber.org/multierr v1.9.0
+	go.uber.org/multierr v1.10.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
