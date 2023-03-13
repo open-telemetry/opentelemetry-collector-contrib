@@ -101,7 +101,7 @@ receivers:
 exporters:
   nop:
 
-connector:
+connectors:
   spanmetrics:
     histogram:
       explicit:
@@ -146,7 +146,7 @@ exporters:
      target_info:
        enabled: true
 
-connector:
+connectors:
   spanmetrics:
     namespace: span.metrics
 
