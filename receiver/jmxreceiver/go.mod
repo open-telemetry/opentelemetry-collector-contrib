@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.73.0
 	github.com/shirou/gopsutil/v3 v3.23.2
 	github.com/stretchr/testify v1.8.2
-	github.com/testcontainers/testcontainers-go v0.18.0
+	github.com/testcontainers/testcontainers-go v0.19.0
 	go.opentelemetry.io/collector v0.73.0
 	go.opentelemetry.io/collector/component v0.73.0
 	go.opentelemetry.io/collector/confmap v0.73.0
@@ -22,7 +22,8 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
-	github.com/containerd/containerd v1.6.18 // indirect
+	github.com/containerd/containerd v1.6.19 // indirect
+	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v23.0.1+incompatible // indirect
