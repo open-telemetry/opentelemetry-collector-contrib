@@ -55,6 +55,11 @@ const (
 	// Centralizing some HTTP and related string constants.
 	gzipEncoding              = "gzip"
 	httpContentEncodingHeader = "Content-Encoding"
+
+	// splunk metadata
+	index      = "index"
+	source     = "source"
+	sourcetype = "sourcetype"
 )
 
 var (
@@ -72,6 +77,13 @@ var (
 	errInternalServerError    = initJSONResponse(responseErrInternalServerError)
 	errUnsupportedMetricEvent = initJSONResponse(responseErrUnsupportedMetricEvent)
 	errUnsupportedLogEvent    = initJSONResponse(responseErrUnsupportedLogEvent)
+
+	//splunk metadata
+	metadataMap = map[string]string{
+		index:      splunk.DefaultIndexLabel,
+		source:     splunk.DefaultSourceLabel,
+		sourcetype: splunk.DefaultSourceTypeLabel,
+	}
 )
 
 // splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
@@ -273,8 +285,9 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	if resourceCustomizer != nil {
 		resourceCustomizer(rl.Resource())
 	}
-	sl := rl.ScopeLogs().AppendEmpty()
+	appendMetadataToResource(rl.Resource(), req)
 
+	sl := rl.ScopeLogs().AppendEmpty()
 	for sc.Scan() {
 		logRecord := sl.LogRecords().AppendEmpty()
 		logLine := sc.Text()
@@ -479,4 +492,11 @@ func isFlatJSONField(field interface{}) bool {
 		}
 	}
 	return true
+}
+func appendMetadataToResource(resource pcommon.Resource, req *http.Request) {
+	for k, v := range metadataMap {
+		if q := req.URL.Query().Get(k); q != "" {
+			resource.Attributes().PutStr(v, q)
+		}
+	}
 }
