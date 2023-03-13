@@ -404,9 +404,9 @@ require (
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
-	github.com/influxdata/influxdb-observability/common v0.3.3 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.3.3 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.3.3 // indirect
+	github.com/influxdata/influxdb-observability/common v0.3.4 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.3.4 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.3.4 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.3 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
@@ -601,7 +601,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
-	go.uber.org/multierr v1.9.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/exp v0.0.0-20230306221820-f0f767cdffd6 // indirect
