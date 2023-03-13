@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxray // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 
 import (
 	"errors"
@@ -27,9 +27,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/xray"
-	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 const (
@@ -41,9 +41,7 @@ const (
 	defaultInterval = time.Minute
 )
 
-var registry sync.Map
-
-type Telemetry interface {
+type Recorder interface {
 	// Start send loop.
 	Start()
 	// Stop send loop.
@@ -60,28 +58,17 @@ type Telemetry interface {
 	RecordConnectionError(err error)
 }
 
-type TelemetryConfig struct {
-	// Enabled determines whether any telemetry should be recorded.
-	Enabled bool `mapstructure:"enabled"`
-	// IncludeMetadata determines whether metadata (instance ID, hostname, resourceARN)
-	// should be included in the telemetry.
-	IncludeMetadata bool `mapstructure:"include_metadata"`
-	// Contributors can be used to explicitly define which X-Ray components are contributing to the telemetry.
-	// If omitted, only X-Ray components with the same component.ID as the setup component will have access.
-	Contributors []component.ID `mapstructure:"contributors"`
-}
-
 type telemetryRecorder struct {
 	resourceARN string
 	instanceID  string
 	hostname    string
 
 	// client is used to send the records.
-	client XRayClient
+	client awsxray.XRayClient
 	// record is the pointer to the count metrics for the current period.
 	record *xray.TelemetryRecord
 	// mu is the lock used when updating the record. Primarily exists to
-	// prevent write while swapping the record out in cutoff.
+	// prevent writes while swapping the record out in cutoff.
 	mu sync.Mutex
 
 	// queue is used to keep records that failed to send for retry during
@@ -100,40 +87,12 @@ type telemetryRecorder struct {
 	stopOnce  sync.Once
 }
 
-// GetTelemetry gets the associated recorder for the ID.
-func GetTelemetry(id component.ID) Telemetry {
-	recorder, ok := registry.Load(id)
-	if ok {
-		return recorder.(Telemetry)
-	}
-	return nil
-}
-
-// SetupTelemetry configures and registers a new Telemetry for the ID.
-func SetupTelemetry(
-	id component.ID,
-	client XRayClient,
-	sess *session.Session,
-	cfg *TelemetryConfig,
-	settings *awsutil.AWSSessionSettings,
-) Telemetry {
-	recorder, ok := registry.Load(id)
-	if !ok {
-		recorder = newTelemetryRecorder(client, sess, cfg, settings)
-		registry.Store(id, recorder)
-		for _, contributor := range cfg.Contributors {
-			_, _ = registry.LoadOrStore(contributor, recorder)
-		}
-	}
-	return recorder.(Telemetry)
-}
-
 func newTelemetryRecorder(
-	client XRayClient,
+	client awsxray.XRayClient,
 	sess *session.Session,
-	cfg *TelemetryConfig,
+	cfg *Config,
 	settings *awsutil.AWSSessionSettings,
-) Telemetry {
+) Recorder {
 	recorder := &telemetryRecorder{
 		client:        client,
 		record:        newTelemetryRecord(),
@@ -275,38 +234,6 @@ func (t *telemetryRecorder) send(records []*xray.TelemetryRecord) ([]*xray.Telem
 	return nil, nil
 }
 
-func (t *telemetryRecorder) RecordConnectionError(err error) {
-	t.mu.Lock()
-	var requestFailure awserr.RequestFailure
-	if ok := errors.As(err, &requestFailure); ok {
-		statusCode := requestFailure.StatusCode()
-		switch {
-		case statusCode >= 500 && statusCode < 600:
-			atomic.AddInt64(t.record.BackendConnectionErrors.HTTPCode5XXCount, 1)
-		case statusCode >= 400 && statusCode < 500:
-			atomic.AddInt64(t.record.BackendConnectionErrors.HTTPCode4XXCount, 1)
-		default:
-			atomic.AddInt64(t.record.BackendConnectionErrors.OtherCount, 1)
-		}
-	} else {
-		var awsError awserr.Error
-		if ok = errors.As(err, &awsError); ok {
-			switch awsError.Code() {
-			case request.ErrCodeResponseTimeout:
-				atomic.AddInt64(t.record.BackendConnectionErrors.TimeoutCount, 1)
-			case request.ErrCodeRequestError:
-				atomic.AddInt64(t.record.BackendConnectionErrors.UnknownHostCount, 1)
-			default:
-				atomic.AddInt64(t.record.BackendConnectionErrors.OtherCount, 1)
-			}
-		} else {
-			atomic.AddInt64(t.record.BackendConnectionErrors.OtherCount, 1)
-		}
-	}
-	t.mu.Unlock()
-	t.recordUpdated.Store(true)
-}
-
 func (t *telemetryRecorder) RecordSegmentsReceived(count int) {
 	t.mu.Lock()
 	atomic.AddInt64(t.record.SegmentsReceivedCount, int64(count))
@@ -331,6 +258,70 @@ func (t *telemetryRecorder) RecordSegmentsSpillover(count int) {
 func (t *telemetryRecorder) RecordSegmentsRejected(count int) {
 	t.mu.Lock()
 	atomic.AddInt64(t.record.SegmentsRejectedCount, int64(count))
+	t.mu.Unlock()
+	t.recordUpdated.Store(true)
+}
+
+func (t *telemetryRecorder) RecordConnectionError(err error) {
+	var requestFailure awserr.RequestFailure
+	if ok := errors.As(err, &requestFailure); ok {
+		statusCode := requestFailure.StatusCode()
+		switch {
+		case statusCode >= 500 && statusCode < 600:
+			t.recordConnectionHTTPCode5XX(1)
+		case statusCode >= 400 && statusCode < 500:
+			t.recordConnectionHTTPCode4XX(1)
+		default:
+			t.recordConnectionOther(1)
+		}
+	} else {
+		var awsError awserr.Error
+		if ok = errors.As(err, &awsError); ok {
+			switch awsError.Code() {
+			case request.ErrCodeResponseTimeout:
+				t.recordConnectionTimeout(1)
+			case request.ErrCodeRequestError:
+				t.recordConnectionUnknownHost(1)
+			default:
+				t.recordConnectionOther(1)
+			}
+		} else {
+			t.recordConnectionOther(1)
+		}
+	}
+}
+
+func (t *telemetryRecorder) recordConnectionHTTPCode5XX(count int) {
+	t.mu.Lock()
+	atomic.AddInt64(t.record.BackendConnectionErrors.HTTPCode5XXCount, int64(count))
+	t.mu.Unlock()
+	t.recordUpdated.Store(true)
+}
+
+func (t *telemetryRecorder) recordConnectionHTTPCode4XX(count int) {
+	t.mu.Lock()
+	atomic.AddInt64(t.record.BackendConnectionErrors.HTTPCode4XXCount, int64(count))
+	t.mu.Unlock()
+	t.recordUpdated.Store(true)
+}
+
+func (t *telemetryRecorder) recordConnectionTimeout(count int) {
+	t.mu.Lock()
+	atomic.AddInt64(t.record.BackendConnectionErrors.TimeoutCount, int64(count))
+	t.mu.Unlock()
+	t.recordUpdated.Store(true)
+}
+
+func (t *telemetryRecorder) recordConnectionUnknownHost(count int) {
+	t.mu.Lock()
+	atomic.AddInt64(t.record.BackendConnectionErrors.UnknownHostCount, int64(count))
+	t.mu.Unlock()
+	t.recordUpdated.Store(true)
+}
+
+func (t *telemetryRecorder) recordConnectionOther(count int) {
+	t.mu.Lock()
+	atomic.AddInt64(t.record.BackendConnectionErrors.OtherCount, int64(count))
 	t.mu.Unlock()
 	t.recordUpdated.Store(true)
 }

@@ -30,10 +30,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 )
 
 const (
 	maxSegmentsPerPut = int(50) // limit imposed by PutTraceSegments API
+)
+
+var (
+	registry = telemetry.GlobalRegistry()
 )
 
 // newTracesExporter creates an exporter.Traces that converts to an X-Ray PutTraceSegments
@@ -51,9 +56,9 @@ func newTracesExporter(
 		return nil, err
 	}
 	xrayClient := awsxray.NewXRayClient(logger, awsConfig, set.BuildInfo, session)
-	var telemetry awsxray.Telemetry
+	var recorder telemetry.Recorder
 	if cfg.TelemetryConfig.Enabled {
-		telemetry = awsxray.SetupTelemetry(set.ID, xrayClient, session, &cfg.TelemetryConfig, &cfg.AWSSessionSettings)
+		recorder = registry.Register(set.ID, xrayClient, session, &cfg.TelemetryConfig, &cfg.AWSSessionSettings)
 	}
 	return exporterhelper.NewTracesExporter(
 		context.TODO(),
@@ -78,11 +83,11 @@ func newTracesExporter(
 				if localErr != nil {
 					logger.Debug("response error", zap.Error(localErr))
 					err = wrapErrorIfBadRequest(localErr) // record error
-					if telemetry != nil {
-						telemetry.RecordConnectionError(localErr)
+					if recorder != nil {
+						recorder.RecordConnectionError(localErr)
 					}
-				} else if telemetry != nil {
-					telemetry.RecordSegmentsSent(len(input.TraceSegmentDocuments))
+				} else if recorder != nil {
+					recorder.RecordSegmentsSent(len(input.TraceSegmentDocuments))
 				}
 				if output != nil {
 					logger.Debug("response: " + output.String())
@@ -94,14 +99,14 @@ func newTracesExporter(
 			return err
 		},
 		exporterhelper.WithStart(func(context.Context, component.Host) error {
-			if telemetry != nil {
-				telemetry.Start()
+			if recorder != nil {
+				recorder.Start()
 			}
 			return nil
 		}),
 		exporterhelper.WithShutdown(func(context.Context) error {
-			if telemetry != nil {
-				telemetry.Stop()
+			if recorder != nil {
+				recorder.Stop()
 			}
 			_ = logger.Sync()
 			return nil

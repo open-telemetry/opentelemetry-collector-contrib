@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -32,6 +33,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 )
 
 func TestTraceExport(t *testing.T) {
@@ -74,6 +76,8 @@ func TestW3CSpanTraceResourceExtraction(t *testing.T) {
 }
 
 func TestTelemetryEnabled(t *testing.T) {
+	// replace global registry for test
+	registry = telemetry.NewRegistry()
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
 	traceExporter := initializeTracesExporter(t, cfg)
@@ -84,6 +88,8 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.NotNil(t, err)
 	err = traceExporter.Shutdown(ctx)
 	assert.Nil(t, err)
+	recorder := registry.Get(component.NewID(""))
+	assert.NotNil(t, recorder)
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {

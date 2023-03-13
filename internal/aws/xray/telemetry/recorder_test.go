@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxray
+package telemetry
 
 import (
 	"context"
@@ -52,67 +52,16 @@ func (m *mockClient) PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (
 	return args.Get(0).(*xray.PutTelemetryRecordsOutput), args.Error(1)
 }
 
-func resetRegistry(t *testing.T) {
-	t.Helper()
-	registry.Range(func(key, _ any) bool {
-		registry.Delete(key)
-		return true
-	})
-}
-
-func TestRegistry(t *testing.T) {
-	resetRegistry(t)
-	newID := component.NewID("new")
-	contribID := component.NewID("contrib")
-	notCreatedID := component.NewID("not-created")
-	original := SetupTelemetry(
-		newID,
-		nil,
-		nil,
-		&TelemetryConfig{
-			IncludeMetadata: false,
-			Contributors:    []component.ID{contribID},
-		},
-		nil,
-	).(*telemetryRecorder)
-	assert.Empty(t, original.hostname)
-	assert.Empty(t, original.instanceID)
-	assert.Empty(t, original.resourceARN)
-	original.RecordSegmentsSpillover(2)
-	original.RecordSegmentsRejected(3)
-	assert.EqualValues(t, 2, *original.record.SegmentsSpilloverCount)
-	assert.EqualValues(t, 3, *original.record.SegmentsRejectedCount)
-	withSameID := SetupTelemetry(
-		newID,
-		nil,
-		nil,
-		&TelemetryConfig{
-			IncludeMetadata: true,
-			Contributors:    []component.ID{notCreatedID},
-		},
-		&awsutil.AWSSessionSettings{ResourceARN: "arn"},
-	).(*telemetryRecorder)
-	// still the same telemetry
-	assert.Equal(t, original, withSameID)
-	assert.EqualValues(t, 2, *withSameID.record.SegmentsSpilloverCount)
-	assert.EqualValues(t, 3, *withSameID.record.SegmentsRejectedCount)
-	// contributors have access to same telemetry
-	contrib := GetTelemetry(contribID)
-	assert.NotNil(t, contrib)
-	assert.Equal(t, original, contrib)
-	// second attempt with same ID did not give contributors access
-	assert.Nil(t, GetTelemetry(notCreatedID))
-}
-
 func TestCutoffInterval(t *testing.T) {
+	registry := NewRegistry()
 	mc := &mockClient{count: &atomic.Int64{}}
 	mc.On("PutTelemetryRecords", mock.Anything).Return(nil, nil).Once()
 	mc.On("PutTelemetryRecords", mock.Anything).Return(nil, errors.New("error"))
-	recorder := SetupTelemetry(
+	recorder := registry.Register(
 		component.NewID("test"),
 		mc,
 		nil,
-		&TelemetryConfig{IncludeMetadata: false},
+		&Config{IncludeMetadata: false},
 		nil,
 	).(*telemetryRecorder)
 	recorder.interval = 50 * time.Millisecond
@@ -126,6 +75,8 @@ func TestCutoffInterval(t *testing.T) {
 			select {
 			case <-ticker.C:
 				recorder.RecordSegmentsReceived(1)
+				recorder.RecordSegmentsSpillover(1)
+				recorder.RecordSegmentsRejected(1)
 			case <-ctx.Done():
 				return
 			}
@@ -141,7 +92,7 @@ func TestIncludeMetadata(t *testing.T) {
 	recorder := newTelemetryRecorder(
 		nil,
 		sess,
-		&TelemetryConfig{IncludeMetadata: true},
+		&Config{IncludeMetadata: true},
 		&awsutil.AWSSessionSettings{ResourceARN: "session_arn"},
 	).(*telemetryRecorder)
 	assert.Equal(t, "", recorder.hostname)
@@ -153,7 +104,7 @@ func TestIncludeMetadata(t *testing.T) {
 	recorder = newTelemetryRecorder(
 		nil,
 		sess,
-		&TelemetryConfig{IncludeMetadata: true},
+		&Config{IncludeMetadata: true},
 		nil,
 	).(*telemetryRecorder)
 	assert.Equal(t, "env_hostname", recorder.hostname)
@@ -229,7 +180,7 @@ func TestQueueOverflow(t *testing.T) {
 	recorder := newTelemetryRecorder(
 		nil,
 		nil,
-		&TelemetryConfig{IncludeMetadata: false},
+		&Config{IncludeMetadata: false},
 		nil,
 	).(*telemetryRecorder)
 	for i := 1; i <= queueSize+20; i++ {
