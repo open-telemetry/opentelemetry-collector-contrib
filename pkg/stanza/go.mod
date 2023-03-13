@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
 go 1.19
 
 require (
-	github.com/antonmedv/expr v1.12.1
+	github.com/antonmedv/expr v1.12.3
 	github.com/bmatcuk/doublestar/v4 v4.6.0
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6
 	github.com/jpillora/backoff v1.0.0
