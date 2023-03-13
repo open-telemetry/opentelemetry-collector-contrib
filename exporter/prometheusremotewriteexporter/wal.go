@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/tidwall/wal"
-	"go.uber.org/atomic"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -81,8 +81,8 @@ func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.Wri
 		exportSink: exportSink,
 		walConfig:  walConfig,
 		stopChan:   make(chan struct{}),
-		rWALIndex:  atomic.NewUint64(0),
-		wWALIndex:  atomic.NewUint64(0),
+		rWALIndex:  &atomic.Uint64{},
+		wWALIndex:  &atomic.Uint64{},
 	}, nil
 }
 

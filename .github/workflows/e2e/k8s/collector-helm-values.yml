@@ -39,12 +39,23 @@ config:
     logging: {}
     file/trace:
       path: /tmp/trace.json
+    file/metric:
+      path: /tmp/metric.json
+    file/log:
+      path: /tmp/log.json
   service:
     pipelines:
       traces:
         exporters:
           - file/trace
-
+      metrics:
+        exporters:
+          - file/metric
+      logs:
+        exporters:
+          - file/log
+      
+          
 image:
   repository: otel/opentelemetry-collector-contrib-dev
   tag: "latest"
