@@ -46,7 +46,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
-	lmLogExp := newLogsExporter(cfg, set)
+	lmLogExp := newLogsExporter(ctx, cfg, set)
 	c := cfg.(*Config)
 
 	return exporterhelper.NewLogsExporter(
