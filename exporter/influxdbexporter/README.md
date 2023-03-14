@@ -96,7 +96,7 @@ spans end_time_unix_nano="2021-02-19 20:50:25.6896741 +0000 UTC",instrumentation
 cpu_temp,foo=bar gauge=87.332
 http_requests_total,method=post,code=200 counter=1027
 http_requests_total,method=post,code=400 counter=3
-http_request_duration_seconds 0.05=24054,0.1=33444,0.2=100392,0.5=129389,1=133988,sum=53423,count=144320
+http_request_duration_seconds 0.05=24054,0.1=33444,0.2=100392,0.5=129389,1=133988,sum=53423,count=144320,min=0,max=10
 rpc_duration_seconds 0.01=3102,0.05=3272,0.5=4773,0.9=9001,0.99=76656,sum=1.7560473e+07,count=2693
 ```
 
@@ -110,7 +110,7 @@ prometheus,le=0.1  http_request_duration_seconds_bucket=33444
 prometheus,le=0.2  http_request_duration_seconds_bucket=100392
 prometheus,le=0.5  http_request_duration_seconds_bucket=129389
 prometheus,le=1    http_request_duration_seconds_bucket=133988
-prometheus         http_request_duration_seconds_count=144320,http_request_duration_seconds_sum=53423
+prometheus         http_request_duration_seconds_count=144320,http_request_duration_seconds_sum=53423,http_request_duration_seconds_min=0,http_request_duration_seconds_max=100
 prometheus,quantile=0.01 rpc_duration_seconds=3102
 prometheus,quantile=0.05 rpc_duration_seconds=3272
 prometheus,quantile=0.5  rpc_duration_seconds=4773
