@@ -53,7 +53,8 @@ Breaking changes:
 Improvements:
 - Added support for OTel exponential histograms for recording span duration measurements.
 - Added support for the milliseconds and seconds histogram units.
-- Added support for generating metrics resource scope attributes.
+- Added support for generating metrics resource scope attributes. Note that this change might result
+in increasing number of time series when using the `spanmetrics` connector with Prometheus exporters.
 
 ## Configurations
 
