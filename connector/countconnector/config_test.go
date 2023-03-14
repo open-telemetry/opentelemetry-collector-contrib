@@ -206,22 +206,84 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple_metrics",
+			name: "attribute",
 			expect: &Config{
 				Spans: map[string]MetricInfo{
 					"my.span.count": {
-						Description: "My span count."},
-					"limited.span.count": {
-						Description: "Limited span count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s") == true`},
+						Description: "My span count by environment.",
+						Attributes: []AttributeConfig{
+							{Key: "env"},
+						},
 					},
 				},
 				SpanEvents: map[string]MetricInfo{
 					"my.spanevent.count": {
-						Description: "My span event count."},
+						Description: "My span event count by environment.",
+						Attributes: []AttributeConfig{
+							{Key: "env"},
+						},
+					},
+				},
+				Metrics: map[string]MetricInfo{
+					"my.metric.count": {
+						Description: "My metric count.",
+					},
+				},
+				DataPoints: map[string]MetricInfo{
+					"my.datapoint.count": {
+						Description: "My data point count by environment.",
+						Attributes: []AttributeConfig{
+							{Key: "env"},
+						},
+					},
+				},
+				Logs: map[string]MetricInfo{
+					"my.logrecord.count": {
+						Description: "My log record count by environment.",
+						Attributes: []AttributeConfig{
+							{Key: "env"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_metrics",
+			expect: &Config{
+				Spans: map[string]MetricInfo{
+					"my.span.count": {
+						Description: "My span count.",
+					},
+					"limited.span.count": {
+						Description: "Limited span count.",
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s") == true`},
+						Attributes: []AttributeConfig{
+							{
+								Key: "env",
+							},
+							{
+								Key:          "component",
+								DefaultValue: "other",
+							},
+						},
+					},
+				},
+				SpanEvents: map[string]MetricInfo{
+					"my.spanevent.count": {
+						Description: "My span event count.",
+					},
 					"limited.spanevent.count": {
 						Description: "Limited span event count.",
 						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e") == true`},
+						Attributes: []AttributeConfig{
+							{
+								Key: "env",
+							},
+							{
+								Key:          "component",
+								DefaultValue: "other",
+							},
+						},
 					},
 				},
 				Metrics: map[string]MetricInfo{
@@ -239,6 +301,15 @@ func TestLoadConfig(t *testing.T) {
 					"limited.datapoint.count": {
 						Description: "Limited data point count.",
 						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d") == true`},
+						Attributes: []AttributeConfig{
+							{
+								Key: "env",
+							},
+							{
+								Key:          "component",
+								DefaultValue: "other",
+							},
+						},
 					},
 				},
 				Logs: map[string]MetricInfo{
@@ -248,6 +319,15 @@ func TestLoadConfig(t *testing.T) {
 					"limited.logrecord.count": {
 						Description: "Limited log record count.",
 						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l") == true`},
+						Attributes: []AttributeConfig{
+							{
+								Key: "env",
+							},
+							{
+								Key:          "component",
+								DefaultValue: "other",
+							},
+						},
 					},
 				},
 			},

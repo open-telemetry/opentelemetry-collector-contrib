@@ -1,47 +1,18 @@
 {
     "resourceLogs": [
         {
-            "resource": {},
-            "scopeLogs": [
-                {
-                    "logRecords": [
-                        {
-                            "attributes": [
-                                {
-                                    "key": "app",
-                                    "value": {
-                                        "stringValue": "server"
-                                    }
-                                },
-                                {
-                                    "key": "instance_num",
-                                    "value": {
-                                        "intValue": "1"
-                                    }
-                                }
-                            ],
-                            "body": {
-                                "stringValue": "This is a log message"
-                            },
-                            "droppedAttributesCount": 1,
-                            "severityNumber": 9,
-                            "severityText": "Info",
-                            "spanId": "0102040800000000",
-                            "timeUnixNano": "1581452773000000789",
-                            "traceId": "08040201000000000000000000000000"
-                        }
-                    ],
-                    "scope": {}
-                }
-            ]
-        },
-        {
             "resource": {
                 "attributes": [
                     {
-                        "key": "resource-attr",
+                        "key": "resource.required",
                         "value": {
-                            "stringValue": "resource-attr-val-1"
+                            "stringValue": "foo"
+                        }
+                    },
+                    {
+                        "key": "resource.optional",
+                        "value": {
+                            "stringValue": "bar"
                         }
                     }
                 ]
@@ -52,55 +23,64 @@
                         {
                             "attributes": [
                                 {
-                                    "key": "app",
+                                    "key": "log.required",
                                     "value": {
-                                        "stringValue": "server"
+                                        "stringValue": "foo"
                                     }
                                 },
                                 {
-                                    "key": "instance_num",
+                                    "key": "log.optional",
                                     "value": {
-                                        "intValue": "1"
+                                        "stringValue": "bar"
                                     }
                                 }
                             ],
                             "body": {
                                 "stringValue": "This is a log message"
                             },
-                            "droppedAttributesCount": 1,
-                            "severityNumber": 9,
-                            "severityText": "Info",
-                            "spanId": "0102040800000000",
-                            "timeUnixNano": "1581452773000000789",
-                            "traceId": "08040201000000000000000000000000"
+                            "timeUnixNano": "1581452773000000789"
                         },
                         {
                             "attributes": [
                                 {
-                                    "key": "customer",
+                                    "key": "log.required",
                                     "value": {
-                                        "stringValue": "acme"
+                                        "stringValue": "foo"
                                     }
                                 },
                                 {
-                                    "key": "env",
+                                    "key": "log.optional",
                                     "value": {
-                                        "stringValue": "dev"
+                                        "stringValue": "notbar"
                                     }
                                 }
                             ],
                             "body": {
-                                "stringValue": "something happened"
+                                "stringValue": "This is a log message"
                             },
-                            "droppedAttributesCount": 1,
-                            "severityNumber": 9,
-                            "severityText": "Info",
-                            "spanId": "",
-                            "timeUnixNano": "1581452773000000789",
-                            "traceId": ""
+                            "timeUnixNano": "1581452773000000789"
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "log.required",
+                                    "value": {
+                                        "stringValue": "notfoo"
+                                    }
+                                }
+                            ],
+                            "body": {
+                                "stringValue": "This is a log message"
+                            },
+                            "timeUnixNano": "1581452773000000789"
+                        },
+                        {
+                            "body": {
+                                "stringValue": "This is a log message"
+                            },
+                            "timeUnixNano": "1581452773000000789"
                         }
-                    ],
-                    "scope": {}
+                    ]
                 }
             ]
         },
@@ -108,15 +88,15 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "resource-attr",
+                        "key": "resource.required",
                         "value": {
-                            "stringValue": "resource-attr-val-1"
+                            "stringValue": "foo"
                         }
-                    }
-                    ,{
-                        "key": "resource-attr-2",
+                    },
+                    {
+                        "key": "resource.optional",
                         "value": {
-                            "stringValue": "resource-attr-val-2"
+                            "stringValue": "notbar"
                         }
                     }
                 ]
@@ -127,80 +107,210 @@
                         {
                             "attributes": [
                                 {
-                                    "key": "app",
+                                    "key": "log.required",
                                     "value": {
-                                        "stringValue": "server"
+                                        "stringValue": "foo"
                                     }
                                 },
                                 {
-                                    "key": "instance_num",
+                                    "key": "log.optional",
                                     "value": {
-                                        "intValue": "1"
+                                        "stringValue": "bar"
                                     }
                                 }
                             ],
                             "body": {
                                 "stringValue": "This is a log message"
                             },
-                            "droppedAttributesCount": 1,
-                            "severityNumber": 9,
-                            "severityText": "Info",
-                            "spanId": "0102040800000000",
-                            "timeUnixNano": "1581452773000000789",
-                            "traceId": "08040201000000000000000000000000"
+                            "timeUnixNano": "1581452773000000789"
                         },
                         {
                             "attributes": [
                                 {
-                                    "key": "customer",
+                                    "key": "log.required",
                                     "value": {
-                                        "stringValue": "acme"
+                                        "stringValue": "foo"
                                     }
                                 },
                                 {
-                                    "key": "env",
+                                    "key": "log.optional",
                                     "value": {
-                                        "stringValue": "dev"
-                                    }
-                                }
-                            ],
-                            "body": {
-                                "stringValue": "something happened"
-                            },
-                            "droppedAttributesCount": 1,
-                            "severityNumber": 9,
-                            "severityText": "Info",
-                            "spanId": "",
-                            "timeUnixNano": "1581452773000000789",
-                            "traceId": ""
-                        },
-                        {
-                            "attributes": [
-                                {
-                                    "key": "app",
-                                    "value": {
-                                        "stringValue": "server"
-                                    }
-                                },
-                                {
-                                    "key": "instance_num",
-                                    "value": {
-                                        "intValue": "1"
+                                        "stringValue": "notbar"
                                     }
                                 }
                             ],
                             "body": {
                                 "stringValue": "This is a log message"
                             },
-                            "droppedAttributesCount": 1,
-                            "severityNumber": 9,
-                            "severityText": "Info",
-                            "spanId": "0102040800000000",
-                            "timeUnixNano": "1581452773000000789",
-                            "traceId": "08040201000000000000000000000000"
+                            "timeUnixNano": "1581452773000000789"
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "log.required",
+                                    "value": {
+                                        "stringValue": "notfoo"
+                                    }
+                                }
+                            ],
+                            "body": {
+                                "stringValue": "This is a log message"
+                            },
+                            "timeUnixNano": "1581452773000000789"
+                        },
+                        {
+                            "body": {
+                                "stringValue": "This is a log message"
+                            },
+                            "timeUnixNano": "1581452773000000789"
                         }
-                    ],
-                    "scope": {}
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "resource.required",
+                        "value": {
+                            "stringValue": "notfoo"
+                        }
+                    }
+                ]
+            },
+            "scopeLogs": [
+                {
+                    "logRecords": [
+                        {
+                            "attributes": [
+                                {
+                                    "key": "log.required",
+                                    "value": {
+                                        "stringValue": "foo"
+                                    }
+                                },
+                                {
+                                    "key": "log.optional",
+                                    "value": {
+                                        "stringValue": "bar"
+                                    }
+                                }
+                            ],
+                            "body": {
+                                "stringValue": "This is a log message"
+                            },
+                            "timeUnixNano": "1581452773000000789"
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "log.required",
+                                    "value": {
+                                        "stringValue": "foo"
+                                    }
+                                },
+                                {
+                                    "key": "log.optional",
+                                    "value": {
+                                        "stringValue": "notbar"
+                                    }
+                                }
+                            ],
+                            "body": {
+                                "stringValue": "This is a log message"
+                            },
+                            "timeUnixNano": "1581452773000000789"
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "log.required",
+                                    "value": {
+                                        "stringValue": "notfoo"
+                                    }
+                                }
+                            ],
+                            "body": {
+                                "stringValue": "This is a log message"
+                            },
+                            "timeUnixNano": "1581452773000000789"
+                        },
+                        {
+                            "body": {
+                                "stringValue": "This is a log message"
+                            },
+                            "timeUnixNano": "1581452773000000789"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "scopeLogs": [
+                {
+                    "logRecords": [
+                        {
+                            "attributes": [
+                                {
+                                    "key": "log.required",
+                                    "value": {
+                                        "stringValue": "foo"
+                                    }
+                                },
+                                {
+                                    "key": "log.optional",
+                                    "value": {
+                                        "stringValue": "bar"
+                                    }
+                                }
+                            ],
+                            "body": {
+                                "stringValue": "This is a log message"
+                            },
+                            "timeUnixNano": "1581452773000000789"
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "log.required",
+                                    "value": {
+                                        "stringValue": "foo"
+                                    }
+                                },
+                                {
+                                    "key": "log.optional",
+                                    "value": {
+                                        "stringValue": "notbar"
+                                    }
+                                }
+                            ],
+                            "body": {
+                                "stringValue": "This is a log message"
+                            },
+                            "timeUnixNano": "1581452773000000789"
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "log.required",
+                                    "value": {
+                                        "stringValue": "notfoo"
+                                    }
+                                }
+                            ],
+                            "body": {
+                                "stringValue": "This is a log message"
+                            },
+                            "timeUnixNano": "1581452773000000789"
+                        },
+                        {
+                            "body": {
+                                "stringValue": "This is a log message"
+                            },
+                            "timeUnixNano": "1581452773000000789"
+                        }
+                    ]
                 }
             ]
         }
