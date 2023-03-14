@@ -91,6 +91,13 @@ func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProc
 		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
 	}
 
+	if pConfig.CacheLoop <= 0 {
+		pConfig.CacheLoop = time.Minute
+	}
+
+	if pConfig.StoreExpirationLoop <= 0 {
+		pConfig.StoreExpirationLoop = 2 * time.Second
+	}
 	return &serviceGraphProcessor{
 		config:                         pConfig,
 		logger:                         logger,
@@ -127,11 +134,9 @@ func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) er
 		}
 	}
 
-	// TODO: Consider making this configurable.
-	go p.cacheLoop(time.Minute)
+	go p.cacheLoop(p.config.CacheLoop)
 
-	// TODO: Consider making this configurable.
-	go p.storeExpirationLoop(2 * time.Second)
+	go p.storeExpirationLoop(p.config.StoreExpirationLoop)
 
 	if p.tracesConsumer == nil {
 		p.logger.Info("Started servicegraphconnector")
