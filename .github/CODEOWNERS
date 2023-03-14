@@ -165,6 +165,7 @@ receiver/azureblobreceiver/                              @open-telemetry/collect
 receiver/bigipreceiver/                                  @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek
 receiver/carbonreceiver/                                 @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/chronyreceiver/                                 @open-telemetry/collector-contrib-approvers @MovieStoreGuy @jamesmoessis
+receiver/cloudflarereceiver/                             @open-telemetry/collector-contrib-approvers @dehaansa @djaglowski
 receiver/cloudfoundryreceiver/                           @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared @crobert-1
 receiver/collectdreceiver/                               @open-telemetry/collector-contrib-approvers @atoulme
 receiver/couchdbreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski
