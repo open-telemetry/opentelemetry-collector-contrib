@@ -79,10 +79,13 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 	}
 
 	resourceMetrics := md.ResourceMetrics().AppendEmpty()
+	resource := resourceMetrics.Resource()
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, receiverScopeName)
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeTelemetrySDKLanguageGo)
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion , r.buildInfo.Version)
+	resource.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
-	scopeMetrics.Scope().SetName(receiverScopeName)
-	scopeMetrics.Scope().SetVersion(r.buildInfo.Version)
-	scopeMetrics.Scope().Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 
 	metrics := scopeMetrics.Metrics()
 	metrics.EnsureCapacity(len(azureMetrics.Records) * 5)
