@@ -1186,6 +1186,62 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 	}
 }
 
+func Test_splunkhecReceiver_rawReqUseConfigurableMetadataKey(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.RawPath = "/foo"
+	config.HecToOtelAttrs = splunk.HecToOtelAttrs{
+		Source:     "com.source.foo",
+		SourceType: "com.sourcetype.foo",
+		Index:      "com.index.foo",
+	}
+
+	currentTime := float64(time.Now().UnixNano()) / 1e6
+	splunkMsg := buildSplunkHecMsg(currentTime, 3)
+
+	assertResponse := func(t *testing.T, status int, body string) {
+		assert.Equal(t, http.StatusOK, status)
+		assert.Equal(t, responseOK, body)
+	}
+
+	sink := new(consumertest.LogsSink)
+	rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+	assert.NoError(t, err)
+
+	r := rcv.(*splunkReceiver)
+	assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, r.Shutdown(context.Background()))
+	}()
+	w := httptest.NewRecorder()
+	r.handleRawReq(w, func() *http.Request {
+		msgBytes, err := json.Marshal(splunkMsg)
+		require.NoError(t, err)
+		req := httptest.NewRequest("POST",
+			"http://localhost/foo?index=bar&source=bar&sourcetype=bar",
+			bytes.NewReader(msgBytes))
+		return req
+	}())
+
+	resp := w.Result()
+	assert.NoError(t, err)
+
+	assertResponse(t, resp.StatusCode, "OK")
+	got := sink.AllLogs()
+	require.Equal(t, 1, len(got))
+	resources := got[0].ResourceLogs()
+	assert.Equal(t, 1, resources.Len())
+	resource := resources.At(0).Resource().Attributes()
+	assert.Equal(t, 3, resource.Len())
+	for _, k := range []string{config.HecToOtelAttrs.Index, config.HecToOtelAttrs.SourceType, config.HecToOtelAttrs.Source} {
+		v, ok := resource.Get(k)
+		if !ok {
+			assert.Fail(t, fmt.Sprintf("does not contain query param: %s", k))
+		}
+		assert.Equal(t, "bar", v.AsString())
+	}
+}
+
 func BenchmarkHandleReq(b *testing.B) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0"

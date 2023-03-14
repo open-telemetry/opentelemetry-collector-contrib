@@ -78,7 +78,6 @@ var (
 	errUnsupportedMetricEvent = initJSONResponse(responseErrUnsupportedMetricEvent)
 	errUnsupportedLogEvent    = initJSONResponse(responseErrUnsupportedLogEvent)
 
-	//splunk metadata
 	metadataMap = map[string]string{
 		index:      splunk.DefaultIndexLabel,
 		source:     splunk.DefaultSourceLabel,
@@ -285,7 +284,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	if resourceCustomizer != nil {
 		resourceCustomizer(rl.Resource())
 	}
-	appendMetadataToResource(rl.Resource(), req)
+	appendMetadataToResource(rl.Resource(), req, r.config.HecToOtelAttrs)
 
 	sl := rl.ScopeLogs().AppendEmpty()
 	for sc.Scan() {
@@ -493,10 +492,29 @@ func isFlatJSONField(field interface{}) bool {
 	}
 	return true
 }
-func appendMetadataToResource(resource pcommon.Resource, req *http.Request) {
+func appendMetadataToResource(resource pcommon.Resource, req *http.Request, hecAttr splunk.HecToOtelAttrs) {
 	for k, v := range metadataMap {
 		if q := req.URL.Query().Get(k); q != "" {
-			resource.Attributes().PutStr(v, q)
+			key := getMetadataKey(hecAttr, k, v)
+			resource.Attributes().PutStr(key, q)
 		}
 	}
+}
+
+func getMetadataKey(hecAttr splunk.HecToOtelAttrs, rKey, rDefault string) string {
+	switch rKey {
+	case index:
+		if hecAttr.Index != "" {
+			return hecAttr.Index
+		}
+	case source:
+		if hecAttr.Source != "" {
+			return hecAttr.Source
+		}
+	case sourcetype:
+		if hecAttr.SourceType != "" {
+			return hecAttr.SourceType
+		}
+	}
+	return rDefault
 }
