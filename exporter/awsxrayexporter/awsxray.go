@@ -37,16 +37,13 @@ const (
 	maxSegmentsPerPut = int(50) // limit imposed by PutTraceSegments API
 )
 
-var (
-	registry = telemetry.GlobalRegistry()
-)
-
 // newTracesExporter creates an exporter.Traces that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
 func newTracesExporter(
 	cfg *Config,
 	set exporter.CreateSettings,
 	cn awsutil.ConnAttr,
+	registry telemetry.Registry,
 ) (exporter.Traces, error) {
 	typeLog := zap.String("type", string(set.ID.Type()))
 	nameLog := zap.String("name", set.ID.String())
@@ -58,7 +55,9 @@ func newTracesExporter(
 	xrayClient := awsxray.NewXRayClient(logger, awsConfig, set.BuildInfo, session)
 	var recorder telemetry.Recorder
 	if cfg.TelemetryConfig.Enabled {
-		recorder = registry.Register(set.ID, xrayClient, session, &cfg.TelemetryConfig, &cfg.AWSSessionSettings)
+		opts := telemetry.ToRecorderOptions(cfg.TelemetryConfig, session, &cfg.AWSSessionSettings)
+		opts = append(opts, telemetry.WithLogger(set.Logger))
+		recorder = registry.Register(set.ID, cfg.TelemetryConfig, xrayClient, opts...)
 	}
 	return exporterhelper.NewTracesExporter(
 		context.TODO(),

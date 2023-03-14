@@ -67,6 +67,7 @@ comparable AWS X-Ray Daemon configuration values.
 | `aws_log_groups`          | List of log group names for CloudWatch.                                            | []      |
 | `telemetry.enabled`          | Whether telemetry collection is enabled at all.                                    | false   |
 | `telemetry.include_metadata` | Whether to include metadata in the telemetry (InstanceID, Hostname, ResourceARN)   | false   |
+| `telemetry.contributors`     | List X-Ray components IDs contributing to the telemetry (i.e. for multiple X-Ray receivers: awsxray/1, awsxray/2) |         |
 
 ## Traces and logs correlation
 

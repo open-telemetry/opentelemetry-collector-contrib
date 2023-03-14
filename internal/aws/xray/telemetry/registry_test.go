@@ -19,46 +19,38 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func TestRegistry(t *testing.T) {
-	registry := NewRegistry()
+	r := NewRegistry()
 	newID := component.NewID("new")
 	contribID := component.NewID("contrib")
 	notCreatedID := component.NewID("not-created")
-	original := registry.Register(
+	original := r.Register(
 		newID,
-		nil,
-		nil,
-		&Config{
+		Config{
 			IncludeMetadata: false,
 			Contributors:    []component.ID{contribID},
 		},
-		nil,
-	).(*telemetryRecorder)
-	assert.Empty(t, original.hostname)
-	assert.Empty(t, original.instanceID)
-	assert.Empty(t, original.resourceARN)
-	withSameID := registry.Register(
+		&mockClient{},
+	)
+	withSameID := r.Register(
 		newID,
-		nil,
-		nil,
-		&Config{
+		Config{
 			IncludeMetadata: true,
 			Contributors:    []component.ID{notCreatedID},
 		},
-		&awsutil.AWSSessionSettings{ResourceARN: "arn"},
-	).(*telemetryRecorder)
+		&mockClient{},
+		WithResourceARN("arn"),
+	)
 	// still the same recorder
 	assert.Same(t, original, withSameID)
 	// contributors have access to same recorder
-	contrib := registry.Get(contribID)
+	contrib := r.Get(contribID)
 	assert.NotNil(t, contrib)
 	assert.Same(t, original, contrib)
 	// second attempt with same ID did not give contributors access
-	assert.Nil(t, registry.Get(notCreatedID))
+	assert.Nil(t, r.Get(notCreatedID))
 }
 
 func TestGlobalRegistry(t *testing.T) {

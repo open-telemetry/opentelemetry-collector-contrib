@@ -17,37 +17,41 @@ package telemetry // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"sync"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
+
+type Registry interface {
+	Set(id component.ID, recorder Recorder)
+	Get(id component.ID) Recorder
+	Register(id component.ID, cfg Config, client awsxray.XRayClient, opts ...RecorderOption) Recorder
+}
 
 var globalRegistry = NewRegistry()
 
 // GlobalRegistry returns the global Registry.
-func GlobalRegistry() *Registry {
+func GlobalRegistry() Registry {
 	return globalRegistry
 }
 
-// Registry maintains a map of all registered Recorders.
-type Registry struct {
+// registry maintains a map of all registered recorders.
+type registry struct {
 	recorders sync.Map
 }
 
 // NewRegistry returns a new empty Registry.
-func NewRegistry() *Registry {
-	return &Registry{}
+func NewRegistry() Registry {
+	return &registry{}
 }
 
 // Set if not already set. Otherwise, return the existing.
-func (r *Registry) Set(id component.ID, recorder Recorder) {
+func (r *registry) Set(id component.ID, recorder Recorder) {
 	r.recorders.LoadOrStore(id, recorder)
 }
 
 // Get gets the associated recorder for the ID.
-func (r *Registry) Get(id component.ID) Recorder {
+func (r *registry) Get(id component.ID) Recorder {
 	recorder, ok := r.recorders.Load(id)
 	if ok {
 		return recorder.(Recorder)
@@ -57,17 +61,16 @@ func (r *Registry) Get(id component.ID) Recorder {
 
 // Register configures and registers a new Recorder for the ID. If one
 // already exists for the ID, then returns that one instead.
-func (r *Registry) Register(
+func (r *registry) Register(
 	id component.ID,
+	cfg Config,
 	client awsxray.XRayClient,
-	sess *session.Session,
-	cfg *Config,
-	settings *awsutil.AWSSessionSettings,
+	opts ...RecorderOption,
 ) Recorder {
 	if recorder, ok := r.recorders.Load(id); ok {
 		return recorder.(Recorder)
 	}
-	recorder := newTelemetryRecorder(client, sess, cfg, settings)
+	recorder := newTelemetryRecorder(client, opts...)
 	r.recorders.Store(id, recorder)
 	for _, contributor := range cfg.Contributors {
 		r.Set(contributor, recorder)

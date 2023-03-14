@@ -22,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
@@ -34,7 +35,8 @@ func TestUserAgent(t *testing.T) {
 		Version: "1.0",
 	}
 
-	newSession, _ := session.NewSession()
+	newSession, err := session.NewSession()
+	require.NoError(t, err)
 	xray := NewXRayClient(logger, &aws.Config{}, buildInfo, newSession).(*xrayClient)
 	x := xray.xRay
 

@@ -27,6 +27,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/xray"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
@@ -58,11 +59,69 @@ type Recorder interface {
 	RecordConnectionError(err error)
 }
 
+type RecorderOption interface {
+	apply(r *telemetryRecorder)
+}
+
+type recorderOptionFunc func(r *telemetryRecorder)
+
+func (ro recorderOptionFunc) apply(r *telemetryRecorder) {
+	ro(r)
+}
+
+func WithResourceARN(resourceARN string) RecorderOption {
+	return recorderOptionFunc(func(r *telemetryRecorder) {
+		r.resourceARN = resourceARN
+	})
+}
+
+func WithInstanceID(instanceID string) RecorderOption {
+	return recorderOptionFunc(func(r *telemetryRecorder) {
+		r.instanceID = instanceID
+	})
+}
+
+func WithHostname(hostname string) RecorderOption {
+	return recorderOptionFunc(func(r *telemetryRecorder) {
+		r.hostname = hostname
+	})
+}
+
+func WithLogger(logger *zap.Logger) RecorderOption {
+	return recorderOptionFunc(func(r *telemetryRecorder) {
+		r.logger = logger
+	})
+}
+
+// ToRecorderOptions gets the metadata recorder options if enabled by the config.
+func ToRecorderOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSettings) []RecorderOption {
+	if !cfg.IncludeMetadata {
+		return nil
+	}
+	hostname := os.Getenv(envAWSHostname)
+	instanceID := os.Getenv(envAWSInstanceID)
+	if !settings.LocalMode {
+		metadataClient := ec2metadata.New(sess)
+		if hostname == "" {
+			if result, err := metadataClient.GetMetadata("hostname"); err == nil {
+				hostname = result
+			}
+		}
+		if instanceID == "" {
+			if result, err := metadataClient.GetMetadata("instance-id"); err == nil {
+				instanceID = result
+			}
+		}
+	}
+	return []RecorderOption{WithResourceARN(settings.ResourceARN), WithHostname(hostname), WithInstanceID(instanceID)}
+}
+
 type telemetryRecorder struct {
 	resourceARN string
 	instanceID  string
 	hostname    string
 
+	logger *zap.Logger
 	// client is used to send the records.
 	client awsxray.XRayClient
 	// record is the pointer to the count metrics for the current period.
@@ -89,10 +148,8 @@ type telemetryRecorder struct {
 
 func newTelemetryRecorder(
 	client awsxray.XRayClient,
-	sess *session.Session,
-	cfg *Config,
-	settings *awsutil.AWSSessionSettings,
-) Recorder {
+	opts ...RecorderOption,
+) *telemetryRecorder {
 	recorder := &telemetryRecorder{
 		client:        client,
 		record:        newTelemetryRecord(),
@@ -101,26 +158,8 @@ func newTelemetryRecorder(
 		done:          make(chan struct{}),
 		queue:         make(chan *xray.TelemetryRecord, queueSize),
 	}
-	if cfg != nil && cfg.IncludeMetadata {
-		if settings != nil {
-			recorder.resourceARN = settings.ResourceARN
-		}
-		recorder.hostname = os.Getenv(envAWSHostname)
-		recorder.instanceID = os.Getenv(envAWSInstanceID)
-
-		if settings == nil || !settings.LocalMode {
-			metadataClient := ec2metadata.New(sess)
-			if recorder.hostname == "" {
-				if hostname, err := metadataClient.GetMetadata("hostname"); err == nil {
-					recorder.hostname = hostname
-				}
-			}
-			if recorder.instanceID == "" {
-				if instanceID, err := metadataClient.GetMetadata("instance-id"); err == nil {
-					recorder.instanceID = instanceID
-				}
-			}
-		}
+	for _, opt := range opts {
+		opt.apply(recorder)
 	}
 	return recorder
 }
@@ -192,11 +231,18 @@ func (t *telemetryRecorder) cutoff() *xray.TelemetryRecord {
 
 // add to the queue. If queue is full, drop the head of the queue and try again.
 func (t *telemetryRecorder) add(record *xray.TelemetryRecord) {
-	select {
-	case t.queue <- record:
-	default:
-		<-t.queue
-		t.add(record)
+	for {
+		select {
+		case t.queue <- record:
+			return
+		case <-t.done:
+			return
+		default:
+			dropped := <-t.queue
+			if t.logger != nil {
+				t.logger.Debug("queue full, dropping telemetry record", zap.Time("dropped_timestamp", *dropped.Timestamp))
+			}
+		}
 	}
 }
 
@@ -263,13 +309,15 @@ func (t *telemetryRecorder) RecordSegmentsRejected(count int) {
 }
 
 func (t *telemetryRecorder) RecordConnectionError(err error) {
+	if err == nil {
+		return
+	}
 	var requestFailure awserr.RequestFailure
 	if ok := errors.As(err, &requestFailure); ok {
-		statusCode := requestFailure.StatusCode()
-		switch {
-		case statusCode >= 500 && statusCode < 600:
+		switch requestFailure.StatusCode() / 100 {
+		case 5:
 			t.recordConnectionHTTPCode5XX(1)
-		case statusCode >= 400 && statusCode < 500:
+		case 4:
 			t.recordConnectionHTTPCode4XX(1)
 		default:
 			t.recordConnectionOther(1)

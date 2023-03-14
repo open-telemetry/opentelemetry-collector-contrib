@@ -34,10 +34,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
 )
 
 func TestTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter(t, generateConfig(t))
+	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
 	ctx := context.Background()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -53,7 +54,7 @@ func TestXraySpanTraceResourceExtraction(t *testing.T) {
 }
 
 func TestXrayAndW3CSpanTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter(t, generateConfig(t))
+	traceExporter := initializeTracesExporter(t, generateConfig(t), nil)
 	ctx := context.Background()
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -77,10 +78,10 @@ func TestW3CSpanTraceResourceExtraction(t *testing.T) {
 
 func TestTelemetryEnabled(t *testing.T) {
 	// replace global registry for test
-	registry = telemetry.NewRegistry()
+	registry := telemetry.NewRegistry()
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
-	traceExporter := initializeTracesExporter(t, cfg)
+	traceExporter := initializeTracesExporter(t, cfg, registry)
 	ctx := context.Background()
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
 	td := constructSpanData()
@@ -93,7 +94,7 @@ func TestTelemetryEnabled(t *testing.T) {
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
-	traceExporter := initializeTracesExporter(b, generateConfig(b))
+	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		ctx := context.Background()
@@ -104,10 +105,10 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	}
 }
 
-func initializeTracesExporter(t testing.TB, exporterConfig *Config) exporter.Traces {
+func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
 	t.Helper()
 	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopCreateSettings(), mconn)
+	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopCreateSettings(), mconn, registry)
 	if err != nil {
 		panic(err)
 	}

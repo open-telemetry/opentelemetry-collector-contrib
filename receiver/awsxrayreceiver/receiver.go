@@ -46,7 +46,7 @@ type xrayReceiver struct {
 	settings receiver.CreateSettings
 	consumer consumer.Traces
 	obsrecv  *obsreport.Receiver
-	registry *telemetry.Registry
+	registry telemetry.Registry
 }
 
 func newReceiver(config *Config,
