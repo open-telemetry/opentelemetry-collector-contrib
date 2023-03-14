@@ -95,10 +95,8 @@ func (m *Manager) Stop() error {
 	m.wg.Wait()
 	close(m.readerChan)
 	m.workerWg.Wait()
-	if len(m.knownFiles) > 0 {
-		m.syncLastPollFiles(m.ctx)
-	}
 	m.roller.cleanup()
+	m.syncLastPollFiles(m.ctx)
 	for _, reader := range m.knownFiles {
 		reader.Close()
 	}
@@ -145,9 +143,7 @@ func (m *Manager) poll(ctx context.Context) {
 
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.fromBeginning = true
-	if len(m.knownFiles) > 0 {
-		m.syncLastPollFiles(ctx)
-	}
+	m.syncLastPollFiles(ctx)
 }
 
 func (m *Manager) clearCurrentFiles() {
@@ -330,11 +326,17 @@ const knownFilesKey = "knownFiles"
 
 // syncLastPollFiles syncs the most recent set of files to the database
 func (m *Manager) syncLastPollFiles(ctx context.Context) {
+	m.knownFilesLock.RLock()
+	defer m.knownFilesLock.RUnlock()
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 
+	// No need to encode if knownFiles is empty
+	if len(m.knownFiles) == 0 {
+		return
+	}
+
 	// Encode the number of known files
-	m.knownFilesLock.RLock()
 	if err := enc.Encode(len(m.knownFiles)); err != nil {
 		m.Errorw("Failed to encode known files", zap.Error(err))
 		return
@@ -346,7 +348,6 @@ func (m *Manager) syncLastPollFiles(ctx context.Context) {
 			m.Errorw("Failed to encode known files", zap.Error(err))
 		}
 	}
-	m.knownFilesLock.RUnlock()
 
 	if err := m.persister.Set(ctx, knownFilesKey, buf.Bytes()); err != nil {
 		m.Errorw("Failed to sync to database", zap.Error(err))
