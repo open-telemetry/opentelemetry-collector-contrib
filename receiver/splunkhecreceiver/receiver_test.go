@@ -1100,7 +1100,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
 				req := httptest.NewRequest("POST",
-					"http://localhost/foo?index=bar&source=bar&sourcetype=bar",
+					"http://localhost/foo?index=bar&source=bar&sourcetype=bar&host=bar",
 					bytes.NewReader(msgBytes))
 				return req
 			}(),
@@ -1109,7 +1109,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 				resources := got[0].ResourceLogs()
 				assert.Equal(t, 1, resources.Len())
 				resource := resources.At(0).Resource().Attributes()
-				assert.Equal(t, 3, resource.Len())
+				assert.Equal(t, 4, resource.Len())
 				for _, k := range []string{splunk.DefaultIndexLabel, splunk.DefaultSourceLabel, splunk.DefaultSourceTypeLabel} {
 					v, ok := resource.Get(k)
 					if !ok {
@@ -1194,6 +1194,7 @@ func Test_splunkhecReceiver_rawReqUseConfigurableMetadataKey(t *testing.T) {
 		Source:     "com.source.foo",
 		SourceType: "com.sourcetype.foo",
 		Index:      "com.index.foo",
+		Host:       "com.host.foo",
 	}
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -1218,7 +1219,7 @@ func Test_splunkhecReceiver_rawReqUseConfigurableMetadataKey(t *testing.T) {
 		msgBytes, err := json.Marshal(splunkMsg)
 		require.NoError(t, err)
 		req := httptest.NewRequest("POST",
-			"http://localhost/foo?index=bar&source=bar&sourcetype=bar",
+			"http://localhost/foo?index=bar&source=bar&sourcetype=bar&host=bar",
 			bytes.NewReader(msgBytes))
 		return req
 	}())
@@ -1232,7 +1233,7 @@ func Test_splunkhecReceiver_rawReqUseConfigurableMetadataKey(t *testing.T) {
 	resources := got[0].ResourceLogs()
 	assert.Equal(t, 1, resources.Len())
 	resource := resources.At(0).Resource().Attributes()
-	assert.Equal(t, 3, resource.Len())
+	assert.Equal(t, 4, resource.Len())
 	for _, k := range []string{config.HecToOtelAttrs.Index, config.HecToOtelAttrs.SourceType, config.HecToOtelAttrs.Source} {
 		v, ok := resource.Get(k)
 		if !ok {

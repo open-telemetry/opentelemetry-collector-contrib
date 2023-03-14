@@ -60,6 +60,7 @@ const (
 	index      = "index"
 	source     = "source"
 	sourcetype = "sourcetype"
+	host       = "host"
 )
 
 var (
@@ -82,6 +83,7 @@ var (
 		index:      splunk.DefaultIndexLabel,
 		source:     splunk.DefaultSourceLabel,
 		sourcetype: splunk.DefaultSourceTypeLabel,
+		host:       splunk.DefaultHostLabel,
 	}
 )
 
@@ -514,6 +516,10 @@ func getMetadataKey(hecAttr splunk.HecToOtelAttrs, rKey, rDefault string) string
 	case sourcetype:
 		if hecAttr.SourceType != "" {
 			return hecAttr.SourceType
+		}
+	case host:
+		if hecAttr.Host != "" {
+			return hecAttr.Host
 		}
 	}
 	return rDefault
