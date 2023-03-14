@@ -53,8 +53,10 @@ Breaking changes:
 Improvements:
 - Added support for OTel exponential histograms for recording span duration measurements.
 - Added support for the milliseconds and seconds histogram units.
-- Added support for generating metrics resource scope attributes. Note that this change might result
-in increasing number of time series when using the `spanmetrics` connector with Prometheus exporters.
+- Added support for generating metrics resource scope attributes. The `spanmetrics` connector will
+generate the number of metrics resource scopes that corresponds to the number of the spans resource
+scopes meaning that more metrics are generated now. Previously, `spanmetrics` generated a single
+metrics resource scope.
 
 ## Configurations
 
@@ -134,7 +136,7 @@ attributes.
 
 Let's look at the example of using the `spanmetrics` connector with the `prometheusremotewrite` exporter:
 
-```
+```yaml
 receivers:
   otlp:
     protocols:
@@ -168,7 +170,7 @@ to be compliant with Prometheus naming rules. For example, the generated `calls`
 result in multiple Prometheus `calls_total` (counter type) time series and the `target_info` time series.
 For example:
 
-```yaml
+```
 target_info{job="shippingservice", instance="...", ...} 1
 calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_UNSET", ...} 142
 ```
