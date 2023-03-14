@@ -41,6 +41,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
@@ -212,13 +213,30 @@ func TestDefaultExtensions(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			extension:     "jaegerremotesampling",
+			skipLifecycle: true,
+			getConfigFn: func() component.Config {
+				return extFactories["jaegerremotesampling"].CreateDefaultConfig().(*jaegerremotesampling.Config)
+			},
+		},
 	}
 
-	assert.Len(t, tests, len(extFactories), "All extensions must be added to the lifecycle tests")
+	extensionCount := 0
+	expectedExtensions := map[component.Type]struct{}{}
+	for k := range extFactories {
+		expectedExtensions[k] = struct{}{}
+	}
 	for _, tt := range tests {
+		_, ok := extFactories[tt.extension]
+		if !ok {
+			// not part of the distro, skipping.
+			continue
+		}
+		delete(expectedExtensions, tt.extension)
+		extensionCount++
 		t.Run(string(tt.extension), func(t *testing.T) {
-			factory, ok := extFactories[tt.extension]
-			require.True(t, ok)
+			factory := extFactories[tt.extension]
 			assert.Equal(t, tt.extension, factory.Type())
 
 			verifyExtensionShutdown(t, factory, tt.getConfigFn)
@@ -229,6 +247,7 @@ func TestDefaultExtensions(t *testing.T) {
 
 		})
 	}
+	assert.Len(t, extFactories, extensionCount, "All extensions must be added to the lifecycle tests", expectedExtensions)
 }
 
 // getExtensionConfigFn is used customize the configuration passed to the verification.

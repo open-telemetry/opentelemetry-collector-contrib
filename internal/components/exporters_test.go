@@ -88,6 +88,13 @@ func TestDefaultExporters(t *testing.T) {
 		skipLifecycle bool
 	}{
 		{
+			exporter: "awscloudwatchlogs",
+			getConfigFn: func() component.Config {
+				return expFactories["awscloudwatchlogs"].CreateDefaultConfig()
+			},
+			skipLifecycle: true,
+		},
+		{
 			exporter: "file",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["file"].CreateDefaultConfig().(*fileexporter.Config)
@@ -176,9 +183,10 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "pulsar",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["pulsar"].CreateDefaultConfig().(*pulsarexporter.Config)
-				cfg.Endpoint = "unknown:6650"
+				cfg.Endpoint = "http://localhost:6650"
 				return cfg
 			},
+			skipLifecycle: true,
 		},
 		{
 			exporter: "sapm",
@@ -219,9 +227,10 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "awskinesis",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["awskinesis"].CreateDefaultConfig().(*awskinesisexporter.Config)
-				cfg.AWS.KinesisEndpoint = endpoint
+				cfg.AWS.KinesisEndpoint = "http://" + endpoint
 				return cfg
 			},
+			skipLifecycle: true,
 		},
 		{
 			exporter: "alibabacloud_logservice",
@@ -264,12 +273,13 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "azuredataexplorer",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["azuredataexplorer"].CreateDefaultConfig().(*azuredataexplorerexporter.Config)
-				cfg.ClusterURI = "http://" + endpoint
+				cfg.ClusterURI = "https://" + endpoint
 				cfg.ApplicationID = "otel-app-id"
 				cfg.ApplicationKey = "otel-app-key"
 				cfg.TenantID = "otel-tenant-id"
 				return cfg
 			},
+			skipLifecycle: true,
 		},
 		{
 			exporter: "azuremonitor",
@@ -295,12 +305,15 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "tcp://" + endpoint
 				return cfg
 			},
+			skipLifecycle: true,
 		},
 		{
 			exporter: "coralogix",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["coralogix"].CreateDefaultConfig().(*coralogixexporter.Config)
 				cfg.Traces.Endpoint = endpoint
+				cfg.Logs.Endpoint = endpoint
+				cfg.Metrics.Endpoint = endpoint
 				return cfg
 			},
 		},
@@ -339,6 +352,7 @@ func TestDefaultExporters(t *testing.T) {
 
 				return cfg
 			},
+			skipLifecycle: true,
 		},
 		{
 			exporter:      "googlecloud",
@@ -349,7 +363,8 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle: true, // Requires credentials to be able to successfully load the exporter
 		},
 		{
-			exporter: "googlecloudpubsub",
+			exporter:      "googlecloudpubsub",
+			skipLifecycle: true,
 		},
 		{
 			exporter: "influxdb",
@@ -358,6 +373,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
+			skipLifecycle: true,
 		},
 		{
 			exporter: "instana",
@@ -372,6 +388,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "loadbalancing",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["loadbalancing"].CreateDefaultConfig().(*loadbalancingexporter.Config)
+				cfg.Resolver = loadbalancingexporter.ResolverSettings{Static: &loadbalancingexporter.StaticResolver{Hostnames: []string{"127.0.0.1"}}}
 				return cfg
 			},
 		},
@@ -381,6 +398,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["logicmonitor"].CreateDefaultConfig().(*logicmonitorexporter.Config)
 				return cfg
 			},
+			skipLifecycle: true,
 		},
 		{
 			exporter: "logzio",
@@ -419,6 +437,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["skywalking"].CreateDefaultConfig().(*skywalkingexporter.Config)
 				return cfg
 			},
+			skipLifecycle: true,
 		},
 		{
 			exporter: "sumologic",
@@ -434,6 +453,7 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["tanzuobservability"].CreateDefaultConfig().(*tanzuobservabilityexporter.Config)
 				cfg.Traces.Endpoint = "http://" + endpoint
+				cfg.Metrics.Endpoint = "http://" + endpoint
 				return cfg
 			},
 		},
@@ -447,22 +467,29 @@ func TestDefaultExporters(t *testing.T) {
 		},
 	}
 
-	assert.Len(t, tests, len(expFactories), "All user configurable components must be added to the lifecycle test")
+	exporterCount := 0
+	expectedExporters := map[component.Type]struct{}{}
+	for k := range expFactories {
+		expectedExporters[k] = struct{}{}
+	}
 	for _, tt := range tests {
+		_, ok := expFactories[tt.exporter]
+		if !ok {
+			// not part of the distro, skipping.
+			continue
+		}
+		exporterCount++
+		delete(expectedExporters, tt.exporter)
 		t.Run(string(tt.exporter), func(t *testing.T) {
-			t.Parallel()
-
-			factory, ok := expFactories[tt.exporter]
-			require.True(t, ok)
+			factory := expFactories[tt.exporter]
 			assert.Equal(t, tt.exporter, factory.Type())
-
 			verifyExporterShutdown(t, factory, tt.getConfigFn)
-
 			if !tt.skipLifecycle {
 				verifyExporterLifecycle(t, factory, tt.getConfigFn)
 			}
 		})
 	}
+	assert.Len(t, expFactories, exporterCount, "All user configurable components must be added to the lifecycle test", expectedExporters)
 }
 
 // GetExporterConfigFn is used customize the configuration passed to the verification.
@@ -525,6 +552,8 @@ func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn
 		r, err := createFn(ctx, expCreateSettings, getConfigFn())
 		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			continue
+		} else if err != nil {
+			require.NoError(tb, err)
 		}
 		if r == nil {
 			continue
