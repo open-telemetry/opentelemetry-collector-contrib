@@ -26,6 +26,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
@@ -108,7 +109,11 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 		for key, route := range p.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, mtx)
 			if err != nil {
-				return err
+				if p.config.ErrorMode == ottl.PropagateError {
+					return err
+				}
+				p.group("", groups, p.router.defaultExporters, rmetrics)
+				continue
 			}
 			if !isMatch {
 				matchCount--

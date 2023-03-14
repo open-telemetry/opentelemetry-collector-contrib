@@ -62,10 +62,14 @@ Optionally, emit custom counts by defining metrics under one or more of the foll
 - `datapoints`
 - `logs`
 
-Under each custom metric name, specify one or more conditions using [OTTL Syntax].
-Data that matches any one of the conditions will be counted. i.e. Conditions are ORed together.
-
 Optionally, specify a description for the metric.
+
+Note: If any custom metrics are defined for a data type, the default metric will not be emitted.
+
+#### Conditions
+
+Conditions may be specified for custom metrics. If specified, data that matches any one
+of the conditions will be counted. i.e. Conditions are ORed together.
 
 ```yaml
 receivers:
@@ -82,7 +86,29 @@ connectors:
           - 'name == "prodevent"'
 ```
 
-Note: If any custom metrics are defined for a data type, the default metric will not be emitted.
+#### Attributes
+
+`spans`, `spanevents`, `datapoints`, and `logs` may be counted according to attributes.
+
+If attributes are specified for custom metrics, a separate count will be generated for each unique
+set of attribute values. Each count will be emitted as a data point on the same metric.
+
+Optionally, include a `default_value` for an attribute, to count data that does not contain the attribute.
+
+```yaml
+receivers:
+  foo:
+exporters:
+  bar:
+connectors:
+  count:
+    logs:
+      my.log.count:
+        description: The number of logs from each environment.
+        attributes:
+          - key: env
+            default_value: unspecified_environment
+```
 
 ### Example Usage
 
@@ -167,6 +193,32 @@ connectors:
         description: Error+ logs.
         conditions:
           - `severity_number >= SEVERITY_NUMBER_ERROR`
+service:
+  pipelines:
+    logs:
+      receivers: [foo]
+      exporters: [count]
+    metrics:
+      receivers: [count]
+      exporters: [bar]
+```
+
+Count logs with a severity of ERROR or higher. Maintain a separate count for each environment.
+
+```yaml
+receivers:
+  foo:
+exporters:
+  bar:
+connectors:
+  count:
+    logs:
+      my.error.log.count:
+        description: Error+ logs.
+        conditions:
+          - `severity_number >= SEVERITY_NUMBER_ERROR`
+        attributes:
+          - key: env
 service:
   pipelines:
     logs:

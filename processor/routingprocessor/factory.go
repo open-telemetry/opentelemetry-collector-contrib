@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 const (
@@ -44,6 +46,7 @@ func NewFactory() processor.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		AttributeSource: defaultAttributeSource,
+		ErrorMode:       ottl.PropagateError,
 	}
 }
 

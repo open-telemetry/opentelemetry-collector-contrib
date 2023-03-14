@@ -42,11 +42,6 @@ type Dimension struct {
 
 // Config defines the configuration options for spanmetricsconnector.
 type Config struct {
-	// LatencyHistogramBuckets is the list of durations representing latency histogram buckets.
-	// See defaultLatencyHistogramBucketsMs in connector.go for the default value.
-	// Deprecated: use HistogramConfig to configure explicit histogram buckets
-	LatencyHistogramBuckets []time.Duration `mapstructure:"latency_histogram_buckets"`
-
 	// Dimensions defines the list of additional dimensions on top of the provided:
 	// - service.name
 	// - span.kind

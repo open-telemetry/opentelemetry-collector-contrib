@@ -733,6 +733,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/receiver/cloudflarereceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/receiver/cloudfoundryreceiver"
     schedule:
       interval: "weekly"
@@ -1068,6 +1073,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/receiver/webhookeventreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/receiver/windowseventlogreceiver"
     schedule:
       interval: "weekly"
@@ -1089,16 +1099,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/testbed"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/testbed/mockdatareceivers/mockawsxrayreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/testbed/mockdatasenders/mockdatadogagentexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"

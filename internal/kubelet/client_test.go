@@ -24,6 +24,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -32,6 +34,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -89,6 +92,18 @@ func TestNewSAClientProvider(t *testing.T) {
 	require.True(t, ok)
 }
 
+func TestNewKubeConfigClientProvider(t *testing.T) {
+	p, err := NewClientProvider("localhost:9876", &ClientConfig{
+		APIConfig: k8sconfig.APIConfig{
+			AuthType: k8sconfig.AuthTypeKubeConfig,
+		},
+	}, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, p)
+	_, ok := p.(*kubeConfigClientProvider)
+	require.True(t, ok)
+}
+
 func TestDefaultTLSClient(t *testing.T) {
 	endpoint := "localhost:9876"
 	client, err := defaultTLSClient(endpoint, true, &x509.CertPool{}, nil, nil, zap.NewNop())
@@ -107,6 +122,40 @@ func TestSvcAcctClient(t *testing.T) {
 	cl, err := p.BuildClient()
 	require.NoError(t, err)
 	require.Equal(t, "s3cr3t", string(cl.(*clientImpl).tok))
+}
+
+func TestNewKubeConfigClient(t *testing.T) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// Check if call is authenticated using provided kubeconfig
+		require.Equal(t, req.Header.Get("Authorization"), "Bearer my-token")
+		require.Equal(t, "/api/v1/nodes/nodename/proxy/", req.URL.EscapedPath())
+		// Send response to be tested
+		_, err := rw.Write([]byte(`OK`))
+		require.NoError(t, err)
+	}))
+	server.StartTLS()
+	defer server.Close()
+
+	kubeConfig, err := clientcmd.LoadFromFile("testdata/kubeconfig")
+	require.NoError(t, err)
+	kubeConfig.Clusters["my-cluster"].Server = "https://" + server.Listener.Addr().String()
+	tempKubeConfig := filepath.Join(t.TempDir(), "kubeconfig")
+	require.NoError(t, clientcmd.WriteToFile(*kubeConfig, tempKubeConfig))
+	t.Setenv("KUBECONFIG", tempKubeConfig)
+
+	p, err := NewClientProvider("nodename", &ClientConfig{
+		APIConfig: k8sconfig.APIConfig{
+			AuthType: k8sconfig.AuthTypeKubeConfig,
+		},
+		InsecureSkipVerify: true,
+	}, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, p)
+	client, err := p.BuildClient()
+	require.NoError(t, err)
+	resp, err := client.Get("/")
+	require.NoError(t, err)
+	require.Equal(t, []byte(`OK`), resp)
 }
 
 func TestBuildEndpoint(t *testing.T) {

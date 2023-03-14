@@ -154,6 +154,7 @@ body:
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
+      - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
       - receiver/couchdb
@@ -219,6 +220,7 @@ body:
       - receiver/udplog
       - receiver/vcenter
       - receiver/wavefront
+      - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters
       - receiver/zipkin
