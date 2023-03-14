@@ -16,6 +16,7 @@ package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -53,7 +54,7 @@ func setupSSHServer(t *testing.T) *opensshContainer {
 			"PASSWORD_ACCESS": "true",
 		},
 		ExposedPorts: []string{"2222/tcp"},
-		WaitingFor:   wait.ForExposedPort(),
+		WaitingFor:   wait.ForListeningPort("2222/tcp"),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
@@ -64,9 +65,17 @@ func setupSSHServer(t *testing.T) *opensshContainer {
 		Started:          true,
 	})
 	require.NoError(t, err)
+	require.NotNil(t, container)
 
-	endpoint, err := container.PortEndpoint(ctx, "2222", "")
+	mappedPort, err := container.MappedPort(ctx, "2222")
+	print(mappedPort)
 	require.NoError(t, err)
+
+	hostIP, err := container.Host(ctx)
+	require.Nil(t, err)
+
+	endpoint := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
+
 	t.Log("endpoint: ", endpoint)
 	return &opensshContainer{Container: container, Endpoint: endpoint}
 }
