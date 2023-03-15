@@ -34,21 +34,40 @@ var (
 const defaultEndpoint = "http://localhost:80"
 
 // Config defines the configuration for the various elements of the receiver agent.
+
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	Method                                  string `mapstructure:"method"`
+	Targets                                 []*targetConfig `mapstructure:"targets"`
 }
 
-// Validate validates the configuration by checking for missing or invalid fields
-func (cfg *Config) Validate() error {
+type targetConfig struct {
+	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	Method                        string `mapstructure:"method"`
+}
+
+func (cfg *targetConfig) Validate() error {
 	var err error
 
 	_, parseErr := url.Parse(cfg.Endpoint)
 	if parseErr != nil {
 		wrappedErr := fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr)
 		err = multierr.Append(err, wrappedErr)
+	}
+
+	return err
+}
+
+// Validate validates the configuration by checking for missing or invalid fields
+func (cfg *Config) Validate() error {
+	var err error
+
+	if len(cfg.Targets) == 0 {
+		err = multierr.Append(err, errors.New("no targets configured"))
+	}
+
+	for _, target := range cfg.Targets {
+		err = multierr.Append(err, target.Validate())
 	}
 
 	return err

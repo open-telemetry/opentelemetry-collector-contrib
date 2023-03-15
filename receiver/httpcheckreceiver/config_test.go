@@ -33,8 +33,12 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "invalid://endpoint:  12efg",
+				Targets: []*targetConfig{
+					{
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: "invalid://endpoint:  12efg",
+						},
+					},
 				},
 			},
 			expectedErr: multierr.Combine(
@@ -44,8 +48,13 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: defaultEndpoint,
+				Targets: []*targetConfig{
+					{
+
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: defaultEndpoint,
+						},
+					},
 				},
 			},
 			expectedErr: nil,

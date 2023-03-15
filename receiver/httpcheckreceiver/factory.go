@@ -48,12 +48,16 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
 		},
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: defaultEndpoint,
-			Timeout:  10 * time.Second,
-		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		Method:               "GET",
+		Targets: []*targetConfig{
+			{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: defaultEndpoint,
+					Timeout:  10 * time.Second,
+				},
+				Method: "GET",
+			},
+		},
 	}
 }
 
