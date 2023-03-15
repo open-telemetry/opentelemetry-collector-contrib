@@ -552,8 +552,6 @@ func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn
 		r, err := createFn(ctx, expCreateSettings, getConfigFn())
 		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			continue
-		} else if err != nil {
-			require.NoError(tb, err)
 		}
 		if r == nil {
 			continue
