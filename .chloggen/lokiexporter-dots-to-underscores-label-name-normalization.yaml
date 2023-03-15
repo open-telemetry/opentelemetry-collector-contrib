@@ -5,7 +5,7 @@ change_type: enhancement
 component: translator/loki
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added normalization so label name to follow Prometheus label names standard
+note: Normalize label names so they follow the Prometheus label names standard
 
 # One or more tracking issues related to the change
 issues: [14113]
