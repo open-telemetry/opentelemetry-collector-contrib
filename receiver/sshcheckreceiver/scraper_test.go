@@ -68,7 +68,6 @@ func setupSSHServer(t *testing.T) *opensshContainer {
 	require.NotNil(t, container)
 
 	mappedPort, err := container.MappedPort(ctx, "2222")
-	print(mappedPort)
 	require.NoError(t, err)
 
 	hostIP, err := container.Host(ctx)
