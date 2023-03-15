@@ -6,6 +6,7 @@
 | Supported pipeline types | traces        |
 | Distributions            | [contrib]     |
 
+**Note**: The `spanmetrics` processor will be deprecated in favour of the [spanmetrics](../../connector/spanmetricsconnector/README.md) connector.
 **Note:** Currently experimental and subject to breaking changes (e.g. change from processor to exporter/translator component).
 See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/403.
 
