@@ -156,6 +156,14 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordVcenterVMCPUUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirection(1), AttributeDiskType(1))
 
 			defaultMetricsCount++
@@ -619,6 +627,32 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.cpu.usage":
+					assert.False(t, validatedMetrics["vcenter.vm.cpu.usage"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.usage")
+					validatedMetrics["vcenter.vm.cpu.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of CPU in Hz used by the VM.", ms.At(i).Description())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.cpu.utilization":
+					assert.False(t, validatedMetrics["vcenter.vm.cpu.utilization"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.utilization")
+					validatedMetrics["vcenter.vm.cpu.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The CPU utilization of the VM.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
 				case "vcenter.vm.disk.latency.avg":
 					assert.False(t, validatedMetrics["vcenter.vm.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.avg")
 					validatedMetrics["vcenter.vm.disk.latency.avg"] = true

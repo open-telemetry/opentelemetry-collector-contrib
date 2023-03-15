@@ -51,6 +51,7 @@ func (v *vcenterMetricScraper) recordHostSystemMemoryUsage(
 func (v *vcenterMetricScraper) recordVMUsages(
 	now pcommon.Timestamp,
 	vm mo.VirtualMachine,
+	hs mo.HostSystem,
 ) {
 	memUsage := vm.Summary.QuickStats.GuestMemoryUsage
 	balloonedMem := vm.Summary.QuickStats.BalloonedMemory
@@ -71,6 +72,27 @@ func (v *vcenterMetricScraper) recordVMUsages(
 		diskUtilization := float64(diskUsed) / float64(diskFree+diskUsed) * 100
 		v.mb.RecordVcenterVMDiskUtilizationDataPoint(now, diskUtilization)
 	}
+
+	s := vm.Summary
+	z := s.QuickStats
+
+	ncpu := vm.Config.Hardware.NumCPU
+	cpuUsage := z.OverallCpuUsage
+	var cpuUtilization float64
+
+	if cpuUsage != 0 {
+		// If a limit is set, use that. Runtime.MaxCpuUsage seems always equal to the limit value set for a vm, so could just use that?
+		if vm.Config.CpuAllocation.Limit != nil && *vm.Config.CpuAllocation.Limit != -1 {
+			cpuUtilization = 100 * float64(cpuUsage) / float64((int64(ncpu))*(*vm.Config.CpuAllocation.Limit))
+			// no limit so full Ghz of host available
+		} else {
+			cpuUtilization = 100 * float64(cpuUsage) / float64(ncpu*hs.Summary.Hardware.CpuMhz)
+
+		}
+	}
+
+	v.mb.RecordVcenterVMCPUUsageDataPoint(now, int64(cpuUsage))
+	v.mb.RecordVcenterVMCPUUtilizationDataPoint(now, cpuUtilization)
 }
 
 func (v *vcenterMetricScraper) recordDatastoreProperties(
