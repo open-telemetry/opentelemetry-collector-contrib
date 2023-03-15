@@ -120,8 +120,9 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 	}
 
 	return &http.Server{
-		Addr:    cfg.Endpoint,
-		Handler: handler,
+		Addr:              cfg.Endpoint,
+		Handler:           handler,
+		ReadHeaderTimeout: 20 * time.Second,
 	}, nil
 }
 

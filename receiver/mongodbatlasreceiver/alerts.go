@@ -133,8 +133,9 @@ func newAlertsReceiver(params rcvr.CreateSettings, baseConfig *Config, consumer 
 		return recv, nil
 	}
 	s := &http.Server{
-		TLSConfig: tlsConfig,
-		Handler:   http.HandlerFunc(recv.handleRequest),
+		TLSConfig:         tlsConfig,
+		Handler:           http.HandlerFunc(recv.handleRequest),
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	recv.server = s
 	return recv, nil
