@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewRawUnmarshaler(t *testing.T) {
+func TestNewAzureResourceLogsUnmarshaler(t *testing.T) {
 	um := newAzureResourceLogsUnmarshaler()
 	assert.Equal(t, "azureresourcelogs", um.Encoding())
 }
