@@ -232,7 +232,7 @@ func (m *Manager) makeReader(filePath string) *Reader {
 		if m.readerFactory.fromBeginning {
 			m.Infow("Started watching file", "path", filePath)
 		} else {
-			m.Infow("Startedd watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", filePath)
+			m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", filePath)
 		}
 		m.seenPaths[filePath] = struct{}{}
 	}
