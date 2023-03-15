@@ -247,6 +247,8 @@ func (m *Manager) makeReader(filePath string) *Reader {
 		m.Errorw("Failed creating fingerprint", zap.Error(err))
 		return nil
 	}
+	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
+
 	if len(fp.FirstBytes) == 0 {
 		if err = file.Close(); err != nil {
 			m.Errorf("problem closing file", "file", file.Name())

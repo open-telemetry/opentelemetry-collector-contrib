@@ -1308,6 +1308,8 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 
 	tempDir := t.TempDir()
 	cfg1 := NewConfig().includeDir(tempDir)
+	// Keep the polling interval high, we'll manually call the poll()
+	cfg1.PollInterval = 200 * time.Second
 	cfg1.StartAt = "beginning"
 	cfg1 = cfg1.withHeader(`^\|`, "headerField1: (?P<header_value_1>[A-z0-9]+)")
 
