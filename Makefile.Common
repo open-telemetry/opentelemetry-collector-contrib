@@ -167,7 +167,7 @@ lint: $(LINT) checklicense misspell govulncheck
 	$(LINT) run --allow-parallel-runners --build-tags integration
 
 .PHONY: govulncheck
-govulncheck:
+govulncheck: $(GOVULNCHECK)
 	$(GOVULNCHECK) ./...
 
 .PHONY: tidy
