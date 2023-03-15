@@ -54,12 +54,6 @@ const (
 	// Centralizing some HTTP and related string constants.
 	gzipEncoding              = "gzip"
 	httpContentEncodingHeader = "Content-Encoding"
-
-	// splunk metadata
-	index      = "index"
-	source     = "source"
-	sourcetype = "sourcetype"
-	host       = "host"
 )
 
 var (
