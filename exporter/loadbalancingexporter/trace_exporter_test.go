@@ -139,8 +139,6 @@ func TestConsumeTraces(t *testing.T) {
 	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig(), zap.NewNop())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, traceIDRouting)
-
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
@@ -175,7 +173,7 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), zap.NewNop())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, svcRouting)
+	assert.Equal(t, p.resourceKeys, []string{"service.name"})
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
@@ -201,52 +199,81 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 }
 
 func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
-	b := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	for _, tt := range []struct {
 		desc  string
 		batch ptrace.Traces
-		rf    routingFunction
-		res   map[string][]int
+		res   []routingEntry
 		err   error
 	}{
 		{
 			"same trace id and different services - service based routing",
 			twoServicesWithSameTraceID(),
-			func(t ptrace.Traces) (map[string][]int, error) {
-				return routeByResourceAttr(t, "service.name")
+			[]routingEntry{
+				{
+					routingKey: resourceAttrRouting,
+					keyValue:   "ad-service-1",
+				},
+				{
+					routingKey: resourceAttrRouting,
+					keyValue:   "get-recommendations-7",
+				},
 			},
-			nil,
-			errors.New("received traces were not split by resource attr"),
-		},
-		{
-			"same trace id and different services - trace id routing",
-			twoServicesWithSameTraceID(),
-			routeByTraceId,
-			map[string][]int{string(b[:]): {0, 1}},
 			nil,
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res, err := tt.rf(tt.batch)
+			res, err := splitTracesByResourceAttr(tt.batch, []string{"service.name"})
+			for i, r := range res {
+				assert.Equal(t, tt.res[i].routingKey, r.routingKey)
+				assert.Equal(t, tt.res[i].keyValue, r.keyValue)
+
+				var sn string
+				if v, ok := r.trace.ResourceSpans().At(0).Resource().Attributes().Get("service.name"); ok {
+					sn = v.Str()
+				} else {
+					sn = ""
+				}
+				assert.Equal(t, tt.res[i].keyValue, sn)
+			}
+			assert.Equal(t, tt.err, err)
+		})
+	}
+}
+
+func TestIdBasedRoutingForSameTraceId(t *testing.T) {
+	for _, tt := range []struct {
+		desc  string
+		batch ptrace.Traces
+		res   string
+		err   error
+	}{
+		{
+			"same trace id and different services - trace id routing",
+			twoServicesWithSameTraceID(),
+			"",
+			errors.New("routeByTraceId must receive a ptrace.Traces with a single ResourceSpan"),
+		},
+	} {
+		t.Run(tt.desc, func(t *testing.T) {
+			res, err := routeByTraceId(tt.batch)
 			assert.Equal(t, tt.err, err)
 			assert.Equal(t, tt.res, res)
 		})
 	}
 }
 
-func TestAttrBasedRouting(t *testing.T) {
+func TestIdBasedRouting(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newMockTracesExporter(sink.ConsumeTraces), nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), attrBasedRoutingConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), attrBasedRoutingConfig(), zap.NewNop())
-	require.NotNil(t, p)
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig(), zap.NewNop())
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, resourceAttrRouting)
+	require.NotNil(t, p)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
@@ -267,12 +294,105 @@ func TestAttrBasedRouting(t *testing.T) {
 	}()
 
 	// test
-	res := p.ConsumeTraces(context.Background(), twoServicesWithSameTraceID())
+	trace := twoServicesWithSameTraceID()
+	appendSimpleTraceWithID(trace.ResourceSpans().At(0), [16]byte{1, 2, 3, 4})
+	trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
+	trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().AppendEmpty().SetTraceID([16]byte{2, 3, 4, 5})
+	res := p.ConsumeTraces(context.Background(), trace)
+
+	// Resulting Trace
+	// {
+	// 	ptrace.Traces: [
+	// 		{
+	// 			ResourceSpans: [{
+	// 				service.name: "ad-service-1"
+	// 				ScopeSpans: [{
+	// 					Spans: [{
+	// 						TraceID: "1234"
+	// 					}]
+	// 					Spans: [{
+	// 						TraceID: "1234"
+	// 					}]
+	// 					Spans: [{
+	// 						TraceID: "2345"
+	// 					}]
+	// 				}]
+	// 				ScopeSpans: [{
+	// 					Spans: [{
+	// 						TraceID: "1234"
+	// 					}]
+	// 				}]
+	// 			}]
+	// 		},
+	// 		{
+	// 			ResourceSpans: [{
+	// 				service.name: "get-recommendation-7"
+	// 				ScopeSpans: [{
+	// 					Spans: [{
+	// 						TraceID: "1234"
+	// 					}]
+	// 				}]
+	// 			}]
+	// 		}
+	// 	]
+	// }
+
+	// verify
+	assert.Nil(t, res)
+
+	// This will be split into four because of the behavior of batchpersignal.SplitTraces
+	// The ad-service-1 trace is split into 3
+	// - 1 trace containing the two "1234" spans
+	// - 1 trace containing the "2345" span
+	// - 1 trace containing the span in a different ILS (despite having the same trace ID as the two "1234" spans)
+	// - 1 trace containing the span in a different RS (despite having the same trace ID as the thre "1234" spans)
+	assert.Len(t, sink.AllTraces(), 4)
+}
+
+func TestAttrBasedRouting(t *testing.T) {
+	sink := new(consumertest.TracesSink)
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+		return newMockTracesExporter(sink.ConsumeTraces), nil
+	}
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), attrBasedRoutingConfig(), componentFactory)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), attrBasedRoutingConfig(), zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, p)
+	assert.Equal(t, p.resourceKeys, []string{"service.name"})
+
+	// pre-load an exporter here, so that we don't use the actual OTLP exporter
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
+	lb.addMissingExporters(context.Background(), []string{"endpoint-2"})
+	lb.addMissingExporters(context.Background(), []string{"endpoint-3"})
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(ctx context.Context) ([]string, error) {
+			return []string{"endpoint-1", "endpoint-2", "endpoint-3"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	// test
+	trace := twoServicesWithSameTraceID()
+	rs := trace.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "ad-service-1")
+	appendSimpleTraceWithID(rs, [16]byte{1, 2, 3, 4})
+	res := p.ConsumeTraces(context.Background(), trace)
 
 	// verify
 	assert.Nil(t, res)
 
 	// Verify that the single Trace was split into two based on service name
+	// With the two `ad-service-1` RS being grouped into a single trace
 	assert.Len(t, sink.AllTraces(), 2)
 }
 
@@ -404,18 +524,16 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	assert.Len(t, sink.AllTraces(), 2)
 }
 
-func TestNoTracesInBatch(t *testing.T) {
+func TestNoTracesInBatchTraceIdRouting(t *testing.T) {
 	for _, tt := range []struct {
 		desc  string
 		batch ptrace.Traces
-		rf    routingFunction
 		err   error
 	}{
 		// Trace ID routing
 		{
 			"no resource spans",
 			ptrace.NewTraces(),
-			routeByTraceId,
 			errors.New("empty resource spans"),
 		},
 		{
@@ -425,9 +543,24 @@ func TestNoTracesInBatch(t *testing.T) {
 				batch.ResourceSpans().AppendEmpty()
 				return batch
 			}(),
-			routeByTraceId,
 			errors.New("empty scope spans"),
 		},
+	} {
+		t.Run(tt.desc, func(t *testing.T) {
+			res, err := routeByTraceId(tt.batch)
+			assert.Equal(t, err, tt.err)
+			assert.Equal(t, res, "")
+		})
+	}
+}
+
+func TestNoTracesInBatchResourceRouting(t *testing.T) {
+	for _, tt := range []struct {
+		desc  string
+		batch ptrace.Traces
+		res   []routingEntry
+		err   error
+	}{
 		// Service / Resource Attribute routing
 		{
 			"no spans",
@@ -436,16 +569,22 @@ func TestNoTracesInBatch(t *testing.T) {
 				batch.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 				return batch
 			}(),
-			func(t ptrace.Traces) (map[string][]int, error) {
-				return routeByResourceAttr(t, "service.name")
+			[]routingEntry{
+				{
+					routingKey: traceIDRouting,
+					keyValue:   "",
+				},
 			},
-			errors.New("empty spans"),
+			nil,
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res, err := tt.rf(tt.batch)
-			assert.Equal(t, err, tt.err)
-			assert.Equal(t, res, map[string][]int(nil))
+			res, err := splitTracesByResourceAttr(tt.batch, []string{"service.name"})
+			assert.Equal(t, tt.err, err)
+			for i, _ := range res {
+				assert.Equal(t, tt.res[i].routingKey, res[i].routingKey)
+				assert.Equal(t, tt.res[i].keyValue, res[i].keyValue)
+			}
 		})
 	}
 }
@@ -655,8 +794,8 @@ func attrBasedRoutingConfig() *Config {
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}},
 		},
-		RoutingKey:       "resourceAttr",
-		ResourceAttrKeys: []string{"service.name"},
+		RoutingKey:   "resource",
+		ResourceKeys: []string{"service.name"},
 	}
 }
 

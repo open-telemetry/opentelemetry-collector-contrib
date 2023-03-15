@@ -36,16 +36,22 @@ import (
 var _ exporter.Traces = (*traceExporterImp)(nil)
 
 type traceExporterImp struct {
-	loadBalancer     loadBalancer
-	routingKey       routingKey
-	resourceAttrKeys []string
+	loadBalancer loadBalancer
+	resourceKeys []string
 
-	stopped    bool
-	shutdownWg sync.WaitGroup
-	logger     *zap.Logger
+	traceConsumer traceConsumer
+	stopped       bool
+	shutdownWg    sync.WaitGroup
+	logger        *zap.Logger
 }
 
-type routingFunction func(ptrace.Traces) (map[string][]int, error)
+type routingEntry struct {
+	routingKey routingKey
+	keyValue   string
+	trace      ptrace.Traces
+}
+
+type traceConsumer func(ctx context.Context, td ptrace.Traces) error
 
 // Create new traces exporter
 func newTracesExporter(params exporter.CreateSettings, cfg component.Config, logger *zap.Logger) (*traceExporterImp, error) {
@@ -59,15 +65,17 @@ func newTracesExporter(params exporter.CreateSettings, cfg component.Config, log
 		return nil, err
 	}
 
-	traceExporter := traceExporterImp{loadBalancer: lb, routingKey: traceIDRouting, logger: logger}
+	traceExporter := traceExporterImp{loadBalancer: lb, logger: logger}
 
 	switch cfg.(*Config).RoutingKey {
 	case "service":
-		traceExporter.routingKey = svcRouting
-	case "resourceAttr":
-		traceExporter.routingKey = resourceAttrRouting
-		traceExporter.resourceAttrKeys = cfg.(*Config).ResourceAttrKeys
+		traceExporter.traceConsumer = traceExporter.consumeTracesByResource
+		traceExporter.resourceKeys = []string{"service.name"}
+	case "resource":
+		traceExporter.traceConsumer = traceExporter.consumeTracesByResource
+		traceExporter.resourceKeys = cfg.(*Config).ResourceKeys
 	case "traceID", "":
+		traceExporter.traceConsumer = traceExporter.consumeTracesById
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
 	}
@@ -78,60 +86,6 @@ func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	oCfg := cfg.Protocol.OTLP
 	oCfg.Endpoint = endpoint
 	return oCfg
-}
-
-func SplitTracesByResourceAttr(batches ptrace.Traces, attrKeys []string) (map[string][]ptrace.Traces, error) {
-	// This code is based on the ConsumeTraces function of the batchperresourceattr
-	// modified to support multiple routing keys + fallback on the traceId when routing attr does not exist
-	result := make(map[string][]ptrace.Traces)
-
-	rss := batches.ResourceSpans()
-	lenRss := rss.Len()
-
-	indicesByAttr := make(map[string]map[string][]int)
-	var fallbackIndices []int
-	var attrFound bool
-	for i := 0; i < lenRss; i++ {
-		rs := rss.At(i)
-		attrFound = false
-		for _, attrKey := range attrKeys {
-			var keyValue string
-			if _, ok := indicesByAttr[attrKey]; !ok {
-				indicesByAttr[attrKey] = make(map[string][]int)
-			}
-			if attributeValue, ok := rs.Resource().Attributes().Get(attrKey); ok {
-				keyValue = attributeValue.Str()
-				indicesByAttr[attrKey][keyValue] = append(indicesByAttr[attrKey][keyValue], i)
-				attrFound = true
-				break
-			}
-		}
-		if !attrFound {
-			// These will be processed further to be split per traceID
-			fallbackIndices = append(fallbackIndices, i)
-		}
-	}
-
-	for j := 0; j < len(fallbackIndices); j++ {
-		t := ptrace.NewTraces()
-		rs := rss.At(fallbackIndices[j])
-		rs.CopyTo(t.ResourceSpans().AppendEmpty())
-		nt := batchpersignal.SplitTraces(t)
-		result["traceId"] = append(result["traceId"], nt...)
-	}
-
-	for routeKey, routeKeyAttrs := range indicesByAttr {
-		for _, indices := range routeKeyAttrs {
-			tracesForAttr := ptrace.NewTraces()
-			for _, i := range indices {
-				rs := rss.At(i)
-				rs.CopyTo((tracesForAttr.ResourceSpans().AppendEmpty()))
-			}
-			result[routeKey] = append(result[routeKey], tracesForAttr)
-		}
-	}
-
-	return result, nil
 }
 
 func (e *traceExporterImp) Capabilities() consumer.Capabilities {
@@ -149,51 +103,45 @@ func (e *traceExporterImp) Shutdown(context.Context) error {
 }
 
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	var err error
+	return e.traceConsumer(ctx, td)
+}
+
+func (e *traceExporterImp) consumeTracesById(ctx context.Context, td ptrace.Traces) error {
 	var errs error
-	var batches = make(map[string][]ptrace.Traces)
-	if e.routingKey == resourceAttrRouting {
-		batches, err = SplitTracesByResourceAttr(td, e.resourceAttrKeys)
-		if err != nil {
+	batches := batchpersignal.SplitTraces(td)
+
+	for _, t := range batches {
+		if tid, err := routeByTraceId(t); err == nil {
+			errs = multierr.Append(errs, e.consumeTrace(ctx, t, tid))
+		} else {
 			return err
 		}
-	} else {
-		batches["traceId"] = batchpersignal.SplitTraces(td)
 	}
-	rfs := make(map[string]routingFunction)
-	for key := range batches {
-		if key == "traceId" {
-			rfs[key] = func(x ptrace.Traces) (map[string][]int, error) {
-				return routeByTraceId(x)
-			}
-		} else {
-			rfs[key] = func(x ptrace.Traces) (map[string][]int, error) {
-				return routeByResourceAttr(x, key)
-			}
-		}
-	}
-	for key, tb := range batches {
-		for _, t := range tb {
-			errs = multierr.Append(errs, e.consumeTrace(ctx, t, rfs[key]))
-		}
-	}
-
 	return errs
 }
 
-func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces, rf routingFunction) error {
-	var exp component.Component
-	routingIds, err := rf(td)
+func (e *traceExporterImp) consumeTracesByResource(ctx context.Context, td ptrace.Traces) error {
+	var errs error
+	routeBatches, err := splitTracesByResourceAttr(td, e.resourceKeys)
 	if err != nil {
 		return err
 	}
-	var rid string
-	for key := range routingIds {
-		rid = key
-		break
+	for _, batch := range routeBatches {
+		switch batch.routingKey {
+		case resourceAttrRouting:
+			errs = multierr.Append(errs, e.consumeTrace(ctx, batch.trace, batch.keyValue))
+		case traceIDRouting:
+			errs = multierr.Append(errs, e.consumeTracesById(ctx, batch.trace))
+		}
 	}
+	return errs
+
+}
+
+func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces, rid string) error {
+	// Routes a single trace via a given routing ID
 	endpoint := e.loadBalancer.Endpoint([]byte(rid))
-	exp, err = e.loadBalancer.Exporter(endpoint)
+	exp, err := e.loadBalancer.Exporter(endpoint)
 	if err != nil {
 		return err
 	}
@@ -221,62 +169,79 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces, r
 	return err
 }
 
-func validateNotEmpty(td ptrace.Traces) error {
-	rs := td.ResourceSpans()
-	if rs.Len() == 0 {
-		return errors.New("empty resource spans")
+func getResourceAttrValue(rs ptrace.ResourceSpans, resourceKeys []string) (string, bool) {
+	for _, attrKey := range resourceKeys {
+		if attributeValue, ok := rs.Resource().Attributes().Get(attrKey); ok {
+			return attributeValue.Str(), true
+		}
 	}
-	ils := rs.At(0).ScopeSpans()
-	if ils.Len() == 0 {
-		return errors.New("empty scope spans")
-	}
-	spans := ils.At(0).Spans()
-	if spans.Len() == 0 {
-		return errors.New("empty spans")
-	}
-	return nil
+	return "", false
 }
 
-func routeByTraceId(td ptrace.Traces) (map[string][]int, error) {
-	ids := make(map[string][]int)
+func splitTracesByResourceAttr(batches ptrace.Traces, resourceKeys []string) ([]routingEntry, error) {
+	// This function batches all the ResourceSpans with the same routing resource attribute value into a single ptrace.Trace
+	// This returns a list of routing entries which consists of the routing key, routing key value and the trace
+	// There should be a 1:1 mapping between key value <-> trace
+	// This is because we group all Resource Spans with the same key value under a single trace
+	result := []routingEntry{}
+	rss := batches.ResourceSpans()
+
+	// This is a mapping between the resource attribute values found and the constructed trace
+	routeMap := make(map[string]ptrace.Traces)
+
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		if keyValue, ok := getResourceAttrValue(rs, resourceKeys); ok {
+			// Check if this keyValue has previously been seen
+			// if not it constructs an empty ptrace.Trace
+			if _, ok := routeMap[keyValue]; !ok {
+				routeMap[keyValue] = ptrace.NewTraces()
+			}
+			rs.CopyTo(routeMap[keyValue].ResourceSpans().AppendEmpty())
+		} else {
+			// If none of the resource attributes have been found
+			// We fallback to routing the given Resource Span by Trace ID
+			t := ptrace.NewTraces()
+			rs.CopyTo(t.ResourceSpans().AppendEmpty())
+			// We can't route this whole Resource Span by a single trace ID
+			// because it's possible for the spans under the RS to have different trace IDs
+			result = append(result, routingEntry{
+				routingKey: traceIDRouting,
+				trace:      t,
+			})
+		}
+	}
+
+	// We convert the attr value:trace mapping into a list of routingEntries
+	for key, trace := range routeMap {
+		result = append(result, routingEntry{
+			routingKey: resourceAttrRouting,
+			keyValue:   key,
+			trace:      trace,
+		})
+	}
+
+	return result, nil
+}
+
+func routeByTraceId(td ptrace.Traces) (string, error) {
+	// This function assumes that you are receiving a single trace i.e. single traceId
+	// returns the traceId as the routing key
 	rs := td.ResourceSpans()
 	if rs.Len() == 0 {
-		return nil, errors.New("empty resource spans")
+		return "", errors.New("empty resource spans")
+	}
+	if rs.Len() > 1 {
+		return "", errors.New("routeByTraceId must receive a ptrace.Traces with a single ResourceSpan")
 	}
 	ils := rs.At(0).ScopeSpans()
 	if ils.Len() == 0 {
-		return nil, errors.New("empty scope spans")
+		return "", errors.New("empty scope spans")
 	}
 	spans := ils.At(0).Spans()
 	if spans.Len() == 0 {
-		return nil, errors.New("empty spans")
+		return "", errors.New("empty spans")
 	}
 	tid := spans.At(0).TraceID()
-	ids[string(tid[:])] = []int{}
-	for i := 0; i < rs.Len(); i++ {
-		ids[string(tid[:])] = append(ids[string(tid[:])], i)
-	}
-	return ids, nil
-}
-
-func routeByResourceAttr(td ptrace.Traces, routeKey string) (map[string][]int, error) {
-	ids := make(map[string][]int)
-	err := validateNotEmpty(td)
-	if err != nil {
-		return nil, err
-	}
-
-	rs := td.ResourceSpans()
-	for i := 0; i < rs.Len(); i++ {
-		attr, ok := rs.At(i).Resource().Attributes().Get(routeKey)
-		if !ok {
-			// If resource attribute is not found, falls back to  Trace ID routing
-			return routeByTraceId(td)
-		}
-		ids[attr.Str()] = append(ids[attr.Str()], i)
-	}
-	if len(ids) > 1 {
-		return nil, errors.New("received traces were not split by resource attr")
-	}
-	return ids, nil
+	return string(tid[:]), nil
 }

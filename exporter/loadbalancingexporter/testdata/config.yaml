@@ -50,5 +50,5 @@ loadbalancing/6:
     dns:
       hostname: service-1
       port: 55690
-  routing_key: resourceAttr
-  resource_attr_keys: ["resource.attribute", "service.name"]
+  routing_key: resource
+  resource_keys: ["resource.attribute", "service.name"]
