@@ -195,7 +195,7 @@ receiver/kafkareceiver/                                  @open-telemetry/collect
 receiver/kubeletstatsreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/memcachedreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/mongodbreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
-receiver/mongodbatlasreceiver/                           @open-telemetry/collector-contrib-approvers @zenmoto
+receiver/mongodbatlasreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/mysqlreceiver/                                  @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/nginxreceiver/                                  @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/nsxtreceiver/                                   @open-telemetry/collector-contrib-approvers @dashpole @schmikei
