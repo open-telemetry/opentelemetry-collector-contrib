@@ -1080,6 +1080,12 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
+	config.HecToOtelAttrs = splunk.HecToOtelAttrs{
+		Source:     "com.source.foo",
+		SourceType: "com.sourcetype.foo",
+		Index:      "com.index.foo",
+		Host:       "com.host.foo",
+	}
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
@@ -1110,7 +1116,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 				assert.Equal(t, 1, resources.Len())
 				resource := resources.At(0).Resource().Attributes()
 				assert.Equal(t, 4, resource.Len())
-				for _, k := range []string{splunk.DefaultIndexLabel, splunk.DefaultSourceLabel, splunk.DefaultSourceTypeLabel} {
+				for _, k := range []string{config.HecToOtelAttrs.Index, config.HecToOtelAttrs.SourceType, config.HecToOtelAttrs.Source, config.HecToOtelAttrs.Host} {
 					v, ok := resource.Get(k)
 					if !ok {
 						assert.Fail(t, fmt.Sprintf("does not contain query param: %s", k))
@@ -1135,7 +1141,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 				assert.Equal(t, 1, resources.Len())
 				resource := resources.At(0).Resource().Attributes()
 				assert.Equal(t, 2, resource.Len())
-				for _, k := range [2]string{splunk.DefaultIndexLabel, splunk.DefaultSourceLabel} {
+				for _, k := range [2]string{config.HecToOtelAttrs.Index, config.HecToOtelAttrs.Source} {
 					v, ok := resource.Get(k)
 					if !ok {
 						assert.Fail(t, fmt.Sprintf("does not contain query param: %s", k))
@@ -1183,63 +1189,6 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 			assertResponse(t, resp.StatusCode, "OK")
 			tt.assertResource(t, sink.AllLogs())
 		})
-	}
-}
-
-func Test_splunkhecReceiver_rawReqUseConfigurableMetadataKey(t *testing.T) {
-	config := createDefaultConfig().(*Config)
-	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	config.RawPath = "/foo"
-	config.HecToOtelAttrs = splunk.HecToOtelAttrs{
-		Source:     "com.source.foo",
-		SourceType: "com.sourcetype.foo",
-		Index:      "com.index.foo",
-		Host:       "com.host.foo",
-	}
-
-	currentTime := float64(time.Now().UnixNano()) / 1e6
-	splunkMsg := buildSplunkHecMsg(currentTime, 3)
-
-	assertResponse := func(t *testing.T, status int, body string) {
-		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, responseOK, body)
-	}
-
-	sink := new(consumertest.LogsSink)
-	rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
-	assert.NoError(t, err)
-
-	r := rcv.(*splunkReceiver)
-	assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, r.Shutdown(context.Background()))
-	}()
-	w := httptest.NewRecorder()
-	r.handleRawReq(w, func() *http.Request {
-		msgBytes, err := json.Marshal(splunkMsg)
-		require.NoError(t, err)
-		req := httptest.NewRequest("POST",
-			"http://localhost/foo?index=bar&source=bar&sourcetype=bar&host=bar",
-			bytes.NewReader(msgBytes))
-		return req
-	}())
-
-	resp := w.Result()
-	assert.NoError(t, err)
-
-	assertResponse(t, resp.StatusCode, "OK")
-	got := sink.AllLogs()
-	require.Equal(t, 1, len(got))
-	resources := got[0].ResourceLogs()
-	assert.Equal(t, 1, resources.Len())
-	resource := resources.At(0).Resource().Attributes()
-	assert.Equal(t, 4, resource.Len())
-	for _, k := range []string{config.HecToOtelAttrs.Index, config.HecToOtelAttrs.SourceType, config.HecToOtelAttrs.Source} {
-		v, ok := resource.Get(k)
-		if !ok {
-			assert.Fail(t, fmt.Sprintf("does not contain query param: %s", k))
-		}
-		assert.Equal(t, "bar", v.AsString())
 	}
 }
 

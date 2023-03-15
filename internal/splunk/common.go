@@ -30,7 +30,6 @@ const (
 	DefaultSourceTypeLabel     = "com.splunk.sourcetype"
 	DefaultSourceLabel         = "com.splunk.source"
 	DefaultIndexLabel          = "com.splunk.index"
-	DefaultHostLabel           = "com.splunk.host"
 	DefaultNameLabel           = "otel.log.name"
 	DefaultSeverityTextLabel   = "otel.log.severity.text"
 	DefaultSeverityNumberLabel = "otel.log.severity.number"

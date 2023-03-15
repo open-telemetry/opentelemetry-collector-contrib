@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
@@ -78,13 +77,6 @@ var (
 	errInternalServerError    = initJSONResponse(responseErrInternalServerError)
 	errUnsupportedMetricEvent = initJSONResponse(responseErrUnsupportedMetricEvent)
 	errUnsupportedLogEvent    = initJSONResponse(responseErrUnsupportedLogEvent)
-
-	metadataMap = map[string]string{
-		index:      splunk.DefaultIndexLabel,
-		source:     splunk.DefaultSourceLabel,
-		sourcetype: splunk.DefaultSourceTypeLabel,
-		host:       splunk.DefaultHostLabel,
-	}
 )
 
 // splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
@@ -279,30 +271,17 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	}
 
 	sc := bufio.NewScanner(bodyReader)
-
-	ld := plog.NewLogs()
-	rl := ld.ResourceLogs().AppendEmpty()
 	resourceCustomizer := r.createResourceCustomizer(req)
-	if resourceCustomizer != nil {
-		resourceCustomizer(rl.Resource())
-	}
-	appendMetadataToResource(rl.Resource(), req, r.config.HecToOtelAttrs)
-
-	sl := rl.ScopeLogs().AppendEmpty()
-	for sc.Scan() {
-		logRecord := sl.LogRecords().AppendEmpty()
-		logLine := sc.Text()
-		logRecord.Body().SetStr(logLine)
-	}
+	ld, slLen := splunkHecRawToLogData(sc, req.URL.Query(), resourceCustomizer, r.config)
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()
 
 	if consumerErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, sl.LogRecords().Len(), consumerErr)
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, consumerErr)
 	} else {
 		resp.WriteHeader(http.StatusOK)
-		r.obsrecv.EndLogsOp(ctx, typeStr, sl.LogRecords().Len(), nil)
+		r.obsrecv.EndLogsOp(ctx, typeStr, slLen, nil)
 	}
 }
 
@@ -493,34 +472,4 @@ func isFlatJSONField(field interface{}) bool {
 		}
 	}
 	return true
-}
-func appendMetadataToResource(resource pcommon.Resource, req *http.Request, hecAttr splunk.HecToOtelAttrs) {
-	for k, v := range metadataMap {
-		if q := req.URL.Query().Get(k); q != "" {
-			key := getMetadataKey(hecAttr, k, v)
-			resource.Attributes().PutStr(key, q)
-		}
-	}
-}
-
-func getMetadataKey(hecAttr splunk.HecToOtelAttrs, rKey, rDefault string) string {
-	switch rKey {
-	case index:
-		if hecAttr.Index != "" {
-			return hecAttr.Index
-		}
-	case source:
-		if hecAttr.Source != "" {
-			return hecAttr.Source
-		}
-	case sourcetype:
-		if hecAttr.SourceType != "" {
-			return hecAttr.SourceType
-		}
-	case host:
-		if hecAttr.Host != "" {
-			return hecAttr.Host
-		}
-	}
-	return rDefault
 }
