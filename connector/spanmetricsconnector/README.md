@@ -1,10 +1,10 @@
 # Span Metrics Connector
 
-| Status                   |                                                          |
-|------------------------- |----------------------------------------------------------|
-| Stability                | [alpha]                                                  |
-| Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types)|
-| Distributions            | []                                                       |
+| Status                   |                                                            |
+|------------------------- |------------------------------------------------------------|
+| Stability                | [alpha]                                                    |
+| Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types)  |
+| Distributions            | [contrib]                                                  |
 
 ## Supported Pipeline Types
 
@@ -70,7 +70,7 @@ The following settings can be optionally configured:
   - `unit` (default: `ms`, allowed values: `ms`, `s`): The time unit for recording duration measurements.
   calculated from spans duration measurements.
   - `explicit`:
-    - `buckets`: the list of durations defining the duration histogram buckets. Default
+    - `buckets`: the list of durations defining the duration histogram time buckets. Default
       buckets: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
   - `exponential`:
     - `max_size` (default: 160) the maximum number of buckets per positive or negative number range.
