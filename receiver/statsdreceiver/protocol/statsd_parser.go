@@ -82,12 +82,12 @@ var defaultObserverCategory = ObserverCategory{
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
 type StatsDParser struct {
-	instruments        map[string]instruments
-	enableMetricType   bool
-	isMonotonicCounter bool
-	timerEvents        ObserverCategory
-	histogramEvents    ObserverCategory
-	lastIntervalTime   time.Time
+	instrumentsByAddress map[netAddr]*instruments
+	enableMetricType     bool
+	isMonotonicCounter   bool
+	timerEvents          ObserverCategory
+	histogramEvents      ObserverCategory
+	lastIntervalTime     time.Time
 }
 
 type instruments struct {
@@ -99,8 +99,8 @@ type instruments struct {
 	timersAndDistributions []pmetric.ScopeMetrics
 }
 
-func newInstruments(addr net.Addr) instruments {
-	return instruments{
+func newInstruments(addr net.Addr) *instruments {
+	return &instruments{
 		addr:       addr,
 		gauges:     make(map[statsDMetricDescription]pmetric.ScopeMetrics),
 		counters:   make(map[statsDMetricDescription]pmetric.ScopeMetrics),
@@ -155,7 +155,7 @@ func (t MetricType) FullName() TypeName {
 
 func (p *StatsDParser) resetState(when time.Time) {
 	p.lastIntervalTime = when
-	p.instruments = make(map[string]instruments)
+	p.instrumentsByAddress = make(map[netAddr]*instruments)
 }
 
 func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error {
@@ -189,9 +189,9 @@ func expoHistogramConfig(opts HistogramConfig) structure.Config {
 
 // GetMetrics gets the metrics preparing for flushing and reset the state.
 func (p *StatsDParser) GetMetrics() []BatchMetrics {
-	batchMetrics := make([]BatchMetrics, 0, len(p.instruments))
+	batchMetrics := make([]BatchMetrics, 0, len(p.instrumentsByAddress))
 	now := timeNowFunc()
-	for _, instrument := range p.instruments {
+	for _, instrument := range p.instrumentsByAddress {
 		batch := BatchMetrics{
 			Info: client.Info{
 				Addr: instrument.addr,
@@ -258,12 +258,12 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 		return err
 	}
 
-	addrKey := addrToKey(addr)
-	instrument, ok := p.instruments[addrKey]
+	addrKey := newNetAddr(addr)
+	instrument, ok := p.instrumentsByAddress[addrKey]
 	if !ok {
 		instrument = newInstruments(addr)
+		p.instrumentsByAddress[addrKey] = instrument
 	}
-	defer func() { p.instruments[addrKey] = instrument }()
 
 	switch parsedMetric.description.metricType {
 	case GaugeType:
@@ -418,6 +418,11 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 	return result, nil
 }
 
-func addrToKey(addr net.Addr) string {
-	return addr.Network() + "_" + addr.String()
+type netAddr struct {
+	Network string
+	String  string
+}
+
+func newNetAddr(addr net.Addr) netAddr {
+	return netAddr{addr.Network(), addr.String()}
 }

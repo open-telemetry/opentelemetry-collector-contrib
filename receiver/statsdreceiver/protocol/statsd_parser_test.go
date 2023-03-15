@@ -665,16 +665,16 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			assert.NoError(t, p.Initialize(false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
-			addrKey := addrToKey(addr)
+			addrKey := newNetAddr(addr)
 			for _, line := range tt.input {
 				err = p.Aggregate(line, addr)
 			}
 			if tt.err != nil {
 				assert.Equal(t, tt.err, err)
 			} else {
-				assert.Equal(t, tt.expectedGauges, p.instruments[addrKey].gauges)
-				assert.Equal(t, tt.expectedCounters, p.instruments[addrKey].counters)
-				assert.Equal(t, tt.expectedTimer, p.instruments[addrKey].timersAndDistributions)
+				assert.Equal(t, tt.expectedGauges, p.instrumentsByAddress[addrKey].gauges)
+				assert.Equal(t, tt.expectedCounters, p.instrumentsByAddress[addrKey].counters)
+				assert.Equal(t, tt.expectedTimer, p.instrumentsByAddress[addrKey].timersAndDistributions)
 			}
 		})
 	}
@@ -739,8 +739,8 @@ func TestStatsDParser_AggregateByAddress(t *testing.T) {
 				}
 			}
 			for i, addr := range tt.addresses {
-				addrKey := addrToKey(addr)
-				assert.Equal(t, tt.expectedGauges[i], p.instruments[addrKey].gauges)
+				addrKey := newNetAddr(addr)
+				assert.Equal(t, tt.expectedGauges[i], p.instrumentsByAddress[addrKey].gauges)
 			}
 		})
 	}
@@ -802,15 +802,15 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 			assert.NoError(t, p.Initialize(true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
-			addrKey := addrToKey(addr)
+			addrKey := newNetAddr(addr)
 			for _, line := range tt.input {
 				err = p.Aggregate(line, addr)
 			}
 			if tt.err != nil {
 				assert.Equal(t, tt.err, err)
 			} else {
-				assert.Equal(t, tt.expectedGauges, p.instruments[addrKey].gauges)
-				assert.Equal(t, tt.expectedCounters, p.instruments[addrKey].counters)
+				assert.Equal(t, tt.expectedGauges, p.instrumentsByAddress[addrKey].gauges)
+				assert.Equal(t, tt.expectedCounters, p.instrumentsByAddress[addrKey].counters)
 			}
 		})
 	}
@@ -852,15 +852,15 @@ func TestStatsDParser_AggregateWithIsMonotonicCounter(t *testing.T) {
 			assert.NoError(t, p.Initialize(false, true, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
-			addrKey := addrToKey(addr)
+			addrKey := newNetAddr(addr)
 			for _, line := range tt.input {
 				err = p.Aggregate(line, addr)
 			}
 			if tt.err != nil {
 				assert.Equal(t, tt.err, err)
 			} else {
-				assert.Equal(t, tt.expectedGauges, p.instruments[addrKey].gauges)
-				assert.Equal(t, tt.expectedCounters, p.instruments[addrKey].counters)
+				assert.Equal(t, tt.expectedGauges, p.instrumentsByAddress[addrKey].gauges)
+				assert.Equal(t, tt.expectedCounters, p.instrumentsByAddress[addrKey].counters)
 			}
 		})
 	}
@@ -949,14 +949,14 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 			p := &StatsDParser{}
 			assert.NoError(t, p.Initialize(false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "summary"}, {StatsdType: "histogram", ObserverType: "summary"}}))
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
-			addrKey := addrToKey(addr)
+			addrKey := newNetAddr(addr)
 			for _, line := range tt.input {
 				err = p.Aggregate(line, addr)
 			}
 			if tt.err != nil {
 				assert.Equal(t, tt.err, err)
 			} else {
-				assert.EqualValues(t, tt.expectedSummaries, p.instruments[addrKey].summaries)
+				assert.EqualValues(t, tt.expectedSummaries, p.instrumentsByAddress[addrKey].summaries)
 			}
 		})
 	}
@@ -971,12 +971,12 @@ func TestStatsDParser_Initialize(t *testing.T) {
 		attrs:      *attribute.EmptySet(),
 	}
 	addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
-	addrKey := addrToKey(addr)
+	addrKey := newNetAddr(addr)
 	instrument := newInstruments(addr)
 	instrument.gauges[teststatsdDMetricdescription] = pmetric.ScopeMetrics{}
-	p.instruments[addrKey] = instrument
-	assert.Equal(t, 1, len(p.instruments))
-	assert.Equal(t, 1, len(p.instruments[addrKey].gauges))
+	p.instrumentsByAddress[addrKey] = instrument
+	assert.Equal(t, 1, len(p.instrumentsByAddress))
+	assert.Equal(t, 1, len(p.instrumentsByAddress[addrKey].gauges))
 	assert.Equal(t, GaugeObserver, p.timerEvents.method)
 	assert.Equal(t, GaugeObserver, p.histogramEvents.method)
 }
@@ -999,7 +999,7 @@ func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
 			weights: []float64{1, 1, 1, 1},
 		},
 	}
-	p.instruments[""] = instrument
+	p.instrumentsByAddress[netAddr{}] = instrument
 	metrics := p.GetMetrics()[0].Metrics
 	assert.Equal(t, 5, metrics.ResourceMetrics().At(0).ScopeMetrics().Len())
 }
