@@ -54,7 +54,7 @@ type Manager struct {
 	currentFps   []*Fingerprint
 
 	readerChan   chan ReaderWrapper
-	pathHash     map[string]bool
+	pathHash     map[string]*Fingerprint
 	pathHashLock sync.RWMutex
 	readerLock   sync.Mutex
 	lostReaders  []*Reader
@@ -174,9 +174,7 @@ func (m *Manager) worker(ctx context.Context) {
 			m.lostReaders = append(m.lostReaders, r)
 			m.readerLock.Unlock()
 		}
-		m.pathHashLock.Lock()
-		delete(m.pathHash, path)
-		m.pathHashLock.Unlock()
+		m.removePath(path)
 	}
 }
 
@@ -184,22 +182,32 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.Debug("Consuming files")
 	m.handleLostFiles(ctx)
 	for _, path := range paths {
-		m.pathHashLock.Lock()
-		if _, ok := m.pathHash[path]; ok {
-			m.pathHashLock.Unlock()
-			continue
-		}
-		m.pathHash[path] = true
 		reader := m.makeReader(path)
 		if reader == nil {
 			fmt.Println("Couldn't create reader for ", path)
-			delete(m.pathHash, path)
-			m.pathHashLock.Unlock()
 			continue
 		}
-		m.pathHashLock.Unlock()
 		m.readerChan <- ReaderWrapper{reader: reader, path: path}
 	}
+}
+
+func (m *Manager) isCurrentlyConsuming(path string, fp *Fingerprint) bool {
+	m.pathHashLock.Lock()
+	defer m.pathHashLock.Unlock()
+	if fp2, ok := m.pathHash[path]; ok {
+		if fp2.StartsWith(fp) || fp.StartsWith(fp2) {
+			return true
+		}
+	}
+	// add path and fingerprint as it's not consuming
+	m.pathHash[path] = fp
+	return false
+}
+
+func (m *Manager) removePath(path string) {
+	m.pathHashLock.Lock()
+	delete(m.pathHash, path)
+	m.pathHashLock.Unlock()
 }
 
 func (m *Manager) handleLostFiles(ctx context.Context) {
@@ -257,6 +265,15 @@ func (m *Manager) makeReader(filePath string) *Reader {
 		m.currentFiles = m.currentFiles[:len(m.currentFiles)-1]
 		return nil
 	}
+
+	// check if the current file is already being consumed
+	if m.isCurrentlyConsuming(filePath, fp) {
+		if err = file.Close(); err != nil {
+			m.Errorf("problem closing file", "file", file.Name())
+		}
+		m.currentFiles = m.currentFiles[:len(m.currentFiles)-1]
+		return nil
+	}
 	m.currentFps = append(m.currentFps, fp)
 
 	for i := 0; i < len(m.currentFps)-1; i++ {
@@ -268,6 +285,7 @@ func (m *Manager) makeReader(filePath string) *Reader {
 			}
 			m.currentFiles = m.currentFiles[:len(m.currentFiles)-1]
 			m.currentFps = m.currentFps[:len(m.currentFps)-1]
+			m.removePath(filePath)
 			return nil
 		}
 	}
@@ -275,6 +293,7 @@ func (m *Manager) makeReader(filePath string) *Reader {
 	reader, err := m.newReader(file, fp)
 	if err != nil {
 		m.Errorw("Failed to create reader", zap.Error(err))
+		m.removePath(filePath)
 		return nil
 	}
 	return reader
