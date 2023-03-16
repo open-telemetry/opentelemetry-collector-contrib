@@ -144,16 +144,6 @@ func newProcessor(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
 	}
 
-	if err := validateDimensions(pConfig.Dimensions, pConfig.skipSanitizeLabel); err != nil {
-		return nil, err
-	}
-
-	if pConfig.DimensionsCacheSize <= 0 {
-		return nil, fmt.Errorf(
-			"invalid cache size: %v, the maximum number of the items in the cache should be positive",
-			pConfig.DimensionsCacheSize,
-		)
-	}
 	metricKeyToDimensionsCache, err := cache.NewCache[metricKey, pcommon.Map](pConfig.DimensionsCacheSize)
 	if err != nil {
 		return nil, err
@@ -185,35 +175,6 @@ func mapDurationsToMillis(vs []time.Duration) []float64 {
 		vsm[i] = durationToMillis(v)
 	}
 	return vsm
-}
-
-// validateDimensions checks duplicates for reserved dimensions and additional dimensions. Considering
-// the usage of Prometheus related exporters, we also validate the dimensions after sanitization.
-func validateDimensions(dimensions []Dimension, skipSanitizeLabel bool) error {
-	labelNames := make(map[string]struct{})
-	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey} {
-		labelNames[key] = struct{}{}
-		labelNames[sanitize(key, skipSanitizeLabel)] = struct{}{}
-	}
-	labelNames[operationKey] = struct{}{}
-
-	for _, key := range dimensions {
-		if _, ok := labelNames[key.Name]; ok {
-			return fmt.Errorf("duplicate dimension name %s", key.Name)
-		}
-		labelNames[key.Name] = struct{}{}
-
-		sanitizedName := sanitize(key.Name, skipSanitizeLabel)
-		if sanitizedName == key.Name {
-			continue
-		}
-		if _, ok := labelNames[sanitizedName]; ok {
-			return fmt.Errorf("duplicate dimension name %s after sanitization", sanitizedName)
-		}
-		labelNames[sanitizedName] = struct{}{}
-	}
-
-	return nil
 }
 
 // Start implements the component.Component interface.

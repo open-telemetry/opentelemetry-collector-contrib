@@ -19,6 +19,7 @@ The following settings are required:
 
 - `endpoint` (default = 0.0.0.0:13133): Address to publish the health check status. For full list of `HTTPServerSettings` refer [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp).
 - `path` (default = "/"): Specifies the path to be configured for the health check server.
+- `response_body` (default = ""): Specifies a static body that overrides the default response returned by the health check service. 
 - `check_collector_pipeline:` (optional): Settings of collector pipeline health check
     - `enabled` (default = false): Whether enable collector pipeline check or not
     - `interval` (default = "5m"): Time interval to check the number of failures

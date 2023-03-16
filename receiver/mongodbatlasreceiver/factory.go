@@ -75,7 +75,10 @@ func createCombinedLogReceiver(
 	}
 
 	var err error
-	recv := &combinedLogsReceiver{}
+	recv := &combinedLogsReceiver{
+		id:        params.ID,
+		storageID: cfg.StorageID,
+	}
 
 	if cfg.Alerts.Enabled {
 		recv.alerts, err = newAlertsReceiver(params, cfg, consumer)
@@ -100,7 +103,7 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		Granularity:               defaultGranularity,
 		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
-		Metrics:                   metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 		Alerts: AlertConfig{
 			Enabled:      defaultAlertsEnabled,
 			Mode:         alertModeListen,

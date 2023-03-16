@@ -30,18 +30,12 @@ const (
 	// TypeStr is type of detector.
 	TypeStr = "heroku"
 
-	// The identifier for the current release
-	herokuReleaseVersion = "heroku.release.version"
 	// The time and date the release was created.
 	herokuReleaseCreationTimestamp = "heroku.release.creation_timestamp"
 	// The commit hash for the current release
 	herokuReleaseCommit = "heroku.release.commit"
-	// The application name
-	herokuAppName = "heroku.app.name"
 	// The unique identifier for the application
 	herokuAppID = "heroku.app.id"
-	// The dyno identifier. Used as host name
-	herokuDynoID = "heroku.dyno.id"
 )
 
 // NewDetector returns a detector which can detect resource attributes on Heroku
@@ -65,20 +59,20 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	attrs := res.Attributes()
+	attrs.PutStr(conventions.AttributeCloudProvider, "heroku")
 
-	attrs.PutStr(herokuDynoID, dynoID)
-	attrs.PutStr(conventions.AttributeHostName, dynoID)
+	attrs.PutStr(conventions.AttributeServiceInstanceID, dynoID)
 	if v, ok := os.LookupEnv("HEROKU_APP_ID"); ok {
 		attrs.PutStr(herokuAppID, v)
 	}
 	if v, ok := os.LookupEnv("HEROKU_APP_NAME"); ok {
-		attrs.PutStr(herokuAppName, v)
+		attrs.PutStr(conventions.AttributeServiceName, v)
 	}
 	if v, ok := os.LookupEnv("HEROKU_RELEASE_CREATED_AT"); ok {
 		attrs.PutStr(herokuReleaseCreationTimestamp, v)
 	}
 	if v, ok := os.LookupEnv("HEROKU_RELEASE_VERSION"); ok {
-		attrs.PutStr(herokuReleaseVersion, v)
+		attrs.PutStr(conventions.AttributeServiceVersion, v)
 	}
 	if v, ok := os.LookupEnv("HEROKU_SLUG_COMMIT"); ok {
 		attrs.PutStr(herokuReleaseCommit, v)

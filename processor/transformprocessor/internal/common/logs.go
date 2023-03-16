@@ -75,6 +75,13 @@ func WithLogParser(functions map[string]interface{}) LogParserCollectionOption {
 	}
 }
 
+func WithLogErrorMode(errorMode ottl.ErrorMode) LogParserCollectionOption {
+	return func(lp *LogParserCollection) error {
+		lp.errorMode = errorMode
+		return nil
+	}
+}
+
 func NewLogParserCollection(settings component.TelemetrySettings, options ...LogParserCollectionOption) (*LogParserCollection, error) {
 	rp, err := ottlresource.NewParser(ResourceFunctions(), settings)
 	if err != nil {
@@ -109,10 +116,10 @@ func (pc LogParserCollection) ParseContextStatements(contextStatements ContextSt
 		if err != nil {
 			return nil, err
 		}
-		lStatements := ottllog.NewStatements(parsedStatements, pc.settings, ottllog.WithErrorMode(ottl.PropagateError))
+		lStatements := ottllog.NewStatements(parsedStatements, pc.settings, ottllog.WithErrorMode(pc.errorMode))
 		return logStatements{lStatements}, nil
 	default:
-		statements, err := pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)
+		statements, err := pc.parseCommonContextStatements(contextStatements)
 		if err != nil {
 			return nil, err
 		}

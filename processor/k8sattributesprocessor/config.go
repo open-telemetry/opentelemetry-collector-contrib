@@ -74,10 +74,20 @@ type ExtractConfig struct {
 	//   k8s.replicaset.name, k8s.replicaset.uid,
 	//   k8s.daemonset.name, k8s.daemonset.uid,
 	//   k8s.job.name, k8s.job.uid, k8s.cronjob.name,
-	//   k8s.statefulset.name, k8s.statefulset.uid
+	//   k8s.statefulset.name, k8s.statefulset.uid,
+	//   container.image.name, container.image.tag,
+	//   container.id
 	//
 	// Specifying anything other than these values will result in an error.
-	// By default all of the fields are extracted and added to spans and metrics.
+	// By default, the following fields are extracted and added to spans, metrics and logs as attributes:
+	//  - k8s.pod.name
+	//  - k8s.pod.uid
+	//  - k8s.pod.start_time
+	//  - k8s.namespace.name
+	//  - k8s.node.name
+	//  - k8s.deployment.name (if the pod is controlled by a deployment)
+	//  - container.image.name (requires an additional attribute to be set: k8s.container.name)
+	//  - container.image.tag (requires an additional attribute to be set: k8s.container.name)
 	Metadata []string `mapstructure:"metadata"`
 
 	// Annotations allows extracting data from pod annotations and record it

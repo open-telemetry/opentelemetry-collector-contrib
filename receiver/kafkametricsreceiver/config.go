@@ -46,6 +46,6 @@ type Config struct {
 	// ClientID is the id associated with the consumer that reads from topics in kafka.
 	ClientID string `mapstructure:"client_id"`
 
-	// Metrics allows customizing scraped metrics representation.
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }

@@ -70,6 +70,8 @@ metrics:
 
 Number of times the process has been context switched.
 
+This metric is only available on Linux.
+
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {count} | Sum | Int | Cumulative | true |
@@ -120,13 +122,17 @@ Percentage of total physical memory that is used by the process.
 
 Number of file descriptors in use by the process.
 
+This metric is only available on Linux.
+
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {count} | Sum | Int | Cumulative | false |
 
 ### process.paging.faults
 
-Number of page faults the process has made. This metric is only available on Linux.
+Number of page faults the process has made.
+
+This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -140,7 +146,9 @@ Number of page faults the process has made. This metric is only available on Lin
 
 ### process.signals_pending
 
-Number of pending signals for the process. This metric is only available on Linux.
+Number of pending signals for the process.
+
+This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

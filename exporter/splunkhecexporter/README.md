@@ -21,6 +21,7 @@ The following configuration options can also be configured:
 - `sourcetype` (no default): Optional Splunk source type: https://docs.splunk.com/Splexicon:Sourcetype
 - `index` (no default): Splunk index, optional name of the Splunk index targeted
 - `max_connections` (default: 100): Maximum HTTP connections to use simultaneously when sending data. Deprecated: use `max_idle_conns` or `max_idle_conns_per_host` instead. See [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md) for more info.
+- `use_multi_metric_format` (default: false): Combines metrics with the same metadata to reduce ingest using the [multiple-metric JSON format](https://docs.splunk.com/Documentation/Splunk/9.0.0/Metrics/GetMetricsInOther#The_multiple-metric_JSON_format). Applicable in the `metrics` pipeline only.
 - `disable_compression` (default: false): Whether to disable gzip compression over HTTP.
 - `timeout` (default: 10s): HTTP timeout when sending data.
 - `insecure_skip_verify` (default: false): Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS.
@@ -34,7 +35,7 @@ The following configuration options can also be configured:
 - `max_content_length_metrics` (default: 2097152): Maximum metric payload size in bytes. Metric batches of bigger size
   will be broken down into several requests. Default value is 2097152 bytes (2 MiB). Maximum allowed value is 838860800
   (~ 800 MB). When set to 0, it will treat as infinite length and it will create only one request per batch.
-- `max_content_length_metrics` (default: 2097152): Maximum trace payload size in bytes. Trace batches of bigger size
+- `max_content_length_traces` (default: 2097152): Maximum trace payload size in bytes. Trace batches of bigger size
   will be broken down into several requests. Default value is 2097152 bytes (2 MiB). Maximum allowed value is 838860800
   (~ 800 MB). When set to 0, it will treat as infinite length and it will create only one request per batch.
 - `splunk_app_name` (default: "OpenTelemetry Collector Contrib") App name is used to track telemetry information for Splunk App's using HEC by App name.

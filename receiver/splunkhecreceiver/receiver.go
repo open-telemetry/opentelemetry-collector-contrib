@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
@@ -266,29 +265,17 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	}
 
 	sc := bufio.NewScanner(bodyReader)
-
-	ld := plog.NewLogs()
-	rl := ld.ResourceLogs().AppendEmpty()
 	resourceCustomizer := r.createResourceCustomizer(req)
-	if resourceCustomizer != nil {
-		resourceCustomizer(rl.Resource())
-	}
-	sl := rl.ScopeLogs().AppendEmpty()
-
-	for sc.Scan() {
-		logRecord := sl.LogRecords().AppendEmpty()
-		logLine := sc.Text()
-		logRecord.Body().SetStr(logLine)
-	}
+	ld, slLen := splunkHecRawToLogData(sc, req.URL.Query(), resourceCustomizer, r.config)
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()
 
 	if consumerErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, sl.LogRecords().Len(), consumerErr)
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, consumerErr)
 	} else {
 		resp.WriteHeader(http.StatusOK)
-		r.obsrecv.EndLogsOp(ctx, typeStr, sl.LogRecords().Len(), nil)
+		r.obsrecv.EndLogsOp(ctx, typeStr, slLen, nil)
 	}
 }
 

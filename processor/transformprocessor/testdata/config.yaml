@@ -24,6 +24,13 @@ transform:
       statements:
         - set(attributes["name"], "bear")
 
+transform/ignore_errors:
+  error_mode: ignore
+  trace_statements:
+    - context: resource
+      statements:
+        - set(attributes["name"], "bear")
+
 transform/bad_syntax_log:
   log_statements:
     - context: log
@@ -71,3 +78,6 @@ transform/unknown_context:
     - context: test
       statements:
         - set(name, "bear") where attributes["http.path"] == "/animal"
+
+transform/unknown_error_mode:
+  error_mode: test
