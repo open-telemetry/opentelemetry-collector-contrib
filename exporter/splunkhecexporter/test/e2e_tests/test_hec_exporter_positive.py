@@ -57,7 +57,7 @@ def test_splunk_event_json_object(setup):
     source = "source_test_2"
     sourcetype = "sourcetype_test_2"
     json_data = {
-        "test_name": "Test 2b timestamp",
+        "test_name": "JSON Object",
         "field1": "test",
         "field2": 155,
         "index": index,
@@ -84,15 +84,17 @@ def test_splunk_event_timestamp(setup):
     - check event timestamp test
     """
     logger.info("-- Starting: check event timestamp test --")
-    index = config.EVENT_INDEX_2
+    index = config.EVENT_TIMESTAMP
     source = "source_test_3"
     sourcetype = "sourcetype_test_3"
-    event_timestamp = time.time() - 1800
+    time_base = time.time()
+    event_timestamp = time_base - 1800
     json_data = {
         "time": event_timestamp,
-        "test_name": "Test  timestamp",
+        "test_name": "Test timestamp",
         "index": index,
     }
+    logger.info("Timestamp event body: {}".format(json_data))
     send_event_with_time_offset(index, source, sourcetype, json_data, event_timestamp)
     search_query = "index=" + index + " sourcetype=" + sourcetype + " source=" + source
     events = check_events_from_splunk(
@@ -103,7 +105,7 @@ def test_splunk_event_timestamp(setup):
         password=setup["splunk_password"],
     )
     past_events = check_events_from_splunk(
-        start_time="-30m@m",
+        start_time="-31m@m",
         end_time="-29m@m",
         url=setup["splunkd_url"],
         user=setup["splunk_user"],
@@ -115,6 +117,11 @@ def test_splunk_event_timestamp(setup):
         "Splunk received %s events in the selected timeframe (~30 mins ago)",
         len(past_events),
     )
+    logger.info("--------------------")
+    logger.info("Timestamp {}".format(event_timestamp))
+    logger.info("Time base {}".format(time_base))
+    logger.info("Event {}".format(past_events))
+    logger.info("--------------------")
     assert len(events) == 0
     assert len(past_events) >= 1
     logger.info("Test Finished")

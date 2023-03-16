@@ -38,11 +38,12 @@ def pytest_unconfigure(config):
         config_data.EVENT_INDEX_1,
         config_data.EVENT_INDEX_2,
         config_data.EVENT_INDEX_FILE_LOG,
+        config_data.EVENT_TIMESTAMP,
     ]
     for index in indexes:
         search_query = "index=" + index + "  | fields *"
         events = check_events_from_splunk(
-            start_time="-1h@h",
+            start_time="-12h@h",
             url=config.getoption("--splunkd-url"),
             user=config.getoption("--splunk-user"),
             query=["search {0}".format(search_query)],
@@ -50,8 +51,24 @@ def pytest_unconfigure(config):
         )
         print("index=" + index + " event count=" + str(len(events)))
         # debug print all events
-        # for event in events:
-        #     print(event)
+        for event in events:
+            print(event)
+
+    # debug get _internal ERRORS
+    internal_index = "_internal"
+    search_query = "index=" + internal_index + "  ERROR"
+    errors = check_events_from_splunk(
+        start_time="-15m@m",
+        url=config.getoption("--splunkd-url"),
+        user=config.getoption("--splunk-user"),
+        query=["search {0}".format(search_query)],
+        password=config.getoption("--splunk-password"),
+    )
+    print("=================")
+    print("index=" + internal_index + " event count=" + str(len(errors)))
+    # debug print all error events
+    for event in errors:
+        print(event)
 
 
 @pytest.fixture(scope="function")

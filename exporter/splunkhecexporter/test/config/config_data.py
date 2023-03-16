@@ -1,6 +1,16 @@
 # indexes
 EVENT_INDEX_1 = "main"
 EVENT_INDEX_2 = "sck-otel"
+EVENT_TIMESTAMP = "timestamp"
 EVENT_INDEX_FILE_LOG = "file_logs"
 METRICS_INDEX_HOST_METRICS = "metrics"
 METRICS_INDEX_METRICS_ENDPOINT = "sck-metrics"
+
+# endpoints / receivers URLs
+EVENTS_RECEIVER_URL = "http://0.0.0.0:8883"
+METRICS_RECEIVER_URL = "http://0.0.0.0:8884"
+INVALID_HEC_EVENTS_RECEIVER_URL = "http://0.0.0.0:8885"
+DISABLED_HEC_EVENTS_RECEIVER_URL = "http://0.0.0.0:8886"
+
+# path
+PATH_TO_OTEL_COLLECTOR_BIN_DIR = "./../../../bin"

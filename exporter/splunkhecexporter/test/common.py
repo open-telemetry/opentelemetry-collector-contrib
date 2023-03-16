@@ -150,7 +150,7 @@ def _collect_events(query, start_time, end_time, url="", user="", password=""):
         "earliest_time": start_time,
         "latest_time": end_time,
     }
-
+    logger.debug("SEARCH DATA: {}".format(data))
     create_job = _requests_retry_session().post(
         search_url, auth=(user, password), verify=False, data=data
     )
