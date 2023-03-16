@@ -67,10 +67,12 @@ func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Bu
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
+	// Assign region if it is defined in the config
 	region := ""
 	if !reflect.ValueOf(awsConfig.Region).IsNil() {
 		region = *awsConfig.Region
 	}
+	// Get the account id with sts regional endpoint
 	awsConfig = awsConfig.WithSTSRegionalEndpoint(endpoints.RegionalSTSEndpoint)
 	stsClient := sts.New(sess, awsConfig)
 	accountCall, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
