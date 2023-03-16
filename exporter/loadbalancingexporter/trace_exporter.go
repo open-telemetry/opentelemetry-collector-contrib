@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -170,12 +171,20 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces, r
 }
 
 func getResourceAttrValue(rs ptrace.ResourceSpans, resourceKeys []string) (string, bool) {
-	for _, attrKey := range resourceKeys {
-		if attributeValue, ok := rs.Resource().Attributes().Get(attrKey); ok {
-			return attributeValue.Str(), true
-		}
-	}
-	return "", false
+	res := ""
+	found := false
+	rs.Resource().Attributes().Range(
+		func(k string, v pcommon.Value) bool {
+			for _, attrKey := range resourceKeys {
+				if k == attrKey {
+					res = v.Str()
+					found = true
+					return false
+				}
+			}
+			return true
+		})
+	return res, found
 }
 
 func splitTracesByResourceAttr(batches ptrace.Traces, resourceKeys []string) ([]routingEntry, error) {
@@ -183,7 +192,7 @@ func splitTracesByResourceAttr(batches ptrace.Traces, resourceKeys []string) ([]
 	// This returns a list of routing entries which consists of the routing key, routing key value and the trace
 	// There should be a 1:1 mapping between key value <-> trace
 	// This is because we group all Resource Spans with the same key value under a single trace
-	result := []routingEntry{}
+	var result []routingEntry
 	rss := batches.ResourceSpans()
 
 	// This is a mapping between the resource attribute values found and the constructed trace
