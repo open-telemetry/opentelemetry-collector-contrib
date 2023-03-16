@@ -145,20 +145,6 @@ func DefaultMetricsSettings() MetricsSettings {
 // ResourceAttributeSettings provides common settings for a particular metric.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
-}
-
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ras.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
 }
 
 // ResourceAttributesSettings provides settings for oracledbreceiver metrics.
@@ -234,7 +220,7 @@ type metricOracledbDmlLocksLimit struct {
 // init fills oracledb.dml_locks.limit metric with initial data.
 func (m *metricOracledbDmlLocksLimit) init() {
 	m.data.SetName("oracledb.dml_locks.limit")
-	m.data.SetDescription("Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.")
+	m.data.SetDescription("Maximum limit of active DML (Data Manipulation Language) locks.")
 	m.data.SetUnit("{locks}")
 	m.data.SetEmptyGauge()
 }
@@ -383,7 +369,7 @@ type metricOracledbEnqueueLocksLimit struct {
 // init fills oracledb.enqueue_locks.limit metric with initial data.
 func (m *metricOracledbEnqueueLocksLimit) init() {
 	m.data.SetName("oracledb.enqueue_locks.limit")
-	m.data.SetDescription("Maximum limit of active enqueue locks, -1 if unlimited.")
+	m.data.SetDescription("Maximum limit of active enqueue locks.")
 	m.data.SetUnit("{locks}")
 	m.data.SetEmptyGauge()
 }
@@ -481,7 +467,7 @@ type metricOracledbEnqueueResourcesLimit struct {
 // init fills oracledb.enqueue_resources.limit metric with initial data.
 func (m *metricOracledbEnqueueResourcesLimit) init() {
 	m.data.SetName("oracledb.enqueue_resources.limit")
-	m.data.SetDescription("Maximum limit of active enqueue resources, -1 if unlimited.")
+	m.data.SetDescription("Maximum limit of active enqueue resources.")
 	m.data.SetUnit("{resources}")
 	m.data.SetEmptyGauge()
 }
@@ -936,7 +922,7 @@ type metricOracledbProcessesLimit struct {
 // init fills oracledb.processes.limit metric with initial data.
 func (m *metricOracledbProcessesLimit) init() {
 	m.data.SetName("oracledb.processes.limit")
-	m.data.SetDescription("Maximum limit of active processes, -1 if unlimited.")
+	m.data.SetDescription("Maximum limit of active processes.")
 	m.data.SetUnit("{processes}")
 	m.data.SetEmptyGauge()
 }
@@ -1034,7 +1020,7 @@ type metricOracledbSessionsLimit struct {
 // init fills oracledb.sessions.limit metric with initial data.
 func (m *metricOracledbSessionsLimit) init() {
 	m.data.SetName("oracledb.sessions.limit")
-	m.data.SetDescription("Maximum limit of active sessions, -1 if unlimited.")
+	m.data.SetDescription("Maximum limit of active sessions.")
 	m.data.SetUnit("{sessions}")
 	m.data.SetEmptyGauge()
 }
@@ -1135,7 +1121,7 @@ type metricOracledbTablespaceSizeLimit struct {
 // init fills oracledb.tablespace_size.limit metric with initial data.
 func (m *metricOracledbTablespaceSizeLimit) init() {
 	m.data.SetName("oracledb.tablespace_size.limit")
-	m.data.SetDescription("Maximum size of tablespace in bytes, -1 if unlimited.")
+	m.data.SetDescription("Maximum size of tablespace in bytes.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1237,7 +1223,7 @@ type metricOracledbTransactionsLimit struct {
 // init fills oracledb.transactions.limit metric with initial data.
 func (m *metricOracledbTransactionsLimit) init() {
 	m.data.SetName("oracledb.transactions.limit")
-	m.data.SetDescription("Maximum limit of active transactions, -1 if unlimited.")
+	m.data.SetDescription("Maximum limit of active transactions.")
 	m.data.SetUnit("{transactions}")
 	m.data.SetEmptyGauge()
 }
@@ -1428,6 +1414,12 @@ func newMetricOracledbUserRollbacks(settings MetricSettings) metricOracledbUserR
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1474,44 +1466,51 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
-func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.resourceAttributesSettings = ras
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                       pmetric.NewMetrics(),
 		buildInfo:                           settings.BuildInfo,
-		resourceAttributesSettings:          DefaultResourceAttributesSettings(),
-		metricOracledbCPUTime:               newMetricOracledbCPUTime(ms.OracledbCPUTime),
-		metricOracledbDmlLocksLimit:         newMetricOracledbDmlLocksLimit(ms.OracledbDmlLocksLimit),
-		metricOracledbDmlLocksUsage:         newMetricOracledbDmlLocksUsage(ms.OracledbDmlLocksUsage),
-		metricOracledbEnqueueDeadlocks:      newMetricOracledbEnqueueDeadlocks(ms.OracledbEnqueueDeadlocks),
-		metricOracledbEnqueueLocksLimit:     newMetricOracledbEnqueueLocksLimit(ms.OracledbEnqueueLocksLimit),
-		metricOracledbEnqueueLocksUsage:     newMetricOracledbEnqueueLocksUsage(ms.OracledbEnqueueLocksUsage),
-		metricOracledbEnqueueResourcesLimit: newMetricOracledbEnqueueResourcesLimit(ms.OracledbEnqueueResourcesLimit),
-		metricOracledbEnqueueResourcesUsage: newMetricOracledbEnqueueResourcesUsage(ms.OracledbEnqueueResourcesUsage),
-		metricOracledbExchangeDeadlocks:     newMetricOracledbExchangeDeadlocks(ms.OracledbExchangeDeadlocks),
-		metricOracledbExecutions:            newMetricOracledbExecutions(ms.OracledbExecutions),
-		metricOracledbHardParses:            newMetricOracledbHardParses(ms.OracledbHardParses),
-		metricOracledbLogicalReads:          newMetricOracledbLogicalReads(ms.OracledbLogicalReads),
-		metricOracledbParseCalls:            newMetricOracledbParseCalls(ms.OracledbParseCalls),
-		metricOracledbPgaMemory:             newMetricOracledbPgaMemory(ms.OracledbPgaMemory),
-		metricOracledbPhysicalReads:         newMetricOracledbPhysicalReads(ms.OracledbPhysicalReads),
-		metricOracledbProcessesLimit:        newMetricOracledbProcessesLimit(ms.OracledbProcessesLimit),
-		metricOracledbProcessesUsage:        newMetricOracledbProcessesUsage(ms.OracledbProcessesUsage),
-		metricOracledbSessionsLimit:         newMetricOracledbSessionsLimit(ms.OracledbSessionsLimit),
-		metricOracledbSessionsUsage:         newMetricOracledbSessionsUsage(ms.OracledbSessionsUsage),
-		metricOracledbTablespaceSizeLimit:   newMetricOracledbTablespaceSizeLimit(ms.OracledbTablespaceSizeLimit),
-		metricOracledbTablespaceSizeUsage:   newMetricOracledbTablespaceSizeUsage(ms.OracledbTablespaceSizeUsage),
-		metricOracledbTransactionsLimit:     newMetricOracledbTransactionsLimit(ms.OracledbTransactionsLimit),
-		metricOracledbTransactionsUsage:     newMetricOracledbTransactionsUsage(ms.OracledbTransactionsUsage),
-		metricOracledbUserCommits:           newMetricOracledbUserCommits(ms.OracledbUserCommits),
-		metricOracledbUserRollbacks:         newMetricOracledbUserRollbacks(ms.OracledbUserRollbacks),
+		resourceAttributesSettings:          mbc.ResourceAttributes,
+		metricOracledbCPUTime:               newMetricOracledbCPUTime(mbc.Metrics.OracledbCPUTime),
+		metricOracledbDmlLocksLimit:         newMetricOracledbDmlLocksLimit(mbc.Metrics.OracledbDmlLocksLimit),
+		metricOracledbDmlLocksUsage:         newMetricOracledbDmlLocksUsage(mbc.Metrics.OracledbDmlLocksUsage),
+		metricOracledbEnqueueDeadlocks:      newMetricOracledbEnqueueDeadlocks(mbc.Metrics.OracledbEnqueueDeadlocks),
+		metricOracledbEnqueueLocksLimit:     newMetricOracledbEnqueueLocksLimit(mbc.Metrics.OracledbEnqueueLocksLimit),
+		metricOracledbEnqueueLocksUsage:     newMetricOracledbEnqueueLocksUsage(mbc.Metrics.OracledbEnqueueLocksUsage),
+		metricOracledbEnqueueResourcesLimit: newMetricOracledbEnqueueResourcesLimit(mbc.Metrics.OracledbEnqueueResourcesLimit),
+		metricOracledbEnqueueResourcesUsage: newMetricOracledbEnqueueResourcesUsage(mbc.Metrics.OracledbEnqueueResourcesUsage),
+		metricOracledbExchangeDeadlocks:     newMetricOracledbExchangeDeadlocks(mbc.Metrics.OracledbExchangeDeadlocks),
+		metricOracledbExecutions:            newMetricOracledbExecutions(mbc.Metrics.OracledbExecutions),
+		metricOracledbHardParses:            newMetricOracledbHardParses(mbc.Metrics.OracledbHardParses),
+		metricOracledbLogicalReads:          newMetricOracledbLogicalReads(mbc.Metrics.OracledbLogicalReads),
+		metricOracledbParseCalls:            newMetricOracledbParseCalls(mbc.Metrics.OracledbParseCalls),
+		metricOracledbPgaMemory:             newMetricOracledbPgaMemory(mbc.Metrics.OracledbPgaMemory),
+		metricOracledbPhysicalReads:         newMetricOracledbPhysicalReads(mbc.Metrics.OracledbPhysicalReads),
+		metricOracledbProcessesLimit:        newMetricOracledbProcessesLimit(mbc.Metrics.OracledbProcessesLimit),
+		metricOracledbProcessesUsage:        newMetricOracledbProcessesUsage(mbc.Metrics.OracledbProcessesUsage),
+		metricOracledbSessionsLimit:         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
+		metricOracledbSessionsUsage:         newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
+		metricOracledbTablespaceSizeLimit:   newMetricOracledbTablespaceSizeLimit(mbc.Metrics.OracledbTablespaceSizeLimit),
+		metricOracledbTablespaceSizeUsage:   newMetricOracledbTablespaceSizeUsage(mbc.Metrics.OracledbTablespaceSizeUsage),
+		metricOracledbTransactionsLimit:     newMetricOracledbTransactionsLimit(mbc.Metrics.OracledbTransactionsLimit),
+		metricOracledbTransactionsUsage:     newMetricOracledbTransactionsUsage(mbc.Metrics.OracledbTransactionsUsage),
+		metricOracledbUserCommits:           newMetricOracledbUserCommits(mbc.Metrics.OracledbUserCommits),
+		metricOracledbUserRollbacks:         newMetricOracledbUserRollbacks(mbc.Metrics.OracledbUserRollbacks),
 	}
 	for _, op := range options {
 		op(mb)
