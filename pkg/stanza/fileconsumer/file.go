@@ -56,8 +56,10 @@ type Manager struct {
 	readerChan   chan ReaderWrapper
 	pathHash     map[string]*Fingerprint
 	pathHashLock sync.RWMutex
-	readerLock   sync.Mutex
-	lostReaders  []*Reader
+
+	// readers[] store the readers of previous poll cycles and are used to keep track of lost files
+	readerLock sync.Mutex
+	readers    []*Reader
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -171,7 +173,7 @@ func (m *Manager) worker(ctx context.Context) {
 			// Save off any files that were not fully read or if deleteAfterRead is false
 			m.saveCurrent([]*Reader{r})
 			m.readerLock.Lock()
-			m.lostReaders = append(m.lostReaders, r)
+			m.readers = append(m.readers, r)
 			m.readerLock.Unlock()
 		}
 		m.removePath(path)
@@ -215,24 +217,25 @@ func (m *Manager) handleLostFiles(ctx context.Context) {
 	defer m.readerLock.Unlock()
 
 	if m.deleteAfterRead {
-		unfinished := make([]*Reader, 0, len(m.lostReaders))
-		for _, r := range m.lostReaders {
+		unfinished := make([]*Reader, 0, len(m.readers))
+		for _, r := range m.readers {
 			if !r.eof {
 				unfinished = append(unfinished, r)
 			}
 		}
-		m.lostReaders = unfinished
-		if len(m.lostReaders) == 0 {
+		m.readers = unfinished
+		if len(m.readers) == 0 {
 			return
 		}
 	}
-	m.rollReaders(ctx, m.lostReaders)
-	m.lostReaders = make([]*Reader, 0)
+	m.rollReaders(ctx, m.readers)
+	m.readers = make([]*Reader, 0)
 }
 
 func (m *Manager) rollReaders(ctx context.Context, readers []*Reader) {
 	m.roller.readLostFiles(ctx, readers)
 	m.roller.roll(ctx, readers)
+	m.clearOldReaders()
 }
 
 func (m *Manager) makeReader(filePath string) *Reader {
@@ -307,7 +310,11 @@ func (m *Manager) saveCurrent(readers []*Reader) {
 	m.knownFilesLock.Lock()
 	defer m.knownFilesLock.Unlock()
 	m.knownFiles = append(m.knownFiles, readers...)
+}
 
+func (m *Manager) clearOldReaders() {
+	m.knownFilesLock.Lock()
+	defer m.knownFilesLock.Unlock()
 	// Clear out old readers. They are sorted such that they are oldest first,
 	// so we can just find the first reader whose generation is less than our
 	// max, and keep every reader after that
