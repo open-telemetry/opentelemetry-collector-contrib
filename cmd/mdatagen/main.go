@@ -103,25 +103,9 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 					}
 					return false
 				},
-				"stringsJoin": strings.Join,
-				"inc":         func(i int) int { return i + 1 },
-				"stability": func(in string) string {
-					switch in {
-					case "alpha":
-						return "Alpha"
-					case "beta":
-						return "Beta"
-					case "unmaintained":
-						return "Unmaintained"
-					case "deprecated":
-						return "Deprecated"
-					case "development":
-						return "Development"
-					case "stable":
-						return "Stable"
-					}
-					return "Undefined"
-				},
+				"stringsJoin":  strings.Join,
+				"stringsTitle": strings.Title,
+				"inc":          func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {
 					return distros[name]
 				},
