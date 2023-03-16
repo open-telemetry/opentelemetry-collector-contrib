@@ -22,6 +22,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
@@ -70,6 +71,7 @@ func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Bu
 	if !reflect.ValueOf(awsConfig.Region).IsNil() {
 		region = *awsConfig.Region
 	}
+	awsConfig = awsConfig.WithSTSRegionalEndpoint(endpoints.RegionalSTSEndpoint)
 	stsClient := sts.New(sess, awsConfig)
 	accountCall, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {

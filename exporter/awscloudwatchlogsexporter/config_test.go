@@ -183,7 +183,7 @@ func TestTagsValidateTooManyTags(t *testing.T) {
 			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 	}
-	assert.EqualError(t, component.ValidateConfig(wrongcfg), "invalid amount of items. Please input at most 50 tags.")
+	assert.EqualError(t, component.ValidateConfig(wrongcfg), "invalid amount of items. Please input at most 50 tags")
 }
 
 func TestTagsValidateWrongKeyRegex(t *testing.T) {

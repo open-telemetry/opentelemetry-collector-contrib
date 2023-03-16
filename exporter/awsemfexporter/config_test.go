@@ -214,7 +214,7 @@ func TestTagsValidateTooManyTags(t *testing.T) {
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 		logger:                      zap.NewNop(),
 	}
-	assert.EqualError(t, component.ValidateConfig(wrongcfg), "invalid amount of items. Please input at most 50 tags.")
+	assert.EqualError(t, component.ValidateConfig(wrongcfg), "invalid amount of items. Please input at most 50 tags")
 }
 
 func TestTagsValidateWrongKeyRegex(t *testing.T) {
