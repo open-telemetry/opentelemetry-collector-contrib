@@ -1,6 +1,123 @@
 {
    "resourceMetrics": [
       {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "resource.required",
+                  "value": {
+                     "stringValue": "foo"
+                  }
+               },
+               {
+                  "key": "resource.optional",
+                  "value": {
+                     "stringValue": "bar"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of log records observed.",
+                     "name": "log.record.count",
+                     "sum": {
+                        "aggregationTemporality": 1,
+                        "dataPoints": [
+                           {
+                              "asInt": "4",
+                              "timeUnixNano": "1678390948393725000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     }
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/countconnector"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "resource.required",
+                  "value": {
+                     "stringValue": "foo"
+                  }
+               },
+               {
+                  "key": "resource.optional",
+                  "value": {
+                     "stringValue": "notbar"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of log records observed.",
+                     "name": "log.record.count",
+                     "sum": {
+                        "aggregationTemporality": 1,
+                        "dataPoints": [
+                           {
+                              "asInt": "4",
+                              "timeUnixNano": "1678390948393759000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     }
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/countconnector"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "resource.required",
+                  "value": {
+                     "stringValue": "notfoo"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of log records observed.",
+                     "name": "log.record.count",
+                     "sum": {
+                        "aggregationTemporality": 1,
+                        "dataPoints": [
+                           {
+                              "asInt": "4",
+                              "timeUnixNano": "1678390948393760000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     }
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/countconnector"
+               }
+            }
+         ]
+      },
+      {
          "resource": {},
          "scopeMetrics": [
             {
@@ -12,84 +129,8 @@
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
-                              "asInt": "1",
-                              "timeUnixNano": "1676478602839825000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     }
-                  }
-               ],
-               "scope": {
-                  "name": "otelcol/countconnector"
-               }
-            }
-         ]
-      },
-      {
-         "resource": {
-            "attributes": [
-               {
-                  "key": "resource-attr",
-                  "value": {
-                     "stringValue": "resource-attr-val-1"
-                  }
-               }
-            ]
-         },
-         "scopeMetrics": [
-            {
-               "metrics": [
-                  {
-                     "description": "The number of log records observed.",
-                     "name": "log.record.count",
-                     "sum": {
-                        "aggregationTemporality": 1,
-                        "dataPoints": [
-                           {
-                              "asInt": "2",
-                              "timeUnixNano": "1676478602839836000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     }
-                  }
-               ],
-               "scope": {
-                  "name": "otelcol/countconnector"
-               }
-            }
-         ]
-      },
-      {
-         "resource": {
-            "attributes": [
-               {
-                  "key": "resource-attr",
-                  "value": {
-                     "stringValue": "resource-attr-val-1"
-                  }
-               },
-               {
-                  "key": "resource-attr-2",
-                  "value": {
-                     "stringValue": "resource-attr-val-2"
-                  }
-               }
-            ]
-         },
-         "scopeMetrics": [
-            {
-               "metrics": [
-                  {
-                     "description": "The number of log records observed.",
-                     "name": "log.record.count",
-                     "sum": {
-                        "aggregationTemporality": 1,
-                        "dataPoints": [
-                           {
-                              "asInt": "3",
-                              "timeUnixNano": "1676478602839837000"
+                              "asInt": "4",
+                              "timeUnixNano": "1678390948393761000"
                            }
                         ],
                         "isMonotonic": true

@@ -77,7 +77,7 @@ func newElasticSearchScraper(
 	e := &elasticsearchScraper{
 		settings:            settings.TelemetrySettings,
 		cfg:                 cfg,
-		mb:                  metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:                  metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		emitNodeVersionAttr: emitNodeVersionAttr.IsEnabled(),
 	}
 

@@ -44,8 +44,8 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
 		DimensionsCacheSize:    defaultDimensionsCacheSize,
-		skipSanitizeLabel:      dropSanitizationGate.IsEnabled(),
 		MetricsFlushInterval:   15 * time.Second,
+		Histogram:              HistogramConfig{Unit: defaultUnit},
 	}
 }
 

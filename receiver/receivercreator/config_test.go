@@ -57,6 +57,14 @@ func (mh *mockHostFactories) GetExtensions() map[component.ID]component.Componen
 	return mh.extensions
 }
 
+var portRule = func(s string) rule {
+	r, err := newRule(s)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}(`type == "port"`)
+
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
@@ -85,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]interface{}{"one": "two"},
-						rule:               newRuleOrPanic(`type == "port"`),
+						rule:               portRule,
 					},
 					"nop/1": {
 						receiverConfig: receiverConfig{
@@ -97,7 +105,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]interface{}{"two": "three"},
-						rule:               newRuleOrPanic(`type == "port"`),
+						rule:               portRule,
 					},
 				},
 				WatchObservers: []component.ID{
@@ -158,6 +166,7 @@ func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
 
 type nopWithEndpointConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
+	IntField int    `mapstructure:"int_field"`
 }
 
 type nopWithEndpointFactory struct {
@@ -165,13 +174,16 @@ type nopWithEndpointFactory struct {
 }
 
 type nopWithEndpointReceiver struct {
-	component.Component
+	mockComponent
 	consumer.Metrics
 	rcvr.CreateSettings
+	cfg component.Config
 }
 
 func (*nopWithEndpointFactory) CreateDefaultConfig() component.Config {
-	return &nopWithEndpointConfig{}
+	return &nopWithEndpointConfig{
+		IntField: 1234,
+	}
 }
 
 type mockComponent struct {
@@ -180,13 +192,47 @@ type mockComponent struct {
 }
 
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	rcs rcvr.CreateSettings,
-	_ component.Config,
+	cfg component.Config,
 	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
 	return &nopWithEndpointReceiver{
-		Component:      mockComponent{},
 		Metrics:        nextConsumer,
 		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
+type nopWithoutEndpointConfig struct {
+	NotEndpoint string `mapstructure:"not_endpoint"`
+	IntField    int    `mapstructure:"int_field"`
+}
+
+type nopWithoutEndpointFactory struct {
+	rcvr.Factory
+}
+
+type nopWithoutEndpointReceiver struct {
+	mockComponent
+	consumer.Metrics
+	rcvr.CreateSettings
+	cfg component.Config
+}
+
+func (*nopWithoutEndpointFactory) CreateDefaultConfig() component.Config {
+	return &nopWithoutEndpointConfig{
+		IntField: 2345,
+	}
+}
+
+func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
+	return &nopWithoutEndpointReceiver{
+		Metrics:        nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
 	}, nil
 }

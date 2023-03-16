@@ -96,3 +96,70 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateDimensions(t *testing.T) {
+	for _, tc := range []struct {
+		name              string
+		dimensions        []Dimension
+		expectedErr       string
+		skipSanitizeLabel bool
+	}{
+		{
+			name:       "no additional dimensions",
+			dimensions: []Dimension{},
+		},
+		{
+			name: "no duplicate dimensions",
+			dimensions: []Dimension{
+				{Name: "http.service_name"},
+				{Name: "http.status_code"},
+			},
+		},
+		{
+			name: "duplicate dimension with reserved labels",
+			dimensions: []Dimension{
+				{Name: "service.name"},
+			},
+			expectedErr: "duplicate dimension name service.name",
+		},
+		{
+			name: "duplicate dimension with reserved labels after sanitization",
+			dimensions: []Dimension{
+				{Name: "service_name"},
+			},
+			expectedErr: "duplicate dimension name service_name",
+		},
+		{
+			name: "duplicate additional dimensions",
+			dimensions: []Dimension{
+				{Name: "service_name"},
+				{Name: "service_name"},
+			},
+			expectedErr: "duplicate dimension name service_name",
+		},
+		{
+			name: "duplicate additional dimensions after sanitization",
+			dimensions: []Dimension{
+				{Name: "http.status_code"},
+				{Name: "http!status_code"},
+			},
+			expectedErr: "duplicate dimension name http_status_code after sanitization",
+		},
+		{
+			name: "we skip the case if the dimension name is the same after sanitization",
+			dimensions: []Dimension{
+				{Name: "http_status_code"},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.skipSanitizeLabel = false
+			err := validateDimensions(tc.dimensions, tc.skipSanitizeLabel)
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

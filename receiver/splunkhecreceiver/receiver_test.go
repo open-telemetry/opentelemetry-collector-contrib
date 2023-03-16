@@ -1076,6 +1076,122 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 	}
 }
 
+func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.RawPath = "/foo"
+	config.HecToOtelAttrs = splunk.HecToOtelAttrs{
+		Source:     "com.source.foo",
+		SourceType: "com.sourcetype.foo",
+		Index:      "com.index.foo",
+		Host:       "com.host.foo",
+	}
+
+	currentTime := float64(time.Now().UnixNano()) / 1e6
+	splunkMsg := buildSplunkHecMsg(currentTime, 3)
+
+	assertResponse := func(t *testing.T, status int, body string) {
+		assert.Equal(t, http.StatusOK, status)
+		assert.Equal(t, responseOK, body)
+	}
+
+	tests := []struct {
+		name           string
+		req            *http.Request
+		assertResource func(t *testing.T, got []plog.Logs)
+	}{
+		{
+			name: "all_metadata",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST",
+					"http://localhost/foo?index=bar&source=bar&sourcetype=bar&host=bar",
+					bytes.NewReader(msgBytes))
+				return req
+			}(),
+			assertResource: func(t *testing.T, got []plog.Logs) {
+				require.Equal(t, 1, len(got))
+				resources := got[0].ResourceLogs()
+				assert.Equal(t, 1, resources.Len())
+				resource := resources.At(0).Resource().Attributes()
+				assert.Equal(t, 4, resource.Len())
+				for _, k := range []string{config.HecToOtelAttrs.Index, config.HecToOtelAttrs.SourceType, config.HecToOtelAttrs.Source, config.HecToOtelAttrs.Host} {
+					v, ok := resource.Get(k)
+					if !ok {
+						assert.Fail(t, fmt.Sprintf("does not contain query param: %s", k))
+					}
+					assert.Equal(t, "bar", v.AsString())
+				}
+			},
+		},
+		{
+			name: "some_metadata",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST",
+					"http://localhost/foo?index=bar&source=bar",
+					bytes.NewReader(msgBytes))
+				return req
+			}(),
+			assertResource: func(t *testing.T, got []plog.Logs) {
+				require.Equal(t, 1, len(got))
+				resources := got[0].ResourceLogs()
+				assert.Equal(t, 1, resources.Len())
+				resource := resources.At(0).Resource().Attributes()
+				assert.Equal(t, 2, resource.Len())
+				for _, k := range [2]string{config.HecToOtelAttrs.Index, config.HecToOtelAttrs.Source} {
+					v, ok := resource.Get(k)
+					if !ok {
+						assert.Fail(t, fmt.Sprintf("does not contain query param: %s", k))
+					}
+					assert.Equal(t, "bar", v.AsString())
+				}
+			},
+		},
+		{
+			name: "no_matching_metadata",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST",
+					"http://localhost/foo?foo=bar",
+					bytes.NewReader(msgBytes))
+				return req
+			}(),
+			assertResource: func(t *testing.T, got []plog.Logs) {
+				require.Equal(t, 1, len(got))
+				resources := got[0].ResourceLogs()
+				assert.Equal(t, 1, resources.Len())
+				resource := resources.At(0).Resource().Attributes()
+				assert.Equal(t, 0, resource.Len())
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sink := new(consumertest.LogsSink)
+			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			assert.NoError(t, err)
+
+			r := rcv.(*splunkReceiver)
+			assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, r.Shutdown(context.Background()))
+			}()
+			w := httptest.NewRecorder()
+			r.handleRawReq(w, tt.req)
+
+			resp := w.Result()
+			assert.NoError(t, err)
+
+			assertResponse(t, resp.StatusCode, "OK")
+			tt.assertResource(t, sink.AllLogs())
+		})
+	}
+}
+
 func BenchmarkHandleReq(b *testing.B) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0"

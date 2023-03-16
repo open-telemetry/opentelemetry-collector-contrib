@@ -93,20 +93,6 @@ func DefaultMetricsSettings() MetricsSettings {
 // ResourceAttributeSettings provides common settings for a particular metric.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
-}
-
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ras.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
 }
 
 // ResourceAttributesSettings provides settings for apachereceiver metrics.
@@ -881,6 +867,12 @@ func newMetricApacheWorkers(settings MetricSettings) metricApacheWorkers {
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -914,31 +906,38 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
-func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.resourceAttributesSettings = ras
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      settings.BuildInfo,
-		resourceAttributesSettings:     DefaultResourceAttributesSettings(),
-		metricApacheCPULoad:            newMetricApacheCPULoad(ms.ApacheCPULoad),
-		metricApacheCPUTime:            newMetricApacheCPUTime(ms.ApacheCPUTime),
-		metricApacheCurrentConnections: newMetricApacheCurrentConnections(ms.ApacheCurrentConnections),
-		metricApacheLoad1:              newMetricApacheLoad1(ms.ApacheLoad1),
-		metricApacheLoad15:             newMetricApacheLoad15(ms.ApacheLoad15),
-		metricApacheLoad5:              newMetricApacheLoad5(ms.ApacheLoad5),
-		metricApacheRequestTime:        newMetricApacheRequestTime(ms.ApacheRequestTime),
-		metricApacheRequests:           newMetricApacheRequests(ms.ApacheRequests),
-		metricApacheScoreboard:         newMetricApacheScoreboard(ms.ApacheScoreboard),
-		metricApacheTraffic:            newMetricApacheTraffic(ms.ApacheTraffic),
-		metricApacheUptime:             newMetricApacheUptime(ms.ApacheUptime),
-		metricApacheWorkers:            newMetricApacheWorkers(ms.ApacheWorkers),
+		resourceAttributesSettings:     mbc.ResourceAttributes,
+		metricApacheCPULoad:            newMetricApacheCPULoad(mbc.Metrics.ApacheCPULoad),
+		metricApacheCPUTime:            newMetricApacheCPUTime(mbc.Metrics.ApacheCPUTime),
+		metricApacheCurrentConnections: newMetricApacheCurrentConnections(mbc.Metrics.ApacheCurrentConnections),
+		metricApacheLoad1:              newMetricApacheLoad1(mbc.Metrics.ApacheLoad1),
+		metricApacheLoad15:             newMetricApacheLoad15(mbc.Metrics.ApacheLoad15),
+		metricApacheLoad5:              newMetricApacheLoad5(mbc.Metrics.ApacheLoad5),
+		metricApacheRequestTime:        newMetricApacheRequestTime(mbc.Metrics.ApacheRequestTime),
+		metricApacheRequests:           newMetricApacheRequests(mbc.Metrics.ApacheRequests),
+		metricApacheScoreboard:         newMetricApacheScoreboard(mbc.Metrics.ApacheScoreboard),
+		metricApacheTraffic:            newMetricApacheTraffic(mbc.Metrics.ApacheTraffic),
+		metricApacheUptime:             newMetricApacheUptime(mbc.Metrics.ApacheUptime),
+		metricApacheWorkers:            newMetricApacheWorkers(mbc.Metrics.ApacheWorkers),
 	}
 	for _, op := range options {
 		op(mb)

@@ -44,7 +44,7 @@ func TestEndtoEnd_ESX(t *testing.T) {
 			TLSClientSetting: configtls.TLSClientSetting{
 				Insecure: true,
 			},
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		}
 		s := session.NewManager(c)
 

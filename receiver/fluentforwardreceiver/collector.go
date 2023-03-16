@@ -19,6 +19,7 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -33,13 +34,15 @@ type Collector struct {
 	nextConsumer consumer.Logs
 	eventCh      <-chan Event
 	logger       *zap.Logger
+	obsrecv      *obsreport.Receiver
 }
 
-func newCollector(eventCh <-chan Event, next consumer.Logs, logger *zap.Logger) *Collector {
+func newCollector(eventCh <-chan Event, next consumer.Logs, logger *zap.Logger, obsrecv *obsreport.Receiver) *Collector {
 	return &Collector{
 		nextConsumer: next,
 		eventCh:      eventCh,
 		logger:       logger,
+		obsrecv:      obsrecv,
 	}
 }
 
@@ -63,7 +66,9 @@ func (c *Collector) processEvents(ctx context.Context) {
 			c.fillBufferUntilChanEmpty(logSlice)
 
 			stats.Record(context.Background(), observ.RecordsGenerated.M(int64(out.LogRecordCount())))
-			_ = c.nextConsumer.ConsumeLogs(ctx, out)
+			ctx = c.obsrecv.StartLogsOp(ctx)
+			err := c.nextConsumer.ConsumeLogs(ctx, out)
+			c.obsrecv.EndLogsOp(ctx, "fluent", out.LogRecordCount(), err)
 		}
 	}
 }

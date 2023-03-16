@@ -12,7 +12,7 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - Aneurysm9
-    - dashpole
+    # - dashpole is out on leave
     - evan-bradley
     - MovieStoreGuy
     - TylerHelmuth

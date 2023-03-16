@@ -16,6 +16,7 @@ package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -53,7 +54,7 @@ func setupSSHServer(t *testing.T) *opensshContainer {
 			"PASSWORD_ACCESS": "true",
 		},
 		ExposedPorts: []string{"2222/tcp"},
-		WaitingFor:   wait.ForExposedPort(),
+		WaitingFor:   wait.ForListeningPort("2222/tcp"),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
@@ -64,9 +65,16 @@ func setupSSHServer(t *testing.T) *opensshContainer {
 		Started:          true,
 	})
 	require.NoError(t, err)
+	require.NotNil(t, container)
 
-	endpoint, err := container.PortEndpoint(ctx, "2222", "")
+	mappedPort, err := container.MappedPort(ctx, "2222")
 	require.NoError(t, err)
+
+	hostIP, err := container.Host(ctx)
+	require.Nil(t, err)
+
+	endpoint := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
+
 	t.Log("endpoint: ", endpoint)
 	return &opensshContainer{Container: container, Endpoint: endpoint}
 }
@@ -119,8 +127,8 @@ func TestScraper(t *testing.T) {
 			cfg.Endpoint = c.Endpoint
 			cfg.IgnoreHostKey = true
 			if tc.enableSFTP {
-				cfg.Metrics.SshcheckSftpStatus.Enabled = true
-				cfg.Metrics.SshcheckSftpDuration.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SshcheckSftpStatus.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
 			}
 
 			settings := receivertest.NewNopCreateSettings()
@@ -130,7 +138,6 @@ func TestScraper(t *testing.T) {
 
 			actualMetrics, err := scrpr.scrape(context.Background())
 			require.NoError(t, err, "failed scrape")
-
 			require.NoError(
 				t,
 				pmetrictest.CompareMetrics(
@@ -239,8 +246,8 @@ func TestWithoutStartErrsNotPanics(t *testing.T) {
 	cfg.Password = "otelp"
 	cfg.Endpoint = "localhost:22"
 	cfg.IgnoreHostKey = true
-	cfg.Metrics.SshcheckSftpStatus.Enabled = true
-	cfg.Metrics.SshcheckSftpDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SshcheckSftpStatus.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
 
 	// create the scraper without starting it, so Client is nil
 	scrpr := newScraper(cfg, receivertest.NewNopCreateSettings())
