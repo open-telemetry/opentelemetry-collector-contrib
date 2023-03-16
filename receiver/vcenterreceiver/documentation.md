@@ -264,7 +264,7 @@ The usage of the memory by the resource pool.
 
 ### vcenter.vm.cpu.usage
 
-The amount of CPU in Hz used by the VM.
+The amount of CPU used by the VM.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
