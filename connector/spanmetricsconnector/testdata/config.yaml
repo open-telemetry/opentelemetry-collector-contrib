@@ -9,6 +9,7 @@ spanmetrics/default_explicit_histogram:
 # configuration with all possible parameters
 spanmetrics/full:
   histogram:
+    unit: "s"
     explicit:
       buckets: [ 10ms, 100ms, 250ms ]
 
@@ -50,3 +51,7 @@ spanmetrics/exponential_and_explicit_histogram:
       max_size: 10
     explicit:
       buckets: [ 10ms, 100ms, 250ms ]
+
+spanmetrics/invalid_histogram_unit:
+  histogram:
+    unit: "h"

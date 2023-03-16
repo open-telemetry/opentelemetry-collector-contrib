@@ -84,7 +84,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	summaryValueCounts = 18
 )
 
-var summaryPlaceholders = newPlaceholder(18)
+var summaryPlaceholders = newPlaceholder(summaryValueCounts)
 
 type summaryModel struct {
 	metricName        string

@@ -23,11 +23,11 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -101,7 +101,7 @@ func makeHandler(dimCh chan<- dim, forcedResp *atomic.Int32) http.HandlerFunc {
 func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Int32, context.CancelFunc) {
 	dimCh := make(chan dim)
 
-	forcedResp := atomic.NewInt32(0)
+	forcedResp := &atomic.Int32{}
 	server := httptest.NewServer(makeHandler(dimCh, forcedResp))
 
 	serverURL, err := url.Parse(server.URL)

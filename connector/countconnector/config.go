@@ -48,8 +48,14 @@ type Config struct {
 
 // MetricInfo for a data type
 type MetricInfo struct {
-	Description string   `mapstructure:"description"`
-	Conditions  []string `mapstructure:"conditions"`
+	Description string            `mapstructure:"description"`
+	Conditions  []string          `mapstructure:"conditions"`
+	Attributes  []AttributeConfig `mapstructure:"attributes"`
+}
+
+type AttributeConfig struct {
+	Key          string `mapstructure:"key"`
+	DefaultValue string `mapstructure:"default_value"`
 }
 
 func (c *Config) Validate() error {
@@ -64,6 +70,9 @@ func (c *Config) Validate() error {
 		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("spans condition: metric %q: %w", name, err)
 		}
+		if err := info.validateAttributes(); err != nil {
+			return fmt.Errorf("spans attributes: metric %q: %w", name, err)
+		}
 	}
 	for name, info := range c.SpanEvents {
 		if name == "" {
@@ -76,6 +85,9 @@ func (c *Config) Validate() error {
 		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("spanevents condition: metric %q: %w", name, err)
 		}
+		if err := info.validateAttributes(); err != nil {
+			return fmt.Errorf("spanevents attributes: metric %q: %w", name, err)
+		}
 	}
 	for name, info := range c.Metrics {
 		if name == "" {
@@ -87,6 +99,9 @@ func (c *Config) Validate() error {
 		}
 		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("metrics condition: metric %q: %w", name, err)
+		}
+		if len(info.Attributes) > 0 {
+			return fmt.Errorf("metrics attributes not supported: metric %q", name)
 		}
 	}
 
@@ -101,6 +116,9 @@ func (c *Config) Validate() error {
 		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("datapoints condition: metric %q: %w", name, err)
 		}
+		if err := info.validateAttributes(); err != nil {
+			return fmt.Errorf("spans attributes: metric %q: %w", name, err)
+		}
 	}
 	for name, info := range c.Logs {
 		if name == "" {
@@ -112,6 +130,18 @@ func (c *Config) Validate() error {
 		}
 		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("logs condition: metric %q: %w", name, err)
+		}
+		if err := info.validateAttributes(); err != nil {
+			return fmt.Errorf("logs attributes: metric %q: %w", name, err)
+		}
+	}
+	return nil
+}
+
+func (i *MetricInfo) validateAttributes() error {
+	for _, attr := range i.Attributes {
+		if attr.Key == "" {
+			return fmt.Errorf("attribute key missing")
 		}
 	}
 	return nil

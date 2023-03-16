@@ -21,6 +21,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
 const (
@@ -40,11 +42,6 @@ type Dimension struct {
 
 // Config defines the configuration options for spanmetricsconnector.
 type Config struct {
-	// LatencyHistogramBuckets is the list of durations representing latency histogram buckets.
-	// See defaultLatencyHistogramBucketsMs in connector.go for the default value.
-	// Deprecated: use HistogramConfig to configure explicit histogram buckets
-	LatencyHistogramBuckets []time.Duration `mapstructure:"latency_histogram_buckets"`
-
 	// Dimensions defines the list of additional dimensions on top of the provided:
 	// - service.name
 	// - span.kind
@@ -71,6 +68,7 @@ type Config struct {
 }
 
 type HistogramConfig struct {
+	Unit        metrics.Unit                `mapstructure:"unit"`
 	Exponential *ExponentialHistogramConfig `mapstructure:"exponential"`
 	Explicit    *ExplicitHistogramConfig    `mapstructure:"explicit"`
 }
@@ -103,7 +101,6 @@ func (c Config) Validate() error {
 	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
 	}
-
 	return nil
 }
 

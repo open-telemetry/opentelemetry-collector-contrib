@@ -4,80 +4,293 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "resource-attr",
+                        "key": "resource.required",
                         "value": {
-                            "stringValue": "resource-attr-val-1"
+                            "stringValue": "foo"
+                        }
+                    },
+                    {
+                        "key": "resource.optional",
+                        "value": {
+                            "stringValue": "bar"
                         }
                     }
                 ]
             },
             "scopeSpans": [
                 {
-                    "scope": {},
                     "spans": [
                         {
-                            "droppedAttributesCount": 1,
-                            "droppedEventsCount": 1,
+                            "attributes": [
+                                {
+                                    "key": "span.required",
+                                    "value": {
+                                        "stringValue": "foo"
+                                    }
+                                },
+                                {
+                                    "key": "span.optional",
+                                    "value": {
+                                        "stringValue": "bar"
+                                    }
+                                }
+                            ],
+                            "name": "span-with-attrs-foo-bar",
+                            "startTimeUnixNano": "1581452772000000321",
                             "endTimeUnixNano": "1581452773000000789",
                             "events": [
                                 {
                                     "attributes": [
                                         {
-                                            "key": "span-event-attr",
+                                            "key": "event.required",
                                             "value": {
-                                                "stringValue": "span-event-attr-val"
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
                                             }
                                         }
                                     ],
-                                    "droppedAttributesCount": 2,
-                                    "name": "event-with-attr",
+                                    "name": "event-with-attrs-foo-bar",
                                     "timeUnixNano": "1581452773000000123"
                                 },
-                                {
-                                    "droppedAttributesCount": 2,
-                                    "name": "event",
-                                    "timeUnixNano": "1581452773000000123"
-                                }
-                            ],
-                            "name": "operationA",
-                            "parentSpanId": "",
-                            "spanId": "",
-                            "startTimeUnixNano": "1581452772000000321",
-                            "status": {
-                                "code": 2,
-                                "message": "status-cancelled"
-                            },
-                            "traceId": ""
-                        },
-                        {
-                            "droppedLinksCount": 3,
-                            "endTimeUnixNano": "1581452773000000789",
-                            "links": [
                                 {
                                     "attributes": [
                                         {
-                                            "key": "span-link-attr",
+                                            "key": "event.required",
                                             "value": {
-                                                "stringValue": "span-link-attr-val"
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
                                             }
                                         }
                                     ],
-                                    "droppedAttributesCount": 4,
-                                    "spanId": "",
-                                    "traceId": ""
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
                                 },
                                 {
-                                    "droppedAttributesCount": 4,
-                                    "spanId": "",
-                                    "traceId": ""
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "span.required",
+                                    "value": {
+                                        "stringValue": "foo"
+                                    }
+                                },
+                                {
+                                    "key": "span.optional",
+                                    "value": {
+                                        "stringValue": "notbar"
+                                    }
                                 }
                             ],
-                            "name": "operationB",
-                            "parentSpanId": "",
-                            "spanId": "",
+                            "name": "span-with-attrs-foo-notbar",
                             "startTimeUnixNano": "1581452772000000321",
-                            "status": {},
-                            "traceId": ""
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "span.required",
+                                    "value": {
+                                        "stringValue": "notfoo"
+                                    }
+                                }
+                            ],
+                            "name": "span-with-attr-notfoo",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "span-with-no-attrs",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
                         }
                     ]
                 }
@@ -87,34 +300,863 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "resource-attr",
+                        "key": "resource.required",
                         "value": {
-                            "stringValue": "resource-attr-val-2"
+                            "stringValue": "foo"
+                        }
+                    },
+                    {
+                        "key": "resource.optional",
+                        "value": {
+                            "stringValue": "notbar"
                         }
                     }
                 ]
             },
             "scopeSpans": [
                 {
-                    "scope": {},
                     "spans": [
                         {
                             "attributes": [
                                 {
-                                    "key": "span-attr",
+                                    "key": "span.required",
                                     "value": {
-                                        "stringValue": "span-attr-val"
+                                        "stringValue": "foo"
+                                    }
+                                },
+                                {
+                                    "key": "span.optional",
+                                    "value": {
+                                        "stringValue": "bar"
                                     }
                                 }
                             ],
-                            "droppedAttributesCount": 5,
-                            "endTimeUnixNano": "1581452773000000789",
-                            "name": "operationC",
-                            "parentSpanId": "",
-                            "spanId": "",
+                            "name": "span-with-attrs-foo-bar",
                             "startTimeUnixNano": "1581452772000000321",
-                            "status": {},
-                            "traceId": ""
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "span.required",
+                                    "value": {
+                                        "stringValue": "foo"
+                                    }
+                                },
+                                {
+                                    "key": "span.optional",
+                                    "value": {
+                                        "stringValue": "notbar"
+                                    }
+                                }
+                            ],
+                            "name": "span-with-attrs-foo-notbar",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "span.required",
+                                    "value": {
+                                        "stringValue": "notfoo"
+                                    }
+                                }
+                            ],
+                            "name": "span-with-attr-notfoo",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "span-with-no-attrs",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "resource.required",
+                        "value": {
+                            "stringValue": "notfoo"
+                        }
+                    }
+                ]
+            },
+            "scopeSpans": [
+                {
+                    "spans": [
+                        {
+                            "attributes": [
+                                {
+                                    "key": "span.required",
+                                    "value": {
+                                        "stringValue": "foo"
+                                    }
+                                },
+                                {
+                                    "key": "span.optional",
+                                    "value": {
+                                        "stringValue": "bar"
+                                    }
+                                }
+                            ],
+                            "name": "span-with-attrs-foo-bar",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "span.required",
+                                    "value": {
+                                        "stringValue": "foo"
+                                    }
+                                },
+                                {
+                                    "key": "span.optional",
+                                    "value": {
+                                        "stringValue": "notbar"
+                                    }
+                                }
+                            ],
+                            "name": "span-with-attrs-foo-notbar",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "span.required",
+                                    "value": {
+                                        "stringValue": "notfoo"
+                                    }
+                                }
+                            ],
+                            "name": "span-with-attr-notfoo",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "span-with-no-attrs",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "scopeSpans": [
+                {
+                    "spans": [
+                        {
+                            "attributes": [
+                                {
+                                    "key": "span.required",
+                                    "value": {
+                                        "stringValue": "foo"
+                                    }
+                                },
+                                {
+                                    "key": "span.optional",
+                                    "value": {
+                                        "stringValue": "bar"
+                                    }
+                                }
+                            ],
+                            "name": "span-with-attrs-foo-bar",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "span.required",
+                                    "value": {
+                                        "stringValue": "foo"
+                                    }
+                                },
+                                {
+                                    "key": "span.optional",
+                                    "value": {
+                                        "stringValue": "notbar"
+                                    }
+                                }
+                            ],
+                            "name": "span-with-attrs-foo-notbar",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        },
+                        {
+                            "attributes": [
+                                {
+                                    "key": "span.required",
+                                    "value": {
+                                        "stringValue": "notfoo"
+                                    }
+                                }
+                            ],
+                            "name": "span-with-attr-notfoo",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "span-with-no-attrs",
+                            "startTimeUnixNano": "1581452772000000321",
+                            "endTimeUnixNano": "1581452773000000789",
+                            "events": [
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "bar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-bar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "foo"
+                                            }
+                                        },
+                                        {
+                                            "key": "event.optional",
+                                            "value": {
+                                                "stringValue": "notbar"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attrs-foo-notbar",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "attributes": [
+                                        {
+                                            "key": "event.required",
+                                            "value": {
+                                                "stringValue": "notfoo"
+                                            }
+                                        }
+                                    ],
+                                    "name": "event-with-attr-notfoo",
+                                    "timeUnixNano": "1581452773000000123"
+                                },
+                                {
+                                    "name": "event-with-no-attrs",
+                                    "timeUnixNano": "1581452773000000123"
+                                }
+                            ]
                         }
                     ]
                 }

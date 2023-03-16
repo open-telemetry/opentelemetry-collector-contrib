@@ -163,6 +163,10 @@ func (c *mockClient) Connect() error {
 	return nil
 }
 
+func (c *mockClient) getVersion() (string, error) {
+	return "8.0.27", nil
+}
+
 func (c *mockClient) getGlobalStats() (map[string]string, error) {
 	return readFile(c.globalStatsFile)
 }

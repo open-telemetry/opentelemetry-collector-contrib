@@ -215,7 +215,7 @@ func (h *explicitHistogram) Observe(value float64) {
 	h.sum += value
 	h.count++
 
-	// Binary search to find the latencyMs bucket index.
+	// Binary search to find the value bucket index.
 	index := sort.SearchFloat64s(h.bounds, value)
 	h.bucketCounts[index]++
 }

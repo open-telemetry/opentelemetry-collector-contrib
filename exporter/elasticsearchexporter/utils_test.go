@@ -50,7 +50,7 @@ type httpTestError struct {
 	cause   error
 }
 
-const currentESVersion = "8.4.0"
+const currentESVersion = "7.17.7"
 
 func (e *httpTestError) Error() string {
 	return fmt.Sprintf("http request failed (status=%v): %v", e.Status(), e.Message())
