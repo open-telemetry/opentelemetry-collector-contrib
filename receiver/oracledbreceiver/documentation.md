@@ -22,7 +22,7 @@ Cumulative CPU time, in seconds
 
 ### oracledb.dml_locks.limit
 
-Maximum limit of active DML (Data Manipulation Language) locks.
+Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -46,7 +46,7 @@ Total number of deadlocks between table or row locks in different sessions.
 
 ### oracledb.enqueue_locks.limit
 
-Maximum limit of active enqueue locks.
+Maximum limit of active enqueue locks, -1 if unlimited.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -62,7 +62,7 @@ Current count of active enqueue locks.
 
 ### oracledb.enqueue_resources.limit
 
-Maximum limit of active enqueue resources.
+Maximum limit of active enqueue resources, -1 if unlimited.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -134,7 +134,7 @@ Number of physical reads
 
 ### oracledb.processes.limit
 
-Maximum limit of active processes.
+Maximum limit of active processes, -1 if unlimited.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -150,7 +150,7 @@ Current count of active processes.
 
 ### oracledb.sessions.limit
 
-Maximum limit of active sessions.
+Maximum limit of active sessions, -1 if unlimited.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -173,7 +173,7 @@ Count of active sessions.
 
 ### oracledb.tablespace_size.limit
 
-Maximum size of tablespace in bytes.
+Maximum size of tablespace in bytes, -1 if unlimited.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -201,7 +201,7 @@ Used tablespace in bytes.
 
 ### oracledb.transactions.limit
 
-Maximum limit of active transactions.
+Maximum limit of active transactions, -1 if unlimited.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
