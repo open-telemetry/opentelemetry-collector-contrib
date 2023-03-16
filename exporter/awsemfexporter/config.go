@@ -16,8 +16,8 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
-	"regexp"
 	"fmt"
+	"regexp"
 
 	"go.uber.org/zap"
 
