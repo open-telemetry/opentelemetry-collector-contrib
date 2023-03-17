@@ -734,7 +734,7 @@ func TestFastFileSameFingerprintAfterRotation(t *testing.T){
 
 }
 
-//Aways exclude the same file
+//Always exclude the same file
 func TestTwoSameFingerprintFileIngestOnyOneFileContent(t *testing.T){
 	if runtime.GOOS == windowsOS {
 		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
