@@ -75,7 +75,7 @@ func TestDBSQLClient_MultiRow(t *testing.T) {
 func TestDBSQLClient_Nulls(t *testing.T) {
 	cl := dbSQLClient{
 		db: fakeDB{rowVals: [][]any{
-			{42, nil}, // NULLs from the DB map to nil here
+			{42, nil, 111}, // NULLs from the DB map to nil here
 		}},
 		logger: zap.NewNop(),
 		sql:    "",
@@ -86,6 +86,7 @@ func TestDBSQLClient_Nulls(t *testing.T) {
 	assert.Len(t, rows, 1)
 	assert.EqualValues(t, map[string]string{
 		"col_0": "42",
+		"col_2": "111",
 	}, rows[0])
 }
 

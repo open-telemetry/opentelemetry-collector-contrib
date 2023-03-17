@@ -105,7 +105,7 @@ Value: 1
 
 Avoid queries that produce any NULL values. If a query produces a NULL value, a warning will be logged. Furthermore,
 if a configuration references the column that produces a NULL value, an additional error will be logged. However, in
-either case, the recevier will continue to operate.
+either case, the receiver will continue to operate.
 
 #### Oracle DB Driver Example
 

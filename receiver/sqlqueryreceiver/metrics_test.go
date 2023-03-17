@@ -26,5 +26,5 @@ func TestSetDataPointValue(t *testing.T) {
 		ValueType:   MetricValueTypeInt,
 		ValueColumn: "some-col",
 	}, "", pmetric.NewNumberDataPoint())
-	assert.Error(t, err)
+	assert.EqualError(t, err, `setDataPointValue: col "some-col": error converting to integer: strconv.Atoi: parsing "": invalid syntax`)
 }
