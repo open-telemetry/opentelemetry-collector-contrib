@@ -70,11 +70,8 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 			scope := ills.At(j).Scope()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				entry, err := LogToLokiEntry(log, resource, scope)
-				tenant := entry.Tenant
-
+				tenant := GetTenantFromTenantHint(log.Attributes(), resource.Attributes())
 				group, ok := groups[tenant]
-
 				if !ok {
 					group = pushRequestGroup{
 						report:  &PushReport{},
@@ -82,6 +79,8 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 					}
 					groups[tenant] = group
 				}
+
+				entry, err := LogToLokiEntry(log, resource, scope)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					group.report.Errors = append(group.report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
@@ -125,11 +124,10 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 	return requests
 }
 
-// PushEntry is Loki log entry enriched with labels and tenant
+// PushEntry is Loki log entry enriched with labels
 type PushEntry struct {
 	Entry  *push.Entry
 	Labels model.LabelSet
-	Tenant string
 }
 
 // LogToLokiEntry converts LogRecord into Loki log entry enriched with labels and tenant
@@ -146,7 +144,6 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 	addLogLevelAttributeAndHint(log)
 
 	format := getFormatFromFormatHint(log.Attributes(), resource.Attributes())
-	tenant := getTenantFromTenantHint(log.Attributes(), resource.Attributes())
 
 	mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
 	// remove the attributes that were promoted to labels
@@ -155,17 +152,12 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 
 	entry, err := convertLogToLokiEntry(log, resource, format, scope)
 	if err != nil {
-		return &PushEntry{
-			Entry:  nil,
-			Labels: mergedLabels,
-			Tenant: tenant,
-		}, err
+		return nil, err
 	}
 
 	return &PushEntry{
 		Entry:  entry,
 		Labels: mergedLabels,
-		Tenant: tenant,
 	}, nil
 }
 
@@ -182,10 +174,10 @@ func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) stri
 	return format
 }
 
-// getTenantFromTenantHint extract an attribute based on the tenant hint.
+// GetTenantFromTenantHint extract an attribute based on the tenant hint.
 // it looks up for the attribute first in resource attributes and fallbacks to
 // record attributes if it is not found.
-func getTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
+func GetTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
 	var tenant string
 	hintAttr, found := resourceAttr.Get(hintTenant)
 	if !found {

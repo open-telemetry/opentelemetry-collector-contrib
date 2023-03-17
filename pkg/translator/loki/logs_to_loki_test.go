@@ -724,67 +724,6 @@ func TestLogToLokiEntry(t *testing.T) {
 			},
 		},
 		{
-			name:      "with tenant in attributes",
-			timestamp: time.Unix(0, 1677592916000000000),
-			attrs: map[string]interface{}{
-				hintTenant:  "tenant.id",
-				"tenant.id": "1",
-			},
-			expected: &PushEntry{
-				Entry: &push.Entry{
-					Timestamp: time.Unix(0, 1677592916000000000),
-					Line:      "{}",
-				},
-				Labels: model.LabelSet{
-					"exporter":  "OTLP",
-					"tenant.id": "1",
-				},
-				Tenant: "1",
-			},
-		},
-		{
-			name:      "with tenant in resources",
-			timestamp: time.Unix(0, 1677592916000000000),
-			res: map[string]interface{}{
-				hintTenant:  "tenant.id",
-				"tenant.id": "1",
-			},
-			expected: &PushEntry{
-				Entry: &push.Entry{
-					Timestamp: time.Unix(0, 1677592916000000000),
-					Line:      "{}",
-				},
-				Labels: model.LabelSet{
-					"exporter":  "OTLP",
-					"tenant.id": "1",
-				},
-				Tenant: "1",
-			},
-		},
-		{
-			name:      "if tenant set in resources and attributes, the one in resource should win",
-			timestamp: time.Unix(0, 1677592916000000000),
-			res: map[string]interface{}{
-				hintTenant:  "tenant.id",
-				"tenant.id": "1",
-			},
-			attrs: map[string]interface{}{
-				hintTenant:  "tenant.id",
-				"tenant.id": "2",
-			},
-			expected: &PushEntry{
-				Entry: &push.Entry{
-					Timestamp: time.Unix(0, 1677592916000000000),
-					Line:      "{}",
-				},
-				Labels: model.LabelSet{
-					"exporter":  "OTLP",
-					"tenant.id": "1",
-				},
-				Tenant: "1",
-			},
-		},
-		{
 			name:      "with instrumentation scope",
 			timestamp: time.Unix(0, 1677592916000000000),
 			instrumentationScope: &instrumentationScope{
@@ -807,13 +746,8 @@ func TestLogToLokiEntry(t *testing.T) {
 			hints: map[string]interface{}{
 				hintFormat: "my-format",
 			},
-			expected: &PushEntry{
-				Entry: nil,
-				Labels: model.LabelSet{
-					"exporter": "OTLP",
-				},
-			},
-			err: fmt.Errorf("invalid format %s. Expected one of: %s, %s", "my-format", formatJSON, formatLogfmt),
+			expected: nil,
+			err:      fmt.Errorf("invalid format %s. Expected one of: %s, %s", "my-format", formatJSON, formatLogfmt),
 		},
 	}
 
@@ -848,6 +782,58 @@ func TestLogToLokiEntry(t *testing.T) {
 			log, err := LogToLokiEntry(lr, resource, scope)
 			assert.Equal(t, tt.err, err)
 			assert.Equal(t, tt.expected, log)
+		})
+	}
+}
+
+func TestGetTenantFromTenantHint(t *testing.T) {
+	testCases := []struct {
+		name     string
+		attrs    map[string]interface{}
+		res      map[string]interface{}
+		expected string
+	}{
+		{
+			name: "tenant in attributes",
+			attrs: map[string]interface{}{
+				hintTenant:  "tenant.id",
+				"tenant.id": "1",
+			},
+			expected: "1",
+		},
+		{
+			name: "tenant in resources",
+			res: map[string]interface{}{
+				hintTenant:  "tenant.id",
+				"tenant.id": "1",
+			},
+			expected: "1",
+		},
+		{
+			name: "if tenant set in resources and attributes, the one in resource should win",
+			res: map[string]interface{}{
+				hintTenant:  "tenant.id",
+				"tenant.id": "1",
+			},
+			attrs: map[string]interface{}{
+				hintTenant:  "tenant.id",
+				"tenant.id": "2",
+			},
+			expected: "1",
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			lr := plog.NewLogRecord()
+			err := lr.Attributes().FromRaw(tt.attrs)
+			require.NoError(t, err)
+
+			resource := pcommon.NewResource()
+			err = resource.Attributes().FromRaw(tt.res)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.expected, GetTenantFromTenantHint(lr.Attributes(), resource.Attributes()))
 		})
 	}
 }
