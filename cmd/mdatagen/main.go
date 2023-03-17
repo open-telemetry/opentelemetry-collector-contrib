@@ -26,6 +26,9 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -87,7 +90,7 @@ func run(ymlPath string) error {
 	return generateFile(filepath.Join(tmplDir, "documentation.md.tmpl"), filepath.Join(ymlDir, "documentation.md"), md)
 }
 
-func getTemplate(tmplFile string, outputFile string, md metadata) *template.Template {
+func templatize(tmplFile string, md metadata) *template.Template {
 	return template.Must(
 		template.
 			New(filepath.Base(tmplFile)).
@@ -116,9 +119,9 @@ func getTemplate(tmplFile string, outputFile string, md metadata) *template.Temp
 					}
 					return false
 				},
-				"stringsJoin":  strings.Join,
-				"stringsTitle": strings.Title,
-				"inc":          func(i int) int { return i + 1 },
+				"stringsJoin": strings.Join,
+				"casesTitle":  cases.Title(language.English).String,
+				"inc":         func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {
 					return distros[name]
 				},
@@ -141,7 +144,7 @@ func inlineReplace(tmplFile string, outputFile string, md metadata, start string
 		return nil
 	}
 
-	tmpl := getTemplate(tmplFile, outputFile, md)
+	tmpl := templatize(tmplFile, md)
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
@@ -159,7 +162,7 @@ func inlineReplace(tmplFile string, outputFile string, md metadata, start string
 }
 
 func generateFile(tmplFile string, outputFile string, md metadata) error {
-	tmpl := getTemplate(tmplFile, outputFile, md)
+	tmpl := templatize(tmplFile, md)
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
