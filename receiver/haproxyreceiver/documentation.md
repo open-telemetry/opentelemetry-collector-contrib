@@ -2,12 +2,6 @@
 
 # haproxyreceiver
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [alpha]   |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
-
 ## Default Metrics
 
 The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -255,7 +249,3 @@ Cumulative number of sessions. Corresponds to HAProxy's `stot` metric.
 | haproxy.url | The path to the HAProxy socket or HTTP URL. | Any Str | true |
 | proxy_name | Proxy name | Any Str | false |
 | service_name | Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener) | Any Str | false |
-
-[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
-
-[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
