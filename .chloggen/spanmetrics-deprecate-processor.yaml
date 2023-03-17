@@ -5,7 +5,7 @@ change_type: deprecation
 component: spanmetricsprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate the `spanmetrics` processor in favour if the `spanmetrics` connector.
+note: Deprecate the `spanmetrics` processor in favour of the `spanmetrics` connector.
 
 # One or more tracking issues related to the change
 issues: [19736]
