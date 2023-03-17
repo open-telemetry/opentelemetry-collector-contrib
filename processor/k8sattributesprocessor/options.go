@@ -297,28 +297,16 @@ func withExtractPodAssociations(podAssociations ...PodAssociationConfig) option 
 
 			var name string
 
-			if association.From != "" {
-				if association.From == kube.ConnectionSource {
+			for _, associationSource := range association.Sources {
+				if associationSource.From == kube.ConnectionSource {
 					name = ""
 				} else {
-					name = association.Name
+					name = associationSource.Name
 				}
 				assoc.Sources = append(assoc.Sources, kube.AssociationSource{
-					From: association.From,
+					From: associationSource.From,
 					Name: name,
 				})
-			} else {
-				for _, associationSource := range association.Sources {
-					if associationSource.From == kube.ConnectionSource {
-						name = ""
-					} else {
-						name = associationSource.Name
-					}
-					assoc.Sources = append(assoc.Sources, kube.AssociationSource{
-						From: associationSource.From,
-						Name: name,
-					})
-				}
 			}
 			associations = append(associations, assoc)
 		}
