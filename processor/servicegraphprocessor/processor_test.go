@@ -209,8 +209,7 @@ func TestProcessorConsume(t *testing.T) {
 			p := newProcessor(zaptest.NewLogger(t), &tc.cfg)
 			p.tracesConsumer = consumertest.NewNop()
 
-			sink := new(consumertest.MetricsSink)
-			metricsExporter := newMockMetricsExporter(sink)
+			metricsExporter := newMockMetricsExporter()
 
 			mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 				component.DataTypeMetrics: {
@@ -249,8 +248,7 @@ func TestConnectorConsume(t *testing.T) {
 	}
 
 	conn := newProcessor(zaptest.NewLogger(t), cfg)
-	sink := new(consumertest.MetricsSink)
-	conn.metricsConsumer = newMockMetricsExporter(sink)
+	conn.metricsConsumer = newMockMetricsExporter()
 
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -458,13 +456,11 @@ func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]compon
 
 var _ exporter.Metrics = (*mockMetricsExporter)(nil)
 
-func newMockMetricsExporter(sink *consumertest.MetricsSink) exporter.Metrics {
-	return &mockMetricsExporter{sink: sink}
+func newMockMetricsExporter() exporter.Metrics {
+	return &mockMetricsExporter{}
 }
 
-type mockMetricsExporter struct {
-	sink *consumertest.MetricsSink
-}
+type mockMetricsExporter struct{}
 
 func (m *mockMetricsExporter) Start(context.Context, component.Host) error { return nil }
 
@@ -473,9 +469,6 @@ func (m *mockMetricsExporter) Shutdown(context.Context) error { return nil }
 func (m *mockMetricsExporter) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
 
 func (m *mockMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	if m.sink != nil {
-		return m.sink.ConsumeMetrics(ctx, md)
-	}
 	return nil
 }
 
@@ -530,7 +523,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 		},
 	}
 
-	mockMetricsExporter := newMockMetricsExporter(nil)
+	mockMetricsExporter := newMockMetricsExporter()
 
 	p := newProcessor(zaptest.NewLogger(t), cfg)
 	p.tracesConsumer = consumertest.NewNop()
