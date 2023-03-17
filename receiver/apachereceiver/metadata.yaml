@@ -1,5 +1,11 @@
 name: apachereceiver
 
+status:
+  type: receiver
+  stability: beta
+  pipelines: [metrics]
+  distributions: [contrib]
+
 resource_attributes:
     apache.server.name:
       description: The name of the Apache HTTP server.
