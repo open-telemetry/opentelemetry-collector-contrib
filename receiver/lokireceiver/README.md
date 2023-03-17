@@ -28,5 +28,5 @@ receivers:
     use_incoming_timestamp: true
 ```
 
-[alpha]:https://github.com/open-telemetry/opentelemetry-collector#development
+[development]:https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
