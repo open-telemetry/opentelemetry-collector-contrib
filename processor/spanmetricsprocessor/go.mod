@@ -1,3 +1,4 @@
+// Deprecated: use github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector instead.
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor
 
 go 1.19
