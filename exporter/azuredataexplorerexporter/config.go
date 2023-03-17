@@ -44,8 +44,8 @@ func (adxCfg *Config) Validate() error {
 		return errors.New("ADX config is nil / not provided")
 	}
 
-	if isEmpty(adxCfg.ClusterURI) || isEmpty(adxCfg.ApplicationID) || isEmpty(string(adxCfg.ApplicationKey)) || isEmpty(adxCfg.TenantID) {
-		return errors.New(`mandatory configurations "cluster_uri" ,"application_id" , "application_key" and "tenant_id" are missing or empty `)
+	if isEmpty(adxCfg.ClusterURI) || isEmpty(adxCfg.TenantID) {
+		return errors.New(`mandatory configurations "cluster_uri" and "tenant_id" are missing or empty `)
 	}
 
 	if !(adxCfg.IngestionType == managedIngestType || adxCfg.IngestionType == queuedIngestTest || isEmpty(adxCfg.IngestionType)) {

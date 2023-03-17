@@ -217,10 +217,25 @@ func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
 }
 
 func buildAdxClient(config *Config) (*kusto.Client, error) {
-	authorizer := kusto.Authorization{
-		Config: auth.NewClientCredentialsConfig(config.ApplicationID,
-			string(config.ApplicationKey), config.TenantID),
+
+	var authorizer kusto.Authorization
+
+	if isEmpty(string(config.ApplicationKey)) {
+		msiConfig := auth.NewMSIConfig()
+
+		if !isEmpty(config.ApplicationID) {
+			msiConfig.ClientID = config.ApplicationID
+		}
+		authorizer = kusto.Authorization{
+			Config: msiConfig,
+		}
+	} else {
+		authorizer = kusto.Authorization{
+			Config: auth.NewClientCredentialsConfig(config.ApplicationID,
+				string(config.ApplicationKey), config.TenantID),
+		}
 	}
+
 	client, err := kusto.New(config.ClusterURI, authorizer)
 	return client, err
 }
