@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
 // package resourcedetectionprocessor implements a processor
 // which can be used to detect resource information from the host,
 // in a format that conforms to the OpenTelemetry resource semantic conventions, and append or
