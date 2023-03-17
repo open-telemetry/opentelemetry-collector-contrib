@@ -253,6 +253,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	}
 
 	if req.ContentLength == 0 {
+		r.obsrecv.EndLogsOp(ctx, typeStr, 0, nil)
 		r.failRequest(ctx, resp, http.StatusBadRequest, noDataRespBody, 0, nil)
 		return
 	}
