@@ -151,8 +151,8 @@ func TestProcessorConsume(t *testing.T) {
 					MaxItems: 10,
 					TTL:      time.Nanosecond,
 				},
-			}, sampleTraces: buildSampleTrace("val"),
-			verifyMetrics: func(t *testing.T, md pmetric.Metrics) { assert.NoError(t, verifyHappyCaseMetrics(t, md)) },
+			}, sampleTraces: buildSampleTrace(t, "val"),
+			verifyMetrics: verifyHappyCaseMetrics,
 		},
 		{
 			name: "incomplete traces with virtual server span",
@@ -253,7 +253,7 @@ func TestConnectorConsume(t *testing.T) {
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Test & verify
-	td := buildSampleTrace("val")
+	td := buildSampleTrace(t, "val")
 	// The assertion is part of verifyHappyCaseMetrics func.
 	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
@@ -261,13 +261,13 @@ func TestConnectorConsume(t *testing.T) {
 	conn.store.Expire()
 	md, err := conn.buildMetrics()
 	assert.NoError(t, err)
-	assert.NoError(t, verifyHappyCaseMetrics(t, md))
+	verifyHappyCaseMetrics(t, md)
 
 	// Shutdown the conn
 	assert.NoError(t, conn.Shutdown(context.Background()))
 }
 
-func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) error {
+func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
 	assert.Equal(t, 2, md.MetricCount())
 
 	rms := md.ResourceMetrics()
@@ -284,8 +284,6 @@ func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) error {
 
 	mDuration := ms.At(1)
 	verifyDuration(t, mDuration)
-
-	return nil
 }
 
 func verifyCount(t *testing.T, m pmetric.Metric) {
@@ -336,7 +334,7 @@ func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
 	assert.Equal(t, expected, v.AsString())
 }
 
-func buildSampleTrace(attrValue string) ptrace.Traces {
+func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
 	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
 
@@ -348,11 +346,14 @@ func buildSampleTrace(attrValue string) ptrace.Traces {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
 	var traceID pcommon.TraceID
-	rand.Read(traceID[:])
+	_, err := rand.Read(traceID[:])
+	assert.NoError(t, err)
 
 	var clientSpanID, serverSpanID pcommon.SpanID
-	rand.Read(clientSpanID[:])
-	rand.Read(serverSpanID[:])
+	_, err = rand.Read(clientSpanID[:])
+	assert.NoError(t, err)
+	_, err = rand.Read(serverSpanID[:])
+	assert.NoError(t, err)
 
 	clientSpan := scopeSpans.Spans().AppendEmpty()
 	clientSpan.SetName("client span")
@@ -468,7 +469,7 @@ func (m *mockMetricsExporter) Shutdown(context.Context) error { return nil }
 
 func (m *mockMetricsExporter) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
 
-func (m *mockMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (m *mockMetricsExporter) ConsumeMetrics(context.Context, pmetric.Metrics) error {
 	return nil
 }
 
@@ -537,7 +538,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	assert.NoError(t, p.Start(context.Background(), mHost))
 
 	// ConsumeTraces
-	td := buildSampleTrace("first")
+	td := buildSampleTrace(t, "first")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
 	// Make series stale and force a cache cleanup
@@ -549,7 +550,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	assert.Equal(t, 0, len(p.keyToMetric))
 
 	// ConsumeTraces with a trace with different attribute value
-	td = buildSampleTrace("second")
+	td = buildSampleTrace(t, "second")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
 	// Shutdown the processor
