@@ -596,3 +596,261 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	require.NoError(t, operator.Start(persister))
 	waitForToken(t, emitCalls, log2)
 }
+
+//Reading a file with a multi-cycle should work well
+func TestTenPollCycleForOneFile(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.FingerprintSize = 16
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestManager(t, cfg)
+	operator.persister = testutil.NewMockPersister("test")
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	file := openTemp(t,tempDir)
+	for i:=0;i<10;i++ {
+		content := fmt.Sprintf("aaaaaaaaaaaaaaaa%d", i)
+		writeString(t,file,content+"\n")
+		operator.poll(context.Background())
+		waitForToken(t,emitCalls,[]byte(content))
+	}
+
+}
+
+//If the rotation is done with the same fingerprint between the pre-rotated file and  the post-rotated file  ,
+//and the file does not grow rapidly after the  rotation  , there should be no data loss
+func TestSlowFileSameFingerprintAfterRotation(t *testing.T){
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig()
+	cfg.FingerprintSize = 16
+	cfg.StartAt = "beginning"
+	cfg.Include = append(cfg.Include,fmt.Sprintf("%s/*.log",tempDir))
+
+	operator, emitCalls := buildTestManager(t, cfg)
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	originalFile := openTempWithPattern(t, tempDir,"*.log")
+	writeString(t,originalFile,"aaaaaaaaaaaaaaaa\n")
+	writeString(t,originalFile,"123\n")
+	writeString(t,originalFile,"456\n")
+
+	waitForToken(t,emitCalls,[]byte("aaaaaaaaaaaaaaaa"))
+	waitForToken(t,emitCalls,[]byte("123"))
+	waitForToken(t,emitCalls,[]byte("456"))
+
+	//The rotation is performed  and the rotation file is excluded
+	rotationFile := openTempWithPattern(t, tempDir,"*.log.1")
+	_, err := originalFile.Seek(0, 0)
+	require.NoError(t,err)
+	_, err = io.Copy(rotationFile, originalFile)
+	require.NoError(t, err)
+	rotationFileInfo, _ := rotationFile.Stat()
+	originalFileInfo, _ := originalFile.Stat()
+	require.Equal(t,rotationFileInfo.Size(), originalFileInfo.Size())
+
+	require.NoError(t, originalFile.Truncate(0))
+	_, err = originalFile.Seek(0, 0)
+	require.NoError(t, err)
+
+	//The first 16 bytes indicate that the file after rotation has the same fingerprint as the file before rotation
+	//Write a total of 21 bytes to indicate that the rotated file will be written slowly before the next read
+	writeString(t,originalFile,"aaaaaaaaaaaaaaaa\n")
+	writeString(t,originalFile,"bbb\n")
+	writeString(t,originalFile,"cc\n")
+
+	waitForToken(t,emitCalls,[]byte("aaaaaaaaaaaaaaaa"))
+	waitForToken(t,emitCalls,[]byte("bbb"))
+	waitForToken(t,emitCalls,[]byte("cc"))
+}
+
+//If the rotation is done with the same fingerprint between the pre-rotated file and  the post-rotated file  ,
+//and the file does grows rapidly after the  rotation  , there will be data loss
+//Note: there is no metric/log yet to tell people to  increase the fingerprint size
+func TestFastFileSameFingerprintAfterRotation(t *testing.T){
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig()
+	cfg.FingerprintSize = 16
+	cfg.StartAt = "beginning"
+	cfg.Include = append(cfg.Include,fmt.Sprintf("%s/*.log",tempDir))
+
+	operator, emitCalls := buildTestManager(t, cfg)
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	originalFile := openTempWithPattern(t, tempDir,"*.log")
+	writeString(t,originalFile,"aaaaaaaaaaaaaaaa\n")
+	writeString(t,originalFile,"123\n")
+	writeString(t,originalFile,"456\n")
+
+	waitForToken(t,emitCalls,[]byte("aaaaaaaaaaaaaaaa"))
+	waitForToken(t,emitCalls,[]byte("123"))
+	waitForToken(t,emitCalls,[]byte("456"))
+
+	//The rotation is performed  and the rotation file is excluded
+	rotationFile := openTempWithPattern(t, tempDir,"*.log.1")
+	_, err := originalFile.Seek(0, 0)
+	require.NoError(t,err)
+	_, err = io.Copy(rotationFile, originalFile)
+	require.NoError(t, err)
+	rotationFileInfo, _ := rotationFile.Stat()
+	originalFileInfo, _ := originalFile.Stat()
+	require.Equal(t,rotationFileInfo.Size(), originalFileInfo.Size())
+
+	require.NoError(t, originalFile.Truncate(0))
+	_, err = originalFile.Seek(0, 0)
+	require.NoError(t, err)
+
+	//The first 16 bytes indicate that the file after rotation has the same fingerprint as the file before rotation
+	//Write a total of 25 bytes to indicate that the rotated file will be written quickly before the next read
+	writeString(t,originalFile,"aaaaaaaaaaaaaaaa\n")
+	writeString(t,originalFile,"bbb\n")
+	writeString(t,originalFile,"ccc\n")
+	writeString(t,originalFile,"ddd\n")
+
+	//data lost before ddd
+	waitForToken(t,emitCalls,[]byte("ddd"))
+
+}
+
+//Always exclude the same file
+func TestTwoSameFingerprintFileIngestOnyOneFileContent(t *testing.T){
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.FingerprintSize = 16
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestManager(t, cfg)
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	file1 := openTempWithPattern(t,tempDir,"*.log1")
+	file2 := openTempWithPattern(t,tempDir,"*.log2")
+
+
+	fileExcluded := file2.Name()
+
+	for i:=0; i<10;i++  {
+		content := fmt.Sprintf("aaaaaaaaaaaaaaaa%d", i)
+		writeString(t,file1, content+"\n")
+		if i == 0 {
+			writeString(t,file2, content+"\n")
+			waitForToken(t,emitCalls,[]byte(content))
+			if _,ok :=operator.excludePaths[file1.Name()]; ok{
+				fileExcluded = file1.Name()
+			}
+		}else{
+			writeString(t,file2, content+"zzzz\n")
+			if _, ok := operator.excludePaths[file1.Name()]; ok {
+				waitForToken(t,emitCalls,[]byte(content+"zzzz"))
+			}else{
+				waitForToken(t,emitCalls,[]byte(content))
+			}
+		}
+		require.Equal(t,1, len(operator.excludePaths))
+		require.Contains(t, operator.excludePaths, fileExcluded)
+
+		expectNoTokens(t,emitCalls)
+	}
+}
+
+
+//If the rotation is done with the same fingerprint between the pre-rotated file and  the post-rotated file  ,
+//the file does not grow rapidly after the  rotation  , and the pre-rotated file still append data
+//there should be no data loss and no data reading chaos
+func TestSlowFileSameFingerprintAfterRotationWithoutExclude(t *testing.T){
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.FingerprintSize = 16
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestManager(t, cfg)
+	operator.persister = testutil.NewMockPersister("test")
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	originalFile := openTemp(t, tempDir)
+	writeString(t,originalFile,"aaaaaaaaaaaaaaaa\n")
+	writeString(t,originalFile,"123\n")
+	writeString(t,originalFile,"456\n")
+
+	operator.poll(context.Background())
+	waitForToken(t,emitCalls,[]byte("aaaaaaaaaaaaaaaa"))
+	waitForToken(t,emitCalls,[]byte("123"))
+	waitForToken(t,emitCalls,[]byte("456"))
+	operator.wg.Wait()
+
+	//The rotation is performed  and the rotation file is included
+	rotationFile := openTemp(t, tempDir)
+	_, err := originalFile.Seek(0, 0)
+	require.NoError(t,err)
+	_, err = io.Copy(rotationFile, originalFile)
+	require.NoError(t, err)
+	rotationFileInfo, _ := rotationFile.Stat()
+	originalFileInfo, _ := originalFile.Stat()
+	require.Equal(t,rotationFileInfo.Size(), originalFileInfo.Size())
+
+	require.NoError(t, originalFile.Truncate(0))
+	_, err = originalFile.Seek(0, 0)
+	require.NoError(t, err)
+
+	//write 19 bytes to indicate that rotation File write slow before next read
+	writeString(t,originalFile,"aaaaaaaaaaaaaaaa\n")
+	writeString(t,originalFile,"bbb\n")
+
+	operator.poll(context.Background())
+	waitForToken(t,emitCalls,[]byte("aaaaaaaaaaaaaaaa"))
+	waitForToken(t,emitCalls,[]byte("bbb"))
+	operator.wg.Wait()
+
+
+	//Write data to the rotation file.
+	//As the rotation file is excluded due to the fingerprint check , there should be no data output
+	require.Contains(t,operator.excludePaths,rotationFile.Name())
+	writeString(t,rotationFile,"7891011121314151617\n")
+	operator.poll(context.Background())
+	expectNoTokens(t,emitCalls)
+	operator.wg.Wait()
+
+	writeString(t,originalFile,"ccc\n")
+	writeString(t,originalFile,"ddd\n")
+
+	//no chaos
+	operator.poll(context.Background())
+	waitForToken(t,emitCalls,[]byte("ccc"))
+	waitForToken(t,emitCalls,[]byte("ddd"))
+	operator.wg.Wait()
+
+}
