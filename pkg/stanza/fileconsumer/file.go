@@ -47,7 +47,7 @@ type Manager struct {
 
 	knownFiles []*Reader
 	seenPaths  map[string]struct{}
-	//exclude by same fingerprint
+	// exclude by same fingerprint
 	excludePaths map[string]struct{}
 }
 
@@ -248,9 +248,9 @@ OUTER:
 					infoJ, _ := files[j].Stat()
 					infoI, _ := files[i].Stat()
 					if infoJ.Size() > infoI.Size() {
-						//Keep the smaller file
-						//if both the file before rotation and the file after rotation are included , and they have same fingerprint
-						//the file after rotation should be read
+						// Keep the smaller file
+						// if both the file before rotation and the file after rotation are included , and they have same fingerprint
+						// the file after rotation should be read
 						deleteIndex = j
 					}
 				}
@@ -264,6 +264,7 @@ OUTER:
 					m.Errorf("problem closing file", "file", files[deleteIndex].Name())
 				}
 				noExclude = false
+
 				fps = append(fps[:deleteIndex], fps[deleteIndex+1:]...)
 				files = append(files[:deleteIndex], files[deleteIndex+1:]...)
 				if fpjExclude {
