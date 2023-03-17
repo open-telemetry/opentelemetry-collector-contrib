@@ -266,8 +266,12 @@ OUTER:
 				noExclude = false
 				fps = append(fps[:deleteIndex], fps[deleteIndex+1:]...)
 				files = append(files[:deleteIndex], files[deleteIndex+1:]...)
-				i--
-				continue OUTER
+				if fpjExclude {
+					j--
+				}else{
+					i--
+					continue OUTER
+				}
 			}
 		}
 	}
