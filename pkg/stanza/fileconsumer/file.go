@@ -248,7 +248,9 @@ OUTER:
 					infoJ, _ := files[j].Stat()
 					infoI, _ := files[i].Stat()
 					if infoJ.Size() > infoI.Size() {
-						//keep the smaller file for rotation condition
+						//Keep the smaller file
+						//if both the file before rotation and the file after rotation are included , and they have same fingerprint
+						//the file after rotation should be read
 						deleteIndex = j
 					}
 				}
@@ -324,8 +326,8 @@ func (m *Manager) findFingerprintMatch(fp *Fingerprint, fileSize int64) (*Reader
 	// Iterate backwards to match newest first
 	for i := len(m.knownFiles) - 1; i >= 0; i-- {
 		oldReader := m.knownFiles[i]
-		// if current file total size is smaller than last poll file offset , current file and oldReader.file can not be
-		// same file , even they have same fingerprint
+		// If the total size of the current file  is less than the last poll file offset ,
+		// the current file and the oldReader.file cannot be the same file , even if they have the same fingerprint.
 		if oldReader.Offset <= fileSize && fp.StartsWith(oldReader.Fingerprint) {
 			return oldReader, true
 		}

@@ -597,7 +597,7 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	waitForToken(t, emitCalls, log2)
 }
 
-//Compare oldReader.Offset and new file size  will not effect one file read in multi poll cycle
+//Reading a file with a multi-cycle should work well
 func TestTenPollCycleForOneFile(t *testing.T) {
 	if runtime.GOOS == windowsOS {
 		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
@@ -624,9 +624,8 @@ func TestTenPollCycleForOneFile(t *testing.T) {
 
 }
 
-//Compare oldReader.Offset and new file size to reduce data lost
-//when rotation happen with same fingerprint and new file in a new poll can not grows fast that greater than offset
-//exclution rotation
+//If the rotation is done with the same fingerprint between the pre-rotated file and  the post-rotated file  ,
+//and the file does not grow rapidly after the  rotation  , there should be no data loss
 func TestSlowFileSameFingerprintAfterRotation(t *testing.T){
 	if runtime.GOOS == windowsOS {
 		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
@@ -654,9 +653,8 @@ func TestSlowFileSameFingerprintAfterRotation(t *testing.T){
 	waitForToken(t,emitCalls,[]byte("123"))
 	waitForToken(t,emitCalls,[]byte("456"))
 
-	//rotation happen with copy truncate, new file has same fingerprint with originalFile
+	//The rotation is performed  and the rotation file is excluded
 	rotationFile := openTempWithPattern(t, tempDir,"*.log.1")
-	//reset offset to copy content
 	_, err := originalFile.Seek(0, 0)
 	require.NoError(t,err)
 	_, err = io.Copy(rotationFile, originalFile)
@@ -669,20 +667,20 @@ func TestSlowFileSameFingerprintAfterRotation(t *testing.T){
 	_, err = originalFile.Seek(0, 0)
 	require.NoError(t, err)
 
-	//write 19 bytes to indicate that rotation File write slow before next read
+	//The first 16 bytes indicate that the file after rotation has the same fingerprint as the file before rotation
+	//Write a total of 21 bytes to indicate that the rotated file will be written slowly before the next read
 	writeString(t,originalFile,"aaaaaaaaaaaaaaaa\n")
 	writeString(t,originalFile,"bbb\n")
 	writeString(t,originalFile,"cc\n")
 
 	waitForToken(t,emitCalls,[]byte("aaaaaaaaaaaaaaaa"))
-	//log in new rotation can read all data
 	waitForToken(t,emitCalls,[]byte("bbb"))
 	waitForToken(t,emitCalls,[]byte("cc"))
 }
 
-//Compare oldReader.Offset and new file size to reduce can not reduce data lost
-//when rotation happen with same fingerprint and new file in a new poll grows fast that greater than offset
-//attention: there is no metric/log for now to indicate people that they should increase fingerprint size
+//If the rotation is done with the same fingerprint between the pre-rotated file and  the post-rotated file  ,
+//and the file does grows rapidly after the  rotation  , there will be data loss
+//Note: there is no metric/log yet to tell people to  increase the fingerprint size
 func TestFastFileSameFingerprintAfterRotation(t *testing.T){
 	if runtime.GOOS == windowsOS {
 		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
@@ -710,9 +708,8 @@ func TestFastFileSameFingerprintAfterRotation(t *testing.T){
 	waitForToken(t,emitCalls,[]byte("123"))
 	waitForToken(t,emitCalls,[]byte("456"))
 
-	//rotation happen with copy truncate, new file has same fingerprint with originalFile
+	//The rotation is performed  and the rotation file is excluded
 	rotationFile := openTempWithPattern(t, tempDir,"*.log.1")
-	//reset offset to copy content
 	_, err := originalFile.Seek(0, 0)
 	require.NoError(t,err)
 	_, err = io.Copy(rotationFile, originalFile)
@@ -722,21 +719,22 @@ func TestFastFileSameFingerprintAfterRotation(t *testing.T){
 	require.Equal(t,rotationFileInfo.Size(), originalFileInfo.Size())
 
 	require.NoError(t, originalFile.Truncate(0))
-	//reset offset to indicate truncate
 	_, err = originalFile.Seek(0, 0)
 	require.NoError(t, err)
 
-	//write 25 bytes to indicate that rotation File write fast before next read
+	//The first 16 bytes indicate that the file after rotation has the same fingerprint as the file before rotation
+	//Write a total of 25 bytes to indicate that the rotated file will be written quickly before the next read
 	writeString(t,originalFile,"aaaaaaaaaaaaaaaa\n")
 	writeString(t,originalFile,"bbb\n")
 	writeString(t,originalFile,"ccc\n")
 	writeString(t,originalFile,"ddd\n")
 
-	//log lost before ddd
+	//data lost before ddd
 	waitForToken(t,emitCalls,[]byte("ddd"))
 
 }
-//aways exclude same file
+
+//Aways exclude the same file
 func TestTwoSameFingerprintFileIngestOnyOneFileContent(t *testing.T){
 	if runtime.GOOS == windowsOS {
 		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
@@ -757,15 +755,19 @@ func TestTwoSameFingerprintFileIngestOnyOneFileContent(t *testing.T){
 	file2 := openTempWithPattern(t,tempDir,"*.log2")
 
 
+	fileExcluded := file2.Name()
+
 	for i:=0; i<10;i++  {
 		content := fmt.Sprintf("aaaaaaaaaaaaaaaa%d", i)
 		writeString(t,file1, content+"\n")
 		if i == 0 {
 			writeString(t,file2, content+"\n")
 			waitForToken(t,emitCalls,[]byte(content))
+			if _,ok :=operator.excludePaths[file1.Name()]; ok{
+				fileExcluded = file1.Name()
+			}
 		}else{
 			writeString(t,file2, content+"zzzz\n")
-			//only one file will be ingest for current logic
 			if _, ok := operator.excludePaths[file1.Name()]; ok {
 				waitForToken(t,emitCalls,[]byte(content+"zzzz"))
 			}else{
@@ -773,15 +775,16 @@ func TestTwoSameFingerprintFileIngestOnyOneFileContent(t *testing.T){
 			}
 		}
 		require.Equal(t,1, len(operator.excludePaths))
+		require.Contains(t, operator.excludePaths, fileExcluded)
 
 		expectNoTokens(t,emitCalls)
 	}
 }
 
 
-//Compare oldReader.Offset and new file size to reduce data lost
-//when rotation happen with same fingerprint and new file in a new poll can not grows fast that greater than offset
-//continue read after rotation
+//If the rotation is done with the same fingerprint between the pre-rotated file and  the post-rotated file  ,
+//the file does not grow rapidly after the  rotation  , and the pre-rotated file still append data
+//there should be no data loss and no data reading chaos
 func TestSlowFileSameFingerprintAfterRotationWithoutExclude(t *testing.T){
 	if runtime.GOOS == windowsOS {
 		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
@@ -809,9 +812,8 @@ func TestSlowFileSameFingerprintAfterRotationWithoutExclude(t *testing.T){
 	waitForToken(t,emitCalls,[]byte("456"))
 	operator.wg.Wait()
 
-	//rotation happen with copy truncate, new file has same fingerprint with originalFile
+	//The rotation is performed  and the rotation file is included
 	rotationFile := openTemp(t, tempDir)
-	//reset offset to copy content
 	_, err := originalFile.Seek(0, 0)
 	require.NoError(t,err)
 	_, err = io.Copy(rotationFile, originalFile)
@@ -821,7 +823,6 @@ func TestSlowFileSameFingerprintAfterRotationWithoutExclude(t *testing.T){
 	require.Equal(t,rotationFileInfo.Size(), originalFileInfo.Size())
 
 	require.NoError(t, originalFile.Truncate(0))
-	//reset for rotation happen
 	_, err = originalFile.Seek(0, 0)
 	require.NoError(t, err)
 
@@ -835,7 +836,8 @@ func TestSlowFileSameFingerprintAfterRotationWithoutExclude(t *testing.T){
 	operator.wg.Wait()
 
 
-	//since rotationFile is larger than originalFile  , it will be drop
+	//Write data to the rotation file.
+	//As the rotation file is excluded due to the fingerprint check , there should be no data output
 	require.Contains(t,operator.excludePaths,rotationFile.Name())
 	writeString(t,rotationFile,"7891011121314151617\n")
 	operator.poll(context.Background())
@@ -845,6 +847,7 @@ func TestSlowFileSameFingerprintAfterRotationWithoutExclude(t *testing.T){
 	writeString(t,originalFile,"ccc\n")
 	writeString(t,originalFile,"ddd\n")
 
+	//no chaos
 	operator.poll(context.Background())
 	waitForToken(t,emitCalls,[]byte("ccc"))
 	waitForToken(t,emitCalls,[]byte("ddd"))
