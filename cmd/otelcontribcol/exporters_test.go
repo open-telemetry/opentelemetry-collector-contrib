@@ -16,7 +16,7 @@
 //go:build !windows
 // +build !windows
 
-package components
+package main
 
 import (
 	"context"
@@ -60,7 +60,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
@@ -76,7 +75,7 @@ import (
 )
 
 func TestDefaultExporters(t *testing.T) {
-	factories, err := Components()
+	factories, err := components()
 	assert.NoError(t, err)
 
 	expFactories := factories.Exporters
@@ -157,14 +156,6 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["otlphttp"].CreateDefaultConfig().(*otlphttpexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
-			exporter: "parquet",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["parquet"].CreateDefaultConfig().(*parquetexporter.Config)
-				cfg.Path = t.TempDir()
 				return cfg
 			},
 		},

@@ -16,7 +16,7 @@
 //go:build !windows
 // +build !windows
 
-package components
+package main
 
 import (
 	"context"
@@ -35,10 +35,8 @@ import (
 
 	tcpop "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
@@ -51,7 +49,7 @@ import (
 )
 
 func TestDefaultReceivers(t *testing.T) {
-	allFactories, err := Components()
+	allFactories, err := components()
 	assert.NoError(t, err)
 
 	rcvrFactories := allFactories.Receivers
@@ -97,16 +95,6 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires AWS endpoint to check identity to run
 		},
 		{
-			receiver: "azureblob",
-			getConfigFn: func() component.Config {
-				cfg := rcvrFactories["azureblob"].CreateDefaultConfig().(*azureblobreceiver.Config)
-				cfg.ConnectionString = "DefaultEndpointsProtocol=http;AccountName=accountName;AccountKey=accountKey==;BlobEndpoint=test"
-				cfg.EventHub.EndPoint = "DefaultEndpointsProtocol=http;SharedAccessKeyName=secret;SharedAccessKey=secret;Endpoint=test.test"
-				return cfg
-			},
-			skipLifecyle: true, // Requires Azure event hub to run
-		},
-		{
 			receiver: "azureeventhub",
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["azureeventhub"].CreateDefaultConfig().(*azureeventhubreceiver.Config)
@@ -130,14 +118,6 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "cloudfoundry",
 			skipLifecyle: true, // Requires UAA (auth) endpoint to run
-		},
-		{
-			receiver: "chrony",
-			getConfigFn: func() component.Config {
-				cfg := rcvrFactories["chrony"].CreateDefaultConfig().(*chronyreceiver.Config)
-				cfg.Endpoint = "udp://localhost:323"
-				return cfg
-			},
 		},
 		{
 			receiver: "collectd",
