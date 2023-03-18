@@ -126,6 +126,7 @@ The following formats are supported:
 
 - `logfmt`: Write logs as [logfmt](https://brandur.org/logfmt) lines.
 - `json`: Write logs as JSON objects. It is the default format if no hint is present.
+- `raw`: Write the body of the log message as string representation.
 
 ## Severity
 
