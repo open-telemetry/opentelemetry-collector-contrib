@@ -488,6 +488,27 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 9,
 		},
 		{
+			name: "stringgetter slice arg",
+			inv: invocation{
+				Function: "testing_stringgetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									String: ottltest.Strp("also test"),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
 			name: "setter arg",
 			inv: invocation{
 				Function: "testing_setter",
@@ -881,6 +902,12 @@ func functionWithGetterSlice(getters []Getter[interface{}]) (ExprFunc[interface{
 	}, nil
 }
 
+func functionWithStringGetterSlice(getters []Getter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
 func functionWithSetter(Setter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
@@ -979,6 +1006,7 @@ func defaultFunctionsForTests() map[string]interface{} {
 	functions["testing_int_slice"] = functionWithIntSlice
 	functions["testing_byte_slice"] = functionWithByteSlice
 	functions["testing_getter_slice"] = functionWithGetterSlice
+	functions["testing_stringgetter_slice"] = functionWithStringGetterSlice
 	functions["testing_setter"] = functionWithSetter
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter
