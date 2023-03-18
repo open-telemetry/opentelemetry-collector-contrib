@@ -84,8 +84,8 @@ type ActionKeyValue struct {
 	//           Either Value, FromAttribute or FromContext must be set.
 	// DELETE  - Deletes the attribute. If the key doesn't exist,
 	//           no action is performed.
-	// HASH    - Calculates the SHA-1 hash of an existing value and overwrites the
-	//           value with it's SHA-1 hash result.
+	// HASH    - Calculates the SHA-256 hash of an existing value and overwrites the
+	//           value with it's SHA-256 hash result.
 	// EXTRACT - Extracts values using a regular expression rule from the input
 	//           'key' to target keys specified in the 'rule'. If a target key
 	//           already exists, it will be overridden.
@@ -132,8 +132,8 @@ const (
 	// Supports pattern which is matched against attribute key.
 	DELETE Action = "delete"
 
-	// HASH calculates the SHA-1 hash of an existing value and overwrites the
-	// value with it's SHA-1 hash result.
+	// HASH calculates the SHA-256 hash of an existing value and overwrites the
+	// value with it's SHA-256 hash result.
 	// Supports pattern which is matched against attribute key.
 	HASH Action = "hash"
 
@@ -405,7 +405,7 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 
 func hashAttribute(key string, attrs pcommon.Map) {
 	if value, exists := attrs.Get(key); exists {
-		sha1Hasher(value)
+		sha2Hasher(value)
 	}
 }
 

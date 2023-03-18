@@ -16,7 +16,7 @@ package attraction
 
 import (
 	"context"
-	"crypto/sha1" // #nosec
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -630,7 +630,7 @@ func TestAttributes_HashValue(t *testing.T) {
 				"updateme": "foo",
 			},
 			expectedAttributes: map[string]interface{}{
-				"updateme": sha1Hash([]byte("foo")),
+				"updateme": sha2Hash([]byte("foo")),
 			},
 		},
 		// Ensure int data types are hashed correctly
@@ -640,7 +640,7 @@ func TestAttributes_HashValue(t *testing.T) {
 				"updateme": intVal,
 			},
 			expectedAttributes: map[string]interface{}{
-				"updateme": sha1Hash(intBytes),
+				"updateme": sha2Hash(intBytes),
 			},
 		},
 		// Ensure double data types are hashed correctly
@@ -650,7 +650,7 @@ func TestAttributes_HashValue(t *testing.T) {
 				"updateme": doubleVal,
 			},
 			expectedAttributes: map[string]interface{}{
-				"updateme": sha1Hash(doubleBytes),
+				"updateme": sha2Hash(doubleBytes),
 			},
 		},
 		// Ensure bool data types are hashed correctly
@@ -660,7 +660,7 @@ func TestAttributes_HashValue(t *testing.T) {
 				"updateme": true,
 			},
 			expectedAttributes: map[string]interface{}{
-				"updateme": sha1Hash([]byte{1}),
+				"updateme": sha2Hash([]byte{1}),
 			},
 		},
 		// Ensure bool data types are hashed correctly
@@ -670,7 +670,7 @@ func TestAttributes_HashValue(t *testing.T) {
 				"updateme": false,
 			},
 			expectedAttributes: map[string]interface{}{
-				"updateme": sha1Hash([]byte{0}),
+				"updateme": sha2Hash([]byte{0}),
 			},
 		},
 		// Ensure regex pattern is being used
@@ -681,7 +681,7 @@ func TestAttributes_HashValue(t *testing.T) {
 				"donotupdatemebyregexp": false,
 			},
 			expectedAttributes: map[string]interface{}{
-				"updatemebyregexp":      sha1Hash([]byte{0}),
+				"updatemebyregexp":      sha2Hash([]byte{0}),
 				"donotupdatemebyregexp": false,
 			},
 		},
@@ -939,9 +939,8 @@ func TestValidConfiguration(t *testing.T) {
 
 }
 
-func sha1Hash(b []byte) string {
-	// #nosec
-	h := sha1.New()
+func sha2Hash(b []byte) string {
+	h := sha256.New()
 	h.Write(b)
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
