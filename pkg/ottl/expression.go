@@ -16,8 +16,11 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"strconv"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -121,6 +124,52 @@ func (g StandardTypeGetter[K, T]) Get(ctx context.Context, tCtx K) (T, error) {
 		return v, fmt.Errorf("expected %T but got %T", v, val)
 	}
 	return v, nil
+}
+
+type StringLikeGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (*string, error)
+}
+
+type StandardStringLikeGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return nil, err
+	}
+	if val == nil {
+		return nil, nil
+	}
+	var result string
+	switch v := val.(type) {
+	case string:
+		result = v
+	case bool:
+		result = strconv.FormatBool(v)
+	case int64:
+		result = strconv.FormatInt(v, 10)
+	case float64:
+		result = strconv.FormatFloat(v, 'f', -1, 64)
+	case []byte:
+		result = base64.StdEncoding.EncodeToString(v)
+	case pcommon.Map:
+		result, err = jsoniter.MarshalToString(v.AsRaw())
+		if err != nil {
+			return nil, err
+		}
+	case pcommon.Slice:
+		result, err = jsoniter.MarshalToString(v.AsRaw())
+		if err != nil {
+			return nil, err
+		}
+	case pcommon.Value:
+		result = v.AsString()
+	default:
+		return nil, fmt.Errorf("unsupported type: %T", v)
+	}
+	return &result, nil
 }
 
 func (p *Parser[K]) newGetter(val value) (Getter[K], error) {

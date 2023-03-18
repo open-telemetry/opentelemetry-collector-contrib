@@ -546,6 +546,29 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "stringlikegetter slice arg",
+			inv: invocation{
+				Function: "testing_stringlikegetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									Literal: &mathExprLiteral{
+										Int: ottltest.Intp(1),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
 			name: "setter arg",
 			inv: invocation{
 				Function: "testing_setter",
@@ -689,6 +712,18 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []value{
 					{
 						String: ottltest.Strp("test"),
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "stringlikegetter arg",
+			inv: invocation{
+				Function: "testing_stringlikegetter",
+				Arguments: []value{
+					{
+						Bool: (*boolean)(ottltest.Boolp(false)),
 					},
 				},
 			},
@@ -971,6 +1006,12 @@ func functionWithPMapGetterSlice(getters []PMapGetter[interface{}]) (ExprFunc[in
 	}, nil
 }
 
+func functionWithStringLikeGetterSlice(getters []StringLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
 func functionWithSetter(Setter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
@@ -990,6 +1031,12 @@ func functionWithGetter(Getter[interface{}]) (ExprFunc[interface{}], error) {
 }
 
 func functionWithStringGetter(StringGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+func functionWithStringLikeGetter(StringLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
@@ -1077,10 +1124,12 @@ func defaultFunctionsForTests() map[string]interface{} {
 	functions["testing_getter_slice"] = functionWithGetterSlice
 	functions["testing_stringgetter_slice"] = functionWithStringGetterSlice
 	functions["testing_pmapgetter_slice"] = functionWithPMapGetterSlice
+	functions["testing_stringlikegetter_slice"] = functionWithStringLikeGetterSlice
 	functions["testing_setter"] = functionWithSetter
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter
 	functions["testing_stringgetter"] = functionWithStringGetter
+	functions["testing_stringlikegetter"] = functionWithStringLikeGetter
 	functions["testing_intgetter"] = functionWithIntGetter
 	functions["testing_pmapgetter"] = functionWithPMapGetter
 	functions["testing_string"] = functionWithString
