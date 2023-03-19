@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -158,8 +159,10 @@ Some info about a component
 			require.FileExists(t, filepath.Join(tmpdir, "README.md"))
 			got, err := os.ReadFile(filepath.Join(tmpdir, "README.md"))
 			require.NoError(t, err)
+			got = bytes.ReplaceAll(got, []byte("\r\n"), []byte("\n"))
 			expected, err := os.ReadFile(filepath.Join("testdata", tt.outputFile))
 			require.NoError(t, err)
+			expected = bytes.ReplaceAll(expected, []byte("\r\n"), []byte("\n"))
 			require.Equal(t, expected, got)
 		})
 	}
