@@ -23,14 +23,12 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "azureeventhub"
-
-	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
 
 	// The receiver scope name
 	receiverScopeName = "otelcol/" + typeStr
@@ -53,8 +51,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithLogs(f.createLogsReceiver, stability),
-		receiver.WithMetrics(f.createMetricsReceiver, stability))
+		receiver.WithLogs(f.createLogsReceiver, metadata.Stability),
+		receiver.WithMetrics(f.createMetricsReceiver, metadata.Stability))
 }
 
 func createDefaultConfig() component.Config {
