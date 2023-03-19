@@ -62,10 +62,6 @@ func run(ymlPath string) error {
 	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
-	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),
-		filepath.Join(codeDir, "generated_metrics.go"), md); err != nil {
-		return err
-	}
 	if len(md.Status.Stability) > 0 {
 		if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
 			filepath.Join(codeDir, "generated_status.go"), md); err != nil {
@@ -78,6 +74,13 @@ func run(ymlPath string) error {
 			md, statusStart, statusEnd); err != nil {
 			return err
 		}
+	}
+	if len(md.Metrics) == 0 {
+		return nil
+	}
+	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),
+		filepath.Join(codeDir, "generated_metrics.go"), md); err != nil {
+		return err
 	}
 	if err = generateFile(filepath.Join(tmplDir, "testdata", "config.yaml.tmpl"),
 		filepath.Join(codeDir, "testdata", "config.yaml"), md); err != nil {
