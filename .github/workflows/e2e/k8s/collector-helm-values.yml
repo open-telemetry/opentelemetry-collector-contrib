@@ -34,9 +34,8 @@ config:
         labels:
         - tag_name: "k8s.labels.app"
           key: "app"
-          from: pod     
+          from: pod
   exporters:
-    logging: {}
     file/trace:
       path: /tmp/trace.json
     file/metric:
@@ -54,8 +53,7 @@ config:
       logs:
         exporters:
           - file/log
-      
-          
+
 image:
   repository: otel/opentelemetry-collector-contrib-dev
   tag: "latest"

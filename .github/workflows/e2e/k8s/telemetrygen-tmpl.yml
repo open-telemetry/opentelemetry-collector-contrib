@@ -1,38 +1,28 @@
 apiVersion: apps/v1
-kind: Deployment
-metadata: 
-  name: telemetrygen-DATA_TYPE-deployment
-  namespace: default
+kind: $WORKLOAD
+metadata:
+  name: telemetrygen-$DATA_TYPE-$WORKLOAD_LOWERCASE
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: telemetrygen-DATA_TYPE-deployment
+      app: telemetrygen-$DATA_TYPE-$WORKLOAD_LOWERCASE
   template:
     metadata:
       annotations:
-        workload: deployment
+        workload: $WORKLOAD
       labels:
-        app: telemetrygen-DATA_TYPE-deployment
+        app: telemetrygen-$DATA_TYPE-$WORKLOAD_LOWERCASE
     spec:
       containers:
       - command:
         - /telemetrygen
-        - DATA_TYPE
+        - $DATA_TYPE
         - --otlp-insecure
         - --otlp-endpoint=test-opentelemetry-collector:4317
         - --duration=36000s
         - --rate=1
-        - --otlp-attributes=service.name="test-deployment"
+        - --otlp-attributes=service.name="test-$WORKLOAD_LOWERCASE"
         - --otlp-attributes=k8s.container.name="telemetrygen"
         - --otlp-attributes=k8s.container.restart_count="0"
         image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
-        imagePullPolicy: IfNotPresent
         name: telemetrygen
-        resources: {}
-        securityContext: {}
-      dnsPolicy: ClusterFirst
-      restartPolicy: Always
-      schedulerName: default-scheduler
-      securityContext: {}
-      terminationGracePeriodSeconds: 30

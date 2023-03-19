@@ -32,8 +32,6 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
-      - name: Build Collector
-        run: make otelcontribcol
       - name: Build Docker Image
         run: |
             make docker-otelcontribcol
@@ -70,34 +68,20 @@ jobs:
       - name: check collector status
         run: |
           kubectl wait --for=condition=Ready --timeout=60s pod/test-opentelemetry-collector-0
-      - name: start telemetrygen job for trace, metric, log
+      - name: start telemetrygen for trace, metric, log
         run: |
-          sed 's/DATA_TYPE/traces/g' .github/workflows/e2e/k8s/telemetrygen-job.yml | kubectl -n default create -f -
-          sed 's/DATA_TYPE/metrics/g' .github/workflows/e2e/k8s/telemetrygen-job.yml | kubectl -n default create -f -
-          sed 's/DATA_TYPE/logs/g' .github/workflows/e2e/k8s/telemetrygen-job.yml | kubectl -n default create -f -
-      - name: check telemetrygen job status
-        run: |
-          kubectl wait --for=condition=Complete --timeout=60s job/telemetrygen-traces-job
-          kubectl wait --for=condition=Complete --timeout=60s job/telemetrygen-metrics-job
-          kubectl wait --for=condition=Complete --timeout=60s job/telemetrygen-logs-job
-      - name: start telemetrygen statefulset for trace, metric, log
-        run: |
-          sed 's/DATA_TYPE/traces/g' .github/workflows/e2e/k8s/telemetrygen-statefulset.yml | kubectl -n default create -f -
-          sed 's/DATA_TYPE/metrics/g' .github/workflows/e2e/k8s/telemetrygen-statefulset.yml | kubectl -n default create -f -
-          sed 's/DATA_TYPE/logs/g' .github/workflows/e2e/k8s/telemetrygen-statefulset.yml | kubectl -n default create -f -
-      - name: start telemetrygen deployment for trace, metric, log
-        run: |
-          sed 's/DATA_TYPE/traces/g' .github/workflows/e2e/k8s/telemetrygen-deployment.yml | kubectl -n default create -f -
-          sed 's/DATA_TYPE/metrics/g' .github/workflows/e2e/k8s/telemetrygen-deployment.yml | kubectl -n default create -f -
-          sed 's/DATA_TYPE/logs/g' .github/workflows/e2e/k8s/telemetrygen-deployment.yml | kubectl -n default create -f -
-      - name: start telemetrygen daemonset for trace, metric, log
-        run: |
-          sed 's/DATA_TYPE/traces/g' .github/workflows/e2e/k8s/telemetrygen-daemonset.yml | kubectl -n default create -f -
-          sed 's/DATA_TYPE/metrics/g' .github/workflows/e2e/k8s/telemetrygen-daemonset.yml | kubectl -n default create -f -
-          sed 's/DATA_TYPE/logs/g' .github/workflows/e2e/k8s/telemetrygen-daemonset.yml | kubectl -n default create -f -
+          for workload in Deployment Job StatefulSet; do
+            for DATA_TYPE in traces metrics logs; do
+              export WORKLOAD=$workload
+              export WORKLOAD_LOWERCASE=$(echo $workload | tr '[:upper:]' '[:lower:]')
+              export DATA_TYPE=$data_type
+              envsubst < .github/workflows/e2e/k8s/telemetrygen-tmpl.yml | kubectl -n default create -f -
+              kubectl wait --for=condition=Complete --timeout=60s job/telemetrygen-$DATA_TYPE-$WORKLOAD_LOWERCASE
+            done
+          done
       - name: wait telemetrygen statefulset/deployment/daemonset to generate trace and metric, log
         run: |
-          sleep 30
+          sleep 10
       - name: copy telemetry trace, metric, log data output
         run: |
           kubectl cp -c filecp default/test-opentelemetry-collector-0:tmp/trace.json processor/k8sattributesprocessor/testdata/trace.json
