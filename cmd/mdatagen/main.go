@@ -59,7 +59,7 @@ func run(ymlPath string) error {
 	tmplDir := "templates"
 
 	codeDir := filepath.Join(ymlDir, "internal", "metadata")
-	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
+	if err = os.MkdirAll(codeDir, 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
 	if len(md.Status.Stability) > 0 {
@@ -77,6 +77,9 @@ func run(ymlPath string) error {
 	}
 	if len(md.Metrics) == 0 {
 		return nil
+	}
+	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
+		return fmt.Errorf("unable to create output directory %q: %w", filepath.Join(codeDir, "testdata"), err)
 	}
 	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),
 		filepath.Join(codeDir, "generated_metrics.go"), md); err != nil {
