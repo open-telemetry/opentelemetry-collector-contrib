@@ -18,7 +18,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
+	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -229,7 +231,7 @@ func TestExtractRawAttributes(t *testing.T) {
 
 }
 
-func TestDecodeAzureLogRecord(t *testing.T) {
+func TestUnmarshalLogs(t *testing.T) {
 
 	expectedMinimum := plog.NewLogs()
 	resourceLogs := expectedMinimum.ResourceLogs().AppendEmpty()
@@ -279,13 +281,30 @@ func TestDecodeAzureLogRecord(t *testing.T) {
 		},
 	}
 
+	sut := newAzureResourceLogsUnmarshaler(testBuildInfo, nil)
+	now := time.Now()
 	for _, tt := range tests {
 		t.Run(tt.file, func(t *testing.T) {
 			data, err := os.ReadFile(filepath.Join("testdata", tt.file))
 			assert.NoError(t, err)
 			assert.NotNil(t, data)
 
-			logs, err := transform(testBuildInfo, data)
+			event := &eventhub.Event{
+				Data:         data,
+				PartitionKey: nil,
+				Properties:   map[string]interface{}{},
+				ID:           "11234",
+				SystemProperties: &eventhub.SystemProperties{
+					SequenceNumber: nil,
+					EnqueuedTime:   &now,
+					Offset:         nil,
+					PartitionID:    nil,
+					PartitionKey:   nil,
+					Annotations:    nil,
+				},
+			}
+
+			logs, err := sut.UnmarshalLogs(event)
 			assert.NoError(t, err)
 
 			assert.NoError(t, plogtest.CompareLogs(tt.expected, logs))
