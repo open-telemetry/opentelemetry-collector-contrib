@@ -2,9 +2,15 @@
 
 The following functions are intended to be used in implementations of the OpenTelemetry Transformation Language that
 interact with OTel data via the Collector's internal data model, [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata).
-Functions generally expect specific types to be returned by `Paths`;
-if that type is not returned or if `nil` is returned, the function will error.
+Functions generally expect specific types to be returned by `Paths`.
+For these functions, if that type is not returned or if `nil` is returned, the function will error.
+Some functions are able to handle different types and will generally convert those types to their desired type.
+In these situations the function will error if it does not know how to do the conversion.
 Use `ErrorMode` to determine how the `Statement` handles these errors.
+See the component-specific guides for how each uses error mode:
+- [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#ottl)
+- [routingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/routingprocessor#tech-preview-opentelemetry-transformation-language-statements-as-routing-conditions)
+- [transformprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#config)
 
 ## Functions
 
