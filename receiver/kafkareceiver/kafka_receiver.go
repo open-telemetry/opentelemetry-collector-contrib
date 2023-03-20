@@ -266,6 +266,8 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 		return nil, errUnrecognizedEncoding
 	}
 
+	unmarshaler.SetReceiverSettings(set)
+
 	c := sarama.NewConfig()
 	c.ClientID = config.ClientID
 	c.Metadata.Full = config.Metadata.Full

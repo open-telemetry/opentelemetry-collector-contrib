@@ -16,6 +16,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 type rawLogsUnmarshaler struct{}
@@ -32,4 +33,7 @@ func (r rawLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 
 func (r rawLogsUnmarshaler) Encoding() string {
 	return "raw"
+}
+
+func (r rawLogsUnmarshaler) SetReceiverSettings(settings receiver.CreateSettings) {
 }

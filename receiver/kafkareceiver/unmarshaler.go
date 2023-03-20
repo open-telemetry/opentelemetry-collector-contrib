@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
@@ -43,6 +44,8 @@ type MetricsUnmarshaler interface {
 
 // LogsUnmarshaler deserializes the message body.
 type LogsUnmarshaler interface {
+	SetReceiverSettings(receiver.CreateSettings)
+
 	// Unmarshal deserializes the message body into traces.
 	Unmarshal([]byte) (plog.Logs, error)
 

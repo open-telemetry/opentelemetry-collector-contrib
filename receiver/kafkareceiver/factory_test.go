@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -202,4 +203,7 @@ func (c customLogsUnmarshaler) Unmarshal([]byte) (plog.Logs, error) {
 
 func (c customLogsUnmarshaler) Encoding() string {
 	return "custom"
+}
+
+func (c customLogsUnmarshaler) SetReceiverSettings(settings receiver.CreateSettings) {
 }

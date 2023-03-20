@@ -22,27 +22,33 @@ import (
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
+	"go.uber.org/zap"
 )
 
-// Constants for OpenTelemetry Specs
-const receiverScopeName = "otelcol/" + typeStr
+const (
+	// Constants for OpenTelemetry Specs
+	receiverScopeName = "otelcol/" + typeStr
 
-// Constants for Azure Log Records
-const azureCategory = "azure.category"
-const azureCorrelationID = "azure.correlation.id"
-const azureDuration = "azure.duration"
-const azureIdentity = "azure.identity"
-const azureOperationName = "azure.operation.name"
-const azureOperationVersion = "azure.operation.version"
-const azureProperties = "azure.properties"
-const azureResourceID = "azure.resource.id"
-const azureResultType = "azure.result.type"
-const azureResultSignature = "azure.result.signature"
-const azureResultDescription = "azure.result.description"
-const azureTenantID = "azure.tenant.id"
+	// Constants for Azure Log Records
+	azureCategory          = "azure.category"
+	azureCorrelationID     = "azure.correlation.id"
+	azureDuration          = "azure.duration"
+	azureIdentity          = "azure.identity"
+	azureOperationName     = "azure.operation.name"
+	azureOperationVersion  = "azure.operation.version"
+	azureProperties        = "azure.properties"
+	azureResourceID        = "azure.resource.id"
+	azureResultType        = "azure.result.type"
+	azureResultSignature   = "azure.result.signature"
+	azureResultDescription = "azure.result.description"
+	azureTenantID          = "azure.tenant.id"
+)
 
-type azureResourceLogsUnmarshaler struct{}
+type azureResourceLogsUnmarshaler struct {
+	settings receiver.CreateSettings
+}
 
 // azureRecords represents an array of Azure log records
 // as exported via an Azure Event Hub
@@ -88,7 +94,7 @@ func (r azureResourceLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	resourceLogs := l.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(receiverScopeName)
-	scopeLogs.Scope().SetVersion("0.70.0")
+	scopeLogs.Scope().SetVersion(r.settings.BuildInfo.Version)
 	logRecords := scopeLogs.LogRecords()
 
 	resourceID := ""
@@ -96,6 +102,7 @@ func (r azureResourceLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 		resourceID = azureLog.ResourceID
 		nanos, err := asTimestamp(azureLog.Time)
 		if err != nil {
+			r.settings.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", azureLog.Time))
 			continue
 		}
 
@@ -126,6 +133,10 @@ func (r azureResourceLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 
 func (r azureResourceLogsUnmarshaler) Encoding() string {
 	return "azureresourcelogs"
+}
+
+func (r azureResourceLogsUnmarshaler) SetReceiverSettings(settings receiver.CreateSettings) {
+	r.settings = settings
 }
 
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
