@@ -94,7 +94,9 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 	return evaluated, nil
 }
 
+// StringGetter is a Getter that must return a string.
 type StringGetter[K any] interface {
+	// Get retrieves a string value.  If the value is not a string, an error is returned.
 	Get(ctx context.Context, tCtx K) (string, error)
 }
 
@@ -126,7 +128,12 @@ func (g StandardTypeGetter[K, T]) Get(ctx context.Context, tCtx K) (T, error) {
 	return v, nil
 }
 
+// StringLikeGetter is a Getter that returns a string by converting the underlying value to a string if necessary.
 type StringLikeGetter[K any] interface {
+	// Get retrieves a string value.
+	// Unlike `StringGetter`, the expectation is that the underlying value is converted to a string if possible.
+	// If the value cannot be converted to a string, nil and an error are returned.
+	// If the value is nil, nil is returned without an error.
 	Get(ctx context.Context, tCtx K) (*string, error)
 }
 
