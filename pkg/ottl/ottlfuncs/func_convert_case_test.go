@@ -230,7 +230,7 @@ func Test_convertCaseRuntimeError(t *testing.T) {
 		expectedError string
 	}{
 		{
-			name: "error bad case",
+			name: "non-string",
 			target: &ottl.StandardTypeGetter[interface{}, string]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return 10, nil
