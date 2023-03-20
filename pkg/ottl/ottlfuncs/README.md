@@ -1,7 +1,7 @@
 # OTTL Functions
 
 The following functions are intended to be used in implementations of the OpenTelemetry Transformation Language that
-interact with OTel data via the Collector's internal data model,[pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata).
+interact with OTel data via the Collector's internal data model, [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata).
 Functions generally expect specific types to be returned by `Paths`;
 if that type is not returned or if `nil` is returned, the function will error.
 Use `ErrorMode` to determine how the `Statement` handles these errors.
