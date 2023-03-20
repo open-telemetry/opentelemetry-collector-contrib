@@ -220,7 +220,7 @@ func (m *Manager) makeReaders(filesPaths []string) []*Reader {
 		fps = append(fps, fp)
 	}
 
-	noExclude :=true
+	noExclude := true
 
 	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
 OUTER:
@@ -241,8 +241,8 @@ OUTER:
 			if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
 				// Exclude the same file
 				deleteIndex := i
-				_,fpjExclude := m.excludePaths[files[j].Name()]
-				_,fpiExclude := m.excludePaths[files[i].Name()]
+				_, fpjExclude := m.excludePaths[files[j].Name()]
+				_, fpiExclude := m.excludePaths[files[i].Name()]
 
 				if !fpiExclude && !fpjExclude {
 					infoJ, _ := files[j].Stat()
@@ -269,7 +269,7 @@ OUTER:
 				files = append(files[:deleteIndex], files[deleteIndex+1:]...)
 				if fpjExclude {
 					j--
-				}else{
+				} else {
 					i--
 					continue OUTER
 				}
