@@ -63,7 +63,7 @@ func (s *sqlServerScraper) start(ctx context.Context, host component.Host) error
 		for perfCounterName, recorder := range pcr.recorders {
 			perfCounterObj := pcr.object
 			if s.config.InstanceName != "" {
-				perfCounterObj = s.config.InstanceName + "\\" + pcr.objectInstance
+				perfCounterObj = s.config.InstanceName + "\\" + pcr.object
 			}
 
 			w, err := winperfcounters.NewWatcher(perfCounterObj, pcr.instance, perfCounterName)
