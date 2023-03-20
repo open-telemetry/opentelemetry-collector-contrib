@@ -219,8 +219,8 @@ The `Substring` Converter returns a substring from the given start index to the 
 
 `target` is a string. `start` and `length` are `int64`.
 
-If `target` is not a string or is nil an error is returned.
-If the start/length exceed the length of the `target` string an error is returned.
+If `target` is not a string or is nil, an error is returned.
+If the start/length exceed the length of the `target` string, an error is returned.
 
 Examples:
 
