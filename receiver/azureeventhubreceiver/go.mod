@@ -6,6 +6,7 @@ require (
 	github.com/Azure/azure-amqp-common-go/v4 v4.0.0
 	github.com/Azure/azure-event-hubs-go/v3 v3.4.0
 	github.com/json-iterator/go v1.1.12
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.73.0
 	github.com/relvacode/iso8601 v1.3.0
@@ -49,7 +50,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -108,3 +108,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent

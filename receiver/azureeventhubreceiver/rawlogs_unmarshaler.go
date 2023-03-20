@@ -16,20 +16,35 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 )
 
-type azureLogFormatConverter struct {
-	buildInfo component.BuildInfo
+type rawLogsUnmarshaler struct {
+	logger *zap.Logger
 }
 
-func newAzureLogFormatConverter(settings receiver.CreateSettings) *azureLogFormatConverter {
-	return &azureLogFormatConverter{buildInfo: settings.BuildInfo}
+func newRawLogsUnmarshaler(logger *zap.Logger) eventLogsUnmarshaler {
+
+	return rawLogsUnmarshaler{
+		logger: logger,
+	}
 }
 
-func (c *azureLogFormatConverter) ToLogs(event *eventhub.Event) (plog.Logs, error) {
-	logs, err := transform(c.buildInfo, event.Data)
-	return logs, err
+func (r rawLogsUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog.Logs, error) {
+
+	l := plog.NewLogs()
+	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	slice := lr.Body().SetEmptyBytes()
+	slice.Append(event.Data...)
+	if event.SystemProperties.EnqueuedTime != nil {
+		lr.SetTimestamp(pcommon.NewTimestampFromTime(*event.SystemProperties.EnqueuedTime))
+	}
+
+	if err := lr.Attributes().FromRaw(event.Properties); err != nil {
+		return l, err
+	}
+
+	return l, nil
 }
