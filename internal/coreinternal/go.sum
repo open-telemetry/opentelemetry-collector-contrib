@@ -46,8 +46,8 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 go.opentelemetry.io/collector v0.73.0 h1:oEBFtf5WcXiIPGXcjOM5gSQ3GNh/3d6pHf0IThhGmfw=
 go.opentelemetry.io/collector v0.73.0/go.mod h1:DtfQzKUyi/4ZAoUOC2e0acSdqP4BswnrMcRjnV0Nkxc=
 go.opentelemetry.io/collector/consumer v0.73.0 h1:gy89oaG198A7KGbXIsMIdN4lWVQqqSdx6dsBCfzLujU=
-go.opentelemetry.io/collector/pdata v1.0.0-rc7 h1:W3wCN9rG/GMuUSQDEzi5FZPmA6pUJWtzKB9+L3t3k/w=
-go.opentelemetry.io/collector/pdata v1.0.0-rc7/go.mod h1:YSlrEri/QKzmeaN8rio2iPYsxPUJo4WkL6fQc4Ph7fk=
+go.opentelemetry.io/collector/pdata v1.0.0-rc8 h1:vBikWdZFsRiT5dVsLQhnE99w3edM7eem3Q9dSqMlStE=
+go.opentelemetry.io/collector/pdata v1.0.0-rc8/go.mod h1:BVCBhWgclYCh7Oi6BkMiQfRa6MXv1uRTlKXuL5oBby8=
 go.opentelemetry.io/collector/semconv v0.73.0 h1:gF4f6z1q8YfWzzo/gPKysjFmmM4Pv4nC2bWrTPxTPaE=
 go.opentelemetry.io/collector/semconv v0.73.0/go.mod h1:xt8oDOiwa1jy24tGUo8+SzpphI7ZredS2WM/0m8rtTA=
 go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=
