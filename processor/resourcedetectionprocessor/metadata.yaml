@@ -1,0 +1,7 @@
+name: resourcedetectionprocessor
+
+status:
+  type: processor
+  stability: beta
+  pipelines: [traces, metrics, logs]
+  distributions: [contrib]
