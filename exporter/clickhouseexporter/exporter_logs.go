@@ -33,7 +33,7 @@ import (
 )
 
 type logsExporter struct {
-	client    clickhouse.Conn
+	client    *sql.DB
 	insertSQL string
 
 	logger *zap.Logger
@@ -76,9 +76,14 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
 	err := func() error {
-		batch, err := e.client.PrepareBatch(ctx, e.insertSQL)
+		scope, err := e.client.Begin()
 		if err != nil {
-			return fmt.Errorf("PrepareBatch:%w", err)
+			return fmt.Errorf("Begin:%w", err)
+		}
+
+		batch, err := scope.Prepare(e.insertSQL)
+		if err != nil {
+			return fmt.Errorf("Prepare:%w", err)
 		}
 
 		var serviceName string
@@ -103,7 +108,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					logAttr := make(map[string]string, attrs.Len())
 					attributesToMap(r.Attributes(), logAttr)
 
-					err = batch.Append(
+					_, err = batch.Exec(
 						r.Timestamp().AsTime(),
 						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
@@ -116,7 +121,6 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 						logAttr,
 					)
 					if err != nil {
-						_ = batch.Abort()
 						return fmt.Errorf("Append:%w", err)
 					}
 				}
@@ -128,12 +132,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			}
 		}
 
-		if err := batch.Send(); err != nil {
-			_ = batch.Abort()
-			return fmt.Errorf("Send:%w", err)
-		}
-
-		return nil
+		return scope.Commit()
 	}()
 
 	duration := time.Since(start)
@@ -206,7 +205,7 @@ func newClickHouseClient(cfg *Config) (*sql.DB, error) {
 	return db, nil
 }
 
-func newClickHouseConn(cfg *Config) (clickhouse.Conn, error) {
+func newClickHouseConn(cfg *Config) (*sql.DB, error) {
 	endpoint := cfg.Endpoint
 
 	if len(cfg.ConnectionParams) > 0 {
@@ -238,7 +237,8 @@ func newClickHouseConn(cfg *Config) (clickhouse.Conn, error) {
 	// can return a "bad" connection if misconfigured, we won't know
 	// until a Ping, Exec, etc.. is done
 
-	return clickhouse.Open(opts)
+	// return clickhouse.Open(opts)
+	return clickhouse.OpenDB(opts), nil
 }
 
 func createDatabase(ctx context.Context, cfg *Config) error {
@@ -266,8 +266,8 @@ func createDatabase(ctx context.Context, cfg *Config) error {
 	return nil
 }
 
-func createLogsTable(ctx context.Context, cfg *Config, conn clickhouse.Conn) error {
-	if err := conn.Exec(ctx, renderCreateLogsTableSQL(cfg)); err != nil {
+func createLogsTable(ctx context.Context, cfg *Config, db *sql.DB) error {
+	if _, err := db.ExecContext(ctx, renderCreateLogsTableSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create logs table sql: %w", err)
 	}
 	return nil
