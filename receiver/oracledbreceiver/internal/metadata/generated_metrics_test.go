@@ -209,7 +209,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.dml_locks.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum limit of active DML (Data Manipulation Language) locks.", ms.At(i).Description())
+					assert.Equal(t, "Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "{locks}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -247,7 +247,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.enqueue_locks.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum limit of active enqueue locks.", ms.At(i).Description())
+					assert.Equal(t, "Maximum limit of active enqueue locks, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "{locks}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -271,7 +271,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.enqueue_resources.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum limit of active enqueue resources.", ms.At(i).Description())
+					assert.Equal(t, "Maximum limit of active enqueue resources, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "{resources}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -393,7 +393,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.processes.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum limit of active processes.", ms.At(i).Description())
+					assert.Equal(t, "Maximum limit of active processes, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "{processes}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -417,7 +417,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.sessions.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum limit of active sessions.", ms.At(i).Description())
+					assert.Equal(t, "Maximum limit of active sessions, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "{sessions}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -447,7 +447,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.tablespace_size.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum size of tablespace in bytes.", ms.At(i).Description())
+					assert.Equal(t, "Maximum size of tablespace in bytes, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -477,7 +477,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.transactions.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum limit of active transactions.", ms.At(i).Description())
+					assert.Equal(t, "Maximum limit of active transactions, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "{transactions}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

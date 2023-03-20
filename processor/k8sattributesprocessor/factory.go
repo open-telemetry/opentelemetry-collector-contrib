@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -160,8 +159,6 @@ func createKubernetesProcessor(
 ) (*kubernetesprocessor, error) {
 	kp := &kubernetesprocessor{logger: params.Logger}
 
-	warnDeprecatedPodAssociationConfig(kp.logger, cfg)
-
 	err := errWrongKeyConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -222,43 +219,4 @@ func errWrongKeyConfig(cfg component.Config) error {
 	}
 
 	return nil
-}
-
-func warnDeprecatedPodAssociationConfig(logger *zap.Logger, cfg component.Config) {
-	oCfg := cfg.(*Config)
-	deprecated := ""
-	actual := ""
-	for _, assoc := range oCfg.Association {
-		if assoc.From == "" && assoc.Name == "" {
-			continue
-		}
-
-		deprecated += fmt.Sprintf(`
-- from: %s`, assoc.From)
-		actual += fmt.Sprintf(`
-- sources:
-  - from: %s`, assoc.From)
-
-		if assoc.Name != "" {
-			deprecated += fmt.Sprintf(`
-  name: %s`, assoc.Name)
-		}
-
-		if assoc.From != kube.ConnectionSource {
-			actual += fmt.Sprintf(`
-    name: %s`, assoc.Name)
-		}
-	}
-
-	if deprecated != "" {
-		logger.Warn(fmt.Sprintf(`Deprecated pod_association configuration detected. Please replace:
-
-pod_association:%s
-
-with
-
-pod_association:%s
-
-`, deprecated, actual))
-	}
 }

@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/client9/misspell v0.3.4
-	github.com/daixiang0/gci v0.9.1
+	github.com/daixiang0/gci v0.10.1
 	github.com/golangci/golangci-lint v1.51.1
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.4.0
@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/build-tools/issuegenerator v0.6.0
 	go.opentelemetry.io/build-tools/multimod v0.6.0
 	go.opentelemetry.io/collector/cmd/builder v0.71.1-0.20230208170110-ead716ac04aa
-	golang.org/x/tools v0.6.0
+	golang.org/x/tools v0.7.0
 )
 
 require (
@@ -73,7 +73,7 @@ require (
 	github.com/go-xmlfmt/xmlfmt v1.1.2 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golangci/check v0.0.0-20180506172741-cfe4005ccda2 // indirect
 	github.com/golangci/dupl v0.0.0-20180902072040-3e9179ac440a // indirect
 	github.com/golangci/go-misc v0.0.0-20220329215616-d24fe342adfe // indirect
@@ -145,7 +145,7 @@ require (
 	github.com/polyfloyd/go-errorlint v1.0.6 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
-	github.com/prometheus/common v0.41.0 // indirect
+	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/quasilyte/go-ruleguard v0.3.18 // indirect
 	github.com/quasilyte/gogrep v0.0.0-20220828223005-86e4605de09f // indirect
@@ -193,7 +193,7 @@ require (
 	gitlab.com/bosi/decorder v0.2.3 // indirect
 	go.opentelemetry.io/build-tools v0.6.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	go.uber.org/multierr v1.9.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
@@ -205,7 +205,7 @@ require (
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	google.golang.org/protobuf v1.29.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

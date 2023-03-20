@@ -103,11 +103,6 @@ func TestLoadConfig(t *testing.T) {
 							},
 						},
 					},
-					// Deprecated way
-					{
-						From: "resource_attribute",
-						Name: "k8s.pod.uid",
-					},
 				},
 				Exclude: ExcludeConfig{
 					Pods: []ExcludePodConfig{

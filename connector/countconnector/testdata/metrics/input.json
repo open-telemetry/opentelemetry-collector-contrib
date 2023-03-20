@@ -2,14 +2,20 @@
    "resourceMetrics": [
       {
          "resource": {
-            "attributes": [
-               {
-                  "key": "resource-attr",
-                  "value": {
-                     "stringValue": "resource-attr-val-1"
-                  }
-               }
-            ]
+             "attributes": [
+                 {
+                     "key": "resource.required",
+                     "value": {
+                         "stringValue": "foo"
+                     }
+                 },
+                 {
+                     "key": "resource.optional",
+                     "value": {
+                         "stringValue": "bar"
+                     }
+                 }
+             ]
          },
          "scopeMetrics": [
             {
@@ -21,12 +27,18 @@
                               "asInt": "123",
                               "attributes": [
                                  {
-                                    "key": "label-1",
-                                    "value": {
-                                       "stringValue": "label-value-1"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
                                  }
-                              ],
+                             ],
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            },
@@ -34,12 +46,36 @@
                               "asInt": "456",
                               "attributes": [
                                  {
-                                    "key": "label-2",
-                                    "value": {
-                                       "stringValue": "label-value-2"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
                                  }
-                              ],
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "789",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "0",
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            }
@@ -55,18 +91,18 @@
                               "asDouble": 1.23,
                               "attributes": [
                                  {
-                                    "key": "label-1",
-                                    "value": {
-                                       "stringValue": "label-value-1"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
                                  },
                                  {
-                                    "key": "label-2",
-                                    "value": {
-                                       "stringValue": "label-value-2"
-                                    }
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
                                  }
-                              ],
+                             ],
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            },
@@ -74,18 +110,36 @@
                               "asDouble": 4.56,
                               "attributes": [
                                  {
-                                    "key": "label-1",
-                                    "value": {
-                                       "stringValue": "label-value-1"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
                                  },
                                  {
-                                    "key": "label-3",
-                                    "value": {
-                                       "stringValue": "label-value-3"
-                                    }
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
                                  }
-                              ],
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 7.89,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 0.00,
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            }
@@ -103,12 +157,18 @@
                               "asInt": "123",
                               "attributes": [
                                  {
-                                    "key": "label-1",
-                                    "value": {
-                                       "stringValue": "label-value-1"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
                                  }
-                              ],
+                             ],
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            },
@@ -116,12 +176,36 @@
                               "asInt": "456",
                               "attributes": [
                                  {
-                                    "key": "label-2",
-                                    "value": {
-                                       "stringValue": "label-value-2"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
                                  }
-                              ],
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "789",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "0",
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            }
@@ -139,18 +223,18 @@
                               "asDouble": 1.23,
                               "attributes": [
                                  {
-                                    "key": "label-1",
-                                    "value": {
-                                       "stringValue": "label-value-1"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
                                  },
                                  {
-                                    "key": "label-2",
-                                    "value": {
-                                       "stringValue": "label-value-2"
-                                    }
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
                                  }
-                              ],
+                             ],
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            },
@@ -158,18 +242,36 @@
                               "asDouble": 4.56,
                               "attributes": [
                                  {
-                                    "key": "label-1",
-                                    "value": {
-                                       "stringValue": "label-value-1"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
                                  },
                                  {
-                                    "key": "label-3",
-                                    "value": {
-                                       "stringValue": "label-value-3"
-                                    }
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
                                  }
-                              ],
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 4.56,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 0.00,
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            }
@@ -185,18 +287,18 @@
                            {
                               "attributes": [
                                  {
-                                    "key": "label-1",
-                                    "value": {
-                                       "stringValue": "label-value-1"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
                                  },
                                  {
-                                    "key": "label-3",
-                                    "value": {
-                                       "stringValue": "label-value-3"
-                                    }
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
                                  }
-                              ],
+                             ],
                               "count": "1",
                               "startTimeUnixNano": "1581452772000000321",
                               "sum": 15,
@@ -205,38 +307,41 @@
                            {
                               "attributes": [
                                  {
-                                    "key": "label-2",
-                                    "value": {
-                                       "stringValue": "label-value-2"
-                                    }
-                                 }
-                              ],
-                              "bucketCounts": [
-                                 "0",
-                                 "1"
-                              ],
-                              "count": "1",
-                              "exemplars": [
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
                                  {
-                                    "asDouble": 15,
-                                    "filteredAttributes": [
-                                       {
-                                          "key": "exemplar-attachment",
-                                          "value": {
-                                             "stringValue": "exemplar-attachment-value"
-                                          }
-                                       }
-                                    ],
-                                    "spanId": "",
-                                    "timeUnixNano": "1581452773000000123",
-                                    "traceId": ""
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
                                  }
-                              ],
-                              "explicitBounds": [
-                                 1
-                              ],
+                             ],
+                              "count": "2",
                               "startTimeUnixNano": "1581452772000000321",
-                              "sum": 15,
+                              "sum": 30,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "count": "3",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 45,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "count": "0",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 0,
                               "timeUnixNano": "1581452773000000789"
                            }
                         ]
@@ -251,18 +356,18 @@
                            {
                               "attributes": [
                                  {
-                                    "key": "label-1",
-                                    "value": {
-                                       "stringValue": "label-value-1"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
                                  },
                                  {
-                                    "key": "label-3",
-                                    "value": {
-                                       "stringValue": "label-value-3"
-                                    }
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
                                  }
-                              ],
+                             ],
                               "count": "1",
                               "startTimeUnixNano": "1581452772000000321",
                               "sum": 15,
@@ -271,21 +376,41 @@
                            {
                               "attributes": [
                                  {
-                                    "key": "label-2",
-                                    "value": {
-                                       "stringValue": "label-value-2"
-                                    }
-                                 }
-                              ],
-                              "count": "1",
-                              "quantileValues": [
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
                                  {
-                                    "quantile": 0.01,
-                                    "value": 15
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
                                  }
-                              ],
+                             ],
+                              "count": "2",
                               "startTimeUnixNano": "1581452772000000321",
-                              "sum": 15,
+                              "sum": 30,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "count": "3",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 45,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "count": "0",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 0,
                               "timeUnixNano": "1581452773000000789"
                            }
                         ]
@@ -299,39 +424,43 @@
       },
       {
          "resource": {
-            "attributes": [
-               {
-                   "key": "resource-attr",
-                   "value": {
-                       "stringValue": "resource-attr-val-1"
-                   }
-               }
-               ,{
-                   "key": "resource-attr-2",
-                   "value": {
-                       "stringValue": "resource-attr-val-2"
-                   }
-               }
-           ]
+             "attributes": [
+                 {
+                     "key": "resource.required",
+                     "value": {
+                         "stringValue": "foo"
+                     }
+                 },
+                 {
+                     "key": "resource.optional",
+                     "value": {
+                         "stringValue": "notbar"
+                     }
+                 }
+             ]
          },
          "scopeMetrics": [
             {
                "metrics": [
                   {
-                     "name": "counter-int",
-                     "sum": {
-                        "aggregationTemporality": 2,
+                     "gauge": {
                         "dataPoints": [
                            {
                               "asInt": "123",
                               "attributes": [
                                  {
-                                    "key": "label-1",
-                                    "value": {
-                                       "stringValue": "label-value-1"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
                                  }
-                              ],
+                             ],
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            },
@@ -339,18 +468,106 @@
                               "asInt": "456",
                               "attributes": [
                                  {
-                                    "key": "label-2",
-                                    "value": {
-                                       "stringValue": "label-value-2"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
                                  }
-                              ],
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "789",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "0",
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            }
-                        ],
-                        "isMonotonic": true
+                        ]
                      },
+                     "name": "gauge-int",
+                     "unit": "1"
+                  },
+                  {
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": 1.23,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 4.56,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 7.89,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 0.00,
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ]
+                     },
+                     "name": "gauge-double",
                      "unit": "1"
                   },
                   {
@@ -362,12 +579,18 @@
                               "asInt": "123",
                               "attributes": [
                                  {
-                                    "key": "label-1",
-                                    "value": {
-                                       "stringValue": "label-value-1"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
                                  }
-                              ],
+                             ],
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            },
@@ -375,18 +598,392 @@
                               "asInt": "456",
                               "attributes": [
                                  {
-                                    "key": "label-2",
-                                    "value": {
-                                       "stringValue": "label-value-2"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
                                  }
-                              ],
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "789",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "0",
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            }
                         ],
                         "isMonotonic": true
                      },
+                     "unit": "1"
+                  },
+                  {
+                     "name": "counter-double",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asDouble": 1.23,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 4.56,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 4.56,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 0.00,
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "histogram": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "count": "1",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 15,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "count": "2",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 30,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "count": "3",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 45,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "count": "0",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 0,
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ]
+                     },
+                     "name": "double-histogram",
+                     "unit": "1"
+                  },
+                  {
+                     "name": "double-summary",
+                     "summary": {
+                        "dataPoints": [
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "count": "1",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 15,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "count": "2",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 30,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "count": "3",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 45,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "count": "0",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 0,
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  }
+               ],
+               "scope": {}
+            }
+         ]
+      },
+      {
+         "resource": {
+             "attributes": [
+                 {
+                     "key": "resource.required",
+                     "value": {
+                         "stringValue": "notfoo"
+                     }
+                 }
+             ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "123",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "456",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "789",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ]
+                     },
+                     "name": "gauge-int",
+                     "unit": "1"
+                  },
+                  {
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": 1.23,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 4.56,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 7.89,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 0.00,
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ]
+                     },
+                     "name": "gauge-double",
                      "unit": "1"
                   },
                   {
@@ -398,12 +995,18 @@
                               "asInt": "123",
                               "attributes": [
                                  {
-                                    "key": "label-1",
-                                    "value": {
-                                       "stringValue": "label-value-1"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
                                  }
-                              ],
+                             ],
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            },
@@ -411,17 +1014,650 @@
                               "asInt": "456",
                               "attributes": [
                                  {
-                                    "key": "label-2",
-                                    "value": {
-                                       "stringValue": "label-value-2"
-                                    }
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
                                  }
-                              ],
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "789",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "0",
                               "startTimeUnixNano": "1581452772000000321",
                               "timeUnixNano": "1581452773000000789"
                            }
                         ],
                         "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "name": "counter-double",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asDouble": 1.23,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 4.56,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 4.56,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 0.00,
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "histogram": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "count": "1",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 15,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "count": "2",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 30,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "count": "3",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 45,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "count": "0",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 0,
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ]
+                     },
+                     "name": "double-histogram",
+                     "unit": "1"
+                  },
+                  {
+                     "name": "double-summary",
+                     "summary": {
+                        "dataPoints": [
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "count": "1",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 15,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "count": "2",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 30,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "count": "3",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 45,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "count": "0",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 0,
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  }
+               ],
+               "scope": {}
+            }
+         ]
+      },
+      {
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "123",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "456",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "789",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ]
+                     },
+                     "name": "gauge-int",
+                     "unit": "1"
+                  },
+                  {
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": 1.23,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 4.56,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 7.89,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 0.00,
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ]
+                     },
+                     "name": "gauge-double",
+                     "unit": "1"
+                  },
+                  {
+                     "name": "counter-int",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "123",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "456",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "789",
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "name": "counter-double",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asDouble": 1.23,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 4.56,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 4.56,
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "asDouble": 0.00,
+                              "startTimeUnixNano": "1581452772000000321",
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "histogram": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "count": "1",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 15,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "count": "2",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 30,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "count": "3",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 45,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "count": "0",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 0,
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ]
+                     },
+                     "name": "double-histogram",
+                     "unit": "1"
+                  },
+                  {
+                     "name": "double-summary",
+                     "summary": {
+                        "dataPoints": [
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "bar"
+                                     }
+                                 }
+                             ],
+                              "count": "1",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 15,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "foo"
+                                     }
+                                 },
+                                 {
+                                     "key": "datapoint.optional",
+                                     "value": {
+                                         "stringValue": "notbar"
+                                     }
+                                 }
+                             ],
+                              "count": "2",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 30,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "attributes": [
+                                 {
+                                     "key": "datapoint.required",
+                                     "value": {
+                                         "stringValue": "notfoo"
+                                     }
+                                 }
+                             ],
+                              "count": "3",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 45,
+                              "timeUnixNano": "1581452773000000789"
+                           },
+                           {
+                              "count": "0",
+                              "startTimeUnixNano": "1581452772000000321",
+                              "sum": 0,
+                              "timeUnixNano": "1581452773000000789"
+                           }
+                        ]
                      },
                      "unit": "1"
                   }
@@ -430,5 +1666,6 @@
             }
          ]
       }
+
    ]
 }

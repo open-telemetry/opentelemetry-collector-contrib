@@ -157,6 +157,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver
@@ -186,6 +187,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver

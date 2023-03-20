@@ -3,4 +3,6 @@ k8sobjects:
     - name: pods
       mode: pull
       resource_version: "1"
+    - name: events
+      mode: pull
     

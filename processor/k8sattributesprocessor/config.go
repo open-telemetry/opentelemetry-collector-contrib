@@ -241,18 +241,6 @@ type FieldFilterConfig struct {
 // PodAssociationConfig contain single rule how to associate Pod metadata
 // with logs, spans and metrics
 type PodAssociationConfig struct {
-	// Deprecated: Sources should be used to provide From and Name.
-	// If this is set, From and Name are going to be used as Sources' ones
-	// From represents the source of the association.
-	// Allowed values are "connection" and "resource_attribute".
-	From string `mapstructure:"from"`
-
-	// Deprecated: Sources should be used to provide From and Name.
-	// If this is set, From and Name are going to be used as Sources' ones
-	// Name represents extracted key name.
-	// e.g. ip, pod_uid, k8s.pod.ip
-	Name string `mapstructure:"name"`
-
 	// List of pod association sources which should be taken
 	// to identify pod
 	Sources []PodAssociationSourceConfig `mapstructure:"sources"`

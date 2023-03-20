@@ -137,12 +137,6 @@ func (p *connectorImp) initHistogramMetrics() metrics.HistogramMetrics {
 		return metrics.NewExponentialHistogramMetrics(maxSize)
 	}
 	bounds := defaultHistogramBucketsMs
-	// TODO remove deprecated `latency_histogram_buckets`
-	if cfg.LatencyHistogramBuckets != nil {
-		p.logger.Warn("latency_histogram_buckets is deprecated. " +
-			"Use `histogram: explicit: buckets` to set histogram buckets")
-		bounds = durationsToUnits(cfg.LatencyHistogramBuckets, unitDivider(cfg.Histogram.Unit))
-	}
 	if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
 		bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider(cfg.Histogram.Unit))
 	}

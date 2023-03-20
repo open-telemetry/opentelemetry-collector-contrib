@@ -96,7 +96,6 @@ type TraceParserCollection struct {
 	parserCollection
 	spanParser      ottl.Parser[ottlspan.TransformContext]
 	spanEventParser ottl.Parser[ottlspanevent.TransformContext]
-	errorMode       ottl.ErrorMode
 }
 
 type TraceParserCollectionOption func(*TraceParserCollection) error

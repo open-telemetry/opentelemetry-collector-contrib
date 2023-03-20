@@ -53,6 +53,7 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
   - `projects` (required if enabled)
     - `name` (required if enabled)
     - `collect_audit_logs` (default false)
+      - Audit logging must be [enabled for your MongoDB Atlas project](https://www.mongodb.com/docs/atlas/database-auditing/) in order to scrape audit logs.
     - `include_clusters` (default empty)
     - `exclude_clusters` (default empty)
 - `events`
