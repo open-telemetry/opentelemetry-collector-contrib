@@ -15,7 +15,6 @@
 package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 
 import (
-	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 )
 
@@ -31,8 +30,6 @@ type S3UploaderConfig struct {
 
 // Config contains the main configuration options for the awskinesis exporter
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
-
 	S3Uploader    S3UploaderConfig `mapstructure:"s3uploader"`
 	MarshalerName string           `mapstructure:"marshaler_name"`
 

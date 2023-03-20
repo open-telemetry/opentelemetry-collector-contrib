@@ -20,28 +20,24 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "default.yaml"), factories)
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "default.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[config.NewComponentID(typeStr)]
-
+	e := cfg.Exporters[component.NewID(typeStr)].(*Config)
 	assert.Equal(t, e,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-
 			S3Uploader: S3UploaderConfig{
 				Region:      "us-east-1",
 				S3Partition: "minute",
@@ -52,23 +48,21 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(
+	cfg, err := otelcoltest.LoadConfigAndValidate(
 		filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[config.NewComponentID(typeStr)]
+	e := cfg.Exporters[component.NewID(typeStr)].(*Config)
 
 	assert.Equal(t, e,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-
 			S3Uploader: S3UploaderConfig{
 				Region:      "us-east-1",
 				S3Bucket:    "foo",

@@ -18,28 +18,28 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "awss3"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a factory for S3 exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter),
-		component.WithTracesExporter(createTracesExporter))
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-
 		S3Uploader: S3UploaderConfig{
 			Region:      "us-east-1",
 			S3Partition: "minute",
@@ -51,31 +51,33 @@ func createDefaultConfig() config.Exporter {
 }
 
 func createLogsExporter(ctx context.Context,
-	params component.ExporterCreateSettings,
-	config config.Exporter) (component.LogsExporter, error) {
+	params exporter.CreateSettings,
+	config component.Config) (exp exporter.Logs, err error) {
 
-	s3Exporter, err := NewS3Exporter(config, params)
+	s3Exporter, err := NewS3Exporter(config.(*Config), params)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewLogsExporter(
-		config,
+		context.TODO(),
 		params,
+		config,
 		s3Exporter.ConsumeLogs)
 }
 
 func createTracesExporter(ctx context.Context,
-	params component.ExporterCreateSettings,
-	config config.Exporter) (component.TracesExporter, error) {
+	params exporter.CreateSettings,
+	config component.Config) (exp exporter.Traces, err error) {
 
-	s3Exporter, err := NewS3Exporter(config, params)
+	s3Exporter, err := NewS3Exporter(config.(*Config), params)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewTracesExporter(
-		config,
+		context.TODO(),
 		params,
+		config,
 		s3Exporter.ConsumeTraces)
 }

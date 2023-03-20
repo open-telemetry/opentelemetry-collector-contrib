@@ -19,8 +19,8 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -28,28 +28,21 @@ import (
 )
 
 type S3Exporter struct {
-	config     config.Exporter
 	dataWriter DataWriter
 	logger     *zap.Logger
 	marshaler  Marshaler
 }
 
-func NewS3Exporter(config config.Exporter,
-	params component.ExporterCreateSettings) (*S3Exporter, error) {
+func NewS3Exporter(config *Config,
+	params exporter.CreateSettings) (*S3Exporter, error) {
 
 	if config == nil {
 		return nil, errors.New("s3 exporter config is nil")
 	}
 
 	logger := params.Logger
-	expConfig := config.(*Config)
+	expConfig := config
 	expConfig.logger = logger
-
-	validateConfig := expConfig.Validate()
-
-	if validateConfig != nil {
-		return nil, validateConfig
-	}
 
 	marshaler, err := NewMarshaler(expConfig.MarshalerName, logger)
 	if err != nil {
@@ -57,7 +50,6 @@ func NewS3Exporter(config config.Exporter,
 	}
 
 	s3Exporter := &S3Exporter{
-		config:     config,
 		dataWriter: &S3Writer{},
 		logger:     logger,
 		marshaler:  marshaler,
