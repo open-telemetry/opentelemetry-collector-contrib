@@ -16,7 +16,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
-	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 
@@ -160,7 +160,7 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, 
 	case float64:
 		result = strconv.FormatFloat(v, 'f', -1, 64)
 	case []byte:
-		result = base64.StdEncoding.EncodeToString(v)
+		result = hex.EncodeToString(v)
 	case pcommon.Map:
 		result, err = jsoniter.MarshalToString(v.AsRaw())
 		if err != nil {

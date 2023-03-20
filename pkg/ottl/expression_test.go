@@ -428,7 +428,7 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 					return []byte{0}, nil
 				},
 			},
-			want:  "AA==",
+			want:  "00",
 			valid: true,
 		},
 		{
