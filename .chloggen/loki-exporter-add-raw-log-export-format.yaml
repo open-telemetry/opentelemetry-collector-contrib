@@ -1,4 +1,0 @@
-change_type: enhancement
-component: translator/loki
-note: Loki add raw log export format
-issues: [ 18888 ]
