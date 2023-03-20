@@ -52,8 +52,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.35.2 h1:mmLqVCbrswx9WTJgl8dQZPJcWLmKeiYXClTBMVSgxog=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.35.2/go.mod h1:bLdv79djYazd76Ee5YFO7qiWu5U2NjDqT/L9mkQV6uY=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.35.2 h1:OTne6f43ZXWS1i45l1/zHeAirIRbsb8whJpYcC/zHeU=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.35.2/go.mod h1:PNxl7KZT+VRkGuh4cXfgn0bYM9FZ7664qdQ1QdAvCdA=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.36.0 h1:pYK7SEGH4tK3ErxRdcUY5eoCYdV1AIZhxz8Lz5QNEiQ=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.36.0/go.mod h1:kL2fZZCwtVq6Pa3QtdUNZ8/WVnulikKWa6Yvp2nMZS0=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.11.2 h1:Z5/bjyZhqXd7dNI76Z/KnyxtqavKF1UgGhInFSAIa8s=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.11.2/go.mod h1:mHbBqn8wTt1/+bTA55xe2mLX5b+RKz2dVcGz8sH2HsY=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.35.2 h1:xXo67CnDmiDMhgD3zAiuejKKMQ9nNkAQZZ4RS5U5jJY=
