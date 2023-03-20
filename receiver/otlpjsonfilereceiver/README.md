@@ -18,8 +18,6 @@ the receiver will read it in its entirety again.
 Please note that there is no guarantee that exact field names will remain stable.
 This intended for primarily for debugging Collector without setting up backends.
 
-Supported pipeline types: traces, metrics, logs
-
 ## Getting Started
 
 The following settings are required:
