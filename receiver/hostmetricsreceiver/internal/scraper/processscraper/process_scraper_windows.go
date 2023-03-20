@@ -39,6 +39,10 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 }
 
 func getProcessName(proc processHandle, exePath string) (string, error) {
+	if exePath == "" {
+		return "", fmt.Errorf("executable path is empty")
+	}
+
 	return filepath.Base(exePath), nil
 }
 
