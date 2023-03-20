@@ -29,7 +29,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
@@ -58,9 +57,6 @@ var (
 )
 
 func TestElasticsearchIntegration(t *testing.T) {
-	// Let this test check if it works with the features disabled and the unit test will test the feature enabled.
-	require.NoError(t, featuregate.GlobalRegistry().Set(emitNodeVersionAttr.ID(), false))
-
 	// Starts an elasticsearch docker container
 	t.Run("Running elasticsearch 7.9", func(t *testing.T) {
 		t.Parallel()
@@ -92,10 +88,15 @@ func TestElasticsearchIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
-			pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"),
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+		))
 	})
 	t.Run("Running elasticsearch 7.16.3", func(t *testing.T) {
 		t.Parallel()
@@ -127,10 +128,15 @@ func TestElasticsearchIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
-			pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"),
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+		))
 	})
 }
 

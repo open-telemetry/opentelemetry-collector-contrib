@@ -119,10 +119,17 @@ Examples:
 The `IsMatch` factory function returns true if the `target` matches the regex `pattern`.
 
 `target` is either a path expression to a telemetry field to retrieve or a literal string. `pattern` is a regexp pattern.
+The matching semantics are identical to `regexp.MatchString`.
 
 The function matches the target against the pattern, returning true if the match is successful and false otherwise.
-If target is a boolean, int, or float it will be converted to a string.
-If target is nil or not a string, boolean, int, or float false is always returned.
+If target is not a string, it will be converted to one:
+
+- booleans, ints and floats will be converted using `strconv`
+- byte slices will be encoded using base64
+- OTLP Maps and Slices will be JSON encoded
+- other OTLP Values will use their canonical string representation via `AsString`
+
+If target is nil, false is always returned.
 
 Examples:
 

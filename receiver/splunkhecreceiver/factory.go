@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -72,10 +73,17 @@ func createMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
+	var err error
+	var recv receiver.Metrics
 	rCfg := cfg.(*Config)
-
-	return newMetricsReceiver(params, *rCfg, consumer)
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		recv, err = newMetricsReceiver(params, *rCfg, consumer)
+		return recv
+	})
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 // createLogsReceiver creates a logs receiver based on provided config.
@@ -85,8 +93,17 @@ func createLogsReceiver(
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
-
+	var err error
+	var recv receiver.Logs
 	rCfg := cfg.(*Config)
-
-	return newLogsReceiver(params, *rCfg, consumer)
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		recv, err = newLogsReceiver(params, *rCfg, consumer)
+		return recv
+	})
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
+
+var receivers = sharedcomponent.NewSharedComponents()

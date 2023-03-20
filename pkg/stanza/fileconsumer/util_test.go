@@ -30,6 +30,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -44,6 +45,23 @@ func testEmitFunc(emitChan chan *emitParams) EmitFunc {
 // includeDir is a builder-like helper for quickly setting up a test config
 func (c *Config) includeDir(dir string) *Config {
 	c.Include = append(c.Include, fmt.Sprintf("%s/*", dir))
+	return c
+}
+
+// withHeader is a builder-like helper for quickly setting up a test config header
+func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
+	regexOpConfig := regex.NewConfig()
+	regexOpConfig.Regex = extractRegex
+
+	c.Header = &HeaderConfig{
+		Pattern: headerMatchPattern,
+		MetadataOperators: []operator.Config{
+			{
+				Builder: regexOpConfig,
+			},
+		},
+	}
+
 	return c
 }
 
@@ -151,6 +169,16 @@ func waitForToken(t *testing.T, c chan *emitParams, expected []byte) {
 	select {
 	case call := <-c:
 		require.Equal(t, expected, call.token)
+	case <-time.After(3 * time.Second):
+		require.FailNow(t, fmt.Sprintf("Timed out waiting for token: %s", expected))
+	}
+}
+
+func waitForTokenHeaderAttributes(t *testing.T, c chan *emitParams, expected []byte, headerAttributes map[string]any) {
+	select {
+	case call := <-c:
+		require.Equal(t, expected, call.token)
+		require.Equal(t, headerAttributes, call.attrs.HeaderAttributes)
 	case <-time.After(3 * time.Second):
 		require.FailNow(t, fmt.Sprintf("Timed out waiting for token: %s", expected))
 	}

@@ -75,7 +75,10 @@ func createCombinedLogReceiver(
 	}
 
 	var err error
-	recv := &combinedLogsReceiver{}
+	recv := &combinedLogsReceiver{
+		id:        params.ID,
+		storageID: cfg.StorageID,
+	}
 
 	if cfg.Alerts.Enabled {
 		recv.alerts, err = newAlertsReceiver(params, cfg, consumer)

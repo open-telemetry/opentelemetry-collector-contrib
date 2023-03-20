@@ -43,6 +43,11 @@ type Config struct {
 	// Namespace is a container for CloudWatch metrics.
 	// Metrics in different namespaces are isolated from each other.
 	Namespace string `mapstructure:"namespace"`
+	// RetainInitialValueOfDeltaMetric is the flag to signal that the initial value of a metric is a valid datapoint.
+	// The default behavior is that the first value occurrence of a metric is set as the baseline for the calculation of
+	// the delta to the next occurrence. With this flag set to true the exporter will instead use this first value as the
+	// initial delta value. This is especially useful when handling low frequency metrics.
+	RetainInitialValueOfDeltaMetric bool `mapstructure:"retain_initial_value_of_delta_metric"`
 	// DimensionRollupOption is the option for metrics dimension rollup. Three options are available, default option is "ZeroAndSingleDimensionRollup".
 	// "ZeroAndSingleDimensionRollup" - Enable both zero dimension rollup and single dimension rollup
 	// "SingleDimensionRollupOnly" - Enable single dimension rollup

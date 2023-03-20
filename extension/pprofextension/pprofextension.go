@@ -23,13 +23,13 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
+	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
-var running = atomic.NewBool(false)
+var running = &atomic.Bool{}
 
 type pprofExtension struct {
 	config Config

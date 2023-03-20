@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -26,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/atomic"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
@@ -70,13 +70,13 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 	spans := traceData.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
 	spans.EnsureCapacity(dp.options.ItemsPerBatch)
 
-	traceID := dp.traceIDSequence.Inc()
+	traceID := dp.traceIDSequence.Add(1)
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 
 		startTime := time.Now()
 		endTime := startTime.Add(time.Millisecond)
 
-		spanID := dp.dataItemsGenerated.Inc()
+		spanID := dp.dataItemsGenerated.Add(1)
 
 		span := spans.AppendEmpty()
 
@@ -119,13 +119,13 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
 		metric.SetUnit("1")
 		dps := metric.SetEmptyGauge().DataPoints()
-		batchIndex := dp.traceIDSequence.Inc()
+		batchIndex := dp.traceIDSequence.Add(1)
 		// Generate data points for the metric.
 		dps.EnsureCapacity(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
 			dataPoint := dps.AppendEmpty()
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-			value := dp.dataItemsGenerated.Inc()
+			value := dp.dataItemsGenerated.Add(1)
 			dataPoint.SetIntValue(int64(value))
 			dataPoint.Attributes().PutStr("item_index", "item_"+strconv.Itoa(j))
 			dataPoint.Attributes().PutStr("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
@@ -149,10 +149,10 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	batchIndex := dp.traceIDSequence.Inc()
+	batchIndex := dp.traceIDSequence.Add(1)
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
-		itemIndex := dp.dataItemsGenerated.Inc()
+		itemIndex := dp.dataItemsGenerated.Add(1)
 		record := logRecords.AppendEmpty()
 		record.SetSeverityNumber(plog.SeverityNumberInfo3)
 		record.SetSeverityText("INFO3")

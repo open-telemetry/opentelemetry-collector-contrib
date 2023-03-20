@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -35,7 +36,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/atomic"
 )
 
 type MockTargetAllocator struct {
@@ -124,7 +124,7 @@ func transformTAResponseMap(rawResponses map[string][]mockTargetAllocatorRespons
 		}
 		responsesMap[path] = responses
 
-		v := atomic.NewInt32(0)
+		v := &atomic.Int32{}
 		responsesIndexMap[path] = v
 	}
 	return responsesMap, responsesIndexMap, nil
