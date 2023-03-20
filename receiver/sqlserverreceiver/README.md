@@ -14,6 +14,7 @@ Because of this, it is a Windows only receiver.
 The following settings are optional:
 
 - `collection_interval` (default = `10s`): The internal at which metrics should be emitted by this receiver.
+- `instance_name` (optional): The instance name identifies the specific SQL Server instance being monitored.
 
 Example:
 
