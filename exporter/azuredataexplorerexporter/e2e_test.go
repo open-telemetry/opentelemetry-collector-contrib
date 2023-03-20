@@ -16,6 +16,7 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"testing"
@@ -43,22 +44,23 @@ const (
 	appKey                = "APP_KEY"
 	clusterURI            = "CLUSTER_URI"
 	debugLevel            = "Debug"
-	epochTimeString       = "1970-01-01 00:00:00.0000000Z"
+	epochTimeString       = "1970-01-01T00:00:00.0000000Z"
 	logStatement          = "A unit test log with trace"
 	logTable              = "OTELLogs"
-	logValidationQuery    = "TBL | extend Timestamp=tostring(Timestamp),ObservedTimestamp=tostring(ObservedTimestamp) | where TraceID == TID"
+	logValidationQuery    = "OTELLogs | extend Timestamp=tostring(Timestamp) , ObservedTimestamp=tostring(ObservedTimestamp) | where TraceID == TID"
 	metricDescription     = "A unit-test gauge metric"
 	metricName            = "test_gauge"
 	metricTable           = "OTELMetrics"
 	metricUnit            = "%"
-	metricValidationQuery = "TBL | extend Timestamp=tostring(Timestamp) | where MetricName == TID"
 	metricValue           = 42.42
+	metricValidationQuery = "OTELMetrics | extend Timestamp=tostring(Timestamp) | where MetricName == TID"
 	skipMessage           = "Environment variables CLUSTER_URI/APP_ID/APP_KEY/AZURE_TENANT_ID/OTEL_DB is/are empty.Tests will be skipped"
-	spanID                = "0102030405060708"
+	spanID                = "1234"
 	spanName              = "UnitTestTraces"
 	tenantID              = "AZURE_TENANT_ID"
+	otelE2EDb             = "OTEL_DB"
 	traceTable            = "OTELTraces"
-	traceValidationQuery  = "TBL | extend StartTime=tostring(StartTime),EndTime=tostring(EndTime) | where TraceID == TID"
+	traceValidationQuery  = "OTELTraces | extend StartTime=tostring(StartTime),EndTime=tostring(EndTime) | where TraceID == TID"
 )
 
 // E2E tests while sending the trace data through the exporter
@@ -78,7 +80,7 @@ func TestCreateTracesExporterE2E(t *testing.T) {
 	td, tID, attrs := createTraces()
 	err = exp.ConsumeTraces(context.Background(), td)
 	require.NoError(t, err)
-	kustoDefinitions, kustoParameters := prepareQuery(tID, traceTable)
+	kustoDefinitions, kustoParameters := prepareQuery(tID)
 	// Statements
 	traceStmt := kusto.NewStmt(traceValidationQuery)
 	traceStmt = traceStmt.MustDefinitions(kusto.NewDefinitions().Must(kustoDefinitions)).MustParameters(kusto.NewParameters().Must(kustoParameters))
@@ -108,7 +110,11 @@ func TestCreateTracesExporterE2E(t *testing.T) {
 	// Validate all attributes
 	for i := 0; i < len(recs); i++ {
 		assert.Equal(t, tID, recs[i].TraceID)
-		assert.Equal(t, spanID, recs[i].SpanID)
+		spanBytes, err := hex.DecodeString(recs[i].SpanID)
+		assert.Equal(t, tID, recs[i].TraceID)
+		if err != nil {
+			assert.Equal(t, spanID, string(spanBytes))
+		}
 		assert.Equal(t, "", recs[i].ParentID)
 		assert.Equal(t, spanName, recs[i].SpanName)
 		assert.Equal(t, "STATUS_CODE_UNSET", recs[i].SpanStatus)
@@ -137,7 +143,7 @@ func TestCreateLogsExporterE2E(t *testing.T) {
 	ld, tID, attrs := createLogs()
 	err = exp.ConsumeLogs(context.Background(), ld)
 	require.NoError(t, err)
-	kustoDefinitions, kustoParameters := prepareQuery(tID, logTable)
+	kustoDefinitions, kustoParameters := prepareQuery(tID)
 	// Statements
 	traceStmt := kusto.NewStmt(logValidationQuery)
 	traceStmt = traceStmt.MustDefinitions(kusto.NewDefinitions().Must(kustoDefinitions)).MustParameters(kusto.NewParameters().Must(kustoParameters))
@@ -167,8 +173,11 @@ func TestCreateLogsExporterE2E(t *testing.T) {
 	// Validate all attributes
 	for i := 0; i < len(recs); i++ {
 		crec := recs[i]
+		spanBytes, err := hex.DecodeString(crec.SpanID)
 		assert.Equal(t, tID, crec.TraceID)
-		assert.Equal(t, spanID, crec.SpanID)
+		if err != nil {
+			assert.Equal(t, spanID, string(spanBytes))
+		}
 		assert.Equal(t, epochTimeString, crec.ObservedTimestamp)
 		assert.Equal(t, epochTimeString, crec.Timestamp)
 		assert.Equal(t, attrs, crec.LogsAttributes)
@@ -197,7 +206,7 @@ func TestCreateMetricsExporterE2E(t *testing.T) {
 	md, attrs, metricName := createMetrics()
 	err = exp.ConsumeMetrics(context.Background(), md)
 	require.NoError(t, err)
-	kustoDefinitions, kustoParameters := prepareQuery(metricName, metricTable)
+	kustoDefinitions, kustoParameters := prepareQuery(metricName)
 	// Statements
 	traceStmt := kusto.NewStmt(metricValidationQuery)
 	traceStmt = traceStmt.MustDefinitions(kusto.NewDefinitions().Must(kustoDefinitions)).MustParameters(kusto.NewParameters().Must(kustoParameters))
@@ -237,25 +246,23 @@ func TestCreateMetricsExporterE2E(t *testing.T) {
 	t.Cleanup(func() { _ = exp.Shutdown(context.Background()) })
 }
 
-func prepareQuery(tID string, table string) (kusto.ParamTypes, kusto.QueryValues) {
+func prepareQuery(tID string) (kusto.ParamTypes, kusto.QueryValues) {
 	kustoDefinitions := make(kusto.ParamTypes)
 	kustoParameters := make(kusto.QueryValues)
 	kustoDefinitions["TID"] = kusto.ParamType{Type: types.String}
 	kustoParameters["TID"] = tID
-	kustoDefinitions["TBL"] = kusto.ParamType{Type: types.String}
-	kustoParameters["TBL"] = table
 	return kustoDefinitions, kustoParameters
 }
 
 func getConfig() (*Config, bool) {
-	if os.Getenv(clusterURI) == "" || os.Getenv(appID) == "" || os.Getenv(appKey) == "" || os.Getenv(tenantID) == "" || os.Getenv(otelDb) == "" {
+	if os.Getenv(clusterURI) == "" || os.Getenv(appID) == "" || os.Getenv(appKey) == "" || os.Getenv(tenantID) == "" || os.Getenv(otelE2EDb) == "" {
 		return nil, false
 	}
 	clusterURI := os.Getenv(clusterURI)
 	clientID := os.Getenv(appID)
 	appKey := os.Getenv(appKey)
 	tenantID := os.Getenv(tenantID)
-	database := os.Getenv(otelDb)
+	database := os.Getenv(otelE2EDb)
 
 	return &Config{
 		ClusterURI:     clusterURI,

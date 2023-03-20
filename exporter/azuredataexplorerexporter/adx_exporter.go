@@ -155,12 +155,12 @@ func (e *adxDataProducer) Close(context.Context) error {
 
 // Create an exporter. The exporter instantiates a client , creates the ingestor and then sends data through it
 
-func newExporter(config *Config, logger *zap.Logger, telemetryDataType int) (*adxDataProducer, error) {
+func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, version string) (*adxDataProducer, error) {
 	tableName, err := getTableName(config, telemetryDataType)
 	if err != nil {
 		return nil, err
 	}
-	metricClient, err := buildAdxClient(config)
+	metricClient, err := buildAdxClient(config, version)
 
 	if err != nil {
 		return nil, err
@@ -215,8 +215,9 @@ func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
 	return nil
 }
 
-func buildAdxClient(config *Config) (*kusto.Client, error) {
+func buildAdxClient(config *Config, version string) (*kusto.Client, error) {
 	kcsb := kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
+	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{})
 	client, err := kusto.New(kcsb)
 	return client, err
 }
