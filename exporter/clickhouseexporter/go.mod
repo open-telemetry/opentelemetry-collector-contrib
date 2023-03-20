@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.7.0
 	github.com/cenkalti/backoff/v4 v4.2.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.73.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.74.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector/component v0.73.0
 	go.opentelemetry.io/collector/confmap v0.73.0
