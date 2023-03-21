@@ -14,6 +14,7 @@ Because of this, it is a Windows only receiver.
 The following settings are optional:
 
 - `collection_interval` (default = `10s`): The internal at which metrics should be emitted by this receiver.
+- `computer_name` (optional): The computer name identifies the SQL Server name or IP address of the computer being monitored.
 - `instance_name` (optional): The instance name identifies the specific SQL Server instance being monitored.
 
 Example:
@@ -24,14 +25,18 @@ Example:
         collection_interval: 10s
 ```
 
+When a named instance is used, a computer name and a instance name must be specified.
 Example with named instance:
 
 ```yaml
     receivers:
       sqlserver:
         collection_interval: 10s
-        instance_name: SQLSERVER1
+        computer_name: CustomServer
+        instance_name: CustomInstance
         resource_attributes:
+          sqlserver.computer.name:
+            enabled: true
           sqlserver.instance.name:
             enabled: true
 ```

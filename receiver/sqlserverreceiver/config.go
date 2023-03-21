@@ -15,6 +15,8 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -25,4 +27,16 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 	InstanceName                            string `mapstructure:"instance_name"`
+	ComputerName                            string `mapstructure:"computer_name"`
+}
+
+func (cfg *Config) Validate() error {
+	if cfg.InstanceName != "" && cfg.ComputerName == "" {
+		return fmt.Errorf("missing 'instance name', both instance name and computer name must be set")
+	}
+	if cfg.InstanceName == "" && cfg.ComputerName != "" {
+		return fmt.Errorf("missing 'computer_name', both instance name and computer name must be set")
+	}
+
+	return nil
 }

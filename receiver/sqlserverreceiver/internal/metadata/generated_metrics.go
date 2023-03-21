@@ -127,12 +127,16 @@ type ResourceAttributeSettings struct {
 
 // ResourceAttributesSettings provides settings for sqlserverreceiver metrics.
 type ResourceAttributesSettings struct {
+	SqlserverComputerName ResourceAttributeSettings `mapstructure:"sqlserver.computer.name"`
 	SqlserverDatabaseName ResourceAttributeSettings `mapstructure:"sqlserver.database.name"`
 	SqlserverInstanceName ResourceAttributeSettings `mapstructure:"sqlserver.instance.name"`
 }
 
 func DefaultResourceAttributesSettings() ResourceAttributesSettings {
 	return ResourceAttributesSettings{
+		SqlserverComputerName: ResourceAttributeSettings{
+			Enabled: false,
+		},
 		SqlserverDatabaseName: ResourceAttributeSettings{
 			Enabled: true,
 		},
@@ -1260,6 +1264,15 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+
+// WithSqlserverComputerName sets provided value as "sqlserver.computer.name" attribute for current resource.
+func WithSqlserverComputerName(val string) ResourceMetricsOption {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.SqlserverComputerName.Enabled {
+			rm.Resource().Attributes().PutStr("sqlserver.computer.name", val)
+		}
+	}
+}
 
 // WithSqlserverDatabaseName sets provided value as "sqlserver.database.name" attribute for current resource.
 func WithSqlserverDatabaseName(val string) ResourceMetricsOption {

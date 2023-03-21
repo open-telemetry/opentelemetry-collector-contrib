@@ -3,7 +3,10 @@ sqlserver:
 
 sqlserver2:
   collection_interval: 10s
-  instance_name: SQLSERVER2
+  computer_name: CustomServer
+  instance_name: CustomInstance
   resource_attributes:
+    sqlserver.computer.name:
+      enabled: true
     sqlserver.instance.name:
       enabled: true

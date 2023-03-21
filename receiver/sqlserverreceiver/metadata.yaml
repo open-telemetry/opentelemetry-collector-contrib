@@ -9,6 +9,10 @@ resource_attributes:
     description: The name of the SQL Server instance being monitored.
     enabled: false
     type: string
+  sqlserver.computer.name:
+    description: The name of the SQL Server instance being monitored.
+    enabled: false
+    type: string
 
 attributes:
   page.operations:

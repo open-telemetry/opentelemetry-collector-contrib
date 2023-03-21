@@ -85,9 +85,13 @@ func TestLoadConfig(t *testing.T) {
 				SqlserverInstanceName: metadata.ResourceAttributeSettings{
 					Enabled: true,
 				},
+				SqlserverComputerName: metadata.ResourceAttributeSettings{
+					Enabled: true,
+				},
 			},
 		}
-		expected.InstanceName = "SQLSERVER2"
+		expected.ComputerName = "CustomServer"
+		expected.InstanceName = "CustomInstance"
 
 		sub, err := cm.Sub("sqlserver2")
 		require.NoError(t, err)

@@ -42,6 +42,8 @@ all_set:
     sqlserver.user.connection.count:
       enabled: true
   resource_attributes:
+    sqlserver.computer.name:
+      enabled: true
     sqlserver.database.name:
       enabled: true
     sqlserver.instance.name:
@@ -89,6 +91,8 @@ none_set:
     sqlserver.user.connection.count:
       enabled: false
   resource_attributes:
+    sqlserver.computer.name:
+      enabled: false
     sqlserver.database.name:
       enabled: false
     sqlserver.instance.name:
