@@ -747,7 +747,7 @@ func TestLogToLokiEntry(t *testing.T) {
 				hintFormat: "my-format",
 			},
 			expected: nil,
-			err:      fmt.Errorf("invalid format %s. Expected one of: %s, %s", "my-format", formatJSON, formatLogfmt),
+			err:      fmt.Errorf("invalid format %s. Expected one of: %s, %s, %s", "my-format", formatJSON, formatLogfmt, formatRaw),
 		},
 	}
 
