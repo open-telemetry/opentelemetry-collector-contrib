@@ -33,6 +33,7 @@ type tracesExporter struct {
 	logger    common.Logger
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelTracesToLineProtocol
+	started   bool
 }
 
 func newTracesExporter(config *Config, settings exporter.CreateSettings) (*tracesExporter, error) {
@@ -65,12 +66,16 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error
 
 func (e *tracesExporter) Start(ctx context.Context, host component.Host) error {
 	e.logger.Debug("starting traces exporter")
+	e.started = true
 	return multierr.Combine(
 		e.writer.Start(ctx, host),
 		e.converter.Start(ctx, host))
 }
 
 func (e *tracesExporter) Shutdown(ctx context.Context) error {
+	if !e.started {
+		return nil
+	}
 	return e.converter.Shutdown(ctx)
 }
 

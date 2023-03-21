@@ -1,0 +1,7 @@
+name: signalfxreceiver
+
+status:
+  type: receiver
+  stability: beta
+  pipelines: [metrics, logs]
+  distributions: [contrib]

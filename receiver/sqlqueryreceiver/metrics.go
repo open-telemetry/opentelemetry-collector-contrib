@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) error {
+func rowToMetric(row stringMap, cfg MetricCfg, dest pmetric.Metric, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) error {
 	dest.SetName(cfg.MetricName)
 	dest.SetDescription(cfg.Description)
 	dest.SetUnit(cfg.Unit)
@@ -96,13 +96,13 @@ func setDataPointValue(cfg MetricCfg, str string, dest pmetric.NumberDataPoint) 
 	case MetricValueTypeUnspecified, MetricValueTypeInt:
 		val, err := strconv.Atoi(str)
 		if err != nil {
-			return fmt.Errorf("setDataPointValue: error converting to integer: %w", err)
+			return fmt.Errorf("setDataPointValue: col %q: error converting to integer: %w", cfg.ValueColumn, err)
 		}
 		dest.SetIntValue(int64(val))
 	case MetricValueTypeDouble:
 		val, err := strconv.ParseFloat(str, 64)
 		if err != nil {
-			return fmt.Errorf("setDataPointValue: error converting to double: %w", err)
+			return fmt.Errorf("setDataPointValue: col %q: error converting to double: %w", cfg.ValueColumn, err)
 		}
 		dest.SetDoubleValue(val)
 	}
