@@ -3,7 +3,7 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [alpha]   |
-| Supported pipeline types | logs,metrics,traces   |
+| Supported pipeline types | traces,metrics,logs   |
 | Distributions            | [contrib] |
 | Warnings                 | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 

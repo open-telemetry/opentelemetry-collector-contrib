@@ -3,6 +3,6 @@ name: transform
 status:
   type: processor
   stability: alpha
-  pipelines: [logs, metrics, traces]
+  pipelines: [traces, metrics, logs]
   distributions: [contrib]
   warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]
