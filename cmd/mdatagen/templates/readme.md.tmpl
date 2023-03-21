@@ -3,7 +3,9 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [{{ .Status.Stability }}]   |
+{{- if ne .Status.Type "extension" }}
 | Supported pipeline types | {{ stringsJoin .Status.Pipelines "," }}   |
+{{- end }}
 | Distributions            | [{{ stringsJoin .Status.Distributions "], [" }}] |
 
 [{{ .Status.Stability }}]: https://github.com/open-telemetry/opentelemetry-collector#{{ .Status.Stability }}
