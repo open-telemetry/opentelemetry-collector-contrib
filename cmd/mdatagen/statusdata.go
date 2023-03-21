@@ -24,4 +24,5 @@ type Status struct {
 	Pipelines     []string `mapstructure:"pipelines"`
 	Distributions []string `mapstructure:"distributions"`
 	Type          string   `mapstructure:"type"`
+	Warnings      []string `mapstructure:"warnings"`
 }
