@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -35,6 +36,7 @@ func NewFactory() exporter.Factory {
 		typeStr,
 		createDefaultConfig,
 		exporter.WithLogs(createLogsExporter, stability),
+		exporter.WithTraces(createTracesExporter, stability),
 	)
 }
 
@@ -58,4 +60,19 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, cfg co
 		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
 	)
+}
+
+func createTracesExporter(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (exporter.Traces, error) {
+	lmTraceExp := newTracesExporter(ctx, cfg, set)
+	c := cfg.(*Config)
+
+	return exporterhelper.NewTracesExporter(
+		ctx,
+		set,
+		cfg,
+		lmTraceExp.PushTraceData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithStart(lmTraceExp.start),
+		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithQueue(c.QueueSettings))
 }
