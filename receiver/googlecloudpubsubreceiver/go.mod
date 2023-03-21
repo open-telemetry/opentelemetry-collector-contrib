@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/google
 go 1.19
 
 require (
-	cloud.google.com/go/pubsub v1.28.0
+	cloud.google.com/go/pubsub v1.29.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.74.0
 	go.opentelemetry.io/collector/component v0.74.0
@@ -55,7 +55,7 @@ require (
 	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230303212802-e74f57abe488 // indirect
-	google.golang.org/protobuf v1.29.1 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
