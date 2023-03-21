@@ -18,9 +18,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestNewAzureResourceLogsUnmarshaler(t *testing.T) {
-	um := newAzureResourceLogsUnmarshaler()
+	um := newAzureResourceLogsUnmarshaler("Test Version", zap.NewNop())
 	assert.Equal(t, "azureresourcelogs", um.Encoding())
 }

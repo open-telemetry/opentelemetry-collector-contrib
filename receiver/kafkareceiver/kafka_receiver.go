@@ -16,7 +16,6 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/Shopify/sarama"
@@ -34,8 +33,6 @@ import (
 const (
 	transport = "kafka"
 )
-
-var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 
 // kafkaTracesConsumer uses sarama to consume and handle messages from kafka.
 type kafkaTracesConsumer struct {
@@ -83,8 +80,7 @@ var _ receiver.Traces = (*kafkaTracesConsumer)(nil)
 var _ receiver.Metrics = (*kafkaMetricsConsumer)(nil)
 var _ receiver.Logs = (*kafkaLogsConsumer)(nil)
 
-func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
-	unmarshaler := unmarshalers[config.Encoding]
+func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshaler TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
@@ -171,8 +167,7 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
-	unmarshaler := unmarshalers[config.Encoding]
+func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshaler MetricsUnmarshaler, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
@@ -260,13 +255,10 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
-	unmarshaler := unmarshalers[config.Encoding]
+func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshaler LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
-
-	unmarshaler.SetReceiverSettings(set)
 
 	c := sarama.NewConfig()
 	c.ClientID = config.ClientID

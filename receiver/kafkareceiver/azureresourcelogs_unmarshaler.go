@@ -22,7 +22,6 @@ import (
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.uber.org/zap"
 )
@@ -47,7 +46,8 @@ const (
 )
 
 type azureResourceLogsUnmarshaler struct {
-	settings receiver.CreateSettings
+	version string
+	logger  *zap.Logger
 }
 
 // azureRecords represents an array of Azure log records
@@ -78,8 +78,11 @@ type azureLogRecord struct {
 	Properties        *interface{} `json:"properties"`
 }
 
-func newAzureResourceLogsUnmarshaler() LogsUnmarshaler {
-	return azureResourceLogsUnmarshaler{}
+func newAzureResourceLogsUnmarshaler(version string, logger *zap.Logger) LogsUnmarshaler {
+	return azureResourceLogsUnmarshaler{
+		version: version,
+		logger:  logger,
+	}
 }
 
 func (r azureResourceLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
@@ -94,7 +97,7 @@ func (r azureResourceLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	resourceLogs := l.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(receiverScopeName)
-	scopeLogs.Scope().SetVersion(r.settings.BuildInfo.Version)
+	scopeLogs.Scope().SetVersion(r.version)
 	logRecords := scopeLogs.LogRecords()
 
 	resourceID := ""
@@ -102,7 +105,7 @@ func (r azureResourceLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 		resourceID = azureLog.ResourceID
 		nanos, err := asTimestamp(azureLog.Time)
 		if err != nil {
-			r.settings.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", azureLog.Time))
+			r.logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", azureLog.Time))
 			continue
 		}
 
@@ -133,10 +136,6 @@ func (r azureResourceLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 
 func (r azureResourceLogsUnmarshaler) Encoding() string {
 	return "azureresourcelogs"
-}
-
-func (r azureResourceLogsUnmarshaler) SetReceiverSettings(settings receiver.CreateSettings) {
-	r.settings = settings
 }
 
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry

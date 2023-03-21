@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
@@ -44,8 +44,6 @@ type MetricsUnmarshaler interface {
 
 // LogsUnmarshaler deserializes the message body.
 type LogsUnmarshaler interface {
-	SetReceiverSettings(receiver.CreateSettings)
-
 	// Unmarshal deserializes the message body into traces.
 	Unmarshal([]byte) (plog.Logs, error)
 
@@ -78,10 +76,10 @@ func defaultMetricsUnmarshalers() map[string]MetricsUnmarshaler {
 	}
 }
 
-func defaultLogsUnmarshalers() map[string]LogsUnmarshaler {
+func defaultLogsUnmarshalers(version string, logger *zap.Logger) map[string]LogsUnmarshaler {
 	otlpPb := newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding)
 	raw := newRawLogsUnmarshaler()
-	azureresourcelogs := newAzureResourceLogsUnmarshaler()
+	azureresourcelogs := newAzureResourceLogsUnmarshaler(version, logger)
 	return map[string]LogsUnmarshaler{
 		otlpPb.Encoding():            otlpPb,
 		raw.Encoding():               raw,

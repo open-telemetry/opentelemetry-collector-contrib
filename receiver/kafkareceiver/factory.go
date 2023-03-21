@@ -16,6 +16,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opencensus.io/stats/view"
@@ -48,6 +49,8 @@ const (
 	// default from sarama.NewConfig()
 	defaultAutoCommitInterval = 1 * time.Second
 )
+
+var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 
 // FactoryOption applies changes to kafkaExporterFactory.
 type FactoryOption func(factory *kafkaReceiverFactory)
@@ -84,13 +87,15 @@ func NewFactory(options ...FactoryOption) receiver.Factory {
 	_ = view.Register(MetricViews()...)
 
 	f := &kafkaReceiverFactory{
-		tracesUnmarshalers:  defaultTracesUnmarshalers(),
-		metricsUnmarshalers: defaultMetricsUnmarshalers(),
-		logsUnmarshalers:    defaultLogsUnmarshalers(),
+		tracesUnmarshalers:  map[string]TracesUnmarshaler{},
+		metricsUnmarshalers: map[string]MetricsUnmarshaler{},
+		logsUnmarshalers:    map[string]LogsUnmarshaler{},
 	}
+
 	for _, o := range options {
 		o(f)
 	}
+
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
@@ -137,8 +142,17 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
+	for encoding, unmarshal := range defaultTracesUnmarshalers() {
+		f.tracesUnmarshalers[encoding] = unmarshal
+	}
+
 	c := cfg.(*Config)
-	r, err := newTracesReceiver(*c, set, f.tracesUnmarshalers, nextConsumer)
+	unmarshaler := f.tracesUnmarshalers[c.Encoding]
+	if unmarshaler == nil {
+		return nil, errUnrecognizedEncoding
+	}
+
+	r, err := newTracesReceiver(*c, set, unmarshaler, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +165,17 @@ func (f *kafkaReceiverFactory) createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
+	for encoding, unmarshal := range defaultMetricsUnmarshalers() {
+		f.metricsUnmarshalers[encoding] = unmarshal
+	}
+
 	c := cfg.(*Config)
-	r, err := newMetricsReceiver(*c, set, f.metricsUnmarshalers, nextConsumer)
+	unmarshaler := f.metricsUnmarshalers[c.Encoding]
+	if unmarshaler == nil {
+		return nil, errUnrecognizedEncoding
+	}
+
+	r, err := newMetricsReceiver(*c, set, unmarshaler, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -165,8 +188,17 @@ func (f *kafkaReceiverFactory) createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
+	for encoding, unmarshal := range defaultLogsUnmarshalers(set.BuildInfo.Version, set.Logger) {
+		f.logsUnmarshalers[encoding] = unmarshal
+	}
+
 	c := cfg.(*Config)
-	r, err := newLogsReceiver(*c, set, f.logsUnmarshalers, nextConsumer)
+	unmarshaler := f.logsUnmarshalers[c.Encoding]
+	if unmarshaler == nil {
+		return nil, errUnrecognizedEncoding
+	}
+
+	r, err := newLogsReceiver(*c, set, unmarshaler, nextConsumer)
 	if err != nil {
 		return nil, err
 	}

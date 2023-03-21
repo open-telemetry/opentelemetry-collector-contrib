@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/receiver"
 )
 
 type pdataLogsUnmarshaler struct {
@@ -32,9 +31,6 @@ func (p pdataLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 
 func (p pdataLogsUnmarshaler) Encoding() string {
 	return p.encoding
-}
-
-func (p pdataLogsUnmarshaler) SetReceiverSettings(settings receiver.CreateSettings) {
 }
 
 func newPdataLogsUnmarshaler(unmarshaler plog.Unmarshaler, encoding string) LogsUnmarshaler {

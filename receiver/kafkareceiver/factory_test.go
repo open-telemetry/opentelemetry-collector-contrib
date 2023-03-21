@@ -24,8 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -130,7 +130,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers()}
+	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers("Test Version", zap.NewNop())}
 	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	// no available broker
 	require.Error(t, err)
@@ -142,7 +142,7 @@ func TestCreateLogsReceiver_error(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// disable contacting broker at startup
 	cfg.Metadata.Full = false
-	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers()}
+	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers("Test Version", zap.NewNop())}
 	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
@@ -203,7 +203,4 @@ func (c customLogsUnmarshaler) Unmarshal([]byte) (plog.Logs, error) {
 
 func (c customLogsUnmarshaler) Encoding() string {
 	return "custom"
-}
-
-func (c customLogsUnmarshaler) SetReceiverSettings(settings receiver.CreateSettings) {
 }
