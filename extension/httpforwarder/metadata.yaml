@@ -3,5 +3,4 @@ name: httpforwarder
 status:
   type: extension
   stability: beta
-  pipelines: []
   distributions: [contrib]
