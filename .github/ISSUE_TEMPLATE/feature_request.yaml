@@ -218,7 +218,6 @@ body:
       - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters
-      - receiver/zipkin
       - receiver/zookeeper
       - testbed
       - testbed/mockdatareceivers/mockawsxrayreceiver
