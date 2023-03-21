@@ -48,7 +48,7 @@ List of available Converters:
 - [ConvertCase](#convertcase)
 - [Int](#int)
 - [IsMatch](#ismatch)
-- [ParseJSON](#ParseJSON)
+- [ParseJSON](#parsejson)
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
