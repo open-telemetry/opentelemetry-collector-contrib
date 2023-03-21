@@ -3,7 +3,6 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [beta]   |
-| Supported pipeline types |    |
 | Distributions            | [contrib] |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
