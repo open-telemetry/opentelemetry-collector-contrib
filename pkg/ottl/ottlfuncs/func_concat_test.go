@@ -134,7 +134,7 @@ func Test_concat(t *testing.T) {
 			expected:  "00000000000000000ed2e63cbe71f5a8",
 		},
 		{
-			name: "pcommon.Slaice",
+			name: "pcommon.Slice",
 			vals: []ottl.StandardStringLikeGetter[interface{}]{
 				{
 					Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
