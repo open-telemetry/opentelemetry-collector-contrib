@@ -54,15 +54,46 @@ func TestValidate(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+	t.Run("default SQL Server configuration", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+		require.NoError(t, err)
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub("sqlserver")
-	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		sub, err := cm.Sub("sqlserver")
+		require.NoError(t, err)
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	assert.NoError(t, component.ValidateConfig(cfg))
-	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+		assert.NoError(t, component.ValidateConfig(cfg))
+		assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+	})
+
+	t.Run("named instance SQL Server configuration", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+		require.NoError(t, err)
+
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig()
+
+		expected := factory.CreateDefaultConfig().(*Config)
+		expected.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
+			Metrics: metadata.DefaultMetricsSettings(),
+			ResourceAttributes: metadata.ResourceAttributesSettings{
+				SqlserverDatabaseName: metadata.ResourceAttributeSettings{
+					Enabled: true,
+				},
+				SqlserverInstanceName: metadata.ResourceAttributeSettings{
+					Enabled: true,
+				},
+			},
+		}
+		expected.InstanceName = "SQLSERVER2"
+
+		sub, err := cm.Sub("sqlserver2")
+		require.NoError(t, err)
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+		assert.NoError(t, component.ValidateConfig(cfg))
+		assert.Equal(t, expected, cfg)
+	})
 }
