@@ -125,6 +125,12 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 			return nil, err
 		}
 		return arg, nil
+	case strings.HasPrefix(name, "StringGetter"):
+		arg, err := buildSlice[StringGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
 	default:
 		return nil, fmt.Errorf("unsupported slice type '%s' for function", argType.Elem().Name())
 	}
