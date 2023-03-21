@@ -18,8 +18,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"strconv"
-
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -153,12 +151,6 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, 
 	switch v := val.(type) {
 	case string:
 		result = v
-	case bool:
-		result = strconv.FormatBool(v)
-	case int64:
-		result = strconv.FormatInt(v, 10)
-	case float64:
-		result = strconv.FormatFloat(v, 'f', -1, 64)
 	case []byte:
 		result = hex.EncodeToString(v)
 	case pcommon.Map:
