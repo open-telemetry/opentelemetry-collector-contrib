@@ -27,7 +27,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	model_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/model/v1"
+	egress_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/model/egress/v1"
+	receive_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/model/receive/v1"
 )
 
 // tracesUnmarshaller deserializes the message body.
@@ -47,6 +48,10 @@ func newTracesUnmarshaller(logger *zap.Logger, metrics *opencensusMetrics) trace
 			logger:  logger,
 			metrics: metrics,
 		},
+		egressUnmarshallerV1: &brokerTraceEgressUnmarshallerV1{
+			logger:  logger,
+			metrics: metrics,
+		},
 	}
 }
 
@@ -55,6 +60,7 @@ type solaceTracesUnmarshaller struct {
 	logger                *zap.Logger
 	metrics               *opencensusMetrics
 	receiveUnmarshallerV1 tracesUnmarshaller
+	egressUnmarshallerV1  tracesUnmarshaller
 }
 
 var (
@@ -70,6 +76,7 @@ func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Tr
 	const (
 		topicPrefix       = "_telemetry/"
 		receiveSpanPrefix = "broker/trace/receive/"
+		egressSpanPrefix  = "broker/trace/egress/"
 		v1Suffix          = "v1"
 	)
 	if message.Properties == nil || message.Properties.To == nil {
@@ -88,6 +95,10 @@ func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Tr
 			}
 			// otherwise we are an unknown version
 			u.logger.Error("Received message with unsupported receive span version, an upgrade is required", zap.String("topic", *message.Properties.To))
+		} else if strings.HasPrefix(topic[len(topicPrefix):], egressSpanPrefix) {
+			if strings.HasSuffix(topic, v1Suffix) {
+				return u.egressUnmarshallerV1.unmarshal(message)
+			}
 		} else {
 			u.logger.Error("Received message with unsupported topic, an upgrade is required", zap.String("topic", *message.Properties.To))
 		}
@@ -97,6 +108,33 @@ func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Tr
 	// unknown topic, do not require an upgrade
 	u.logger.Error("Received message with unknown topic", zap.String("topic", *message.Properties.To))
 	return ptrace.Traces{}, errUnknownTopic
+}
+
+type brokerTraceEgressUnmarshallerV1 struct {
+	logger  *zap.Logger
+	metrics *opencensusMetrics
+}
+
+func (u *brokerTraceEgressUnmarshallerV1) unmarshal(message *inboundMessage) (ptrace.Traces, error) {
+	spanData, err := u.unmarshalToSpanData(message)
+	if err != nil {
+		return ptrace.Traces{}, err
+	}
+	u.logger.Error(spanData.String())
+	traces := ptrace.NewTraces()
+	return traces, nil
+}
+
+func (u *brokerTraceEgressUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*egress_v1.SpanData, error) {
+	var data = message.GetData()
+	if len(data) == 0 {
+		return nil, errEmptyPayload
+	}
+	var spanData egress_v1.SpanData
+	if err := proto.Unmarshal(data, &spanData); err != nil {
+		return nil, err
+	}
+	return &spanData, nil
 }
 
 type brokerTraceReceiveUnmarshallerV1 struct {
@@ -117,12 +155,12 @@ func (u *brokerTraceReceiveUnmarshallerV1) unmarshal(message *inboundMessage) (p
 
 // unmarshalToSpanData will consume an solaceMessage and unmarshal it into a SpanData.
 // Returns an error if one occurred.
-func (u *brokerTraceReceiveUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*model_v1.SpanData, error) {
+func (u *brokerTraceReceiveUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*receive_v1.SpanData, error) {
 	var data = message.GetData()
 	if len(data) == 0 {
 		return nil, errEmptyPayload
 	}
-	var spanData model_v1.SpanData
+	var spanData receive_v1.SpanData
 	if err := proto.Unmarshal(data, &spanData); err != nil {
 		return nil, err
 	}
@@ -132,7 +170,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) unmarshalToSpanData(message *inboundM
 // createSpan will create a new Span from the given traces and map the given SpanData to the span.
 // This will set all required fields such as name version, trace and span ID, parent span ID (if applicable),
 // timestamps, errors and states.
-func (u *brokerTraceReceiveUnmarshallerV1) populateTraces(spanData *model_v1.SpanData, traces ptrace.Traces) {
+func (u *brokerTraceReceiveUnmarshallerV1) populateTraces(spanData *receive_v1.SpanData, traces ptrace.Traces) {
 	// Append new resource span and map any attributes
 	resourceSpan := traces.ResourceSpans().AppendEmpty()
 	u.mapResourceSpanAttributes(spanData, resourceSpan.Resource().Attributes())
@@ -147,7 +185,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) populateTraces(spanData *model_v1.Spa
 	u.mapEvents(spanData, clientSpan)
 }
 
-func (u *brokerTraceReceiveUnmarshallerV1) mapResourceSpanAttributes(spanData *model_v1.SpanData, attrMap pcommon.Map) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapResourceSpanAttributes(spanData *receive_v1.SpanData, attrMap pcommon.Map) {
 	const (
 		routerNameAttrKey     = "service.name"
 		messageVpnNameAttrKey = "service.instance.id"
@@ -160,7 +198,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapResourceSpanAttributes(spanData *m
 	attrMap.PutStr(solosVersionAttrKey, spanData.SolosVersion)
 }
 
-func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanData, clientSpan ptrace.Span) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanData(spanData *receive_v1.SpanData, clientSpan ptrace.Span) {
 	const clientSpanName = "(topic) receive"
 
 	// client span constants
@@ -199,7 +237,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanData(spanData *model_v1.
 
 // mapAttributes takes a set of attributes from SpanData and maps them to ClientSpan.Attributes().
 // Will also copy any user properties stored in the SpanData with a best effort approach.
-func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1.SpanData, attrMap pcommon.Map) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *receive_v1.SpanData, attrMap pcommon.Map) {
 	// constant attributes
 	const (
 		systemAttrKey      = "messaging.system"
@@ -252,11 +290,11 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *mod
 
 	var deliveryMode string
 	switch spanData.DeliveryMode {
-	case model_v1.SpanData_DIRECT:
+	case receive_v1.SpanData_DIRECT:
 		deliveryMode = "direct"
-	case model_v1.SpanData_NON_PERSISTENT:
+	case receive_v1.SpanData_NON_PERSISTENT:
 		deliveryMode = "non_persistent"
-	case model_v1.SpanData_PERSISTENT:
+	case receive_v1.SpanData_PERSISTENT:
 		deliveryMode = "persistent"
 	default:
 		deliveryMode = fmt.Sprintf("Unknown Delivery Mode (%s)", spanData.DeliveryMode.String())
@@ -318,7 +356,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *mod
 }
 
 // mapEvents maps all events contained in SpanData to relevant events within clientSpan.Events()
-func (u *brokerTraceReceiveUnmarshallerV1) mapEvents(spanData *model_v1.SpanData, clientSpan ptrace.Span) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapEvents(spanData *receive_v1.SpanData, clientSpan ptrace.Span) {
 	// handle enqueue events
 	for _, enqueueEvent := range spanData.EnqueueEvents {
 		u.mapEnqueueEvent(enqueueEvent, clientSpan.Events())
@@ -331,7 +369,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEvents(spanData *model_v1.SpanData
 }
 
 // mapEnqueueEvent maps a SpanData_EnqueueEvent to a ClientSpan.Event
-func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.SpanData_EnqueueEvent, clientSpanEvents ptrace.SpanEventSlice) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *receive_v1.SpanData_EnqueueEvent, clientSpanEvents ptrace.SpanEventSlice) {
 	const (
 		enqueueEventSuffix               = " enqueue" // Final should be `<dest> enqueue`
 		messagingDestinationTypeEventKey = "messaging.solace.destination_type"
@@ -343,10 +381,10 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v
 	var destinationName string
 	var destinationType string
 	switch casted := enqueueEvent.Dest.(type) {
-	case *model_v1.SpanData_EnqueueEvent_TopicEndpointName:
+	case *receive_v1.SpanData_EnqueueEvent_TopicEndpointName:
 		destinationName = casted.TopicEndpointName
 		destinationType = topicEndpointKind
-	case *model_v1.SpanData_EnqueueEvent_QueueName:
+	case *receive_v1.SpanData_EnqueueEvent_QueueName:
 		destinationName = casted.QueueName
 		destinationType = queueKind
 	default:
@@ -366,7 +404,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v
 }
 
 // mapTransactionEvent maps a SpanData_TransactionEvent to a ClientSpan.Event
-func (u *brokerTraceReceiveUnmarshallerV1) mapTransactionEvent(transactionEvent *model_v1.SpanData_TransactionEvent, clientSpanEvents ptrace.SpanEventSlice) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapTransactionEvent(transactionEvent *receive_v1.SpanData_TransactionEvent, clientSpanEvents ptrace.SpanEventSlice) {
 	const (
 		transactionInitiatorEventKey    = "messaging.solace.transaction_initiator"
 		transactionIDEventKey           = "messaging.solace.transaction_id"
@@ -378,17 +416,17 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapTransactionEvent(transactionEvent 
 	// map the transaction type to a name
 	var name string
 	switch transactionEvent.GetType() {
-	case model_v1.SpanData_TransactionEvent_COMMIT:
+	case receive_v1.SpanData_TransactionEvent_COMMIT:
 		name = "commit"
-	case model_v1.SpanData_TransactionEvent_ROLLBACK:
+	case receive_v1.SpanData_TransactionEvent_ROLLBACK:
 		name = "rollback"
-	case model_v1.SpanData_TransactionEvent_END:
+	case receive_v1.SpanData_TransactionEvent_END:
 		name = "end"
-	case model_v1.SpanData_TransactionEvent_PREPARE:
+	case receive_v1.SpanData_TransactionEvent_PREPARE:
 		name = "prepare"
-	case model_v1.SpanData_TransactionEvent_SESSION_TIMEOUT:
+	case receive_v1.SpanData_TransactionEvent_SESSION_TIMEOUT:
 		name = "session_timeout"
-	case model_v1.SpanData_TransactionEvent_ROLLBACK_ONLY:
+	case receive_v1.SpanData_TransactionEvent_ROLLBACK_ONLY:
 		name = "rollback_only"
 	default:
 		// Set the name to the unknown transaction event type to ensure forward compat.
@@ -402,11 +440,11 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapTransactionEvent(transactionEvent 
 	// map initiator enums to expected initiator strings
 	var initiator string
 	switch transactionEvent.GetInitiator() {
-	case model_v1.SpanData_TransactionEvent_CLIENT:
+	case receive_v1.SpanData_TransactionEvent_CLIENT:
 		initiator = "client"
-	case model_v1.SpanData_TransactionEvent_ADMIN:
+	case receive_v1.SpanData_TransactionEvent_ADMIN:
 		initiator = "administrator"
-	case model_v1.SpanData_TransactionEvent_BROKER:
+	case receive_v1.SpanData_TransactionEvent_BROKER:
 		initiator = "broker"
 	default:
 		initiator = fmt.Sprintf("Unknown Transaction Initiator (%s)", transactionEvent.GetInitiator().String())
@@ -421,11 +459,11 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapTransactionEvent(transactionEvent 
 	// map the transaction type/id
 	transactionID := transactionEvent.GetTransactionId()
 	switch casted := transactionID.(type) {
-	case *model_v1.SpanData_TransactionEvent_LocalId:
+	case *receive_v1.SpanData_TransactionEvent_LocalId:
 		clientEvent.Attributes().PutInt(transactionIDEventKey, int64(casted.LocalId.TransactionId))
 		clientEvent.Attributes().PutStr(transactedSessionNameEventKey, casted.LocalId.SessionName)
 		clientEvent.Attributes().PutInt(transactedSessionIDEventKey, int64(casted.LocalId.SessionId))
-	case *model_v1.SpanData_TransactionEvent_Xid_:
+	case *receive_v1.SpanData_TransactionEvent_Xid_:
 		// format xxxxxxxx-yyyyyyyy-zzzzzzzz where x is FormatID (hex rep of int32), y is BranchQualifier and z is GlobalID, hex encoded.
 		xidString := fmt.Sprintf("%08x", casted.Xid.FormatId) + "-" +
 			hex.EncodeToString(casted.Xid.BranchQualifier) + "-" + hex.EncodeToString(casted.Xid.GlobalId)
@@ -492,37 +530,37 @@ func (u *brokerTraceReceiveUnmarshallerV1) insertUserProperty(toMap pcommon.Map,
 	)
 	k := userPropertiesAttrKeyPrefix + key
 	switch v := value.(type) {
-	case *model_v1.SpanData_UserPropertyValue_NullValue:
+	case *receive_v1.SpanData_UserPropertyValue_NullValue:
 		toMap.PutEmpty(k)
-	case *model_v1.SpanData_UserPropertyValue_BoolValue:
+	case *receive_v1.SpanData_UserPropertyValue_BoolValue:
 		toMap.PutBool(k, v.BoolValue)
-	case *model_v1.SpanData_UserPropertyValue_DoubleValue:
+	case *receive_v1.SpanData_UserPropertyValue_DoubleValue:
 		toMap.PutDouble(k, v.DoubleValue)
-	case *model_v1.SpanData_UserPropertyValue_ByteArrayValue:
+	case *receive_v1.SpanData_UserPropertyValue_ByteArrayValue:
 		toMap.PutEmptyBytes(k).FromRaw(v.ByteArrayValue)
-	case *model_v1.SpanData_UserPropertyValue_FloatValue:
+	case *receive_v1.SpanData_UserPropertyValue_FloatValue:
 		toMap.PutDouble(k, float64(v.FloatValue))
-	case *model_v1.SpanData_UserPropertyValue_Int8Value:
+	case *receive_v1.SpanData_UserPropertyValue_Int8Value:
 		toMap.PutInt(k, int64(v.Int8Value))
-	case *model_v1.SpanData_UserPropertyValue_Int16Value:
+	case *receive_v1.SpanData_UserPropertyValue_Int16Value:
 		toMap.PutInt(k, int64(v.Int16Value))
-	case *model_v1.SpanData_UserPropertyValue_Int32Value:
+	case *receive_v1.SpanData_UserPropertyValue_Int32Value:
 		toMap.PutInt(k, int64(v.Int32Value))
-	case *model_v1.SpanData_UserPropertyValue_Int64Value:
+	case *receive_v1.SpanData_UserPropertyValue_Int64Value:
 		toMap.PutInt(k, v.Int64Value)
-	case *model_v1.SpanData_UserPropertyValue_Uint8Value:
+	case *receive_v1.SpanData_UserPropertyValue_Uint8Value:
 		toMap.PutInt(k, int64(v.Uint8Value))
-	case *model_v1.SpanData_UserPropertyValue_Uint16Value:
+	case *receive_v1.SpanData_UserPropertyValue_Uint16Value:
 		toMap.PutInt(k, int64(v.Uint16Value))
-	case *model_v1.SpanData_UserPropertyValue_Uint32Value:
+	case *receive_v1.SpanData_UserPropertyValue_Uint32Value:
 		toMap.PutInt(k, int64(v.Uint32Value))
-	case *model_v1.SpanData_UserPropertyValue_Uint64Value:
+	case *receive_v1.SpanData_UserPropertyValue_Uint64Value:
 		toMap.PutInt(k, int64(v.Uint64Value))
-	case *model_v1.SpanData_UserPropertyValue_StringValue:
+	case *receive_v1.SpanData_UserPropertyValue_StringValue:
 		toMap.PutStr(k, v.StringValue)
-	case *model_v1.SpanData_UserPropertyValue_DestinationValue:
+	case *receive_v1.SpanData_UserPropertyValue_DestinationValue:
 		toMap.PutStr(k, v.DestinationValue)
-	case *model_v1.SpanData_UserPropertyValue_CharacterValue:
+	case *receive_v1.SpanData_UserPropertyValue_CharacterValue:
 		toMap.PutStr(k, string(rune(v.CharacterValue)))
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown user property type: %T", v))

@@ -15,6 +15,7 @@
 package solacereceiver
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"testing"
@@ -27,8 +28,27 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	model_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/model/v1"
+	egress_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/model/egress/v1"
+	receive_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/model/receive/v1"
 )
+
+func TestPrintPayload(t *testing.T) {
+	data := &egress_v1.SpanData{}
+	vpnName := "default"
+	data.MessageVpnName = &vpnName
+	data.RouterName = "vmr-133-53"
+	// data.EgressSpans = []*egress_v1.SpanData_EgressSpan{
+	// 	{
+	// 		TraceId:      []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 3, 2},
+	// 		SpanId:       []byte{1, 2, 3, 4, 5, 6, 7, 8},
+	// 		ParentSpanId: []byte{1, 2, 3, 4, 5, 6, 7, 8},
+	// 		TypeData:     &egress_v1.SpanData_EgressSpan_SendSpan{},
+	// 	},
+	// }
+	bytes, err := proto.Marshal(data)
+	assert.NoError(t, err)
+	fmt.Println(hex.Dump(bytes))
+}
 
 // Validate entire unmarshal flow
 func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
@@ -122,7 +142,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 						replyToTopic         = "someReplyToTopic"
 						topic                = "someTopic"
 					)
-					validData, err := proto.Marshal(&model_v1.SpanData{
+					validData, err := proto.Marshal(&receive_v1.SpanData{
 						TraceId:                             []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
 						SpanId:                              []byte{7, 6, 5, 4, 3, 2, 1, 0},
 						StartTimeUnixNano:                   1234567890,
@@ -134,7 +154,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 						ProtocolVersion:                     &protocolVersion,
 						ApplicationMessageId:                &applicationMessageID,
 						CorrelationId:                       &correlationID,
-						DeliveryMode:                        model_v1.SpanData_DIRECT,
+						DeliveryMode:                        receive_v1.SpanData_DIRECT,
 						BinaryAttachmentSize:                1000,
 						XmlAttachmentSize:                   200,
 						MetadataSize:                        34,
@@ -154,29 +174,29 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 						PeerPort:                            12345,
 						BrokerReceiveTimeUnixNano:           1357924680,
 						DroppedApplicationMessageProperties: false,
-						UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
+						UserProperties: map[string]*receive_v1.SpanData_UserPropertyValue{
 							"special_key": {
-								Value: &model_v1.SpanData_UserPropertyValue_BoolValue{
+								Value: &receive_v1.SpanData_UserPropertyValue_BoolValue{
 									BoolValue: true,
 								},
 							},
 						},
-						EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
+						EnqueueEvents: []*receive_v1.SpanData_EnqueueEvent{
 							{
-								Dest:         &model_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
+								Dest:         &receive_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
 								TimeUnixNano: 123456789,
 							},
 							{
-								Dest:         &model_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "sometopic"},
+								Dest:         &receive_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "sometopic"},
 								TimeUnixNano: 2345678,
 							},
 						},
-						TransactionEvent: &model_v1.SpanData_TransactionEvent{
+						TransactionEvent: &receive_v1.SpanData_TransactionEvent{
 							TimeUnixNano: 123456789,
-							Type:         model_v1.SpanData_TransactionEvent_SESSION_TIMEOUT,
-							Initiator:    model_v1.SpanData_TransactionEvent_CLIENT,
-							TransactionId: &model_v1.SpanData_TransactionEvent_LocalId{
-								LocalId: &model_v1.SpanData_TransactionEvent_LocalTransactionId{
+							Type:         receive_v1.SpanData_TransactionEvent_SESSION_TIMEOUT,
+							Initiator:    receive_v1.SpanData_TransactionEvent_CLIENT,
+							TransactionId: &receive_v1.SpanData_TransactionEvent_LocalId{
+								LocalId: &receive_v1.SpanData_TransactionEvent_LocalTransactionId{
 									TransactionId: 12345,
 									SessionId:     67890,
 									SessionName:   "my-session-name",
@@ -295,13 +315,13 @@ func TestUnmarshallerMapResourceSpan(t *testing.T) {
 	)
 	tests := []struct {
 		name                        string
-		spanData                    *model_v1.SpanData
+		spanData                    *receive_v1.SpanData
 		want                        map[string]interface{}
 		expectedUnmarshallingErrors interface{}
 	}{
 		{
 			name: "Maps All Fields When Present",
-			spanData: &model_v1.SpanData{
+			spanData: &receive_v1.SpanData{
 				RouterName:     routerName,
 				MessageVpnName: &vpnName,
 				SolosVersion:   version,
@@ -314,7 +334,7 @@ func TestUnmarshallerMapResourceSpan(t *testing.T) {
 		},
 		{
 			name:     "Does Not Map Fields When Not Present",
-			spanData: &model_v1.SpanData{},
+			spanData: &receive_v1.SpanData{},
 			want: map[string]interface{}{
 				"service.version": "",
 				"service.name":    "",
@@ -338,13 +358,13 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 	someTraceState := "some trace status"
 	tests := []struct {
 		name string
-		data *model_v1.SpanData
+		data *receive_v1.SpanData
 		want func(ptrace.Span)
 	}{
 		// no trace state no status no parent span
 		{
 			name: "Without Optional Fields",
-			data: &model_v1.SpanData{
+			data: &receive_v1.SpanData{
 				TraceId:           []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
 				SpanId:            []byte{7, 6, 5, 4, 3, 2, 1, 0},
 				StartTimeUnixNano: 1234567890,
@@ -364,7 +384,7 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 		// trace state status and parent span
 		{
 			name: "With Optional Fields",
-			data: &model_v1.SpanData{
+			data: &receive_v1.SpanData{
 				TraceId:           []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
 				SpanId:            []byte{7, 6, 5, 4, 3, 2, 1, 0},
 				StartTimeUnixNano: 1234567890,
@@ -414,13 +434,13 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 
 	tests := []struct {
 		name                        string
-		spanData                    *model_v1.SpanData
+		spanData                    *receive_v1.SpanData
 		want                        map[string]interface{}
 		expectedUnmarshallingErrors interface{}
 	}{
 		{
 			name: "With All Valid Attributes",
-			spanData: &model_v1.SpanData{
+			spanData: &receive_v1.SpanData{
 				Protocol:                            "MQTT",
 				ProtocolVersion:                     &protocolVersion,
 				ApplicationMessageId:                &applicationMessageID,
@@ -431,7 +451,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				ClientUsername:                      "someClientUsername",
 				ClientName:                          "someClient1234",
 				ReplyToTopic:                        &replyToTopic,
-				DeliveryMode:                        model_v1.SpanData_PERSISTENT,
+				DeliveryMode:                        receive_v1.SpanData_PERSISTENT,
 				Topic:                               "someTopic",
 				ReplicationGroupMessageId:           []byte{0x01, 0x00, 0x01, 0x04, 0x09, 0x10, 0x19, 0x24, 0x31, 0x40, 0x51, 0x64, 0x79, 0x90, 0xa9, 0xc4, 0xe1},
 				Priority:                            &priority,
@@ -446,9 +466,9 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				BrokerReceiveTimeUnixNano:           1357924680,
 				DroppedApplicationMessageProperties: false,
 				Baggage:                             &baggageString,
-				UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
+				UserProperties: map[string]*receive_v1.SpanData_UserPropertyValue{
 					"special_key": {
-						Value: &model_v1.SpanData_UserPropertyValue_BoolValue{
+						Value: &receive_v1.SpanData_UserPropertyValue_BoolValue{
 							BoolValue: true,
 						},
 					},
@@ -488,7 +508,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 		},
 		{
 			name: "With Only Required Fields",
-			spanData: &model_v1.SpanData{
+			spanData: &receive_v1.SpanData{
 				Protocol:                            "MQTT",
 				BinaryAttachmentSize:                1000,
 				XmlAttachmentSize:                   200,
@@ -496,7 +516,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				ClientUsername:                      "someClientUsername",
 				ClientName:                          "someClient1234",
 				Topic:                               "someTopic",
-				DeliveryMode:                        model_v1.SpanData_NON_PERSISTENT,
+				DeliveryMode:                        receive_v1.SpanData_NON_PERSISTENT,
 				DmqEligible:                         true,
 				DroppedEnqueueEventsSuccess:         42,
 				DroppedEnqueueEventsFailed:          24,
@@ -506,7 +526,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				PeerPort:                            12345,
 				BrokerReceiveTimeUnixNano:           1357924680,
 				DroppedApplicationMessageProperties: true,
-				UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
+				UserProperties: map[string]*receive_v1.SpanData_UserPropertyValue{
 					"special_key": nil,
 				},
 			},
@@ -532,7 +552,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 		},
 		{
 			name: "With Some Invalid Fields",
-			spanData: &model_v1.SpanData{
+			spanData: &receive_v1.SpanData{
 				Protocol:                            "MQTT",
 				BinaryAttachmentSize:                1000,
 				XmlAttachmentSize:                   200,
@@ -540,7 +560,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				ClientUsername:                      "someClientUsername",
 				ClientName:                          "someClient1234",
 				Topic:                               "someTopic",
-				DeliveryMode:                        model_v1.SpanData_DeliveryMode(1000),
+				DeliveryMode:                        receive_v1.SpanData_DeliveryMode(1000),
 				DmqEligible:                         true,
 				DroppedEnqueueEventsSuccess:         42,
 				DroppedEnqueueEventsFailed:          24,
@@ -549,7 +569,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				BrokerReceiveTimeUnixNano:           1357924680,
 				DroppedApplicationMessageProperties: true,
 				Baggage:                             &invalidBaggageString,
-				UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
+				UserProperties: map[string]*receive_v1.SpanData_UserPropertyValue{
 					"special_key": nil,
 				},
 			},
@@ -590,21 +610,21 @@ func TestUnmarshallerEvents(t *testing.T) {
 	someErrorString := "some error"
 	tests := []struct {
 		name                 string
-		spanData             *model_v1.SpanData
+		spanData             *receive_v1.SpanData
 		populateExpectedSpan func(span ptrace.Span)
 		unmarshallingErrors  interface{}
 	}{
 		{ // don't expect any events when none are present in the span data
 			name:                 "No Events",
-			spanData:             &model_v1.SpanData{},
+			spanData:             &receive_v1.SpanData{},
 			populateExpectedSpan: func(span ptrace.Span) {},
 		},
 		{ // when an enqueue event is present, expect it to be added to the span events
 			name: "Enqueue Event Queue",
-			spanData: &model_v1.SpanData{
-				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
+			spanData: &receive_v1.SpanData{
+				EnqueueEvents: []*receive_v1.SpanData_EnqueueEvent{
 					{
-						Dest:         &model_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
+						Dest:         &receive_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
 						TimeUnixNano: 123456789,
 					},
 				},
@@ -618,10 +638,10 @@ func TestUnmarshallerEvents(t *testing.T) {
 		},
 		{ // when a topic endpoint enqueue event is present, expect it to be added to the span events
 			name: "Enqueue Event Topic Endpoint",
-			spanData: &model_v1.SpanData{
-				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
+			spanData: &receive_v1.SpanData{
+				EnqueueEvents: []*receive_v1.SpanData_EnqueueEvent{
 					{
-						Dest:               &model_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "sometopic"},
+						Dest:               &receive_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "sometopic"},
 						TimeUnixNano:       123456789,
 						ErrorDescription:   &someErrorString,
 						RejectsAllEnqueues: true,
@@ -638,14 +658,14 @@ func TestUnmarshallerEvents(t *testing.T) {
 		},
 		{ // when a both a queue and topic endpoint enqueue event is present, expect it to be added to the span events
 			name: "Enqueue Event Queue and Topic Endpoint",
-			spanData: &model_v1.SpanData{
-				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
+			spanData: &receive_v1.SpanData{
+				EnqueueEvents: []*receive_v1.SpanData_EnqueueEvent{
 					{
-						Dest:         &model_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
+						Dest:         &receive_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
 						TimeUnixNano: 123456789,
 					},
 					{
-						Dest:         &model_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "sometopic"},
+						Dest:         &receive_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "sometopic"},
 						TimeUnixNano: 2345678,
 					},
 				},
@@ -663,8 +683,8 @@ func TestUnmarshallerEvents(t *testing.T) {
 		},
 		{ // when an enqueue event does not have a valid dest (ie. nil)
 			name: "Enqueue Event no Dest",
-			spanData: &model_v1.SpanData{
-				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
+			spanData: &receive_v1.SpanData{
+				EnqueueEvents: []*receive_v1.SpanData_EnqueueEvent{
 					{
 						Dest:         nil,
 						TimeUnixNano: 123456789,
@@ -676,13 +696,13 @@ func TestUnmarshallerEvents(t *testing.T) {
 		},
 		{ // Local Transaction
 			name: "Local Transaction Event",
-			spanData: &model_v1.SpanData{
-				TransactionEvent: &model_v1.SpanData_TransactionEvent{
+			spanData: &receive_v1.SpanData{
+				TransactionEvent: &receive_v1.SpanData_TransactionEvent{
 					TimeUnixNano: 123456789,
-					Type:         model_v1.SpanData_TransactionEvent_COMMIT,
-					Initiator:    model_v1.SpanData_TransactionEvent_CLIENT,
-					TransactionId: &model_v1.SpanData_TransactionEvent_LocalId{
-						LocalId: &model_v1.SpanData_TransactionEvent_LocalTransactionId{
+					Type:         receive_v1.SpanData_TransactionEvent_COMMIT,
+					Initiator:    receive_v1.SpanData_TransactionEvent_CLIENT,
+					TransactionId: &receive_v1.SpanData_TransactionEvent_LocalId{
+						LocalId: &receive_v1.SpanData_TransactionEvent_LocalTransactionId{
 							TransactionId: 12345,
 							SessionId:     67890,
 							SessionName:   "my-session-name",
@@ -701,13 +721,13 @@ func TestUnmarshallerEvents(t *testing.T) {
 		},
 		{ // XA transaction
 			name: "XA Transaction Event",
-			spanData: &model_v1.SpanData{
-				TransactionEvent: &model_v1.SpanData_TransactionEvent{
+			spanData: &receive_v1.SpanData{
+				TransactionEvent: &receive_v1.SpanData_TransactionEvent{
 					TimeUnixNano: 123456789,
-					Type:         model_v1.SpanData_TransactionEvent_END,
-					Initiator:    model_v1.SpanData_TransactionEvent_ADMIN,
-					TransactionId: &model_v1.SpanData_TransactionEvent_Xid_{
-						Xid: &model_v1.SpanData_TransactionEvent_Xid{
+					Type:         receive_v1.SpanData_TransactionEvent_END,
+					Initiator:    receive_v1.SpanData_TransactionEvent_ADMIN,
+					TransactionId: &receive_v1.SpanData_TransactionEvent_Xid_{
+						Xid: &receive_v1.SpanData_TransactionEvent_Xid{
 							FormatId:        123,
 							BranchQualifier: []byte{0, 8, 20, 254},
 							GlobalId:        []byte{128, 64, 32, 16, 8, 4, 2, 1, 0},
@@ -724,13 +744,13 @@ func TestUnmarshallerEvents(t *testing.T) {
 		},
 		{ // XA Transaction with no branch qualifier or global ID and with an error
 			name: "XA Transaction Event with nil fields and error",
-			spanData: &model_v1.SpanData{
-				TransactionEvent: &model_v1.SpanData_TransactionEvent{
+			spanData: &receive_v1.SpanData{
+				TransactionEvent: &receive_v1.SpanData_TransactionEvent{
 					TimeUnixNano: 123456789,
-					Type:         model_v1.SpanData_TransactionEvent_PREPARE,
-					Initiator:    model_v1.SpanData_TransactionEvent_BROKER,
-					TransactionId: &model_v1.SpanData_TransactionEvent_Xid_{
-						Xid: &model_v1.SpanData_TransactionEvent_Xid{
+					Type:         receive_v1.SpanData_TransactionEvent_PREPARE,
+					Initiator:    receive_v1.SpanData_TransactionEvent_BROKER,
+					TransactionId: &receive_v1.SpanData_TransactionEvent_Xid_{
+						Xid: &receive_v1.SpanData_TransactionEvent_Xid{
 							FormatId:        123,
 							BranchQualifier: nil,
 							GlobalId:        nil,
@@ -749,10 +769,10 @@ func TestUnmarshallerEvents(t *testing.T) {
 		},
 		{ // Type of transaction not handled
 			name: "Unknown Transaction Type and no ID",
-			spanData: &model_v1.SpanData{
-				TransactionEvent: &model_v1.SpanData_TransactionEvent{
+			spanData: &receive_v1.SpanData{
+				TransactionEvent: &receive_v1.SpanData_TransactionEvent{
 					TimeUnixNano: 123456789,
-					Type:         model_v1.SpanData_TransactionEvent_Type(12345),
+					Type:         receive_v1.SpanData_TransactionEvent_Type(12345),
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
@@ -764,11 +784,11 @@ func TestUnmarshallerEvents(t *testing.T) {
 		},
 		{ // Type of ID not handled, type of initiator not handled
 			name: "Unknown Transaction Initiator and no ID",
-			spanData: &model_v1.SpanData{
-				TransactionEvent: &model_v1.SpanData_TransactionEvent{
+			spanData: &receive_v1.SpanData{
+				TransactionEvent: &receive_v1.SpanData_TransactionEvent{
 					TimeUnixNano:  123456789,
-					Type:          model_v1.SpanData_TransactionEvent_ROLLBACK,
-					Initiator:     model_v1.SpanData_TransactionEvent_Initiator(12345),
+					Type:          receive_v1.SpanData_TransactionEvent_ROLLBACK,
+					Initiator:     receive_v1.SpanData_TransactionEvent_Initiator(12345),
 					TransactionId: nil,
 				},
 			},
@@ -781,24 +801,24 @@ func TestUnmarshallerEvents(t *testing.T) {
 		},
 		{ // when a both a queue and topic endpoint enqueue event is present, expect it to be added to the span events
 			name: "Multiple Events",
-			spanData: &model_v1.SpanData{
-				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
+			spanData: &receive_v1.SpanData{
+				EnqueueEvents: []*receive_v1.SpanData_EnqueueEvent{
 					{
-						Dest:         &model_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
+						Dest:         &receive_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
 						TimeUnixNano: 123456789,
 					},
 					{
-						Dest:               &model_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "sometopic"},
+						Dest:               &receive_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "sometopic"},
 						TimeUnixNano:       2345678,
 						RejectsAllEnqueues: true,
 					},
 				},
-				TransactionEvent: &model_v1.SpanData_TransactionEvent{
+				TransactionEvent: &receive_v1.SpanData_TransactionEvent{
 					TimeUnixNano: 123456789,
-					Type:         model_v1.SpanData_TransactionEvent_ROLLBACK_ONLY,
-					Initiator:    model_v1.SpanData_TransactionEvent_CLIENT,
-					TransactionId: &model_v1.SpanData_TransactionEvent_LocalId{
-						LocalId: &model_v1.SpanData_TransactionEvent_LocalTransactionId{
+					Type:         receive_v1.SpanData_TransactionEvent_ROLLBACK_ONLY,
+					Initiator:    receive_v1.SpanData_TransactionEvent_CLIENT,
+					TransactionId: &receive_v1.SpanData_TransactionEvent_LocalId{
+						LocalId: &receive_v1.SpanData_TransactionEvent_LocalTransactionId{
 							TransactionId: 12345,
 							SessionId:     67890,
 							SessionName:   "my-session-name",
@@ -986,124 +1006,124 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 		validate     func(val pcommon.Value)
 	}{
 		{
-			&model_v1.SpanData_UserPropertyValue_NullValue{},
+			&receive_v1.SpanData_UserPropertyValue_NullValue{},
 			pcommon.ValueTypeEmpty,
 			nil,
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_BoolValue{BoolValue: true},
+			&receive_v1.SpanData_UserPropertyValue_BoolValue{BoolValue: true},
 			pcommon.ValueTypeBool,
 			func(val pcommon.Value) {
 				assert.Equal(t, true, val.Bool())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_DoubleValue{DoubleValue: 12.34},
+			&receive_v1.SpanData_UserPropertyValue_DoubleValue{DoubleValue: 12.34},
 			pcommon.ValueTypeDouble,
 			func(val pcommon.Value) {
 				assert.Equal(t, float64(12.34), val.Double())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_ByteArrayValue{ByteArrayValue: []byte{1, 2, 3, 4}},
+			&receive_v1.SpanData_UserPropertyValue_ByteArrayValue{ByteArrayValue: []byte{1, 2, 3, 4}},
 			pcommon.ValueTypeBytes,
 			func(val pcommon.Value) {
 				assert.Equal(t, []byte{1, 2, 3, 4}, val.Bytes().AsRaw())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_FloatValue{FloatValue: 12.34},
+			&receive_v1.SpanData_UserPropertyValue_FloatValue{FloatValue: 12.34},
 			pcommon.ValueTypeDouble,
 			func(val pcommon.Value) {
 				assert.Equal(t, float64(float32(12.34)), val.Double())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_Int8Value{Int8Value: 8},
+			&receive_v1.SpanData_UserPropertyValue_Int8Value{Int8Value: 8},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
 				assert.Equal(t, int64(8), val.Int())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_Int16Value{Int16Value: 16},
+			&receive_v1.SpanData_UserPropertyValue_Int16Value{Int16Value: 16},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
 				assert.Equal(t, int64(16), val.Int())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_Int32Value{Int32Value: 32},
+			&receive_v1.SpanData_UserPropertyValue_Int32Value{Int32Value: 32},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
 				assert.Equal(t, int64(32), val.Int())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_Int64Value{Int64Value: 64},
+			&receive_v1.SpanData_UserPropertyValue_Int64Value{Int64Value: 64},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
 				assert.Equal(t, int64(64), val.Int())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_Uint8Value{Uint8Value: 8},
+			&receive_v1.SpanData_UserPropertyValue_Uint8Value{Uint8Value: 8},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
 				assert.Equal(t, int64(8), val.Int())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_Uint16Value{Uint16Value: 16},
+			&receive_v1.SpanData_UserPropertyValue_Uint16Value{Uint16Value: 16},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
 				assert.Equal(t, int64(16), val.Int())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_Uint32Value{Uint32Value: 32},
+			&receive_v1.SpanData_UserPropertyValue_Uint32Value{Uint32Value: 32},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
 				assert.Equal(t, int64(32), val.Int())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_Uint64Value{Uint64Value: 64},
+			&receive_v1.SpanData_UserPropertyValue_Uint64Value{Uint64Value: 64},
 			pcommon.ValueTypeInt,
 			func(val pcommon.Value) {
 				assert.Equal(t, int64(64), val.Int())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_StringValue{StringValue: "hello world"},
+			&receive_v1.SpanData_UserPropertyValue_StringValue{StringValue: "hello world"},
 			pcommon.ValueTypeStr,
 			func(val pcommon.Value) {
 				assert.Equal(t, "hello world", val.Str())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_DestinationValue{DestinationValue: "some_dest"},
+			&receive_v1.SpanData_UserPropertyValue_DestinationValue{DestinationValue: "some_dest"},
 			pcommon.ValueTypeStr,
 			func(val pcommon.Value) {
 				assert.Equal(t, "some_dest", val.Str())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0x61},
+			&receive_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0x61},
 			pcommon.ValueTypeStr,
 			func(val pcommon.Value) {
 				assert.Equal(t, "a", val.Str())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0xe68080},
+			&receive_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0xe68080},
 			pcommon.ValueTypeStr,
 			func(val pcommon.Value) {
 				assert.Equal(t, string(rune(0xe68080)), val.Str())
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0xf09f92a9},
+			&receive_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0xf09f92a9},
 			pcommon.ValueTypeStr,
 			func(val pcommon.Value) {
 				assert.Equal(t, string(rune(emojiVal)), val.Str())
