@@ -139,8 +139,7 @@ func Test_isMatch_validation(t *testing.T) {
 func Test_isMatch_error(t *testing.T) {
 	target := &ottl.StandardStringLikeGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-			v := ottl.Path{}
-			return v, nil
+			return make(chan int), nil
 		},
 	}
 	exprFunc, err := IsMatch[interface{}](target, "test")

@@ -242,7 +242,7 @@ func Test_concat(t *testing.T) {
 func Test_concat_error(t *testing.T) {
 	target := &ottl.StandardStringLikeGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-			return []int{1, 2}, nil
+			return make(chan int), nil
 		},
 	}
 	exprFunc, err := Concat[interface{}]([]ottl.StringLikeGetter[interface{}]{target}, "test")

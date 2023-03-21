@@ -481,11 +481,11 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 			name: "invalid type",
 			getter: StandardStringLikeGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return 1, nil
+					return make(chan int), nil
 				},
 			},
 			valid:            false,
-			expectedErrorMsg: "unsupported type: int",
+			expectedErrorMsg: "unsupported type: chan int",
 		},
 	}
 

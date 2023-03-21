@@ -174,7 +174,10 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, 
 	case pcommon.Value:
 		result = v.AsString()
 	default:
-		return nil, fmt.Errorf("unsupported type: %T", v)
+		result, err = jsoniter.MarshalToString(v)
+		if err != nil {
+			return nil, fmt.Errorf("unsupported type: %T", v)
+		}
 	}
 	return &result, nil
 }
