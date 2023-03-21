@@ -15,8 +15,6 @@ This receiver collects metrics from an Oracle Database.
 
 The receiver connects to a database host and performs periodically queries.
 
-Supported pipeline types: metrics
-
 ## Getting Started
 
 The following settings are required:

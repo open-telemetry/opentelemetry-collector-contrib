@@ -13,8 +13,6 @@
 
 The HAProxy receiver generates metrics by polling periodically the HAProxy process through a dedicated socket or HTTP URL.
 
-Supported pipeline types: metrics
-
 ## Getting Started
 
 ## Configuration
