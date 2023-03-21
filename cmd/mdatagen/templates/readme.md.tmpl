@@ -4,7 +4,7 @@
 | ------------------------ |-----------|
 | Stability                | [{{ .Status.Stability }}]   |
 {{- if ne .Status.Type "extension" }}
-| Supported pipeline types | {{ stringsJoin .Status.Pipelines "," }}   |
+| Supported pipeline types | {{ stringsJoin .Status.Pipelines ", " }}   |
 {{- end }}
 | Distributions            | [{{ stringsJoin .Status.Distributions "], [" }}] |
 {{- if .Status.Warnings }}
