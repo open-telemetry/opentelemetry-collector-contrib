@@ -24,6 +24,18 @@ Example:
         collection_interval: 10s
 ```
 
+Example with named instance:
+
+```yaml
+    receivers:
+      sqlserver:
+        collection_interval: 10s
+        instance_name: SQLSERVER1
+        resource_attributes:
+          sqlserver.instance.name:
+            enabled: true
+```
+
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Metrics

@@ -138,7 +138,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithSqlserverDatabaseName("attr-val"))
+			metrics := mb.Emit(WithSqlserverDatabaseName("attr-val"), WithSqlserverInstanceName("attr-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -156,8 +156,15 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
+			attrVal, ok = rm.Resource().Attributes().Get("sqlserver.instance.name")
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.SqlserverInstanceName.Enabled, ok)
+			if mb.resourceAttributesSettings.SqlserverInstanceName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 1)
+			assert.Equal(t, attrCount, 2)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()

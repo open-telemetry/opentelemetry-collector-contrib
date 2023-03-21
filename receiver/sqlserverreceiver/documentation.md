@@ -183,3 +183,4 @@ Number of users connected to the SQL Server.
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | sqlserver.database.name | The name of the SQL Server database. | Any Str | true |
+| sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | false |

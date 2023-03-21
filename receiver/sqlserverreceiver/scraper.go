@@ -63,7 +63,7 @@ func (s *sqlServerScraper) start(ctx context.Context, host component.Host) error
 		for perfCounterName, recorder := range pcr.recorders {
 			perfCounterObj := pcr.object
 			if s.config.InstanceName != "" {
-				perfCounterObj = s.config.InstanceName + "\\" + pcr.object
+				perfCounterObj = "\\" + s.config.InstanceName + "\\" + pcr.object
 			}
 
 			w, err := winperfcounters.NewWatcher(perfCounterObj, pcr.instance, perfCounterName)
@@ -128,9 +128,18 @@ func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, database
 		recorder(s.metricsBuilder, now)
 	}
 
-	if databaseName != "" {
+	if s.config.InstanceName != "" && databaseName != "" {
+		s.metricsBuilder.EmitForResource(
+			metadata.WithSqlserverInstanceName(s.config.InstanceName),
+			metadata.WithSqlserverDatabaseName(databaseName),
+		)
+	} else if s.config.InstanceName == "" && databaseName != "" {
 		s.metricsBuilder.EmitForResource(
 			metadata.WithSqlserverDatabaseName(databaseName),
+		)
+	} else if s.config.InstanceName != "" && databaseName == "" {
+		s.metricsBuilder.EmitForResource(
+			metadata.WithSqlserverInstanceName(s.config.InstanceName),
 		)
 	} else {
 		s.metricsBuilder.EmitForResource()

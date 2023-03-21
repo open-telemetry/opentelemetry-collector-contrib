@@ -128,12 +128,16 @@ type ResourceAttributeSettings struct {
 // ResourceAttributesSettings provides settings for sqlserverreceiver metrics.
 type ResourceAttributesSettings struct {
 	SqlserverDatabaseName ResourceAttributeSettings `mapstructure:"sqlserver.database.name"`
+	SqlserverInstanceName ResourceAttributeSettings `mapstructure:"sqlserver.instance.name"`
 }
 
 func DefaultResourceAttributesSettings() ResourceAttributesSettings {
 	return ResourceAttributesSettings{
 		SqlserverDatabaseName: ResourceAttributeSettings{
 			Enabled: true,
+		},
+		SqlserverInstanceName: ResourceAttributeSettings{
+			Enabled: false,
 		},
 	}
 }
@@ -1262,6 +1266,15 @@ func WithSqlserverDatabaseName(val string) ResourceMetricsOption {
 	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		if ras.SqlserverDatabaseName.Enabled {
 			rm.Resource().Attributes().PutStr("sqlserver.database.name", val)
+		}
+	}
+}
+
+// WithSqlserverInstanceName sets provided value as "sqlserver.instance.name" attribute for current resource.
+func WithSqlserverInstanceName(val string) ResourceMetricsOption {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.SqlserverInstanceName.Enabled {
+			rm.Resource().Attributes().PutStr("sqlserver.instance.name", val)
 		}
 	}
 }
