@@ -26,13 +26,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
 const (
-	typeStr   = "transform"
-	stability = component.StabilityLevelAlpha
+	typeStr = "transform"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -41,9 +41,9 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processor.WithLogs(createLogsProcessor, stability),
-		processor.WithTraces(createTracesProcessor, stability),
-		processor.WithMetrics(createMetricsProcessor, stability),
+		processor.WithLogs(createLogsProcessor, metadata.Stability),
+		processor.WithTraces(createTracesProcessor, metadata.Stability),
+		processor.WithMetrics(createMetricsProcessor, metadata.Stability),
 	)
 }
 
