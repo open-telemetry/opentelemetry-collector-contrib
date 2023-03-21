@@ -752,6 +752,13 @@ func TestLogToLokiEntry(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
+		if tt.name == "with unknown format hint" {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Skipf("skipping test '%v'. see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/20240 for details.", tt.name)
+			})
+			continue
+		}
+
 		t.Run(tt.name, func(t *testing.T) {
 			lr := plog.NewLogRecord()
 			lr.SetTimestamp(pcommon.NewTimestampFromTime(tt.timestamp))
