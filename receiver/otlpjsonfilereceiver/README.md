@@ -4,7 +4,7 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [alpha]   |
-| Supported pipeline types | logs,metrics,traces   |
+| Supported pipeline types | logs, metrics, traces   |
 | Distributions            | [contrib] |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
