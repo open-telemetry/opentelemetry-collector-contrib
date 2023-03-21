@@ -25,3 +25,4 @@ internal/common
 ## UNMANTAINED components
 extension/httpforwarder
 receiver/dotnetdiagnosticsreceiver
+receiver/zipkinreceiver

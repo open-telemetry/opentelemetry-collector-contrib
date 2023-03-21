@@ -1,0 +1,7 @@
+name: zipkinreceiver
+
+status:
+  type: receiver
+  stability: unmaintained
+  pipelines: [traces]
+  distributions: [core, contrib]
