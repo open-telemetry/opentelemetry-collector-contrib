@@ -148,6 +148,7 @@ func TestElasticsearchIntegration(t *testing.T) {
 		))
 	})
 	t.Run("Running elasticsearch 7.16.3", func(t *testing.T) {
+		t.Skip("Skipping as the test fails intermittently, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19755")
 		t.Parallel()
 		container := getContainer(t, containerRequest7_16_3)
 		defer func() {
