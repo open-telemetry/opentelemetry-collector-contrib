@@ -61,13 +61,10 @@ func (s *sqlServerScraper) start(ctx context.Context, host component.Host) error
 
 	for _, pcr := range perfCounterRecorders {
 		for perfCounterName, recorder := range pcr.recorders {
-			perfCounterObj := pcr.object
+			perfCounterObj := defaultObjectName + ":" + pcr.object
 			if s.config.InstanceName != "" {
 				// The instance name must be preceded by "MSSQL$" to indicate that it is a named instance
-				perfCounterObj = "\\" + s.config.ComputerName + "\\MSSQL$" + s.config.InstanceName + ":" + pcr.object // ninth //
-
-			} else {
-				perfCounterObj = defaultObjectName + ":" + pcr.object
+				perfCounterObj = "\\" + s.config.ComputerName + "\\MSSQL$" + s.config.InstanceName + ":" + pcr.object
 			}
 
 			w, err := winperfcounters.NewWatcher(perfCounterObj, pcr.instance, perfCounterName)
