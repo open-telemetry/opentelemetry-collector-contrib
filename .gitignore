@@ -35,7 +35,3 @@ integration-coverage.html
 # Wix
 *.wixobj
 *.wixpdb
-
-# python
-.pytest_cache
-__pycache__
