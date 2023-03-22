@@ -53,12 +53,12 @@ type Config struct {
 
 	// This setting is required when logging pipelines used.
 	LogsIndex string `mapstructure:"logs_index"`
-	// fall back to pure LogsIndex, if 'elastic.logs_index_prefix' or 'elastic.logs_index_suffix' are not found in resource or attribute (prio: resource > attribute)
+	// fall back to pure LogsIndex, if 'logs_index_prefix' or 'logs_index_suffix' are not found in resource or attribute (prio: resource > attribute)
 	LogsDynamicIndex DynamicIndexSetting `mapstructure:"logs_dynamic_index"`
 	// This setting is required when traces pipelines used.
 	TracesIndex string `mapstructure:"traces_index"`
-	// fall back to pure TracesIndex, if 'elastic.traces_index_prefix' or 'elastic.traces_index_suffix' are not found in resource or attribute (prio: resource > attribute)
-	TracesDynamicIndex DynamicIndexSetting `mapstructure:"logs_dynamic_index"`
+	// fall back to pure TracesIndex, if 'traces_index_prefix' or 'traces_index_suffix' are not found in resource or attribute (prio: resource > attribute)
+	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
 
 	// Pipeline configures the ingest node pipeline name that should be used to process the
 	// events.
