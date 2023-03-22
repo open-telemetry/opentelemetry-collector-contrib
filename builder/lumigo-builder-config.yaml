@@ -19,6 +19,8 @@ extensions:
 receivers:
   - gomod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.71.0"
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.71.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.71.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.71.0"
 
 processors:
   - gomod: "go.opentelemetry.io/collector/processor/batchprocessor v0.71.0"
