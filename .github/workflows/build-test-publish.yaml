@@ -398,10 +398,10 @@ jobs:
         run: ./.github/workflows/scripts/set_release_tag.sh
       - name: Build ${{ matrix.package_type }} amd64 package
         run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag || github.event.pull_request.head.sha || github.sha }}" "amd64" "./dist/"
-      - name: Build ${{ matrix.package_type }} arm64 package
-        run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag || github.event.pull_request.head.sha || github.sha }}" "arm64" "./dist/"
-      - name: Build ${{ matrix.package_type }} ppc64le package
-        run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag || github.event.pull_request.head.sha || github.sha }}" "ppc64le" "./dist/"
+      # - name: Build ${{ matrix.package_type }} arm64 package
+      #   run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag || github.event.pull_request.head.sha || github.sha }}" "arm64" "./dist/"
+      # - name: Build ${{ matrix.package_type }} ppc64le package
+      #   run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag || github.event.pull_request.head.sha || github.sha }}" "ppc64le" "./dist/"
       - name: Test ${{ matrix.package_type }} package
         run: |
           if [[ "${{ matrix.package_type }}" = "deb" ]]; then
