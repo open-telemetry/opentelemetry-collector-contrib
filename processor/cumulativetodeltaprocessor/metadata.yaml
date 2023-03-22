@@ -1,0 +1,8 @@
+name: transform
+
+status:
+  type: processor
+  stability: beta
+  pipelines: [metrics]
+  distributions: [contrib]
+  warnings: [Statefulness]
