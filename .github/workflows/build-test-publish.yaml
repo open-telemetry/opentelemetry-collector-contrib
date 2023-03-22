@@ -393,15 +393,15 @@ jobs:
           name: collector-binaries
           path: bin/
       - run: chmod +x bin/*
-      - name: Set Release Tag
-        id: github_tag
-        run: ./.github/workflows/scripts/set_release_tag.sh
+      # - name: Set Release Tag
+      #   id: github_tag
+      #   run: ./.github/workflows/scripts/set_release_tag.sh
       - name: Build ${{ matrix.package_type }} amd64 package
-        run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag || github.event.pull_request.head.sha || github.sha }}" "amd64" "./dist/"
+        run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "0.0.${{ github.run_id }}" "amd64" "./dist/"
       # - name: Build ${{ matrix.package_type }} arm64 package
-      #   run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag || github.event.pull_request.head.sha || github.sha }}" "arm64" "./dist/"
+      #   run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "0.0.${{ github.run_id }}" "arm64" "./dist/"
       # - name: Build ${{ matrix.package_type }} ppc64le package
-      #   run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag || github.event.pull_request.head.sha || github.sha }}" "ppc64le" "./dist/"
+      #   run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "0.0.${{ github.run_id }}" "ppc64le" "./dist/"
       - name: Test ${{ matrix.package_type }} package
         run: |
           if [[ "${{ matrix.package_type }}" = "deb" ]]; then
@@ -483,33 +483,21 @@ jobs:
         if: steps.check.outputs.passed == 'true'
         run: |
           make docker-otelcontribcol
-          docker tag otelcontribcol:latest 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:$GITHUB_SHA
+          docker tag otelcontribcol:latest 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:0.0.${{ github.run_id }}
       - name: Validate Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
-          docker run 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:$GITHUB_SHA --version
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
+          docker run 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:0.0.${{ github.run_id }} --version
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          aws-access-key-id: ${{secrets.ECR_AWS_ACCESS_KEY_ID}}
+          aws-secret-access-key: ${{secrets.ECR_AWS_SECRET_ACCESS_KEY}}
+          aws-region: us-west-2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
       - name: Push Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
-          docker push 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:$GITHUB_SHA
-  publish-stable:
-    runs-on: ubuntu-latest
-    needs: [lint, unittest, integration-tests, build-package]
-    if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Set Release Tag
-        id: github_tag
-        run: ./.github/workflows/scripts/set_release_tag.sh
-      - name: Create Github Release
-        run: |
-          gh release create $RELEASE_TAG -t $RELEASE_TAG -n "The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/$RELEASE_TAG), be sure to check the release notes there as well."
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
+          docker push 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:0.0.${{ github.run_id }}
