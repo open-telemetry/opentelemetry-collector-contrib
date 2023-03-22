@@ -824,7 +824,7 @@ type metricVcenterHostCPUUsage struct {
 // init fills vcenter.host.cpu.usage metric with initial data.
 func (m *metricVcenterHostCPUUsage) init() {
 	m.data.SetName("vcenter.host.cpu.usage")
-	m.data.SetDescription("The amount of CPU in Hz used by the host.")
+	m.data.SetDescription("The amount of CPU used by the host.")
 	m.data.SetUnit("MHz")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)

@@ -104,7 +104,7 @@ The utilization of the datastore.
 
 ### vcenter.host.cpu.usage
 
-The amount of CPU in Hz used by the host.
+The amount of CPU used by the host.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

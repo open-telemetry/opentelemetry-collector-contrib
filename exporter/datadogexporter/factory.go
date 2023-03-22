@@ -294,12 +294,12 @@ func (f *factory) createTracesExporter(
 		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent)
 		if err2 != nil {
 			cancel()
+			f.wg.Wait() // then wait for shutdown
 			return nil, err2
 		}
 		pusher = tracex.consumeTraces
 		stop = func(context.Context) error {
-			cancel()    // first cancel context
-			f.wg.Wait() // then wait for shutdown
+			cancel() // first cancel context
 			return nil
 		}
 	}
@@ -346,6 +346,7 @@ func (f *factory) createLogsExporter(
 		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
 		if err != nil {
 			cancel()
+			f.wg.Wait() // then wait for shutdown
 			return nil, err
 		}
 		pusher = exp.consumeLogs

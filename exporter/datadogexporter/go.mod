@@ -9,40 +9,40 @@ require (
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.2
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.2
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.3
 	github.com/DataDog/sketches-go v1.4.1
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.2
-	github.com/aws/aws-sdk-go v1.44.220
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.12.0
+	github.com/aws/aws-sdk-go v1.44.226
 	github.com/cenkalti/backoff/v4 v4.2.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.73.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.73.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.73.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.73.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.73.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.73.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.73.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.73.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.73.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.74.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.73.0
-	go.opentelemetry.io/collector/component v0.73.0
-	go.opentelemetry.io/collector/confmap v0.73.0
-	go.opentelemetry.io/collector/consumer v0.73.0
-	go.opentelemetry.io/collector/exporter v0.73.0
-	go.opentelemetry.io/collector/featuregate v0.73.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc7
-	go.opentelemetry.io/collector/processor/batchprocessor v0.73.0
-	go.opentelemetry.io/collector/receiver v0.73.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.73.0
-	go.opentelemetry.io/collector/semconv v0.73.0
+	go.opentelemetry.io/collector v0.74.0
+	go.opentelemetry.io/collector/component v0.74.0
+	go.opentelemetry.io/collector/confmap v0.74.0
+	go.opentelemetry.io/collector/consumer v0.74.0
+	go.opentelemetry.io/collector/exporter v0.74.0
+	go.opentelemetry.io/collector/featuregate v0.74.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc8
+	go.opentelemetry.io/collector/processor/batchprocessor v0.74.0
+	go.opentelemetry.io/collector/receiver v0.74.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.74.0
+	go.opentelemetry.io/collector/semconv v0.74.0
 	go.uber.org/multierr v1.10.0
 	go.uber.org/zap v1.24.0
-	google.golang.org/protobuf v1.29.1
+	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
-	k8s.io/apimachinery v0.26.2
-	k8s.io/client-go v0.26.2
+	k8s.io/apimachinery v0.26.3
+	k8s.io/client-go v0.26.3
 )
 
 require (
@@ -129,9 +129,9 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.17 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/observiq/ctimefmt v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.73.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.73.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.73.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.74.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.74.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.74.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417 // indirect
@@ -162,7 +162,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.40.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.14.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.15.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.37.0 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
@@ -182,7 +182,7 @@ require (
 	google.golang.org/grpc v1.53.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.26.2 // indirect
+	k8s.io/api v0.26.3 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
 	k8s.io/utils v0.0.0-20221107191617-1a15be271d1d // indirect

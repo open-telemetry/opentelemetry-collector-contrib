@@ -220,7 +220,7 @@ type metricOracledbDmlLocksLimit struct {
 // init fills oracledb.dml_locks.limit metric with initial data.
 func (m *metricOracledbDmlLocksLimit) init() {
 	m.data.SetName("oracledb.dml_locks.limit")
-	m.data.SetDescription("Maximum limit of active DML (Data Manipulation Language) locks.")
+	m.data.SetDescription("Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.")
 	m.data.SetUnit("{locks}")
 	m.data.SetEmptyGauge()
 }
@@ -369,7 +369,7 @@ type metricOracledbEnqueueLocksLimit struct {
 // init fills oracledb.enqueue_locks.limit metric with initial data.
 func (m *metricOracledbEnqueueLocksLimit) init() {
 	m.data.SetName("oracledb.enqueue_locks.limit")
-	m.data.SetDescription("Maximum limit of active enqueue locks.")
+	m.data.SetDescription("Maximum limit of active enqueue locks, -1 if unlimited.")
 	m.data.SetUnit("{locks}")
 	m.data.SetEmptyGauge()
 }
@@ -467,7 +467,7 @@ type metricOracledbEnqueueResourcesLimit struct {
 // init fills oracledb.enqueue_resources.limit metric with initial data.
 func (m *metricOracledbEnqueueResourcesLimit) init() {
 	m.data.SetName("oracledb.enqueue_resources.limit")
-	m.data.SetDescription("Maximum limit of active enqueue resources.")
+	m.data.SetDescription("Maximum limit of active enqueue resources, -1 if unlimited.")
 	m.data.SetUnit("{resources}")
 	m.data.SetEmptyGauge()
 }
@@ -922,7 +922,7 @@ type metricOracledbProcessesLimit struct {
 // init fills oracledb.processes.limit metric with initial data.
 func (m *metricOracledbProcessesLimit) init() {
 	m.data.SetName("oracledb.processes.limit")
-	m.data.SetDescription("Maximum limit of active processes.")
+	m.data.SetDescription("Maximum limit of active processes, -1 if unlimited.")
 	m.data.SetUnit("{processes}")
 	m.data.SetEmptyGauge()
 }
@@ -1020,7 +1020,7 @@ type metricOracledbSessionsLimit struct {
 // init fills oracledb.sessions.limit metric with initial data.
 func (m *metricOracledbSessionsLimit) init() {
 	m.data.SetName("oracledb.sessions.limit")
-	m.data.SetDescription("Maximum limit of active sessions.")
+	m.data.SetDescription("Maximum limit of active sessions, -1 if unlimited.")
 	m.data.SetUnit("{sessions}")
 	m.data.SetEmptyGauge()
 }
@@ -1121,7 +1121,7 @@ type metricOracledbTablespaceSizeLimit struct {
 // init fills oracledb.tablespace_size.limit metric with initial data.
 func (m *metricOracledbTablespaceSizeLimit) init() {
 	m.data.SetName("oracledb.tablespace_size.limit")
-	m.data.SetDescription("Maximum size of tablespace in bytes.")
+	m.data.SetDescription("Maximum size of tablespace in bytes, -1 if unlimited.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1223,7 +1223,7 @@ type metricOracledbTransactionsLimit struct {
 // init fills oracledb.transactions.limit metric with initial data.
 func (m *metricOracledbTransactionsLimit) init() {
 	m.data.SetName("oracledb.transactions.limit")
-	m.data.SetDescription("Maximum limit of active transactions.")
+	m.data.SetDescription("Maximum limit of active transactions, -1 if unlimited.")
 	m.data.SetUnit("{transactions}")
 	m.data.SetEmptyGauge()
 }

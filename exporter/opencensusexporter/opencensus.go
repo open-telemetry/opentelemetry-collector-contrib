@@ -112,6 +112,9 @@ func (oce *ocExporter) start(ctx context.Context, host component.Host) error {
 }
 
 func (oce *ocExporter) shutdown(context.Context) error {
+	if oce.grpcClientConn == nil {
+		return nil
+	}
 	if oce.tracesClients != nil {
 		// First remove all the clients from the channel.
 		for i := 0; i < oce.cfg.NumWorkers; i++ {

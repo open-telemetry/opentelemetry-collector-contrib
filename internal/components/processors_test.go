@@ -142,13 +142,26 @@ func TestDefaultProcessors(t *testing.T) {
 		{
 			processor: "transform",
 		},
+		{
+			processor: "redaction",
+		},
 	}
 
-	assert.Len(t, tests, len(procFactories), "All processors MUST be added to lifecycle tests")
+	processorCount := 0
+	expectedProcessors := map[component.Type]struct{}{}
+	for proc := range procFactories {
+		expectedProcessors[proc] = struct{}{}
+	}
 	for _, tt := range tests {
+		_, ok := procFactories[tt.processor]
+		if !ok {
+			// not part of the distro, skipping.
+			continue
+		}
+		delete(expectedProcessors, tt.processor)
+		processorCount++
 		t.Run(string(tt.processor), func(t *testing.T) {
-			factory, ok := procFactories[tt.processor]
-			require.True(t, ok)
+			factory := procFactories[tt.processor]
 			assert.Equal(t, tt.processor, factory.Type())
 
 			verifyProcessorShutdown(t, factory, tt.getConfigFn)
@@ -159,6 +172,7 @@ func TestDefaultProcessors(t *testing.T) {
 
 		})
 	}
+	assert.Len(t, procFactories, processorCount, "All processors must be added to lifecycle tests", expectedProcessors)
 }
 
 // getProcessorConfigFn is used customize the configuration passed to the verification.
