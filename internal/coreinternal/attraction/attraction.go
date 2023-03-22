@@ -21,8 +21,15 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+)
+
+var enableSha256Gate = featuregate.GlobalRegistry().MustRegister(
+	"coreinternal.attraction.hash.sha256",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, switches hashing algorithm from SHA-1 to SHA-2 256"),
 )
 
 // Settings specifies the processor settings.
@@ -405,7 +412,11 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 
 func hashAttribute(key string, attrs pcommon.Map) {
 	if value, exists := attrs.Get(key); exists {
-		sha2Hasher(value)
+		if enableSha256Gate.IsEnabled() {
+			sha2Hasher(value)
+		} else {
+			sha1Hasher(value)
+		}
 	}
 }
 
