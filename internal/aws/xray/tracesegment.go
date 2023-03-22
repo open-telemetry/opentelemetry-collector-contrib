@@ -283,7 +283,7 @@ type ServiceData struct {
 	Compiler        *string `json:"compiler,omitempty"`
 }
 
-// SpanLinkData provides the shape for unmarshalling the service field.
+// SpanLinkData provides the shape for unmarshalling the span links in the span link field.
 type SpanLinkData struct {
 	TraceID    *string                `json:"trace_id"`
 	SpanID     *string                `json:"id"`

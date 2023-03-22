@@ -55,6 +55,22 @@ func TestSpanLinkSimple(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, spanLink.SpanID().String()))
 }
 
+func TestSpanLinkEmpty(t *testing.T) {
+	spanName := "ProcessingMessage"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+
+	assert.Equal(t, 0, len(segment.Links))
+
+	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil)
+
+	assert.False(t, strings.Contains(jsonStr, "links"))
+}
+
 func TestOldSpanLinkError(t *testing.T) {
 	spanName := "ProcessingMessage"
 	parentSpanID := newSegmentID()
@@ -62,7 +78,7 @@ func TestOldSpanLinkError(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
-	const maxAge = 60 * 60 * 24 * 35
+	const maxAge = 60 * 60 * 24 * 30
 	ExpiredEpoch := time.Now().Unix() - maxAge - 1
 
 	var traceID = newTraceID()
