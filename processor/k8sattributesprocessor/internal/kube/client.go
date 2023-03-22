@@ -438,6 +438,15 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		HostNetwork: pod.Spec.HostNetwork,
 		PodUID:      string(pod.UID),
 		StartTime:   pod.Status.StartTime,
+		PodConfigHash: func() string {
+			if len(pod.Annotations) == 0 {
+				return ""
+			}
+			if hash, ok := pod.Annotations[K8sConfigHashAnnotation]; ok {
+				return hash
+			}
+			return ""
+		}(),
 	}
 
 	if c.shouldIgnorePod(pod) {
@@ -489,6 +498,8 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 				// k8s.pod.ip is set by passthrough mode
 				case K8sIPLabelName:
 					attr = pod.Address
+				case K8sConfigHashName:
+					attr = pod.PodConfigHash
 				default:
 					if v, ok := pod.Attributes[source.Name]; ok {
 						attr = v

@@ -39,9 +39,12 @@ const (
 	MetadataFromNamespace  = "namespace"
 	PodIdentifierMaxLength = 4
 
-	ResourceSource   = "resource_attribute"
-	ConnectionSource = "connection"
-	K8sIPLabelName   = "k8s.pod.ip"
+	ResourceSource    = "resource_attribute"
+	ConnectionSource  = "connection"
+	K8sIPLabelName    = "k8s.pod.ip"
+	K8sConfigHashName = "k8s.pod.confighash"
+
+	K8sConfigHashAnnotation = "kubernetes.io/config.hash"
 )
 
 // PodIdentifierAttribute represents AssociationSource with matching value for pod
@@ -111,14 +114,15 @@ type APIClientsetProvider func(config k8sconfig.APIConfig) (kubernetes.Interface
 
 // Pod represents a kubernetes pod.
 type Pod struct {
-	Name        string
-	Address     string
-	PodUID      string
-	Attributes  map[string]string
-	StartTime   *metav1.Time
-	Ignore      bool
-	Namespace   string
-	HostNetwork bool
+	Name          string
+	Address       string
+	PodUID        string
+	PodConfigHash string
+	Attributes    map[string]string
+	StartTime     *metav1.Time
+	Ignore        bool
+	Namespace     string
+	HostNetwork   bool
 
 	// Containers is a map of container name to Container struct.
 	Containers map[string]*Container
