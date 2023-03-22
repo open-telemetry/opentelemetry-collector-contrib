@@ -129,24 +129,15 @@ func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, database
 		recorder(s.metricsBuilder, now)
 	}
 
-	if s.config.InstanceName != "" && databaseName != "" {
-		s.metricsBuilder.EmitForResource(
-			metadata.WithSqlserverComputerName(s.config.ComputerName),
-			metadata.WithSqlserverInstanceName(s.config.InstanceName),
-			metadata.WithSqlserverDatabaseName(databaseName),
-		)
-	} else if s.config.InstanceName == "" && databaseName != "" {
-		s.metricsBuilder.EmitForResource(
-			metadata.WithSqlserverDatabaseName(databaseName),
-		)
-	} else if s.config.InstanceName != "" && databaseName == "" {
-		s.metricsBuilder.EmitForResource(
-			metadata.WithSqlserverComputerName(s.config.ComputerName),
-			metadata.WithSqlserverInstanceName(s.config.InstanceName),
-		)
-	} else {
-		s.metricsBuilder.EmitForResource()
+	attributes := []metadata.ResourceMetricsOption{}
+	if databaseName != "" {
+		attributes = append(attributes, metadata.WithSqlserverDatabaseName(databaseName))
 	}
+	if s.config.InstanceName != "" {
+		attributes = append(attributes, metadata.WithSqlserverComputerName(s.config.ComputerName))
+		attributes = append(attributes, metadata.WithSqlserverInstanceName(s.config.InstanceName))
+	}
+	s.metricsBuilder.EmitForResource(attributes...)
 }
 
 // shutdown stops all of the watchers for the scraper.

@@ -30,7 +30,7 @@ import (
 
 // TestPerfCounterRecorders requires each perf counter record created to exist in the available counters.
 func TestPerfCounterRecorders(t *testing.T) {
-	t.Run("expected default counters", func(t *testing.T) {
+	t.Run("default", func(t *testing.T) {
 		expectedCounters := getAvailableCounters(t)
 
 		for _, counter := range perfCounterRecorders {
@@ -42,7 +42,7 @@ func TestPerfCounterRecorders(t *testing.T) {
 		}
 	})
 
-	t.Run("expected counters from named instance", func(t *testing.T) {
+	t.Run("named", func(t *testing.T) {
 		expectedCounters := getAvailableNamedInstanceCounters(t)
 
 		for _, counter := range perfCounterRecorders {

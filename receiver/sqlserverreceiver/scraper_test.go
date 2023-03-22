@@ -124,7 +124,7 @@ var goldenNamedInstanceScrapePath = filepath.Join("testdata", "golden_named_inst
 var dbInstance = "db-instance"
 
 func TestScrape(t *testing.T) {
-	t.Run("scrape default counters", func(t *testing.T) {
+	t.Run("default", func(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
 		settings := receivertest.NewNopCreateSettings()
@@ -152,7 +152,7 @@ func TestScrape(t *testing.T) {
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	})
 
-	t.Run("scrape named instance counters", func(t *testing.T) {
+	t.Run("named", func(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
 		cfg.MetricsBuilderConfig = metadata.MetricsBuilderConfig{

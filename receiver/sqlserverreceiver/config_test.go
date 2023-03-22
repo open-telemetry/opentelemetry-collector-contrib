@@ -54,7 +54,7 @@ func TestValidate(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	t.Run("default SQL Server configuration", func(t *testing.T) {
+	t.Run("default", func(t *testing.T) {
 		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 		require.NoError(t, err)
 		factory := NewFactory()
@@ -68,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 		assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	})
 
-	t.Run("named instance SQL Server configuration", func(t *testing.T) {
+	t.Run("named", func(t *testing.T) {
 		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 		require.NoError(t, err)
 
@@ -93,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.ComputerName = "CustomServer"
 		expected.InstanceName = "CustomInstance"
 
-		sub, err := cm.Sub("sqlserver2")
+		sub, err := cm.Sub("sqlserver/named")
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
