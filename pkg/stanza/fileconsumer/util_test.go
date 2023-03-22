@@ -76,14 +76,24 @@ type emitParams struct {
 	token []byte
 }
 
-func buildTestManager(t *testing.T, cfg *Config) (*Manager, chan *emitParams) {
+func buildTestManager(t *testing.T, cfg *Config, initializeChannel bool) (*Manager, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
-	return buildTestManagerWithEmit(t, cfg, emitChan), emitChan
+	return buildTestManagerWithEmit(t, cfg, emitChan, initializeChannel), emitChan
 }
 
-func buildTestManagerWithEmit(t *testing.T, cfg *Config, emitChan chan *emitParams) *Manager {
+func buildTestManagerWithEmit(t *testing.T, cfg *Config, emitChan chan *emitParams, initializeChannel bool) *Manager {
 	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(emitChan))
 	require.NoError(t, err)
+	if initializeChannel {
+		input.readerChan = make(chan ReaderWrapper, cfg.MaxConcurrentFiles/2)
+		ctx, cancel := context.WithCancel(context.Background())
+		input.cancel = cancel
+		input.ctx = ctx
+		for i := 0; i < cfg.MaxConcurrentFiles/2; i++ {
+			input.workerWg.Add(1)
+			go input.worker(input.ctx)
+		}
+	}
 	return input
 }
 
