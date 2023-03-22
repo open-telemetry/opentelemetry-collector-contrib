@@ -17,6 +17,8 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"fmt"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type ExprFunc[K any] func(ctx context.Context, tCtx K) (interface{}, error)
@@ -95,6 +97,10 @@ type StringGetter[K any] interface {
 
 type IntGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (int64, error)
+}
+
+type PMapGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (pcommon.Map, error)
 }
 
 type StandardTypeGetter[K any, T any] struct {

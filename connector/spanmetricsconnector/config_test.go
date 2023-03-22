@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -58,6 +60,7 @@ func TestLoadConfig(t *testing.T) {
 				DimensionsCacheSize:  1500,
 				MetricsFlushInterval: 30 * time.Second,
 				Histogram: HistogramConfig{
+					Unit: metrics.Seconds,
 					Explicit: &ExplicitHistogramConfig{
 						Buckets: []time.Duration{
 							10 * time.Millisecond,
@@ -75,6 +78,7 @@ func TestLoadConfig(t *testing.T) {
 				DimensionsCacheSize:    1000,
 				MetricsFlushInterval:   15 * time.Second,
 				Histogram: HistogramConfig{
+					Unit: metrics.Milliseconds,
 					Exponential: &ExponentialHistogramConfig{
 						MaxSize: 10,
 					},
@@ -84,6 +88,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(typeStr, "exponential_and_explicit_histogram"),
 			errorMessage: "use either `explicit` or `exponential` buckets histogram",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "invalid_histogram_unit"),
+			errorMessage: "unknown Unit \"h\"",
 		},
 	}
 
@@ -95,7 +103,6 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			err = component.UnmarshalConfig(sub, cfg)
-			require.NoError(t, err)
 
 			if tt.expected == nil {
 				err = multierr.Append(err, component.ValidateConfig(cfg))

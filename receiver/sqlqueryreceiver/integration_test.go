@@ -13,7 +13,6 @@
 // limitations under the License.
 
 //go:build integration
-// +build integration
 
 package sqlqueryreceiver
 
@@ -85,7 +84,7 @@ func TestPostgresIntegration(t *testing.T) {
 		},
 		{
 			SQL: "select 1::smallint as a, 2::integer as b, 3::bigint as c, 4.1::decimal as d," +
-				" 4.2::numeric as e, 4.3::real as f, 4.4::double precision as g",
+				" 4.2::numeric as e, 4.3::real as f, 4.4::double precision as g, null as h",
 			Metrics: []MetricCfg{
 				{
 					MetricName:  "a",
@@ -126,6 +125,12 @@ func TestPostgresIntegration(t *testing.T) {
 				{
 					MetricName:  "g",
 					ValueColumn: "g",
+					ValueType:   MetricValueTypeDouble,
+					DataType:    MetricTypeGauge,
+				},
+				{
+					MetricName:  "h",
+					ValueColumn: "h",
 					ValueType:   MetricValueTypeDouble,
 					DataType:    MetricTypeGauge,
 				},

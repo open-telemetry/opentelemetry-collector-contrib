@@ -4,9 +4,15 @@
          "resource": {
             "attributes": [
                {
-                  "key": "resource-attr",
+                  "key": "resource.required",
                   "value": {
-                     "stringValue": "resource-attr-val-1"
+                     "stringValue": "foo"
+                  }
+               },
+               {
+                  "key": "resource.optional",
+                  "value": {
+                     "stringValue": "bar"
                   }
                }
             ]
@@ -21,8 +27,8 @@
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
-                              "asInt": "1",
-                              "timeUnixNano": "1676490033223790000"
+                              "asInt": "4",
+                              "timeUnixNano": "1678392127923826000"
                            }
                         ],
                         "isMonotonic": true
@@ -35,8 +41,8 @@
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
-                              "asInt": "1",
-                              "timeUnixNano": "1676490033223791000"
+                              "asInt": "16",
+                              "timeUnixNano": "1678392127923826000"
                            }
                         ],
                         "isMonotonic": true
@@ -53,9 +59,15 @@
          "resource": {
             "attributes": [
                {
-                  "key": "resource-attr",
+                  "key": "resource.required",
                   "value": {
-                     "stringValue": "resource-attr-val-2"
+                     "stringValue": "foo"
+                  }
+               },
+               {
+                  "key": "resource.optional",
+                  "value": {
+                     "stringValue": "notbar"
                   }
                }
             ]
@@ -70,8 +82,8 @@
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
-                              "asInt": "1",
-                              "timeUnixNano": "1676490033223796000"
+                              "asInt": "4",
+                              "timeUnixNano": "1678392127923836000"
                            }
                         ],
                         "isMonotonic": true
@@ -84,8 +96,97 @@
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
-                              "asInt": "0",
-                              "timeUnixNano": "1676490033223796000"
+                              "asInt": "16",
+                              "timeUnixNano": "1678392127923836000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     }
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/countconnector"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "resource.required",
+                  "value": {
+                     "stringValue": "notfoo"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "Span count if ...",
+                     "name": "span.count.if",
+                     "sum": {
+                        "aggregationTemporality": 1,
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "timeUnixNano": "1678392127923843000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     }
+                  },
+                  {
+                     "description": "Span event count if ...",
+                     "name": "spanevent.count.if",
+                     "sum": {
+                        "aggregationTemporality": 1,
+                        "dataPoints": [
+                           {
+                              "asInt": "8",
+                              "timeUnixNano": "1678392127923843000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     }
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/countconnector"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {},
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "Span count if ...",
+                     "name": "span.count.if",
+                     "sum": {
+                        "aggregationTemporality": 1,
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "timeUnixNano": "1678392127923849000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     }
+                  },
+                  {
+                     "description": "Span event count if ...",
+                     "name": "spanevent.count.if",
+                     "sum": {
+                        "aggregationTemporality": 1,
+                        "dataPoints": [
+                           {
+                              "asInt": "8",
+                              "timeUnixNano": "1678392127923849000"
                            }
                         ],
                         "isMonotonic": true

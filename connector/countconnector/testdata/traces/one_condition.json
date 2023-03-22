@@ -4,9 +4,15 @@
          "resource": {
             "attributes": [
                {
-                  "key": "resource-attr",
+                  "key": "resource.required",
                   "value": {
-                     "stringValue": "resource-attr-val-1"
+                     "stringValue": "foo"
+                  }
+               },
+               {
+                  "key": "resource.optional",
+                  "value": {
+                     "stringValue": "bar"
                   }
                }
             ]
@@ -21,8 +27,8 @@
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
-                              "asInt": "0",
-                              "timeUnixNano": "1676490033222958000"
+                              "asInt": "4",
+                              "timeUnixNano": "1678392127922309000"
                            }
                         ],
                         "isMonotonic": true
@@ -35,8 +41,8 @@
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
-                              "asInt": "2",
-                              "timeUnixNano": "1676490033222959000"
+                              "asInt": "16",
+                              "timeUnixNano": "1678392127922310000"
                            }
                         ],
                         "isMonotonic": true
@@ -53,9 +59,15 @@
          "resource": {
             "attributes": [
                {
-                  "key": "resource-attr",
+                  "key": "resource.required",
                   "value": {
-                     "stringValue": "resource-attr-val-2"
+                     "stringValue": "foo"
+                  }
+               },
+               {
+                  "key": "resource.optional",
+                  "value": {
+                     "stringValue": "notbar"
                   }
                }
             ]
@@ -70,8 +82,8 @@
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
-                              "asInt": "1",
-                              "timeUnixNano": "1676490033222979000"
+                              "asInt": "4",
+                              "timeUnixNano": "1678392127922363000"
                            }
                         ],
                         "isMonotonic": true
@@ -84,8 +96,8 @@
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
-                              "asInt": "0",
-                              "timeUnixNano": "1676490033222979000"
+                              "asInt": "16",
+                              "timeUnixNano": "1678392127922364000"
                            }
                         ],
                         "isMonotonic": true

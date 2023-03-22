@@ -29,7 +29,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
@@ -37,6 +36,15 @@ import (
 )
 
 var (
+	containerRequest7_0_0 = testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    filepath.Join("testdata", "integration"),
+			Dockerfile: "Dockerfile.elasticsearch.7_0_0",
+		},
+		ExposedPorts: []string{"9600:9200"},
+		WaitingFor: wait.ForListeningPort("9200").
+			WithStartupTimeout(2 * time.Minute),
+	}
 	containerRequest7_9_3 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
@@ -58,11 +66,48 @@ var (
 )
 
 func TestElasticsearchIntegration(t *testing.T) {
-	// Let this test check if it works with the features disabled and the unit test will test the feature enabled.
-	require.NoError(t, featuregate.GlobalRegistry().Set(emitNodeVersionAttr.ID(), false))
-
 	// Starts an elasticsearch docker container
-	t.Run("Running elasticsearch 7.9", func(t *testing.T) {
+	t.Run("Running elasticsearch 7.0.0", func(t *testing.T) {
+		t.Parallel()
+		container := getContainer(t, containerRequest7_0_0)
+		defer func() {
+			require.NoError(t, container.Terminate(context.Background()))
+		}()
+		hostname, err := container.Host(context.Background())
+		require.NoError(t, err)
+
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.Endpoint = fmt.Sprintf("http://%s:9600", hostname)
+
+		consumer := new(consumertest.MetricsSink)
+		settings := receivertest.NewNopCreateSettings()
+		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+		require.NoError(t, err, "failed creating metrics receiver")
+
+		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+		require.Eventuallyf(t, func() bool {
+			return len(consumer.AllMetrics()) > 0
+		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+
+		actualMetrics := consumer.AllMetrics()[0]
+
+		expectedFile := filepath.Join("testdata", "integration", "expected.7_0_0.json")
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"),
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+		))
+	})
+	t.Run("Running elasticsearch 7.9.3", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest7_9_3)
 		defer func() {
@@ -92,12 +137,18 @@ func TestElasticsearchIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
-			pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"),
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+		))
 	})
 	t.Run("Running elasticsearch 7.16.3", func(t *testing.T) {
+		t.Skip("Skipping as the test fails intermittently, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19755")
 		t.Parallel()
 		container := getContainer(t, containerRequest7_16_3)
 		defer func() {
@@ -127,10 +178,15 @@ func TestElasticsearchIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
-			pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"),
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+		))
 	})
 }
 

@@ -25,15 +25,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "splunk_hec"
-	// The stability level of the exporter.
-	stability            = component.StabilityLevelBeta
+	typeStr              = "splunk_hec"
 	defaultMaxIdleCons   = 100
 	defaultHTTPTimeout   = 10 * time.Second
 	defaultSplunkAppName = "OpenTelemetry Collector Contrib"
@@ -56,9 +55,9 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability),
-		exporter.WithMetrics(createMetricsExporter, stability),
-		exporter.WithLogs(createLogsExporter, stability))
+		exporter.WithTraces(createTracesExporter, metadata.Stability),
+		exporter.WithMetrics(createMetricsExporter, metadata.Stability),
+		exporter.WithLogs(createLogsExporter, metadata.Stability))
 }
 
 func createDefaultConfig() component.Config {

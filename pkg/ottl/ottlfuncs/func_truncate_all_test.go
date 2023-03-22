@@ -31,19 +31,15 @@ func Test_truncateAll(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardGetSetter[pcommon.Map]{
+	target := &ottl.StandardTypeGetter[pcommon.Map, pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
 			return tCtx, nil
-		},
-		Setter: func(ctx context.Context, tCtx pcommon.Map, val interface{}) error {
-			val.(pcommon.Map).CopyTo(tCtx)
-			return nil
 		},
 	}
 
 	tests := []struct {
 		name   string
-		target ottl.GetSetter[pcommon.Map]
+		target ottl.PMapGetter[pcommon.Map]
 		limit  int64
 		want   func(pcommon.Map)
 	}{
@@ -109,47 +105,36 @@ func Test_truncateAll(t *testing.T) {
 }
 
 func Test_truncateAll_validation(t *testing.T) {
-	_, err := TruncateAll[interface{}](&ottl.StandardGetSetter[interface{}]{}, -1)
+	_, err := TruncateAll[interface{}](&ottl.StandardTypeGetter[interface{}, pcommon.Map]{}, -1)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "invalid limit for truncate_all function, -1 cannot be negative")
 }
 
 func Test_truncateAll_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
-	target := &ottl.StandardGetSetter[interface{}]{
+	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
-		},
-		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
-			t.Errorf("nothing should be set in this scenario")
-			return nil
 		},
 	}
 
 	exprFunc, err := TruncateAll[interface{}](target, 1)
 	assert.NoError(t, err)
 
-	result, err := exprFunc(nil, input)
-	assert.NoError(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
+	_, err = exprFunc(nil, input)
+	assert.Error(t, err)
 }
 
 func Test_truncateAll_get_nil(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
+	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
-		},
-		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
-			t.Errorf("nothing should be set in this scenario")
-			return nil
 		},
 	}
 
 	exprFunc, err := TruncateAll[interface{}](target, 1)
 	assert.NoError(t, err)
 
-	result, err := exprFunc(nil, nil)
-	assert.NoError(t, err)
-	assert.Nil(t, result)
+	_, err = exprFunc(nil, nil)
+	assert.Error(t, err)
 }
