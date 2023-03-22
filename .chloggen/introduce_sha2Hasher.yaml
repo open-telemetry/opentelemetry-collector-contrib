@@ -5,7 +5,7 @@ change_type: enhancement
 component: attributesprocessor, resourceprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Stop using SHA-1 and use SHA2-256 instead for hashing
+note: Add feature gate to support using SHA2-256 instead of SHA-1 for hashing
 
 # One or more tracking issues related to the change
 issues: [4759, 5576]
