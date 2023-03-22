@@ -11,8 +11,6 @@ receiver](../prometheusreceiver).
 This receiver provides a simple configuration interface to configure the
 prometheus receiver to scrape metrics from a single target.
 
-Supported pipeline types: metrics
-
 ## Configuration
 
 The following settings are required:

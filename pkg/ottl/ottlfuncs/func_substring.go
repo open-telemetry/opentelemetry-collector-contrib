@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Substring[K any](target ottl.Getter[K], start int64, length int64) (ottl.ExprFunc[K], error) {
+func Substring[K any](target ottl.StringGetter[K], start int64, length int64) (ottl.ExprFunc[K], error) {
 	if start < 0 {
 		return nil, fmt.Errorf("invalid start for substring function, %d cannot be negative", start)
 	}
@@ -34,12 +34,9 @@ func Substring[K any](target ottl.Getter[K], start int64, length int64) (ottl.Ex
 		if err != nil {
 			return nil, err
 		}
-		if valStr, ok := val.(string); ok {
-			if (start + length) > int64(len(valStr)) {
-				return nil, fmt.Errorf("invalid range for substring function, %d cannot be greater than the length of target string(%d)", start+length, len(valStr))
-			}
-			return valStr[start : start+length], nil
+		if (start + length) > int64(len(val)) {
+			return nil, fmt.Errorf("invalid range for substring function, %d cannot be greater than the length of target string(%d)", start+length, len(val))
 		}
-		return nil, nil
+		return val[start : start+length], nil
 	}, nil
 }
