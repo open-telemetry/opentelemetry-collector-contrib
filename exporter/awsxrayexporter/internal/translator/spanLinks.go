@@ -20,18 +20,22 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func makeSpanLinks(links ptrace.SpanLinkSlice) []awsxray.SpanLinkData {
+func makeSpanLinks(links ptrace.SpanLinkSlice) ([]awsxray.SpanLinkData, error) {
 	var spanLinkDataArray []awsxray.SpanLinkData
 
 	for i := 0; i < links.Len(); i++ {
 		var spanLinkData awsxray.SpanLinkData
 		var link = links.At(i)
 
-		var spanId = link.SpanID().String()
-		var traceId = link.TraceID().String()
+		var spanID = link.SpanID().String()
+		traceID, err := convertToAmazonTraceID(link.TraceID())
 
-		spanLinkData.SpanID = &spanId
-		spanLinkData.TraceID = &traceId
+		if err != nil {
+			return nil, err
+		}
+
+		spanLinkData.SpanID = &spanID
+		spanLinkData.TraceID = &traceID
 
 		if links.Len() > 0 {
 			spanLinkData.Attributes = make(map[string]interface{})
@@ -45,5 +49,5 @@ func makeSpanLinks(links ptrace.SpanLinkSlice) []awsxray.SpanLinkData {
 		spanLinkDataArray = append(spanLinkDataArray, spanLinkData)
 	}
 
-	return spanLinkDataArray
+	return spanLinkDataArray, nil
 }

@@ -112,10 +112,14 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		sqlfiltered, sql                                   = makeSQL(span, awsfiltered)
 		additionalAttrs                                    = addSpecialAttributes(sqlfiltered, indexedAttrs, attributes)
 		user, annotations, metadata                        = makeXRayAttributes(additionalAttrs, resource, storeResource, indexedAttrs, indexAllAttrs)
-		spanLinks                                          = makeSpanLinks(span.Links())
+		spanLinks, makeSpanLinkErr                         = makeSpanLinks(span.Links())
 		name                                               string
 		namespace                                          string
 	)
+
+	if makeSpanLinkErr != nil {
+		return nil, makeSpanLinkErr
+	}
 
 	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
 

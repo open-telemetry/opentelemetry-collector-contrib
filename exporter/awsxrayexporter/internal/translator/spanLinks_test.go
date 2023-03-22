@@ -15,8 +15,10 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
+	"encoding/binary"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -30,23 +32,53 @@ func TestSpanLinkSimple(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
+	var traceID = newTraceID()
+
 	spanLink := span.Links().AppendEmpty()
-	spanLink.SetTraceID(newTraceID())
+	spanLink.SetTraceID(traceID)
 	spanLink.SetSpanID(newSegmentID())
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
+	var convertedTraceId, _ = convertToAmazonTraceID(traceID)
+
 	assert.Equal(t, 1, len(segment.Links))
 	assert.Equal(t, spanLink.SpanID().String(), *segment.Links[0].SpanID)
-	assert.Equal(t, spanLink.TraceID().String(), *segment.Links[0].TraceID)
+	assert.Equal(t, convertedTraceId, *segment.Links[0].TraceID)
 	assert.Equal(t, 0, len(segment.Links[0].Attributes))
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil)
 
 	assert.True(t, strings.Contains(jsonStr, "links"))
 	assert.False(t, strings.Contains(jsonStr, "attributes"))
-	assert.True(t, strings.Contains(jsonStr, spanLink.TraceID().String()))
+	assert.True(t, strings.Contains(jsonStr, convertedTraceId))
 	assert.True(t, strings.Contains(jsonStr, spanLink.SpanID().String()))
+}
+
+func TestOldSpanLinkError(t *testing.T) {
+	spanName := "ProcessingMessage"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
+
+	const maxAge = 60 * 60 * 24 * 35
+	ExpiredEpoch := time.Now().Unix() - maxAge - 1
+
+	var traceID = newTraceID()
+	binary.BigEndian.PutUint32(traceID[0:4], uint32(ExpiredEpoch))
+
+	spanLink := span.Links().AppendEmpty()
+	spanLink.SetTraceID(traceID)
+	spanLink.SetSpanID(newSegmentID())
+
+	_, error1 := MakeSegment(span, resource, nil, false, nil)
+
+	assert.NotNil(t, error1)
+
+	_, error2 := MakeSegmentDocumentString(span, resource, nil, false, nil)
+
+	assert.NotNil(t, error2)
 }
 
 func TestTwoSpanLinks(t *testing.T) {
@@ -56,29 +88,36 @@ func TestTwoSpanLinks(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
+	var traceID1 = newTraceID()
+
 	spanLink1 := span.Links().AppendEmpty()
-	spanLink1.SetTraceID(newTraceID())
+	spanLink1.SetTraceID(traceID1)
 	spanLink1.SetSpanID(newSegmentID())
 	spanLink1.Attributes().PutStr("myKey1", "ABC")
 
+	var traceID2 = newTraceID()
+
 	spanLink2 := span.Links().AppendEmpty()
-	spanLink2.SetTraceID(newTraceID())
+	spanLink2.SetTraceID(traceID2)
 	spanLink2.SetSpanID(newSegmentID())
-	spanLink2.Attributes().PutStr("myKey2", "DEF")
+	spanLink2.Attributes().PutInt("myKey2", 1234)
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
-	assert.Equal(t, 2, len(segment.Links))
+	var convertedTraceId1, _ = convertToAmazonTraceID(traceID1)
+	var convertedTraceId2, _ = convertToAmazonTraceID(traceID2)
 
+	assert.Equal(t, 2, len(segment.Links))
 	assert.Equal(t, spanLink1.SpanID().String(), *segment.Links[0].SpanID)
-	assert.Equal(t, spanLink1.TraceID().String(), *segment.Links[0].TraceID)
+	assert.Equal(t, convertedTraceId1, *segment.Links[0].TraceID)
+
 	assert.Equal(t, 1, len(segment.Links[0].Attributes))
 	assert.Equal(t, "ABC", segment.Links[0].Attributes["myKey1"])
 
 	assert.Equal(t, spanLink2.SpanID().String(), *segment.Links[1].SpanID)
-	assert.Equal(t, spanLink2.TraceID().String(), *segment.Links[1].TraceID)
+	assert.Equal(t, convertedTraceId2, *segment.Links[1].TraceID)
 	assert.Equal(t, 1, len(segment.Links[0].Attributes))
-	assert.Equal(t, "DEF", segment.Links[1].Attributes["myKey2"])
+	assert.Equal(t, int64(1234), segment.Links[1].Attributes["myKey2"])
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil)
 
@@ -87,7 +126,9 @@ func TestTwoSpanLinks(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "myKey1"))
 	assert.True(t, strings.Contains(jsonStr, "myKey2"))
 	assert.True(t, strings.Contains(jsonStr, "ABC"))
-	assert.True(t, strings.Contains(jsonStr, "DEF"))
+	assert.True(t, strings.Contains(jsonStr, "1234"))
+	assert.True(t, strings.Contains(jsonStr, convertedTraceId1))
+	assert.True(t, strings.Contains(jsonStr, convertedTraceId2))
 }
 
 func TestSpanLinkComplexAttributes(t *testing.T) {
@@ -128,8 +169,6 @@ func TestSpanLinkComplexAttributes(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
 	assert.Equal(t, 1, len(segment.Links))
-	assert.Equal(t, spanLink.SpanID().String(), *segment.Links[0].SpanID)
-	assert.Equal(t, spanLink.TraceID().String(), *segment.Links[0].TraceID)
 	assert.Equal(t, 8, len(segment.Links[0].Attributes))
 
 	assert.Equal(t, "myValue", segment.Links[0].Attributes["myKey1"])
