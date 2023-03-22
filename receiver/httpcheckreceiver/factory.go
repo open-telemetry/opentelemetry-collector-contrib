@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	typeStr   = "httpcheck"
-	stability = component.StabilityLevelDevelopment
+	typeStr = "httpcheck"
 )
 
 var errConfigNotHTTPCheck = errors.New("config was not a HTTP check receiver config")
@@ -40,7 +39,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.Stability))
 }
 
 func createDefaultConfig() component.Config {
