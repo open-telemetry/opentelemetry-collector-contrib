@@ -13,15 +13,3 @@
 // limitations under the License.
 
 package splunk
-
-import (
-	"net/http"
-	"net/http/httptest"
-	"testing"
-)
-
-func newEndpointHandler(tb testing.TB, endpointHandler http.Handler) *httptest.Server {
-	s := httptest.NewServer(endpointHandler)
-	tb.Cleanup(s.Close)
-	return s
-}

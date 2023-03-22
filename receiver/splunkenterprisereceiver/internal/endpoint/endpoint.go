@@ -28,10 +28,10 @@ import (
 // Endpoint is a FQDN for a Splunk rest endpoint
 type Endpoint string
 
-// EndpointOption is an additional set of options
+// Option is an additional set of options
 // that can be provided to query the endpoint that
 // is not strictly needed.
-type EndpointOption struct {
+type Option struct {
 	Query      url.Values
 	Method     string
 	Body       io.Reader
@@ -53,8 +53,8 @@ func NewEndpoint(hostname string, path string) (Endpoint, error) {
 
 // MarshalContent performs a HTTP call to the hostname + endpoint and will marshal the json into v.
 // Additional options can be passed in to allow modifying querying the endpoint.
-func (e Endpoint) MarshalContent(ctx context.Context, v any, opts ...func(eo *EndpointOption)) error {
-	eo := &EndpointOption{
+func (e Endpoint) MarshalContent(ctx context.Context, v any, opts ...func(eo *Option)) error {
+	eo := &Option{
 		Query: url.Values{
 			"output_mode": []string{"json"},
 		},

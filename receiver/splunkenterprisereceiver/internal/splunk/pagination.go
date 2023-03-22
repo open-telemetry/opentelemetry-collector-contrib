@@ -131,7 +131,7 @@ func FetchPaginatedData[T any](ctx context.Context, path string, opts ...Request
 		snapshot := *u
 		snapshot.RawQuery = q.Encode()
 
-		req, err := ro.ReqFactory.NewRequest(ctx, ro.Method, u.String(), ro.Body)
+		req, err := ro.ReqFactory.NewRequest(ctx, ro.Method, snapshot.String(), ro.Body)
 		if err != nil {
 			return nil, err
 		}
