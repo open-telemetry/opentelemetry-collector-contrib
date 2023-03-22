@@ -32,10 +32,10 @@ type Config struct {
 
 func (cfg *Config) Validate() error {
 	if cfg.InstanceName != "" && cfg.ComputerName == "" {
-		return fmt.Errorf("missing 'instance name', both instance name and computer name must be set")
+		return fmt.Errorf("'instance_name' may not be specified without 'computer_name'")
 	}
 	if cfg.InstanceName == "" && cfg.ComputerName != "" {
-		return fmt.Errorf("missing 'computer_name', both instance name and computer name must be set")
+		return fmt.Errorf("'computer_name' may not be specified without 'instance_name'")
 	}
 
 	return nil
