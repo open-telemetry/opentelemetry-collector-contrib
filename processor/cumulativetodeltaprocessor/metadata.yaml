@@ -1,4 +1,4 @@
-name: transform
+name: cumulativetodelta
 
 status:
   type: processor
