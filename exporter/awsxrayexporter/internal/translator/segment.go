@@ -112,6 +112,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		sqlfiltered, sql                                   = makeSQL(span, awsfiltered)
 		additionalAttrs                                    = addSpecialAttributes(sqlfiltered, indexedAttrs, attributes)
 		user, annotations, metadata                        = makeXRayAttributes(additionalAttrs, resource, storeResource, indexedAttrs, indexAllAttrs)
+		spanLinks                                          = makeSpanLinks(span.Links())
 		name                                               string
 		namespace                                          string
 	)
@@ -211,6 +212,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		Annotations: annotations,
 		Metadata:    metadata,
 		Type:        awsxray.String(segmentType),
+		Links:       spanLinks,
 	}, nil
 }
 
