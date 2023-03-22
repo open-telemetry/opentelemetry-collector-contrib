@@ -163,7 +163,7 @@ fmt: $(GOIMPORTS)
 	$(GOIMPORTS) -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
-lint: $(LINT) checklicense misspell govulncheck
+lint: $(LINT) checklicense misspell
 	$(LINT) run --allow-parallel-runners --build-tags integration
 
 .PHONY: govulncheck
