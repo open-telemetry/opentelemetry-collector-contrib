@@ -12,8 +12,9 @@ Because of this, it is a Windows only receiver.
 ## Configuration
 
 The following settings are optional:
-
 - `collection_interval` (default = `10s`): The internal at which metrics should be emitted by this receiver.
+
+To collect from a SQL Server with a named instance, both `computer_name` and `instance_name` are required. For a default SQL Server setup, these settings are optional.
 - `computer_name` (optional): The computer name identifies the SQL Server name or IP address of the computer being monitored.
 - `instance_name` (optional): The instance name identifies the specific SQL Server instance being monitored.
 
