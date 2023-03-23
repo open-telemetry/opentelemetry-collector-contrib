@@ -19,8 +19,8 @@ require (
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.2 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.4 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.4 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.74.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.74.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.74.0 // indirect
@@ -252,7 +252,7 @@ require (
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.3 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.4 // indirect
 	github.com/DataDog/sketches-go v1.4.1 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
