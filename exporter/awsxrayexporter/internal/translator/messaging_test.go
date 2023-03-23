@@ -86,10 +86,13 @@ func TestMessagingComplex(t *testing.T) {
 	span.Attributes().PutInt("messaging.payload_compressed_size_bytes", 1024)
 	span.Attributes().PutStr("messaging.conversation_id", "MyConversationId")
 	span.Attributes().PutStr("messaging.id", "452a7c7c7c7048c2f887f61572b18fc2")
+	var slice = span.Attributes().PutEmptySlice("messaging.sliceData")
+	slice.AppendEmpty().SetStr("alpha")
+	slice.AppendEmpty().SetStr("beta")
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
-	assert.Equal(t, 7, len(segment.Messaging))
+	assert.Equal(t, 8, len(segment.Messaging))
 	assert.Equal(t, "process", segment.Messaging["operation"])
 	assert.Equal(t, "AmazonSQS", segment.Messaging["system"])
 	assert.Equal(t, int64(7), segment.Messaging["message_count"])
@@ -97,6 +100,8 @@ func TestMessagingComplex(t *testing.T) {
 	assert.Equal(t, int64(1024), segment.Messaging["payload_compressed_size_bytes"])
 	assert.Equal(t, "MyConversationId", segment.Messaging["conversation_id"])
 	assert.Equal(t, "452a7c7c7c7048c2f887f61572b18fc2", segment.Messaging["id"])
+	assert.Equal(t, "alpha", segment.Messaging["sliceData"].([]interface{})[0])
+	assert.Equal(t, "beta", segment.Messaging["sliceData"].([]interface{})[1])
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil)
 
@@ -122,6 +127,10 @@ func TestMessagingComplex(t *testing.T) {
 
 	assert.True(t, strings.Contains(jsonStr, "id"))
 	assert.True(t, strings.Contains(jsonStr, "452a7c7c7c7048c2f887f61572b18fc2"))
+
+	assert.True(t, strings.Contains(jsonStr, "sliceData"))
+	assert.True(t, strings.Contains(jsonStr, "alpha"))
+	assert.True(t, strings.Contains(jsonStr, "beta"))
 }
 
 func TestMessagingWithIndexedAttributes(t *testing.T) {
