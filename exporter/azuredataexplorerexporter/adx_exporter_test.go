@@ -25,6 +25,7 @@ import (
 	"github.com/Azure/azure-kusto-go/kusto"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -46,16 +47,16 @@ func TestNewExporter(t *testing.T) {
 		LogTableMapping:    "otellogs_mapping",
 		TraceTableMapping:  "oteltraces_mapping",
 	}
-	texp, err := newExporter(&c, logger, metricsType)
-	assert.Error(t, err)
-	assert.Nil(t, texp)
-	texp, err = newExporter(&c, logger, logsType)
-	assert.Error(t, err)
-	assert.Nil(t, texp)
-	texp, err = newExporter(&c, logger, tracesType)
-	assert.Error(t, err)
-	assert.Nil(t, texp)
-	texp, err = newExporter(&c, logger, 5)
+	texp, err := newExporter(&c, logger, metricsType, component.NewDefaultBuildInfo().Version)
+	assert.NoError(t, err)
+	assert.NotNil(t, texp)
+	texp, err = newExporter(&c, logger, logsType, component.NewDefaultBuildInfo().Version)
+	assert.NoError(t, err)
+	assert.NotNil(t, texp)
+	texp, err = newExporter(&c, logger, tracesType, component.NewDefaultBuildInfo().Version)
+	assert.NoError(t, err)
+	assert.NotNil(t, texp)
+	texp, err = newExporter(&c, logger, 5, component.NewDefaultBuildInfo().Version)
 	assert.Error(t, err)
 	assert.Nil(t, texp)
 }
