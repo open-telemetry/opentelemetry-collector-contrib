@@ -91,11 +91,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 		numberMode = otlpmetrics.NumberModeCumulativeToDelta
 	}
 
-	options = append(options, otlpmetrics.WithNumberMode(numberMode))
-
-	if hostmetadata.HostnamePreviewFeatureGate.IsEnabled() {
-		options = append(options, otlpmetrics.WithPreviewHostnameFromAttributes())
-	}
+	options = append(options, otlpmetrics.WithNumberMode(numberMode), otlpmetrics.WithPreviewHostnameFromAttributes())
 
 	return otlpmetrics.NewTranslator(logger, options...)
 }

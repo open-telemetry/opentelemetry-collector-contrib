@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
@@ -65,7 +64,6 @@ var (
 )
 
 func TestFillHostMetadata(t *testing.T) {
-	hostnameCache.Flush()
 	params := exportertest.NewNopCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
@@ -102,13 +100,12 @@ func TestFillHostMetadata(t *testing.T) {
 
 func TestMetadataFromAttributes(t *testing.T) {
 	tests := []struct {
-		name                    string
-		attrs                   pcommon.Map
-		usePreviewHostnameLogic bool
-		expected                *HostMetadata
+		name     string
+		attrs    pcommon.Map
+		expected *HostMetadata
 	}{
 		{
-			name: "AWS (exporter.datadog.hostname.preview = false)",
+			name: "AWS",
 			attrs: testutil.NewAttributeMap(map[string]string{
 				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
 				conventions.AttributeHostID:        "host-id",
@@ -127,27 +124,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "AWS (exporter.datadog.hostname.preview = true)",
-			attrs: testutil.NewAttributeMap(map[string]string{
-				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
-				conventions.AttributeHostID:        "host-id",
-				conventions.AttributeHostName:      "ec2amaz-host-name",
-				"ec2.tag.tag1":                     "val1",
-				"ec2.tag.tag2":                     "val2",
-			}),
-			usePreviewHostnameLogic: true,
-			expected: &HostMetadata{
-				InternalHostname: "host-id",
-				Meta: &Meta{
-					Hostname:    "host-id",
-					InstanceID:  "host-id",
-					EC2Hostname: "ec2amaz-host-name",
-				},
-				Tags: &HostTags{OTel: []string{"tag1:val1", "tag2:val2"}},
-			},
-		},
-		{
-			name: "GCP (exporter.datadog.hostname.preview = false)",
+			name: "GCP",
 			attrs: testutil.NewAttributeMap(map[string]string{
 				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 				conventions.AttributeHostID:                "host-id",
@@ -156,28 +133,6 @@ func TestMetadataFromAttributes(t *testing.T) {
 				conventions.AttributeHostType:              "host-type",
 				conventions.AttributeCloudAvailabilityZone: "cloud-zone",
 			}),
-			expected: &HostMetadata{
-				InternalHostname: "host-name",
-				Meta: &Meta{
-					Hostname:    "host-name",
-					HostAliases: []string{"host-name.project-id"},
-				},
-				Tags: &HostTags{
-					GCP: []string{"instance-id:host-id", "project:project-id", "zone:cloud-zone", "instance-type:host-type"},
-				},
-			},
-		},
-		{
-			name: "GCP (exporter.datadog.hostname.preview = true)",
-			attrs: testutil.NewAttributeMap(map[string]string{
-				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
-				conventions.AttributeHostID:                "host-id",
-				conventions.AttributeCloudAccountID:        "project-id",
-				conventions.AttributeHostName:              "host-name",
-				conventions.AttributeHostType:              "host-type",
-				conventions.AttributeCloudAvailabilityZone: "cloud-zone",
-			}),
-			usePreviewHostnameLogic: true,
 			expected: &HostMetadata{
 				InternalHostname: "host-name.project-id",
 				Meta: &Meta{
@@ -189,7 +144,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "Azure (exporter.datadog.hostname.preview = false)",
+			name: "Azure",
 			attrs: testutil.NewAttributeMap(map[string]string{
 				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
 				conventions.AttributeHostName:       "azure-host-name",
@@ -198,26 +153,6 @@ func TestMetadataFromAttributes(t *testing.T) {
 				conventions.AttributeCloudAccountID: "subscriptionID",
 				azure.AttributeResourceGroupName:    "resourceGroup",
 			}),
-			expected: &HostMetadata{
-				InternalHostname: "azure-host-name",
-				Meta: &Meta{
-					Hostname:    "azure-host-name",
-					HostAliases: []string{"azure-vm-id"},
-				},
-				Tags: &HostTags{},
-			},
-		},
-		{
-			name: "Azure (exporter.datadog.hostname.preview = true)",
-			attrs: testutil.NewAttributeMap(map[string]string{
-				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
-				conventions.AttributeHostName:       "azure-host-name",
-				conventions.AttributeCloudRegion:    "location",
-				conventions.AttributeHostID:         "azure-vm-id",
-				conventions.AttributeCloudAccountID: "subscriptionID",
-				azure.AttributeResourceGroupName:    "resourceGroup",
-			}),
-			usePreviewHostnameLogic: true,
 			expected: &HostMetadata{
 				InternalHostname: "azure-vm-id",
 				Meta: &Meta{
@@ -243,10 +178,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			registry := featuregate.NewRegistry()
-			gate := registry.MustRegister(HostnamePreviewFeatureGate.ID(), featuregate.StageBeta)
-			require.NoError(t, registry.Set(HostnamePreviewFeatureGate.ID(), testInstance.usePreviewHostnameLogic))
-			metadata := metadataFromAttributesWithRegistry(gate, testInstance.attrs)
+			metadata := metadataFromAttributes(testInstance.attrs)
 			assert.Equal(t, testInstance.expected.InternalHostname, metadata.InternalHostname)
 			assert.Equal(t, testInstance.expected.Meta, metadata.Meta)
 			assert.ElementsMatch(t, testInstance.expected.Tags.GCP, metadata.Tags.GCP)

@@ -16,7 +16,6 @@ package hostmetadata
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,32 +24,9 @@ import (
 )
 
 func TestHost(t *testing.T) {
-	// Start with a fresh cache, the following test would fail
-	// if the cache key is already set.
-	hostnameCache.Delete(cacheKeyHostname)
-
-	p, err := buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host")
+	p, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "test-host")
 	require.NoError(t, err)
 	src, err := p.Source(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, src.Identifier, "test-host")
-
-	// config.Config.Hostname does not get stored in the cache
-	p, err = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "test-host-2")
-	require.NoError(t, err)
-	src, err = p.Source(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, src.Identifier, "test-host-2")
-
-	// Disable EC2 Metadata service to prevent fetching hostname from there,
-	// in case the test is running on an EC2 instance
-	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
-
-	p, err = buildCurrentProvider(componenttest.NewNopTelemetrySettings(), "")
-	require.NoError(t, err)
-	src, err = p.Source(context.Background())
-	require.NoError(t, err)
-	osHostname, err := os.Hostname()
-	require.NoError(t, err)
-	assert.Contains(t, src.Identifier, osHostname)
 }
