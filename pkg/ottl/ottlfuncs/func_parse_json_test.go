@@ -28,12 +28,12 @@ import (
 func Test_ParseJSON(t *testing.T) {
 	tests := []struct {
 		name   string
-		target ottl.Getter[any]
+		target ottl.StringGetter[any]
 		want   func(pcommon.Map)
 	}{
 		{
 			name: "handle string",
-			target: ottl.StandardGetSetter[any]{
+			target: ottl.StandardTypeGetter[any, string]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":"string value"}`, nil
 				},
@@ -44,7 +44,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "handle bool",
-			target: ottl.StandardGetSetter[any]{
+			target: ottl.StandardTypeGetter[any, string]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":true}`, nil
 				},
@@ -55,7 +55,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "handle int",
-			target: ottl.StandardGetSetter[any]{
+			target: ottl.StandardTypeGetter[any, string]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":1}`, nil
 				},
@@ -66,7 +66,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "handle float",
-			target: ottl.StandardGetSetter[any]{
+			target: ottl.StandardTypeGetter[any, string]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":1.1}`, nil
 				},
@@ -77,7 +77,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "handle nil",
-			target: ottl.StandardGetSetter[any]{
+			target: ottl.StandardTypeGetter[any, string]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":null}`, nil
 				},
@@ -88,7 +88,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "handle array",
-			target: ottl.StandardGetSetter[any]{
+			target: ottl.StandardTypeGetter[any, string]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":["string","value"]}`, nil
 				},
@@ -101,7 +101,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "handle nested object",
-			target: ottl.StandardGetSetter[any]{
+			target: ottl.StandardTypeGetter[any, string]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":{"nested":"true"}}`, nil
 				},
@@ -113,7 +113,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "updates existing",
-			target: ottl.StandardGetSetter[any]{
+			target: ottl.StandardTypeGetter[any, string]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"existing":"pass"}`, nil
 				},
@@ -124,7 +124,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "complex",
-			target: ottl.StandardGetSetter[any]{
+			target: ottl.StandardTypeGetter[any, string]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test1":{"nested":"true"},"test2":"string","test3":1,"test4":1.1,"test5":[[1], [2, 3],[]],"test6":null}`, nil
 				},
@@ -172,7 +172,7 @@ func Test_ParseJSON(t *testing.T) {
 }
 
 func Test_ParseJSON_Error(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
+	target := &ottl.StandardTypeGetter[interface{}, string]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return 1, nil
 		},

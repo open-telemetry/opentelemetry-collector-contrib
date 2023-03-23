@@ -73,9 +73,9 @@ func TestLogsExporter_New(t *testing.T) {
 			var err error
 			exporter, err := newLogsExporter(zap.NewNop(), test.config)
 			err = multierr.Append(err, err)
-			err = multierr.Append(err, exporter.start(context.TODO(), nil))
 
 			if exporter != nil {
+				err = multierr.Append(err, exporter.start(context.TODO(), nil))
 				defer func() {
 					require.NoError(t, exporter.shutdown(context.TODO()))
 				}()

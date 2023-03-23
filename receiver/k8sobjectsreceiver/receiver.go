@@ -117,14 +117,21 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
 	ticker := NewTicker(config.Interval)
+	listOption := metav1.ListOptions{
+		FieldSelector: config.FieldSelector,
+		LabelSelector: config.LabelSelector,
+	}
+
+	if config.ResourceVersion != "" {
+		listOption.ResourceVersion = config.ResourceVersion
+		listOption.ResourceVersionMatch = metav1.ResourceVersionMatchExact
+	}
+
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			objects, err := resource.List(ctx, metav1.ListOptions{
-				FieldSelector: config.FieldSelector,
-				LabelSelector: config.LabelSelector,
-			})
+			objects, err := resource.List(ctx, listOption)
 			if err != nil {
 				kr.setting.Logger.Error("error in pulling object", zap.String("resource", config.gvr.String()), zap.Error(err))
 			} else if len(objects.Items) > 0 {

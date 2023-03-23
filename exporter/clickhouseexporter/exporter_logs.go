@@ -194,11 +194,7 @@ var driverName = "clickhouse" // for testing
 
 // newClickHouseClient create a clickhouse client.
 func newClickHouseClient(cfg *Config) (*sql.DB, error) {
-	dsn, err := cfg.buildDSN(cfg.Database)
-	if err != nil {
-		return nil, err
-	}
-	db, err := sql.Open(driverName, dsn)
+	db, err := cfg.buildDB(cfg.Database)
 	if err != nil {
 		return nil, err
 	}
@@ -242,18 +238,14 @@ func newClickHouseConn(cfg *Config) (*sql.DB, error) {
 }
 
 func createDatabase(ctx context.Context, cfg *Config) error {
+	// use default database to create new database
 	if cfg.Database == defaultDatabase {
 		return nil
 	}
-	// use default database to create new database
-	dsnUseDefaultDatabase, err := cfg.buildDSN(defaultDatabase)
+
+	db, err := cfg.buildDB(defaultDatabase)
 	if err != nil {
 		return err
-	}
-
-	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
-	if err != nil {
-		return fmt.Errorf("sql.Open:%w", err)
 	}
 	defer func() {
 		_ = db.Close()

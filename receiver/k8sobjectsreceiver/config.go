@@ -98,10 +98,6 @@ func (c *Config) Validate() error {
 			object.Interval = defaultPullInterval
 		}
 
-		if object.Mode == PullMode && object.ResourceVersion != "" {
-			return fmt.Errorf("resource version is invalid for mode: %v", object.Mode)
-		}
-
 		if object.Mode == WatchMode && object.ResourceVersion == "" {
 			object.ResourceVersion = defaultResourceVersion
 		}

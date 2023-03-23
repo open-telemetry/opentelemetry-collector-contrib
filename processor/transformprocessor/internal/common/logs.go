@@ -60,7 +60,6 @@ func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 type LogParserCollection struct {
 	parserCollection
 	logParser ottl.Parser[ottllog.TransformContext]
-	errorMode ottl.ErrorMode
 }
 
 type LogParserCollectionOption func(*LogParserCollection) error
