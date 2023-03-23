@@ -91,8 +91,10 @@ type ActionKeyValue struct {
 	//           Either Value, FromAttribute or FromContext must be set.
 	// DELETE  - Deletes the attribute. If the key doesn't exist,
 	//           no action is performed.
-	// HASH    - Calculates the SHA-256 hash of an existing value and overwrites the
-	//           value with it's SHA-256 hash result.
+	// HASH    - Calculates the SHA-1 hash of an existing value and overwrites the
+	//           value with its SHA-1 hash result. If the feature gate
+	//           `coreinternal.attraction.hash.sha256` is enabled, it uses SHA2-256
+	//           instead.
 	// EXTRACT - Extracts values using a regular expression rule from the input
 	//           'key' to target keys specified in the 'rule'. If a target key
 	//           already exists, it will be overridden.
