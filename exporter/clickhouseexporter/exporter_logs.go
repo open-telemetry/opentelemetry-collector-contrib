@@ -193,6 +193,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 var driverName = "clickhouse" // for testing
 
 // newClickHouseClient create a clickhouse client.
+// used by metrics and traces:
 func newClickHouseClient(cfg *Config) (*sql.DB, error) {
 	db, err := cfg.buildDB(cfg.Database)
 	if err != nil {
@@ -201,6 +202,7 @@ func newClickHouseClient(cfg *Config) (*sql.DB, error) {
 	return db, nil
 }
 
+// used by logs:
 func newClickHouseConn(cfg *Config) (*sql.DB, error) {
 	endpoint := cfg.Endpoint
 
@@ -232,13 +234,7 @@ func newClickHouseConn(cfg *Config) (*sql.DB, error) {
 
 	// can return a "bad" connection if misconfigured, we won't know
 	// until a Ping, Exec, etc.. is done
-	conn := clickhouse.OpenDB(opts)
-
-	if err := conn.Ping(); err != nil {
-		return nil, fmt.Errorf("unable to connect to db: %w", err)
-	}
-
-	return conn, nil
+	return clickhouse.OpenDB(opts), nil
 }
 
 func createDatabase(ctx context.Context, cfg *Config) error {

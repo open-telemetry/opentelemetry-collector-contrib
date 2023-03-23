@@ -63,7 +63,7 @@ func TestLogsExporter_New(t *testing.T) {
 	}{
 		"no dsn": {
 			config: withDefaultConfig(),
-			want:   failWithMsg("exec create logs table sql: parse dsn address failed"),
+			want:   failWithMsg("parse dsn address failed"),
 		},
 	}
 
@@ -107,7 +107,12 @@ func TestExporter_pushLogsData(t *testing.T) {
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
-	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
+	cfg := withTestExporterConfig(fns...)(dsn)
+	exporter, err := newLogsExporter(zaptest.NewLogger(t), cfg)
+	require.NoError(t, err)
+
+	// need to use the dummy driver driver for testing
+	exporter.client, err = newClickHouseClient(cfg)
 	require.NoError(t, err)
 	require.NoError(t, exporter.start(context.TODO(), nil))
 
