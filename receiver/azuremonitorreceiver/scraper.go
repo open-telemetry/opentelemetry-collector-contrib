@@ -222,7 +222,12 @@ func (s *azureScraper) getResources(ctx context.Context) {
 
 func (s *azureScraper) getResourcesFilter() string {
 	// TODO: switch to parsing services from https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported
-	resourcesTypeFilter := strings.Join(monitorServices, "' or resourceType eq '")
+	var resourcesTypeFilter string
+	if len(s.cfg.Services) > 0 {
+		resourcesTypeFilter = strings.Join(s.cfg.Services, "' or resourceType eq '")
+	} else {
+		resourcesTypeFilter = strings.Join(monitorServices, "' or resourceType eq '")
+	}
 
 	resourcesGroupFilterString := ""
 	if len(s.cfg.ResourceGroups) > 0 {

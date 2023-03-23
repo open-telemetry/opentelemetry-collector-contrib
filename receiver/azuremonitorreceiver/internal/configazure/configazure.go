@@ -23,6 +23,7 @@ type AzureSettings struct {
 	ClientId                      string   `mapstructure:"client_id"`
 	ClientSecret                  string   `mapstructure:"client_secret"`
 	ResourceGroups                []string `mapstructure:"resource_groups"`
+	Services                      []string `mapstructure:"services"`
 	CacheResources                int64    `mapstructure:"cache_resources"`
 	CacheResourcesDefinitions     int64    `mapstructure:"cache_resources_definitions"`
 	MaximumNumberOfMetricsInACall int      `mapstructure:"maximum_number_of_metrics_in_a_call"`
