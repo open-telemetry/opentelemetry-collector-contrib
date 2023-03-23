@@ -103,6 +103,24 @@ func TestExporter_pushLogsData(t *testing.T) {
 
 		require.Equal(t, 3, items)
 	})
+	t.Run("test scope name and scope version merge into log attribute", func(t *testing.T) {
+		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			if strings.HasPrefix(query, "INSERT") {
+				if value, ok := values[9].(map[string]string); ok {
+					v, found := value[conventions.AttributeOtelScopeName]
+					require.True(t, found)
+					require.Equal(t, "io.opentelemetry.contrib.clickhouse", v)
+					v, found = value[conventions.AttributeOtelScopeVersion]
+					require.True(t, found)
+					require.Equal(t, "1.0.0", v)
+				}
+			}
+			return nil
+		})
+
+		exporter := newTestLogsExporter(t, defaultEndpoint)
+		mustPushLogsData(t, exporter, simpleLogs(1))
+	})
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
@@ -129,6 +147,8 @@ func simpleLogs(count int) plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("io.opentelemetry.contrib.clickhouse")
+	sl.Scope().SetVersion("1.0.0")
 	for i := 0; i < count; i++ {
 		r := sl.LogRecords().AppendEmpty()
 		r.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))

@@ -94,6 +94,12 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
 					logAttr := attributesToMap(r.Attributes())
+					if logs.ScopeLogs().At(j).Scope().Name() != "" {
+						logAttr[conventions.AttributeOtelScopeName] = logs.ScopeLogs().At(j).Scope().Name()
+					}
+					if logs.ScopeLogs().At(j).Scope().Version() != "" {
+						logAttr[conventions.AttributeOtelScopeVersion] = logs.ScopeLogs().At(j).Scope().Version()
+					}
 					_, err = statement.ExecContext(ctx,
 						r.Timestamp().AsTime(),
 						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
