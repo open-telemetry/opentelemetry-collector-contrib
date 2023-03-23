@@ -232,9 +232,16 @@ func newClickHouseConn(cfg *Config) (*sql.DB, error) {
 
 	// can return a "bad" connection if misconfigured, we won't know
 	// until a Ping, Exec, etc.. is done
+	conn, err := clickhouse.OpenDB(opts), nil
+	if err != nil {
+		return nil, fmt.Errorf("unable to open db: %w", err)
+	}
 
-	// return clickhouse.Open(opts)
-	return clickhouse.OpenDB(opts), nil
+	if err := conn.Ping(); err != nil {
+		return nil, fmt.Errorf("unable to connect to db: %w", err)
+	}
+
+	return conn, nil
 }
 
 func createDatabase(ctx context.Context, cfg *Config) error {
