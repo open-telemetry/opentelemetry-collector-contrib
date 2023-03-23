@@ -415,29 +415,9 @@ jobs:
           name: collector-packages
           path: ./dist/*
 
-  # publish-check:
-  #   runs-on: ubuntu-latest
-  #   needs: [build-package]
-  #   steps:
-  #     - name: Checkout Repo
-  #       uses: actions/checkout@v3
-  #     - name: Download Binaries
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: collector-binaries
-  #         path: ./bin/
-  #     - name: Download Packages
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: collector-packages
-  #         path: ./dist/
-  #     - name: Verify Distribution Files Exist
-  #       id: check
-  #       run: ./.github/workflows/scripts/verify-dist-files-exist.sh
   publish-dev:
     runs-on: ubuntu-latest
     needs: [lint, unittest, integration-tests, build-package]
-    #if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     #if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     steps:
       - name: Checkout Repo
@@ -476,13 +456,27 @@ jobs:
           path: ./dist/
       - name: Add Permissions to Tool Binaries
         run: chmod -R +x ./dist
+      - name: Sanitize branch name and create version
+        id: create-version
+        env:
+          BRANCH: ${{github.ref_name}}
+          RUN_NUMBER: ${{github.run_number}}
+          BASE_VERSION: "0.0.0"
+        run: |
+          # let's simply use the k8s namespace rules (even stricter) and have the same version(-suffix) for everything
+          # lowercase everything and replace all invalid characters with '-' and trim to 60 characters
+          SANITIZED_BRANCH=$(echo -n "${BRANCH}" | tr '[:upper:]' '[:lower:]' | tr -C 'a-z0-9' '-')
+          SANITIZED_BRANCH="${SANITIZED_BRANCH:0:60}"
+
+          BUILD_VERSION="${BASE_VERSION}-${SANITIZED_BRANCH}-${RUN_NUMBER}"
+          echo "BUILD_VERSION=${BUILD_VERSION}" | tee -a $GITHUB_ENV $GITHUB_OUTPUT
       - name: Build Docker Image
         run: |
           make docker-otelcontribcol
-          docker tag otelcontribcol:latest 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:0.0.${{ github.run_id }}
+          docker tag otelcontribcol:latest 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:${{ steps.create-version.outputs.BUILD_VERSION }}
       - name: Validate Docker Image
         run: |
-          docker run 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:0.0.${{ github.run_id }} --version
+          docker run 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:${{ steps.create-version.outputs.BUILD_VERSION }} --version
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
@@ -494,4 +488,4 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
       - name: Push Docker Image
         run: |
-          docker push 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:0.0.${{ github.run_id }}
+          docker push 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:${{ steps.create-version.outputs.BUILD_VERSION }}
