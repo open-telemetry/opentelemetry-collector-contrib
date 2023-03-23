@@ -476,16 +476,11 @@ jobs:
           path: ./dist/
       - name: Add Permissions to Tool Binaries
         run: chmod -R +x ./dist
-      - name: Verify Distribution Files Exist
-        id: check
-        run: ./.github/workflows/scripts/verify-dist-files-exist.sh
       - name: Build Docker Image
-        if: steps.check.outputs.passed == 'true'
         run: |
           make docker-otelcontribcol
           docker tag otelcontribcol:latest 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:0.0.${{ github.run_id }}
       - name: Validate Docker Image
-        if: steps.check.outputs.passed == 'true'
         run: |
           docker run 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:0.0.${{ github.run_id }} --version
       - name: Configure AWS credentials
@@ -498,6 +493,5 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
       - name: Push Docker Image
-        if: steps.check.outputs.passed == 'true'
         run: |
           docker push 609927696493.dkr.ecr.us-west-2.amazonaws.com/opentelemetry-collector-contrib:0.0.${{ github.run_id }}
