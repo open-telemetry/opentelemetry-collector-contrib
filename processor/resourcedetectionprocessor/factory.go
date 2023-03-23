@@ -39,6 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
@@ -46,8 +47,6 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "resourcedetection"
-	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
@@ -88,9 +87,9 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processor.WithTraces(f.createTracesProcessor, stability),
-		processor.WithMetrics(f.createMetricsProcessor, stability),
-		processor.WithLogs(f.createLogsProcessor, stability))
+		processor.WithTraces(f.createTracesProcessor, metadata.Stability),
+		processor.WithMetrics(f.createMetricsProcessor, metadata.Stability),
+		processor.WithLogs(f.createLogsProcessor, metadata.Stability))
 }
 
 // Type gets the type of the Option config created by this factory.

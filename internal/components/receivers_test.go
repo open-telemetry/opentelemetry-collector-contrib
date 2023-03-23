@@ -426,11 +426,16 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 	}
 
-	assert.Len(t, tests, len(rcvrFactories), "All receivers must be added to the lifecycle suite")
+	receiverCount := 0
 	for _, tt := range tests {
+		_, ok := rcvrFactories[tt.receiver]
+		if !ok {
+			// not part of the distro, skipping.
+			continue
+		}
+		receiverCount++
 		t.Run(string(tt.receiver), func(t *testing.T) {
-			factory, ok := rcvrFactories[tt.receiver]
-			require.True(t, ok)
+			factory := rcvrFactories[tt.receiver]
 			assert.Equal(t, tt.receiver, factory.Type())
 
 			verifyReceiverShutdown(t, factory, tt.getConfigFn)
@@ -440,6 +445,7 @@ func TestDefaultReceivers(t *testing.T) {
 			}
 		})
 	}
+	assert.Len(t, rcvrFactories, receiverCount, "All receivers must be added to the lifecycle suite")
 }
 
 // getReceiverConfigFn is used customize the configuration passed to the verification.

@@ -215,7 +215,8 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	rr := make(chan receivedRequest)
 	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
-		Handler: &capture,
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	defer s.Close()
 	go func() {
@@ -267,7 +268,8 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 	rr := make(chan receivedRequest)
 	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
-		Handler: &capture,
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	defer s.Close()
 	go func() {
@@ -326,7 +328,8 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 	rr := make(chan receivedRequest)
 	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
-		Handler: &capture,
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	defer s.Close()
 	go func() {
@@ -965,7 +968,8 @@ func TestErrorReceived(t *testing.T) {
 		panic(err)
 	}
 	s := &http.Server{
-		Handler: &capture,
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	defer s.Close()
 	go func() {

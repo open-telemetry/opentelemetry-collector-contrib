@@ -8,8 +8,6 @@
 
 **Status: under development; Not recommended for production usage.**
 
-Supported pipeline types: metrics
-
 ## Description
 
 The delta to rate processor (`deltatorateprocessor`) converts delta sum metrics to rate metrics. This rate is a gauge. 

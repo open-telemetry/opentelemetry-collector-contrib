@@ -839,6 +839,42 @@
                      "unit": "By"
                   },
                   {
+                     "description": "Total count of query cache misses across all shards assigned to selected nodes.",
+                     "name": "elasticsearch.node.cache.count",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1663084088275038000",
+                              "timeUnixNano": "1663084098275677000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1663084088275038000",
+                              "timeUnixNano": "1663084098275677000"
+                           }
+                        ]
+                     },
+                     "unit": "{count}"
+                  },
+                  {
                      "description": "The number of evictions from the cache on a node.",
                      "name": "elasticsearch.node.cache.evictions",
                      "sum": {
@@ -5209,6 +5245,21 @@
                      "unit": "{status}"
                   },
                   {
+                     "description": "The number of unfinished fetches.",
+                     "name": "elasticsearch.cluster.in_flight_fetch",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1663084088275038000",
+                              "timeUnixNano": "1663084098275677000"
+                           }
+                        ]
+                     },
+                     "unit": "{fetches}"
+                  },
+                  {
                      "description": "The total number of nodes in the cluster.",
                      "name": "elasticsearch.cluster.nodes",
                      "sum": {
@@ -5222,6 +5273,21 @@
                         ]
                      },
                      "unit": "{nodes}"
+                  },
+                  {
+                     "description": "The number of cluster-level changes that have not yet been executed.",
+                     "name": "elasticsearch.cluster.pending_tasks",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1663084088275038000",
+                              "timeUnixNano": "1663084098275677000"
+                           }
+                        ]
+                     },
+                     "unit": "{tasks}"
                   },
                   {
                      "description": "The number of shards in the cluster.",

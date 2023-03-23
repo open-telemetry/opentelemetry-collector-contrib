@@ -61,7 +61,13 @@ func (s *sqlServerScraper) start(ctx context.Context, host component.Host) error
 
 	for _, pcr := range perfCounterRecorders {
 		for perfCounterName, recorder := range pcr.recorders {
-			w, err := winperfcounters.NewWatcher(pcr.object, pcr.instance, perfCounterName)
+			perfCounterObj := defaultObjectName + ":" + pcr.object
+			if s.config.InstanceName != "" {
+				// The instance name must be preceded by "MSSQL$" to indicate that it is a named instance
+				perfCounterObj = "\\" + s.config.ComputerName + "\\MSSQL$" + s.config.InstanceName + ":" + pcr.object
+			}
+
+			w, err := winperfcounters.NewWatcher(perfCounterObj, pcr.instance, perfCounterName)
 			if err != nil {
 				s.logger.Warn(err.Error())
 				continue
@@ -123,13 +129,15 @@ func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, database
 		recorder(s.metricsBuilder, now)
 	}
 
+	attributes := []metadata.ResourceMetricsOption{}
 	if databaseName != "" {
-		s.metricsBuilder.EmitForResource(
-			metadata.WithSqlserverDatabaseName(databaseName),
-		)
-	} else {
-		s.metricsBuilder.EmitForResource()
+		attributes = append(attributes, metadata.WithSqlserverDatabaseName(databaseName))
 	}
+	if s.config.InstanceName != "" {
+		attributes = append(attributes, metadata.WithSqlserverComputerName(s.config.ComputerName))
+		attributes = append(attributes, metadata.WithSqlserverInstanceName(s.config.InstanceName))
+	}
+	s.metricsBuilder.EmitForResource(attributes...)
 }
 
 // shutdown stops all of the watchers for the scraper.

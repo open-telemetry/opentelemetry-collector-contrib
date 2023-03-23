@@ -26,7 +26,7 @@
                     "metrics": [
                         {
                             "name": "vcenter.host.cpu.usage",
-                            "description": "The amount of CPU in Hz used by the host.",
+                            "description": "The amount of CPU used by the host.",
                             "unit": "MHz",
                             "sum": {
                                 "dataPoints": [

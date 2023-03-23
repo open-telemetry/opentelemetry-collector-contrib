@@ -10,7 +10,7 @@ BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
-COMP_REL_PATH=internal/components/components.go
+COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 GROUP ?= all
@@ -144,23 +144,32 @@ gendependabot:
 	@echo "    directory: \"/\"" >> ${DEPENDABOT_PATH}
 	@echo "    schedule:" >> ${DEPENDABOT_PATH}
 	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}
+	@echo "      day: \"wednesday\"" >> ${DEPENDABOT_PATH}
 	@echo "Add entry for \"/\" docker"
 	@echo "  - package-ecosystem: \"docker\"" >> ${DEPENDABOT_PATH}
 	@echo "    directory: \"/\"" >> ${DEPENDABOT_PATH}
 	@echo "    schedule:" >> ${DEPENDABOT_PATH}
 	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}
+	@echo "      day: \"wednesday\"" >> ${DEPENDABOT_PATH}
 	@echo "Add entry for \"/\" gomod"
 	@echo "  - package-ecosystem: \"gomod\"" >> ${DEPENDABOT_PATH}
 	@echo "    directory: \"/\"" >> ${DEPENDABOT_PATH}
 	@echo "    schedule:" >> ${DEPENDABOT_PATH}
 	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}
-	@set -e; for dir in $(NONROOT_MODS); do \
+	@echo "      day: \"wednesday\"" >> ${DEPENDABOT_PATH}
+	@set -e; for dir in `echo $(NONROOT_MODS) | tr ' ' '\n' | head -n 217 | tr '\n' ' '`; do \
 		echo "Add entry for \"$${dir:1}\""; \
 		echo "  - package-ecosystem: \"gomod\"" >> ${DEPENDABOT_PATH}; \
 		echo "    directory: \"$${dir:1}\"" >> ${DEPENDABOT_PATH}; \
 		echo "    schedule:" >> ${DEPENDABOT_PATH}; \
 		echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}; \
+		echo "      day: \"wednesday\"" >> ${DEPENDABOT_PATH}; \
 	done
+	@echo "The following modules are not included in the dependabot file because it has a limit of 220 entries:"
+	@set -e; for dir in `echo $(NONROOT_MODS) | tr ' ' '\n' | tail -n +218 | tr '\n' ' '`; do \
+		echo "  - $${dir:1}"; \
+	done
+
 
 # Define a delegation target for each module
 .PHONY: $(ALL_MODS)
@@ -345,7 +354,8 @@ CERT_DIRS := receiver/sapmreceiver/testdata \
              receiver/signalfxreceiver/testdata \
              receiver/splunkhecreceiver/testdata \
              receiver/mongodbatlasreceiver/testdata/alerts/cert \
-             receiver/mongodbreceiver/testdata/certs
+             receiver/mongodbreceiver/testdata/certs \
+             receiver/cloudflarereceiver/testdata/cert
 
 # Generate certificates for unit tests relying on certificates.
 .PHONY: certs

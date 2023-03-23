@@ -28,7 +28,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "spanmetrics"
 	// The stability level of the processor.
-	stability = component.StabilityLevelDevelopment
+	stability = component.StabilityLevelDeprecated
 )
 
 // NewFactory creates a factory for the spanmetrics processor.

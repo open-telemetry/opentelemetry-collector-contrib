@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
@@ -125,6 +127,24 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 			return nil, err
 		}
 		return arg, nil
+	case strings.HasPrefix(name, "PMapGetter"):
+		arg, err := buildSlice[PMapGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
+	case strings.HasPrefix(name, "StringGetter"):
+		arg, err := buildSlice[StringGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
+	case strings.HasPrefix(name, "StringLikeGetter"):
+		arg, err := buildSlice[StringLikeGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
 	default:
 		return nil, fmt.Errorf("unsupported slice type '%s' for function", argType.Elem().Name())
 	}
@@ -157,12 +177,24 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return StandardTypeGetter[K, string]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "StringLikeGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardStringLikeGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "IntGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
 		return StandardTypeGetter[K, int64]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "PMapGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardTypeGetter[K, pcommon.Map]{Getter: arg.Get}, nil
 	case name == "Enum":
 		arg, err := p.enumParser(argVal.Enum)
 		if err != nil {

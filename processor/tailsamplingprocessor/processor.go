@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opencensus.io/stats"
@@ -28,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -108,7 +108,7 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 		decisionBatcher: inBatcher,
 		policies:        policies,
 		tickerFrequency: time.Second,
-		numTracesOnMap:  atomic.NewUint64(0),
+		numTracesOnMap:  &atomic.Uint64{},
 	}
 
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
@@ -334,10 +334,12 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		}
 		d, loaded := tsp.idToTrace.Load(id)
 		if !loaded {
+			spanCount := &atomic.Int64{}
+			spanCount.Store(lenSpans)
 			d, loaded = tsp.idToTrace.LoadOrStore(id, &sampling.TraceData{
 				Decisions:       initialDecisions,
 				ArrivalTime:     time.Now(),
-				SpanCount:       atomic.NewInt64(lenSpans),
+				SpanCount:       spanCount,
 				ReceivedBatches: ptrace.NewTraces(),
 			})
 		}

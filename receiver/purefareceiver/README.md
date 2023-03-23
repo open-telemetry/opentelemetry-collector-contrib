@@ -8,8 +8,6 @@
 
 The Pure Storage FlashArray receiver, receives metrics from Pure Storage internal services hosts.
 
-Supported pipeline types: metrics
-
 ## Configuration
 
 The following settings are required:
