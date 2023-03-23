@@ -16,7 +16,7 @@ package attraction
 
 import (
 	"context"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
@@ -943,9 +943,8 @@ func TestValidConfiguration(t *testing.T) {
 func hash(b []byte) string {
 	if enableSha256Gate.IsEnabled() {
 		return sha2Hash(b)
-	} else {
-		return sha1Hash(b)
 	}
+	return sha1Hash(b)
 }
 
 func sha1Hash(b []byte) string {

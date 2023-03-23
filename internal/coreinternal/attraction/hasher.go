@@ -15,7 +15,7 @@
 package attraction // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" // #nosec
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
