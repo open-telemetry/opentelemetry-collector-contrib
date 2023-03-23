@@ -25,12 +25,10 @@ import (
 	"time"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/azure"
 	ec2Attributes "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/ec2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/gcp"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -107,14 +105,9 @@ type Meta struct {
 // metadataFromAttributes gets metadata info from attributes following
 // OpenTelemetry semantic conventions
 func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
-	return metadataFromAttributesWithRegistry(HostnamePreviewFeatureGate, attrs)
-}
-
-func metadataFromAttributesWithRegistry(gate *featuregate.Gate, attrs pcommon.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
-	var usePreviewHostnameLogic = gate.IsEnabled()
-	if src, ok := attributes.SourceFromAttributes(attrs, usePreviewHostnameLogic); ok && src.Kind == source.HostnameKind {
+	if src, ok := attributes.SourceFromAttrs(attrs); ok && src.Kind == source.HostnameKind {
 		hm.InternalHostname = src.Identifier
 		hm.Meta.Hostname = src.Identifier
 	}
@@ -128,12 +121,9 @@ func metadataFromAttributesWithRegistry(gate *featuregate.Gate, attrs pcommon.Ma
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
 	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderGCP:
-		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
+		gcpHostInfo := gcp.HostInfoFromAttrs(attrs)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
-	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderAzure:
-		azureHostInfo := azure.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
-		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
 	}
 
 	return hm
