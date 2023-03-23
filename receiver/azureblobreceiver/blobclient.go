@@ -19,6 +19,8 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"go.uber.org/zap"
 )
 
@@ -27,13 +29,13 @@ type blobClient interface {
 }
 
 type azureBlobClient struct {
-	serviceClient *azblob.ServiceClient
+	serviceClient *service.Client
 	logger        *zap.Logger
 }
 
 var _ blobClient = (*azureBlobClient)(nil)
 
-func (bc *azureBlobClient) getBlockBlob(containerName string, blobName string) azblob.BlockBlobClient {
+func (bc *azureBlobClient) getBlockBlob(containerName string, blobName string) *blockblob.Client {
 	containerClient := bc.serviceClient.NewContainerClient(containerName)
 
 	return containerClient.NewBlockBlobClient(blobName)
@@ -48,13 +50,13 @@ func (bc *azureBlobClient) readBlob(ctx context.Context, containerName string, b
 		}
 	}()
 
-	get, err := blockBlob.Download(ctx, nil)
+	get, err := blockBlob.DownloadStream(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	downloadedData := &bytes.Buffer{}
-	reader := get.Body(nil)
+	reader := get.NewRetryReader(ctx, nil)
 	defer reader.Close()
 
 	_, err = downloadedData.ReadFrom(reader)
@@ -63,13 +65,14 @@ func (bc *azureBlobClient) readBlob(ctx context.Context, containerName string, b
 }
 
 func newBlobClient(connectionString string, logger *zap.Logger) (*azureBlobClient, error) {
-	serviceClient, err := azblob.NewServiceClientFromConnectionString(connectionString, nil)
+	client, err := azblob.NewClientFromConnectionString(connectionString, nil)
 	if err != nil {
 		return nil, err
 	}
+	serviceClient := client.ServiceClient()
 
 	return &azureBlobClient{
-		&serviceClient,
+		serviceClient,
 		logger,
 	}, nil
 }

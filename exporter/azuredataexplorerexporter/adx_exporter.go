@@ -22,7 +22,6 @@ import (
 	"github.com/Azure/azure-kusto-go/kusto"
 	kustoerrors "github.com/Azure/azure-kusto-go/kusto/data/errors"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -217,11 +216,9 @@ func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
 }
 
 func buildAdxClient(config *Config) (*kusto.Client, error) {
-	authorizer := kusto.Authorization{
-		Config: auth.NewClientCredentialsConfig(config.ApplicationID,
-			string(config.ApplicationKey), config.TenantID),
-	}
-	client, err := kusto.New(config.ClusterURI, authorizer)
+	kcsb := kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
+	//kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{})
+	client, err := kusto.New(kcsb)
 	return client, err
 }
 
