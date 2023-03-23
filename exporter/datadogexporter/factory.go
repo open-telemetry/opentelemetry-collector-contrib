@@ -145,7 +145,6 @@ func (f *factory) createDefaultConfig() component.Config {
 			},
 			HistConfig: HistogramConfig{
 				Mode:             "distributions",
-				SendCountSum:     false,
 				SendAggregations: false,
 			},
 			SumConfig: SumConfig{

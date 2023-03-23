@@ -126,8 +126,8 @@ type HistogramConfig struct {
 }
 
 func (c *HistogramConfig) validate() error {
-	if c.Mode == HistogramModeNoBuckets && !c.SendCountSum {
-		return fmt.Errorf("'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics")
+	if c.Mode == HistogramModeNoBuckets && !c.SendAggregations {
+		return fmt.Errorf("'nobuckets' mode and `send_aggregation_metrics` set to false will send no histogram metrics")
 	}
 	return nil
 }
