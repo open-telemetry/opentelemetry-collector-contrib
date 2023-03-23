@@ -5,7 +5,7 @@ change_type: enhancement
 component: datadogexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Adds support for OpenTelemetry span links when converting OTLP spans (span links are added as metadata to the converted span).
+note: Adds support for span links (span links are added as metadata to the converted span).
 
 # One or more tracking issues related to the change
 issues: [20286]
