@@ -139,6 +139,12 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 			return nil, err
 		}
 		return arg, nil
+	case strings.HasPrefix(name, "StringLikeGetter"):
+		arg, err := buildSlice[StringLikeGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
 	default:
 		return nil, fmt.Errorf("unsupported slice type '%s' for function", argType.Elem().Name())
 	}
@@ -171,6 +177,12 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return StandardTypeGetter[K, string]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "StringLikeGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardStringLikeGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "IntGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
