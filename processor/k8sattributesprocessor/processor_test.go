@@ -302,6 +302,12 @@ func withPodUID(uid string) generateResourceFunc {
 	}
 }
 
+func withPodConfigHash(hash string) generateResourceFunc {
+	return func(res pcommon.Resource) {
+		res.Attributes().PutStr("k8s.pod.confighash", hash)
+	}
+}
+
 func withContainerName(containerName string) generateResourceFunc {
 	return func(res pcommon.Resource) {
 		res.Attributes().PutStr(conventions.AttributeK8SContainerName, containerName)
@@ -675,6 +681,47 @@ func TestPodUID(t *testing.T) {
 	})
 }
 
+func TestPodConfigHash(t *testing.T) {
+	m := newMultiTest(
+		t,
+		NewFactory().CreateDefaultConfig(),
+		nil,
+	)
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.podAssociations = []kube.Association{
+			{
+				Sources: []kube.AssociationSource{
+					{
+						From: "resource_attribute",
+						Name: "k8s.pod.confighash",
+					},
+				},
+			},
+		}
+		kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.confighash", "e19c1283c925b3206685ff522acfe3e6")] = &kube.Pod{
+			Name: "PodA",
+			Attributes: map[string]string{
+				"k":  "v",
+				"1":  "2",
+				"aa": "b",
+			},
+		}
+	})
+
+	m.testConsume(context.Background(),
+		generateTraces(withPodConfigHash("e19c1283c925b3206685ff522acfe3e6")),
+		generateMetrics(withPodConfigHash("e19c1283c925b3206685ff522acfe3e6")),
+		generateLogs(withPodConfigHash("e19c1283c925b3206685ff522acfe3e6")),
+		nil)
+
+	m.assertBatchesLen(1)
+	m.assertResourceObjectLen(0)
+	m.assertResource(0, func(r pcommon.Resource) {
+		require.Greater(t, r.Attributes().Len(), 0)
+		assertResourceHasStringAttribute(t, r, "k8s.pod.confighash", "e19c1283c925b3206685ff522acfe3e6")
+	})
+}
+
 func TestProcessorAddLabels(t *testing.T) {
 	m := newMultiTest(
 		t,
@@ -779,6 +826,40 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			},
 			wantAttrs: map[string]string{
 				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				conventions.AttributeK8SContainerName:   "app",
+				conventions.AttributeContainerImageName: "test/app",
+				conventions.AttributeContainerImageTag:  "1.0.1",
+			},
+		},
+		{
+			name: "image-only-confighash",
+			op: func(kp *kubernetesprocessor) {
+				kp.podAssociations = []kube.Association{
+					{
+						Name: "k8s.pod.confighash",
+						Sources: []kube.AssociationSource{
+							{
+								From: "resource_attribute",
+								Name: "k8s.pod.confighash",
+							},
+						},
+					},
+				}
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.confighash", "e19c1283c925b3206685ff522acfe3e6")] = &kube.Pod{
+					Containers: map[string]*kube.Container{
+						"app": {
+							ImageName: "test/app",
+							ImageTag:  "1.0.1",
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPodConfigHash("e19c1283c925b3206685ff522acfe3e6"),
+				withContainerName("app"),
+			},
+			wantAttrs: map[string]string{
+				kube.K8sConfigHashName:                  "e19c1283c925b3206685ff522acfe3e6",
 				conventions.AttributeK8SContainerName:   "app",
 				conventions.AttributeContainerImageName: "test/app",
 				conventions.AttributeContainerImageTag:  "1.0.1",

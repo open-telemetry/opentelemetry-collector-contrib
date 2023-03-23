@@ -62,6 +62,9 @@ k8sattributes/2:
         name: k8s.pod.ip
     - sources:
       - from: resource_attribute
+        name: k8s.pod.confighash
+    - sources:
+      - from: resource_attribute
         name: host.name
     - sources:
       - from: connection

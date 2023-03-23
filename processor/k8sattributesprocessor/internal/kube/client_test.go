@@ -86,6 +86,9 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interfac
 	pod.Name = "podC"
 	pod.Status.PodIP = "2.2.2.2"
 	pod.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	pod.Annotations = map[string]string{
+		"kubernetes.io/config.hash": "e19c1283c925b3206685ff522acfe3e6",
+	}
 	handler(pod)
 	assert.Equal(t, 5, len(c.Pods))
 	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "2.2.2.2")]
@@ -93,6 +96,10 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interfac
 	assert.Equal(t, "podC", got.Name)
 	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.PodUID)
 	got = c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")]
+	assert.Equal(t, "2.2.2.2", got.Address)
+	assert.Equal(t, "podC", got.Name)
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.PodUID)
+	got = c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.confighash", "e19c1283c925b3206685ff522acfe3e6")]
 	assert.Equal(t, "2.2.2.2", got.Address)
 	assert.Equal(t, "podC", got.Name)
 	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.PodUID)

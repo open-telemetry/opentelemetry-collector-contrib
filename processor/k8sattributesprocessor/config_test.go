@@ -91,6 +91,14 @@ func TestLoadConfig(t *testing.T) {
 						Sources: []PodAssociationSourceConfig{
 							{
 								From: "resource_attribute",
+								Name: "k8s.pod.confighash",
+							},
+						},
+					},
+					{
+						Sources: []PodAssociationSourceConfig{
+							{
+								From: "resource_attribute",
 								Name: "host.name",
 							},
 						},
