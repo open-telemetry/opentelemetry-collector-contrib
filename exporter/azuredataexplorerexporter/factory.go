@@ -37,7 +37,7 @@ const (
 	logsType           = 2
 	tracesType         = 3
 	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
+	stability = component.StabilityLevelBeta
 )
 
 // Creates a factory for the ADX Exporter
@@ -72,10 +72,10 @@ func createMetricsExporter(
 	}
 	adxCfg := config.(*Config)
 	setDefaultIngestionType(adxCfg, set.Logger)
-
+	version := set.BuildInfo.Version
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	adp, err := newExporter(adxCfg, set.Logger, metricsType)
+	adp, err := newExporter(adxCfg, set.Logger, metricsType, version)
 
 	if err != nil {
 		return nil, err
@@ -102,10 +102,10 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	adxCfg := config.(*Config)
 	setDefaultIngestionType(adxCfg, set.Logger)
-
+	version := set.BuildInfo.Version
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	adp, err := newExporter(adxCfg, set.Logger, tracesType)
+	adp, err := newExporter(adxCfg, set.Logger, tracesType, version)
 
 	if err != nil {
 		return nil, err
@@ -132,10 +132,10 @@ func createLogsExporter(
 ) (exp exporter.Logs, err error) {
 	adxCfg := config.(*Config)
 	setDefaultIngestionType(adxCfg, set.Logger)
-
+	version := set.BuildInfo.Version
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	adp, err := newExporter(adxCfg, set.Logger, logsType)
+	adp, err := newExporter(adxCfg, set.Logger, logsType, version)
 
 	if err != nil {
 		return nil, err

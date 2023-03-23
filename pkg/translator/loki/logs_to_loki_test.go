@@ -58,7 +58,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant.id="1"}`,
+								Labels: `{exporter="OTLP", tenant_id="1"}`,
 								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
@@ -71,7 +71,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant.id="2"}`,
+								Labels: `{exporter="OTLP", tenant_id="2"}`,
 								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
@@ -110,7 +110,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant.id="11"}`,
+								Labels: `{exporter="OTLP", tenant_id="11"}`,
 								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
@@ -123,7 +123,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant.id="12"}`,
+								Labels: `{exporter="OTLP", tenant_id="12"}`,
 								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
@@ -196,7 +196,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant.id="21"}`,
+								Labels: `{exporter="OTLP", tenant_id="21"}`,
 								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
@@ -209,7 +209,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant.id="22"}`,
+								Labels: `{exporter="OTLP", tenant_id="22"}`,
 								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
@@ -265,7 +265,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			hints: map[string]interface{}{
 				hintAttributes: "host.name",
 			},
-			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
+			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
 			expectedLines: []string{
 				`{"traceid":"01000000000000000000000000000000","attributes":{"http.status":200}}`,
 				`{"traceid":"02000000000000000000000000000000","attributes":{"http.status":200}}`,
@@ -281,7 +281,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			hints: map[string]interface{}{
 				hintResources: "host.name",
 			},
-			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
+			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
 			expectedLines: []string{
 				`{"traceid":"01000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
 				`{"traceid":"02000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
@@ -298,7 +298,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 				hintAttributes: "host.name",
 				hintFormat:     formatLogfmt,
 			},
-			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
+			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
 			expectedLines: []string{
 				`traceID=01000000000000000000000000000000 attribute_http.status=200`,
 				`traceID=02000000000000000000000000000000 attribute_http.status=200`,
