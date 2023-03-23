@@ -45,7 +45,8 @@ Each _metric_ in the configuration will produce one OTel metric per row returned
 * `unit` (optional): the units applied to the metric.
 * `static_attributes` (optional): static attributes applied to the metrics.
 * `start_ts_column` (optional): start timestamp associated with metrics.
-* `stop_ts_column` (optional): stop timestamp associated with metrics, used for setting metric `timestamp`.
+* `end_ts_column` (optional): end timestamp associated with metrics, used for setting metric `timestamp`. This can be 
+  current timestamp depending upon the time of last recorded metric's datapoint.
 ### Example
 
 ```yaml

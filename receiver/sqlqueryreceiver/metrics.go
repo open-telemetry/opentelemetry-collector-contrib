@@ -31,20 +31,20 @@ func rowToMetric(row stringMap, cfg MetricCfg, dest pmetric.Metric, startTime pc
 	dataPoint := dataPointSlice.AppendEmpty()
 	if cfg.StartTsColumn != "" {
 		if val, found := row[cfg.StartTsColumn]; found {
-			time, err := strconv.ParseUint(val, 10, 64)
+			timestamp, err := strconv.ParseInt(val, 10, 64)
 			if err != nil {
 				return fmt.Errorf("failed to parse uint64 for %s, value was %s: %w", cfg.StartTsColumn, val, err)
 			}
-			startTime = pcommon.Timestamp(time)
+			startTime = pcommon.Timestamp(timestamp)
 		}
 	}
-	if cfg.StopTsColumn != "" {
-		if val, found := row[cfg.StopTsColumn]; found {
-			time, err := strconv.ParseUint(val, 10, 64)
+	if cfg.EndTsColumn != "" {
+		if val, found := row[cfg.EndTsColumn]; found {
+			timestamp, err := strconv.ParseInt(val, 10, 64)
 			if err != nil {
-				return fmt.Errorf("failed to parse uint64 for %s, value was %s: %w", cfg.StopTsColumn, val, err)
+				return fmt.Errorf("failed to parse uint64 for %s, value was %s: %w", cfg.EndTsColumn, val, err)
 			}
-			ts = pcommon.Timestamp(time)
+			ts = pcommon.Timestamp(timestamp)
 		}
 	}
 	setTimestamp(cfg, dataPoint, startTime, ts, scrapeCfg)

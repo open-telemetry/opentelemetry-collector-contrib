@@ -83,7 +83,7 @@ type MetricCfg struct {
 	Description      string            `mapstructure:"description"`
 	StaticAttributes map[string]string `mapstructure:"static_attributes"`
 	StartTsColumn    string            `mapstructure:"start_ts_column"`
-	StopTsColumn     string            `mapstructure:"stop_ts_column"`
+	EndTsColumn      string            `mapstructure:"end_ts_column"`
 }
 
 func (c MetricCfg) Validate() error {
@@ -107,13 +107,13 @@ func (c MetricCfg) Validate() error {
 		errs = multierr.Append(errs, fmt.Errorf("aggregation=%s but data_type=%s does not support aggregation", c.Aggregation, c.DataType))
 	}
 	if c.StartTsColumn != "" {
-		if _, err := strconv.ParseUint(c.StartTsColumn, 10, 64); err != nil {
+		if _, err := strconv.ParseInt(c.StartTsColumn, 10, 64); err != nil {
 			errs = multierr.Append(errs, fmt.Errorf("metric config has unsupported timestamp: '%s'", c.StartTsColumn))
 		}
 	}
-	if c.StopTsColumn != "" {
-		if _, err := strconv.ParseUint(c.StopTsColumn, 10, 64); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("metric config has unsupported timestamp: '%s'", c.StopTsColumn))
+	if c.EndTsColumn != "" {
+		if _, err := strconv.ParseInt(c.EndTsColumn, 10, 64); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("metric config has unsupported timestamp: '%s'", c.EndTsColumn))
 		}
 	}
 	if errs != nil && c.MetricName != "" {
