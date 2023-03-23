@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -143,8 +144,9 @@ func (f *factory) createDefaultConfig() component.Config {
 				InstrumentationScopeMetadataAsTags: false,
 			},
 			HistConfig: HistogramConfig{
-				Mode:         "distributions",
-				SendCountSum: false,
+				Mode:             "distributions",
+				SendCountSum:     false,
+				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
@@ -176,11 +178,12 @@ func (f *factory) createDefaultConfig() component.Config {
 
 // checkAndCastConfig checks the configuration type and its warnings, and casts it to
 // the Datadog Config struct.
-func checkAndCastConfig(c component.Config) *Config {
+func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 	cfg, ok := c.(*Config)
 	if !ok {
 		panic("programming error: config structure is not of type *datadogexporter.Config")
 	}
+	cfg.logWarnings(logger)
 	return cfg
 }
 
@@ -190,7 +193,7 @@ func (f *factory) createMetricsExporter(
 	set exporter.CreateSettings,
 	c component.Config,
 ) (exporter.Metrics, error) {
-	cfg := checkAndCastConfig(c)
+	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
 
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
@@ -256,7 +259,7 @@ func (f *factory) createTracesExporter(
 	set exporter.CreateSettings,
 	c component.Config,
 ) (exporter.Traces, error) {
-	cfg := checkAndCastConfig(c)
+	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
 
 	var (
 		pusher consumer.ConsumeTracesFunc
@@ -324,7 +327,7 @@ func (f *factory) createLogsExporter(
 	set exporter.CreateSettings,
 	c component.Config,
 ) (exporter.Logs, error) {
-	cfg := checkAndCastConfig(c)
+	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
 
 	var pusher consumer.ConsumeLogsFunc
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
