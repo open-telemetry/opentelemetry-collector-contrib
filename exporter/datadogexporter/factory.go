@@ -120,11 +120,6 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
-	hostnameSource := HostnameSourceFirstResource
-	if hostmetadata.HostnamePreviewFeatureGate.IsEnabled() {
-		hostnameSource = HostnameSourceConfigOrSystem
-	}
-
 	return &Config{
 		TimeoutSettings: defaulttimeoutSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
@@ -170,7 +165,7 @@ func (f *factory) createDefaultConfig() component.Config {
 
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: hostnameSource,
+			HostnameSource: HostnameSourceConfigOrSystem,
 		},
 	}
 }
