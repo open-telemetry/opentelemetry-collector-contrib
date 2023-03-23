@@ -40,6 +40,7 @@ func TestMessagingSimple(t *testing.T) {
 	assert.Equal(t, "process", segment.Messaging["operation"])
 	assert.Equal(t, "AmazonSQS", segment.Messaging["system"])
 	assert.Equal(t, "myValue", segment.Metadata["default"]["notMessaging"])
+	assert.Equal(t, 0, len(segment.Annotations))
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil)
 
@@ -121,4 +122,35 @@ func TestMessagingComplex(t *testing.T) {
 
 	assert.True(t, strings.Contains(jsonStr, "id"))
 	assert.True(t, strings.Contains(jsonStr, "452a7c7c7c7048c2f887f61572b18fc2"))
+}
+
+func TestMessagingWithIndexedAttributes(t *testing.T) {
+	spanName := "ProcessingMessage"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
+
+	span.Attributes().PutStr("messaging.operation", "process")
+	span.Attributes().PutStr("messaging.system", "AmazonSQS")
+
+	segment, _ := MakeSegment(span, resource, []string{"messaging.system"}, false, nil)
+
+	assert.Equal(t, 2, len(segment.Messaging))
+	assert.Equal(t, "process", segment.Messaging["operation"])
+	assert.Equal(t, "AmazonSQS", segment.Messaging["system"])
+	assert.Equal(t, 1, len(segment.Annotations))
+	assert.Equal(t, "AmazonSQS", segment.Annotations["messaging_system"])
+
+	jsonStr, _ := MakeSegmentDocumentString(span, resource, []string{"messaging.system"}, false, nil)
+
+	assert.True(t, strings.Contains(jsonStr, "messaging"))
+
+	assert.True(t, strings.Contains(jsonStr, "operation"))
+	assert.True(t, strings.Contains(jsonStr, "process"))
+
+	assert.True(t, strings.Contains(jsonStr, "system"))
+	assert.True(t, strings.Contains(jsonStr, "AmazonSQS"))
+	assert.True(t, strings.Contains(jsonStr, "annotations"))
+	assert.True(t, strings.Contains(jsonStr, "messaging_system"))
 }
