@@ -16,11 +16,13 @@ package countconnector // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
@@ -51,7 +53,12 @@ func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) erro
 	for name, md := range c.metricDefs {
 		countAttrs := pcommon.NewMap()
 		for _, attr := range md.attrs {
-			if attrVal, ok := attrs.Get(attr.Key); ok {
+			attrVal, ok := attrs.Get(attr.Key)
+			if !ok {
+				// couldn't find the attribute so check if it is nested
+				attrVal, ok = getNestedAttribute(attr.Key, attrs) // shadows the OK from above on purpose
+			}
+			if ok {
 				countAttrs.PutStr(attr.Key, attrVal.Str())
 			} else if attr.DefaultValue != "" {
 				countAttrs.PutStr(attr.Key, attr.DefaultValue)
@@ -116,4 +123,25 @@ func (c *counter[K]) appendMetricsTo(metricSlice pmetric.MetricSlice) {
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(c.timestamp))
 		}
 	}
+}
+
+func getNestedAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
+	logger := zap.NewExample()
+	defer logger.Sync()
+	left, right, _ := strings.Cut(attr, ".")
+	av, ok := attributes.Get(left)
+	if ok {
+		if av.Type().String() == "Slice" {
+			logger.Warn("[connector/count] cannot use Type Slice as an attribute source", zap.String("atrribute", attr))
+			return pcommon.Value{}, false
+		} else if len(right) == 0 {
+			return av, ok
+		}
+	}
+
+	if !ok {
+		return pcommon.Value{}, false
+	}
+
+	return getNestedAttribute(right, av.Map())
 }
