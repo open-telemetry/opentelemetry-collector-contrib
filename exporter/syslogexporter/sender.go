@@ -54,7 +54,7 @@ type sender struct {
 	conn      net.Conn
 }
 
-func Connect(logger *zap.Logger, cfg *Config, tlsConfig *tls.Config) (*sender, error) {
+func connect(logger *zap.Logger, cfg *Config, tlsConfig *tls.Config) (*sender, error) {
 	s := &sender{
 		logger:    logger,
 		network:   cfg.Protocol,
@@ -66,14 +66,14 @@ func Connect(logger *zap.Logger, cfg *Config, tlsConfig *tls.Config) (*sender, e
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	err := s.connect()
+	err := s.dial()
 	if err != nil {
 		return nil, err
 	}
 	return s, err
 }
 
-func (s *sender) Close() error {
+func (s *sender) close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -85,7 +85,7 @@ func (s *sender) Close() error {
 	return nil
 }
 
-func (s *sender) connect() error {
+func (s *sender) dial() error {
 	if s.conn != nil {
 		s.conn.Close()
 		s.conn = nil
@@ -110,7 +110,7 @@ func (s *sender) Write(msg map[string]any, timestamp time.Time) error {
 			return nil
 		}
 	}
-	if err := s.connect(); err != nil {
+	if err := s.dial(); err != nil {
 		return err
 	}
 
