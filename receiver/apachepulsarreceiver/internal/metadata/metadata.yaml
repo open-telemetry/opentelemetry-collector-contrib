@@ -1,0 +1,39 @@
+name: apachepulsarreceiver
+
+status:
+  type: receiver
+  stability: development
+  pipelines: [metrics]
+  distribution: [contrib]
+
+metrics:
+  topic.msgincount:
+    description: number of messages published for a topic (in the last interval?)
+    enabled: true
+    sum:
+      aggregation: delta
+      monotonic: false
+      value_type: int
+    unit: "{messages}"
+  topic.backlogsize:
+    description: total unconsumed message data
+    enabled: true
+    sum:
+      aggregation: cumulative # double check this
+      monotonic: false
+      value_type: int
+    unit: bytes
+  topic.sub.unackedmsgs:
+    description: number of unacknowledged messages for a subscription
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: "{messages}"
+  topic.avgmsgsize:
+    description: average size of messages in the last interval
+    enabled: true
+    gauge:
+      value_type: int
+    unit: bytes
