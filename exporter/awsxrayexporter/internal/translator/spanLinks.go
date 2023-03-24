@@ -37,14 +37,14 @@ func makeSpanLinks(links ptrace.SpanLinkSlice) ([]awsxray.SpanLinkData, error) {
 		spanLinkData.SpanID = &spanID
 		spanLinkData.TraceID = &traceID
 
-		if links.Len() > 0 {
+		if link.Attributes().Len() > 0 {
 			spanLinkData.Attributes = make(map[string]interface{})
-		}
 
-		link.Attributes().Range(func(k string, v pcommon.Value) bool {
-			spanLinkData.Attributes[k] = v.AsRaw()
-			return true
-		})
+			link.Attributes().Range(func(k string, v pcommon.Value) bool {
+				spanLinkData.Attributes[k] = v.AsRaw()
+				return true
+			})
+		}
 
 		spanLinkDataArray = append(spanLinkDataArray, spanLinkData)
 	}
