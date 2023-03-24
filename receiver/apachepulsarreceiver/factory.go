@@ -18,26 +18,24 @@ const (
 
 var errConfigNotPulsar = errors.New("config was not a Pulsar receiver config")
 
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		newDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
 func newDefaultConfig() component.Config {
-	return &component.Config{
+	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)), find a way to replace this line
 			CollectionInterval: 10 * time.Second,
 		},
-		// Endpoint: defaultEndpoint,
 	}
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -50,7 +48,7 @@ func createMetricsReceiver(
 	// 	return nil, fmt.Errorf("failed to validate added config defaults: %w", err)
 	// }
 
-	pulsarScraper := newScraper(params.Logger, pulsarConfig)
+	pulsarScraper := newScraper(params.Logger, pulsarConfig, params)
 	scraper, err := scraperhelper.NewScraper(typeStr, pulsarScraper.scrape,
 		scraperhelper.WithStart(pulsarScraper.start))
 	if err != nil {

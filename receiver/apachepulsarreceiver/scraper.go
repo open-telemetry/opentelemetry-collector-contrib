@@ -5,6 +5,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -12,10 +13,10 @@ import (
 type apachePulsarScraper struct {
 	logger   *zap.Logger
 	cfg      *Config
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 }
 
-func newScraper(logger *zap.Logger, cfg *Config, settings component.ReceiverCreateSettings) *apachePulsarScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *apachePulsarScraper {
 	return &apachePulsarScraper{logger, cfg, settings}
 }
 
