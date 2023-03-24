@@ -20,6 +20,8 @@ import (
 	"strings"
 )
 
+const MessagingPrefix = "messaging."
+
 func makeMessaging(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]pcommon.Value, map[string]interface{}) {
 	var (
 		filtered  = make(map[string]pcommon.Value)
@@ -27,8 +29,8 @@ func makeMessaging(span ptrace.Span, attributes map[string]pcommon.Value) (map[s
 	)
 
 	for key, value := range attributes {
-		if strings.HasPrefix(key, "messaging.") {
-			messaging[strings.TrimPrefix(key, "messaging.")] = value.AsRaw()
+		if strings.HasPrefix(key, MessagingPrefix) {
+			messaging[strings.TrimPrefix(key, MessagingPrefix)] = value.AsRaw()
 		} else {
 			filtered[key] = value
 		}
