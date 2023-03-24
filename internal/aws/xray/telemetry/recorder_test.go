@@ -101,6 +101,14 @@ func TestIncludeMetadata(t *testing.T) {
 	assert.Equal(t, "env_hostname", recorder.hostname)
 	assert.Equal(t, "env_instance_id", recorder.instanceID)
 	assert.Equal(t, "", recorder.resourceARN)
+	cfg.Hostname = "cfg_hostname"
+	cfg.InstanceID = "cfg_instance_id"
+	cfg.ResourceARN = "cfg_arn"
+	opts = ToRecorderOptions(cfg, sess, &awsutil.AWSSessionSettings{})
+	recorder = newTelemetryRecorder(&mockClient{}, opts...)
+	assert.Equal(t, "cfg_hostname", recorder.hostname)
+	assert.Equal(t, "cfg_instance_id", recorder.instanceID)
+	assert.Equal(t, "cfg_arn", recorder.resourceARN)
 }
 
 func TestRecordConnectionError(t *testing.T) {

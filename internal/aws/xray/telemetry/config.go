@@ -24,5 +24,11 @@ type Config struct {
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 	// Contributors can be used to explicitly define which X-Ray components are contributing to the telemetry.
 	// If omitted, only X-Ray components with the same component.ID as the setup component will have access.
-	Contributors []component.ID `mapstructure:"contributors"`
+	Contributors []component.ID `mapstructure:"contributors,omitempty"`
+	// Hostname can be used to explicitly define the hostname associated with the telemetry.
+	Hostname string `mapstructure:"hostname,omitempty"`
+	// InstanceID can be used to explicitly define the instance ID associated with the telemetry.
+	InstanceID string `mapstructure:"instance_id,omitempty"`
+	// ResourceARN can be used to explicitly define the resource ARN associated with the telemetry.
+	ResourceARN string `mapstructure:"resource_arn,omitempty"`
 }

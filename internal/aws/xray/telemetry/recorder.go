@@ -34,8 +34,10 @@ import (
 )
 
 const (
-	envAWSHostname   = "AWS_HOSTNAME"
-	envAWSInstanceID = "AWS_INSTANCE_ID"
+	envAWSHostname     = "AWS_HOSTNAME"
+	envAWSInstanceID   = "AWS_INSTANCE_ID"
+	metadataHostname   = "hostname"
+	metadataInstanceID = "instance-id"
 
 	queueSize       = 30
 	batchSize       = 10
@@ -93,27 +95,71 @@ func WithLogger(logger *zap.Logger) RecorderOption {
 	})
 }
 
+type metadataProvider interface {
+	get() string
+}
+
+func getMetadata(providers ...metadataProvider) string {
+	var metadata string
+	for _, provider := range providers {
+		if metadata = provider.get(); metadata != "" {
+			break
+		}
+	}
+	return metadata
+}
+
+type simpleMetadataProvider struct {
+	metadata string
+}
+
+func (p simpleMetadataProvider) get() string {
+	return p.metadata
+}
+
+type envMetadataProvider struct {
+	envKey string
+}
+
+func (p envMetadataProvider) get() string {
+	return os.Getenv(p.envKey)
+}
+
+type ec2MetadataProvider struct {
+	client      *ec2metadata.EC2Metadata
+	metadataKey string
+}
+
+func (p ec2MetadataProvider) get() string {
+	var metadata string
+	if result, err := p.client.GetMetadata(p.metadataKey); err == nil {
+		metadata = result
+	}
+	return metadata
+}
+
 // ToRecorderOptions gets the metadata recorder options if enabled by the config.
 func ToRecorderOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSettings) []RecorderOption {
 	if !cfg.IncludeMetadata {
 		return nil
 	}
-	hostname := os.Getenv(envAWSHostname)
-	instanceID := os.Getenv(envAWSInstanceID)
-	if !settings.LocalMode {
-		metadataClient := ec2metadata.New(sess)
-		if hostname == "" {
-			if result, err := metadataClient.GetMetadata("hostname"); err == nil {
-				hostname = result
-			}
-		}
-		if instanceID == "" {
-			if result, err := metadataClient.GetMetadata("instance-id"); err == nil {
-				instanceID = result
-			}
-		}
+	metadataClient := ec2metadata.New(sess)
+	return []RecorderOption{
+		WithHostname(getMetadata(
+			simpleMetadataProvider{cfg.Hostname},
+			envMetadataProvider{envAWSHostname},
+			ec2MetadataProvider{metadataClient, metadataHostname},
+		)),
+		WithInstanceID(getMetadata(
+			simpleMetadataProvider{cfg.InstanceID},
+			envMetadataProvider{envAWSInstanceID},
+			ec2MetadataProvider{metadataClient, metadataInstanceID},
+		)),
+		WithResourceARN(getMetadata(
+			simpleMetadataProvider{cfg.ResourceARN},
+			simpleMetadataProvider{settings.ResourceARN},
+		)),
 	}
-	return []RecorderOption{WithResourceARN(settings.ResourceARN), WithHostname(hostname), WithInstanceID(instanceID)}
 }
 
 type telemetryRecorder struct {
@@ -121,6 +167,7 @@ type telemetryRecorder struct {
 	instanceID  string
 	hostname    string
 
+	// logger is used to log dropped records.
 	logger *zap.Logger
 	// client is used to send the records.
 	client awsxray.XRayClient
@@ -312,50 +359,26 @@ func (t *telemetryRecorder) RecordConnectionError(err error) {
 	if ok := errors.As(err, &requestFailure); ok {
 		switch requestFailure.StatusCode() / 100 {
 		case 5:
-			t.recordConnectionHTTPCode5XX(1)
+			atomic.AddInt64(t.record.BackendConnectionErrors.HTTPCode5XXCount, 1)
 		case 4:
-			t.recordConnectionHTTPCode4XX(1)
+			atomic.AddInt64(t.record.BackendConnectionErrors.HTTPCode4XXCount, 1)
 		default:
-			t.recordConnectionOther(1)
+			atomic.AddInt64(t.record.BackendConnectionErrors.OtherCount, 1)
 		}
 	} else {
 		var awsError awserr.Error
 		if ok = errors.As(err, &awsError); ok {
 			switch awsError.Code() {
 			case request.ErrCodeResponseTimeout:
-				t.recordConnectionTimeout(1)
+				atomic.AddInt64(t.record.BackendConnectionErrors.TimeoutCount, 1)
 			case request.ErrCodeRequestError:
-				t.recordConnectionUnknownHost(1)
+				atomic.AddInt64(t.record.BackendConnectionErrors.UnknownHostCount, 1)
 			default:
-				t.recordConnectionOther(1)
+				atomic.AddInt64(t.record.BackendConnectionErrors.OtherCount, 1)
 			}
 		} else {
-			t.recordConnectionOther(1)
+			atomic.AddInt64(t.record.BackendConnectionErrors.OtherCount, 1)
 		}
 	}
-}
-
-func (t *telemetryRecorder) recordConnectionHTTPCode5XX(count int) {
-	atomic.AddInt64(t.record.BackendConnectionErrors.HTTPCode5XXCount, int64(count))
-	t.recordUpdated.Store(true)
-}
-
-func (t *telemetryRecorder) recordConnectionHTTPCode4XX(count int) {
-	atomic.AddInt64(t.record.BackendConnectionErrors.HTTPCode4XXCount, int64(count))
-	t.recordUpdated.Store(true)
-}
-
-func (t *telemetryRecorder) recordConnectionTimeout(count int) {
-	atomic.AddInt64(t.record.BackendConnectionErrors.TimeoutCount, int64(count))
-	t.recordUpdated.Store(true)
-}
-
-func (t *telemetryRecorder) recordConnectionUnknownHost(count int) {
-	atomic.AddInt64(t.record.BackendConnectionErrors.UnknownHostCount, int64(count))
-	t.recordUpdated.Store(true)
-}
-
-func (t *telemetryRecorder) recordConnectionOther(count int) {
-	atomic.AddInt64(t.record.BackendConnectionErrors.OtherCount, int64(count))
 	t.recordUpdated.Store(true)
 }
