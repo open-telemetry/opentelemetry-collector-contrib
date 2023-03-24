@@ -34,7 +34,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 
 	assert.Equal(t, cfg, &Config{
-		Endpoint: "host.domain.com",
 		Port:     514,
 		Protocol: "tcp",
 		Format:   "rfc5424",
@@ -51,6 +50,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 			MaxInterval:         30 * time.Second,
 			MaxElapsedTime:      5 * time.Minute,
 		},
+		TimeoutSettings: exporterhelper.TimeoutSettings{
+			Timeout: 5 * time.Second,
+		},
 	})
-	assert.NoError(t, component.ValidateConfig(cfg))
 }

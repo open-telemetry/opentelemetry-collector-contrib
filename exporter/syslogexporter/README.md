@@ -45,6 +45,7 @@ The syslog exporter supports sending messages to a remote syslog server.
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
   - `storage` (default = `none`): When set, enables persistence and uses the component specified as a storage extension for the [persistent queue][persistent_queue]
+- `timeout` (default = 5s) Time to wait per individual attempt to send data to a backend
 
 Please refer to the yaml below to configure the syslog exporter:
 
