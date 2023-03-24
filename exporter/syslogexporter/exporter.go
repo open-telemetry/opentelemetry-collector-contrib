@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -40,6 +41,8 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sysloge
 	if err != nil {
 		return nil, err
 	}
+
+	cfg.Protocol = strings.ToLower(cfg.Protocol)
 
 	s := &syslogexporter{
 		config:    cfg,
