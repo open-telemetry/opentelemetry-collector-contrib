@@ -3229,7 +3229,7 @@
                             }
                         },
                         {
-                            "name": "vcenter.host.cpu.utilization",
+                            "name": "vcenter.vm.cpu.utilization",
                             "description": "The CPU utilization of the VM.",
                             "unit": "%",
                             "gauge": {
