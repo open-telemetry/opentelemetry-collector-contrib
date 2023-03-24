@@ -126,9 +126,6 @@ type telemetryRecorder struct {
 	client awsxray.XRayClient
 	// record is the pointer to the count metrics for the current period.
 	record *xray.TelemetryRecord
-	// mu is the lock used when updating the record. Primarily exists to
-	// prevent writes while swapping the record out in cutoff.
-	mu sync.Mutex
 
 	// queue is used to keep records that failed to send for retry during
 	// the next period.
@@ -221,12 +218,19 @@ func (t *telemetryRecorder) start() {
 // cutoff the current record and swap it out with a new record.
 // Sets the timestamp and returns the old record.
 func (t *telemetryRecorder) cutoff() *xray.TelemetryRecord {
-	t.mu.Lock()
-	oldRecord := t.record
-	t.record = newTelemetryRecord()
-	t.mu.Unlock()
-	oldRecord.SetTimestamp(time.Now())
-	return oldRecord
+	snapshot := newTelemetryRecord()
+	snapshot.SetSegmentsSentCount(atomic.SwapInt64(t.record.SegmentsSentCount, 0))
+	snapshot.SetSegmentsReceivedCount(atomic.SwapInt64(t.record.SegmentsReceivedCount, 0))
+	snapshot.SetSegmentsRejectedCount(atomic.SwapInt64(t.record.SegmentsRejectedCount, 0))
+	snapshot.SetSegmentsSpilloverCount(atomic.SwapInt64(t.record.SegmentsSpilloverCount, 0))
+	snapshot.BackendConnectionErrors.SetHTTPCode4XXCount(atomic.SwapInt64(t.record.BackendConnectionErrors.HTTPCode4XXCount, 0))
+	snapshot.BackendConnectionErrors.SetHTTPCode5XXCount(atomic.SwapInt64(t.record.BackendConnectionErrors.HTTPCode5XXCount, 0))
+	snapshot.BackendConnectionErrors.SetTimeoutCount(atomic.SwapInt64(t.record.BackendConnectionErrors.TimeoutCount, 0))
+	snapshot.BackendConnectionErrors.SetConnectionRefusedCount(atomic.SwapInt64(t.record.BackendConnectionErrors.ConnectionRefusedCount, 0))
+	snapshot.BackendConnectionErrors.SetUnknownHostCount(atomic.SwapInt64(t.record.BackendConnectionErrors.UnknownHostCount, 0))
+	snapshot.BackendConnectionErrors.SetOtherCount(atomic.SwapInt64(t.record.BackendConnectionErrors.OtherCount, 0))
+	snapshot.SetTimestamp(time.Now())
+	return snapshot
 }
 
 // add to the queue. If queue is full, drop the head of the queue and try again.
@@ -281,30 +285,22 @@ func (t *telemetryRecorder) send(records []*xray.TelemetryRecord) ([]*xray.Telem
 }
 
 func (t *telemetryRecorder) RecordSegmentsReceived(count int) {
-	t.mu.Lock()
 	atomic.AddInt64(t.record.SegmentsReceivedCount, int64(count))
-	t.mu.Unlock()
 	t.recordUpdated.Store(true)
 }
 
 func (t *telemetryRecorder) RecordSegmentsSent(count int) {
-	t.mu.Lock()
 	atomic.AddInt64(t.record.SegmentsSentCount, int64(count))
-	t.mu.Unlock()
 	t.recordUpdated.Store(true)
 }
 
 func (t *telemetryRecorder) RecordSegmentsSpillover(count int) {
-	t.mu.Lock()
 	atomic.AddInt64(t.record.SegmentsSpilloverCount, int64(count))
-	t.mu.Unlock()
 	t.recordUpdated.Store(true)
 }
 
 func (t *telemetryRecorder) RecordSegmentsRejected(count int) {
-	t.mu.Lock()
 	atomic.AddInt64(t.record.SegmentsRejectedCount, int64(count))
-	t.mu.Unlock()
 	t.recordUpdated.Store(true)
 }
 
@@ -340,36 +336,26 @@ func (t *telemetryRecorder) RecordConnectionError(err error) {
 }
 
 func (t *telemetryRecorder) recordConnectionHTTPCode5XX(count int) {
-	t.mu.Lock()
 	atomic.AddInt64(t.record.BackendConnectionErrors.HTTPCode5XXCount, int64(count))
-	t.mu.Unlock()
 	t.recordUpdated.Store(true)
 }
 
 func (t *telemetryRecorder) recordConnectionHTTPCode4XX(count int) {
-	t.mu.Lock()
 	atomic.AddInt64(t.record.BackendConnectionErrors.HTTPCode4XXCount, int64(count))
-	t.mu.Unlock()
 	t.recordUpdated.Store(true)
 }
 
 func (t *telemetryRecorder) recordConnectionTimeout(count int) {
-	t.mu.Lock()
 	atomic.AddInt64(t.record.BackendConnectionErrors.TimeoutCount, int64(count))
-	t.mu.Unlock()
 	t.recordUpdated.Store(true)
 }
 
 func (t *telemetryRecorder) recordConnectionUnknownHost(count int) {
-	t.mu.Lock()
 	atomic.AddInt64(t.record.BackendConnectionErrors.UnknownHostCount, int64(count))
-	t.mu.Unlock()
 	t.recordUpdated.Store(true)
 }
 
 func (t *telemetryRecorder) recordConnectionOther(count int) {
-	t.mu.Lock()
 	atomic.AddInt64(t.record.BackendConnectionErrors.OtherCount, int64(count))
-	t.mu.Unlock()
 	t.recordUpdated.Store(true)
 }
