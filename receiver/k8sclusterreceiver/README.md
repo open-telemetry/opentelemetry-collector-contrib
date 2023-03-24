@@ -126,6 +126,9 @@ data:
         collection_interval: 10s
     exporters:
       logging:
+        verbosity: detailed
+        sampling_initial: 5
+        sampling_thereafter: 200
     service:
       pipelines:
         metrics:
