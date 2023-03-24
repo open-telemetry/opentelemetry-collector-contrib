@@ -118,11 +118,6 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "aggregation=cumulative but data_type=gauge does not support aggregation",
 		},
-		{
-			fname:        "config-invalid-timestamp.yaml",
-			id:           component.NewIDWithName(typeStr, ""),
-			errorMessage: "metric config has unsupported timestamp: '1234c'",
-		},
 	}
 
 	for _, tt := range tests {

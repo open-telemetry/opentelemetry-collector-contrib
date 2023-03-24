@@ -17,7 +17,6 @@ package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -105,16 +104,6 @@ func (c MetricCfg) Validate() error {
 	}
 	if c.DataType == MetricTypeGauge && c.Aggregation != "" {
 		errs = multierr.Append(errs, fmt.Errorf("aggregation=%s but data_type=%s does not support aggregation", c.Aggregation, c.DataType))
-	}
-	if c.StartTsColumn != "" {
-		if _, err := strconv.ParseInt(c.StartTsColumn, 10, 64); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("metric config has unsupported timestamp: '%s'", c.StartTsColumn))
-		}
-	}
-	if c.EndTsColumn != "" {
-		if _, err := strconv.ParseInt(c.EndTsColumn, 10, 64); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("metric config has unsupported timestamp: '%s'", c.EndTsColumn))
-		}
 	}
 	if errs != nil && c.MetricName != "" {
 		errs = multierr.Append(fmt.Errorf("invalid metric config with metric_name '%s'", c.MetricName), errs)
