@@ -22,13 +22,13 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "cumulativetodelta"
-	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -38,7 +38,7 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processor.WithMetrics(createMetricsProcessor, stability))
+		processor.WithMetrics(createMetricsProcessor, metadata.Stability))
 }
 
 func createDefaultConfig() component.Config {

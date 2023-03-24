@@ -16,7 +16,7 @@
 //go:build !windows
 // +build !windows
 
-package components
+package main
 
 import (
 	"context"
@@ -76,7 +76,7 @@ import (
 )
 
 func TestDefaultExporters(t *testing.T) {
-	factories, err := Components()
+	factories, err := components()
 	assert.NoError(t, err)
 
 	expFactories := factories.Exporters

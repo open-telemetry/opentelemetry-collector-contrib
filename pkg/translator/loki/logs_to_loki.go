@@ -22,6 +22,8 @@ import (
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type PushRequest struct {
@@ -90,8 +92,16 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 				group.report.NumSubmitted++
 
+				processed := model.LabelSet{}
+				for label := range entry.Labels {
+					// Loki doesn't support dots in label names
+					// labelName is normalized label name to follow Prometheus label names standard
+					labelName := prometheustranslator.NormalizeLabel(string(label))
+					processed[model.LabelName(labelName)] = entry.Labels[label]
+				}
+
 				// create the stream name based on the labels
-				labels := entry.Labels.String()
+				labels := processed.String()
 				if stream, ok := group.streams[labels]; ok {
 					stream.Entries = append(stream.Entries, *entry.Entry)
 					continue
