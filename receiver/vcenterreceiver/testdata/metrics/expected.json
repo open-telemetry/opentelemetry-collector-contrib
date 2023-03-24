@@ -3218,24 +3218,25 @@
                             "description": "The amount of CPU used by the VM.",
                             "unit": "MHz",
                             "sum": {
-                               "dataPoints": [
-                                   {
-                                       "startTimeUnixNano": "1678982928665994414",
-                                       "timeUnixNano": "1678983023127318606",
-                                       "asInt": "0"
-                                   },
-                            "aggregationTemporality": 2
-                          }
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1653335619966318000",
+                                        "timeUnixNano": "1653335619974183000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": 2
+                            }
                         },
                         {
-                            "name": "vcenter.vm.cpu.utilization",
+                            "name": "vcenter.host.cpu.utilization",
                             "description": "The CPU utilization of the VM.",
                             "unit": "%",
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1678982928665994414",
-                                        "timeUnixNano": "1678983023127318606",
+                                        "startTimeUnixNano": "1653335619966318000",
+                                        "timeUnixNano": "1653335619974183000",
                                         "asDouble": 0
                                     }
                                 ]
