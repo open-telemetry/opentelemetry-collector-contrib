@@ -7,14 +7,16 @@ on:
     types:
       - closed
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   update-pr:
     if: github.event.pull_request.merged
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
         with:
           script: |
             const milestones = await github.rest.issues.listMilestones({
