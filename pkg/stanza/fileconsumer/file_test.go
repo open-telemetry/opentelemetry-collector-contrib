@@ -1250,7 +1250,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 
 	// Stop consuming before long file has been fully consumed
 	operator.cancel()
-	operator.wg.Wait()
+	operator.pollerWg.Wait()
 	close(operator.readerChan)
 	operator.workerWg.Wait()
 

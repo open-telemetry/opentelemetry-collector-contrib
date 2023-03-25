@@ -32,7 +32,7 @@ type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
 
 type Manager struct {
 	*zap.SugaredLogger
-	wg       sync.WaitGroup
+	pollerWg sync.WaitGroup
 	workerWg sync.WaitGroup
 	cancel   context.CancelFunc
 	ctx      context.Context
@@ -59,6 +59,9 @@ type Manager struct {
 	// readers[] store the readers of previous poll cycles and are used to keep track of lost files
 	readerLock sync.Mutex
 	readers    []*Reader
+
+	// TRIE - this data structure stores the fingerprint of the files which are currently being consumed
+	trie *Trie
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -93,7 +96,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 // Stop will stop the file monitoring process
 func (m *Manager) Stop() error {
 	m.cancel()
-	m.wg.Wait()
+	m.pollerWg.Wait()
 	close(m.readerChan)
 	m.workerWg.Wait()
 	m.roller.cleanup()
@@ -109,9 +112,9 @@ func (m *Manager) Stop() error {
 // startPoller kicks off a goroutine that will poll the filesystem periodically,
 // checking if there are new files or new logs in the watched files
 func (m *Manager) startPoller(ctx context.Context) {
-	m.wg.Add(1)
+	m.pollerWg.Add(1)
 	go func() {
-		defer m.wg.Done()
+		defer m.pollerWg.Done()
 		globTicker := time.NewTicker(m.pollInterval)
 		defer globTicker.Stop()
 
@@ -159,7 +162,7 @@ func (m *Manager) worker(ctx context.Context) {
 		if !ok {
 			return
 		}
-		r, path := chanData.reader, chanData.path
+		r, fp := chanData.reader, chanData.fp
 		r.ReadToEnd(ctx)
 		// Delete a file if deleteAfterRead is enabled and we reached the end of the file
 		if m.deleteAfterRead && r.eof {
@@ -174,7 +177,7 @@ func (m *Manager) worker(ctx context.Context) {
 			m.readers = append(m.readers, r)
 			m.readerLock.Unlock()
 		}
-		m.removePath(path)
+		m.removePath(fp)
 	}
 }
 
@@ -187,28 +190,23 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 			fmt.Println("Couldn't create reader for ", path)
 			continue
 		}
-		m.readerChan <- ReaderWrapper{reader: reader, path: path}
 		// add path and fingerprint as it's not consuming
 		m.pathHashLock.Lock()
-		m.pathHash[path] = fp
+		m.trie.Put(fp.FirstBytes, true)
 		m.pathHashLock.Unlock()
+		m.readerChan <- ReaderWrapper{reader: reader, fp: fp}
 	}
 }
 
 func (m *Manager) isCurrentlyConsuming(path string, fp *Fingerprint) bool {
 	m.pathHashLock.Lock()
 	defer m.pathHashLock.Unlock()
-	if fp2, ok := m.pathHash[path]; ok {
-		if fp2.StartsWith(fp) || fp.StartsWith(fp2) {
-			return true
-		}
-	}
-	return false
+	return m.trie.Get(fp.FirstBytes) != nil
 }
 
-func (m *Manager) removePath(path string) {
+func (m *Manager) removePath(fp *Fingerprint) {
 	m.pathHashLock.Lock()
-	delete(m.pathHash, path)
+	m.trie.Delete(fp.FirstBytes)
 	m.pathHashLock.Unlock()
 }
 
@@ -283,7 +281,6 @@ func (m *Manager) makeReader(filePath string) (*Reader, *Fingerprint) {
 				m.Errorf("problem closing file", "file", file.Name())
 			}
 			m.currentFps = m.currentFps[:len(m.currentFps)-1]
-			m.removePath(filePath)
 			return nil, nil
 		}
 	}
@@ -291,7 +288,6 @@ func (m *Manager) makeReader(filePath string) (*Reader, *Fingerprint) {
 	reader, err := m.newReader(file, fp)
 	if err != nil {
 		m.Errorw("Failed to create reader", zap.Error(err))
-		m.removePath(filePath)
 		return nil, nil
 	}
 	return reader, fp

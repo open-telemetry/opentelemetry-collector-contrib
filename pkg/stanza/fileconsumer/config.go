@@ -83,7 +83,7 @@ type Config struct {
 
 type ReaderWrapper struct {
 	reader *Reader
-	path   string
+	fp     *Fingerprint
 }
 
 // Build will build a file input operator from the supplied configuration
@@ -171,6 +171,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 			encodingConfig:  c.Splitter.EncodingConfig,
 			headerSettings:  hs,
 		},
+		trie:            NewTrie(),
 		finder:          c.Finder,
 		roller:          newRoller(),
 		pollInterval:    c.PollInterval,
