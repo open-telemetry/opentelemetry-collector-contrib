@@ -17,11 +17,12 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const (
@@ -60,5 +61,21 @@ func createMetricsExporter(_ context.Context,
 
 	expCfg := config.(*Config)
 
-	return newEmfExporter(expCfg, params)
+	emfExp, err := newEmfExporter(expCfg, params)
+	if err != nil {
+		return nil, err
+	}
+
+	exporter, err := exporterhelper.NewMetricsExporter(
+		ctx,
+		params,
+		config,
+		emfExp.pushMetricsData,
+		exporterhelper.WithShutdown(emfExp.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return resourcetotelemetry.WrapMetricsExporter(expCfg.ResourceToTelemetrySettings, exporter), nil
 }

@@ -17,10 +17,9 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
+	"go.uber.org/zap"
 )
 
 var (
@@ -87,6 +86,9 @@ type Config struct {
 	// DetailedMetrics is the options for retaining detailed datapoint values in exported metrics (e.g instead of exporting a quantile as a statistical value,
 	// preserve the quantile's population)
 	DetailedMetrics bool `mapstructure:"detailed_metrics"`
+
+	// EMFV1
+	EnableEMFVersion1 bool `mapstructure:"enable_emf_version_1"`
 
 	// logger is the Logger used for writing error/warning logs
 	logger *zap.Logger

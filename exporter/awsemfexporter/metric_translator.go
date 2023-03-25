@@ -20,10 +20,10 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -374,7 +374,13 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 		// Create `_aws` section only if there are measurements
 		cWMetricMap["CloudWatchMetrics"] = cWMetric.measurements
 		cWMetricMap["Timestamp"] = cWMetric.timestampMs
-		fieldMap["_aws"] = cWMetricMap
+
+		if config.EnableEMFVersion1 {
+			fieldMap["_aws"] = cWMetricMap
+		} else {
+			maps.Copy(fieldMap, cWMetricMap)
+		}
+
 	}
 
 	pleMsg, err := json.Marshal(fieldMap)
