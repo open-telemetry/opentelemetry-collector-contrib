@@ -23,7 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 )
 
 const (
@@ -338,7 +337,6 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 // translateCWMetricToEMF converts CloudWatch Metric format to EMF.
 func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 	// convert CWMetric into map format for compatible with PLE input
-	cWMetricMap := make(map[string]interface{})
 	fieldMap := cWMetric.fields
 
 	// restore the json objects that are stored as string in attributes
@@ -369,16 +367,44 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 		}
 	}
 
-	// Create `_aws` section only if there are measurements
+	// Create EMF metrics if there are measurements
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure
 	if len(cWMetric.measurements) > 0 {
-		// Create `_aws` section only if there are measurements
-		cWMetricMap["CloudWatchMetrics"] = cWMetric.measurements
-		cWMetricMap["Timestamp"] = cWMetric.timestampMs
-
 		if config.EnableEMFVersion1 {
-			fieldMap["_aws"] = cWMetricMap
+			/* 	EMF V1
+				"_aws": {
+					"CloudWatchMetrics": [
+					{
+						"Namespace": "ECS",
+						"Dimensions": [ ["ClusterName"] ],
+						"Metrics": [{"Name": "memcached_commands_total"}]
+					}
+					],
+					"Timestamp": 1668387032641
+			  	}
+			*/
+			fieldMap["Version"] = 1
+			fieldMap["_aws"] = map[string]interface{}{
+				"CloudWatchMetrics": cWMetric.measurements,
+				"Timestamp":         cWMetric.timestampMs,
+			}
+
 		} else {
-			maps.Copy(fieldMap, cWMetricMap)
+			/* 	EMF V0
+				{
+					"CloudWatchMetrics": [
+					{
+						"Namespace": "ECS",
+						"Dimensions": [ ["ClusterName"] ],
+						"Metrics": [{"Name": "memcached_commands_total"}]
+					}
+					],
+					"Timestamp": 1668387032641
+			  	}
+			*/
+			fieldMap["Version"] = 0
+			fieldMap["Timestamp"] = cWMetric.timestampMs
+			fieldMap["CloudWatchMetrics"] = cWMetric.measurements
 		}
 
 	}

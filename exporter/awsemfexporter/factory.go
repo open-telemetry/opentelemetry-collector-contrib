@@ -17,12 +17,13 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -48,6 +49,7 @@ func createDefaultConfig() component.Config {
 		LogStreamName:                   "",
 		Namespace:                       "",
 		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
+		EnableEMFVersion1:               true,
 		RetainInitialValueOfDeltaMetric: false,
 		OutputDestination:               "cloudwatch",
 		logger:                          zap.NewNop(),
@@ -55,10 +57,7 @@ func createDefaultConfig() component.Config {
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
-func createMetricsExporter(_ context.Context,
-	params exporter.CreateSettings,
-	config component.Config) (exporter.Metrics, error) {
-
+func createMetricsExporter(ctx context.Context, params exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
 	expCfg := config.(*Config)
 
 	emfExp, err := newEmfExporter(expCfg, params)
