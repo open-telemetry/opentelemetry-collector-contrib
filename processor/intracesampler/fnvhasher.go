@@ -28,6 +28,10 @@ func computeHash(b []byte, seed []byte) uint32 {
 }
 
 // i32tob converts a seed to a byte array to be used as part of fnv.Write()
+// this code is copied from probability sampler for them to apply the same hash
+// and achieve consistent sampling results
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/e15755144d6ac15689ef04429465da063a001302/processor/probabilisticsamplerprocessor/fnvhasher.go#L31
+// it can potentially be moved to a common place which both samplers consume
 func i32tob(val uint32) []byte {
 	r := make([]byte, 4)
 	for i := uint32(0); i < 4; i++ {
