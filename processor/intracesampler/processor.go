@@ -137,8 +137,8 @@ func spansToTraceTree(td ptrace.Traces) traceTreeData {
 // this indicates that the processor is run after another processor
 // that emits completed traces after timeout
 // if a single trace id is found, it is returend, otherwise nil is returned
-func getSingleTraceID(td ptrace.Traces) *pcommon.TraceID {
-	var traceID *pcommon.TraceID
+func getSingleTraceID(td ptrace.Traces) pcommon.TraceID {
+	var traceID pcommon.TraceID
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -149,10 +149,10 @@ func getSingleTraceID(td ptrace.Traces) *pcommon.TraceID {
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				currentTraceID := span.TraceID()
-				if traceID == nil {
-					traceID = &currentTraceID
-				} else if currentTraceID != *traceID {
-					return nil
+				if traceID == pcommon.NewTraceIDEmpty() {
+					traceID = currentTraceID
+				} else if currentTraceID != traceID {
+					return pcommon.NewTraceIDEmpty()
 				}
 			}
 		}
@@ -206,13 +206,13 @@ func (its *inTraceSamplerProcessor) processTraces(ctx context.Context, td ptrace
 
 	// the sampler assumes it receives full "completed" traces
 	singleTraceID := getSingleTraceID(td)
-	if singleTraceID == nil {
+	if singleTraceID == pcommon.NewTraceIDEmpty() {
 		its.logger.Warn("in trace sampler received spans from different traces. it should run after tailsampler or groupby processor")
 		return td, nil
 	}
 
 	// some of the traces will be sampled in trace, but some will still be allowed to pass through as is
-	sampled := computeHash((*singleTraceID)[:], its.hashSeedBytes)&bitMaskHashBuckets < its.scaledSamplingRate
+	sampled := computeHash(singleTraceID[:], its.hashSeedBytes)&bitMaskHashBuckets < its.scaledSamplingRate
 	// sampled means we keep all spans (not dropping anything), thus forwarding td as is
 	if sampled {
 		return td, nil
