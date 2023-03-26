@@ -112,7 +112,7 @@ processors:
          {
               name: test-policy-12,
               type: boolean_attribute,
-              boolean_attrbiute: {key: key4, value: true}
+              boolean_attribute: {key: key4, value: true}
          },
          {
             name: and-policy-1,

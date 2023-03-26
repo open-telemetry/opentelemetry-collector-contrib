@@ -738,6 +738,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/receiver/cloudflarereceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/receiver/cloudfoundryreceiver"
     schedule:
       interval: "weekly"
@@ -874,6 +879,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/kubeletstatsreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/lokireceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1094,11 +1104,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/zookeeperreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/testbed"
     schedule:
       interval: "weekly"
       day: "wednesday"

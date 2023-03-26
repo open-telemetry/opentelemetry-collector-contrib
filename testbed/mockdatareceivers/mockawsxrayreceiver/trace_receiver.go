@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
@@ -91,7 +92,7 @@ func (ar *MockAwsXrayReceiver) Start(_ context.Context, host component.Host) err
 	nr.HandleFunc("/TraceSegments", ar.HTTPHandlerFunc)
 
 	// create a server with the handler
-	ar.server = &http.Server{Handler: nr}
+	ar.server = &http.Server{Handler: nr, ReadHeaderTimeout: 20 * time.Second}
 
 	// run the server on a routine
 	go func() {

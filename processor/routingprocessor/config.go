@@ -18,6 +18,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 var (
@@ -54,6 +56,14 @@ type Config struct {
 	// This is only relevant if AttributeSource is set to resource.
 	// Optional.
 	DropRoutingResourceAttribute bool `mapstructure:"drop_resource_routing_attribute"`
+
+	// ErrorMode determines how the processor reacts to errors that occur while processing an OTTL condition.
+	// Valid values are `ignore` and `propagate`.
+	// `ignore` means the processor ignores errors returned by conditions and continues on to the next condition. This is the recommended mode.
+	// If `ignored` is used and a statement's condition has an error then the payload will be routed to the default exporter.
+	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
+	// The default value is `propagate`.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
 	// Table contains the routing table for this processor.
 	// Required.

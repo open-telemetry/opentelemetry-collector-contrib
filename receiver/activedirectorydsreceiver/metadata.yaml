@@ -1,5 +1,11 @@
 name: activedirectorydsreceiver
 
+status:
+  type: receiver
+  stability: beta
+  pipelines: [metrics]
+  distributions: [contrib]
+
 attributes:
   direction:
     description: The direction of data flow.

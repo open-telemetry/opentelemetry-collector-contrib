@@ -1,0 +1,7 @@
+name: resourceprocessor
+
+status:
+  type: processor
+  stability: beta
+  pipelines: [logs, metrics, traces]
+  distributions: [core, contrib]

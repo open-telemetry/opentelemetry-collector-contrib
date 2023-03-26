@@ -1,5 +1,11 @@
 name: haproxyreceiver
 
+status:
+  type: receiver
+  stability: alpha
+  pipelines: [metrics]
+  distributions: [contrib]
+
 resource_attributes:
   haproxy.url:
     description: The path to the HAProxy socket or HTTP URL.

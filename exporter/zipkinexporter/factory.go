@@ -23,13 +23,13 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter/internal/metadata"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "zipkin"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
 
 	defaultTimeout = time.Second * 5
 
@@ -43,7 +43,7 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability))
+		exporter.WithTraces(createTracesExporter, metadata.Stability))
 }
 
 func createDefaultConfig() component.Config {
