@@ -14,19 +14,6 @@
 
 package intracesampler // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/intracesamplerprocessor"
 
-import (
-	"hash/fnv"
-)
-
-// computeHash creates a hash using the FNV-1a algorithm
-func computeHash(b []byte, seed []byte) uint32 {
-	hash := fnv.New32a()
-	// the implementation fnv.Write() does not return an error, see hash/fnv/fnv.go
-	_, _ = hash.Write(seed)
-	_, _ = hash.Write(b)
-	return hash.Sum32()
-}
-
 // i32tob converts a seed to a byte array to be used as part of fnv.Write()
 // this code is copied from probability sampler for them to apply the same hash
 // and achieve consistent sampling results
