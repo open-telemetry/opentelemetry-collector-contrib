@@ -30,6 +30,11 @@ processors:
     hash_seed: 22
 ```
 
+## Relation to Other Samplers
+- [probabilisticsamplerprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor) will either sample the entire trace or not.
+- [tailsamplingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor) will either sample the entire trace or not.
+- [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor) can similarly drop individual spans and keep others, but it is not aware of the position of the span in the trace and thus can remove non-leaf spans and "break" the trace into multiple fragments. Also, it is not a sampler and will always filter out matching spans without allowing any samples to be kept.
+
 ## Hashing
 
 Sampling percentage is calculated based on trace id hash, and is compatible with `Probabilistic Sampling Processor` and other `In-Trace sampling processor`s in the same pipeline. Using the same `hash_seed` for different processors guarantee they are synced about sampling decision for the same trace - if the same `sampling_percentage` is used they will have the same decision and if one is higher than the other then it will be sampled if the other is sampled etc.
