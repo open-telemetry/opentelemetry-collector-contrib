@@ -1,0 +1,6 @@
+name: sigv4authextension
+
+status:
+  type: extension
+  stability: beta
+  distributions: [contrib]
