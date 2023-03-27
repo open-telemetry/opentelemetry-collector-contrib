@@ -15,8 +15,9 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"strings"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const messagingPrefix = "messaging."
