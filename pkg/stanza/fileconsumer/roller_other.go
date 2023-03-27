@@ -19,6 +19,7 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"os"
 	"sync"
 )
 
@@ -35,8 +36,10 @@ func (r *detectLostFiles) readLostFiles(ctx context.Context, readers []*Reader) 
 	lostReaders := make([]*Reader, 0, len(r.oldReaders))
 OUTER:
 	for _, oldReader := range r.oldReaders {
+		oldFileStat, _ := oldReader.file.Stat()
 		for _, reader := range readers {
-			if reader.Fingerprint.StartsWith(oldReader.Fingerprint) {
+			newFileStat, _ := reader.file.Stat()
+			if os.SameFile(newFileStat, oldFileStat) {
 				continue OUTER
 			}
 		}

@@ -48,7 +48,7 @@ type Manager struct {
 	knownFiles []*Reader
 	seenPaths  map[string]struct{}
 	// exclude by same fingerprint
-	excludePaths map[string]struct{}
+	excludePaths map[string]int64
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -161,7 +161,6 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		}(reader)
 	}
 	wg.Wait()
-
 	// Save off any files that were not fully read
 	if m.deleteAfterRead {
 		unfinished := make([]*Reader, 0, len(readers))
@@ -239,35 +238,14 @@ OUTER:
 		for j := i + 1; j < len(fps); j++ {
 			fp2 := fps[j]
 			if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
-				// Exclude the same file
-				deleteIndex := i
-				_, fpjExclude := m.excludePaths[files[j].Name()]
-				_, fpiExclude := m.excludePaths[files[i].Name()]
-
-				if !fpiExclude && !fpjExclude {
-					infoJ, _ := files[j].Stat()
-					infoI, _ := files[i].Stat()
-					if infoJ.Size() > infoI.Size() {
-						// Keep the smaller file
-						// if both the file before rotation and the file after rotation are included , and they have same fingerprint
-						// the file after rotation should be read
-						deleteIndex = j
-					}
-				}
-
-				if fpjExclude {
-					deleteIndex = j
-				}
-
-				m.excludePaths[files[deleteIndex].Name()] = struct{}{}
+				deleteIndex := getExcludeIndex(i, files, j, m)
 				if err := files[deleteIndex].Close(); err != nil {
 					m.Errorf("problem closing file", "file", files[deleteIndex].Name())
 				}
 				noExclude = false
-
 				fps = append(fps[:deleteIndex], fps[deleteIndex+1:]...)
 				files = append(files[:deleteIndex], files[deleteIndex+1:]...)
-				if fpjExclude {
+				if deleteIndex == j {
 					j--
 				} else {
 					i--
@@ -278,7 +256,7 @@ OUTER:
 	}
 
 	if noExclude {
-		m.excludePaths = map[string]struct{}{}
+		m.excludePaths = map[string]int64{}
 	}
 
 	readers := make([]*Reader, 0, len(fps))
@@ -292,6 +270,49 @@ OUTER:
 	}
 
 	return readers
+}
+
+// Exclude the same file if no rotation happen with excluded file, read the file that has the smaller file size
+func getExcludeIndex(i int, files []*os.File, j int, m *Manager) (int) {
+	deleteIndex := i
+	fJName := files[j].Name()
+	fIName := files[i].Name()
+	prevJSize, fpjExclude := m.excludePaths[fJName]
+	prevISize, fpiExclude := m.excludePaths[fIName]
+	infoJ, _ := files[j].Stat()
+	infoI, _ := files[i].Stat()
+	if !fpiExclude && !fpjExclude {
+		m.Warnf("detect two file have same fingerprint , one of them is excluded ,check to increase fingerprint size", fJName, fIName)
+		if infoJ.Size() > infoI.Size() {
+			// Keep the smaller file
+			// if both the file before rotation and the file after rotation are included , and they have same fingerprint
+			// the file after rotation should be read
+			deleteIndex = j
+		}
+	}
+	if fpjExclude {
+		if infoJ.Size() < prevJSize {
+			// If file j already exclude , but file j suddenly small than original size
+			// new rotation happen
+			delete(m.excludePaths, fJName)
+		}else{
+			deleteIndex = j
+		}
+	}
+	if fpiExclude {
+		if infoI.Size() < prevISize {
+			// If file i already exclude , but file i suddenly small than original size
+			// new rotation happen
+			delete(m.excludePaths, fIName)
+			deleteIndex = j
+		}
+	}
+	if deleteIndex == i {
+		m.excludePaths[files[deleteIndex].Name()] = infoI.Size()
+	}else{
+		m.excludePaths[files[deleteIndex].Name()] = infoJ.Size()
+	}
+	return deleteIndex
 }
 
 // saveCurrent adds the readers from this polling interval to this list of
@@ -319,7 +340,7 @@ func (m *Manager) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
 	if e!= nil {
 		return nil , e
 	}
-	if oldReader, ok := m.findFingerprintMatch(fp, fileInfo.Size()); ok {
+	if oldReader, ok := m.findFingerprintMatch(fp, fileInfo.Size(), file.Name()); ok {
 		return m.readerFactory.copy(oldReader, file)
 	}
 
@@ -327,13 +348,17 @@ func (m *Manager) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
 	return m.readerFactory.newReader(file, fp)
 }
 
-func (m *Manager) findFingerprintMatch(fp *Fingerprint, fileSize int64) (*Reader, bool) {
+func (m *Manager) findFingerprintMatch(fp *Fingerprint, fileSize int64, fileName string) (*Reader, bool) {
 	// Iterate backwards to match newest first
 	for i := len(m.knownFiles) - 1; i >= 0; i-- {
 		oldReader := m.knownFiles[i]
-		// If the total size of the current file  is less than the last poll file offset ,
-		// the current file and the oldReader.file cannot be the same file , even if they have the same fingerprint.
-		if oldReader.Offset <= fileSize && fp.StartsWith(oldReader.Fingerprint) {
+		if fp.StartsWith(oldReader.Fingerprint) {
+			// If the total size of the current file is less than the last poll file offset, even if they have the
+			// same fingerprint, the current file and the oldReader.file either not the same file or truncated happen
+			if oldReader.Offset > fileSize {
+				m.Warnf("detect two file have same fingerprint , check to increase fingerprint size", oldReader.file.Name(), fileName)
+				return nil, false
+			}
 			return oldReader, true
 		}
 	}
