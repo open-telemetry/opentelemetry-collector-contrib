@@ -58,6 +58,7 @@
 - `splunkhecreceiver`: Appends query param (index, source, sourcetype, and host) for raw path (#19632)
 - `splunkhecreceiver`: align error message with splunk enterprise to include No Data, Invalid Data Format, Event field is required, and  Event field cannot be blank (#19219)
 - `reciver/statsdreceiver`: Metrics emitted by the statsd receiver are batched by source IP address, available in context. (#15290)
+- `receiver/skywalking`: Refactor code structure/directory in order to add metrics receiver. (#20344)
 
 ### 🧰 Bug fixes 🧰
 
