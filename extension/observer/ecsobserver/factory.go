@@ -20,6 +20,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver/internal/metadata"
 )
 
 const (
@@ -32,7 +34,7 @@ func NewFactory() extension.Factory {
 		typeStr,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelBeta,
+		metadata.Stability,
 	)
 }
 
