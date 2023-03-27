@@ -42,7 +42,9 @@ const (
 
 type eventsClient interface {
 	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
-	GetEvents(ctx context.Context, groupID string, opts *internal.GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error)
+	GetProjectEvents(ctx context.Context, groupID string, opts *internal.GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error)
+	GetOrganization(ctx context.Context, orgID string) (*mongodbatlas.Organization, error)
+	GetOrgEvents(ctx context.Context, orgID string, opts *internal.GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error)
 }
 
 type eventsReceiver struct {
@@ -142,14 +144,23 @@ func (er *eventsReceiver) pollEvents(ctx context.Context) error {
 			er.logger.Error("error retrieving project information for "+pc.Name+":", zap.Error(err))
 			return err
 		}
-		er.poll(ctx, project, pc, st, et)
+		er.pollProject(ctx, project, pc, st, et)
+	}
+
+	for _, pc := range er.cfg.Events.Orgs {
+		org, err := er.client.GetOrganization(ctx, pc.Name)
+		if err != nil {
+			er.logger.Error("error retrieving org information for "+pc.Name+":", zap.Error(err))
+			return err
+		}
+		er.pollOrg(ctx, org, pc, st, et)
 	}
 
 	er.record.NextStartTime = &et
 	return er.checkpoint(ctx)
 }
 
-func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Project, p *ProjectConfig, startTime, now time.Time) {
+func (er *eventsReceiver) pollProject(ctx context.Context, project *mongodbatlas.Project, p *ProjectConfig, startTime, now time.Time) {
 	for pageN := 1; pageN <= er.maxPages; pageN++ {
 		opts := &internal.GetEventsOptions{
 			PageNum:    pageN,
@@ -158,14 +169,14 @@ func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Projec
 			MinDate:    startTime,
 		}
 
-		projectEvents, hasNext, err := er.client.GetEvents(ctx, project.ID, opts)
+		projectEvents, hasNext, err := er.client.GetProjectEvents(ctx, project.ID, opts)
 		if err != nil {
 			er.logger.Error("unable to get events for project", zap.Error(err), zap.String("project", p.Name))
 			break
 		}
 
 		now := pcommon.NewTimestampFromTime(now)
-		logs := er.transformEvents(now, projectEvents, project)
+		logs := er.transformProjectEvents(now, projectEvents, project)
 
 		if logs.LogRecordCount() > 0 {
 			if err = er.consumer.ConsumeLogs(ctx, logs); err != nil {
@@ -180,7 +191,38 @@ func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Projec
 	}
 }
 
-func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, p *mongodbatlas.Project) plog.Logs {
+func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organization, p *ProjectConfig, startTime, now time.Time) {
+	for pageN := 1; pageN <= er.maxPages; pageN++ {
+		opts := &internal.GetEventsOptions{
+			PageNum:    pageN,
+			EventTypes: er.cfg.Events.Types,
+			MaxDate:    now,
+			MinDate:    startTime,
+		}
+
+		projectEvents, hasNext, err := er.client.GetOrgEvents(ctx, org.ID, opts)
+		if err != nil {
+			er.logger.Error("unable to get events for organization", zap.Error(err), zap.String("organization", p.Name))
+			break
+		}
+
+		now := pcommon.NewTimestampFromTime(now)
+		logs := er.transformOrgEvents(now, projectEvents, org)
+
+		if logs.LogRecordCount() > 0 {
+			if err = er.consumer.ConsumeLogs(ctx, logs); err != nil {
+				er.logger.Error("error consuming events", zap.Error(err))
+				break
+			}
+		}
+
+		if !hasNext {
+			break
+		}
+	}
+}
+
+func (er *eventsReceiver) transformProjectEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, p *mongodbatlas.Project) plog.Logs {
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	ra := resourceLogs.Resource().Attributes()
@@ -209,6 +251,45 @@ func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongo
 
 		attrs := logRecord.Attributes()
 		// always present attributes
+		attrs.PutStr("event.domain", "mongodbatlas")
+		attrs.PutStr("type", event.EventTypeName)
+		attrs.PutStr("id", event.ID)
+		attrs.PutStr("group.id", event.GroupID)
+
+		parseOptionalAttributes(&attrs, event)
+	}
+	return logs
+}
+
+func (er *eventsReceiver) transformOrgEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, o *mongodbatlas.Organization) plog.Logs {
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	ra := resourceLogs.Resource().Attributes()
+	ra.PutStr("mongodbatlas.org.id", o.ID)
+
+	for _, event := range events {
+
+		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		bodyBytes, err := json.Marshal(event)
+		if err != nil {
+			er.logger.Error("unable to unmarshal event into body string", zap.Error(err))
+			continue
+		}
+		logRecord.Body().SetStr(string(bodyBytes))
+
+		// ISO-8601 formatted
+		ts, err := time.Parse(time.RFC3339, event.Created)
+		if err != nil {
+			er.logger.Warn("unable to interpret when an event was created, expecting a RFC3339 timestamp", zap.String("timestamp", event.Created), zap.String("event", event.ID))
+			logRecord.SetTimestamp(now)
+		} else {
+			logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+		}
+		logRecord.SetObservedTimestamp(now)
+
+		attrs := logRecord.Attributes()
+		// always present attributes
+		ra.PutStr("mongodbatlas.org.id", o.ID)
 		attrs.PutStr("event.domain", "mongodbatlas")
 		attrs.PutStr("type", event.EventTypeName)
 		attrs.PutStr("id", event.ID)

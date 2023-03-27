@@ -440,6 +440,7 @@ const (
 	testOrgID           = "test-org-id"
 	testProjectID       = "test-project-id"
 	testProjectName     = "test-project"
+	testOrgName         = "test-name"
 	testMetricName      = "metric-name"
 	testTypeName        = "OUTSIDE_METRIC_THRESHOLD"
 	testHostNameAndPort = "127.0.0.1:27017"
