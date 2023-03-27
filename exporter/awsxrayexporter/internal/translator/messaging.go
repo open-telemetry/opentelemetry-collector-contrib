@@ -16,13 +16,12 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"strings"
 )
 
 const MessagingPrefix = "messaging."
 
-func makeMessaging(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]pcommon.Value, map[string]interface{}) {
+func makeMessaging(attributes map[string]pcommon.Value) (map[string]pcommon.Value, map[string]interface{}) {
 	var (
 		filtered  = make(map[string]pcommon.Value)
 		messaging = make(map[string]interface{})

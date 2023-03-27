@@ -110,7 +110,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		awsfiltered, aws                                   = makeAws(causefiltered, resource, logGroupNames)
 		service                                            = makeService(resource)
 		sqlfiltered, sql                                   = makeSQL(span, awsfiltered)
-		messagingFiltered, messaging                       = makeMessaging(span, sqlfiltered)
+		messagingFiltered, messaging                       = makeMessaging(sqlfiltered)
 		additionalAttrs                                    = addSpecialAttributes(messagingFiltered, indexedAttrs, attributes)
 		user, annotations, metadata                        = makeXRayAttributes(additionalAttrs, resource, storeResource, indexedAttrs, indexAllAttrs)
 		spanLinks, makeSpanLinkErr                         = makeSpanLinks(span.Links())

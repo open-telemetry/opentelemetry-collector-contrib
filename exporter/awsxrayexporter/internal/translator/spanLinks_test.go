@@ -40,18 +40,18 @@ func TestSpanLinkSimple(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
-	var convertedTraceId, _ = convertToAmazonTraceID(traceID)
+	var convertedTraceID, _ = convertToAmazonTraceID(traceID)
 
 	assert.Equal(t, 1, len(segment.Links))
 	assert.Equal(t, spanLink.SpanID().String(), *segment.Links[0].SpanID)
-	assert.Equal(t, convertedTraceId, *segment.Links[0].TraceID)
+	assert.Equal(t, convertedTraceID, *segment.Links[0].TraceID)
 	assert.Equal(t, 0, len(segment.Links[0].Attributes))
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil)
 
 	assert.True(t, strings.Contains(jsonStr, "links"))
 	assert.False(t, strings.Contains(jsonStr, "attributes"))
-	assert.True(t, strings.Contains(jsonStr, convertedTraceId))
+	assert.True(t, strings.Contains(jsonStr, convertedTraceID))
 	assert.True(t, strings.Contains(jsonStr, spanLink.SpanID().String()))
 }
 
@@ -120,18 +120,18 @@ func TestTwoSpanLinks(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
-	var convertedTraceId1, _ = convertToAmazonTraceID(traceID1)
-	var convertedTraceId2, _ = convertToAmazonTraceID(traceID2)
+	var convertedTraceID1, _ = convertToAmazonTraceID(traceID1)
+	var convertedTraceID2, _ = convertToAmazonTraceID(traceID2)
 
 	assert.Equal(t, 2, len(segment.Links))
 	assert.Equal(t, spanLink1.SpanID().String(), *segment.Links[0].SpanID)
-	assert.Equal(t, convertedTraceId1, *segment.Links[0].TraceID)
+	assert.Equal(t, convertedTraceID1, *segment.Links[0].TraceID)
 
 	assert.Equal(t, 1, len(segment.Links[0].Attributes))
 	assert.Equal(t, "ABC", segment.Links[0].Attributes["myKey1"])
 
 	assert.Equal(t, spanLink2.SpanID().String(), *segment.Links[1].SpanID)
-	assert.Equal(t, convertedTraceId2, *segment.Links[1].TraceID)
+	assert.Equal(t, convertedTraceID2, *segment.Links[1].TraceID)
 	assert.Equal(t, 1, len(segment.Links[0].Attributes))
 	assert.Equal(t, int64(1234), segment.Links[1].Attributes["myKey2"])
 
@@ -143,8 +143,8 @@ func TestTwoSpanLinks(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "myKey2"))
 	assert.True(t, strings.Contains(jsonStr, "ABC"))
 	assert.True(t, strings.Contains(jsonStr, "1234"))
-	assert.True(t, strings.Contains(jsonStr, convertedTraceId1))
-	assert.True(t, strings.Contains(jsonStr, convertedTraceId2))
+	assert.True(t, strings.Contains(jsonStr, convertedTraceID1))
+	assert.True(t, strings.Contains(jsonStr, convertedTraceID2))
 }
 
 func TestSpanLinkComplexAttributes(t *testing.T) {
