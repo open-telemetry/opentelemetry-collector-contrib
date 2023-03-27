@@ -2,7 +2,7 @@
 
 | Status                   |                               |
 | ------------------------ |-------------------------------|
-| Stability                | [alpha]                       |
+| Stability                | [in development]              |
 | Supported pipeline types | traces                        |
 | Distributions            | [contrib]                     |
 
