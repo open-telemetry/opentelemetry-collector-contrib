@@ -22,6 +22,8 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -80,6 +82,24 @@ func createTracesReceiver(
 	// that Skywalking receiver understands.
 	rCfg := cfg.(*Config)
 
+	c, err := createConfiguration(rCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		return newSkywalkingReceiver(c, set)
+	})
+
+	if err = r.Unwrap().(*swReceiver).registerTraceConsumer(nextConsumer); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+// create the config that Skywalking receiver will use.
+func createConfiguration(rCfg *Config) (*configuration, error) {
 	var err error
 	var c configuration
 	// Set ports
@@ -96,9 +116,7 @@ func createTracesReceiver(
 			return nil, fmt.Errorf("unable to extract port for the HTTP endpoint: %w", err)
 		}
 	}
-
-	// Create the receiver.
-	return newSkywalkingReceiver(&c, nextConsumer, set)
+	return &c, nil
 }
 
 // extract the port number from string in "address:port" format. If the
@@ -117,3 +135,5 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 	}
 	return int(port), nil
 }
+
+var receivers = sharedcomponent.NewSharedComponents()

@@ -16,20 +16,19 @@ package skywalkingreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"sync"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/trace"
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
@@ -52,8 +51,6 @@ type configuration struct {
 // Receiver type is used to receive spans that were originally intended to be sent to Skywaking.
 // This receiver is basically a Skywalking collector.
 type swReceiver struct {
-	nextConsumer consumer.Traces
-
 	config *configuration
 
 	grpc            *grpc.Server
@@ -63,49 +60,33 @@ type swReceiver struct {
 
 	settings receiver.CreateSettings
 
-	grpcObsrecv          *obsreport.Receiver
-	httpObsrecv          *obsreport.Receiver
-	segmentReportService *traceSegmentReportService
-	dummyReportService   *dummyReportService
-}
+	traceReceiver *trace.Receiver
 
-const (
-	collectorHTTPTransport = "http"
-	grpcTransport          = "grpc"
-	failing                = "failing"
-)
+	dummyReportService *dummyReportService
+}
 
 // newSkywalkingReceiver creates a TracesReceiver that receives traffic as a Skywalking collector
 func newSkywalkingReceiver(
 	config *configuration,
-	nextConsumer consumer.Traces,
 	set receiver.CreateSettings,
-) (*swReceiver, error) {
-
-	grpcObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             set.ID,
-		Transport:              grpcTransport,
-		ReceiverCreateSettings: set,
-	})
-	if err != nil {
-		return nil, err
-	}
-	httpObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             set.ID,
-		Transport:              collectorHTTPTransport,
-		ReceiverCreateSettings: set,
-	})
-	if err != nil {
-		return nil, err
-	}
-
+) *swReceiver {
 	return &swReceiver{
-		config:       config,
-		nextConsumer: nextConsumer,
-		settings:     set,
-		grpcObsrecv:  grpcObsrecv,
-		httpObsrecv:  httpObsrecv,
-	}, nil
+		config:   config,
+		settings: set,
+	}
+}
+
+// registerTraceConsumer register a TracesReceiver that receives trace
+func (sr *swReceiver) registerTraceConsumer(tc consumer.Traces) error {
+	if tc == nil {
+		return component.ErrNilNextConsumer
+	}
+	var err error
+	sr.traceReceiver, err = trace.New(tc, sr.settings)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (sr *swReceiver) collectorGRPCAddr() string {
@@ -157,7 +138,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		}
 
 		nr := mux.NewRouter()
-		nr.HandleFunc("/v3/segments", sr.httpHandler).Methods(http.MethodPost)
+		nr.HandleFunc("/v3/segments", sr.traceReceiver.HTTPHandler).Methods(http.MethodPost)
 		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServer(host, sr.settings.TelemetrySettings, nr)
 		if cerr != nil {
 			return cerr
@@ -178,25 +159,24 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %w", err)
 		}
-
 		gaddr := sr.collectorGRPCAddr()
 		gln, gerr := net.Listen("tcp", gaddr)
 		if gerr != nil {
 			return fmt.Errorf("failed to bind to gRPC address %q: %w", gaddr, gerr)
 		}
-
-		sr.segmentReportService = &traceSegmentReportService{sr: sr}
-		v3.RegisterTraceSegmentReportServiceServer(sr.grpc, sr.segmentReportService)
+		if sr.traceReceiver != nil {
+			v3.RegisterTraceSegmentReportServiceServer(sr.grpc, sr.traceReceiver)
+		}
 		sr.dummyReportService = &dummyReportService{}
-
 		management.RegisterManagementServiceServer(sr.grpc, sr.dummyReportService)
 		cds.RegisterConfigurationDiscoveryServiceServer(sr.grpc, sr.dummyReportService)
 		event.RegisterEventServiceServer(sr.grpc, &eventService{})
 		profile.RegisterProfileTaskServer(sr.grpc, sr.dummyReportService)
-		v3.RegisterJVMMetricReportServiceServer(sr.grpc, sr.dummyReportService)
 		v3.RegisterMeterReportServiceServer(sr.grpc, &meterService{})
 		v3.RegisterCLRMetricReportServiceServer(sr.grpc, &clrService{})
 		v3.RegisterBrowserPerfServiceServer(sr.grpc, sr.dummyReportService)
+		//TODO: add jvm metrics service
+		v3.RegisterJVMMetricReportServiceServer(sr.grpc, sr.dummyReportService)
 
 		sr.goroutines.Add(1)
 		go func() {
@@ -208,35 +188,4 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 	}
 
 	return nil
-}
-
-type Response struct {
-	Status string `json:"status"`
-	Msg    string `json:"msg"`
-}
-
-func (sr *swReceiver) httpHandler(rsp http.ResponseWriter, r *http.Request) {
-	rsp.Header().Set("Content-Type", "application/json")
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		response := &Response{Status: failing, Msg: err.Error()}
-		ResponseWithJSON(rsp, response, http.StatusBadRequest)
-		return
-	}
-	var data []*v3.SegmentObject
-	if err = json.Unmarshal(b, &data); err != nil {
-		fmt.Printf("cannot Unmarshal skywalking segment collection, %v", err)
-	}
-
-	for _, segment := range data {
-		err = consumeTraces(r.Context(), segment, sr.nextConsumer)
-		if err != nil {
-			fmt.Printf("cannot consume traces, %v", err)
-		}
-	}
-}
-
-func ResponseWithJSON(rsp http.ResponseWriter, response *Response, code int) {
-	rsp.WriteHeader(code)
-	_ = json.NewEncoder(rsp).Encode(response)
 }
