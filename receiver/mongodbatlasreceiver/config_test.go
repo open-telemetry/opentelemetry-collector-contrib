@@ -236,7 +236,7 @@ func TestValidate(t *testing.T) {
 					Projects: []*ProjectConfig{},
 				},
 			},
-			expectedErr: errNoProjects.Error(),
+			expectedErr: errNoEvents.Error(),
 		},
 	}
 
@@ -294,6 +294,11 @@ func TestLoadConfig(t *testing.T) {
 		Projects: []*ProjectConfig{
 			{
 				Name: "Project 0",
+			},
+		},
+		Orgs: []*ProjectConfig{
+			{
+				Name: "Org 0",
 			},
 		},
 		PollInterval: time.Minute,
