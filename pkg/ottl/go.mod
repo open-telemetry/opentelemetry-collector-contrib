@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
 go 1.19
 
 require (
-	github.com/alecthomas/participle/v2 v2.0.0-beta.5
+	github.com/alecthomas/participle/v2 v2.0.0
 	github.com/gobwas/glob v0.2.3
 	github.com/iancoleman/strcase v0.2.0
 	github.com/json-iterator/go v1.1.12
