@@ -8,7 +8,8 @@
 
 Receives metrics from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) 
 via their [monitoring APIs](https://docs.atlas.mongodb.com/reference/api/monitoring-and-logs/),
-as well as alerts via a configured [webhook](https://www.mongodb.com/docs/atlas/tutorial/third-party-service-integrations/).
+as well as alerts via a configured [webhook](https://www.mongodb.com/docs/atlas/tutorial/third-party-service-integrations/)
+and events from [events APIs](https://www.mongodb.com/docs/atlas/reference/api/events/).
 
 ## Getting Started
 
@@ -59,7 +60,9 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
     - `exclude_clusters` (default empty)
 - `events`
   - `projects`
-    - `name` Name of the Project to discover events from
+    - `name` Name of the Project to discover events from.
+  - `orgs`
+    - `name` Name of the Organization to discover events from.
   - `poll_interval` (default `1m`)
     - How often the receiver will poll the Events API for new events.
   - `page_size` (default `100`)
@@ -129,6 +132,8 @@ receivers:
     events:
       projects:
         - name: "project 1"
+      orgs:
+        - name: "org 1"
       poll_interval: 1m
       page_size: 100
       max_pages: 25
