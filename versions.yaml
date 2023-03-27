@@ -146,6 +146,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachepulsarreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
@@ -234,7 +235,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter
-
 
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
