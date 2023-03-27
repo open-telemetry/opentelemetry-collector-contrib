@@ -1,10 +1,10 @@
-// Copyright The OpenTelemetry Authors
+// Copyright 2020, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +14,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-// Package pprofextension implements an extension that exposes the golang
-// net/http/pprof (Performance Profiler) in a HTTP endpoint.
-package pprofextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+package oidcauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
