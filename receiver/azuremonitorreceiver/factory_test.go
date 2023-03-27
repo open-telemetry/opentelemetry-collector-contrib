@@ -12,19 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azuremonitorreceiver
+package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/configazure"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"testing"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -48,12 +49,10 @@ func TestNewFactory(t *testing.T) {
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: 10 * time.Second,
 					},
-					AzureSettings: configazure.AzureSettings{
-						CacheResources:                24 * 60 * 60,
-						CacheResourcesDefinitions:     24 * 60 * 60,
-						MaximumNumberOfMetricsInACall: 20,
-					},
-					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
+					CacheResources:                24 * 60 * 60,
+					CacheResourcesDefinitions:     24 * 60 * 60,
+					MaximumNumberOfMetricsInACall: 20,
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

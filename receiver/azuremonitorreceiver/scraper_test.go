@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azuremonitorreceiver
+package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -25,10 +24,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
 func TestNewScraper(t *testing.T) {
@@ -39,7 +40,7 @@ func TestNewScraper(t *testing.T) {
 	require.Len(t, scraper.resources, 0)
 }
 
-func azIdCredentialsFuncMock(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error) {
+func azIDCredentialsFuncMock(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error) {
 	return &azidentity.ClientSecretCredential{}, nil
 }
 
@@ -89,7 +90,7 @@ func TestAzureScraperStart(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &azureScraper{
 				cfg:                             tt.fields.cfg,
-				azIdCredentialsFunc:             azIdCredentialsFuncMock,
+				azIDCredentialsFunc:             azIDCredentialsFuncMock,
 				armClientFunc:                   armClientFuncMock,
 				armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
 				armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
@@ -214,22 +215,22 @@ func getResourcesMockData() []armresources.ClientListResponse {
 	id1, id2, id3 := "resourceId1", "resourceId2", "resourceId3"
 
 	return []armresources.ClientListResponse{
-		armresources.ClientListResponse{
+		{
 			ResourceListResult: armresources.ResourceListResult{
 				Value: []*armresources.GenericResourceExpanded{
-					&armresources.GenericResourceExpanded{
+					{
 						ID: &id1,
 					},
-					&armresources.GenericResourceExpanded{
+					{
 						ID: &id2,
 					},
 				},
 			},
 		},
-		armresources.ClientListResponse{
+		{
 			ResourceListResult: armresources.ResourceListResult{
 				Value: []*armresources.GenericResourceExpanded{
-					&armresources.GenericResourceExpanded{
+					{
 						ID: &id3,
 					},
 				},
@@ -249,11 +250,11 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 	}
 
 	pages := map[string][]armmonitor.MetricDefinitionsClientListResponse{
-		"resourceId1": []armmonitor.MetricDefinitionsClientListResponse{
-			armmonitor.MetricDefinitionsClientListResponse{
+		"resourceId1": {
+			{
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
-						&armmonitor.MetricDefinition{
+						{
 							Name: &armmonitor.LocalizableString{
 								Value: &name1,
 							},
@@ -267,11 +268,11 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 				},
 			},
 		},
-		"resourceId2": []armmonitor.MetricDefinitionsClientListResponse{
-			armmonitor.MetricDefinitionsClientListResponse{
+		"resourceId2": {
+			{
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
-						&armmonitor.MetricDefinition{
+						{
 							Name: &armmonitor.LocalizableString{
 								Value: &name1,
 							},
@@ -285,11 +286,11 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 				},
 			},
 		},
-		"resourceId3": []armmonitor.MetricDefinitionsClientListResponse{
-			armmonitor.MetricDefinitionsClientListResponse{
+		"resourceId3": {
+			{
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
-						&armmonitor.MetricDefinition{
+						{
 							Name: &armmonitor.LocalizableString{
 								Value: &name1,
 							},
@@ -313,18 +314,18 @@ func getMetricsValuesMockData() map[string]armmonitor.MetricsClientListResponse 
 	var value1 float64 = 1
 
 	return map[string]armmonitor.MetricsClientListResponse{
-		"resourceId1": armmonitor.MetricsClientListResponse{
+		"resourceId1": {
 			Response: armmonitor.Response{
 				Value: []*armmonitor.Metric{
-					&armmonitor.Metric{
+					{
 						Name: &armmonitor.LocalizableString{
 							Value: &name1,
 						},
 						Unit: &unit1,
 						Timeseries: []*armmonitor.TimeSeriesElement{
-							&armmonitor.TimeSeriesElement{
+							{
 								Data: []*armmonitor.MetricValue{
-									&armmonitor.MetricValue{
+									{
 										Average: &value1,
 										Count:   &value1,
 										Maximum: &value1,
@@ -338,18 +339,18 @@ func getMetricsValuesMockData() map[string]armmonitor.MetricsClientListResponse 
 				},
 			},
 		},
-		"resourceId2": armmonitor.MetricsClientListResponse{
+		"resourceId2": {
 			Response: armmonitor.Response{
 				Value: []*armmonitor.Metric{
-					&armmonitor.Metric{
+					{
 						Name: &armmonitor.LocalizableString{
 							Value: &name1,
 						},
 						Unit: &unit1,
 						Timeseries: []*armmonitor.TimeSeriesElement{
-							&armmonitor.TimeSeriesElement{
+							{
 								Data: []*armmonitor.MetricValue{
-									&armmonitor.MetricValue{
+									{
 										Average: &value1,
 										Count:   &value1,
 										Maximum: &value1,
@@ -363,18 +364,18 @@ func getMetricsValuesMockData() map[string]armmonitor.MetricsClientListResponse 
 				},
 			},
 		},
-		"resourceId3": armmonitor.MetricsClientListResponse{
+		"resourceId3": {
 			Response: armmonitor.Response{
 				Value: []*armmonitor.Metric{
-					&armmonitor.Metric{
+					{
 						Name: &armmonitor.LocalizableString{
 							Value: &name1,
 						},
 						Unit: &unit1,
 						Timeseries: []*armmonitor.TimeSeriesElement{
-							&armmonitor.TimeSeriesElement{
+							{
 								Data: []*armmonitor.MetricValue{
-									&armmonitor.MetricValue{
+									{
 										Count: &value1,
 									},
 								},

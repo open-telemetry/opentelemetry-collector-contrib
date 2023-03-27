@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azuremonitorreceiver
+package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
 import (
 	"context"
@@ -24,13 +24,11 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/configazure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
 const (
-	typeStr   = "azuremonitor"
-	stability = component.StabilityLevelDevelopment
+	typeStr = "azuremonitor"
 )
 
 var errConfigNotAzureMonitor = errors.New("Config was not a Azure Monitor receiver config")
@@ -40,7 +38,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.Stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -48,12 +46,10 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
 		},
-		AzureSettings: configazure.AzureSettings{
-			CacheResources:                24 * 60 * 60,
-			CacheResourcesDefinitions:     24 * 60 * 60,
-			MaximumNumberOfMetricsInACall: 20,
-		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
+		CacheResources:                24 * 60 * 60,
+		CacheResourcesDefinitions:     24 * 60 * 60,
+		MaximumNumberOfMetricsInACall: 20,
 	}
 }
 

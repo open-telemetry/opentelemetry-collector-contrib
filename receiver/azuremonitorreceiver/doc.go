@@ -14,4 +14,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package azuremonitorreceiver
+package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"

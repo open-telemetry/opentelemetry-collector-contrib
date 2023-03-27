@@ -109,7 +109,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.75.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureemonitorreceiver v0.75.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.75.0

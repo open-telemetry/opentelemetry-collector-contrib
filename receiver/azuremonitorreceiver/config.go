@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azuremonitorreceiver
+package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
 import (
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/configazure"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
+
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
 // Predefined error responses for configuration validation failures
 var (
-	errMissingTenantId       = errors.New(`TenantId" is not specified in config`)
-	errMissingSubscriptionId = errors.New(`SubscriptionId" is not specified in config`)
-	errMissingClientId       = errors.New(`ClientId" is not specified in config`)
+	errMissingTenantID       = errors.New(`TenantID" is not specified in config`)
+	errMissingSubscriptionID = errors.New(`SubscriptionID" is not specified in config`)
+	errMissingClientID       = errors.New(`ClientID" is not specified in config`)
 	errMissingClientSecret   = errors.New(`ClientSecret" is not specified in config`)
 
 	monitorServices = []string{
@@ -232,25 +233,33 @@ var (
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	configazure.AzureSettings               `mapstructure:",squash"`
 	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	SubscriptionID                          string                        `mapstructure:"subscription_id"`
+	TenantID                                string                        `mapstructure:"tenant_id"`
+	ClientID                                string                        `mapstructure:"client_id"`
+	ClientSecret                            string                        `mapstructure:"client_secret"`
+	ResourceGroups                          []string                      `mapstructure:"resource_groups"`
+	Services                                []string                      `mapstructure:"services"`
+	CacheResources                          int64                         `mapstructure:"cache_resources"`
+	CacheResourcesDefinitions               int64                         `mapstructure:"cache_resources_definitions"`
+	MaximumNumberOfMetricsInACall           int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
-	if c.AzureSettings.TenantId == "" {
-		err = multierr.Append(err, errMissingTenantId)
+	if c.TenantID == "" {
+		err = multierr.Append(err, errMissingTenantID)
 	}
 
-	if c.AzureSettings.SubscriptionId == "" {
-		err = multierr.Append(err, errMissingSubscriptionId)
+	if c.SubscriptionID == "" {
+		err = multierr.Append(err, errMissingSubscriptionID)
 	}
 
-	if c.AzureSettings.ClientId == "" {
-		err = multierr.Append(err, errMissingClientId)
+	if c.ClientID == "" {
+		err = multierr.Append(err, errMissingClientID)
 	}
 
-	if c.AzureSettings.ClientSecret == "" {
+	if c.ClientSecret == "" {
 		err = multierr.Append(err, errMissingClientSecret)
 	}
 

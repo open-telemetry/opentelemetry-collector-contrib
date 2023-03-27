@@ -1,5 +1,11 @@
 name: azuremonitorreceiver
 
+status:
+   type: receiver
+   stability: development
+   pipelines: [metrics]
+   distributions: [contrib]
+
 resource_attributes:
   azuremonitor.tenant_id:
     description:  Azure tenant ID

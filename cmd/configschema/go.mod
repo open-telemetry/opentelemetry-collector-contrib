@@ -18,6 +18,8 @@ require (
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor v0.8.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.0.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.8.1 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.4 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.4 // indirect
@@ -122,6 +124,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.75.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.75.0 // indirect
@@ -887,6 +890,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxr
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver => ../../receiver/azureblobreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ../../receiver/azureeventhubreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver => ../../receiver/azuremonitorreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver => ../../receiver/bigipreceiver
 

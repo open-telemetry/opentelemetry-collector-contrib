@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azuremonitorreceiver
+package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
 import (
 	"context"
@@ -21,22 +21,20 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
-
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
 var (
@@ -76,7 +74,7 @@ func newScraper(conf *Config, settings receiver.CreateSettings) *azureScraper {
 		cfg:                             conf,
 		settings:                        settings.TelemetrySettings,
 		mb:                              metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
-		azIdCredentialsFunc:             azidentity.NewClientSecretCredential,
+		azIDCredentialsFunc:             azidentity.NewClientSecretCredential,
 		armClientFunc:                   armresources.NewClient,
 		armMonitorDefinitionsClientFunc: armmonitor.NewMetricDefinitionsClient,
 		armMonitorMetricsClientFunc:     armmonitor.NewMetricsClient,
@@ -95,7 +93,7 @@ type azureScraper struct {
 	resources                       map[string]*azureResource
 	resourcesUpdated                int64
 	mb                              *metadata.MetricsBuilder
-	azIdCredentialsFunc             func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
+	azIDCredentialsFunc             func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
 	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
 	armMonitorDefinitionsClientFunc func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
 	armMonitorMetricsClientFunc     func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
@@ -106,7 +104,7 @@ type ArmClient interface {
 }
 
 func (s *azureScraper) getArmClient() ArmClient {
-	client, _ := s.armClientFunc(s.cfg.SubscriptionId, s.cred, nil)
+	client, _ := s.armClientFunc(s.cfg.SubscriptionID, s.cred, nil)
 	return client
 }
 
@@ -129,7 +127,7 @@ func (s *azureScraper) GetMetricsValuesClient() MetricsValuesClient {
 }
 
 func (s *azureScraper) start(ctx context.Context, host component.Host) (err error) {
-	s.cred, err = s.azIdCredentialsFunc(s.cfg.TenantId, s.cfg.ClientId, s.cfg.ClientSecret, nil)
+	s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil)
 	if err != nil {
 		return err
 	}
@@ -148,36 +146,30 @@ func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.getResources(ctx)
 	resourcesIdsWithDefinitions := make(chan string)
 
+	mutex := &sync.RWMutex{}
+
 	go func() {
 		defer close(resourcesIdsWithDefinitions)
-		for resourceId := range s.resources {
-			s.getResourceMetricsDefinitions(ctx, resourceId)
-			resourcesIdsWithDefinitions <- resourceId
+		for resourceID := range s.resources {
+			s.getResourceMetricsDefinitions(ctx, resourceID)
+			resourcesIdsWithDefinitions <- resourceID
 		}
 	}()
 
 	var resourceMetricsProgress sync.WaitGroup
 
-	for resourcesIdsWithDefinitions != nil {
-		select {
-		case resourceId, ok := <-resourcesIdsWithDefinitions:
-			if !ok {
-				resourcesIdsWithDefinitions = nil
-				break
-			}
-			resourceMetricsProgress.Add(1)
-			go func() {
-				defer resourceMetricsProgress.Done()
-				s.getResourceMetricsValues(ctx, resourceId)
-			}()
-		}
+	for resourceID := range resourcesIdsWithDefinitions {
+		resourceMetricsProgress.Add(1)
+		go func(resourceID string) {
+			defer resourceMetricsProgress.Done()
+			s.getResourceMetricsValues(ctx, resourceID, mutex)
+		}(resourceID)
 	}
-
 	resourceMetricsProgress.Wait()
 
 	return s.mb.Emit(
-		metadata.WithAzureMonitorSubscriptionID(s.cfg.SubscriptionId),
-		metadata.WithAzureMonitorTenantID(s.cfg.TenantId),
+		metadata.WithAzureMonitorSubscriptionID(s.cfg.SubscriptionID),
+		metadata.WithAzureMonitorTenantID(s.cfg.TenantID),
 	), nil
 }
 
@@ -238,15 +230,16 @@ func (s *azureScraper) getResourcesFilter() string {
 	return fmt.Sprintf("(resourceType eq '%s')%s", resourcesTypeFilter, resourcesGroupFilterString)
 }
 
-func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resourceId string) {
+func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resourceID string) {
 
-	if time.Now().UTC().Unix() < (s.resources[resourceId].metricsDefinitionsUpdated + s.cfg.CacheResourcesDefinitions) {
+	if time.Now().UTC().Unix() < (s.resources[resourceID].metricsDefinitionsUpdated + s.cfg.CacheResourcesDefinitions) {
 		return
 	}
-	res := s.resources[resourceId]
+
+	res := s.resources[resourceID]
 	res.metricsByGrains = map[string]*azureResourceMetrics{}
 
-	pager := s.clientMetricsDefinitions.NewListPager(resourceId, nil)
+	pager := s.clientMetricsDefinitions.NewListPager(resourceID, nil)
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
 		if err != nil {
@@ -268,9 +261,8 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 	res.metricsDefinitionsUpdated = time.Now().UTC().Unix()
 }
 
-func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceId string) {
-
-	res := s.resources[resourceId]
+func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID string, mutex *sync.RWMutex) {
+	res := *s.resources[resourceID]
 
 	for timeGrain, metricsByGrain := range res.metricsByGrains {
 
@@ -288,19 +280,12 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceId 
 				end = len(metricsByGrain.metrics)
 			}
 
-			resType := strings.Join(metricsByGrain.metrics[start:end], ",")
+			opts := s.getResourceMetricsValuesRequestOptions(metricsByGrain.metrics, timeGrain, start, end)
 			start = end
-
-			opts := armmonitor.MetricsClientListOptions{
-				Metricnames: &resType,
-				Interval:    to.Ptr(timeGrain),
-				Timespan:    to.Ptr(timeGrain),
-				Aggregation: to.Ptr(strings.Join(aggregations, ",")),
-			}
 
 			result, err := s.clientMetricsValues.List(
 				ctx,
-				resourceId,
+				resourceID,
 				&opts,
 			)
 			if err != nil {
@@ -313,27 +298,42 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceId 
 				for _, timeserie := range metric.Timeseries {
 					if timeserie.Data != nil {
 						for _, timeserieData := range timeserie.Data {
-
-							ts := pcommon.NewTimestampFromTime(time.Now())
-							if timeserieData.Average != nil {
-								s.mb.AddDataPoint(resourceId, *metric.Name.Value, "Average", string(*metric.Unit), ts, *timeserieData.Average)
-							}
-							if timeserieData.Count != nil {
-								s.mb.AddDataPoint(resourceId, *metric.Name.Value, "Count", string(*metric.Unit), ts, *timeserieData.Count)
-							}
-							if timeserieData.Maximum != nil {
-								s.mb.AddDataPoint(resourceId, *metric.Name.Value, "Maximum", string(*metric.Unit), ts, *timeserieData.Maximum)
-							}
-							if timeserieData.Minimum != nil {
-								s.mb.AddDataPoint(resourceId, *metric.Name.Value, "Minimum", string(*metric.Unit), ts, *timeserieData.Minimum)
-							}
-							if timeserieData.Total != nil {
-								s.mb.AddDataPoint(resourceId, *metric.Name.Value, "Total", string(*metric.Unit), ts, *timeserieData.Total)
-							}
+							mutex.Lock()
+							s.processTimeserieData(resourceID, metric, timeserieData)
+							mutex.Unlock()
 						}
 					}
 				}
 			}
 		}
+	}
+}
+
+func (s *azureScraper) getResourceMetricsValuesRequestOptions(metrics []string, timeGrain string, start int, end int) armmonitor.MetricsClientListOptions {
+	resType := strings.Join(metrics[start:end], ",")
+	return armmonitor.MetricsClientListOptions{
+		Metricnames: &resType,
+		Interval:    to.Ptr(timeGrain),
+		Timespan:    to.Ptr(timeGrain),
+		Aggregation: to.Ptr(strings.Join(aggregations, ",")),
+	}
+}
+
+func (s *azureScraper) processTimeserieData(resourceID string, metric *armmonitor.Metric, timeserieData *armmonitor.MetricValue) {
+	ts := pcommon.NewTimestampFromTime(time.Now())
+	if timeserieData.Average != nil {
+		s.mb.AddDataPoint(resourceID, *metric.Name.Value, "Average", string(*metric.Unit), ts, *timeserieData.Average)
+	}
+	if timeserieData.Count != nil {
+		s.mb.AddDataPoint(resourceID, *metric.Name.Value, "Count", string(*metric.Unit), ts, *timeserieData.Count)
+	}
+	if timeserieData.Maximum != nil {
+		s.mb.AddDataPoint(resourceID, *metric.Name.Value, "Maximum", string(*metric.Unit), ts, *timeserieData.Maximum)
+	}
+	if timeserieData.Minimum != nil {
+		s.mb.AddDataPoint(resourceID, *metric.Name.Value, "Minimum", string(*metric.Unit), ts, *timeserieData.Minimum)
+	}
+	if timeserieData.Total != nil {
+		s.mb.AddDataPoint(resourceID, *metric.Name.Value, "Total", string(*metric.Unit), ts, *timeserieData.Total)
 	}
 }

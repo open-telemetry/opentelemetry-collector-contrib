@@ -1,4 +1,18 @@
-package metadata
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 
 import (
 	"errors"
@@ -13,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
+
+const metricsPrefix = "azure_"
 
 // ResourceAttributeSettings provides common settings for a particular metric.
 type ResourceAttributeSettings struct {
@@ -89,13 +105,6 @@ type MetricsBuilder struct {
 
 // metricBuilderOption applies changes to default metrics builder.
 type metricBuilderOption func(*MetricsBuilder)
-
-// WithStartTime sets startTime on the metrics builder.
-func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.startTime = startTime
-	}
-}
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
 func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
@@ -188,36 +197,36 @@ func (m *metricAzureAbstract) init(name, unit string) {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (mb *MetricsBuilder) getMetric(resourceMetricId string) (*metricAzureAbstract, bool) {
-	if _, exists := mb.metrics[resourceMetricId]; !exists {
+func (mb *MetricsBuilder) getMetric(resourceMetricID string) (*metricAzureAbstract, bool) {
+	if _, exists := mb.metrics[resourceMetricID]; !exists {
 		return nil, false
 	}
-	return mb.metrics[resourceMetricId], true
+	return mb.metrics[resourceMetricID], true
 }
 
-func (mb *MetricsBuilder) addMetric(resourceMetricId, resourceId, logicalMetricId, unit string) (*metricAzureAbstract, error) {
-	if _, exists := mb.metrics[resourceMetricId]; exists {
+func (mb *MetricsBuilder) addMetric(resourceMetricID, logicalMetricID, unit string) (*metricAzureAbstract, error) {
+	if _, exists := mb.metrics[resourceMetricID]; exists {
 		return nil, errors.New("metric already exists")
 	}
 
 	m := &metricAzureAbstract{}
 	m.data = pmetric.NewMetric()
 
-	m.init(logicalMetricId, unit)
+	m.init(logicalMetricID, unit)
 
-	mb.metrics[resourceMetricId] = m
+	mb.metrics[resourceMetricID] = m
 
-	return mb.metrics[resourceMetricId], nil
+	return mb.metrics[resourceMetricID], nil
 }
 
-func (mb *MetricsBuilder) AddDataPoint(resourceId, metric, aggregation, unit string, ts pcommon.Timestamp, val float64) {
-	logicalMetricId := getLogicalMetricId(metric, aggregation)
-	resourceMetricId := getLogicalResourceMetricId(resourceId, logicalMetricId)
+func (mb *MetricsBuilder) AddDataPoint(resourceID, metric, aggregation, unit string, ts pcommon.Timestamp, val float64) {
+	logicalMetricID := getLogicalMetricID(metric, aggregation)
+	resourceMetricID := getLogicalResourceMetricID(resourceID, logicalMetricID)
 
-	m, exists := mb.getMetric(resourceMetricId)
+	m, exists := mb.getMetric(resourceMetricID)
 	if !exists {
 		var err error
-		m, err = mb.addMetric(resourceMetricId, resourceId, logicalMetricId, unit)
+		m, err = mb.addMetric(resourceMetricID, logicalMetricID, unit)
 		if err != nil {
 			log.Println(err)
 		}
@@ -226,15 +235,15 @@ func (mb *MetricsBuilder) AddDataPoint(resourceId, metric, aggregation, unit str
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("azuremonitor.resource_id", resourceId)
+	dp.Attributes().PutStr("azuremonitor.resource_id", resourceID)
 }
 
-func getLogicalMetricId(metric, aggregation string) string {
-	return strings.ToLower(fmt.Sprintf("azure_%s_%s", strings.ReplaceAll(metric, " ", "_"), aggregation))
+func getLogicalMetricID(metric, aggregation string) string {
+	return strings.ToLower(fmt.Sprintf("%s%s_%s", metricsPrefix, strings.ReplaceAll(metric, " ", "_"), aggregation))
 }
 
-func getLogicalResourceMetricId(resourceId, logicalMetricId string) string {
-	return fmt.Sprintf("%s/%s", strings.ToLower(resourceId), logicalMetricId)
+func getLogicalResourceMetricID(resourceID, logicalMetricID string) string {
+	return fmt.Sprintf("%s/%s", strings.ToLower(resourceID), logicalMetricID)
 }
 
 func (mb *MetricsBuilder) EmitAllMetrics(ils pmetric.ScopeMetrics) {
