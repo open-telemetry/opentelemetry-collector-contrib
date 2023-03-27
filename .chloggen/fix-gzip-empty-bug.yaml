@@ -1,0 +1,19 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: splunkhecexporter
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: While sending empty data to Splunk with compression enabled, the gzip buffer will be at least 18 bytes (10-byte header + 0-byte payload + 8-byte footer), even if uncompressed data is of 0 bytes.
+HEC will return with '{\\\"text\\\":\\\"No data\\\",\\\"code\\\":5}'' if uncompressed data of 0 bytes is gzipped before sending to HEC. 
+The current check in the overall buffer, regardless of compression. So we need to add another check if compression is enabled.
+
+
+# One or more tracking issues related to the change
+issues: [https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/20290]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext:

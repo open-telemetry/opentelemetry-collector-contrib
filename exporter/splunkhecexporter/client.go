@@ -16,8 +16,11 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sync"
@@ -109,6 +112,19 @@ func isProfilingData(sl plog.ScopeLogs) bool {
 	return sl.Scope().Name() == profilingLibraryName
 }
 
+// Check if the underlying buffer is empty
+func isBufferEmpty(bufState *bufferState) bool {
+	if bufState.compressionEnabled {
+		r, _ := gzip.NewReader(bytes.NewBuffer(bufState.buf.Bytes()))
+		// Try to read 1 byte of uncompressed data. If EOF is raised then it means it's empty
+		// Splunk will return "No data" and reply_code=5 if it is empty.
+		_, err1 := io.CopyN(io.Discard, r, 1)
+		return errors.Is(err1, io.EOF)
+	} else {
+		return bufState.buf.Len() <= 0
+	}
+}
+
 // pushLogDataInBatches sends batches of Splunk events in JSON format.
 // The batch content length is restricted to MaxContentLengthLogs.
 // ld log records are parsed to Splunk events.
@@ -168,19 +184,14 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 	}
 
 	// There's some leftover unsent non-profiling data
-	if bufState.buf.Len() > 0 {
-
-		if err := c.postEvents(ctx, bufState, headers); err != nil {
-			return consumererror.NewLogs(err, c.subLogs(ld, bufState.bufFront, profilingBufState.bufFront))
-		}
+	if err := c.postEvents(ctx, bufState, headers); err != nil {
+		return consumererror.NewLogs(err, c.subLogs(ld, bufState.bufFront, profilingBufState.bufFront))
 	}
 
 	// There's some leftover unsent profiling data
-	if profilingBufState.buf.Len() > 0 {
-		if err := c.postEvents(ctx, profilingBufState, profilingLocalHeaders); err != nil {
-			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
-			return consumererror.NewLogs(err, c.subLogs(ld, nil, profilingBufState.bufFront))
-		}
+	if err := c.postEvents(ctx, profilingBufState, profilingLocalHeaders); err != nil {
+		// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
+		return consumererror.NewLogs(err, c.subLogs(ld, nil, profilingBufState.bufFront))
 	}
 
 	return multierr.Combine(permanentErrors...)
@@ -222,10 +233,8 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 			continue
 		}
 
-		if state.buf.Len() > 0 {
-			if err := c.postEvents(ctx, state, headers); err != nil {
-				return permanentErrors, err
-			}
+		if err := c.postEvents(ctx, state, headers); err != nil {
+			return permanentErrors, err
 		}
 		state.reset()
 
@@ -296,10 +305,8 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 			continue
 		}
 
-		if state.buf.Len() > 0 {
-			if err := c.postEvents(ctx, state, headers); err != nil {
-				return permanentErrors, err
-			}
+		if err := c.postEvents(ctx, state, headers); err != nil {
+			return permanentErrors, err
 		}
 		state.reset()
 
@@ -358,10 +365,8 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 			continue
 		}
 
-		if state.buf.Len() > 0 {
-			if err = c.postEvents(ctx, state, headers); err != nil {
-				return permanentErrors, err
-			}
+		if err = c.postEvents(ctx, state, headers); err != nil {
+			return permanentErrors, err
 		}
 		state.reset()
 
@@ -417,10 +422,8 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 	}
 
 	// There's some leftover unsent metrics
-	if bufState.buf.Len() > 0 {
-		if err := c.postEvents(ctx, bufState, headers); err != nil {
-			return consumererror.NewMetrics(err, subMetrics(md, bufState.bufFront))
-		}
+	if err := c.postEvents(ctx, bufState, headers); err != nil {
+		return consumererror.NewMetrics(err, subMetrics(md, bufState.bufFront))
 	}
 
 	return multierr.Combine(permanentErrors...)
@@ -452,10 +455,8 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 	}
 
 	// There's some leftover unsent traces
-	if bufState.buf.Len() > 0 {
-		if err := c.postEvents(ctx, bufState, headers); err != nil {
-			return consumererror.NewTraces(err, subTraces(td, bufState.bufFront))
-		}
+	if err := c.postEvents(ctx, bufState, headers); err != nil {
+		return consumererror.NewTraces(err, subTraces(td, bufState.bufFront))
 	}
 
 	return multierr.Combine(permanentErrors...)
@@ -464,6 +465,10 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 func (c *client) postEvents(ctx context.Context, bufState *bufferState, headers map[string]string) error {
 	if err := bufState.Close(); err != nil {
 		return err
+	}
+	// If underlying buffer is empty, skip it
+	if isBufferEmpty(bufState) {
+		return nil
 	}
 	return c.hecWorker.send(ctx, bufState, headers)
 }

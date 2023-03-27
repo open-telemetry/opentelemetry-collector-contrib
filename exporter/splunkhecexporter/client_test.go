@@ -1268,6 +1268,44 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	assert.Equal(t, 10, nonProfilingCount)
 }
 
+func Test_pushLogData_LongDataWithCompression_ShouldRaiseError(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	c := client{
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
+	}
+
+	// 5MiB log record
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(strings.Repeat("myLog", 1024*1024))
+
+	httpClient, _ := newTestClient(200, "OK")
+	c.hecWorker = &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
+
+	c.config.MaxContentLengthLogs = 2000
+	err := c.pushLogData(context.Background(), logs)
+	require.Contains(t, err.Error(), "Permanent error: error writing the event: over capacity")
+}
+
+func Test_pushLogData_LongDataWithCompression_ShouldWork(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	c := client{
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
+	}
+
+	// 5MiB log record
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(strings.Repeat("myLog", 1024*1024))
+
+	httpClient, _ := newTestClient(200, "OK")
+	c.hecWorker = &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
+
+	c.config.MaxContentLengthLogs = 8000
+	err := c.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
+}
+
 func Benchmark_pushLogData_100_10_10_1024(b *testing.B) {
 	benchPushLogData(b, 100, 10, 10, 1024)
 }
