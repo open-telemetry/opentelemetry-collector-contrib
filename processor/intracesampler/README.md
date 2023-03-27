@@ -31,9 +31,9 @@ processors:
 ```
 
 ## Relation to Other Samplers
-- [probabilisticsamplerprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor) will either keep or drop the entire trace.
-- [tailsamplingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor) will either keep or drop the entire trace.
-- [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor) can similarly drop individual spans and keep others, but it is not aware of the position of the span in the trace and thus can remove non-leaf spans and "break" the trace into multiple fragments. Also, it is not a sampler and will always filter out matching spans without allowing any samples to be kept.
+- [probabilisticsamplerprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor) will either keep the entire trace or drop the entire trace. It is not able to sample out just parts of a trace.
+- [tailsamplingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor) will either keep the entire trace or drop the entire trace. It is not able to sample out just parts of a trace.
+- [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor) can drop individual spans and keep others, but it is not aware of the position of the span in the trace and thus can remove non-leaf spans and break the trace into multiple fragments. Also, it is not a sampler and will always filter out matching spans without allowing any samples to be kept.
 
 It is recommended to use the intracesampler for traces that are valuable to keep, but includes spans which are not. 
 
