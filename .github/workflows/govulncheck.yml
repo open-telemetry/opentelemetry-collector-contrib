@@ -12,18 +12,27 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: Checkout
+      - name: Collect Workflow Telemetry
+        if: always()
+        uses: runforesight/foresight-workflow-kit-action@v1
+        with:
+          api_key: ${{ secrets.FORESIGHT_API_KEY }}
+      - name: Checkout Repo
         uses: actions/checkout@v3
-
-      - name: Install Go
+      - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          cache: true
-          check-latest: true
-          go-version: ~1.19.7
-
-      - name: Install `govulncheck`
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
-
-      - name: Run `govulncheck`
-        run: govulncheck ./...
+          go-version: 1.19
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Run govulncheck
+        run: make govulncheck
