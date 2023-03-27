@@ -768,11 +768,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/receiver/dotnetdiagnosticsreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/receiver/elasticsearchreceiver"
     schedule:
       interval: "weekly"
