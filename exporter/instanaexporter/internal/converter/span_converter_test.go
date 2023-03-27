@@ -16,8 +16,8 @@ package converter
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
-	"math/rand"
 	"testing"
 	"time"
 
@@ -255,13 +255,17 @@ func TestSpanWithError(t *testing.T) {
 }
 
 func generateTraceID() (data [16]byte) {
-	rand.Read(data[:])
-
+	_, err := rand.Read(data[:])
+	if err != nil {
+		panic(err)
+	}
 	return data
 }
 
 func generateSpanID() (data [8]byte) {
-	rand.Read(data[:])
-
+	_, err := rand.Read(data[:])
+	if err != nil {
+		panic(err)
+	}
 	return data
 }

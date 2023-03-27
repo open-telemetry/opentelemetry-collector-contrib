@@ -16,7 +16,7 @@ package servicegraphprocessor
 
 import (
 	"context"
-	"math/rand"
+	"crypto/rand"
 	"testing"
 	"time"
 
@@ -149,7 +149,7 @@ func TestProcessorConsume(t *testing.T) {
 			cfg: Config{
 				MetricsExporter: "mock",
 				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
-			}, sampleTraces: buildSampleTrace("val"),
+			}, sampleTraces: buildSampleTrace(t, "val"),
 		},
 		{
 			name: "incomplete traces with server span lost",
@@ -207,7 +207,7 @@ func TestConnectorConsume(t *testing.T) {
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Test & verify
-	td := buildSampleTrace("val")
+	td := buildSampleTrace(t, "val")
 	// The assertion is part of verifyMetrics func.
 	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
@@ -281,7 +281,7 @@ func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
 	assert.Equal(t, expected, v.AsString())
 }
 
-func buildSampleTrace(attrValue string) ptrace.Traces {
+func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
 	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
 
@@ -293,11 +293,14 @@ func buildSampleTrace(attrValue string) ptrace.Traces {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
 	var traceID pcommon.TraceID
-	rand.Read(traceID[:])
+	_, err := rand.Read(traceID[:])
+	require.NoError(t, err)
 
 	var clientSpanID, serverSpanID pcommon.SpanID
-	rand.Read(clientSpanID[:])
-	rand.Read(serverSpanID[:])
+	_, err = rand.Read(clientSpanID[:])
+	require.NoError(t, err)
+	_, err = rand.Read(serverSpanID[:])
+	require.NoError(t, err)
 
 	clientSpan := scopeSpans.Spans().AppendEmpty()
 	clientSpan.SetName("client span")
@@ -481,7 +484,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	assert.NoError(t, p.Start(context.Background(), mHost))
 
 	// ConsumeTraces
-	td := buildSampleTrace("first")
+	td := buildSampleTrace(t, "first")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
 	// Make series stale and force a cache cleanup
@@ -493,7 +496,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	assert.Equal(t, 0, len(p.keyToMetric))
 
 	// ConsumeTraces with a trace with different attribute value
-	td = buildSampleTrace("second")
+	td = buildSampleTrace(t, "second")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
 	// Shutdown the processor

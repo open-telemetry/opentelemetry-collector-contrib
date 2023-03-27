@@ -16,12 +16,11 @@ package sapmexporter
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
@@ -133,11 +132,16 @@ func buildTestTrace() ptrace.Traces {
 		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("MySpan")
 
-		rand.Seed(time.Now().Unix())
 		var traceIDBytes [16]byte
 		var spanIDBytes [8]byte
-		rand.Read(traceIDBytes[:])
-		rand.Read(spanIDBytes[:])
+		_, err := rand.Read(traceIDBytes[:])
+		if err != nil {
+			panic(err)
+		}
+		_, err = rand.Read(spanIDBytes[:])
+		if err != nil {
+			panic(err)
+		}
 		span.SetTraceID(traceIDBytes)
 		span.SetSpanID(spanIDBytes)
 	}

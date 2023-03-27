@@ -163,7 +163,8 @@ func TestIngestedDataRecordCount(t *testing.T) {
 		ingestOptions: ingestOptions,
 		logger:        logger,
 	}
-	rand.Seed(time.Now().UTC().UnixNano())
+	source := rand.NewSource(time.Now().UTC().UnixNano())
+	rand := rand.New(source)
 	recordstoingest := rand.Intn(20)
 	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(recordstoingest))
 	ingestedrecordsactual := ingestor.Records()
