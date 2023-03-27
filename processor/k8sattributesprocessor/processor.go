@@ -151,46 +151,64 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
 func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *kube.Pod) {
 	containerName := stringAttributeFromMap(attrs, conventions.AttributeK8SContainerName)
-	if containerName == "" {
+	containerID := stringAttributeFromMap(attrs, conventions.AttributeContainerID)
+	var (
+		containerSpec *kube.Container
+		ok            bool
+	)
+	switch {
+	case containerName != "":
+		containerSpec, ok = pod.Containers.ByName[containerName]
+		if !ok {
+			return
+		}
+	case containerID != "":
+		containerSpec, ok = pod.Containers.ByID[containerID]
+		if !ok {
+			return
+		}
+	default:
 		return
 	}
-	containerSpec, ok := pod.Containers[containerName]
-	if !ok {
-		return
-	}
-
-	if containerSpec.ImageName != "" {
-		if _, found := attrs.Get(conventions.AttributeContainerImageName); !found {
-			attrs.PutStr(conventions.AttributeContainerImageName, containerSpec.ImageName)
+	// addIfAbsent reports whether it has added the value v to the resource attribute k.
+	// It is false when v is empty or k is already set.
+	addIfAbsent := func(k, v string) bool {
+		if v == "" {
+			return false
 		}
-	}
-	if containerSpec.ImageTag != "" {
-		if _, found := attrs.Get(conventions.AttributeContainerImageTag); !found {
-			attrs.PutStr(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
+		if _, ok := attrs.Get(k); ok {
+			return false
 		}
+		attrs.PutStr(k, v)
+		return true
 	}
-
-	runID := -1
-	runIDAttr, ok := attrs.Get(conventions.AttributeK8SContainerRestartCount)
-	if ok {
-		containerRunID, err := intFromAttribute(runIDAttr)
-		if err != nil {
-			kp.logger.Debug(err.Error())
-		} else {
-			runID = containerRunID
-		}
-	} else {
-		// take the highest runID (restart count) which represents the currently running container in most cases
-		for containerRunID := range containerSpec.Statuses {
-			if containerRunID > runID {
+	addIfAbsent(conventions.AttributeK8SContainerName, containerSpec.Name)
+	addIfAbsent(conventions.AttributeContainerImageName, containerSpec.ImageName)
+	addIfAbsent(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
+	if !addIfAbsent(conventions.AttributeContainerID, containerSpec.ID) {
+		// attempt to get container ID from restart count
+		runID := -1
+		runIDAttr, ok := attrs.Get(conventions.AttributeK8SContainerRestartCount)
+		if ok {
+			containerRunID, err := intFromAttribute(runIDAttr)
+			if err != nil {
+				kp.logger.Debug(err.Error())
+			} else {
 				runID = containerRunID
 			}
+		} else {
+			// take the highest runID (restart count) which represents the currently running container in most cases
+			for containerRunID := range containerSpec.Statuses {
+				if containerRunID > runID {
+					runID = containerRunID
+				}
+			}
 		}
-	}
-	if runID != -1 {
-		if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
-			if _, found := attrs.Get(conventions.AttributeContainerID); !found {
-				attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
+		if runID != -1 {
+			if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
+				if _, found := attrs.Get(conventions.AttributeContainerID); !found {
+					attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
+				}
 			}
 		}
 	}

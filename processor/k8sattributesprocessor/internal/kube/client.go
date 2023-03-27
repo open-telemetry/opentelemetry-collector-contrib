@@ -374,12 +374,26 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	return tags
 }
 
-func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) map[string]*Container {
-	containers := map[string]*Container{}
-
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag {
+func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContainers {
+	containers := PodContainers{
+		ByID:   map[string]*Container{},
+		ByName: map[string]*Container{},
+	}
+	if !needContainerAttributes(c.Rules) {
+		return containers
+	}
+	ifRule := func(rule bool, v string) string {
+		if rule {
+			return v
+		}
+		return ""
+	}
+	switch {
+	case c.Rules.ContainerImageName,
+		c.Rules.ContainerImageTag,
+		c.Rules.ContainerName:
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
-			container := &Container{}
+			container := &Container{Name: ifRule(c.Rules.ContainerName, spec.Name)}
 			nameTagSep := strings.LastIndex(spec.Image, ":")
 			if c.Rules.ContainerImageName {
 				if nameTagSep > 0 {
@@ -391,29 +405,27 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) map[string
 			if c.Rules.ContainerImageTag && nameTagSep > 0 {
 				container.ImageTag = spec.Image[nameTagSep+1:]
 			}
-			containers[spec.Name] = container
+			containers.ByName[spec.Name] = container
 		}
 	}
-
-	if c.Rules.ContainerID {
-		for _, apiStatus := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
-			container, ok := containers[apiStatus.Name]
-			if !ok {
-				container = &Container{}
-				containers[apiStatus.Name] = container
-			}
+	for _, apiStatus := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
+		container, ok := containers.ByName[apiStatus.Name]
+		if !ok {
+			container = &Container{Name: ifRule(c.Rules.ContainerName, apiStatus.Name)}
+			containers.ByName[apiStatus.Name] = container
+		}
+		containerID := apiStatus.ContainerID
+		// Remove container runtime prefix
+		parts := strings.Split(containerID, "://")
+		if len(parts) == 2 {
+			containerID = parts[1]
+		}
+		containers.ByID[containerID] = container
+		if c.Rules.ContainerID {
+			container.ID = containerID
 			if container.Statuses == nil {
 				container.Statuses = map[int]ContainerStatus{}
 			}
-
-			containerID := apiStatus.ContainerID
-
-			// Remove container runtime prefix
-			idParts := strings.Split(containerID, "://")
-			if len(idParts) == 2 {
-				containerID = idParts[1]
-			}
-
 			container.Statuses[int(apiStatus.RestartCount)] = ContainerStatus{containerID}
 		}
 	}
@@ -651,5 +663,12 @@ func (c *WatchClient) extractNamespaceLabelsAnnotations() bool {
 }
 
 func needContainerAttributes(rules ExtractionRules) bool {
-	return rules.ContainerImageName || rules.ContainerImageTag || rules.ContainerID
+	switch {
+	case rules.ContainerImageName,
+		rules.ContainerName,
+		rules.ContainerImageTag,
+		rules.ContainerID:
+		return true
+	}
+	return false
 }
