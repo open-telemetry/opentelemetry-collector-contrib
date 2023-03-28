@@ -93,7 +93,6 @@ func (config *Config) Validate() error {
 	return nil
 }
 
-
 func (config *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 	return exporterhelper.QueueSettings{
 		Enabled: true,
