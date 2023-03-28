@@ -33,7 +33,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -155,10 +154,7 @@ func TestTracesSource(t *testing.T) {
 
 	assert := assert.New(t)
 	params := exportertest.NewNopCreateSettings()
-	reg := featuregate.NewRegistry()
-	reg.MustRegister(hostmetadata.HostnamePreviewFeatureGate.ID(), featuregate.StageBeta)
-	assert.NoError(reg.Set(hostmetadata.HostnamePreviewFeatureGate.ID(), true))
-	f := newFactoryWithRegistry(reg)
+	f := NewFactory()
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(err)
 

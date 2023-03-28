@@ -97,6 +97,25 @@ datasources:
     version: 1
 ```
 
+## Configuration
+
+The following settings are required:
+
+- `metrics_exporter`: the name of the exporter that this processor will write metrics to. This exporter **must** be present in a pipeline.
+- `latency_histogram_buckets`: the list of durations defining the latency histogram buckets.
+    - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
+- `dimensions`: the list of dimensions to add together with the default dimensions defined above.
+
+The following settings can be optionally configured:
+
+- `store` defines the config for the in-memory store used to find requests between services by pairing spans.
+    - `ttl` - TTL is the time to live for items in the store.
+      - Default: `2ms`
+    - `max_items` - MaxItems is the maximum number of items to keep in the store.
+      - Default: `1000` 
+- `cache_loop` - the time to cleans the cache periodically
+- `store_expiration_loop`  the time to expire old entries from the store periodically.
+
 ## Example configuration
 
 ```yaml
@@ -117,6 +136,8 @@ processors:
     store: # Configuration for the in-memory store
       ttl: 2s # Value to wait for an edge to be completed
       max_items: 200 # Amount of edges that will be stored in the storeMap      
+    cache_loop: 2m # the time to cleans the cache periodically
+    store_expiration_loop: 10s # the time to expire old entries from the store periodically.
 
 exporters:
   prometheus/servicegraph:

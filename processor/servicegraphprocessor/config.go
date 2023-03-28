@@ -39,6 +39,10 @@ type Config struct {
 
 	// Store contains the config for the in-memory store used to find requests between services by pairing spans.
 	Store StoreConfig `mapstructure:"store"`
+	// CacheLoop is the time to cleans the cache periodically.
+	CacheLoop time.Duration `mapstructure:"cache_loop"`
+	// CacheLoop is the time to expire old entries from the store periodically.
+	StoreExpirationLoop time.Duration `mapstructure:"store_expiration_loop"`
 }
 
 type StoreConfig struct {

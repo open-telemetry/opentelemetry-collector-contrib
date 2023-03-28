@@ -1,5 +1,12 @@
 name: httpcheckreceiver
 
+status:
+  type: receiver
+  stability: development
+  pipelines: [metrics]
+  distributions: [contrib]
+  warnings: []
+
 resource_attributes:
 
 attributes:

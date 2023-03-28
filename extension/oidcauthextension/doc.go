@@ -1,4 +1,4 @@
-// Copyright The OpenTelemetry Authors
+// Copyright 2020, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,18 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
+//go:generate mdatagen metadata.yaml
 
-import (
-	"time"
-
-	gocache "github.com/patrickmn/go-cache"
-)
-
-const (
-	// cacheKeyHostname specifies the cache key for storing hostnames.
-	cacheKeyHostname = "canonical_hostname"
-)
-
-// hostnameCache specifies a cache used for storing hostname resolution outcomes.
-var hostnameCache = gocache.New(20*time.Minute, 10*time.Minute)
+package oidcauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
