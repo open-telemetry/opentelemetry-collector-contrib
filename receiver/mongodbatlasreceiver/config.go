@@ -67,7 +67,7 @@ type LogConfig struct {
 // EventsConfig is the configuration options for events collection
 type EventsConfig struct {
 	Projects     []*ProjectConfig `mapstructure:"projects"`
-	Orgs         []*ProjectConfig `mapstructure:"orgs"`
+	Orgs         []*OrgConfig     `mapstructure:"orgs"`
 	PollInterval time.Duration    `mapstructure:"poll_interval"`
 	Types        []string         `mapstructure:"types"`
 	PageSize     int64            `mapstructure:"page_size"`
@@ -82,6 +82,10 @@ type ProjectConfig struct {
 
 	includesByClusterName map[string]struct{}
 	excludesByClusterName map[string]struct{}
+}
+
+type OrgConfig struct {
+	ID string `mapstructure:"id"`
 }
 
 func (pc *ProjectConfig) populateIncludesAndExcludes() *ProjectConfig {

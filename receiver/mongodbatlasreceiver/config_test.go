@@ -296,9 +296,9 @@ func TestLoadConfig(t *testing.T) {
 				Name: "Project 0",
 			},
 		},
-		Orgs: []*ProjectConfig{
+		Orgs: []*OrgConfig{
 			{
-				Name: "Org 0",
+				ID: "5b478b3afc4625789ce616a3",
 			},
 		},
 		PollInterval: time.Minute,

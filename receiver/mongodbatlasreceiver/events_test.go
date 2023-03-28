@@ -117,9 +117,9 @@ func TestPoll(t *testing.T) {
 				Name: testProjectName,
 			},
 		},
-		Orgs: []*ProjectConfig{
+		Orgs: []*OrgConfig{
 			{
-				Name: testOrgName,
+				ID: testOrgID,
 			},
 		},
 		PollInterval: time.Second,
@@ -162,9 +162,9 @@ func TestProjectGetFailure(t *testing.T) {
 				Name: "fake-project",
 			},
 		},
-		Orgs: []*ProjectConfig{
+		Orgs: []*OrgConfig{
 			{
-				Name: "fake-org",
+				ID: "fake-org",
 			},
 		},
 		PollInterval: time.Second,
@@ -210,7 +210,6 @@ func (mec *mockEventsClient) setupGetProject() {
 func (mec *mockEventsClient) setupGetOrganization() {
 	mec.On("GetOrganization", mock.Anything, mock.Anything).Return(&mongodbatlas.Organization{
 		ID:    testOrgID,
-		Name:  testOrgName,
 		Links: []*mongodbatlas.Link{},
 	}, nil)
 }

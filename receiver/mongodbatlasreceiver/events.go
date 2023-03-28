@@ -148,9 +148,9 @@ func (er *eventsReceiver) pollEvents(ctx context.Context) error {
 	}
 
 	for _, pc := range er.cfg.Events.Orgs {
-		org, err := er.client.GetOrganization(ctx, pc.Name)
+		org, err := er.client.GetOrganization(ctx, pc.ID)
 		if err != nil {
-			er.logger.Error("error retrieving org information for "+pc.Name+":", zap.Error(err))
+			er.logger.Error("error retrieving org information for "+pc.ID+":", zap.Error(err))
 			return err
 		}
 		er.pollOrg(ctx, org, pc, st, et)
@@ -191,7 +191,7 @@ func (er *eventsReceiver) pollProject(ctx context.Context, project *mongodbatlas
 	}
 }
 
-func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organization, p *ProjectConfig, startTime, now time.Time) {
+func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organization, p *OrgConfig, startTime, now time.Time) {
 	for pageN := 1; pageN <= er.maxPages; pageN++ {
 		opts := &internal.GetEventsOptions{
 			PageNum:    pageN,
@@ -202,7 +202,7 @@ func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organiz
 
 		projectEvents, hasNext, err := er.client.GetOrgEvents(ctx, org.ID, opts)
 		if err != nil {
-			er.logger.Error("unable to get events for organization", zap.Error(err), zap.String("organization", p.Name))
+			er.logger.Error("unable to get events for organization", zap.Error(err), zap.String("organization", p.ID))
 			break
 		}
 
@@ -289,7 +289,6 @@ func (er *eventsReceiver) transformOrgEvents(now pcommon.Timestamp, events []*mo
 
 		attrs := logRecord.Attributes()
 		// always present attributes
-		ra.PutStr("mongodbatlas.org.id", o.ID)
 		attrs.PutStr("event.domain", "mongodbatlas")
 		attrs.PutStr("type", event.EventTypeName)
 		attrs.PutStr("id", event.ID)
