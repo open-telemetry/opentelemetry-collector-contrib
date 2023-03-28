@@ -121,7 +121,7 @@ func TestAllMetrics(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "metrics", "expected_all_metrics.json")
+	expectedFile := filepath.Join("testdata", "metrics", "expected_all_metrics.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
