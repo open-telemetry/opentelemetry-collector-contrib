@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Limit[K any](target ottl.GetSetter[K], limit int64, priorityKeys []string) (ottl.ExprFunc[K], error) {
+func Limit[K any](target ottl.PMapGetter[K], limit int64, priorityKeys []string) (ottl.ExprFunc[K], error) {
 	if limit < 0 {
 		return nil, fmt.Errorf("invalid limit for limit function, %d cannot be negative", limit)
 	}
@@ -43,27 +43,19 @@ func Limit[K any](target ottl.GetSetter[K], limit int64, priorityKeys []string) 
 		if err != nil {
 			return nil, err
 		}
-		if val == nil {
-			return nil, nil
-		}
 
-		attrs, ok := val.(pcommon.Map)
-		if !ok {
-			return nil, nil
-		}
-
-		if int64(attrs.Len()) <= limit {
+		if int64(val.Len()) <= limit {
 			return nil, nil
 		}
 
 		count := int64(0)
 		for _, key := range priorityKeys {
-			if _, ok := attrs.Get(key); ok {
+			if _, ok := val.Get(key); ok {
 				count++
 			}
 		}
 
-		attrs.RemoveIf(func(key string, value pcommon.Value) bool {
+		val.RemoveIf(func(key string, value pcommon.Value) bool {
 			if _, ok := keep[key]; ok {
 				return false
 			}

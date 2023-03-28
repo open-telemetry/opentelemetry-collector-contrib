@@ -61,8 +61,8 @@ func TestNewExporter(t *testing.T) {
 			},
 			DeltaTTL: 3600,
 			HistConfig: HistogramConfig{
-				Mode:         HistogramModeDistributions,
-				SendCountSum: false,
+				Mode:             HistogramModeDistributions,
+				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
@@ -383,8 +383,8 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			},
 			DeltaTTL: 3600,
 			HistConfig: HistogramConfig{
-				Mode:         HistogramModeDistributions,
-				SendCountSum: false,
+				Mode:             HistogramModeDistributions,
+				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,

@@ -95,6 +95,9 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error
 	return nil
 }
 func (e *tracesExporter) shutdown(context.Context) error {
+	if e.clientConn == nil {
+		return nil
+	}
 	return e.clientConn.Close()
 }
 

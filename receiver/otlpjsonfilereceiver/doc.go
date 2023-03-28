@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
 // Package otlpjsonfilereceiver implements a receiver that can be used by the
 // Opentelemetry collector to receive logs, traces and metrics from files
 // See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/file-exporter.md#json-file-serialization

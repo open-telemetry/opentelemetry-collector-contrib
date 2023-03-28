@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.73.0
+    version: v0.74.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -186,6 +186,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver

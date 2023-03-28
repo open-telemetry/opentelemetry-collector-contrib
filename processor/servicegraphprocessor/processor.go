@@ -91,6 +91,14 @@ func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProc
 		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
 	}
 
+	if pConfig.CacheLoop <= 0 {
+		pConfig.CacheLoop = time.Minute
+	}
+
+	if pConfig.StoreExpirationLoop <= 0 {
+		pConfig.StoreExpirationLoop = 2 * time.Second
+	}
+
 	if pConfig.VirtualNodePeerAttributes == nil {
 		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
 	}

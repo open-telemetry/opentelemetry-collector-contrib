@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	typeStr   = "oracledb"
-	stability = component.StabilityLevelAlpha
+	typeStr = "oracledb"
 )
 
 // NewFactory creates a new Oracle receiver factory.
@@ -40,7 +39,7 @@ func NewFactory() receiver.Factory {
 		createDefaultConfig,
 		receiver.WithMetrics(createReceiverFunc(func(dataSourceName string) (*sql.DB, error) {
 			return sql.Open("oracle", dataSourceName)
-		}, newDbClient), stability))
+		}, newDbClient), metadata.Stability))
 }
 
 func createDefaultConfig() component.Config {

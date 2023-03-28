@@ -1,10 +1,10 @@
 # Span Metrics Connector
 
-| Status                   |                                                           |
-|------------------------- |---------------------------------------------------------- |
-| Stability                | [development]                                             |
-| Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types) |
-| Distributions            | []                                                        |
+| Status                   |                                                            |
+|------------------------- |------------------------------------------------------------|
+| Stability                | [alpha]                                                    |
+| Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types)  |
+| Distributions            | [contrib]                                                  |
 
 ## Supported Pipeline Types
 
@@ -33,6 +33,31 @@ across all spans:
 - `span.kind`
 - `status.code`
 
+
+## Span to Metrics processor to Span to metrics connector
+
+The spanmetrics connector is a port of the [spanmetrics](../../processor/spanmetricsprocessor/README.md) processor, but with multiple improvements
+and breaking changes. It was done to bring the `spanmetrics` connector closer to the OpenTelemetry
+specification and make the component agnostic to exporters logic. The `spanmetrics` processor
+essentially was mixing the OTel with Prometheus conventions by using the OTel data model and
+the Prometheus metric and attributes naming convention.
+
+The following changes were done to the connector component.
+
+Breaking changes:
+- The `operation` metric attribute was renamed to `span.name`.
+- The `latency` histogram metric name was changed to `duration`.
+- The `_total` metric prefix was dropped from generated metrics names.
+- The Prometheus-specific metrics labels sanitization was dropped.
+
+Improvements:
+- Added support for OTel exponential histograms for recording span duration measurements.
+- Added support for the milliseconds and seconds histogram units.
+- Added support for generating metrics resource scope attributes. The `spanmetrics` connector will
+generate the number of metrics resource scopes that corresponds to the number of the spans resource
+scopes meaning that more metrics are generated now. Previously, `spanmetrics` generated a single
+metrics resource scope.
+
 ## Configurations
 
 If you are not already familiar with connectors, you may find it helpful to first
@@ -45,7 +70,7 @@ The following settings can be optionally configured:
   - `unit` (default: `ms`, allowed values: `ms`, `s`): The time unit for recording duration measurements.
   calculated from spans duration measurements.
   - `explicit`:
-    - `buckets`: the list of durations defining the duration histogram buckets. Default
+    - `buckets`: the list of durations defining the duration histogram time buckets. Default
       buckets: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
   - `exponential`:
     - `max_size` (default: 160) the maximum number of buckets per positive or negative number range.
@@ -79,7 +104,7 @@ receivers:
 exporters:
   nop:
 
-connector:
+connectors:
   spanmetrics:
     histogram:
       explicit:
@@ -101,11 +126,60 @@ service:
       exporters: [nop]
 ```
 
+### Using `spanmetrics` with Prometheus components
+
+The `spanmetrics` connector can be used with Prometheus exporter components.
+
+For some functionality of the exporters, e.g. like generation of the `target_info` metric the
+incoming spans resource scope attributes must contain `service.name` and `service.instance.id`
+attributes.
+
+Let's look at the example of using the `spanmetrics` connector with the `prometheusremotewrite` exporter:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+
+exporters:
+  prometheusremotewrite:
+    endpoint: http://localhost:9090/api/v1/write
+     target_info:
+       enabled: true
+
+connectors:
+  spanmetrics:
+    namespace: span.metrics
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [spanmetrics]
+    metrics:
+      receivers: [spanmetrics]
+      exporters: [prometheusremotewrite]
+```
+
+This configures the `spanmetrics` connector to generate metrics from received spans and export the
+metrics to the Prometheus Remote Write exporter. The `target_info` metric will be generated for each
+resource scope, while OpenTelemetry metric names and attributes will be [normalized](../../exporter/prometheusremotewriteexporter/README.md)
+to be compliant with Prometheus naming rules. For example, the generated `calls` OTel sum metric can
+result in multiple Prometheus `calls_total` (counter type) time series and the `target_info` time series.
+For example:
+
+```
+target_info{job="shippingservice", instance="...", ...} 1
+calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_UNSET", ...} 142
+```
+
 ### More Examples
 
 For more example configuration covering various other use cases, please visit the [testdata directory](../../connector/spanmetricsconnector/testdata).
 
-[development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
 [Exporter Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type

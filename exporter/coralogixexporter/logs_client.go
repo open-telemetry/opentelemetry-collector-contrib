@@ -74,6 +74,9 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) (err erro
 }
 
 func (e *logsExporter) shutdown(context.Context) error {
+	if e.clientConn == nil {
+		return nil
+	}
 	return e.clientConn.Close()
 }
 

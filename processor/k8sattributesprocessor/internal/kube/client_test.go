@@ -1040,7 +1040,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				},
 				{
 					Name:  "container2",
-					Image: "test/image2:0.2.0",
+					Image: "example.com:port1/image2:0.2.0",
 				},
 			},
 			InitContainers: []api_v1.Container{
@@ -1102,7 +1102,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			pod: pod,
 			want: map[string]*Container{
 				"container1":     {ImageName: "test/image1"},
-				"container2":     {ImageName: "test/image2"},
+				"container2":     {ImageName: "example.com:port1/image2"},
 				"init_container": {ImageName: "test/init-image"},
 			},
 		},
@@ -1166,7 +1166,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					},
 				},
 				"container2": {
-					ImageName: "test/image2",
+					ImageName: "example.com:port1/image2",
 					ImageTag:  "0.2.0",
 					Statuses: map[int]ContainerStatus{
 						2: {ContainerID: "container2-id-456"},

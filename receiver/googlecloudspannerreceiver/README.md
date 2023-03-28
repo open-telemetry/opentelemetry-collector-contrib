@@ -17,9 +17,7 @@ by exposing via [Total and Top N built-in tables](https://cloud.google.com/spann
 _Note_: Total and Top N built-in tables are used with 1 minute statistics granularity.
 
 The ultimate goal of Google Cloud Spanner Receiver is to collect and transform those statistics into metrics
-that would be convenient for further analysis by users. 
-
-Supported pipeline types: metrics
+that would be convenient for further analysis by users.
 
 ## Getting Started
 

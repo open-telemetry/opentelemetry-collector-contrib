@@ -154,7 +154,7 @@ metrics:
     attributes: []
   vcenter.host.cpu.usage:
     enabled: true
-    description: The amount of CPU in Hz used by the host.
+    description: The amount of CPU used by the host.
     unit: "MHz"
     sum:
       monotonic: false

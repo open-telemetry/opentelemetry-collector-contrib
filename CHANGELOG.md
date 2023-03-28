@@ -4,6 +4,81 @@
 
 <!-- next version -->
 
+## v0.74.0
+
+### 🛑 Breaking changes 🛑
+
+- `k8sattributes`: Remove support of deprecated `pod_association` fields (#19642)
+  Fields are now nested under the pod_association::sources
+- `k8sattributes`: Remove support of deprecated options in extract.metadata field (#19438)
+- `spanmetricsconnector`: Remove deprecated `latency_histogram_buckets` configuration parameter. (#19372)
+  Use the `histogram` configuration section to provide buckets for
+  explicit buckets histogram metrics. 
+  
+- `spanmetricsconnector`: Rename `latency` histogram metrics to `duration`. (#19214)
+
+### 🚩 Deprecations 🚩
+
+- `spanmetricsprocessor`: Deprecate the `spanmetrics` processor in favour of the `spanmetrics` connector. (#19736)
+  Please note that the `spanmetrics` connector contains breaking changes related to configurations
+  metrics names and attributes. Please see the `spanmetrics` connector README for more information.  
+  
+
+### 🚀 New components 🚀
+
+- `lokireceiver`: The Loki receiver implements the [Loki push api](https://grafana.com/docs/loki/latest/clients/promtail/#loki-push-api) as specified [here](https://grafana.com/docs/loki/latest/api/#push-log-entries-to-loki) (#18635)
+- `cloudflarereceiver`: Adds support for receiving logs from Cloudflare's LogPush API. (#19201)
+- `webhookeventreceiver`: New component wireframe for webhookeventreceiver (#18101)
+- `spanmetricsconnector`: Add the `spanmetricsconnector` connector to build. (#18760)
+
+### 💡 Enhancements 💡
+
+- `exporter/awsemfexporter`: Add ServiceName/service.name as a valid token replacement in log_stream_name (#16531)
+- `azureeventhubreceiver`: Add the ability to consume Metrics from Azure Diagnostic Settings and convert them into OpenTelemetry Metrics (#18690)
+- `mdatagen`: use metadata to generate status table (#19175)
+  This change updates mdatagen to support auto-generation of the stability level table in the documentation. It also
+  generates a generated_status.go file which contains the stability which is used in the factory of a component.
+  
+- `mdatagen`: Allow mdatagen to support components that do not produce metrics. (#19772)
+  This allows us to define metadata.yaml files for components that don't generate metrics, specifically in support of generating the status table.
+- `countconnector`: Add ability to count by attributes (#19432)
+- `healthcheckextension`: Add `response_body` configuration option that allows specifying a specific response body (#18824)
+- `k8sobjectsreceiver`: Enabling resource version filter on pull mode (#18828)
+- `kubeletstatsreceiver`: Add support for `kubeConfig` auth_type in kubeletstatsreceiver (#17562)
+- `translator/loki`: Loki add raw log export format (#18888)
+- `clickhouseexporter`: Improve clickhouse DSN parsing (#18079)
+  Improve clickhouse DSN parsing to support all possible configuration options and fixes TLS support.
+- `routingprocessor`: Adds new `error_mode` configuration option that allows specifying how errors returned by OTTL statements should be handled. (#19147)
+  If a condition errors when using `ignore` the payload will be routed to the default exporter.
+- `spanmetricsconnector`: Set resource attributes for generated metrics. (#18502)
+- `spanmetricsconnector`: Add optional `seconds` unit support for recording generated duration measurements. (#18698)
+  The `unit` is configurable. The allowed values are `ms` and `s`.
+  The default `unit` is `ms`.
+  
+- `splunkhecreceiver`: Appends query param (index, source, sourcetype, and host) for raw path (#19632)
+- `splunkhecreceiver`: align error message with splunk enterprise to include No Data, Invalid Data Format, Event field is required, and  Event field cannot be blank (#19219)
+- `reciver/statsdreceiver`: Metrics emitted by the statsd receiver are batched by source IP address, available in context. (#15290)
+
+### 🧰 Bug fixes 🧰
+
+- `elasticsearchexporter`: roll back elasticsearch client to v7.17.7 due to incompatibility with older elasticsearch versions (#16310)
+- `sqlqueryreceiver`: Don't panic when a query produces NULLs (#19177)
+- `sentry/sentryexporter`: Fix `environment` configuration not being tracked properly on sentry. (#18694)
+  For sentry export, the environment value should have been attached to transaction.
+- `azuremonitorexporter`: Ensure that attributes for LogRecords are exported to Azure Monitor (#16557)
+- `azuremonitorexporter`: Fix a bug that prevented integer NumberDataPoint metrics to be exported to Azure Monitor. (#18905)
+- `azuremonitorexporter`: Ensure that resource attributes, instrumentation scope and cloud tags are exported to Azure Monitor for logs (#18525)
+- `influxdbexporter`: include histogram min and max in InfluxDB/Telegraf Prometheus schemas (#16714)
+- `influxdbexporter`: Fix exported histograms to be cumulative, Prometheus-style (#19453)
+- `influxdbreceiver`: Test the InfluxDB write APIs with canonical client libraries (#5321)
+- `influxdbreceiver`: Decompose Prometheus-style, cumulative histogram bucket counts (#19453)
+- `receiver/elasticsearch`: Fix "no such index [_cluster]" error by adding "/nodes" to the ClusterStats request (#17867)
+- `mongodbatlasreceiver`: Fixes issue where filestorageextension usage with the mongodbatlasreceiver would cause a race condition/timeout (#19434)
+- `mysqlreceiver`: Adds a version check to make sure replica query is supported (#19469)
+- `oracledbreceiver`: Update metric description and explain that unlimited translates to -1 (#19752)
+- `signalfxexporter`: use a copy of system.cpu.time and system.paging.operations when splitting the metric, this will allow the user to send the original metric (#19743)
+- `transformprocessor`: Fixes bug where the value for `error_mode` was ignored. (#19629)
+
 ## v0.73.0
 
 ### 🛑 Breaking changes 🛑

@@ -182,6 +182,7 @@ body:
       - receiver/kafka
       - receiver/kafkametrics
       - receiver/kubeletstats
+      - receiver/loki
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas

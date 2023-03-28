@@ -1,6 +1,16 @@
 # OTTL Functions
 
-The following functions are intended to be used in implementations of the OpenTelemetry Transformation Language that interact with otel data via the collector's internal data model, [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata). These functions may make assumptions about the types of the data returned by Paths.
+The following functions are intended to be used in implementations of the OpenTelemetry Transformation Language that
+interact with OTel data via the Collector's internal data model, [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata).
+Functions generally expect specific types to be returned by `Paths`.
+For these functions, if that type is not returned or if `nil` is returned, the function will error.
+Some functions are able to handle different types and will generally convert those types to their desired type.
+In these situations the function will error if it does not know how to do the conversion.
+Use `ErrorMode` to determine how the `Statement` handles these errors.
+See the component-specific guides for how each uses error mode:
+- [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#ottl)
+- [routingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/routingprocessor#tech-preview-opentelemetry-transformation-language-statements-as-routing-conditions)
+- [transformprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#config)
 
 ## Functions
 
@@ -38,7 +48,7 @@ List of available Converters:
 - [ConvertCase](#convertcase)
 - [Int](#int)
 - [IsMatch](#ismatch)
-- [ParseJSON](#ParseJSON)
+- [ParseJSON](#parsejson)
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
@@ -72,7 +82,7 @@ The `ConvertCase` factory function converts the `target` string into the desired
 
 `target` is a string. `toCase` is a string.
 
-If the `target` is not a string or does not exist, the `ConvertCase` factory function will return `nil`.
+If the `target` is not a string or does not exist, the `ConvertCase` factory function will return an error.
 
 `toCase` can be:
 
@@ -119,10 +129,17 @@ Examples:
 The `IsMatch` factory function returns true if the `target` matches the regex `pattern`.
 
 `target` is either a path expression to a telemetry field to retrieve or a literal string. `pattern` is a regexp pattern.
+The matching semantics are identical to `regexp.MatchString`.
 
 The function matches the target against the pattern, returning true if the match is successful and false otherwise.
-If target is a boolean, int, or float it will be converted to a string.
-If target is nil or not a string, boolean, int, or float false is always returned.
+If target is not a string, it will be converted to one:
+
+- booleans, ints and floats will be converted using `strconv`
+- byte slices will be encoded using base64
+- OTLP Maps and Slices will be JSON encoded
+- other OTLP Values will use their canonical string representation via `AsString`
+
+If target is nil, false is always returned.
 
 Examples:
 
@@ -138,6 +155,7 @@ Examples:
 The `ParseJSON` factory function returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
 
 `target` is a Getter that returns a string. This string should be in json format.
+If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
 
 Unmarshalling is done using [jsoniter](https://github.com/json-iterator/go).
 Each JSON type is converted into a `pdata.Value` using the following map:
@@ -181,7 +199,7 @@ The `Split` factory function separates a string by the delimiter, and returns an
 
 `target` is a string. `delimiter` is a string.
 
-If the `target` is not a string or does not exist, the `Split` factory function will return `nil`.
+If the `target` is not a string or does not exist, the `Split` factory function will return an error.
 
 Examples:
 
@@ -207,7 +225,8 @@ The `Substring` Converter returns a substring from the given start index to the 
 
 `target` is a string. `start` and `length` are `int64`.
 
-The `Substring` Converter will return `nil` if the given parameters are invalid, e.x. `target` is not a string, or the start/length exceed the length of the `target` string.
+If `target` is not a string or is nil, an error is returned.
+If the start/length exceed the length of the `target` string, an error is returned.
 
 Examples:
 

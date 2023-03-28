@@ -14,64 +14,19 @@ The following settings are required:
 
 - `endpoint` (no default): The target URL to send Loki log streams to (e.g.: `http://loki:3100/loki/api/v1/push`).
 
-The following options are now deprecated:
-
-- `labels.{attributes/resource}`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
-- `labels.record`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
-- `tenant`: Deprecated and will be removed by v0.59.0. See the [Labels](#tenant-information) section for more information.
-- `format` Deprecated without replacement. If you rely on this, let us know by opening an issue before v0.59.0 and we'll assist you in finding a solution.
-
 Example:
 ```yaml
-receivers:
-  otlp:
-
 exporters:
   loki:
     endpoint: https://loki.example.com:3100/loki/api/v1/push
-
-processors:
-  attributes:
-    actions:
-    - action: insert
-      key: event_domain
-      from_attribute: event.domain
-    - action: insert
-      key: loki.attribute.labels
-      value: event_domain
-
-  resource:
-    attributes:
-    - action: insert
-      key: service_name
-      from_attribute: service.name
-    - action: insert
-      key: service_namespace
-      from_attribute: service.namespace
-    - action: insert
-      key: loki.resource.labels
-      value: service_name, service_namespace
-
-extensions:
-
-service:
-  extensions:
-  pipelines:
-    logs:
-      receivers: [otlp]
-      processors: [resource, attributes]
-      exporters: [loki]
 ```
 
-The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample
-configurations [here](./testdata/config.yaml).
+## Configuration via attribute hints
 
-More information on how to send logs to Grafana Loki using the OpenTelemetry Collector could be found [here](https://grafana.com/docs/opentelemetry/collector/send-logs-to-loki/)
-## Labels
-
+### Labels
 The Loki exporter can convert OTLP resource and log attributes into Loki labels, which are indexed. For that, you need to configure
 hints, specifying which attributes should be placed as labels. The hints are themselves attributes and will be ignored when
-exporting to Loki. The following example uses the `attributes` processor to hint the Loki exporter to set the `event.domain` 
+exporting to Loki. The following example uses the `attributes` processor to hint the Loki exporter to set the `event.domain`
 attribute as label and the `resource` processor to give a hint to the Loki exporter to set the `service.name` as label.
 
 ```yaml
@@ -79,25 +34,19 @@ processors:
   attributes:
     actions:
       - action: insert
-        key: event_domain
-        from_attribute: event.domain
-      - action: insert
         key: loki.attribute.labels
-        value: event_domain
+        value: event.domain
 
   resource:
     attributes:
       - action: insert
-        key: service_name
-        from_attribute: service.name
-      - action: insert
         key: loki.resource.labels
-        value: service_name
+        value: service.name
 ```
 
-Currently, Loki does not support labels with dots. 
-That’s why to add Loki label based on `event.domain` OTLP attribute we need to specify two actions. The first one inserts a new attribute `event_domain` from the OTLP attribute `event.domain`. The second one is a hint for Loki, specifying that the `event_domain` attribute should be placed as a Loki label.
-The same approach is applicable to placing Loki labels from resource attribute `service.name`.
+Currently, Loki does not support label names with dots. 
+That's why lokiexporter normalizes label names to follow Prometheus label names standard before sending requests to Loki.
+More information on label normalization could be found [here](../../pkg/translator/prometheus/README.md#Labels)
 
 Default labels:
 - `job=service.namespace/service.name`
@@ -116,7 +65,12 @@ If `service.instance.id` is present then `instance=service.instance.id` is set
 
 If `service.instance.id` is not present then `instance` label is not set
 
-## Tenant information
+The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample
+configurations [here](./testdata/config.yaml).
+
+More information on how to send logs to Grafana Loki using the OpenTelemetry Collector could be found [here](https://grafana.com/docs/opentelemetry/collector/send-logs-to-loki/)
+
+### Tenant information
 
 It is recommended to use the [`header_setter`](../../extension/headerssetterextension/README.md) extension to configure the tenant information to send to Loki. In case a static tenant
 should be used, you can make use of the `headers` option for regular HTTP client settings, like the following:
@@ -138,10 +92,7 @@ processors:
     attributes:
     - action: insert
       key: loki.tenant
-      value: host_name
-    - action: insert
-      key: host_name
-      from_attribute: host.name
+      value: host.name
 ```
 
 In this case the value of the `host.name` resource attribute is used to group logs
@@ -150,9 +101,35 @@ by tenant and send requests with the `X-Scope-OrgID` header set to relevant tena
 If the `loki.tenant` hint attribute is present in both resource or log attributes,
 then the look-up for a tenant value from resource attributes takes precedence.
 
+### Format
+To choose the format used for writing log lines by the exporter use the `loki.format` hint. For example:
+
+```yaml
+processors:
+  resource:
+    attributes:
+    - action: insert
+      key: loki.format
+      value: logfmt
+```
+
+The following formats are supported:
+
+- `logfmt`: Write logs as [logfmt](https://brandur.org/logfmt) lines.
+- `json`: Write logs as JSON objects. It is the default format if no hint is present.
+- `raw`: Write the body of the log message as string representation.
+
 ## Severity
 
 OpenTelemetry uses `record.severity` to track log levels where loki uses `record.attributes.level` for the same. The exporter automatically maps the two, except if a "level" attribute already exists.
+
+## Deprecated configuration
+The following options are now deprecated:
+
+- `labels.{attributes/resource}`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
+- `labels.record`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
+- `tenant`: Deprecated and will be removed by v0.59.0. See the [Tenant information](#tenant-information) section for more information.
+- `format` Deprecated without replacement. See the [Format](#format) section for more information.
 
 ## Advanced Configuration
 

@@ -56,7 +56,7 @@ func Test_ProcessMetrics_ResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -91,7 +91,7 @@ func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -510,7 +510,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statements[0], func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "datapoint", Statements: tt.statements}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "datapoint", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -642,7 +642,7 @@ func Test_ProcessMetrics_MixContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor(tt.contextStatments, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.contextStatments, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -652,6 +652,41 @@ func Test_ProcessMetrics_MixContext(t *testing.T) {
 			tt.want(exTd)
 
 			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessMetrics_Error(t *testing.T) {
+	tests := []struct {
+		statement string
+		context   common.ContextID
+	}{
+		{
+			statement: `set(attributes["test"], ParseJSON(1))`,
+			context:   "resource",
+		},
+		{
+			statement: `set(attributes["test"], ParseJSON(1))`,
+			context:   "scope",
+		},
+		{
+			statement: `set(name, ParseJSON(1))`,
+			context:   "metric",
+		},
+		{
+			statement: `set(attributes["test"], ParseJSON(1))`,
+			context:   "datapoint",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructMetrics()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(context.Background(), td)
+			assert.Error(t, err)
 		})
 	}
 }

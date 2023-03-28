@@ -39,7 +39,7 @@ var _ exporter.Logs = (*logExporterImp)(nil)
 type logExporterImp struct {
 	loadBalancer loadBalancer
 
-	stopped    bool
+	started    bool
 	shutdownWg sync.WaitGroup
 }
 
@@ -65,11 +65,15 @@ func (e *logExporterImp) Capabilities() consumer.Capabilities {
 }
 
 func (e *logExporterImp) Start(ctx context.Context, host component.Host) error {
+	e.started = true
 	return e.loadBalancer.Start(ctx, host)
 }
 
 func (e *logExporterImp) Shutdown(context.Context) error {
-	e.stopped = true
+	if !e.started {
+		return nil
+	}
+	e.started = false
 	e.shutdownWg.Wait()
 	return nil
 }

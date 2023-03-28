@@ -16,7 +16,11 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
+
+	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type ExprFunc[K any] func(ctx context.Context, tCtx K) (interface{}, error)
@@ -89,12 +93,18 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 	return evaluated, nil
 }
 
+// StringGetter is a Getter that must return a string.
 type StringGetter[K any] interface {
+	// Get retrieves a string value.  If the value is not a string, an error is returned.
 	Get(ctx context.Context, tCtx K) (string, error)
 }
 
 type IntGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (int64, error)
+}
+
+type PMapGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (pcommon.Map, error)
 }
 
 type StandardTypeGetter[K any, T any] struct {
@@ -115,6 +125,54 @@ func (g StandardTypeGetter[K, T]) Get(ctx context.Context, tCtx K) (T, error) {
 		return v, fmt.Errorf("expected %T but got %T", v, val)
 	}
 	return v, nil
+}
+
+// StringLikeGetter is a Getter that returns a string by converting the underlying value to a string if necessary.
+type StringLikeGetter[K any] interface {
+	// Get retrieves a string value.
+	// Unlike `StringGetter`, the expectation is that the underlying value is converted to a string if possible.
+	// If the value cannot be converted to a string, nil and an error are returned.
+	// If the value is nil, nil is returned without an error.
+	Get(ctx context.Context, tCtx K) (*string, error)
+}
+
+type StandardStringLikeGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return nil, err
+	}
+	if val == nil {
+		return nil, nil
+	}
+	var result string
+	switch v := val.(type) {
+	case string:
+		result = v
+	case []byte:
+		result = hex.EncodeToString(v)
+	case pcommon.Map:
+		result, err = jsoniter.MarshalToString(v.AsRaw())
+		if err != nil {
+			return nil, err
+		}
+	case pcommon.Slice:
+		result, err = jsoniter.MarshalToString(v.AsRaw())
+		if err != nil {
+			return nil, err
+		}
+	case pcommon.Value:
+		result = v.AsString()
+	default:
+		result, err = jsoniter.MarshalToString(v)
+		if err != nil {
+			return nil, fmt.Errorf("unsupported type: %T", v)
+		}
+	}
+	return &result, nil
 }
 
 func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
