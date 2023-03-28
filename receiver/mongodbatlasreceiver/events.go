@@ -180,7 +180,7 @@ func (er *eventsReceiver) pollProject(ctx context.Context, project *mongodbatlas
 
 		if logs.LogRecordCount() > 0 {
 			if err = er.consumer.ConsumeLogs(ctx, logs); err != nil {
-				er.logger.Error("error consuming events", zap.Error(err))
+				er.logger.Error("error consuming project events", zap.Error(err))
 				break
 			}
 		}
@@ -211,7 +211,7 @@ func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organiz
 
 		if logs.LogRecordCount() > 0 {
 			if err = er.consumer.ConsumeLogs(ctx, logs); err != nil {
-				er.logger.Error("error consuming events", zap.Error(err))
+				er.logger.Error("error consuming organization events", zap.Error(err))
 				break
 			}
 		}
