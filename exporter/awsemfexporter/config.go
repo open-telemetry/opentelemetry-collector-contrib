@@ -16,12 +16,11 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
-	"fmt"
-	"regexp"
 
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -135,72 +134,16 @@ func (config *Config) Validate() error {
 	}
 	config.MetricDescriptors = validDescriptors
 
-	if !isValidRetentionValue(config.LogRetention) {
+	if !cwlogs.IsValidRetentionValue(config.LogRetention) {
 		return errors.New("invalid value for retention policy.  Please make sure to use the following values: 0 (Never Expire), 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653")
 	}
 
-	tagInputErr := validateTagsInput(config.Tags)
+	tagInputErr := cwlogs.ValidateTagsInput(config.Tags)
 	if tagInputErr != nil {
 		return errors.New(tagInputErr.Error())
 	}
 
 	return nil
-}
-
-// Check if the tags input is valid
-func validateTagsInput(input map[string]*string) error {
-	if len(input) > 50 {
-		return fmt.Errorf("invalid amount of items. Please input at most 50 tags")
-	}
-	validKeyPattern := regexp.MustCompile(`^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`)
-	validValuePattern := regexp.MustCompile(`^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
-	for key, value := range input {
-		if len(key) < 1 || len(key) > 128 {
-			return fmt.Errorf("key - " + key + " has an invalid length. Please use keys with a length of 1 to 128 characters")
-		}
-		if len(*value) < 1 || len(*value) > 256 {
-			return fmt.Errorf("value - " + *value + " has an invalid length. Please use values with a length of 1 to 256 characters")
-		}
-		if !validKeyPattern.MatchString(key) {
-			return fmt.Errorf("key - " + key + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`)
-		}
-		if !validValuePattern.MatchString(*value) {
-			return fmt.Errorf("value - " + *value + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
-		}
-	}
-
-	return nil
-}
-
-// Added function to check if value is an accepted number of log retention days
-func isValidRetentionValue(input int64) bool {
-	switch input {
-	case
-		0,
-		1,
-		3,
-		5,
-		7,
-		14,
-		30,
-		60,
-		90,
-		120,
-		150,
-		180,
-		365,
-		400,
-		545,
-		731,
-		1827,
-		2192,
-		2557,
-		2922,
-		3288,
-		3653:
-		return true
-	}
-	return false
 }
 
 func newEMFSupportedUnits() map[string]interface{} {
