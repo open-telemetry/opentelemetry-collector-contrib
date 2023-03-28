@@ -39,6 +39,13 @@ func TestTracesExporter_New(t *testing.T) {
 		require.Nil(t, err)
 		require.NotNil(t, exporter)
 	}
+	successWithInternalModel := func(expectedModel *encodeModel) validate {
+		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
+			require.Nil(t, err)
+			require.NotNil(t, exporter)
+			require.EqualValues(t, expectedModel, exporter.model)
+		}
+	}
 
 	failWith := func(want error) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
@@ -96,6 +103,14 @@ func TestTracesExporter_New(t *testing.T) {
 				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
 			}),
 			want: failWithMessage("Addresses and CloudID are set"),
+		},
+		"create with custom dedup and dedot values": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"test:9200"}
+				cfg.Mapping.Dedot = false
+				cfg.Mapping.Dedup = true
+			}),
+			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true}),
 		},
 	}
 
