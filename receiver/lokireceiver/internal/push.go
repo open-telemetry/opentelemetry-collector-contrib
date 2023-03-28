@@ -71,7 +71,7 @@ func ParseRequest(req *http.Request) (*push.PushRequest, error) {
 	default:
 		// When no content-type header is set or when it is set to
 		// `application/x-protobuf`: expect snappy compression.
-		if err := parseProtoReader(body, int(req.ContentLength), math.MaxInt32, &pushRequest, RawSnappy); err != nil {
+		if err := parseProtoReader(body, int(req.ContentLength), math.MaxInt32, &pushRequest); err != nil {
 			return nil, err
 		}
 		return &pushRequest, nil

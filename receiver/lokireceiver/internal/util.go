@@ -23,20 +23,11 @@ import (
 	"github.com/golang/snappy"
 )
 
-// CompressionType for encoding and decoding requests and responses.
-type CompressionType int
-
-// Values for CompressionType
-const (
-	NoCompression CompressionType = iota
-	RawSnappy
-)
-
 const messageSizeLargerErrFmt = "received message larger than max (%d vs %d)"
 
 // parseProtoReader parses a compressed proto from an io.Reader.
-func parseProtoReader(reader io.Reader, expectedSize, maxSize int, req proto.Message, compression CompressionType) error {
-	body, err := decompressRequest(reader, expectedSize, maxSize, compression)
+func parseProtoReader(reader io.Reader, expectedSize, maxSize int, req proto.Message) error {
+	body, err := decompressRequest(reader, expectedSize, maxSize)
 	if err != nil {
 		return err
 	}
@@ -56,7 +47,7 @@ func parseProtoReader(reader io.Reader, expectedSize, maxSize int, req proto.Mes
 	return nil
 }
 
-func decompressRequest(reader io.Reader, expectedSize, maxSize int, compression CompressionType) (body []byte, err error) {
+func decompressRequest(reader io.Reader, expectedSize, maxSize int) (body []byte, err error) {
 	defer func() {
 		if err != nil && len(body) > maxSize {
 			err = fmt.Errorf(messageSizeLargerErrFmt, len(body), maxSize)
@@ -67,14 +58,14 @@ func decompressRequest(reader io.Reader, expectedSize, maxSize int, compression 
 	}
 	buffer, ok := tryBufferFromReader(reader)
 	if ok {
-		body, err = decompressFromBuffer(buffer, maxSize, compression)
+		body, err = decompressFromBuffer(buffer, maxSize)
 		return
 	}
-	body, err = decompressFromReader(reader, expectedSize, maxSize, compression)
+	body, err = decompressFromReader(reader, expectedSize, maxSize)
 	return
 }
 
-func decompressFromReader(reader io.Reader, expectedSize, maxSize int, compression CompressionType) ([]byte, error) {
+func decompressFromReader(reader io.Reader, expectedSize, maxSize int) ([]byte, error) {
 	var (
 		buf  bytes.Buffer
 		body []byte
@@ -86,42 +77,31 @@ func decompressFromReader(reader io.Reader, expectedSize, maxSize int, compressi
 	// Read from LimitReader with limit max+1. So if the underlying
 	// reader is over limit, the result will be bigger than max.
 	reader = io.LimitReader(reader, int64(maxSize)+1)
-	switch compression {
-	case NoCompression:
-		_, err = buf.ReadFrom(reader)
-		body = buf.Bytes()
-	case RawSnappy:
-		_, err = buf.ReadFrom(reader)
-		if err != nil {
-			return nil, err
-		}
-		body, err = decompressFromBuffer(&buf, maxSize, RawSnappy)
+	_, err = buf.ReadFrom(reader)
+	if err != nil {
+		return nil, err
 	}
+	body, err = decompressFromBuffer(&buf, maxSize)
+
 	return body, err
 }
 
-func decompressFromBuffer(buffer *bytes.Buffer, maxSize int, compression CompressionType) ([]byte, error) {
+func decompressFromBuffer(buffer *bytes.Buffer, maxSize int) ([]byte, error) {
 	if len(buffer.Bytes()) > maxSize {
 		return nil, fmt.Errorf(messageSizeLargerErrFmt, len(buffer.Bytes()), maxSize)
 	}
-	switch compression {
-	case NoCompression:
-		return buffer.Bytes(), nil
-	case RawSnappy:
-		size, err := snappy.DecodedLen(buffer.Bytes())
-		if err != nil {
-			return nil, err
-		}
-		if size > maxSize {
-			return nil, fmt.Errorf(messageSizeLargerErrFmt, size, maxSize)
-		}
-		body, err := snappy.Decode(nil, buffer.Bytes())
-		if err != nil {
-			return nil, err
-		}
-		return body, nil
+	size, err := snappy.DecodedLen(buffer.Bytes())
+	if err != nil {
+		return nil, err
 	}
-	return nil, nil
+	if size > maxSize {
+		return nil, fmt.Errorf(messageSizeLargerErrFmt, size, maxSize)
+	}
+	body, err := snappy.Decode(nil, buffer.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
 }
 
 // tryBufferFromReader attempts to cast the reader to a `*bytes.Buffer` this is possible when using httpgrpc.

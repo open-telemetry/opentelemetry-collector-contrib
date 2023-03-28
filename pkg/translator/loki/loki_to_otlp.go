@@ -15,6 +15,7 @@
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -36,15 +37,19 @@ func PushRequestToLogs(pushRequest *push.PushRequest, keepTimestamp bool) (plog.
 	logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
 
 	var lastErr error
+	var errNumber int64
 	for _, stream := range pushRequest.Streams {
 		// Return early if stream does not contain any entries
 		if len(stream.Entries) == 0 {
 			continue
 		}
 		// Get stream labels
+		// Stream contains labels in string format: `{label1="value1", label2="value2"}`
+		// Here we parse such a string into labels.Labels
 		ls, err := promql_parser.ParseMetric(stream.Labels)
 		if err != nil {
 			lastErr = err
+			errNumber++
 			continue
 		}
 
@@ -62,6 +67,10 @@ func PushRequestToLogs(pushRequest *push.PushRequest, keepTimestamp bool) (plog.
 			lr := logSlice.AppendEmpty()
 			ConvertEntryToLogRecord(&stream.Entries[i], &lr, filtered, keepTimestamp)
 		}
+	}
+
+	if lastErr != nil {
+		lastErr = fmt.Errorf("%d entries failed to process, the last error: %w", errNumber, lastErr)
 	}
 
 	return logs, lastErr

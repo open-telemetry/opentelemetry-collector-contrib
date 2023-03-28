@@ -106,16 +106,15 @@ func (r *lokiReceiver) startProtocolsServers(host component.Host) error {
 	if r.conf.HTTP != nil {
 		r.serverHTTP, err = r.conf.HTTP.ToServer(host, r.settings.TelemetrySettings, r.httpMux)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed create http server error: %w", err)
 		}
 		err = r.startHTTPServer(host)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to start http server error: %w", err)
 		}
 	}
 
 	if r.conf.GRPC != nil {
-		r.settings.Logger.Info("Creating GRPC server")
 		r.serverGRPC, err = r.conf.GRPC.ToServer(host, r.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed create grpc server error: %w", err)
