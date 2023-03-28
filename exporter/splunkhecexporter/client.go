@@ -120,9 +120,8 @@ func isBufferEmpty(bufState *bufferState) bool {
 		// Splunk will return "No data" and reply_code=5 if it is empty.
 		_, err1 := io.CopyN(io.Discard, r, 1)
 		return errors.Is(err1, io.EOF)
-	} else {
-		return bufState.buf.Len() <= 0
 	}
+	return bufState.buf.Len() <= 0
 }
 
 // pushLogDataInBatches sends batches of Splunk events in JSON format.
