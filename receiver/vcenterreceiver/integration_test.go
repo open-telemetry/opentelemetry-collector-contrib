@@ -73,7 +73,7 @@ func TestIntegrationESX(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, metrics)
 
-		goldenPath := filepath.Join("testdata", "metrics", "integration-metrics.json")
+		goldenPath := filepath.Join("testdata", "metrics", "integration-metrics.yaml")
 		expectedMetrics, err := golden.ReadMetrics(goldenPath)
 		require.NoError(t, err)
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics,
