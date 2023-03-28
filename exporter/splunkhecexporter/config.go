@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -46,6 +47,26 @@ type OtelToHecFields struct {
 	SeverityText string `mapstructure:"severity_text"`
 	// SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
 	SeverityNumber string `mapstructure:"severity_number"`
+}
+
+// HecHeartbeat defines the heartbeat information for the exporter
+type HecHeartbeat struct {
+	// Interval represents the time interval for the heartbeat interval. If nothing or 0 is set,
+	// heartbeat is not enabled.
+	// A heartbeat is an event sent to _internal index with metadata for the current collector/host.
+	Interval time.Duration `mapstructure:"interval"`
+}
+
+// HecTelemetry defines the telemetry configuration for the exporter
+type HecTelemetry struct {
+	// Enabled is the bool to enable telemetry inside splunk hec exporter
+	Enabled bool `mapstructure:"enabled"`
+
+	// OverrideMetricsNames is the map to override metrics for internal metrics in splunk hec exporter
+	OverrideMetricsNames map[string]string `mapstructure:"override_metrics_names"`
+
+	// ExtraAttributes is the extra attributes for metrics inside splunk hex exporter
+	ExtraAttributes map[string]string `mapstructure:"extra_attributes"`
 }
 
 // Config defines configuration for Splunk exporter.
@@ -117,6 +138,12 @@ type Config struct {
 
 	// UseMultiMetricFormat combines metric events to save space during ingestion.
 	UseMultiMetricFormat bool `mapstructure:"use_multi_metric_format"`
+
+	// HecHeartbeat is the configuration to enable heartbeat
+	HecHeartbeat HecHeartbeat `mapstructure:"hec_heartbeat"`
+
+	// HecTelemetry is the configuration for splunk hec exporter telemetry
+	HecTelemetry HecTelemetry `mapstructure:"telemetry"`
 }
 
 func (cfg *Config) getURL() (out *url.URL, err error) {
