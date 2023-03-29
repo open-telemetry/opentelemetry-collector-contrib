@@ -668,9 +668,8 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				if runtime.GOOS == "windows" {
 					return `error reading process executable for pid 1: err1; ` +
 						`error reading process name for pid 1: executable path is empty`
-				} else {
-					return `error reading process executable for pid 1: err1`
 				}
+				return `error reading process executable for pid 1: err1`
 			}(),
 		},
 		{
@@ -926,9 +925,8 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			expectedError: func() string {
 				if runtime.GOOS == "windows" {
 					return fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
-				} else {
-					return fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
 				}
+				return fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
 			}(),
 		},
 		{
@@ -940,10 +938,9 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 				if runtime.GOOS == "windows" {
 					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
 						fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
-				} else {
-					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
-						fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
 				}
+				return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+					fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
 			}(),
 		},
 		{
@@ -953,10 +950,9 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 				if runtime.GOOS == "windows" {
 					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
 						fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
-				} else {
-					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
-						fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
 				}
+				return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+					fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
 			}(),
 		},
 	}
