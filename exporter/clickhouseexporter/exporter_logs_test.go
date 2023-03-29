@@ -101,8 +101,8 @@ func TestExporter_pushLogsData(t *testing.T) {
 		exporter := newTestLogsExporter(t, defaultEndpoint)
 		mustPushLogsData(t, exporter, simpleLogs(1))
 		mustPushLogsData(t, exporter, simpleLogs(2))
-		exporter.wg.Wait()
-		//require.Equal(t, 3, items)
+
+		require.Equal(t, 3, items)
 	})
 }
 
@@ -112,7 +112,7 @@ func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsEx
 	require.NoError(t, err)
 
 	// need to use the dummy driver driver for testing
-	exporter.client, err = newClickHouseConn(cfg)
+	exporter.client, err = newClickHouseClient(cfg)
 	require.NoError(t, err)
 	require.NoError(t, exporter.start(context.TODO(), nil))
 

@@ -48,7 +48,7 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 }
 
 func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
-	if err := createDatabase(ctx, e.cfg, nil); err != nil {
+	if err := createDatabase(ctx, e.cfg); err != nil {
 		return err
 	}
 
