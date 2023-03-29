@@ -53,7 +53,7 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error)
 }
 
 func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
-	if err := createDatabase(ctx, e.cfg); err != nil {
+	if err := createDatabase(ctx, e.cfg, nil); err != nil {
 		return err
 	}
 

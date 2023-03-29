@@ -17,9 +17,12 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -33,11 +36,14 @@ import (
 )
 
 type logsExporter struct {
-	client    *sql.DB
+	client    clickhouse.Conn
 	insertSQL string
 
 	logger *zap.Logger
 	cfg    *Config
+
+	wg        *sync.WaitGroup
+	closeChan chan struct{}
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
@@ -51,11 +57,13 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 		insertSQL: renderInsertLogsSQL(cfg),
 		logger:    logger,
 		cfg:       cfg,
+		wg:        new(sync.WaitGroup),
+		closeChan: make(chan struct{}),
 	}, nil
 }
 
 func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
-	if err := createDatabase(ctx, e.cfg); err != nil {
+	if err := createDatabase(ctx, e.cfg, e.client); err != nil {
 		return err
 	}
 
@@ -67,6 +75,8 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 
 // shutdown will shut down the exporter.
 func (e *logsExporter) shutdown(_ context.Context) error {
+	close(e.closeChan)
+	e.wg.Wait()
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -74,17 +84,21 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
-	start := time.Now()
-	err := func() error {
-		scope, err := e.client.Begin()
-		if err != nil {
-			return fmt.Errorf("Begin:%w", err)
-		}
+	e.wg.Add(1)
+	defer e.wg.Done()
 
-		batch, err := scope.Prepare(e.insertSQL)
+	select {
+	case <-e.closeChan:
+		return errors.New("shutdown has been called")
+	default:
+		start := time.Now()
+		statement, err := e.client.PrepareBatch(ctx, e.insertSQL)
 		if err != nil {
-			return fmt.Errorf("Prepare:%w", err)
+			return fmt.Errorf("PrepareBatch:%w", err)
 		}
+		defer func() {
+			_ = statement.Abort()
+		}()
 
 		var serviceName string
 		resAttr := make(map[string]string)
@@ -108,37 +122,46 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					logAttr := make(map[string]string, attrs.Len())
 					attributesToMap(r.Attributes(), logAttr)
 
-					_, err = batch.Exec(
-						r.Timestamp().AsTime(),
-						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
-						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
-						uint32(r.Flags()),
-						r.SeverityText(),
-						int32(r.SeverityNumber()),
-						serviceName,
-						r.Body().AsString(),
-						resAttr,
-						logAttr,
-					)
-					if err != nil {
-						return fmt.Errorf("Append:%w", err)
+					if v, ok := attrs.Get(conventions.AttributeServiceName); ok {
+						serviceName = v.Str()
+					}
+
+					for j := 0; j < logs.ScopeLogs().Len(); j++ {
+						rs := logs.ScopeLogs().At(j).LogRecords()
+						for k := 0; k < rs.Len(); k++ {
+							r := rs.At(k)
+
+							logAttr := make(map[string]string, attrs.Len())
+							attributesToMap(r.Attributes(), logAttr)
+
+							err = statement.Append(
+								r.Timestamp().AsTime(),
+								traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
+								traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
+								uint32(r.Flags()),
+								r.SeverityText(),
+								int32(r.SeverityNumber()),
+								serviceName,
+								r.Body().AsString(),
+								resAttr,
+								logAttr,
+							)
+							if err != nil {
+								return fmt.Errorf("Append:%w", err)
+							}
+						}
+
 					}
 				}
 			}
-
-			// clear map for reuse
-			for k := range resAttr {
-				delete(resAttr, k)
-			}
 		}
+		err = statement.Send()
 
-		return scope.Commit()
-	}()
-
-	duration := time.Since(start)
-	e.logger.Info("insert logs", zap.Int("records", ld.LogRecordCount()),
-		zap.String("cost", duration.String()))
-	return err
+		duration := time.Since(start)
+		e.logger.Info("insert logs", zap.Int("records", ld.LogRecordCount()),
+			zap.String("cost", duration.String()))
+		return err
+	}
 }
 
 func attributesToMap(attributes pcommon.Map, dest map[string]string) {
@@ -225,7 +248,7 @@ func newClickHouseClient(cfg *Config) (*sql.DB, error) {
 }
 
 // used by logs:
-func newClickHouseConn(cfg *Config) (*sql.DB, error) {
+func newClickHouseConn(cfg *Config) (driver.Conn, error) {
 	endpoint := cfg.Endpoint
 
 	if len(cfg.ConnectionParams) > 0 {
@@ -256,10 +279,15 @@ func newClickHouseConn(cfg *Config) (*sql.DB, error) {
 
 	// can return a "bad" connection if misconfigured, we won't know
 	// until a Ping, Exec, etc.. is done
-	return clickhouse.OpenDB(opts), nil
+	conn, err := clickhouse.Open(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn, nil
 }
 
-func createDatabase(ctx context.Context, cfg *Config) error {
+func createDatabase(ctx context.Context, cfg *Config, client clickhouse.Conn) error {
 	// use default database to create new database
 	if cfg.Database == defaultDatabase {
 		return nil
@@ -273,15 +301,15 @@ func createDatabase(ctx context.Context, cfg *Config) error {
 		_ = db.Close()
 	}()
 	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database)
-	_, err = db.ExecContext(ctx, query)
+	err = client.Exec(ctx, query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)
 	}
 	return nil
 }
 
-func createLogsTable(ctx context.Context, cfg *Config, db *sql.DB) error {
-	if _, err := db.ExecContext(ctx, renderCreateLogsTableSQL(cfg)); err != nil {
+func createLogsTable(ctx context.Context, cfg *Config, db clickhouse.Conn) error {
+	if err := db.Exec(ctx, renderCreateLogsTableSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create logs table sql: %w", err)
 	}
 	return nil
