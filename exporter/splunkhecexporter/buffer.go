@@ -91,8 +91,7 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 			zipWriter.maxCapacity = 0
 		}
 
-		// the new data is so big, even with a zip writer, we are over the max limit.
-		// abandon and return false, so we can send what is already in our buffer.
+		// we write the bytes buffer into the zip buffer. Any error from this is I/O, and should stop the process.
 		if _, err2 := zipWriter.Write(b.buf.Bytes()); err2 != nil {
 			return false, err2
 		}
