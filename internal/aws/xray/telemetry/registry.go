@@ -23,13 +23,16 @@ import (
 )
 
 type Registry interface {
-	// LoadOrStore the recorder for the ID.
-	LoadOrStore(id component.ID, recorder Recorder) (Recorder, bool)
-	// Load the recorder for the ID.
-	Load(id component.ID) Recorder
-	// Register configures and registers a new Recorder for the ID. If one
+	// Load the Sender for the ID.
+	Load(id component.ID) Sender
+	// LoadOrNop gets the Sender for the ID. If it doesn't exist, returns
+	// the NopSender.
+	LoadOrNop(id component.ID) Sender
+	// LoadOrStore the Sender for the ID.
+	LoadOrStore(id component.ID, sender Sender) (Sender, bool)
+	// Register configures and registers a new Sender for the ID. If one
 	// already exists for the ID, then returns that one instead.
-	Register(id component.ID, cfg Config, client awsxray.XRayClient, opts ...RecorderOption) Recorder
+	Register(id component.ID, cfg Config, client awsxray.XRayClient, opts ...Option) Sender
 }
 
 var globalRegistry = NewRegistry()
@@ -39,9 +42,9 @@ func GlobalRegistry() Registry {
 	return globalRegistry
 }
 
-// registry maintains a map of all registered recorders.
+// registry maintains a map of all registered senders.
 type registry struct {
-	recorders sync.Map
+	senders sync.Map
 }
 
 // NewRegistry returns a new empty Registry.
@@ -49,36 +52,40 @@ func NewRegistry() Registry {
 	return &registry{}
 }
 
-// LoadOrStore the recorder for the ID.
-func (r *registry) LoadOrStore(id component.ID, recorder Recorder) (Recorder, bool) {
-	actual, loaded := r.recorders.LoadOrStore(id, recorder)
-	return actual.(Recorder), loaded
-}
-
-// Load the recorder for the ID.
-func (r *registry) Load(id component.ID) Recorder {
-	recorder, ok := r.recorders.Load(id)
+func (r *registry) Load(id component.ID) Sender {
+	sender, ok := r.senders.Load(id)
 	if ok {
-		return recorder.(Recorder)
+		return sender.(Sender)
 	}
 	return nil
 }
 
-// Register configures and registers a new Recorder for the ID. If one
-// already exists for the ID, then returns that one instead.
+func (r *registry) LoadOrNop(id component.ID) Sender {
+	sender := r.Load(id)
+	if sender == nil {
+		sender = NewNopSender()
+	}
+	return sender
+}
+
+func (r *registry) LoadOrStore(id component.ID, sender Sender) (Sender, bool) {
+	actual, loaded := r.senders.LoadOrStore(id, sender)
+	return actual.(Sender), loaded
+}
+
 func (r *registry) Register(
 	id component.ID,
 	cfg Config,
 	client awsxray.XRayClient,
-	opts ...RecorderOption,
-) Recorder {
-	if recorder, ok := r.recorders.Load(id); ok {
-		return recorder.(Recorder)
+	opts ...Option,
+) Sender {
+	if sender, ok := r.senders.Load(id); ok {
+		return sender.(Sender)
 	}
-	recorder := NewRecorder(client, opts...)
-	r.recorders.Store(id, recorder)
+	sender := NewSender(client, opts...)
+	r.senders.Store(id, sender)
 	for _, contributor := range cfg.Contributors {
-		r.LoadOrStore(contributor, recorder)
+		r.LoadOrStore(contributor, sender)
 	}
-	return recorder
+	return sender
 }

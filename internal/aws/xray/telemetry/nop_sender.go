@@ -14,35 +14,45 @@
 
 package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 
-// NewNopRecorder returns a Recorder that drops all data.
-func NewNopRecorder() Recorder {
-	return nopRecorderInstance
+import "github.com/aws/aws-sdk-go/service/xray"
+
+// NewNopSender returns a Sender that drops all data.
+func NewNopSender() Sender {
+	return nopSenderInstance
 }
 
-var nopRecorderInstance = &nopRecorder{}
+var nopSenderInstance = &nopSender{}
 
-var _ Recorder = (*nopRecorder)(nil)
+var _ Sender = (*nopSender)(nil)
 
-type nopRecorder struct {
+type nopSender struct {
 }
 
-func (n nopRecorder) Start() {
+func (n nopSender) Rotate() *xray.TelemetryRecord {
+	return nil
 }
 
-func (n nopRecorder) Stop() {
+func (n nopSender) HasRecording() bool {
+	return false
 }
 
-func (n nopRecorder) RecordSegmentsReceived(int) {
+func (n nopSender) Start() {
 }
 
-func (n nopRecorder) RecordSegmentsSent(int) {
+func (n nopSender) Stop() {
 }
 
-func (n nopRecorder) RecordSegmentsSpillover(int) {
+func (n nopSender) RecordSegmentsReceived(int) {
 }
 
-func (n nopRecorder) RecordSegmentsRejected(int) {
+func (n nopSender) RecordSegmentsSent(int) {
 }
 
-func (n nopRecorder) RecordConnectionError(error) {
+func (n nopSender) RecordSegmentsSpillover(int) {
+}
+
+func (n nopSender) RecordSegmentsRejected(int) {
+}
+
+func (n nopSender) RecordConnectionError(error) {
 }

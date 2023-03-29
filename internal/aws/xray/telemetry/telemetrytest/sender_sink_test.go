@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetry
+package telemetrytest
 
 import (
 	"testing"
@@ -20,16 +20,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNopRecorder(t *testing.T) {
-	assert.Same(t, nopRecorderInstance, NewNopRecorder())
-	recorder := NewNopRecorder()
-	assert.NotPanics(t, func() {
-		recorder.Start()
-		recorder.RecordConnectionError(nil)
-		recorder.RecordSegmentsSent(1)
-		recorder.RecordSegmentsSpillover(1)
-		recorder.RecordSegmentsRejected(1)
-		recorder.RecordSegmentsReceived(1)
-		recorder.Stop()
-	})
+func TestSink(t *testing.T) {
+	sink := NewSenderSink()
+	sink.Start()
+	sink.Stop()
+	assert.EqualValues(t, 1, sink.StartCount.Load())
+	assert.EqualValues(t, 1, sink.StopCount.Load())
 }

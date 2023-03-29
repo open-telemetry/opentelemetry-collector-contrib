@@ -34,16 +34,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
 )
 
-type mockClient struct {
-	awsxray.XRayClient
-}
-
 func TestTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetry.NewNopRegistry())
+	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
 	ctx := context.Background()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -59,7 +55,7 @@ func TestXraySpanTraceResourceExtraction(t *testing.T) {
 }
 
 func TestXrayAndW3CSpanTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetry.NewNopRegistry())
+	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
 	ctx := context.Background()
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -84,11 +80,12 @@ func TestW3CSpanTraceResourceExtraction(t *testing.T) {
 func TestTelemetryEnabled(t *testing.T) {
 	// replace global registry for test
 	registry := telemetry.NewRegistry()
-	// preload the recorder for an empty component.ID
-	// that the exporter should use.
-	recorder, loaded := registry.LoadOrStore(component.NewID(""), telemetry.NewRecorder(&mockClient{}))
-	require.True(t, loaded)
-	require.NotNil(t, recorder)
+	sink := telemetrytest.NewSenderSink()
+	// preload the sender that the exporter will use
+	sender, loaded := registry.LoadOrStore(component.NewID(""), sink)
+	require.False(t, loaded)
+	require.NotNil(t, sender)
+	require.Equal(t, sink, sender)
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
 	traceExporter := initializeTracesExporter(t, cfg, registry)
@@ -99,10 +96,15 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.NotNil(t, err)
 	err = traceExporter.Shutdown(ctx)
 	assert.Nil(t, err)
+	assert.EqualValues(t, 1, sink.StartCount.Load())
+	assert.EqualValues(t, 1, sink.StopCount.Load())
+	assert.True(t, sink.HasRecording())
+	got := sink.Rotate()
+	assert.EqualValues(t, 1, *got.BackendConnectionErrors.HTTPCode4XXCount)
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
-	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetry.NewNopRegistry())
+	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		ctx := context.Background()

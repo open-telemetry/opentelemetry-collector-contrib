@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/xray"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -74,6 +76,7 @@ func TestTranslation(t *testing.T) {
 		expectedUnmarshallFailure bool
 		samplePath                string
 		expectedResourceAttrs     func(seg *awsxray.Segment) map[string]interface{}
+		expectedRecord            xray.TelemetryRecord
 		propsPerSpan              func(testCase string, t *testing.T, seg *awsxray.Segment) []perSpanProperties
 		verification              func(testCase string,
 			actualSeg *awsxray.Segment,
@@ -95,6 +98,10 @@ func TestTranslation(t *testing.T) {
 					conventions.AttributeK8SPodName:           *seg.AWS.EKS.Pod,
 					conventions.AttributeContainerID:          *seg.AWS.EKS.ContainerID,
 				}
+			},
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(1),
+				SegmentsRejectedCount: aws.Int64(0),
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := defaultServerSpanAttrs(seg)
@@ -134,6 +141,10 @@ func TestTranslation(t *testing.T) {
 					conventions.AttributeTelemetrySDKName:     *seg.AWS.XRay.SDK,
 					conventions.AttributeTelemetrySDKLanguage: "java",
 				}
+			},
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(18),
+				SegmentsRejectedCount: aws.Int64(0),
 			},
 			propsPerSpan: func(testCase string, t *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				rootSpanAttrs := pcommon.NewMap()
@@ -535,6 +546,10 @@ func TestTranslation(t *testing.T) {
 					conventions.AttributeCloudProvider: "unknown",
 				}
 			},
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(1),
+				SegmentsRejectedCount: aws.Int64(0),
+			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := defaultServerSpanAttrs(seg)
 				res := perSpanProperties{
@@ -584,6 +599,10 @@ func TestTranslation(t *testing.T) {
 					conventions.AttributeTelemetrySDKLanguage:  "Go",
 				}
 			},
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(1),
+				SegmentsRejectedCount: aws.Int64(0),
+			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := defaultServerSpanAttrs(seg)
 				attrs.PutStr(awsxray.AWSAccountAttribute, *seg.AWS.AccountID)
@@ -621,6 +640,10 @@ func TestTranslation(t *testing.T) {
 					conventions.AttributeCloudProvider: "unknown",
 				}
 			},
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(1),
+				SegmentsRejectedCount: aws.Int64(0),
+			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -654,6 +677,10 @@ func TestTranslation(t *testing.T) {
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]interface{} {
 				return nil
 			},
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(18),
+				SegmentsRejectedCount: aws.Int64(18),
+			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				return nil
 			},
@@ -674,6 +701,10 @@ func TestTranslation(t *testing.T) {
 					conventions.AttributeServiceName:   *seg.Name,
 					conventions.AttributeCloudProvider: "unknown",
 				}
+			},
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(1),
+				SegmentsRejectedCount: aws.Int64(0),
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
@@ -718,6 +749,10 @@ func TestTranslation(t *testing.T) {
 					conventions.AttributeServiceName:   *seg.Name,
 					conventions.AttributeCloudProvider: "unknown",
 				}
+			},
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(1),
+				SegmentsRejectedCount: aws.Int64(0),
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
@@ -764,6 +799,10 @@ func TestTranslation(t *testing.T) {
 					conventions.AttributeCloudProvider: "unknown",
 				}
 			},
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(1),
+				SegmentsRejectedCount: aws.Int64(0),
+			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
 				assert.NoError(t, attrs.FromRaw(map[string]interface{}{
@@ -806,6 +845,10 @@ func TestTranslation(t *testing.T) {
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]interface{} {
 				return nil
 			},
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(1),
+				SegmentsRejectedCount: aws.Int64(1),
+			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				return nil
 			},
@@ -827,6 +870,10 @@ func TestTranslation(t *testing.T) {
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]interface{} {
 				return nil
 			},
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(0),
+				SegmentsRejectedCount: aws.Int64(0),
+			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				return nil
 			},
@@ -846,6 +893,10 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "segmentValidationFailed.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]interface{} {
 				return nil
+			},
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(1),
+				SegmentsRejectedCount: aws.Int64(1),
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				return nil
@@ -881,7 +932,8 @@ func TestTranslation(t *testing.T) {
 				)
 			}
 
-			traces, totalSpanCount, err := ToTraces(content, telemetry.NewNopRecorder())
+			recorder := telemetry.NewRecorder()
+			traces, totalSpanCount, err := ToTraces(content, recorder)
 			if err == nil || (!tc.expectedUnmarshallFailure && expectedRs.ScopeSpans().Len() > 0 && expectedRs.ScopeSpans().At(0).Spans().Len() > 0) {
 				assert.Equal(t, totalSpanCount,
 					expectedRs.ScopeSpans().At(0).Spans().Len(),
@@ -889,6 +941,9 @@ func TestTranslation(t *testing.T) {
 				)
 			}
 			tc.verification(tc.testCase, &actualSeg, expectedRs, traces, err)
+			record := recorder.Rotate()
+			assert.Equal(t, *tc.expectedRecord.SegmentsReceivedCount, *record.SegmentsReceivedCount)
+			assert.Equal(t, *tc.expectedRecord.SegmentsRejectedCount, *record.SegmentsRejectedCount)
 		})
 	}
 }

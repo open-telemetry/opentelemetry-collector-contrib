@@ -53,11 +53,11 @@ func newTracesExporter(
 		return nil, err
 	}
 	xrayClient := awsxray.NewXRayClient(logger, awsConfig, set.BuildInfo, session)
-	recorder := telemetry.NewNopRecorder()
+	sender := telemetry.NewNopSender()
 	if cfg.TelemetryConfig.Enabled {
-		opts := telemetry.ToRecorderOptions(cfg.TelemetryConfig, session, &cfg.AWSSessionSettings)
+		opts := telemetry.ToOptions(cfg.TelemetryConfig, session, &cfg.AWSSessionSettings)
 		opts = append(opts, telemetry.WithLogger(set.Logger))
-		recorder = registry.Register(set.ID, cfg.TelemetryConfig, xrayClient, opts...)
+		sender = registry.Register(set.ID, cfg.TelemetryConfig, xrayClient, opts...)
 	}
 	return exporterhelper.NewTracesExporter(
 		context.TODO(),
@@ -82,9 +82,9 @@ func newTracesExporter(
 				if localErr != nil {
 					logger.Debug("response error", zap.Error(localErr))
 					err = wrapErrorIfBadRequest(localErr) // record error
-					recorder.RecordConnectionError(localErr)
+					sender.RecordConnectionError(localErr)
 				} else {
-					recorder.RecordSegmentsSent(len(input.TraceSegmentDocuments))
+					sender.RecordSegmentsSent(len(input.TraceSegmentDocuments))
 				}
 				if output != nil {
 					logger.Debug("response: " + output.String())
@@ -96,15 +96,11 @@ func newTracesExporter(
 			return err
 		},
 		exporterhelper.WithStart(func(context.Context, component.Host) error {
-			if recorder != nil {
-				recorder.Start()
-			}
+			sender.Start()
 			return nil
 		}),
 		exporterhelper.WithShutdown(func(context.Context) error {
-			if recorder != nil {
-				recorder.Stop()
-			}
+			sender.Stop()
 			_ = logger.Sync()
 			return nil
 		}),

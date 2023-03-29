@@ -51,6 +51,9 @@ func TestRegistry(t *testing.T) {
 	assert.Same(t, original, contrib)
 	// second attempt with same ID did not give contributors access
 	assert.Nil(t, r.Load(notCreatedID))
+	nop := r.LoadOrNop(notCreatedID)
+	assert.NotNil(t, nop)
+	assert.Equal(t, NewNopSender(), nop)
 }
 
 func TestGlobalRegistry(t *testing.T) {
