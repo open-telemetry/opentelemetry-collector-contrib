@@ -662,9 +662,16 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError: `error reading process name for pid 1: err1`,
 		},
 		{
-			name:          "Exe Error",
-			exeError:      errors.New("err1"),
-			expectedError: `error reading process executable for pid 1: err1`,
+			name:     "Exe Error",
+			exeError: errors.New("err1"),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return `error reading process executable for pid 1: err1`
+				} else {
+					return `error reading process executable for pid 1: err1 ` +
+						`error reading process name for pid 1: executable path is empty`
+				}
+			}(),
 		},
 		{
 			name:          "Cmdline Error",
@@ -809,7 +816,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 
-			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
+			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
@@ -826,7 +833,11 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) (int, int) {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError error) (int, int) {
+	if runtime.GOOS == "windows" && exeError != nil {
+		return 0, 0
+	}
+
 	if nameError != nil {
 		return 0, 0
 	}
@@ -870,7 +881,7 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPerc
 	if nameError != nil || exeError != nil {
 		return 1
 	}
-	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
 	return metricsLen - expectedMetricsLen
 }
 
