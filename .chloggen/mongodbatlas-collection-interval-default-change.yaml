@@ -5,7 +5,7 @@ change_type: bug_fix
 component: mongodbatlasreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fixes issue where default collection interval of 1 minute was not properly collecting all metrics.
+note: Fix issue where default collection interval of 1 minute was too short to collect several metrics.
 
 # One or more tracking issues related to the change
 issues: [18032]
