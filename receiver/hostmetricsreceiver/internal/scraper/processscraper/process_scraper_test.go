@@ -666,10 +666,10 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			exeError: errors.New("err1"),
 			expectedError: func() string {
 				if runtime.GOOS == "windows" {
-					return `error reading process executable for pid 1: err1`
-				} else {
 					return `error reading process executable for pid 1: err1 ` +
 						`error reading process name for pid 1: executable path is empty`
+				} else {
+					return `error reading process executable for pid 1: err1`
 				}
 			}(),
 		},
@@ -878,6 +878,10 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 }
 
 func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) int {
+	if runtime.GOOS == "windows" && exeError != nil {
+		return 2
+	}
+
 	if nameError != nil || exeError != nil {
 		return 1
 	}
