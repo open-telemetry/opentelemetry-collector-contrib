@@ -92,22 +92,22 @@ jobs:
 #          key: go-lint-build-${{ matrix.group }}-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
 #      - name: Lint
 #        run: make -j2 golint GROUP=${{ matrix.group }}
-#  lint:
-#    if: ${{ github.actor != 'dependabot[bot]' && always() }}
-#    runs-on: ubuntu-latest
-#    needs: [setup-environment, lint-matrix]
-#    steps:
-#      - name: Print result
-#        run: echo ${{ needs.lint-matrix.result }}
-#      - name: Interpret result
-#        run: |
-#          if [[ success == ${{ needs.lint-matrix.result }} ]]
-#          then
-#            echo "All matrix jobs passed!"
-#          else
-#            echo "One or more matrix jobs failed."
-#            false
-#          fi
+  lint:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-latest
+    needs: [setup-environment, lint-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.lint-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.lint-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
   checks:
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -216,25 +216,25 @@ jobs:
 #          key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
 #      - name: Run Unit Tests
 #        run: make gotest GROUP=${{ matrix.group }}
-#  unittest:
-#    if: ${{ github.actor != 'dependabot[bot]' && always() }}
-#    strategy:
-#      matrix:
-#        go-version: ["1.20", 1.19] # 1.20 is interpreted as 1.2 without quotes
-#    runs-on: ubuntu-latest
-#    needs: [setup-environment, unittest-matrix]
-#    steps:
-#      - name: Print result
-#        run: echo ${{ needs.unittest-matrix.result }}
-#      - name: Interpret result
-#        run: |
-#          if [[ success == ${{ needs.unittest-matrix.result }} ]]
-#          then
-#            echo "All matrix jobs passed!"
-#          else
-#            echo "One or more matrix jobs failed."
-#            false
-#          fi
+  unittest:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    strategy:
+      matrix:
+        go-version: ["1.20", 1.19] # 1.20 is interpreted as 1.2 without quotes
+    runs-on: ubuntu-latest
+    needs: [setup-environment, unittest-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.unittest-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.unittest-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
 
   integration-tests:
     runs-on: ubuntu-latest
