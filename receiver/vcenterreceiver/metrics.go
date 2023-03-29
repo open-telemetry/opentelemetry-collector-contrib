@@ -51,6 +51,7 @@ func (v *vcenterMetricScraper) recordHostSystemMemoryUsage(
 func (v *vcenterMetricScraper) recordVMUsages(
 	now pcommon.Timestamp,
 	vm mo.VirtualMachine,
+	hs mo.HostSystem,
 ) {
 	memUsage := vm.Summary.QuickStats.GuestMemoryUsage
 	balloonedMem := vm.Summary.QuickStats.BalloonedMemory
@@ -78,12 +79,20 @@ func (v *vcenterMetricScraper) recordVMUsages(
 	cpuUsage := z.OverallCpuUsage
 	var cpuUtilization float64
 
+	ncpu := vm.Config.Hardware.NumCPU
 	if cpuUsage != 0 {
 		// https://communities.vmware.com/t5/VMware-code-Documents/Resource-Management/ta-p/2783456
 		// VirtualMachine.runtime.maxCpuUsage is a property of the virtual machine, indicating the limit value.
 		// This value is always equal to the limit value set for that virtual machine.
 		// If no limit, it has full host mhz * vm.Config.Hardware.NumCPU.
-		cpuUtilization = 100 * float64(cpuUsage) / float64(vm.Runtime.MaxCpuUsage)
+		if vm.Runtime.MaxCpuUsage != 0 {
+			cpuUtilization = 100 * float64(cpuUsage) / float64(vm.Runtime.MaxCpuUsage)
+		} else {
+			// no limit.
+			cpuUtilization = 100 * float64(cpuUsage) / float64(ncpu*hs.Summary.Hardware.CpuMhz)
+
+		}
+
 	}
 
 	v.mb.RecordVcenterVMCPUUsageDataPoint(now, int64(cpuUsage))
