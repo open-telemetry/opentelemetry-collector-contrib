@@ -266,7 +266,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				return
 			}
 
-			expectedFile := filepath.Join("testdata", "scraper", fmt.Sprintf("%s.json", tt.expectedMetricsFilename))
+			expectedFile := filepath.Join("testdata", "scraper", fmt.Sprintf("%s.yaml", tt.expectedMetricsFilename))
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 

@@ -49,6 +49,8 @@ func TestLoadConfig(t *testing.T) {
 				TTL:      time.Second,
 				MaxItems: 10,
 			},
+			CacheLoop:           2 * time.Minute,
+			StoreExpirationLoop: 10 * time.Second,
 		},
 		cfg.Processors[component.NewID(typeStr)],
 	)
@@ -72,6 +74,8 @@ func TestLoadConfig(t *testing.T) {
 				TTL:      time.Second,
 				MaxItems: 10,
 			},
+			CacheLoop:           time.Minute,
+			StoreExpirationLoop: 2 * time.Second,
 		},
 		cfg.Connectors[component.NewID(typeStr)],
 	)
