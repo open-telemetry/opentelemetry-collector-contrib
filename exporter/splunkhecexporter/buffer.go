@@ -102,6 +102,10 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 		// if the byte writer was over capacity, try to write the new entry in the zip writer:
 		if overCapacity {
 			if _, err2 := zipWriter.Write(data); err2 != nil {
+				overCapacity2 := errors.Is(err2, errOverCapacity)
+				if overCapacity2 {
+					return false, nil
+				}
 				return false, err2
 			}
 
