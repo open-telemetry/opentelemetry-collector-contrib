@@ -102,6 +102,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 		mustPushLogsData(t, exporter, simpleLogs(1))
 		mustPushLogsData(t, exporter, simpleLogs(2))
 		exporter.wg.Wait()
+		//require.Equal(t, 3, items)
 	})
 }
 
