@@ -664,7 +664,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		{
 			name:          "Exe Error",
 			exeError:      errors.New("err1"),
-			expectedError: `error reading process executable for pid 1: err1`,
+			expectedError: `error reading process name for pid 1: err1`,
 		},
 		{
 			name:          "Cmdline Error",
@@ -809,7 +809,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 
-			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
+			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
@@ -826,8 +826,8 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) (int, int) {
-	if nameError != nil {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) (int, int) {
+	if nameError != nil || exeError != nil {
 		return 0, 0
 	}
 
@@ -870,11 +870,11 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPerc
 	if nameError != nil || exeError != nil {
 		return 1
 	}
-	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
 	return metricsLen - expectedMetricsLen
 }
 
-func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
+func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
 	processNameError := errors.New("err1")
@@ -882,46 +882,24 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 	type testCase struct {
 		name                 string
 		muteProcessNameError bool
-		muteProcessExeError  bool
-		muteProcessIOError   bool
 		omitConfigField      bool
 		expectedError        string
 	}
 
 	testCases := []testCase{
 		{
-			name:                 "Process Name Error Muted And Process Exe Error Muted And Process IO Error Muted",
+			name:                 "Process Name Error Muted",
 			muteProcessNameError: true,
-			muteProcessExeError:  true,
-			muteProcessIOError:   true,
 		},
 		{
-			name:                 "Process Name Error Muted And Process Exe Error Enabled And Process IO Error Muted",
-			muteProcessNameError: true,
-			muteProcessExeError:  false,
-			muteProcessIOError:   true,
-			expectedError:        fmt.Sprintf("error reading process executable for pid 1: %v", processNameError),
-		},
-		{
-			name:                 "Process Name Error Enabled And Process Exe Error Muted And Process IO Error Muted",
+			name:                 "Process Name Error Enabled",
 			muteProcessNameError: false,
-			muteProcessExeError:  true,
-			muteProcessIOError:   true,
 			expectedError:        fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
 		},
 		{
-			name:                 "Process Name Error Enabled And Process Exe Error Enabled And Process IO Error Muted",
-			muteProcessNameError: false,
-			muteProcessExeError:  false,
-			muteProcessIOError:   true,
-			expectedError: fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
-				fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
-		},
-		{
-			name:            "Process Name Error Default (Enabled) And Process Exe Error Default (Enabled) And Process IO Error Default (Enabled)",
+			name:            "Process Name Error Default (Enabled)",
 			omitConfigField: true,
-			expectedError: fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
-				fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError:   fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
 		},
 	}
 
@@ -930,8 +908,6 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			config := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
 			if !test.omitConfigField {
 				config.MuteProcessNameError = test.muteProcessNameError
-				config.MuteProcessExeError = test.muteProcessExeError
-				config.MuteProcessIOError = test.muteProcessIOError
 			}
 			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
@@ -942,18 +918,13 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			handleMock.On("Name").Return("test", processNameError)
 			handleMock.On("Exe").Return("test", processNameError)
 
-			if config.MuteProcessIOError {
-				handleMock.On("IOCounters").Return("test", errors.New("permission denied"))
-			}
-
 			scraper.getProcessHandles = func() (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 			}
 			md, err := scraper.scrape(context.Background())
 
 			assert.Zero(t, md.MetricCount())
-
-			if config.MuteProcessNameError && config.MuteProcessExeError {
+			if config.MuteProcessNameError {
 				assert.Nil(t, err)
 			} else {
 				assert.EqualError(t, err, test.expectedError)
