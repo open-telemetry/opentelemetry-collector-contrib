@@ -666,7 +666,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			exeError: errors.New("err1"),
 			expectedError: func() string {
 				if runtime.GOOS == "windows" {
-					return `error reading process executable for pid 1: err1 ` +
+					return `error reading process executable for pid 1: err1; ` +
 						`error reading process name for pid 1: executable path is empty`
 				} else {
 					return `error reading process executable for pid 1: err1`
