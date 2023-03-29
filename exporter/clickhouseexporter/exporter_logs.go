@@ -19,12 +19,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/component"
