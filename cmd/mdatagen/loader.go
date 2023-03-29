@@ -182,6 +182,8 @@ type warnings struct {
 }
 
 type attribute struct {
+	// Warnings that will be shown to user under specified conditions.
+	Warnings warnings `mapstructure:"warnings"`
 	// Description describes the purpose of the attribute.
 	Description string `mapstructure:"description"`
 	// NameOverride can be used to override the attribute name.

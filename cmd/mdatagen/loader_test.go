@@ -35,6 +35,9 @@ func Test_loadMetadata(t *testing.T) {
 				SemConvVersion: "1.9.0",
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
+						Warnings: warnings{
+							IfEnabledNotSet: "This resource_attribute will be disabled by default soon.",
+						},
 						Description: "Resource attribute with any string value.",
 						Enabled:     true,
 						Type: ValueType{
