@@ -313,7 +313,7 @@ jobs:
 
   cross-compile:
     runs-on: ubuntu-latest
-    needs: [integration-tests]
+    needs: [unittest, integration-tests, lint]
     strategy:
       matrix:
         os:
