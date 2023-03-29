@@ -39,9 +39,9 @@ const (
 	metadataHostname   = "hostname"
 	metadataInstanceID = "instance-id"
 
-	queueSize       = 30
-	batchSize       = 10
-	defaultInterval = time.Minute
+	defaultQueueSize = 30
+	defaultBatchSize = 10
+	defaultInterval  = time.Minute
 )
 
 type Recorder interface {
@@ -92,6 +92,12 @@ func WithHostname(hostname string) RecorderOption {
 func WithLogger(logger *zap.Logger) RecorderOption {
 	return recorderOptionFunc(func(r *telemetryRecorder) {
 		r.logger = logger
+	})
+}
+
+func WithInterval(interval time.Duration) RecorderOption {
+	return recorderOptionFunc(func(r *telemetryRecorder) {
+		r.interval = interval
 	})
 }
 
@@ -146,18 +152,18 @@ func ToRecorderOptions(cfg Config, sess *session.Session, settings *awsutil.AWSS
 	metadataClient := ec2metadata.New(sess)
 	return []RecorderOption{
 		WithHostname(getMetadata(
-			simpleMetadataProvider{cfg.Hostname},
-			envMetadataProvider{envAWSHostname},
-			ec2MetadataProvider{metadataClient, metadataHostname},
+			simpleMetadataProvider{metadata: cfg.Hostname},
+			envMetadataProvider{envKey: envAWSHostname},
+			ec2MetadataProvider{client: metadataClient, metadataKey: metadataHostname},
 		)),
 		WithInstanceID(getMetadata(
-			simpleMetadataProvider{cfg.InstanceID},
-			envMetadataProvider{envAWSInstanceID},
-			ec2MetadataProvider{metadataClient, metadataInstanceID},
+			simpleMetadataProvider{metadata: cfg.InstanceID},
+			envMetadataProvider{envKey: envAWSInstanceID},
+			ec2MetadataProvider{client: metadataClient, metadataKey: metadataInstanceID},
 		)),
 		WithResourceARN(getMetadata(
-			simpleMetadataProvider{cfg.ResourceARN},
-			simpleMetadataProvider{settings.ResourceARN},
+			simpleMetadataProvider{metadata: cfg.ResourceARN},
+			simpleMetadataProvider{metadata: settings.ResourceARN},
 		)),
 	}
 }
@@ -181,6 +187,10 @@ type telemetryRecorder struct {
 	done chan struct{}
 	// interval is the amount of time between flushes.
 	interval time.Duration
+	// queueSize is the capacity of the queue.
+	queueSize int
+	// batchSize is the max number of records sent together.
+	batchSize int
 
 	// recordUpdated is set to true when any count is updated. Indicates
 	// that telemetry data is available.
@@ -190,25 +200,31 @@ type telemetryRecorder struct {
 	stopOnce  sync.Once
 }
 
-func newTelemetryRecorder(
-	client awsxray.XRayClient,
-	opts ...RecorderOption,
-) *telemetryRecorder {
+// NewRecorder creates a new Recorder with a default interval and queue size.
+func NewRecorder(client awsxray.XRayClient, opts ...RecorderOption) Recorder {
+	return newRecorder(client, opts...)
+}
+
+func newRecorder(client awsxray.XRayClient, opts ...RecorderOption) *telemetryRecorder {
 	recorder := &telemetryRecorder{
 		client:        client,
-		record:        newTelemetryRecord(),
+		record:        NewRecord(),
 		recordUpdated: &atomic.Bool{},
 		interval:      defaultInterval,
+		queueSize:     defaultQueueSize,
+		batchSize:     defaultBatchSize,
 		done:          make(chan struct{}),
-		queue:         make(chan *xray.TelemetryRecord, queueSize),
 	}
 	for _, opt := range opts {
 		opt.apply(recorder)
 	}
+	recorder.queue = make(chan *xray.TelemetryRecord, recorder.queueSize)
 	return recorder
 }
 
-func newTelemetryRecord() *xray.TelemetryRecord {
+// NewRecord creates a new xray.TelemetryRecord with all of its fields initialized
+// and set to 0.
+func NewRecord() *xray.TelemetryRecord {
 	return &xray.TelemetryRecord{
 		SegmentsReceivedCount:  aws.Int64(0),
 		SegmentsRejectedCount:  aws.Int64(0),
@@ -265,7 +281,7 @@ func (t *telemetryRecorder) start() {
 // cutoff the current record and swap it out with a new record.
 // Sets the timestamp and returns the old record.
 func (t *telemetryRecorder) cutoff() *xray.TelemetryRecord {
-	snapshot := newTelemetryRecord()
+	snapshot := NewRecord()
 	snapshot.SetSegmentsSentCount(atomic.SwapInt64(t.record.SegmentsSentCount, 0))
 	snapshot.SetSegmentsReceivedCount(atomic.SwapInt64(t.record.SegmentsReceivedCount, 0))
 	snapshot.SetSegmentsRejectedCount(atomic.SwapInt64(t.record.SegmentsRejectedCount, 0))
@@ -306,12 +322,12 @@ func (t *telemetryRecorder) flush() []*xray.TelemetryRecord {
 	return records
 }
 
-// send the records in batches of batchSize. Returns the error and records it was unable to send
+// send the records in batches of defaultBatchSize. Returns the error and records it was unable to send
 // if the PutTelemetryRecords call fails.
 func (t *telemetryRecorder) send(records []*xray.TelemetryRecord) ([]*xray.TelemetryRecord, error) {
 	if len(records) > 0 {
-		for i := 0; i < len(records); i += batchSize {
-			endIndex := i + batchSize
+		for i := 0; i < len(records); i += t.batchSize {
+			endIndex := i + t.batchSize
 			if endIndex > len(records) {
 				endIndex = len(records)
 			}

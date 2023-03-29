@@ -46,11 +46,11 @@ func TestRegistry(t *testing.T) {
 	// still the same recorder
 	assert.Same(t, original, withSameID)
 	// contributors have access to same recorder
-	contrib := r.Get(contribID)
+	contrib := r.Load(contribID)
 	assert.NotNil(t, contrib)
 	assert.Same(t, original, contrib)
 	// second attempt with same ID did not give contributors access
-	assert.Nil(t, r.Get(notCreatedID))
+	assert.Nil(t, r.Load(notCreatedID))
 }
 
 func TestGlobalRegistry(t *testing.T) {

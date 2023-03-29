@@ -58,8 +58,7 @@ func TestCutoffInterval(t *testing.T) {
 	mc := &mockClient{count: &atomic.Int64{}}
 	mc.On("PutTelemetryRecords", mock.Anything).Return(nil, nil).Once()
 	mc.On("PutTelemetryRecords", mock.Anything).Return(nil, errors.New("error"))
-	recorder := newTelemetryRecorder(mc)
-	recorder.interval = 50 * time.Millisecond
+	recorder := NewRecorder(mc, WithInterval(50*time.Millisecond))
 	recorder.Start()
 	defer recorder.Stop()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -90,14 +89,14 @@ func TestIncludeMetadata(t *testing.T) {
 	assert.Empty(t, opts)
 	cfg.IncludeMetadata = true
 	opts = ToRecorderOptions(cfg, sess, set)
-	recorder := newTelemetryRecorder(&mockClient{}, opts...)
+	recorder := newRecorder(&mockClient{}, opts...)
 	assert.Equal(t, "", recorder.hostname)
 	assert.Equal(t, "", recorder.instanceID)
 	assert.Equal(t, "session_arn", recorder.resourceARN)
 	t.Setenv(envAWSHostname, "env_hostname")
 	t.Setenv(envAWSInstanceID, "env_instance_id")
 	opts = ToRecorderOptions(cfg, sess, &awsutil.AWSSessionSettings{})
-	recorder = newTelemetryRecorder(&mockClient{}, opts...)
+	recorder = newRecorder(&mockClient{}, opts...)
 	assert.Equal(t, "env_hostname", recorder.hostname)
 	assert.Equal(t, "env_instance_id", recorder.instanceID)
 	assert.Equal(t, "", recorder.resourceARN)
@@ -105,7 +104,7 @@ func TestIncludeMetadata(t *testing.T) {
 	cfg.InstanceID = "cfg_instance_id"
 	cfg.ResourceARN = "cfg_arn"
 	opts = ToRecorderOptions(cfg, sess, &awsutil.AWSSessionSettings{})
-	recorder = newTelemetryRecorder(&mockClient{}, opts...)
+	recorder = newRecorder(&mockClient{}, opts...)
 	assert.Equal(t, "cfg_hostname", recorder.hostname)
 	assert.Equal(t, "cfg_instance_id", recorder.instanceID)
 	assert.Equal(t, "cfg_arn", recorder.resourceARN)
@@ -120,7 +119,7 @@ func TestRecordConnectionError(t *testing.T) {
 		{
 			input: awserr.NewRequestFailure(nil, http.StatusInternalServerError, ""),
 			want: func() *xray.TelemetryRecord {
-				record := newTelemetryRecord()
+				record := NewRecord()
 				record.BackendConnectionErrors.HTTPCode5XXCount = aws.Int64(1)
 				return record
 			},
@@ -128,7 +127,7 @@ func TestRecordConnectionError(t *testing.T) {
 		{
 			input: awserr.NewRequestFailure(nil, http.StatusBadRequest, ""),
 			want: func() *xray.TelemetryRecord {
-				record := newTelemetryRecord()
+				record := NewRecord()
 				record.BackendConnectionErrors.HTTPCode4XXCount = aws.Int64(1)
 				return record
 			},
@@ -136,7 +135,7 @@ func TestRecordConnectionError(t *testing.T) {
 		{
 			input: awserr.NewRequestFailure(nil, http.StatusFound, ""),
 			want: func() *xray.TelemetryRecord {
-				record := newTelemetryRecord()
+				record := NewRecord()
 				record.BackendConnectionErrors.OtherCount = aws.Int64(1)
 				return record
 			},
@@ -144,7 +143,7 @@ func TestRecordConnectionError(t *testing.T) {
 		{
 			input: awserr.New(request.ErrCodeResponseTimeout, "", nil),
 			want: func() *xray.TelemetryRecord {
-				record := newTelemetryRecord()
+				record := NewRecord()
 				record.BackendConnectionErrors.TimeoutCount = aws.Int64(1)
 				return record
 			},
@@ -152,7 +151,7 @@ func TestRecordConnectionError(t *testing.T) {
 		{
 			input: awserr.New(request.ErrCodeRequestError, "", nil),
 			want: func() *xray.TelemetryRecord {
-				record := newTelemetryRecord()
+				record := NewRecord()
 				record.BackendConnectionErrors.UnknownHostCount = aws.Int64(1)
 				return record
 			},
@@ -160,7 +159,7 @@ func TestRecordConnectionError(t *testing.T) {
 		{
 			input: awserr.New(request.ErrCodeSerialization, "", nil),
 			want: func() *xray.TelemetryRecord {
-				record := newTelemetryRecord()
+				record := NewRecord()
 				record.BackendConnectionErrors.OtherCount = aws.Int64(1)
 				return record
 			},
@@ -168,17 +167,17 @@ func TestRecordConnectionError(t *testing.T) {
 		{
 			input: errors.New("test"),
 			want: func() *xray.TelemetryRecord {
-				record := newTelemetryRecord()
+				record := NewRecord()
 				record.BackendConnectionErrors.OtherCount = aws.Int64(1)
 				return record
 			},
 		},
 		{
 			input: nil,
-			want:  newTelemetryRecord,
+			want:  NewRecord,
 		},
 	}
-	recorder := newTelemetryRecorder(&mockClient{})
+	recorder := newRecorder(&mockClient{})
 	for _, testCase := range testCases {
 		recorder.RecordConnectionError(testCase.input)
 		snapshot := recorder.cutoff()
@@ -188,8 +187,8 @@ func TestRecordConnectionError(t *testing.T) {
 
 func TestQueueOverflow(t *testing.T) {
 	obs, logs := observer.New(zap.DebugLevel)
-	recorder := newTelemetryRecorder(&mockClient{}, WithLogger(zap.New(obs)))
-	for i := 1; i <= queueSize+20; i++ {
+	recorder := newRecorder(&mockClient{}, WithLogger(zap.New(obs)))
+	for i := 1; i <= defaultQueueSize+20; i++ {
 		recorder.RecordSegmentsSent(i)
 		recorder.add(recorder.cutoff())
 	}

@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetrytest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
+package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
-
-func NewNopRecorder() telemetry.Recorder {
+// NewNopRecorder returns a Recorder that drops all data.
+func NewNopRecorder() Recorder {
 	return nopRecorderInstance
 }
 
 var nopRecorderInstance = &nopRecorder{}
 
-var _ telemetry.Recorder = (*nopRecorder)(nil)
+var _ Recorder = (*nopRecorder)(nil)
 
 type nopRecorder struct {
 }

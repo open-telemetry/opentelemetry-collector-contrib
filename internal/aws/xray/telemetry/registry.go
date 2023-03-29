@@ -23,8 +23,12 @@ import (
 )
 
 type Registry interface {
-	Set(id component.ID, recorder Recorder)
-	Get(id component.ID) Recorder
+	// LoadOrStore the recorder for the ID.
+	LoadOrStore(id component.ID, recorder Recorder) (Recorder, bool)
+	// Load the recorder for the ID.
+	Load(id component.ID) Recorder
+	// Register configures and registers a new Recorder for the ID. If one
+	// already exists for the ID, then returns that one instead.
 	Register(id component.ID, cfg Config, client awsxray.XRayClient, opts ...RecorderOption) Recorder
 }
 
@@ -45,13 +49,14 @@ func NewRegistry() Registry {
 	return &registry{}
 }
 
-// Set if not already set. Otherwise, return the existing.
-func (r *registry) Set(id component.ID, recorder Recorder) {
-	r.recorders.LoadOrStore(id, recorder)
+// LoadOrStore the recorder for the ID.
+func (r *registry) LoadOrStore(id component.ID, recorder Recorder) (Recorder, bool) {
+	actual, loaded := r.recorders.LoadOrStore(id, recorder)
+	return actual.(Recorder), loaded
 }
 
-// Get gets the associated recorder for the ID.
-func (r *registry) Get(id component.ID) Recorder {
+// Load the recorder for the ID.
+func (r *registry) Load(id component.ID) Recorder {
 	recorder, ok := r.recorders.Load(id)
 	if ok {
 		return recorder.(Recorder)
@@ -70,10 +75,10 @@ func (r *registry) Register(
 	if recorder, ok := r.recorders.Load(id); ok {
 		return recorder.(Recorder)
 	}
-	recorder := newTelemetryRecorder(client, opts...)
+	recorder := NewRecorder(client, opts...)
 	r.recorders.Store(id, recorder)
 	for _, contributor := range cfg.Contributors {
-		r.Set(contributor, recorder)
+		r.LoadOrStore(contributor, recorder)
 	}
 	return recorder
 }

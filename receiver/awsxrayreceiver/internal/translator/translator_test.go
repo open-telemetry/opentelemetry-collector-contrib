@@ -28,6 +28,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
@@ -880,7 +881,7 @@ func TestTranslation(t *testing.T) {
 				)
 			}
 
-			traces, totalSpanCount, err := ToTraces(content, nil)
+			traces, totalSpanCount, err := ToTraces(content, telemetry.NewNopRecorder())
 			if err == nil || (!tc.expectedUnmarshallFailure && expectedRs.ScopeSpans().Len() > 0 && expectedRs.ScopeSpans().At(0).Spans().Len() > 0) {
 				assert.Equal(t, totalSpanCount,
 					expectedRs.ScopeSpans().At(0).Spans().Len(),

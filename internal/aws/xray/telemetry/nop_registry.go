@@ -12,36 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetrytest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
+package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 
 import (
-	"go.opentelemetry.io/collector/component"
-
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
+	"go.opentelemetry.io/collector/component"
 )
 
-func NewNopRegistry() telemetry.Registry {
+func NewNopRegistry() Registry {
 	return nopRegistryInstance
 }
 
 type nopRegistry struct {
-	recorder telemetry.Recorder
+	recorder Recorder
 }
 
-var _ telemetry.Registry = (*nopRegistry)(nil)
+var _ Registry = (*nopRegistry)(nil)
 
 var nopRegistryInstance = &nopRegistry{
 	recorder: NewNopRecorder(),
 }
 
-func (n nopRegistry) Register(component.ID, telemetry.Config, awsxray.XRayClient, ...telemetry.RecorderOption) telemetry.Recorder {
+func (n nopRegistry) Register(component.ID, Config, awsxray.XRayClient, ...RecorderOption) Recorder {
 	return n.recorder
 }
 
-func (n nopRegistry) Set(component.ID, telemetry.Recorder) {
+func (n nopRegistry) LoadOrStore(component.ID, Recorder) (Recorder, bool) {
+	return n.recorder, false
 }
 
-func (n nopRegistry) Get(component.ID) telemetry.Recorder {
+func (n nopRegistry) Load(component.ID) Recorder {
 	return n.recorder
 }

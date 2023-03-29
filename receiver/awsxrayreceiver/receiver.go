@@ -122,7 +122,11 @@ func (x *xrayReceiver) start() {
 	incomingSegments := x.poller.SegmentsChan()
 	for seg := range incomingSegments {
 		ctx := x.obsrecv.StartTracesOp(seg.Ctx)
-		traces, totalSpanCount, err := translator.ToTraces(seg.Payload, x.registry.Get(x.settings.ID))
+		recorder := x.registry.Load(x.settings.ID)
+		if recorder == nil {
+			recorder = telemetry.NewNopRecorder()
+		}
+		traces, totalSpanCount, err := translator.ToTraces(seg.Payload, recorder)
 		if err != nil {
 			x.settings.Logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
 			x.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, totalSpanCount, err)

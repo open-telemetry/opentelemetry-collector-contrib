@@ -53,7 +53,7 @@ func newTracesExporter(
 		return nil, err
 	}
 	xrayClient := awsxray.NewXRayClient(logger, awsConfig, set.BuildInfo, session)
-	var recorder telemetry.Recorder
+	recorder := telemetry.NewNopRecorder()
 	if cfg.TelemetryConfig.Enabled {
 		opts := telemetry.ToRecorderOptions(cfg.TelemetryConfig, session, &cfg.AWSSessionSettings)
 		opts = append(opts, telemetry.WithLogger(set.Logger))
@@ -82,10 +82,8 @@ func newTracesExporter(
 				if localErr != nil {
 					logger.Debug("response error", zap.Error(localErr))
 					err = wrapErrorIfBadRequest(localErr) // record error
-					if recorder != nil {
-						recorder.RecordConnectionError(localErr)
-					}
-				} else if recorder != nil {
+					recorder.RecordConnectionError(localErr)
+				} else {
 					recorder.RecordSegmentsSent(len(input.TraceSegmentDocuments))
 				}
 				if output != nil {

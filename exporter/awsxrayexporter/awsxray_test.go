@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
@@ -33,12 +34,16 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
 )
 
+type mockClient struct {
+	awsxray.XRayClient
+}
+
 func TestTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
+	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetry.NewNopRegistry())
 	ctx := context.Background()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -54,7 +59,7 @@ func TestXraySpanTraceResourceExtraction(t *testing.T) {
 }
 
 func TestXrayAndW3CSpanTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter(t, generateConfig(t), nil)
+	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetry.NewNopRegistry())
 	ctx := context.Background()
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -79,6 +84,11 @@ func TestW3CSpanTraceResourceExtraction(t *testing.T) {
 func TestTelemetryEnabled(t *testing.T) {
 	// replace global registry for test
 	registry := telemetry.NewRegistry()
+	// preload the recorder for an empty component.ID
+	// that the exporter should use.
+	recorder, loaded := registry.LoadOrStore(component.NewID(""), telemetry.NewRecorder(&mockClient{}))
+	require.True(t, loaded)
+	require.NotNil(t, recorder)
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
 	traceExporter := initializeTracesExporter(t, cfg, registry)
@@ -89,12 +99,10 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.NotNil(t, err)
 	err = traceExporter.Shutdown(ctx)
 	assert.Nil(t, err)
-	recorder := registry.Get(component.NewID(""))
-	assert.NotNil(t, recorder)
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
-	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
+	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetry.NewNopRegistry())
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		ctx := context.Background()

@@ -45,15 +45,11 @@ func ToTraces(rawSeg []byte, recorder telemetry.Recorder) (ptrace.Traces, int, e
 		return ptrace.Traces{}, 1, err
 	}
 	count := totalSegmentsCount(seg)
-	if recorder != nil {
-		recorder.RecordSegmentsReceived(count)
-	}
+	recorder.RecordSegmentsReceived(count)
 
 	err = seg.Validate()
 	if err != nil {
-		if recorder != nil {
-			recorder.RecordSegmentsRejected(count)
-		}
+		recorder.RecordSegmentsRejected(count)
 		return ptrace.Traces{}, count, err
 	}
 
@@ -82,9 +78,7 @@ func ToTraces(rawSeg []byte, recorder telemetry.Recorder) (ptrace.Traces, int, e
 	// the embedded subsegment to generate independent child spans.
 	_, err = segToSpans(seg, seg.TraceID, nil, spans)
 	if err != nil {
-		if recorder != nil {
-			recorder.RecordSegmentsRejected(count)
-		}
+		recorder.RecordSegmentsRejected(count)
 		return ptrace.Traces{}, count, err
 	}
 

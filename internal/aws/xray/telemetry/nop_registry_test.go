@@ -12,23 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetrytest
+package telemetry
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 )
 
 func TestNopRegistry(t *testing.T) {
 	assert.Same(t, nopRegistryInstance, NewNopRegistry())
-	registry := NewNopRegistry()
+	r := NewNopRegistry()
 	assert.NotPanics(t, func() {
-		recorder := registry.Register(component.NewID("a"), telemetry.Config{}, nil)
-		assert.Same(t, recorder, registry.Get(component.NewID("b")))
-		registry.Set(component.NewID("c"), recorder)
+		recorder := r.Register(component.NewID("a"), Config{}, nil)
+		assert.Same(t, recorder, r.Load(component.NewID("b")))
+		r.LoadOrStore(component.NewID("c"), recorder)
 	})
 }
