@@ -211,7 +211,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         ResourceAttributes,
                         LogAttributes
                         )`
-	inlineinsertLogsSQLTemplate = `INSERT INTO %s SETTINGS async_insert=1, wait_for_async_insert=0 (
+	inlineinsertLogsSQLTemplate = `INSERT INTO %s (
                         Timestamp,
                         TraceId,
                         SpanId,
@@ -232,7 +232,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                                  ?,
                                  ?,
                                  ?,
-                                 ?)`
+                                 ?) SETTINGS async_insert=1, wait_for_async_insert=0`
 )
 
 var driverName = "clickhouse" // for testing
@@ -324,8 +324,5 @@ func renderCreateLogsTableSQL(cfg *Config) string {
 }
 
 func renderInsertLogsSQL(cfg *Config) string {
-	if strings.HasPrefix(cfg.Endpoint, "tcp") && cfg.ConnectionParams["async_insert"] == "1" {
-		return fmt.Sprintf(inlineinsertLogsSQLTemplate, cfg.LogsTableName)
-	}
-	return fmt.Sprintf(insertLogsSQLTemplate, cfg.LogsTableName)
+	return fmt.Sprintf(inlineinsertLogsSQLTemplate, cfg.LogsTableName)
 }
