@@ -9,7 +9,7 @@
 The syslog exporter supports sending messages to a remote syslog server.
 
 - This exporter can forward syslog messages to syslog server using [RFC5424][RFC5424] and [RFC3164][RFC3164].
-- It is recommended that this syslog exporter be used with the [syslog_parser][syslog_parser] configured in the receiver.
+- It is recommended that this syslog exporter be used with the [syslog receiver][syslog_receiver] or with [filelog receiver][filelog_receiver] along with [syslog_parser][syslog_parser] configured in the receiver, please see [examples](./examples/)
   This ensures that all the syslog message headers are populated with the expected values.
 - Not using the `syslog_parser` will result in the syslog message being populated with default header values.
 
@@ -47,83 +47,13 @@ The syslog exporter supports sending messages to a remote syslog server.
   - `storage` (default = `none`): When set, enables persistence and uses the component specified as a storage extension for the [persistent queue][persistent_queue]
 - `timeout` (default = 5s) Time to wait per individual attempt to send data to a backend
 
-Please refer to the yaml below to configure the syslog exporter:
-
-```yaml
-extensions:
-  file_storage/syslog:
-    directory: .
-    timeout: 10s
-
-exporters:
-  syslog:
-    protocol: tcp
-    port: 6514
-    endpoint: 127.0.0.1 # FQDN or IP address
-    tls:
-      ca_file: certs/servercert.pem
-      cert_file: certs/cert.pem
-      key_file: certs/key.pem
-    format: rfc5424 # rfc5424 or rfc3164
-
-
-    # for below described queueing and retry related configuration please refer to:
-    # https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#configuration
-    retry_on_failure:
-      # default = true
-      enabled: true
-      # time to wait after the first failure before retrying;
-      # ignored if enabled is false, default = 5s
-      initial_interval: 10s
-      # is the upper bound on backoff; ignored if enabled is false, default = 30s
-      max_interval: 40s
-      # is the maximum amount of time spent trying to send a batch;
-      # ignored if enabled is false, default = 120s
-      max_elapsed_time: 150s
-
-    sending_queue:
-      # default = false
-      enabled: true
-      # number of consumers that dequeue batches; ignored if enabled is false,
-      # default = 10
-      num_consumers: 20
-      # when set, enables persistence and uses the component specified as a storage extension for the persistent queue
-      # make sure to configure and add a `file_storage` extension in `service.extensions`.
-      # default = None
-      storage: file_storage/syslog
-      # maximum number of batches kept in memory before data;
-      # ignored if enabled is false, default = 5000
-      #
-      # user should calculate this as num_seconds * requests_per_second where:
-      # num_seconds is the number of seconds to buffer in case of a backend outage,
-      # requests_per_second is the average number of requests per seconds.
-      queue_size: 10000
-receivers:
-  filelog:
-    start_at: beginning
-    include:
-    - /other/path/**/*.txt
-    operators:
-      - type: syslog_parser
-        protocol: rfc5424 # the format used here must match the syslog exporter
-
-service:
-  telemetry:
-      logs:
-        level: "info"
-  extensions:
-    - file_storage/syslog
-  pipelines:
-    logs:
-      receivers:
-        - filelog
-      exporters:
-        - syslog
-```
+Please see [example configurations](./examples/).
 
 [RFC5424]: https://www.rfc-editor.org/rfc/rfc5424
 [RFC3164]: https://www.rfc-editor.org/rfc/rfc3164
 [syslog_parser]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/syslog_parser.md
+[syslog_receiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/syslogreceiver
+[filelog_receiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver
 [cryptoTLS]: https://github.com/golang/go/blob/518889b35cb07f3e71963f2ccfc0f96ee26a51ce/src/crypto/tls/common.go#L706-L709
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [persistent_queue]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#persistent-queue
