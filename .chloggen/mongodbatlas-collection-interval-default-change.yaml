@@ -13,4 +13,4 @@ issues: [18032]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Some metrics were returning null with smaller windows
+subtext: Default collection interval is now 3 minutes.
