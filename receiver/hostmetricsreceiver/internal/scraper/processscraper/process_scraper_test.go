@@ -878,6 +878,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
 	processNameError := errors.New("err1")
+	processEmptyExeError := errors.New("executable path is empty")
 
 	type testCase struct {
 		name                 string
@@ -907,21 +908,41 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			muteProcessNameError: false,
 			muteProcessExeError:  true,
 			muteProcessIOError:   true,
-			expectedError:        fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
+				} else {
+					return fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
+				}
+			}(),
 		},
 		{
 			name:                 "Process Name Error Enabled And Process Exe Error Enabled And Process IO Error Muted",
 			muteProcessNameError: false,
 			muteProcessExeError:  false,
 			muteProcessIOError:   true,
-			expectedError: fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
-				fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+						fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
+				} else {
+					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+						fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
+				}
+			}(),
 		},
 		{
 			name:            "Process Name Error Default (Enabled) And Process Exe Error Default (Enabled) And Process IO Error Default (Enabled)",
 			omitConfigField: true,
-			expectedError: fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
-				fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+						fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
+				} else {
+					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+						fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
+				}
+			}(),
 		},
 	}
 
