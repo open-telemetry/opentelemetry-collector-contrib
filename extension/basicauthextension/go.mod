@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector v0.74.0
 	go.opentelemetry.io/collector/component v0.74.0
 	go.opentelemetry.io/collector/confmap v0.74.0
-	google.golang.org/grpc v1.53.0
+	google.golang.org/grpc v1.54.0
 )
 
 require (
