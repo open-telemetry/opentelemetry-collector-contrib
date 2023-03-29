@@ -31,9 +31,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "flatten_one_level",
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.Field = entry.BodyField{
-						Keys: []string{"nested"},
-					}
+					cfg.Field = entry.NewBodyField("nested")
 					return cfg
 				}(),
 				ExpectErr: false,
@@ -42,9 +40,16 @@ func TestUnmarshal(t *testing.T) {
 				Name: "flatten_second_level",
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.Field = entry.BodyField{
-						Keys: []string{"nested", "secondlevel"},
-					}
+					cfg.Field = entry.NewBodyField("nested", "secondlevel")
+					return cfg
+				}(),
+				ExpectErr: false,
+			},
+			{
+				Name: "flatten_resource",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Field = entry.NewResourceField("secondlevel")
 					return cfg
 				}(),
 				ExpectErr: false,
@@ -53,12 +58,10 @@ func TestUnmarshal(t *testing.T) {
 				Name: "flatten_attributes",
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.Field = entry.BodyField{
-						Keys: []string{"attributes", "errField"},
-					}
+					cfg.Field = entry.NewAttributeField("secondlevel")
 					return cfg
 				}(),
-				ExpectErr: true,
+				ExpectErr: false,
 			},
 		},
 	}.Run(t)
