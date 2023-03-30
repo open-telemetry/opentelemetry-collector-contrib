@@ -27,10 +27,10 @@ import (
 )
 
 func TestAccumulateHistogram(t *testing.T) {
-	appendHistogram := func(ts time.Time, count uint64, sum float64, counts []uint64, bounds []float64, metrics pmetric.MetricSlice, vcl pmetric.AggregationTemporality) {
+	appendHistogram := func(ts time.Time, count uint64, sum float64, counts []uint64, bounds []float64, metrics pmetric.MetricSlice, aggregationTemporality pmetric.AggregationTemporality) {
 		metric := metrics.AppendEmpty()
 		metric.SetName("test_metric")
-		metric.SetEmptyHistogram().SetAggregationTemporality(vcl)
+		metric.SetEmptyHistogram().SetAggregationTemporality(aggregationTemporality)
 		metric.SetDescription("test description")
 		dp := metric.Histogram().DataPoints().AppendEmpty()
 		dp.SetCount(count)
@@ -67,7 +67,7 @@ func TestAccumulateHistogram(t *testing.T) {
 	resourceMetrics3 := pmetric.NewResourceMetrics()
 	ilm3 := resourceMetrics3.ScopeMetrics().AppendEmpty()
 	ilm3.Scope().SetName("test")
-	appendHistogram(ts4, 7, 5, []uint64{3, 1, 1, 0, 0}, []float64{0.1, 0.2, 1, 10, 15}, ilm3.Metrics(), pmetric.AggregationTemporalityDelta)
+	appendHistogram(ts4, 7, 5, []uint64{3, 1, 1, 0, 0}, []float64{0.1, 0.2, 1, 10, 15}, ilm3.Metrics(), pmetric.AggregationTemporalityCumulative)
 
 	m4 := ilm3.Metrics().At(0).Histogram().DataPoints().At(0)
 
@@ -94,7 +94,7 @@ func TestAccumulateHistogram(t *testing.T) {
 		// should ignore metric from the past
 		n := a.Accumulate(resourceMetrics2)
 
-		require.Equal(t, 1, n)
+		require.Equal(t, 0, n)
 
 		m, ok := a.registeredMetrics.Load(signature)
 		v := m.(*accumulatedValue).value.Histogram().DataPoints().At(0)
