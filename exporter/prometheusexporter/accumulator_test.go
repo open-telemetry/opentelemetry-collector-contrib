@@ -27,10 +27,10 @@ import (
 )
 
 func TestAccumulateHistogram(t *testing.T) {
-	appendHistogram := func(ts time.Time, count uint64, sum float64, counts []uint64, bounds []float64, metrics pmetric.MetricSlice, vcl pmetric.AggregationTemporality) {
+	appendHistogram := func(ts time.Time, count uint64, sum float64, counts []uint64, bounds []float64, metrics pmetric.MetricSlice) {
 		metric := metrics.AppendEmpty()
 		metric.SetName("test_metric")
-		metric.SetEmptyHistogram().SetAggregationTemporality(vcl)
+		metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		metric.SetDescription("test description")
 		dp := metric.Histogram().DataPoints().AppendEmpty()
 		dp.SetCount(count)
@@ -50,8 +50,8 @@ func TestAccumulateHistogram(t *testing.T) {
 	resourceMetrics1 := pmetric.NewResourceMetrics()
 	ilm1 := resourceMetrics1.ScopeMetrics().AppendEmpty()
 	ilm1.Scope().SetName("test")
-	appendHistogram(ts3, 5, 2.5, []uint64{1, 3, 1, 0}, []float64{0.1, 0.5, 1, 10}, ilm1.Metrics(), pmetric.AggregationTemporalityDelta)
-	appendHistogram(ts2, 4, 8.3, []uint64{1, 1, 2, 0}, []float64{0.1, 0.5, 1, 10}, ilm1.Metrics(), pmetric.AggregationTemporalityDelta)
+	appendHistogram(ts3, 5, 2.5, []uint64{1, 3, 1, 0}, []float64{0.1, 0.5, 1, 10}, ilm1.Metrics())
+	appendHistogram(ts2, 4, 8.3, []uint64{1, 1, 2, 0}, []float64{0.1, 0.5, 1, 10}, ilm1.Metrics())
 
 	m3 := ilm1.Metrics().At(0).Histogram().DataPoints().At(0)
 	m2 := ilm1.Metrics().At(1).Histogram().DataPoints().At(0)
@@ -61,13 +61,13 @@ func TestAccumulateHistogram(t *testing.T) {
 	resourceMetrics2 := pmetric.NewResourceMetrics()
 	ilm2 := resourceMetrics2.ScopeMetrics().AppendEmpty()
 	ilm2.Scope().SetName("test")
-	appendHistogram(ts1, 7, 5, []uint64{3, 1, 1, 0}, []float64{0.1, 0.2, 1, 10}, ilm2.Metrics(), pmetric.AggregationTemporalityCumulative)
+	appendHistogram(ts1, 7, 5, []uint64{3, 1, 1, 0}, []float64{0.1, 0.2, 1, 10}, ilm2.Metrics())
 
 	// add extra buckets
 	resourceMetrics3 := pmetric.NewResourceMetrics()
 	ilm3 := resourceMetrics3.ScopeMetrics().AppendEmpty()
 	ilm3.Scope().SetName("test")
-	appendHistogram(ts4, 7, 5, []uint64{3, 1, 1, 0, 0}, []float64{0.1, 0.2, 1, 10, 15}, ilm3.Metrics(), pmetric.AggregationTemporalityDelta)
+	appendHistogram(ts4, 7, 5, []uint64{3, 1, 1, 0, 0}, []float64{0.1, 0.2, 1, 10, 15}, ilm3.Metrics())
 
 	m4 := ilm3.Metrics().At(0).Histogram().DataPoints().At(0)
 
