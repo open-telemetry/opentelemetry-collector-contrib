@@ -168,6 +168,11 @@ processors:
     * host.id (instance id)
     * host.name (instance name; only when workload identity is disabled)
 
+One known issue is when GKE workload identity is enabled, the GCE metadata endpoints won't be available, thus the GKE resource detector won't be
+able to determine `host.name`. In that case, users are encouraged to set `host.name` from either:
+- `node.name` through the downward API with the `env` detector
+- obtaining the Kubernetes node name from the Kubernetes API (with `k8s.io/client-go`)
+
 #### Google Cloud Run Metadata
 
     * cloud.provider ("gcp")
