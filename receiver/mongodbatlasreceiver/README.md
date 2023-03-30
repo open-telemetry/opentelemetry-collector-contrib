@@ -20,6 +20,10 @@ below both values are being pulled from the environment.
 
 In order to collect logs, at least one project must be specified. By default, logs for all clusters within a project will be collected. Clusters can be limited using either the `include_clusters` or `exclude_clusters` setting.
 
+In order to collect project events, the requesting API key needs the appropriate permission which at minimum is the `Project Read Only` role. Project events are specific to a single project.
+
+In order to collect organization events, the requesting API needs the appropriate permission which at minimum is the `Organization Member` role. Organization events are collected across all the projects hosted on Atlas within the organization.
+
 MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/logs/#logs) recommends a polling interval of 5 minutes.
 
 - `public_key` (required for metrics, logs, or alerts in `poll` mode)
