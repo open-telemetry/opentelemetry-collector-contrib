@@ -524,7 +524,7 @@ metadata:
 #
   - name: "hourly table size stats"
     query: "SELECT * FROM SPANNER_SYS.TABLE_SIZES_STATS_1HOUR WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, USED_BYTES DESC"
-    metric_name_prefix: "database/spanner/table_sizes/total/"
+    metric_name_prefix: "database/spanner/table_sizes/top/"
     timestamp_column_name: "INTERVAL_END"
     high_cardinality: true
     labels:
