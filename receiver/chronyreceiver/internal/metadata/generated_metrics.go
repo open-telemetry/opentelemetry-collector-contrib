@@ -6,13 +6,29 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsSettings provides settings for chrony receiver metrics.
@@ -50,6 +66,19 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: false,
 		},
 	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesSettings provides settings for chrony receiver metrics.
+type ResourceAttributesSettings struct {
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{}
 }
 
 // AttributeLeapStatus specifies the a value leap.status attribute.
@@ -97,7 +126,7 @@ func (m *metricNtpFrequencyOffset) init() {
 	m.data.SetName("ntp.frequency.offset")
 	m.data.SetDescription("The frequency is the rate by which the system s clock would be wrong if chronyd was not correcting it.")
 	m.data.SetUnit("ppm")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -108,8 +137,8 @@ func (m *metricNtpFrequencyOffset) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("leap.status", leapStatusAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("leap.status", leapStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -148,7 +177,7 @@ func (m *metricNtpSkew) init() {
 	m.data.SetName("ntp.skew")
 	m.data.SetDescription("This is the estimated error bound on the frequency.")
 	m.data.SetUnit("ppm")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricNtpSkew) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -158,7 +187,7 @@ func (m *metricNtpSkew) recordDataPoint(start pcommon.Timestamp, ts pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -197,7 +226,7 @@ func (m *metricNtpStratum) init() {
 	m.data.SetName("ntp.stratum")
 	m.data.SetDescription("The number of hops away from the reference system keeping the reference time")
 	m.data.SetUnit("{count}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricNtpStratum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -207,7 +236,7 @@ func (m *metricNtpStratum) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -246,7 +275,7 @@ func (m *metricNtpTimeCorrection) init() {
 	m.data.SetName("ntp.time.correction")
 	m.data.SetDescription("The number of seconds difference between the system's clock and the reference clock")
 	m.data.SetUnit("seconds")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -257,8 +286,8 @@ func (m *metricNtpTimeCorrection) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("leap.status", leapStatusAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("leap.status", leapStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -297,7 +326,7 @@ func (m *metricNtpTimeLastOffset) init() {
 	m.data.SetName("ntp.time.last_offset")
 	m.data.SetDescription("The estimated local offset on the last clock update")
 	m.data.SetUnit("seconds")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -308,8 +337,8 @@ func (m *metricNtpTimeLastOffset) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("leap.status", leapStatusAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("leap.status", leapStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -348,7 +377,7 @@ func (m *metricNtpTimeRmsOffset) init() {
 	m.data.SetName("ntp.time.rms_offset")
 	m.data.SetDescription("the long term average of the offset value")
 	m.data.SetUnit("seconds")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -359,8 +388,8 @@ func (m *metricNtpTimeRmsOffset) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("leap.status", leapStatusAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("leap.status", leapStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -399,7 +428,7 @@ func (m *metricNtpTimeRootDelay) init() {
 	m.data.SetName("ntp.time.root_delay")
 	m.data.SetDescription("This is the total of the network path delays to the stratum-1 system from which the system is ultimately synchronised.")
 	m.data.SetUnit("seconds")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -410,8 +439,8 @@ func (m *metricNtpTimeRootDelay) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("leap.status", leapStatusAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("leap.status", leapStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -439,21 +468,28 @@ func newMetricNtpTimeRootDelay(settings MetricSettings) metricNtpTimeRootDelay {
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity          int                 // maximum observed number of metrics per resource.
-	resourceCapacity         int                 // maximum observed number of resource attributes.
-	metricsBuffer            pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                component.BuildInfo // contains version information
-	metricNtpFrequencyOffset metricNtpFrequencyOffset
-	metricNtpSkew            metricNtpSkew
-	metricNtpStratum         metricNtpStratum
-	metricNtpTimeCorrection  metricNtpTimeCorrection
-	metricNtpTimeLastOffset  metricNtpTimeLastOffset
-	metricNtpTimeRmsOffset   metricNtpTimeRmsOffset
-	metricNtpTimeRootDelay   metricNtpTimeRootDelay
+	startTime                  pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity            int                 // maximum observed number of metrics per resource.
+	resourceCapacity           int                 // maximum observed number of resource attributes.
+	metricsBuffer              pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                  component.BuildInfo // contains version information
+	resourceAttributesSettings ResourceAttributesSettings
+	metricNtpFrequencyOffset   metricNtpFrequencyOffset
+	metricNtpSkew              metricNtpSkew
+	metricNtpStratum           metricNtpStratum
+	metricNtpTimeCorrection    metricNtpTimeCorrection
+	metricNtpTimeLastOffset    metricNtpTimeLastOffset
+	metricNtpTimeRmsOffset     metricNtpTimeRmsOffset
+	metricNtpTimeRootDelay     metricNtpTimeRootDelay
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -466,18 +502,33 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:            pmetric.NewMetrics(),
-		buildInfo:                buildInfo,
-		metricNtpFrequencyOffset: newMetricNtpFrequencyOffset(settings.NtpFrequencyOffset),
-		metricNtpSkew:            newMetricNtpSkew(settings.NtpSkew),
-		metricNtpStratum:         newMetricNtpStratum(settings.NtpStratum),
-		metricNtpTimeCorrection:  newMetricNtpTimeCorrection(settings.NtpTimeCorrection),
-		metricNtpTimeLastOffset:  newMetricNtpTimeLastOffset(settings.NtpTimeLastOffset),
-		metricNtpTimeRmsOffset:   newMetricNtpTimeRmsOffset(settings.NtpTimeRmsOffset),
-		metricNtpTimeRootDelay:   newMetricNtpTimeRootDelay(settings.NtpTimeRootDelay),
+		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:              pmetric.NewMetrics(),
+		buildInfo:                  settings.BuildInfo,
+		resourceAttributesSettings: mbc.ResourceAttributes,
+		metricNtpFrequencyOffset:   newMetricNtpFrequencyOffset(mbc.Metrics.NtpFrequencyOffset),
+		metricNtpSkew:              newMetricNtpSkew(mbc.Metrics.NtpSkew),
+		metricNtpStratum:           newMetricNtpStratum(mbc.Metrics.NtpStratum),
+		metricNtpTimeCorrection:    newMetricNtpTimeCorrection(mbc.Metrics.NtpTimeCorrection),
+		metricNtpTimeLastOffset:    newMetricNtpTimeLastOffset(mbc.Metrics.NtpTimeLastOffset),
+		metricNtpTimeRmsOffset:     newMetricNtpTimeRmsOffset(mbc.Metrics.NtpTimeRmsOffset),
+		metricNtpTimeRootDelay:     newMetricNtpTimeRootDelay(mbc.Metrics.NtpTimeRootDelay),
 	}
 	for _, op := range options {
 		op(mb)
@@ -496,19 +547,19 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {
@@ -537,8 +588,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricNtpTimeLastOffset.emit(ils.Metrics())
 	mb.metricNtpTimeRmsOffset.emit(ils.Metrics())
 	mb.metricNtpTimeRootDelay.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -551,8 +603,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

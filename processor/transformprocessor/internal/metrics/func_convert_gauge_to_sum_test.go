@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,32 +18,32 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
 func Test_convertGaugeToSum(t *testing.T) {
 	gaugeInput := pmetric.NewMetric()
-	gaugeInput.SetDataType(pmetric.MetricDataTypeGauge)
 
-	dp1 := gaugeInput.Gauge().DataPoints().AppendEmpty()
-	dp1.SetIntVal(10)
+	dp1 := gaugeInput.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp1.SetIntValue(10)
 
 	dp2 := gaugeInput.Gauge().DataPoints().AppendEmpty()
-	dp2.SetDoubleVal(14.5)
+	dp2.SetDoubleValue(14.5)
 
 	sumInput := pmetric.NewMetric()
-	sumInput.SetDataType(pmetric.MetricDataTypeSum)
+	sumInput.SetEmptySum()
 
 	histogramInput := pmetric.NewMetric()
-	histogramInput.SetDataType(pmetric.MetricDataTypeHistogram)
+	histogramInput.SetEmptyHistogram()
 
 	expoHistogramInput := pmetric.NewMetric()
-	expoHistogramInput.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
+	expoHistogramInput.SetEmptyHistogram()
 
 	summaryInput := pmetric.NewMetric()
-	summaryInput.SetDataType(pmetric.MetricDataTypeSummary)
+	summaryInput.SetEmptySummary()
 
 	tests := []struct {
 		name          string
@@ -62,8 +62,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 
 				dps := gaugeInput.Gauge().DataPoints()
 
-				metric.SetDataType(pmetric.MetricDataTypeSum)
-				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.Sum().SetIsMonotonic(false)
 
 				dps.CopyTo(metric.Sum().DataPoints())
@@ -79,8 +78,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 
 				dps := gaugeInput.Gauge().DataPoints()
 
-				metric.SetDataType(pmetric.MetricDataTypeSum)
-				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				metric.Sum().SetIsMonotonic(true)
 
 				dps.CopyTo(metric.Sum().DataPoints())
@@ -128,12 +126,12 @@ func Test_convertGaugeToSum(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input.CopyTo(metric)
 
-			ctx := tqlmetrics.MetricTransformContext{
-				Metric: metric,
-			}
+			ctx := ottldatapoint.NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			exprFunc, _ := convertGaugeToSum(tt.stringAggTemp, tt.monotonic)
-			exprFunc(ctx)
+
+			_, err := exprFunc(nil, ctx)
+			assert.Nil(t, err)
 
 			expected := pmetric.NewMetric()
 			tt.want(expected)

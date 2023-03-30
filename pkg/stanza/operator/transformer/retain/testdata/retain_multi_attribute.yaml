@@ -1,4 +1,0 @@
-type: retain
-fields:
-  - attributes.key1
-  - attributes.key2

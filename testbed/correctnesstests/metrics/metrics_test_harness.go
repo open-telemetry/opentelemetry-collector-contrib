@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -40,7 +41,7 @@ type testHarness struct {
 }
 
 type diffConsumer interface {
-	accept(string, []*MetricDiff)
+	accept(string, []*metricstestutil.MetricDiff)
 }
 
 func newTestHarness(
@@ -77,13 +78,13 @@ func (h *testHarness) ConsumeMetrics(_ context.Context, pdm pmetric.Metrics) err
 
 func (h *testHarness) compare(pdm pmetric.Metrics) {
 	pdms := pdm.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-	var diffs []*MetricDiff
+	var diffs []*metricstestutil.MetricDiff
 	for i := 0; i < pdms.Len(); i++ {
 		pdmRecd := pdms.At(i)
 		metricName := pdmRecd.Name()
 		metric, found := h.metricIndex.lookup(metricName)
 		if !found {
-			h.diffConsumer.accept(metricName, []*MetricDiff{{
+			h.diffConsumer.accept(metricName, []*metricstestutil.MetricDiff{{
 				ExpectedValue: metricName,
 				Msg:           "Metric name not found in index",
 			}})
@@ -92,7 +93,7 @@ func (h *testHarness) compare(pdm pmetric.Metrics) {
 			metric.received = true
 			sent := metric.pdm
 			pdmExpected := sent.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-			diffs = DiffMetric(
+			diffs = metricstestutil.DiffMetric(
 				diffs,
 				pdmExpected,
 				pdmRecd,

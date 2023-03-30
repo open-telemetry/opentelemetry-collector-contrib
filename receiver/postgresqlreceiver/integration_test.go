@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,10 +29,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/service/featuregate"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 type configFunc func(hostname string) *Config
@@ -57,12 +58,12 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
 				cfg.Databases = []string{"otel"}
-				cfg.Username = "otel"
-				cfg.Password = "otel"
+				cfg.Username = "otelu"
+				cfg.Password = "otelp"
 				cfg.Insecure = true
 				return cfg
 			},
-			expectedFile: filepath.Join("testdata", "integration", "expected_single_db.json"),
+			expectedFile: filepath.Join("testdata", "integration", "expected_single_db.yaml"),
 		},
 		{
 			name: "multi_db",
@@ -71,12 +72,12 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
 				cfg.Databases = []string{"otel", "otel2"}
-				cfg.Username = "otel"
-				cfg.Password = "otel"
+				cfg.Username = "otelu"
+				cfg.Password = "otelp"
 				cfg.Insecure = true
 				return cfg
 			},
-			expectedFile: filepath.Join("testdata", "integration", "expected_multi_db.json"),
+			expectedFile: filepath.Join("testdata", "integration", "expected_multi_db.yaml"),
 		},
 		{
 			name: "all_db",
@@ -85,34 +86,40 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
 				cfg.Databases = []string{}
-				cfg.Username = "otel"
-				cfg.Password = "otel"
+				cfg.Username = "otelu"
+				cfg.Password = "otelp"
 				cfg.Insecure = true
 				return cfg
 			},
-			expectedFile: filepath.Join("testdata", "integration", "expected_all_db.json"),
+			expectedFile: filepath.Join("testdata", "integration", "expected_all_db.yaml"),
 		},
 		{
-			name: "with_resource_attributes",
+			name: "without_resource_attributes",
 			cfg: func(hostname string) *Config {
-				require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{
-					emitMetricsWithResourceAttributesFeatureGateID: true,
-				}))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					emitMetricsWithResourceAttributesFeatureGate.ID(), false,
+				))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					emitMetricsWithoutResourceAttributesFeatureGate.ID(), true,
+				))
 				f := NewFactory()
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
 				cfg.Databases = []string{}
-				cfg.Username = "otel"
-				cfg.Password = "otel"
+				cfg.Username = "otelu"
+				cfg.Password = "otelp"
 				cfg.Insecure = true
 				return cfg
 			},
 			cleanup: func() {
-				require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{
-					emitMetricsWithResourceAttributesFeatureGateID: false,
-				}))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					emitMetricsWithResourceAttributesFeatureGate.ID(), true,
+				))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					emitMetricsWithoutResourceAttributesFeatureGate.ID(), false,
+				))
 			},
-			expectedFile: filepath.Join("testdata", "integration", "expected_all_with_resource_attributes.json"),
+			expectedFile: filepath.Join("testdata", "integration", "expected_all_without_resource_attributes.yaml"),
 		},
 	}
 
@@ -141,7 +148,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 
 			f := NewFactory()
 			consumer := new(consumertest.MetricsSink)
-			settings := componenttest.NewNopReceiverCreateSettings()
+			settings := receivertest.NewNopCreateSettings()
 			rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, tc.cfg(hostname), consumer)
 			require.NoError(t, err, "failed creating metrics receiver")
 			require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
@@ -151,7 +158,15 @@ func TestPostgreSQLIntegration(t *testing.T) {
 
 			actualMetrics := consumer.AllMetrics()[0]
 
-			require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
+			require.NoError(t, pmetrictest.CompareMetrics(
+				expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreSubsequentDataPoints("postgresql.backends"),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
+			))
 		})
 	}
 }

@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -31,23 +31,21 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id       config.ComponentID
-		expected config.Processor
+		id       component.ID
+		expected component.Config
 	}{
 		{
-			id: config.NewComponentID(typeStr),
+			id: component.NewID(typeStr),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
-				Exclude:           ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}},
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Exclude:   ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}},
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "2"),
+			id: component.NewIDWithName(typeStr, "2"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-				Passthrough:       false,
+				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+				Passthrough: false,
 				Extract: ExtractConfig{
 					Metadata: []string{"k8s.pod.name", "k8s.pod.uid", "k8s.deployment.name", "k8s.namespace.name", "k8s.node.name", "k8s.pod.start_time"},
 					Annotations: []FieldExtractConfig{
@@ -105,11 +103,6 @@ func TestLoadConfig(t *testing.T) {
 							},
 						},
 					},
-					// Deprecated way
-					{
-						From: "resource_attribute",
-						Name: "k8s.pod.uid",
-					},
 				},
 				Exclude: ExcludeConfig{
 					Pods: []ExcludePodConfig{
@@ -120,11 +113,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "3"),
+			id: component.NewIDWithName(typeStr, "3"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-				Passthrough:       false,
+				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+				Passthrough: false,
 				Extract: ExtractConfig{
 					Annotations: []FieldExtractConfig{
 						{KeyRegex: "opentel.*", From: kube.MetadataFromPod},
@@ -153,9 +145,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

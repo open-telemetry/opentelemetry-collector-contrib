@@ -5,12 +5,13 @@ datasources:
   - name: ClickHouse-official
     type: grafana-clickhouse-datasource
     jsonData:
-      defaultDatabase: default
+      defaultDatabase: otel
       port: 9000
       server: clickhouse
+      protocol: native
       username:
       tlsSkipVerify: true
-      secureJsonData:
+    secureJsonData:
         password:
   - name: ClickHouse-vertamedia
     type: vertamedia-clickhouse-datasource

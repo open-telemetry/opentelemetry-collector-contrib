@@ -22,9 +22,11 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver/internal/metadata"
 )
 
 // This file implements factory for SignalFx receiver.
@@ -32,25 +34,22 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "signalfx"
-	// The stability level of the receiver.
-	stability = component.StabilityLevelStable
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":9943"
 )
 
 // NewFactory creates a factory for SignalFx receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability),
-		component.WithLogsReceiver(createLogsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.Stability),
+		receiver.WithLogs(createLogsReceiver, metadata.Stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -74,37 +73,23 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 	return int(port), nil
 }
 
-// verify that the configured port is not 0
-func (rCfg *Config) validate() error {
-	if rCfg.Endpoint == "" {
-		return errEmptyEndpoint
-	}
-
-	_, err := extractPortFromEndpoint(rCfg.Endpoint)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	params receiver.CreateSettings,
+	cfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
-
-	err := rCfg.validate()
-	if err != nil {
-		return nil, err
-	}
 
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
-		r = newReceiver(params, *rCfg)
+		var err error
+		r, err = newReceiver(params, *rCfg)
+		if err != nil {
+			return nil, err
+		}
 		receivers[rCfg] = r
 	}
 	receiverLock.Unlock()
@@ -117,21 +102,20 @@ func createMetricsReceiver(
 // createLogsReceiver creates a logs receiver based on provided config.
 func createLogsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	params receiver.CreateSettings,
+	cfg component.Config,
 	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	rCfg := cfg.(*Config)
-
-	err := rCfg.validate()
-	if err != nil {
-		return nil, err
-	}
 
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
-		r = newReceiver(params, *rCfg)
+		var err error
+		r, err = newReceiver(params, *rCfg)
+		if err != nil {
+			return nil, err
+		}
 		receivers[rCfg] = r
 	}
 	receiverLock.Unlock()

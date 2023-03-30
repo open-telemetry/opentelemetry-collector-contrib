@@ -1,37 +1,50 @@
 name: postgresqlreceiver
 
+
+status:
+  type: receiver
+  stability: beta
+  pipelines: [metrics]
+  distributions: [contrib]
+
 resource_attributes:
   postgresql.database.name:
     description: The name of the database.
+    enabled: true
     type: string
   postgresql.table.name:
     description: The schema name followed by the table name.
+    enabled: true
     type: string
   postgresql.index.name:
     description: The name of the index on a table.
+    enabled: true
     type: string
 
 attributes:
   bg_buffer_source:
     description: The source of a buffer write.
+    type: string
     enum:
       - backend
       - backend_fsync
       - checkpoints
       - bgwriter
-    value: source
+    name_override: source
   bg_checkpoint_type:
     description: The type of checkpoint state.
+    type: string
     enum:
       - requested
       - scheduled
-    value: type
+    name_override: type
   bg_duration_type:
     description: The type of time spent during the checkpoint.
+    type: string
     enum:
       - sync
       - write
-    value: type
+    name_override: type
   database:
     description: The name of the database.
     type: string
@@ -40,6 +53,7 @@ attributes:
     type: string
   source:
     description: The block read source type.
+    type: string
     enum:
       - heap_read
       - heap_hit
@@ -51,10 +65,20 @@ attributes:
       - tidx_hit
   operation:
     description: The database operation.
+    type: string
     enum: [ins, upd, del, hot_upd]
+  replication_client:
+    description: The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket.
+    type: string
   state:
     description: The tuple (row) state.
+    type: string
     enum: [dead, live]
+  wal_operation_lag:
+    name_override: operation
+    description: The operation which is responsible for the lag.
+    type: string
+    enum: [flush, replay, write]
 
 metrics:
   postgresql.bgwriter.buffers.allocated:
@@ -94,7 +118,7 @@ metrics:
     sum:
       aggregation: cumulative
       monotonic: true
-      value_type: int
+      value_type: double
     unit: ms
   postgresql.bgwriter.maxwritten:
     description: Number of times the background writer stopped a cleaning scan because it had written too many buffers.
@@ -148,6 +172,12 @@ metrics:
       monotonic: false
       aggregation: cumulative
     attributes: [database]
+  postgresql.connection.max:
+    enabled: true
+    description: Configured maximum number of client connections allowed
+    unit: "{connections}"
+    gauge:
+      value_type: int
   postgresql.rows:
     enabled: true
     description: The number of rows in the database.
@@ -182,6 +212,13 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [database, table, operation]
+  postgresql.replication.data_delay:
+    attributes: [replication_client]
+    description: The amount of data delayed in replication.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: By
   postgresql.rollbacks:
     enabled: true
     description: The number of rollbacks.
@@ -216,4 +253,22 @@ metrics:
     sum:
       aggregation: cumulative
       monotonic: true
-      value_type: int 
+      value_type: int
+  postgresql.wal.age:
+    attributes: []
+    description: Age of the oldest WAL file.
+    extended_documentation: |
+     This metric requires WAL to be enabled with at least one replica.
+    enabled: true
+    unit: s
+    gauge:
+      value_type: int
+  postgresql.wal.lag:
+    attributes: [wal_operation_lag, replication_client]
+    description: Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
+    enabled: true
+    unit: s
+    gauge:
+      value_type: int
+    extended_documentation: |
+      This metric requires WAL to be enabled with at least one replica.

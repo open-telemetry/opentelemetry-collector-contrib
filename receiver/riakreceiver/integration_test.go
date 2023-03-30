@@ -30,9 +30,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func riakContainer(t *testing.T) testcontainers.Container {
@@ -65,7 +66,7 @@ func TestRiakIntegration(t *testing.T) {
 	hostname, err := container.Host(context.Background())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "integration", "expected.json")
+	expectedFile := filepath.Join("testdata", "integration", "expected.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -75,7 +76,7 @@ func TestRiakIntegration(t *testing.T) {
 	cfg.Endpoint = fmt.Sprintf("http://%s", net.JoinHostPort(hostname, "8098"))
 
 	consumer := new(consumertest.MetricsSink)
-	settings := componenttest.NewNopReceiverCreateSettings()
+	settings := receivertest.NewNopCreateSettings()
 
 	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
@@ -86,5 +87,5 @@ func TestRiakIntegration(t *testing.T) {
 
 	actualMetrics := consumer.AllMetrics()[0]
 
-	scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+	pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues()) //nolint:errcheck
 }

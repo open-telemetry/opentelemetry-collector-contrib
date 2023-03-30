@@ -2,40 +2,114 @@
 
 # hostmetricsreceiver/disk
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **system.disk.io** | Disk bytes transferred. | By | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
-| **system.disk.io.read** | Disk bytes read. | By | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.disk.io.write** | Disk bytes written. | By | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.disk.io_time** | Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time. | s | Sum(Double) | <ul> <li>device</li> </ul> |
-| **system.disk.merged** | The number of disk reads/writes merged into single physical disk access operations. | {operations} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
-| **system.disk.merged.read** | The number of disk reads merged into single physical disk access operations. | {operations} | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.disk.merged.write** | The number of disk writes merged into single physical disk access operations. | {operations} | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.disk.operation_time** | Time spent in disk operations. | s | Sum(Double) | <ul> <li>device</li> <li>direction</li> </ul> |
-| **system.disk.operation_time.read** | Time spent in disk reads. | s | Sum(Double) | <ul> <li>device</li> </ul> |
-| **system.disk.operation_time.write** | Time spent in disk writes. | s | Sum(Double) | <ul> <li>device</li> </ul> |
-| **system.disk.operations** | Disk operations count. | {operations} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
-| **system.disk.operations.read** | Disk reads count. | {operations} | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.disk.operations.write** | Disk writes count. | {operations} | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.disk.pending_operations** | The queue size of pending I/O operations. | {operations} | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.disk.weighted_io_time** | Time disk spent activated multiplied by the queue length. | s | Sum(Double) | <ul> <li>device</li> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Metric attributes
+### system.disk.io
+
+Disk bytes transferred.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| device | Name of the disk. |  |
-| direction | Direction of flow of bytes/operations (read or write). | read, write |
+| device | Name of the disk. | Any Str |
+| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` |
+
+### system.disk.io_time
+
+Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+
+### system.disk.merged
+
+The number of disk reads/writes merged into single physical disk access operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` |
+
+### system.disk.operation_time
+
+Time spent in disk operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` |
+
+### system.disk.operations
+
+Disk operations count.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` |
+
+### system.disk.pending_operations
+
+The queue size of pending I/O operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+
+### system.disk.weighted_io_time
+
+Time disk spent activated multiplied by the queue length.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |

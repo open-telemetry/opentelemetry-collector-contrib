@@ -36,6 +36,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -43,17 +45,17 @@ import (
 )
 
 func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
-	traceID := pcommon.NewTraceID(
+	traceID := pcommon.TraceID(
 		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
-	parentSpanID := pcommon.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
-	childSpanID := pcommon.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+	parentSpanID := pcommon.SpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
+	childSpanID := pcommon.SpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, "issaTest")
-	rs.Resource().Attributes().InsertBool("bool", true)
-	rs.Resource().Attributes().InsertString("string", "yes")
-	rs.Resource().Attributes().InsertInt("int64", 10000000)
+	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "issaTest")
+	rs.Resource().Attributes().PutBool("bool", true)
+	rs.Resource().Attributes().PutStr("string", "yes")
+	rs.Resource().Attributes().PutInt("int64", 10000000)
 	spans := rs.ScopeSpans().AppendEmpty().Spans()
 
 	span0 := spans.AppendEmpty()
@@ -205,8 +207,8 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 	return resp, nil
 }
 
-func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) component.TracesReceiver {
-	params := componenttest.NewNopReceiverCreateSettings()
+func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) receiver.Traces {
+	params := receivertest.NewNopCreateSettings()
 	sr, err := newReceiver(params, config, sink)
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 	t.Log("Starting")
@@ -378,7 +380,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 				attrs := rspan.Resource().Attributes()
 				amap, contains := attrs.Get("com.splunk.signalfx.access_token")
 				if tt.accessTokenPassthrough && tt.token != "" {
-					assert.Equal(t, tt.token, amap.StringVal())
+					assert.Equal(t, tt.token, amap.Str())
 				} else {
 					assert.False(t, contains)
 				}

@@ -396,48 +396,6 @@ func TestResourceFieldMerge(t *testing.T) {
 	require.Equal(t, expected, entry.Resource)
 }
 
-func TestResourceFieldMarshal(t *testing.T) {
-	cases := []struct {
-		name    string
-		keys    []string
-		jsonDot string
-	}{
-		{
-			"root",
-			[]string{},
-			"resource",
-		},
-		{
-			"standard",
-			[]string{"test"},
-			"resource.test",
-		},
-		{
-			"bracketed",
-			[]string{"test.foo"},
-			"resource['test.foo']",
-		},
-		{
-			"double_bracketed",
-			[]string{"test.foo", "bar"},
-			"resource['test.foo']['bar']",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			field := ResourceField{Keys: tc.keys}
-			yaml, err := field.MarshalYAML()
-			require.NoError(t, err)
-			require.Equal(t, tc.jsonDot, yaml)
-
-			json, err := field.MarshalJSON()
-			require.NoError(t, err)
-			require.Equal(t, []byte(fmt.Sprintf(`"%s"`, tc.jsonDot)), json)
-		})
-	}
-}
-
 func TestResourceFieldUnmarshal(t *testing.T) {
 	cases := []struct {
 		name    string

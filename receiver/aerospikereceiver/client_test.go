@@ -17,7 +17,7 @@ package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"testing"
 
-	as "github.com/aerospike/aerospike-client-go/v5"
+	as "github.com/aerospike/aerospike-client-go/v6"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 

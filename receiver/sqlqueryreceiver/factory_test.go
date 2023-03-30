@@ -19,20 +19,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateSettings{
-			TelemetrySettings: component.TelemetrySettings{
-				TracerProvider: trace.NewNoopTracerProvider(),
-			},
-		},
+		receivertest.NewNopCreateSettings(),
 		factory.CreateDefaultConfig(),
 		consumertest.NewNop(),
 	)

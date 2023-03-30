@@ -22,8 +22,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -34,7 +35,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func newMetricsExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*exporter, error) {
+func newMetricsExporter(cfg component.Config, set exp.CreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Metrics.Endpoint == "" || oCfg.Metrics.Endpoint == "https://" || oCfg.Metrics.Endpoint == "http://" {
@@ -50,9 +51,8 @@ type exporter struct {
 	// Input configuration.
 	config *Config
 
-	metricExporter pmetricotlp.Client
+	metricExporter pmetricotlp.GRPCClient
 	clientConn     *grpc.ClientConn
-	metadata       metadata.MD
 	callOptions    []grpc.CallOption
 
 	settings component.TelemetrySettings
@@ -61,23 +61,17 @@ type exporter struct {
 	userAgent string
 }
 
-func (e *exporter) start(_ context.Context, host component.Host) (err error) {
-	dialOpts, err := e.config.Metrics.ToDialOptions(host, e.settings)
-	if err != nil {
-		return err
-	}
-	dialOpts = append(dialOpts, grpc.WithUserAgent(e.userAgent))
-
-	if e.clientConn, err = grpc.Dial(e.config.Metrics.SanitizedEndpoint(), dialOpts...); err != nil {
+func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
+	if e.clientConn, err = e.config.Metrics.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
 		return err
 	}
 
-	e.metricExporter = pmetricotlp.NewClient(e.clientConn)
-	headers := e.config.Metrics.Headers
-	headers["ApplicationName"] = e.config.AppName
-	headers["ApiName"] = e.config.SubSystem
-	headers["Authorization"] = "Bearer " + e.config.PrivateKey
-	e.metadata = metadata.New(headers)
+	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
+	if e.config.Metrics.Headers == nil {
+		e.config.Metrics.Headers = make(map[string]configopaque.String)
+	}
+	e.config.Metrics.Headers["Authorization"] = configopaque.String("Bearer " + string(e.config.PrivateKey))
+
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Metrics.WaitForReady),
 	}
@@ -86,19 +80,36 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 }
 
 func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-	req := pmetricotlp.NewRequestFromMetrics(md)
-	_, err := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	return processError(err)
+
+	rss := md.ResourceMetrics()
+	for i := 0; i < rss.Len(); i++ {
+		resourceMetric := rss.At(i)
+		appName, subsystem := e.config.getMetadataFromResource(resourceMetric.Resource())
+		resourceMetric.Resource().Attributes().PutStr(cxAppNameAttrName, appName)
+		resourceMetric.Resource().Attributes().PutStr(cxSubsystemNameAttrName, subsystem)
+	}
+
+	_, err := e.metricExporter.Export(e.enhanceContext(ctx), pmetricotlp.NewExportRequestFromMetrics(md), e.callOptions...)
+	if err != nil {
+		return processError(err)
+	}
+
+	return nil
 }
+
 func (e *exporter) shutdown(context.Context) error {
+	if e.clientConn == nil {
+		return nil
+	}
 	return e.clientConn.Close()
 }
 
 func (e *exporter) enhanceContext(ctx context.Context) context.Context {
-	if e.metadata.Len() > 0 {
-		return metadata.NewOutgoingContext(ctx, e.metadata)
+	md := metadata.New(nil)
+	for k, v := range e.config.Metrics.Headers {
+		md.Set(k, string(v))
 	}
-	return ctx
+	return metadata.NewOutgoingContext(ctx, md)
 }
 
 // Send a trace or metrics request to the server. "perform" function is expected to make

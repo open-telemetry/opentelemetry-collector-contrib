@@ -15,11 +15,13 @@
 package processesscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 )
 
 // Config relating to Processes Metric Scraper.
 type Config struct {
-	// Metrics allows customizing scraped metrics representation.
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	internal.ScraperConfig
 }

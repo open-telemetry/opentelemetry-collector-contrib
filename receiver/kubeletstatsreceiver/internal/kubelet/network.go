@@ -21,38 +21,33 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
+type getNetworkDataFunc func(s *stats.NetworkStats) (rx *uint64, tx *uint64)
+
 func addNetworkMetrics(mb *metadata.MetricsBuilder, networkMetrics metadata.NetworkMetrics, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
 
-	recordNetworkDataPoint(mb, networkMetrics.IO, s, currentTime)
-	recordNetworkDataPoint(mb, networkMetrics.Errors, s, currentTime)
+	recordNetworkDataPoint(mb, networkMetrics.IO, s, getNetworkIO, currentTime)
+	recordNetworkDataPoint(mb, networkMetrics.Errors, s, getNetworkErrors, currentTime)
 }
 
-func recordNetworkDataPoint(mb *metadata.MetricsBuilder, r metadata.NetworkMetricsRecorder, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
-	if s.RxBytes == nil && s.TxBytes == nil {
-		return
+func recordNetworkDataPoint(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithDirectionFunc, s *stats.NetworkStats, getData getNetworkDataFunc, currentTime pcommon.Timestamp) {
+	rx, tx := getData(s)
+
+	if rx != nil {
+		recordDataPoint(mb, currentTime, int64(*rx), s.Name, metadata.AttributeDirectionReceive)
 	}
 
-	r.RecordReceiveDataPoint(mb, currentTime, int64(*s.RxBytes), s.Name)
-	r.RecordTransmitDataPoint(mb, currentTime, int64(*s.TxBytes), s.Name)
+	if tx != nil {
+		recordDataPoint(mb, currentTime, int64(*tx), s.Name, metadata.AttributeDirectionTransmit)
+	}
 }
 
-func addNetworkMetricsWithDirection(mb *metadata.MetricsBuilder, networkMetrics metadata.NetworkMetricsWithDirection, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
-	if s == nil {
-		return
-	}
-
-	recordNetworkDataPointWithDirection(mb, networkMetrics.IO, s, currentTime)
-	recordNetworkDataPointWithDirection(mb, networkMetrics.Errors, s, currentTime)
+func getNetworkIO(s *stats.NetworkStats) (*uint64, *uint64) {
+	return s.RxBytes, s.TxBytes
 }
 
-func recordNetworkDataPointWithDirection(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithDirectionFunc, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
-	if s.RxBytes == nil && s.TxBytes == nil {
-		return
-	}
-
-	recordDataPoint(mb, currentTime, int64(*s.RxBytes), s.Name, metadata.AttributeDirectionReceive)
-	recordDataPoint(mb, currentTime, int64(*s.TxBytes), s.Name, metadata.AttributeDirectionTransmit)
+func getNetworkErrors(s *stats.NetworkStats) (*uint64, *uint64) {
+	return s.RxErrors, s.TxErrors
 }

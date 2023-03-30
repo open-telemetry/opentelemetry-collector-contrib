@@ -1,8 +1,0 @@
-type: retain
-fields:
-  - body.foo
-  - body.one.two
-  - attributes.foo
-  - attributes.one.two
-  - resource.foo
-  - resource.one.two

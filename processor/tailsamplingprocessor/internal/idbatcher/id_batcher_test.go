@@ -18,12 +18,12 @@ import (
 	"encoding/binary"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.uber.org/atomic"
 )
 
 func TestBatcherNew(t *testing.T) {
@@ -67,12 +67,12 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
-	ticked := atomic.NewInt64(0)
-	received := atomic.NewInt64(0)
+	ticked := &atomic.Int64{}
+	received := &atomic.Int64{}
 	go func() {
 		for range ticker.C {
 			batch, _ := batcher.CloseCurrentAndTakeFirstBatch()
-			ticked.Inc()
+			ticked.Add(1)
 			received.Add(int64(len(batch)))
 		}
 	}()
@@ -140,11 +140,11 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 
 	idSeen := make(map[[16]byte]bool, len(ids))
 	for _, id := range got {
-		idSeen[id.Bytes()] = true
+		idSeen[id] = true
 	}
 
 	for i := 0; i < len(ids); i++ {
-		require.True(t, idSeen[ids[i].Bytes()], "want id %v but id was not seen", ids[i])
+		require.True(t, idSeen[ids[i]], "want id %v but id was not seen", ids[i])
 	}
 }
 
@@ -154,7 +154,7 @@ func generateSequentialIds(numIds uint64) []pcommon.TraceID {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], 0)
 		binary.BigEndian.PutUint64(traceID[8:], i)
-		ids[i] = pcommon.NewTraceID(traceID)
+		ids[i] = pcommon.TraceID(traceID)
 	}
 	return ids
 }

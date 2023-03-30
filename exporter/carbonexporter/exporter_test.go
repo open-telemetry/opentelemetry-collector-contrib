@@ -24,79 +24,38 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/atomic"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func TestNew(t *testing.T) {
-	tests := []struct {
-		name    string
-		config  *Config
-		wantErr bool
-	}{
-		{
-			name:   "default_config",
-			config: createDefaultConfig().(*Config),
-		},
-		{
-			name: "invalid_tcp_addr",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				Endpoint:         "http://localhost:2003",
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid_timeout",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				Timeout:          -5 * time.Second,
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := newCarbonExporter(tt.config, componenttest.NewNopExporterCreateSettings())
-			if tt.wantErr {
-				assert.Nil(t, got)
-				assert.Error(t, err)
-				return
-			}
-
-			assert.NotNil(t, got)
-			assert.NoError(t, err)
-		})
-	}
+	cfg := createDefaultConfig().(*Config)
+	got, err := newCarbonExporter(cfg, exportertest.NewNopCreateSettings())
+	assert.NotNil(t, got)
+	assert.NoError(t, err)
 }
 
 func TestConsumeMetricsData(t *testing.T) {
 	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/396")
-	smallBatch := internaldata.OCToMetrics(nil, nil, []*metricspb.Metric{
-		metricstestutil.Gauge(
-			"test_gauge",
-			[]string{"k0", "k1"},
-			metricstestutil.Timeseries(
-				time.Now(),
-				[]string{"v0", "v1"},
-				metricstestutil.Double(time.Now(), 123))),
-	})
-
+	smallBatch := pmetric.NewMetrics()
+	m := smallBatch.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("test_gauge")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("k0", "v0")
+	dp.Attributes().PutStr("k1", "v1")
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(123)
 	largeBatch := generateLargeBatch()
 
 	tests := []struct {
@@ -151,7 +110,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			}
 
 			config := &Config{Endpoint: addr, Timeout: 1000 * time.Millisecond}
-			exp, err := newCarbonExporter(config, componenttest.NewNopExporterCreateSettings())
+			exp, err := newCarbonExporter(config, exportertest.NewNopCreateSettings())
 			require.NoError(t, err)
 
 			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
@@ -228,7 +187,7 @@ func Test_connPool_Concurrency(t *testing.T) {
 	concurrentWriters := 3
 	writesPerRoutine := 3
 
-	doneFlag := atomic.NewBool(false)
+	doneFlag := &atomic.Bool{}
 	defer func() {
 		doneFlag.Store(true)
 	}()
@@ -284,29 +243,21 @@ func Test_connPool_Concurrency(t *testing.T) {
 }
 
 func generateLargeBatch() pmetric.Metrics {
-	var metrics []*metricspb.Metric
 	ts := time.Now()
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test_carbon")
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
+
 	for i := 0; i < 65000; i++ {
-		metrics = append(metrics,
-			metricstestutil.Gauge(
-				"test_"+strconv.Itoa(i),
-				[]string{"k0", "k1"},
-				metricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0", "v1"},
-					&metricspb.Point{
-						Timestamp: timestamppb.New(ts),
-						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
-					},
-				),
-			),
-		)
+		m := ms.AppendEmpty()
+		m.SetName("test_" + strconv.Itoa(i))
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.Attributes().PutStr("k0", "v0")
+		dp.Attributes().PutStr("k1", "v1")
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+		dp.SetIntValue(int64(i))
 	}
 
-	return internaldata.OCToMetrics(
-		&commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test_carbon"},
-		},
-		&resourcepb.Resource{Type: "test"},
-		metrics)
+	return metrics
 }

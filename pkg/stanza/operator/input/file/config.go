@@ -43,8 +43,8 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	helper.InputConfig  `mapstructure:",squash" yaml:",inline"`
-	fileconsumer.Config `mapstructure:",squash" yaml:",inline"`
+	helper.InputConfig  `mapstructure:",squash"`
+	fileconsumer.Config `mapstructure:",squash"`
 }
 
 // Build will build a file input operator from the supplied configuration
@@ -54,7 +54,12 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	preEmitOptions := []preEmitOption{}
+	var preEmitOptions []preEmitOption
+
+	if fileconsumer.AllowHeaderMetadataParsing.IsEnabled() {
+		preEmitOptions = append(preEmitOptions, setHeaderMetadata)
+	}
+
 	if c.IncludeFileName {
 		preEmitOptions = append(preEmitOptions, setFileName)
 	}
@@ -73,7 +78,9 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 	if helper.IsNop(c.Config.Splitter.EncodingConfig.Encoding) {
 		toBody = func(token []byte) interface{} {
-			return token
+			copied := make([]byte, len(token))
+			copy(copied, token)
+			return copied
 		}
 	}
 

@@ -24,6 +24,8 @@ endpoint will be used if `auth_type` set to any of the following values:
 `ca_file`, `key_file`, and `cert_file` also be set.
 - `serviceAccount` tells this receiver to use the default service account token
 to authenticate to the kubelet API.
+- `kubeConfig` tells this receiver to use the kubeconfig file (KUBECONFIG env variable or ~/.kube/config)
+to authenticate and use API server proxy to access the kubelet API.
 
 ### TLS Example
 
@@ -105,6 +107,29 @@ service:
       receivers: [kubeletstats]
       exporters: [file]
 ```
+
+### Kubeconfig example
+
+The following config can be used to collect Kubelet metrics from read-only endpoint, proxied by the API server:
+
+```yaml
+receivers:
+  kubeletstats:
+    collection_interval: 20s
+    auth_type: "kubeConfig"
+    insecure_skip_verify: true
+    endpoint: "${K8S_NODE_NAME}"
+exporters:
+  file:
+    path: "fileexporter.txt"
+service:
+  pipelines:
+    metrics:
+      receivers: [kubeletstats]
+      exporters: [file]
+```
+Note that using `auth_type` `kubeConfig`, the endpoint should only be the node name as the communication to the kubelet is proxied by the API server configured in the `kubeConfig`.
+`insecure_skip_verify` still applies by overriding the `kubeConfig` settings.
 
 ### Extra metadata labels
 
@@ -190,26 +215,6 @@ with detailed sample configurations [here](./testdata/config.yaml).
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
-
-### Feature gate configurations
-
-#### Transition from metrics with "direction" attribute
-
-Some kubeletstats metrics reported are transitioning from being reported with a `direction` attribute to being reported with the
-direction included in the metric name to adhere to the OpenTelemetry specification
-(https://github.com/open-telemetry/opentelemetry-specification/pull/2617):
-
-- `k8s.node.network.io` will become:
-  - `k8s.node.network.io.transmit`
-  - `k8s.node.network.io.receive`
-- `k8s.node.network.errors` will become:
-  - `k8s.node.network.errors.transmit`
-  - `k8s.node.network.errors.receive`
-
-The following feature gates control the transition process:
-
-- **receiver.kubeletstatsreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without `direction` attribute are emitted by the receiver.
-- **receiver.kubeletstatsreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with `direction` attribute are emitted by the receiver.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

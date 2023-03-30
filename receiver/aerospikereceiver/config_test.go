@@ -15,11 +15,14 @@
 package aerospikereceiver
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestValidate(t *testing.T) {
@@ -129,4 +132,22 @@ func TestValidate(t *testing.T) {
 			require.ErrorIs(t, err, tc.expected)
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Endpoint = "localhost:3000"
+	expected.CollectionInterval = 30 * time.Second
+
+	require.Equal(t, expected, cfg)
 }

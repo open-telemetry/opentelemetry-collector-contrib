@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -283,6 +284,49 @@ func TestTransformer(t *testing.T) {
 				entryWithBodyAttr(t1, "file1_event1\nend", map[string]string{"file.path": "file1"}),
 				entryWithBodyAttr(t1, "file2_event1\nfile2_event2", map[string]string{"file.path": "file2"}),
 				entryWithBodyAttr(t2, "end", map[string]string{"file.path": "file2"}),
+			},
+		},
+		{
+			"TestMaxLogSizeForLastEntry",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'end'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxLogSize = helper.ByteSize(5)
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "end", map[string]string{"file.path": "file1"}),
+			},
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "file1\nfile1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "end", map[string]string{"file.path": "file1"}),
+			},
+		},
+		{
+			"TestMaxLogSizeForFirstEntry",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "body == 'start'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxLogSize = helper.ByteSize(12)
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content2", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
+			},
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "start\ncontent1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content2", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
 			},
 		},
 	}

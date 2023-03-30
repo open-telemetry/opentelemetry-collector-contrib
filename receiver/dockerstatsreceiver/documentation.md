@@ -2,140 +2,684 @@
 
 # dockerstatsreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **container.blockio.io_merged_recursive.async** | Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_merged_recursive.discard** | Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_merged_recursive.read** | Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_merged_recursive.sync** | Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_merged_recursive.total** | Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_merged_recursive.write** | Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_queued_recursive.async** | Number of requests queued up for this cgroup and its descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_queued_recursive.discard** | Number of requests queued up for this cgroup and its descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_queued_recursive.read** | Number of requests queued up for this cgroup and its descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_queued_recursive.sync** | Number of requests queued up for this cgroup and its descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_queued_recursive.total** | Number of requests queued up for this cgroup and its descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_queued_recursive.write** | Number of requests queued up for this cgroup and its descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_service_bytes_recursive.async** | Number of bytes transferred to/from the disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | By | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_service_bytes_recursive.discard** | Number of bytes transferred to/from the disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | By | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_service_bytes_recursive.read** | Number of bytes transferred to/from the disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | By | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_service_bytes_recursive.sync** | Number of bytes transferred to/from the disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | By | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_service_bytes_recursive.total** | Number of bytes transferred to/from the disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | By | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_service_bytes_recursive.write** | Number of bytes transferred to/from the disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | By | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_service_time_recursive.async** | Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_service_time_recursive.discard** | Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_service_time_recursive.read** | Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_service_time_recursive.sync** | Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_service_time_recursive.total** | Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_service_time_recursive.write** | Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_serviced_recursive.async** | Number of IOs (bio) issued to the disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_serviced_recursive.discard** | Number of IOs (bio) issued to the disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_serviced_recursive.read** | Number of IOs (bio) issued to the disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_serviced_recursive.sync** | Number of IOs (bio) issued to the disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_serviced_recursive.total** | Number of IOs (bio) issued to the disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_serviced_recursive.write** | Number of IOs (bio) issued to the disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {operations} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_time_recursive.async** | Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ms | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_time_recursive.discard** | Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ms | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_time_recursive.read** | Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ms | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_time_recursive.sync** | Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ms | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_time_recursive.total** | Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ms | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_time_recursive.write** | Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ms | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_wait_time_recursive.async** | Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_wait_time_recursive.discard** | Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_wait_time_recursive.read** | Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_wait_time_recursive.sync** | Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_wait_time_recursive.total** | Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.io_wait_time_recursive.write** | Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.sectors_recursive.async** | Number of sectors transferred to/from disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {sectors} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.sectors_recursive.discard** | Number of sectors transferred to/from disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {sectors} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.sectors_recursive.read** | Number of sectors transferred to/from disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {sectors} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.sectors_recursive.sync** | Number of sectors transferred to/from disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {sectors} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.sectors_recursive.total** | Number of sectors transferred to/from disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {sectors} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.blockio.sectors_recursive.write** | Number of sectors transferred to/from disk by the group and descendant groups. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt). | {sectors} | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
-| **container.cpu.percent** | Percent of CPU used by the container. | 1 | Gauge(Double) | <ul> </ul> |
-| **container.cpu.throttling_data.periods** | Number of periods with throttling active. | {periods} | Sum(Int) | <ul> </ul> |
-| **container.cpu.throttling_data.throttled_periods** | Number of periods when the container hits its throttling limit. | {periods} | Sum(Int) | <ul> </ul> |
-| **container.cpu.throttling_data.throttled_time** | Aggregate time the container was throttled. | ns | Sum(Int) | <ul> </ul> |
-| **container.cpu.usage.kernelmode** | Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows). | ns | Sum(Int) | <ul> </ul> |
-| container.cpu.usage.percpu | Per-core CPU usage by the container. | ns | Sum(Int) | <ul> <li>core</li> </ul> |
-| **container.cpu.usage.system** | System CPU usage. | ns | Sum(Int) | <ul> </ul> |
-| **container.cpu.usage.total** | Total CPU time consumed. | ns | Sum(Int) | <ul> </ul> |
-| **container.cpu.usage.usermode** | Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows). | ns | Sum(Int) | <ul> </ul> |
-| **container.memory.active_anon** | The amount of anonymous memory that has been identified as active by the kernel. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.active_file** | Cache memory that has been identified as active by the kernel. [More docs](https://docs.docker.com/config/containers/runmetrics/) | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.cache** | The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.dirty** | Bytes that are waiting to get written back to the disk, from this cgroup. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.hierarchical_memory_limit** | The maximum amount of physical memory that can be used by the processes of this control group. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.hierarchical_memsw_limit** | The maximum amount of RAM + swap that can be used by the processes of this control group. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.inactive_anon** | The amount of anonymous memory that has been identified as inactive by the kernel. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.inactive_file** | Cache memory that has been identified as inactive by the kernel. [More docs](https://docs.docker.com/config/containers/runmetrics/) | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.mapped_file** | Indicates the amount of memory mapped by the processes in the control group. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.percent** | Percentage of memory used. | 1 | Gauge(Double) | <ul> </ul> |
-| **container.memory.pgfault** | Indicate the number of times that a process of the cgroup triggered a page fault. | {faults} | Sum(Int) | <ul> </ul> |
-| **container.memory.pgmajfault** | Indicate the number of times that a process of the cgroup triggered a major fault. | {faults} | Sum(Int) | <ul> </ul> |
-| **container.memory.pgpgin** | Number of pages read from disk by the cgroup. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt). | {operations} | Sum(Int) | <ul> </ul> |
-| **container.memory.pgpgout** | Number of pages written to disk by the cgroup. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt). | {operations} | Sum(Int) | <ul> </ul> |
-| **container.memory.rss** | The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.rss_huge** | Number of bytes of anonymous transparent hugepages in this cgroup. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.swap** | The amount of swap currently used by the processes in this cgroup. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_active_anon** | The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_active_file** | Cache memory that has been identified as active by the kernel. Includes descendant cgroups. [More docs](https://docs.docker.com/config/containers/runmetrics/). | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_cache** | Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_dirty** | Bytes that are waiting to get written back to the disk, from this cgroup and descendants. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_inactive_anon** | The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_inactive_file** | Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups. [More docs](https://docs.docker.com/config/containers/runmetrics/). | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_mapped_file** | Indicates the amount of memory mapped by the processes in the control group and descendant groups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_pgfault** | Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault. | {faults} | Sum(Int) | <ul> </ul> |
-| **container.memory.total_pgmajfault** | Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault. | {faults} | Sum(Int) | <ul> </ul> |
-| **container.memory.total_pgpgin** | Number of pages read from disk by the cgroup and descendant groups. | {operations} | Sum(Int) | <ul> </ul> |
-| **container.memory.total_pgpgout** | Number of pages written to disk by the cgroup and descendant groups. | {operations} | Sum(Int) | <ul> </ul> |
-| **container.memory.total_rss** | The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_rss_huge** | Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_swap** | The amount of swap currently used by the processes in this cgroup and descendant groups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_unevictable** | The amount of memory that cannot be reclaimed. Includes descendant cgroups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_writeback** | Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.unevictable** | The amount of memory that cannot be reclaimed. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.usage.limit** | Memory limit of the container. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.usage.max** | Maximum memory usage. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.usage.total** | Memory usage of the container. This excludes the total cache. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.writeback** | Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup. | By | Gauge(Int) | <ul> </ul> |
-| **container.network.io.usage.rx_bytes** | Bytes received by the container. | By | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **container.network.io.usage.rx_dropped** | Incoming packets dropped. | {packets} | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **container.network.io.usage.rx_errors** | Received errors. | {errors} | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **container.network.io.usage.rx_packets** | Packets received. | {packets} | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **container.network.io.usage.tx_bytes** | Bytes sent. | By | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **container.network.io.usage.tx_dropped** | Outgoing packets dropped. | {packets} | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **container.network.io.usage.tx_errors** | Sent errors. | {errors} | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **container.network.io.usage.tx_packets** | Packets sent. | {packets} | Sum(Int) | <ul> <li>interface</li> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Resource attributes
+### container.blockio.io_service_bytes_recursive
 
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| container.hostname | The hostname of the container. | String |
-| container.id | The ID of the container. | String |
-| container.image.name | The name of the docker image in use by the container. | String |
-| container.name | The name of the container. | String |
-| container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | String |
+Number of bytes transferred to/from the disk by the group and descendant groups.
 
-## Metric attributes
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| core | The CPU core number when utilising per-CPU metrics. |  |
-| device_major | Device major number for block IO operations. |  |
-| device_minor | Device minor number for block IO operations. |  |
-| interface | Network interface. |  |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.cpu.percent
+
+Percent of CPU used by the container.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### container.cpu.usage.kernelmode
+
+Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | true |
+
+### container.cpu.usage.total
+
+Total CPU time consumed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | true |
+
+### container.cpu.usage.usermode
+
+Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | true |
+
+### container.memory.percent
+
+Percentage of memory used.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### container.memory.total_cache
+
+Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.usage.limit
+
+Memory limit of the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.usage.total
+
+Memory usage of the container. This excludes the total cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.network.io.usage.rx_bytes
+
+Bytes received by the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| interface | Network interface. | Any Str |
+
+### container.network.io.usage.rx_dropped
+
+Incoming packets dropped.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {packets} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| interface | Network interface. | Any Str |
+
+### container.network.io.usage.tx_bytes
+
+Bytes sent.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| interface | Network interface. | Any Str |
+
+### container.network.io.usage.tx_dropped
+
+Outgoing packets dropped.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {packets} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| interface | Network interface. | Any Str |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### container.blockio.io_merged_recursive
+
+Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.blockio.io_queued_recursive
+
+Number of requests queued up for this cgroup and its descendant cgroups.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.blockio.io_service_time_recursive
+
+Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.blockio.io_serviced_recursive
+
+Number of IOs (bio) issued to the disk by the group and descendant groups.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.blockio.io_time_recursive
+
+Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ms | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.blockio.io_wait_time_recursive
+
+Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.blockio.sectors_recursive
+
+Number of sectors transferred to/from disk by the group and descendant groups.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {sectors} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.cpu.throttling_data.periods
+
+Number of periods with throttling active.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {periods} | Sum | Int | Cumulative | true |
+
+### container.cpu.throttling_data.throttled_periods
+
+Number of periods when the container hits its throttling limit.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {periods} | Sum | Int | Cumulative | true |
+
+### container.cpu.throttling_data.throttled_time
+
+Aggregate time the container was throttled.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | true |
+
+### container.cpu.usage.percpu
+
+Per-core CPU usage by the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| core | The CPU core number when utilising per-CPU metrics. | Any Str |
+
+### container.cpu.usage.system
+
+System CPU usage, as reported by docker.
+
+Note this is the usage for the system, not the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | true |
+
+### container.memory.active_anon
+
+The amount of anonymous memory that has been identified as active by the kernel.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.active_file
+
+Cache memory that has been identified as active by the kernel.
+
+[More docs](https://docs.docker.com/config/containers/runmetrics/)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.cache
+
+The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.dirty
+
+Bytes that are waiting to get written back to the disk, from this cgroup.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.hierarchical_memory_limit
+
+The maximum amount of physical memory that can be used by the processes of this control group.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.hierarchical_memsw_limit
+
+The maximum amount of RAM + swap that can be used by the processes of this control group.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.inactive_anon
+
+The amount of anonymous memory that has been identified as inactive by the kernel.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.inactive_file
+
+Cache memory that has been identified as inactive by the kernel.
+
+[More docs](https://docs.docker.com/config/containers/runmetrics/)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.mapped_file
+
+Indicates the amount of memory mapped by the processes in the control group.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.pgfault
+
+Indicate the number of times that a process of the cgroup triggered a page fault.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
+### container.memory.pgmajfault
+
+Indicate the number of times that a process of the cgroup triggered a major fault.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
+### container.memory.pgpgin
+
+Number of pages read from disk by the cgroup.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+### container.memory.pgpgout
+
+Number of pages written to disk by the cgroup.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+### container.memory.rss
+
+The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.rss_huge
+
+Number of bytes of anonymous transparent hugepages in this cgroup.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.swap
+
+The amount of swap currently used by the processes in this cgroup.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_active_anon
+
+The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_active_file
+
+Cache memory that has been identified as active by the kernel. Includes descendant cgroups.
+
+[More docs](https://docs.docker.com/config/containers/runmetrics/).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_dirty
+
+Bytes that are waiting to get written back to the disk, from this cgroup and descendants.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_inactive_anon
+
+The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_inactive_file
+
+Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.
+
+[More docs](https://docs.docker.com/config/containers/runmetrics/).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_mapped_file
+
+Indicates the amount of memory mapped by the processes in the control group and descendant groups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_pgfault
+
+Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
+### container.memory.total_pgmajfault
+
+Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
+### container.memory.total_pgpgin
+
+Number of pages read from disk by the cgroup and descendant groups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+### container.memory.total_pgpgout
+
+Number of pages written to disk by the cgroup and descendant groups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+### container.memory.total_rss
+
+The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_rss_huge
+
+Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_swap
+
+The amount of swap currently used by the processes in this cgroup and descendant groups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_unevictable
+
+The amount of memory that cannot be reclaimed. Includes descendant cgroups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_writeback
+
+Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.unevictable
+
+The amount of memory that cannot be reclaimed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.usage.max
+
+Maximum memory usage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.writeback
+
+Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.network.io.usage.rx_errors
+
+Received errors.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {errors} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| interface | Network interface. | Any Str |
+
+### container.network.io.usage.rx_packets
+
+Packets received.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {packets} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| interface | Network interface. | Any Str |
+
+### container.network.io.usage.tx_errors
+
+Sent errors.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {errors} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| interface | Network interface. | Any Str |
+
+### container.network.io.usage.tx_packets
+
+Packets sent.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {packets} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| interface | Network interface. | Any Str |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| container.hostname | The hostname of the container. | Any Str | true |
+| container.id | The ID of the container. | Any Str | true |
+| container.image.name | The name of the docker image in use by the container. | Any Str | true |
+| container.name | The name of the container. | Any Str | true |
+| container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | Any Str | true |

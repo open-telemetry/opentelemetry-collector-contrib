@@ -54,7 +54,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveBodyToBody",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewBodyField("new")
 				return cfg
@@ -75,7 +75,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveBodyToAttribute",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewAttributeField("new")
 				return cfg
@@ -96,7 +96,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveAttributeToBody",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewAttributeField("new")
 				cfg.To = entry.NewBodyField("new")
 				return cfg
@@ -123,7 +123,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveAttributeToResource",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewAttributeField("new")
 				cfg.To = entry.NewResourceField("new")
 				return cfg
@@ -144,7 +144,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveBracketedAttributeToResource",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewAttributeField("dotted.field.name")
 				cfg.To = entry.NewResourceField("new")
 				return cfg
@@ -165,7 +165,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveBracketedAttributeToBracketedResource",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewAttributeField("dotted.field.name")
 				cfg.To = entry.NewResourceField("dotted.field.name")
 				return cfg
@@ -186,7 +186,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveAttributeToBracketedResource",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewAttributeField("new")
 				cfg.To = entry.NewResourceField("dotted.field.name")
 				return cfg
@@ -207,7 +207,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveResourceToAttribute",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewResourceField("new")
 				cfg.To = entry.NewAttributeField("new")
 				return cfg
@@ -228,7 +228,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveNest",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("nested")
 				cfg.To = entry.NewBodyField("NewNested")
 				return cfg
@@ -249,7 +249,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveFromNestedObj",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("nested", "nestedkey")
 				cfg.To = entry.NewBodyField("unnestedkey")
 				return cfg
@@ -269,7 +269,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveToNestedObj",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("newnestedkey")
 				cfg.To = entry.NewBodyField("nested", "newnestedkey")
 
@@ -302,7 +302,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveDoubleNestedObj",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("nested", "nested2")
 				cfg.To = entry.NewBodyField("nested2")
 				return cfg
@@ -338,7 +338,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveNestToResource",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("nested")
 				cfg.To = entry.NewResourceField("NewNested")
 				return cfg
@@ -361,7 +361,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveNestToAttribute",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("nested")
 				cfg.To = entry.NewAttributeField("NewNested")
 
@@ -385,7 +385,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveNestedBodyStringToNestedAttribute",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("nested", "nestedkey")
 				cfg.To = entry.NewAttributeField("one", "two", "three")
 
@@ -412,7 +412,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MoveAttributeTodBody",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewAttributeField("one", "two", "three")
 				cfg.To = entry.NewBodyField()
 
@@ -444,7 +444,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"ReplaceBodyObj",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("wrapper")
 				cfg.To = entry.NewBodyField()
 				return cfg
@@ -476,7 +476,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"ReplaceBodyString",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewBodyField()
 				return cfg
@@ -492,7 +492,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"MergeObjToBody",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.From = entry.NewBodyField("nested")
 				cfg.To = entry.NewBodyField()
 				return cfg

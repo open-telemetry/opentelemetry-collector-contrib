@@ -94,12 +94,12 @@ func TestValidate(t *testing.T) {
 				API: APIConfig{Key: "notnull"},
 				Metrics: MetricsConfig{
 					HistConfig: HistogramConfig{
-						Mode:         HistogramModeNoBuckets,
-						SendCountSum: false,
+						Mode:             HistogramModeNoBuckets,
+						SendAggregations: false,
 					},
 				},
 			},
-			err: "'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics",
+			err: "'nobuckets' mode and `send_aggregation_metrics` set to false will send no histogram metrics",
 		},
 		{
 			name: "TLS settings are valid",
@@ -210,6 +210,33 @@ func TestUnmarshal(t *testing.T) {
 				},
 			}),
 			err: "\"metrics::instrumentation_library_metadata_as_tags\" was removed in favor of \"metrics::instrumentation_scope_as_tags\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11135",
+		},
+		{
+			name: "Empty metric endpoint",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"endpoint": "",
+				},
+			}),
+			err: errEmptyEndpoint.Error(),
+		},
+		{
+			name: "Empty trace endpoint",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"traces": map[string]interface{}{
+					"endpoint": "",
+				},
+			}),
+			err: errEmptyEndpoint.Error(),
+		},
+		{
+			name: "Empty log endpoint",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"logs": map[string]interface{}{
+					"endpoint": "",
+				},
+			}),
+			err: errEmptyEndpoint.Error(),
 		},
 	}
 

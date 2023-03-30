@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,41 +20,42 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
 const (
-	typeStr config.Type = "ecs_task_observer"
+	typeStr component.Type = "ecs_task_observer"
 )
 
 // NewFactory creates a factory for ECSTaskObserver extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactoryWithStabilityLevel(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelUndefined,
+		metadata.Stability,
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.Config {
 	cfg := defaultConfig()
 	return &cfg
 }
 
-type extension struct {
+type baseExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
 }
 
 func createExtension(
 	_ context.Context,
-	params component.ExtensionCreateSettings,
-	cfg config.Extension,
-) (component.Extension, error) {
+	params extension.CreateSettings,
+	cfg component.Config,
+) (extension.Extension, error) {
 	obsCfg := cfg.(*Config)
 
 	var metadataProvider ecsutil.MetadataProvider
@@ -74,7 +75,7 @@ func createExtension(
 		metadataProvider: metadataProvider,
 		telemetry:        params.TelemetrySettings,
 	}
-	e.Extension = extension{
+	e.Extension = baseExtension{
 		ShutdownFunc: e.Shutdown,
 	}
 	e.EndpointsWatcher = observer.NewEndpointsWatcher(e, obsCfg.RefreshInterval, params.TelemetrySettings.Logger)

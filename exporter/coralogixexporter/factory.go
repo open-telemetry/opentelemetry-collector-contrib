@@ -18,84 +18,87 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // NewFactory by Coralogix
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exp.Factory {
+	return exp.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTraceExporter, stability),
-		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, component.StabilityLevelAlpha),
+		exp.WithTraces(createTraceExporter, stability),
+		exp.WithMetrics(createMetricsExporter, stability),
+		exp.WithLogs(createLogsExporter, component.StabilityLevelAlpha),
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		// Traces GRPC client
-		GRPCClientSettings: configgrpc.GRPCClientSettings{Endpoint: "https://"},
+		Traces: configgrpc.GRPCClientSettings{
+			Endpoint:    "https://",
+			Compression: configcompression.Gzip,
+		},
 		Metrics: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
-			Headers:  map[string]string{},
 			// Default to gzip compression
 			Compression:     configcompression.Gzip,
 			WriteBufferSize: 512 * 1024,
 		},
 		Logs: configgrpc.GRPCClientSettings{
-			Endpoint: "https://",
-			Headers:  map[string]string{},
+			Endpoint:    "https://",
+			Compression: configcompression.Gzip,
 		},
-
 		PrivateKey: "",
 		AppName:    "",
 	}
 }
 
-func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTraceExporter(ctx context.Context, set exp.CreateSettings, config component.Config) (exp.Traces, error) {
 	cfg := config.(*Config)
-	exporter, err := newCoralogixExporter(cfg, set)
+
+	exporter, err := newTracesExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		config,
-		exporter.tracesPusher,
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporter.pushTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
-		exporterhelper.WithStart(exporter.client.startConnection),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
 	)
 }
 
 func createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.MetricsExporter, error) {
+	set exp.CreateSettings,
+	cfg component.Config,
+) (exp.Metrics, error) {
 	oce, err := newMetricsExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	return exporterhelper.NewMetricsExporterWithContext(
+	return exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		cfg,
 		oce.pushMetrics,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
@@ -106,20 +109,20 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.LogsExporter, error) {
+	set exp.CreateSettings,
+	cfg component.Config,
+) (exp.Logs, error) {
 	oce, err := newLogsExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	return exporterhelper.NewLogsExporterWithContext(
+	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
 		oce.pushLogs,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),

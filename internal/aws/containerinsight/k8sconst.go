@@ -18,8 +18,6 @@ package containerinsight // import "github.com/open-telemetry/opentelemetry-coll
 const (
 	EKS            = "eks"
 	KubeSecurePort = "10250"
-	BearerToken    = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec to suppress lint error G101: Potential hardcoded credentials
-	CAFile         = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
 	// attribute names
 	Kubernetes       = "kubernetes"
@@ -30,7 +28,6 @@ const (
 	K8sPodNameKey    = "K8sPodName"
 	ContainerNamekey = "ContainerName"
 	ContainerIDkey   = "ContainerId"
-	PodOwnersKey     = "PodOwners"
 
 	PodStatus       = "pod_status"
 	ContainerStatus = "container_status"

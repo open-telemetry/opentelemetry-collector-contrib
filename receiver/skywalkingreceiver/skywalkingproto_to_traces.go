@@ -66,9 +66,9 @@ func SkywalkingToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
 		swTagsToInternalResource(span, rs)
 	}
 
-	rs.Attributes().Insert(conventions.AttributeServiceName, pcommon.NewValueString(segment.GetService()))
-	rs.Attributes().Insert(conventions.AttributeServiceInstanceID, pcommon.NewValueString(segment.GetServiceInstance()))
-	rs.Attributes().Insert(AttributeSkywalkingTraceID, pcommon.NewValueString(segment.GetTraceId()))
+	rs.Attributes().PutStr(conventions.AttributeServiceName, segment.GetService())
+	rs.Attributes().PutStr(conventions.AttributeServiceInstanceID, segment.GetServiceInstance())
+	rs.Attributes().PutStr(AttributeSkywalkingTraceID, segment.GetTraceId())
 
 	il := resourceSpan.ScopeSpans().AppendEmpty()
 	swSpansToSpanSlice(segment.GetTraceId(), segment.GetTraceSegmentId(), swSpans, il.Spans())
@@ -92,7 +92,7 @@ func swTagsToInternalResource(span *agentV3.SpanObject, dest pcommon.Resource) {
 	for _, tag := range tags {
 		otKey, ok := otSpanTagsMapping[tag.Key]
 		if ok {
-			attrs.UpsertString(otKey, tag.Value)
+			attrs.PutStr(otKey, tag.Value)
 		}
 	}
 }
@@ -134,7 +134,7 @@ func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, de
 		attrs.Clear()
 	}
 
-	attrs.InsertString(AttributeSkywalkingSegmentID, segmentID)
+	attrs.PutStr(AttributeSkywalkingSegmentID, segmentID)
 	setSwSpanIDToAttributes(span, attrs)
 	setInternalSpanStatus(span, dest.Status())
 
@@ -171,7 +171,7 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest ptrace.SpanL
 		link := dest.AppendEmpty()
 		link.SetTraceID(swTraceIDToTraceID(ref.TraceId))
 		link.SetSpanID(segmentIDToSpanID(ref.ParentTraceSegmentId, uint32(ref.ParentSpanId)))
-		link.SetTraceState("")
+		link.TraceState().FromRaw("")
 		kvParis := []*common.KeyStringValuePair{
 			{
 				Key:   AttributeParentService,
@@ -210,7 +210,7 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest ptrace.SpanL
 	}
 }
 
-func setInternalSpanStatus(span *agentV3.SpanObject, dest ptrace.SpanStatus) {
+func setInternalSpanStatus(span *agentV3.SpanObject, dest ptrace.Status) {
 	if span.GetIsError() {
 		dest.SetCode(ptrace.StatusCodeError)
 		dest.SetMessage("ERROR")
@@ -221,9 +221,9 @@ func setInternalSpanStatus(span *agentV3.SpanObject, dest ptrace.SpanStatus) {
 }
 
 func setSwSpanIDToAttributes(span *agentV3.SpanObject, dest pcommon.Map) {
-	dest.InsertInt(AttributeSkywalkingSpanID, int64(span.GetSpanId()))
+	dest.PutInt(AttributeSkywalkingSpanID, int64(span.GetSpanId()))
 	if span.ParentSpanId != -1 {
-		dest.InsertInt(AttributeSkywalkingParentSpanID, int64(span.GetParentSpanId()))
+		dest.PutInt(AttributeSkywalkingParentSpanID, int64(span.GetParentSpanId()))
 	}
 }
 
@@ -260,7 +260,7 @@ func swKvPairsToInternalAttributes(pairs []*common.KeyStringValuePair, dest pcom
 	}
 
 	for _, pair := range pairs {
-		dest.UpsertString(pair.Key, pair.Value)
+		dest.PutStr(pair.Key, pair.Value)
 	}
 }
 
@@ -277,11 +277,11 @@ func swTraceIDToTraceID(traceID string) pcommon.TraceID {
 	if len(traceID) <= 36 { // 36: uuid length (rfc4122)
 		uid, err := uuid.Parse(traceID)
 		if err != nil {
-			return pcommon.InvalidTraceID()
+			return pcommon.NewTraceIDEmpty()
 		}
-		return pcommon.NewTraceID(uid)
+		return pcommon.TraceID(uid)
 	}
-	return pcommon.NewTraceID(swStringToUUID(traceID, 0))
+	return swStringToUUID(traceID, 0)
 }
 
 func segmentIDToSpanID(segmentID string, spanID uint32) pcommon.SpanID {
@@ -290,9 +290,9 @@ func segmentIDToSpanID(segmentID string, spanID uint32) pcommon.SpanID {
 	// 56a5e1c519ae4c76a2b8b11d92cead7f: from ParentTraceSegmentId
 
 	if len(segmentID) < 32 {
-		return pcommon.InvalidSpanID()
+		return pcommon.NewSpanIDEmpty()
 	}
-	return pcommon.NewSpanID(uuidTo8Bytes(swStringToUUID(segmentID, spanID)))
+	return uuidTo8Bytes(swStringToUUID(segmentID, spanID))
 }
 
 func swStringToUUID(s string, extra uint32) (dst [16]byte) {

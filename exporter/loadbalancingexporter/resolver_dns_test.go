@@ -19,18 +19,18 @@ import (
 	"errors"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
 func TestInitialDNSResolution(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{
@@ -62,7 +62,7 @@ func TestInitialDNSResolution(t *testing.T) {
 
 func TestInitialDNSResolutionWithPort(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "55690")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "55690", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{
@@ -94,7 +94,7 @@ func TestInitialDNSResolutionWithPort(t *testing.T) {
 
 func TestErrNoHostname(t *testing.T) {
 	// test
-	res, err := newDNSResolver(zap.NewNop(), "", "")
+	res, err := newDNSResolver(zap.NewNop(), "", "", 5*time.Second, 1*time.Second)
 
 	// verify
 	assert.Nil(t, res)
@@ -103,7 +103,7 @@ func TestErrNoHostname(t *testing.T) {
 
 func TestCantResolve(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
@@ -122,7 +122,7 @@ func TestCantResolve(t *testing.T) {
 
 func TestOnChange(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	resolve := []net.IPAddr{
@@ -135,9 +135,9 @@ func TestOnChange(t *testing.T) {
 	}
 
 	// test
-	counter := atomic.NewInt64(0)
+	counter := &atomic.Int64{}
 	res.onChange(func(endpoints []string) {
-		counter.Inc()
+		counter.Add(1)
 	})
 	require.NoError(t, res.start(context.Background()))
 	defer func() {
@@ -189,10 +189,10 @@ func TestEqualStringSlice(t *testing.T) {
 
 func TestPeriodicallyResolve(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second)
 	require.NoError(t, err)
 
-	counter := atomic.NewInt64(0)
+	counter := &atomic.Int64{}
 	resolve := [][]net.IPAddr{
 		{
 			{IP: net.IPv4(127, 0, 0, 1)},
@@ -208,7 +208,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
 			defer func() {
-				counter.Inc()
+				counter.Add(1)
 			}()
 			// for second call, return the second result
 			if counter.Load() == 2 {
@@ -224,7 +224,6 @@ func TestPeriodicallyResolve(t *testing.T) {
 			return resolve[0], nil
 		},
 	}
-	res.resInterval = 10 * time.Millisecond
 
 	wg := sync.WaitGroup{}
 	res.onChange(func(backends []string) {
@@ -247,19 +246,17 @@ func TestPeriodicallyResolve(t *testing.T) {
 }
 
 func TestPeriodicallyResolveFailure(t *testing.T) {
-	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13331")
-
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
 	wg := sync.WaitGroup{}
-	counter := atomic.NewInt64(0)
+	counter := &atomic.Int64{}
 	resolve := []net.IPAddr{{IP: net.IPv4(127, 0, 0, 1)}}
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
-			counter.Inc()
+			counter.Add(1)
 
 			// count down at most two times
 			if counter.Load() <= 2 {
@@ -275,7 +272,6 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 			return resolve, nil
 		},
 	}
-	res.resInterval = 10 * time.Millisecond
 
 	// test
 	wg.Add(2)
@@ -288,13 +284,13 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 	wg.Wait()
 
 	// verify
-	assert.GreaterOrEqual(t, int64(2), counter.Load())
+	assert.GreaterOrEqual(t, counter.Load(), int64(2))
 	assert.Len(t, res.endpoints, 1) // no change to the list of endpoints
 }
 
 func TestShutdownClearsCallbacks(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{}

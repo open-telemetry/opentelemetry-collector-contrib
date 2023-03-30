@@ -17,6 +17,7 @@ package receivercreator
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -28,9 +29,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	zapObserver "go.uber.org/zap/zaptest/observer"
 
@@ -42,7 +45,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 type mockObserver struct {
@@ -56,7 +59,7 @@ func (m *mockObserver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-var _ component.Extension = (*mockObserver)(nil)
+var _ extension.Extension = (*mockObserver)(nil)
 
 func (m *mockObserver) ListAndWatch(notify observer.Notify) {
 	notify.OnAdd([]observer.Endpoint{portEndpoint})
@@ -67,15 +70,29 @@ func (m *mockObserver) Unsubscribe(_ observer.Notify) {}
 var _ observer.Observable = (*mockObserver)(nil)
 
 func TestMockedEndToEnd(t *testing.T) {
-	host, cfg := exampleCreatorFactory(t)
-	host.extensions = map[config.ComponentID]component.Extension{
-		config.NewComponentID("mock_observer"): &mockObserver{},
-	}
-	dynCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "1")]
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factories, _ := otelcoltest.NopFactories()
+	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 	factory := NewFactory()
-	params := componenttest.NewNopReceiverCreateSettings()
+	factories.Receivers[typeStr] = factory
+
+	host := &mockHostFactories{Host: componenttest.NewNopHost(), factories: factories}
+	host.extensions = map[component.ID]component.Component{
+		component.NewID("mock_observer"):                      &mockObserver{},
+		component.NewIDWithName("mock_observer", "with_name"): &mockObserver{},
+	}
+
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "1").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	params := receivertest.NewNopCreateSettings()
 	mockConsumer := new(consumertest.MetricsSink)
-	rcvr, err := factory.CreateMetricsReceiver(context.Background(), params, dynCfg, mockConsumer)
+
+	rcvr, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mockConsumer)
 	require.NoError(t, err)
 	dyn := rcvr.(*receiverCreator)
 	require.NoError(t, rcvr.Start(context.Background(), host))
@@ -90,8 +107,8 @@ func TestMockedEndToEnd(t *testing.T) {
 	defer shutdown()
 
 	require.Eventuallyf(t, func() bool {
-		return dyn.observerHandler.receiversByEndpointID.Size() == 1
-	}, 1*time.Second, 100*time.Millisecond, "expected 1 receiver but got %v", dyn.observerHandler.receiversByEndpointID)
+		return dyn.observerHandler.receiversByEndpointID.Size() == 2
+	}, 1*time.Second, 100*time.Millisecond, "expected 2 receiver but got %v", dyn.observerHandler.receiversByEndpointID)
 
 	// Test that we can send metrics.
 	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
@@ -126,7 +143,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	}
 
 	// TODO: Will have to rework once receivers are started asynchronously to Start().
-	assert.Len(t, mockConsumer.AllMetrics(), 1)
+	assert.Len(t, mockConsumer.AllMetrics(), 2)
 }
 
 func TestLoggingHost(t *testing.T) {

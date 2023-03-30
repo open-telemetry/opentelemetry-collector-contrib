@@ -53,7 +53,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"remove_one",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = newBodyField("key")
 				return cfg
 			}(),
@@ -72,7 +72,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"remove_nestedkey",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = newBodyField("nested", "nestedkey")
 				return cfg
 			}(),
@@ -90,7 +90,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"remove_nested_attribute",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = newAttributeField("nested", "nestedkey")
 				return cfg
 			}(),
@@ -117,7 +117,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"remove_nested_resource",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = newResourceField("nested", "nestedkey")
 				return cfg
 			}(),
@@ -144,7 +144,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"remove_obj",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = newBodyField("nested")
 				return cfg
 			}(),
@@ -161,7 +161,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"remove_single_attribute",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = newAttributeField("key")
 				return cfg
 			}(),
@@ -182,7 +182,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"remove_single_resource",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field = newResourceField("key")
 				return cfg
 			}(),
@@ -203,7 +203,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"remove_body",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field.Field = entry.NewBodyField()
 				return cfg
 			}(),
@@ -218,7 +218,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"remove_resource",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field.allResource = true
 				return cfg
 			}(),
@@ -239,7 +239,7 @@ func TestProcessAndBuild(t *testing.T) {
 		{
 			"remove_attributes",
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Field.allAttributes = true
 				return cfg
 			}(),

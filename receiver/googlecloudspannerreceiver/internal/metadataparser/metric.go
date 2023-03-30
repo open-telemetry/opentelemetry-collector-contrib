@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ type Metric struct {
 }
 
 func (metric Metric) toMetricValueMetadata() (metadata.MetricValueMetadata, error) {
-	dataType, err := metric.DataType.toMetricDataType()
+	dataType, err := metric.DataType.toMetricType()
 	if err != nil {
 		return nil, fmt.Errorf("invalid value data type received for metric %q", metric.Name)
 	}

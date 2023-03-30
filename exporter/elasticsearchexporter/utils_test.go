@@ -50,7 +50,7 @@ type httpTestError struct {
 	cause   error
 }
 
-const currentESVersion = "7.14.0"
+const currentESVersion = "7.17.7"
 
 func (e *httpTestError) Error() string {
 	return fmt.Sprintf("http request failed (status=%v): %v", e.Status(), e.Message())
@@ -147,6 +147,7 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 	mux.HandleFunc("/_bulk", handleErr(func(w http.ResponseWriter, req *http.Request) error {
 		tsStart := time.Now()
 		var items []itemRequest
+		w.Header().Add("X-Elastic-Product", "Elasticsearch")
 
 		dec := json.NewDecoder(req.Body)
 		for dec.More() {
@@ -172,6 +173,7 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+
 		enc := json.NewEncoder(w)
 		return enc.Encode(bulkResult{Took: took, Items: resp, HasErrors: itemsHasError(resp)})
 	}))

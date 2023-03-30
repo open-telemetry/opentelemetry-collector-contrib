@@ -19,8 +19,8 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
@@ -50,7 +50,7 @@ type Detector struct {
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	if len(cfg.HostnameSources) == 0 {
 		cfg.HostnameSources = []string{"dns", "os"}
@@ -70,12 +70,19 @@ func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 	if err != nil {
 		return res, "", fmt.Errorf("failed getting OS type: %w", err)
 	}
+
+	hostID, err := d.provider.HostID()
+	if err != nil {
+		return res, "", fmt.Errorf("failed getting host ID: %w", err)
+	}
+
 	for _, source := range d.hostnameSources {
 		getHostFromSource := hostnameSourcesMap[source]
 		hostname, err = getHostFromSource(d)
 		if err == nil {
-			attrs.InsertString(conventions.AttributeHostName, hostname)
-			attrs.InsertString(conventions.AttributeOSType, osType)
+			attrs.PutStr(conventions.AttributeHostName, hostname)
+			attrs.PutStr(conventions.AttributeOSType, osType)
+			attrs.PutStr(conventions.AttributeHostID, hostID)
 
 			return res, conventions.SchemaURL, nil
 		}

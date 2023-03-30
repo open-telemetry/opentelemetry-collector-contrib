@@ -1,4 +1,0 @@
-type: csv_parser
-parse_from: body.message
-header_attribute: header_field
-delimiter: "\t"

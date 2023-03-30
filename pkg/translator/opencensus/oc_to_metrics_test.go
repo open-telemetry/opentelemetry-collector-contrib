@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestOCToMetrics(t *testing.T) {
@@ -132,7 +133,7 @@ func TestOCToMetrics(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := OCToMetrics(test.oc.Node, test.oc.Resource, test.oc.Metrics)
-			assert.EqualValues(t, test.internal, got)
+			assert.NoError(t, pmetrictest.CompareMetrics(test.internal, got))
 		})
 	}
 }
@@ -140,9 +141,9 @@ func TestOCToMetrics(t *testing.T) {
 func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 	internal := testdata.GenerateMetricsOneMetric()
 	want := pmetric.NewMetrics()
-	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
-	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
-	want.ResourceMetrics().At(1).Resource().Attributes().UpsertString("resource-attr", "another-value")
+	internal.CopyTo(want)
+	want.ResourceMetrics().At(0).CopyTo(want.ResourceMetrics().AppendEmpty())
+	want.ResourceMetrics().At(1).Resource().Attributes().PutStr("resource-attr", "another-value")
 	oc := generateOCTestDataMetricsOneMetric()
 	oc2 := generateOCTestDataMetricsOneMetric()
 	oc.Metrics = append(oc.Metrics, oc2.Metrics...)
@@ -155,7 +156,7 @@ func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 func TestOCToMetrics_ResourceInMetricOnly(t *testing.T) {
 	internal := testdata.GenerateMetricsOneMetric()
 	want := pmetric.NewMetrics()
-	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
+	internal.CopyTo(want)
 	oc := generateOCTestDataMetricsOneMetric()
 	// Move resource to metric level.
 	// We shouldn't have a "combined" resource after conversion

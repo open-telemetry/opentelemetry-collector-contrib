@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cast"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -36,10 +36,11 @@ const (
 // receiverConfig describes a receiver instance with a default config.
 type receiverConfig struct {
 	// id is the id of the subreceiver (ie <receiver type>/<id>).
-	id config.ComponentID
+	id component.ID
 	// config is the map configured by the user in the config file. It is the contents of the map from
 	// the "config" section. The keys and values are arbitrarily configured by the user.
-	config userConfigMap
+	config     userConfigMap
+	endpointID observer.EndpointID
 }
 
 // userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
@@ -64,27 +65,27 @@ type resourceAttributes map[observer.EndpointType]map[string]string
 // newReceiverTemplate creates a receiverTemplate instance from the full name of a subreceiver
 // and its arbitrary config map values.
 func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, error) {
-	id, err := config.NewComponentIDFromString(name)
-	if err != nil {
+	id := component.ID{}
+	if err := id.UnmarshalText([]byte(name)); err != nil {
 		return receiverTemplate{}, err
 	}
 
 	return receiverTemplate{
 		receiverConfig: receiverConfig{
-			id:     id,
-			config: cfg,
+			id:         id,
+			config:     cfg,
+			endpointID: observer.EndpointID("endpoint.id"),
 		},
 	}, nil
 }
 
-var _ config.Unmarshallable = (*Config)(nil)
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for receiver_creator.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	receiverTemplates       map[string]receiverTemplate
+	receiverTemplates map[string]receiverTemplate
 	// WatchObservers are the extensions to listen to endpoints from.
-	WatchObservers []config.Type `mapstructure:"watch_observers"`
+	WatchObservers []component.ID `mapstructure:"watch_observers"`
 	// ResourceAttributes is a map of default resource attributes to add to each resource
 	// object received by this receiver from dynamically created receivers.
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`

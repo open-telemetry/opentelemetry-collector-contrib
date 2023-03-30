@@ -112,7 +112,7 @@ func (saf *stringAttributeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) 
 			batches,
 			func(resource pcommon.Resource) bool {
 				if v, ok := resource.Attributes().Get(saf.key); ok {
-					if ok := saf.matcher(v.StringVal()); ok {
+					if ok := saf.matcher(v.Str()); ok {
 						return false
 					}
 				}
@@ -120,9 +120,9 @@ func (saf *stringAttributeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) 
 			},
 			func(span ptrace.Span) bool {
 				if v, ok := span.Attributes().Get(saf.key); ok {
-					truncableStr := v.StringVal()
+					truncableStr := v.Str()
 					if len(truncableStr) > 0 {
-						if ok := saf.matcher(v.StringVal()); ok {
+						if ok := saf.matcher(v.Str()); ok {
 							return false
 						}
 					}
@@ -136,7 +136,7 @@ func (saf *stringAttributeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) 
 		batches,
 		func(resource pcommon.Resource) bool {
 			if v, ok := resource.Attributes().Get(saf.key); ok {
-				if ok := saf.matcher(v.StringVal()); ok {
+				if ok := saf.matcher(v.Str()); ok {
 					return true
 				}
 			}
@@ -144,9 +144,9 @@ func (saf *stringAttributeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) 
 		},
 		func(span ptrace.Span) bool {
 			if v, ok := span.Attributes().Get(saf.key); ok {
-				truncableStr := v.StringVal()
+				truncableStr := v.Str()
 				if len(truncableStr) > 0 {
-					if ok := saf.matcher(v.StringVal()); ok {
+					if ok := saf.matcher(v.Str()); ok {
 						return true
 					}
 				}

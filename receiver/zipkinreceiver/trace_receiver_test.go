@@ -34,11 +34,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
@@ -47,8 +46,6 @@ const (
 	zipkinV2NoTimestamp = "../../pkg/translator/zipkin/zipkinv2/testdata/zipkin_v2_notimestamp.json"
 	zipkinV1SingleBatch = "../../pkg/translator/zipkin/zipkinv1/testdata/zipkin_v1_single_batch.json"
 )
-
-var zipkinReceiverID = config.NewComponentIDWithName(typeStr, "receiver_test")
 
 func TestNew(t *testing.T) {
 	type args struct {
@@ -75,12 +72,11 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: tt.args.address,
 				},
 			}
-			got, err := newReceiver(cfg, tt.args.nextConsumer, componenttest.NewNopReceiverCreateSettings())
+			got, err := newReceiver(cfg, tt.args.nextConsumer, receivertest.NewNopCreateSettings())
 			require.Equal(t, tt.wantErr, err)
 			if tt.wantErr == nil {
 				require.NotNil(t, got)
@@ -98,12 +94,11 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:" + portStr,
 		},
 	}
-	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), componenttest.NewNopReceiverCreateSettings())
+	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopCreateSettings())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -121,7 +116,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 
 	req := reqs.ResourceSpans().At(0)
 	sn, _ := req.Resource().Attributes().Get(conventions.AttributeServiceName)
-	assert.Equal(t, "frontend", sn.StringVal())
+	assert.Equal(t, "frontend", sn.Str())
 
 	// Expecting 9 non-nil spans
 	require.Equal(t, 9, reqs.SpanCount(), "Incorrect non-nil spans count")
@@ -147,12 +142,11 @@ func TestStartTraceReception(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			cfg := &Config{
-				ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "localhost:0",
 				},
 			}
-			zr, err := newReceiver(cfg, sink, componenttest.NewNopReceiverCreateSettings())
+			zr, err := newReceiver(cfg, sink, receivertest.NewNopCreateSettings())
 			require.Nil(t, err)
 			require.NotNil(t, zr)
 
@@ -241,12 +235,11 @@ func TestReceiverContentTypes(t *testing.T) {
 
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
-				ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "",
 				},
 			}
-			zr, err := newReceiver(cfg, next, componenttest.NewNopReceiverCreateSettings())
+			zr, err := newReceiver(cfg, next, receivertest.NewNopCreateSettings())
 			require.NoError(t, err)
 
 			req := httptest.NewRecorder()
@@ -269,12 +262,11 @@ func TestReceiverInvalidContentType(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "",
 		},
 	}
-	zr, err := newReceiver(cfg, consumertest.NewNop(), componenttest.NewNopReceiverCreateSettings())
+	zr, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopCreateSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -292,12 +284,11 @@ func TestReceiverConsumerError(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:9411",
 		},
 	}
-	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), componenttest.NewNopReceiverCreateSettings())
+	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), receivertest.NewNopCreateSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -381,13 +372,12 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 
 	next := new(consumertest.TracesSink)
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "",
 		},
 		ParseStringTags: true,
 	}
-	zr, err := newReceiver(cfg, next, componenttest.NewNopReceiverCreateSettings())
+	zr, err := newReceiver(cfg, next, receivertest.NewNopCreateSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -402,22 +392,20 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	td := next.AllTraces()[0]
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 
-	expected := pcommon.NewMapFromRaw(map[string]interface{}{
+	expected := map[string]interface{}{
 		"cache_hit":            true,
-		"ping_count":           25,
+		"ping_count":           int64(25),
 		"timeout":              12.3,
 		"clnt/finagle.version": "6.45.0",
 		"http.path":            "/api",
-		"http.status_code":     500,
+		"http.status_code":     int64(500),
 		"net.host.ip":          "7::80:807f",
 		"peer.service":         "backend",
 		"net.peer.ip":          "192.168.99.101",
-		"net.peer.port":        9000,
-	}).Sort()
+		"net.peer.port":        int64(9000),
+	}
 
-	actual := span.Attributes().Sort()
-
-	assert.EqualValues(t, expected, actual)
+	assert.EqualValues(t, expected, span.Attributes().AsRaw())
 }
 
 func TestFromBytesWithNoTimestamp(t *testing.T) {
@@ -425,13 +413,12 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "",
 		},
 		ParseStringTags: true,
 	}
-	zi, err := newReceiver(cfg, consumertest.NewNop(), componenttest.NewNopReceiverCreateSettings())
+	zi, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopCreateSettings())
 	require.NoError(t, err)
 
 	hdr := make(http.Header)
@@ -461,5 +448,5 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 
 	wasAbsent, mapContainedKey := gs.Attributes().Get("otel.zipkin.absentField.startTime")
 	assert.True(t, mapContainedKey)
-	assert.True(t, wasAbsent.BoolVal())
+	assert.True(t, wasAbsent.Bool())
 }

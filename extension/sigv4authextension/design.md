@@ -25,14 +25,13 @@ The Sigv4 authenticator extension provides a way for the OTEL Collector’s Prom
 We first introduce the `config.go` module, which defines the configuration options a user can make and also does some data validation to catch errors.
 
 
-`Config` is a struct of the AWS Sigv4 authentication configurations. This is similar to the [AuthConfig](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/awsprometheusremotewriteexporter/config.go#L31) of the AWS PRW Exporter.
+`Config` is a struct of the AWS Sigv4 authentication configurations.
 
 
 ```go
 // Config for the Sigv4 Authenticator
 
 type Config struct {
-    config.ExtensionSettings `mapstructure:",squash"`
     Region string `mapstructure:"region,omitempty"`
     Service string `mapstructure:"service,omitempty"`
     AssumeRole AssumeRole `mapstructure:"assume_role"`
@@ -41,7 +40,6 @@ type Config struct {
 ```
 
 
-* [config.ExtensionSettings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/extension.go#L32) is a struct needed to needed to satisfy the [config.Extension](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/extension.go#L19) interface
 * `Region` is the AWS region for AWS Sigv4. This is an optional field.
     * Note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
 * `Service` is the AWS service for AWS Sigv4. This is an optional field.
@@ -70,13 +68,13 @@ type AssumeRole struct {
 ```go
 func (cfg *Config) Validate() error {
 	credsProvider, err := getCredsFromConfig(cfg)
-	if credsProvider == nil || err != nil {
-		return errBadCreds
-	} else {
-		cfg.credsProvider = credsProvider
+	if err != nil {
+		return fmt.Errorf("could not retrieve credential provider: %w", err)
 	}
-
-    return nil
+	if credsProvider == nil {
+		return fmt.Errorf("credsProvider cannot be nil")
+	}
+	return nil
 }
 ```
 
@@ -147,7 +145,7 @@ func newSigv4Extension(cfg *Config, awsSDKInfo string, logger *zap.logger) (*sig
 ```
 
 
-`getCredsFromConfig()` is a function that gets AWS credentials from the Config. It returns `*aws.Credentials`. This is largely taken from the [AWS PRW Exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/awsprometheusremotewriteexporter/auth.go#L106), but modified to use the AWS Go SDK v2.
+`getCredsFromConfig()` is a function that gets AWS credentials from the Config. It returns `*aws.Credentials`.
 
 
 ```go
@@ -184,7 +182,7 @@ func getCredsFromConfig(cfg *Config) (*aws.Credentials, error) {
 ```
 
 
-`cloneRequest()` is a function that clones an `http.request` for thread safety purposes. This implementation is also lifted from the [AWS PRW Exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/awsprometheusremotewriteexporter/auth.go#L152).
+`cloneRequest()` is a function that clones an `http.request` for thread safety purposes.
 
 
 ```go
@@ -222,7 +220,7 @@ type signingRoundTripper struct {
 ```
 
 
-`RoundTrip()` executes a single HTTP transaction and returns an HTTP response. It will sign the request with Sigv4. This method is implemented to satisfy the `RoundTripper` interface. Here, we will have multiple error checks throughout the method to ensure a proper `RoundTrip()` will succeed. Note that this implementation of `RoundTrip()` is taken from the [AWS PRW Exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/awsprometheusremotewriteexporter/auth.go#L46), and modified for region/service inference as well as usage with the AWS Go SDK v2.
+`RoundTrip()` executes a single HTTP transaction and returns an HTTP response. It will sign the request with Sigv4. This method is implemented to satisfy the `RoundTripper` interface. Here, we will have multiple error checks throughout the method to ensure a proper `RoundTrip()` will succeed.
 
 
 ```go
@@ -232,7 +230,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
         return nil, err
     }
 
-    content, err := ioutil.ReadAll(reqBody)
+    content, err := io.ReadAll(reqBody)
     reqBody.Close()
     if err != nil {
         return nil, err
@@ -261,7 +259,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	service, region := si.inferServiceAndRegion(req)
 	creds, err := (*si.credsProvider).Retrieve(req.Context())
 	if err != nil {
-		return nil, errBadCreds
+		return nil, fmt.Errorf("error retrieving credentials: %w", err)
 	}
 	err = si.signer.SignHTTP(req.Context(), creds, req2, payloadHash, service, region, time.Now())
 	if err != nil {
@@ -285,7 +283,7 @@ We take a closer look at the performance of `RoundTrip()`, since it will be heav
     .
     .
     .
-    content, err := ioutil.ReadAll(reqBody)
+    content, err := io.ReadAll(reqBody)
     reqBody.Close()
     .
     .
@@ -355,7 +353,7 @@ Lastly, we introduce `factory.go`, which provides the logic for creating the Sig
 
 
 ```go
-func NewFactory() component.ExtensionFactory {
+func NewFactory() extension.Factory {
     return extensionhelper.NewFactory(
         "sigv4auth",
         createDefaultConfig,
@@ -368,10 +366,8 @@ func NewFactory() component.ExtensionFactory {
 
 
 ```go
-func createDefaultConfig() config.Extension {
-    return &Config{
-        ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("sigv4auth")),
-    }
+func createDefaultConfig() component.Config {
+    return &Config{}
 }
 ```
 
@@ -380,7 +376,7 @@ func createDefaultConfig() config.Extension {
 
 
 ```go
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
     awsSDKInfo := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
     return newSigv4Extension(cfg.(*Config), awsSDKInfo, set.Logger)
 }

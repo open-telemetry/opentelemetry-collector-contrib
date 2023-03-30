@@ -15,9 +15,8 @@
 package prometheusexecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 
 import (
+	"errors"
 	"time"
-
-	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
@@ -25,7 +24,6 @@ import (
 // Config definition for prometheus_exec configuration
 type Config struct {
 	// Generic receiver config
-	config.ReceiverSettings `mapstructure:",squash"`
 	// ScrapeInterval is the time between each scrape completed by the Receiver
 	ScrapeInterval time.Duration `mapstructure:"scrape_interval,omitempty"`
 	// ScrapeTimeout is the time to wait before throttling a scrape request
@@ -34,4 +32,11 @@ type Config struct {
 	Port int `mapstructure:"port"`
 	// SubprocessConfig is the configuration needed for the subprocess
 	SubprocessConfig subprocessmanager.SubprocessConfig `mapstructure:",squash"`
+}
+
+func (cfg *Config) Validate() error {
+	if cfg.SubprocessConfig.Command == "" {
+		return errors.New("command to execute must be non-empty")
+	}
+	return nil
 }

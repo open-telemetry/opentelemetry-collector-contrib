@@ -15,9 +15,13 @@
 package splunkhecreceiver
 
 import (
+	"bufio"
+	"bytes"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -42,22 +46,24 @@ func Test_SplunkHecToLogData(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		event     splunk.Event
+		events    []*splunk.Event
 		output    plog.ResourceLogsSlice
 		hecConfig *Config
 		wantErr   error
 	}{
 		{
 			name: "happy_path",
-			event: splunk.Event{
-				Time:       &time,
-				Host:       "localhost",
-				Source:     "mysource",
-				SourceType: "mysourcetype",
-				Index:      "myindex",
-				Event:      "value",
-				Fields: map[string]interface{}{
-					"foo": "bar",
+			events: []*splunk.Event{
+				{
+					Time:       &time,
+					Host:       "localhost",
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Event:      "value",
+					Fields: map[string]interface{}{
+						"foo": "bar",
+					},
 				},
 			},
 			hecConfig: defaultTestingHecConfig,
@@ -68,45 +74,49 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		},
 		{
 			name: "double",
-			event: splunk.Event{
-				Time:       &time,
-				Host:       "localhost",
-				Source:     "mysource",
-				SourceType: "mysourcetype",
-				Index:      "myindex",
-				Event:      12.3,
-				Fields: map[string]interface{}{
-					"foo": "bar",
+			events: []*splunk.Event{
+				{
+					Time:       &time,
+					Host:       "localhost",
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Event:      12.3,
+					Fields: map[string]interface{}{
+						"foo": "bar",
+					},
 				},
 			},
 			hecConfig: defaultTestingHecConfig,
 			output: func() plog.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
-				logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetDoubleVal(12.3)
+				logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetDouble(12.3)
 				return logsSlice
 			}(),
 			wantErr: nil,
 		},
 		{
 			name: "array",
-			event: splunk.Event{
-				Time:       &time,
-				Host:       "localhost",
-				Source:     "mysource",
-				SourceType: "mysourcetype",
-				Index:      "myindex",
-				Event:      []interface{}{"foo", "bar"},
-				Fields: map[string]interface{}{
-					"foo": "bar",
+			events: []*splunk.Event{
+				{
+					Time:       &time,
+					Host:       "localhost",
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Event:      []interface{}{"foo", "bar"},
+					Fields: map[string]interface{}{
+						"foo": "bar",
+					},
 				},
 			},
 			hecConfig: defaultTestingHecConfig,
 			output: func() plog.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
 				arrVal := pcommon.NewValueSlice()
-				arr := arrVal.SliceVal()
-				arr.AppendEmpty().SetStringVal("foo")
-				arr.AppendEmpty().SetStringVal("bar")
+				arr := arrVal.Slice()
+				arr.AppendEmpty().SetStr("foo")
+				arr.AppendEmpty().SetStr("bar")
 				arrVal.CopyTo(logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
 				return logsSlice
 			}(),
@@ -114,48 +124,49 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		},
 		{
 			name: "complex_structure",
-			event: splunk.Event{
-				Time:       &time,
-				Host:       "localhost",
-				Source:     "mysource",
-				SourceType: "mysourcetype",
-				Index:      "myindex",
-				Event:      map[string]interface{}{"foos": []interface{}{"foo", "bar", "foobar"}, "bool": false, "someInt": int64(12)},
-				Fields: map[string]interface{}{
-					"foo": "bar",
+			events: []*splunk.Event{
+				{
+					Time:       &time,
+					Host:       "localhost",
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Event:      map[string]interface{}{"foos": []interface{}{"foo", "bar", "foobar"}, "bool": false, "someInt": int64(12)},
+					Fields: map[string]interface{}{
+						"foo": "bar",
+					},
 				},
 			},
 			hecConfig: defaultTestingHecConfig,
 			output: func() plog.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
-				foosArr := pcommon.NewValueSlice()
-				foos := foosArr.SliceVal()
-				foos.EnsureCapacity(3)
-				foos.AppendEmpty().SetStringVal("foo")
-				foos.AppendEmpty().SetStringVal("bar")
-				foos.AppendEmpty().SetStringVal("foobar")
 
-				attVal := pcommon.NewValueMap()
-				attMap := attVal.MapVal()
-				attMap.InsertBool("bool", false)
-				attMap.Insert("foos", foosArr)
-				attMap.InsertInt("someInt", 12)
-				attVal.CopyTo(logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
+				attMap := logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetEmptyMap()
+				attMap.PutBool("bool", false)
+				foos := attMap.PutEmptySlice("foos")
+				foos.EnsureCapacity(3)
+				foos.AppendEmpty().SetStr("foo")
+				foos.AppendEmpty().SetStr("bar")
+				foos.AppendEmpty().SetStr("foobar")
+				attMap.PutInt("someInt", 12)
+
 				return logsSlice
 			}(),
 			wantErr: nil,
 		},
 		{
 			name: "nil_timestamp",
-			event: splunk.Event{
-				Time:       new(float64),
-				Host:       "localhost",
-				Source:     "mysource",
-				SourceType: "mysourcetype",
-				Index:      "myindex",
-				Event:      "value",
-				Fields: map[string]interface{}{
-					"foo": "bar",
+			events: []*splunk.Event{
+				{
+					Time:       new(float64),
+					Host:       "localhost",
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Event:      "value",
+					Fields: map[string]interface{}{
+						"foo": "bar",
+					},
 				},
 			},
 			hecConfig: defaultTestingHecConfig,
@@ -166,15 +177,17 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		},
 		{
 			name: "custom_config_mapping",
-			event: splunk.Event{
-				Time:       new(float64),
-				Host:       "localhost",
-				Source:     "mysource",
-				SourceType: "mysourcetype",
-				Index:      "myindex",
-				Event:      "value",
-				Fields: map[string]interface{}{
-					"foo": "bar",
+			events: []*splunk.Event{
+				{
+					Time:       new(float64),
+					Host:       "localhost",
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Event:      "value",
+					Fields: map[string]interface{}{
+						"foo": "bar",
+					},
 				},
 			},
 			hecConfig: &Config{
@@ -188,102 +201,324 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			output: func() plog.ResourceLogsSlice {
 				lrs := plog.NewResourceLogsSlice()
 				lr := lrs.AppendEmpty()
+
+				lr.Resource().Attributes().PutStr("myhost", "localhost")
+				lr.Resource().Attributes().PutStr("mysource", "mysource")
+				lr.Resource().Attributes().PutStr("mysourcetype", "mysourcetype")
+				lr.Resource().Attributes().PutStr("myindex", "myindex")
+
 				sl := lr.ScopeLogs().AppendEmpty()
 				logRecord := sl.LogRecords().AppendEmpty()
-				logRecord.Body().SetStringVal("value")
+				logRecord.Body().SetStr("value")
 				logRecord.SetTimestamp(pcommon.Timestamp(0))
-				logRecord.Attributes().InsertString("myhost", "localhost")
-				logRecord.Attributes().InsertString("mysource", "mysource")
-				logRecord.Attributes().InsertString("mysourcetype", "mysourcetype")
-				logRecord.Attributes().InsertString("myindex", "myindex")
-				logRecord.Attributes().InsertString("foo", "bar")
+				logRecord.Attributes().PutStr("foo", "bar")
 				return lrs
 			}(),
 			wantErr: nil,
 		},
+		{
+			name: "group_events_by_resource_attributes",
+			events: []*splunk.Event{
+				{
+					Time:       &time,
+					Host:       "1",
+					Source:     "1",
+					SourceType: "1",
+					Index:      "1",
+					Event:      "Event-1",
+					Fields: map[string]interface{}{
+						"field": "value1",
+					},
+				},
+				{
+					Time:       &time,
+					Host:       "2",
+					Source:     "2",
+					SourceType: "2",
+					Index:      "2",
+					Event:      "Event-2",
+					Fields: map[string]interface{}{
+						"field": "value2",
+					},
+				},
+				{
+					Time:       &time,
+					Host:       "1",
+					Source:     "1",
+					SourceType: "1",
+					Index:      "1",
+					Event:      "Event-3",
+					Fields: map[string]interface{}{
+						"field": "value1",
+					},
+				},
+				{
+					Time:       &time,
+					Host:       "2",
+					Source:     "2",
+					SourceType: "2",
+					Index:      "2",
+					Event:      "Event-4",
+					Fields: map[string]interface{}{
+						"field": "value2",
+					},
+				},
+				{
+					Time:       &time,
+					Host:       "1",
+					Source:     "2",
+					SourceType: "1",
+					Index:      "2",
+					Event:      "Event-5",
+					Fields: map[string]interface{}{
+						"field": "value1-2",
+					},
+				},
+				{
+					Time:       &time,
+					Host:       "2",
+					Source:     "1",
+					SourceType: "2",
+					Index:      "1",
+					Event:      "Event-6",
+					Fields: map[string]interface{}{
+						"field": "value2-1",
+					},
+				},
+			},
+			output: func() plog.ResourceLogsSlice {
+				logs := plog.NewLogs()
+				{
+					lr := logs.ResourceLogs().AppendEmpty()
+					updateResourceMap(lr.Resource().Attributes(), "1", "1", "1", "1")
+					sl := lr.ScopeLogs().AppendEmpty()
+					logRecord := sl.LogRecords().AppendEmpty()
+					logRecord.Body().SetStr("Event-1")
+					logRecord.SetTimestamp(pcommon.Timestamp(nanoseconds))
+					logRecord.Attributes().PutStr("field", "value1")
+
+					logRecord = sl.LogRecords().AppendEmpty()
+					logRecord.Body().SetStr("Event-3")
+					logRecord.SetTimestamp(pcommon.Timestamp(nanoseconds))
+					logRecord.Attributes().PutStr("field", "value1")
+				}
+				{
+					lr := logs.ResourceLogs().AppendEmpty()
+					updateResourceMap(lr.Resource().Attributes(), "2", "2", "2", "2")
+					sl := lr.ScopeLogs().AppendEmpty()
+					logRecord := sl.LogRecords().AppendEmpty()
+					logRecord.Body().SetStr("Event-2")
+					logRecord.SetTimestamp(pcommon.Timestamp(nanoseconds))
+					logRecord.Attributes().PutStr("field", "value2")
+
+					logRecord = sl.LogRecords().AppendEmpty()
+					logRecord.Body().SetStr("Event-4")
+					logRecord.SetTimestamp(pcommon.Timestamp(nanoseconds))
+					logRecord.Attributes().PutStr("field", "value2")
+				}
+				{
+					lr := logs.ResourceLogs().AppendEmpty()
+					updateResourceMap(lr.Resource().Attributes(), "1", "2", "1", "2")
+					sl := lr.ScopeLogs().AppendEmpty()
+					logRecord := sl.LogRecords().AppendEmpty()
+					logRecord.Body().SetStr("Event-5")
+					logRecord.SetTimestamp(pcommon.Timestamp(nanoseconds))
+					logRecord.Attributes().PutStr("field", "value1-2")
+				}
+				{
+					lr := logs.ResourceLogs().AppendEmpty()
+					updateResourceMap(lr.Resource().Attributes(), "2", "1", "2", "1")
+					sl := lr.ScopeLogs().AppendEmpty()
+					logRecord := sl.LogRecords().AppendEmpty()
+					logRecord.Body().SetStr("Event-6")
+					logRecord.SetTimestamp(pcommon.Timestamp(nanoseconds))
+					logRecord.Attributes().PutStr("field", "value2-1")
+				}
+
+				return logs.ResourceLogs()
+			}(),
+			hecConfig: defaultTestingHecConfig,
+			wantErr:   nil,
+		},
 	}
-	for _, tt := range tests {
+	n := len(tests)
+	for _, tt := range tests[n-1:] {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := splunkHecToLogData(zap.NewNop(), []*splunk.Event{&tt.event}, func(resource pcommon.Resource) {}, tt.hecConfig)
+			result, err := splunkHecToLogData(zap.NewNop(), tt.events, func(resource pcommon.Resource) {}, tt.hecConfig)
 			assert.Equal(t, tt.wantErr, err)
-			assert.Equal(t, tt.output.Len(), result.ResourceLogs().Len())
-			assert.Equal(t, tt.output.At(0), result.ResourceLogs().At(0))
+			require.Equal(t, tt.output.Len(), result.ResourceLogs().Len())
+			for i := 0; i < result.ResourceLogs().Len(); i++ {
+				assert.Equal(t, tt.output.At(i), result.ResourceLogs().At(i))
+			}
 		})
 	}
+}
+
+func Test_SplunkHecRawToLogData(t *testing.T) {
+	hecConfig := &Config{
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
+			Source:     "mysource",
+			SourceType: "mysourcetype",
+			Index:      "myindex",
+			Host:       "myhost",
+		},
+	}
+	tests := []struct {
+		name           string
+		sc             *bufio.Scanner
+		query          map[string][]string
+		assertResource func(t *testing.T, got plog.Logs, slLen int)
+	}{
+		{
+			name: "all_mapping",
+			sc: func() *bufio.Scanner {
+				reader := io.NopCloser(bytes.NewReader([]byte("test")))
+				return bufio.NewScanner(reader)
+			}(),
+			query: func() map[string][]string {
+				m := make(map[string][]string)
+				k := []string{"foo"}
+				m[host] = k
+				m[sourcetype] = k
+				m[source] = k
+				m[index] = k
+				return m
+			}(),
+			assertResource: func(t *testing.T, got plog.Logs, slLen int) {
+				assert.Equal(t, 1, slLen)
+				attrs := got.ResourceLogs().At(0).Resource().Attributes()
+				assert.Equal(t, 4, attrs.Len())
+				if v, ok := attrs.Get("myhost"); ok {
+					assert.Equal(t, "foo", v.AsString())
+				} else {
+					assert.Fail(t, "host is not added to attributes")
+				}
+				if v, ok := attrs.Get("mysourcetype"); ok {
+					assert.Equal(t, "foo", v.AsString())
+				} else {
+					assert.Fail(t, "sourcetype is not added to attributes")
+				}
+				if v, ok := attrs.Get("mysource"); ok {
+					assert.Equal(t, "foo", v.AsString())
+				} else {
+					assert.Fail(t, "source is not added to attributes")
+				}
+				if v, ok := attrs.Get("myindex"); ok {
+					assert.Equal(t, "foo", v.AsString())
+				} else {
+					assert.Fail(t, "index is not added to attributes")
+				}
+			},
+		},
+		{
+			name: "some_mapping",
+			sc: func() *bufio.Scanner {
+				reader := io.NopCloser(bytes.NewReader([]byte("test")))
+				return bufio.NewScanner(reader)
+			}(),
+			query: func() map[string][]string {
+				m := make(map[string][]string)
+				k := []string{"foo"}
+				m[host] = k
+				m[sourcetype] = k
+				return m
+			}(),
+			assertResource: func(t *testing.T, got plog.Logs, slLen int) {
+				assert.Equal(t, 1, slLen)
+				attrs := got.ResourceLogs().At(0).Resource().Attributes()
+				assert.Equal(t, 2, attrs.Len())
+				if v, ok := attrs.Get("myhost"); ok {
+					assert.Equal(t, "foo", v.AsString())
+				} else {
+					assert.Fail(t, "host is not added to attributes")
+				}
+				if v, ok := attrs.Get("mysourcetype"); ok {
+					assert.Equal(t, "foo", v.AsString())
+				} else {
+					assert.Fail(t, "sourcetype is not added to attributes")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, slLen := splunkHecRawToLogData(tt.sc, tt.query, func(resource pcommon.Resource) {}, hecConfig)
+			tt.assertResource(t, result, slLen)
+		})
+	}
+}
+
+func updateResourceMap(pmap pcommon.Map, host, source, sourcetype, index string) {
+	pmap.PutStr("host.name", host)
+	pmap.PutStr("com.splunk.source", source)
+	pmap.PutStr("com.splunk.sourcetype", sourcetype)
+	pmap.PutStr("com.splunk.index", index)
 }
 
 func createLogsSlice(nanoseconds int) plog.ResourceLogsSlice {
 	lrs := plog.NewResourceLogsSlice()
 	lr := lrs.AppendEmpty()
+	updateResourceMap(lr.Resource().Attributes(), "localhost", "mysource", "mysourcetype", "myindex")
 	sl := lr.ScopeLogs().AppendEmpty()
 	logRecord := sl.LogRecords().AppendEmpty()
-	logRecord.Body().SetStringVal("value")
+	logRecord.Body().SetStr("value")
 	logRecord.SetTimestamp(pcommon.Timestamp(nanoseconds))
-	logRecord.Attributes().InsertString("host.name", "localhost")
-	logRecord.Attributes().InsertString("com.splunk.source", "mysource")
-	logRecord.Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
-	logRecord.Attributes().InsertString("com.splunk.index", "myindex")
-	logRecord.Attributes().InsertString("foo", "bar")
+	logRecord.Attributes().PutStr("foo", "bar")
 
 	return lrs
 }
 
-func Test_ConvertAttributeValueEmpty(t *testing.T) {
-	value, err := convertInterfaceToAttributeValue(zap.NewNop(), nil)
-	assert.NoError(t, err)
+func TestConvertToValueEmpty(t *testing.T) {
+	value := pcommon.NewValueEmpty()
+	assert.NoError(t, convertToValue(zap.NewNop(), nil, value))
 	assert.Equal(t, pcommon.NewValueEmpty(), value)
 }
 
-func Test_ConvertAttributeValueString(t *testing.T) {
-	value, err := convertInterfaceToAttributeValue(zap.NewNop(), "foo")
-	assert.NoError(t, err)
-	assert.Equal(t, pcommon.NewValueString("foo"), value)
+func TestConvertToValueString(t *testing.T) {
+	value := pcommon.NewValueEmpty()
+	assert.NoError(t, convertToValue(zap.NewNop(), "foo", value))
+	assert.Equal(t, pcommon.NewValueStr("foo"), value)
 }
 
-func Test_ConvertAttributeValueBool(t *testing.T) {
-	value, err := convertInterfaceToAttributeValue(zap.NewNop(), false)
-	assert.NoError(t, err)
+func TestConvertToValueBool(t *testing.T) {
+	value := pcommon.NewValueEmpty()
+	assert.NoError(t, convertToValue(zap.NewNop(), false, value))
 	assert.Equal(t, pcommon.NewValueBool(false), value)
 }
 
-func Test_ConvertAttributeValueFloat(t *testing.T) {
-	value, err := convertInterfaceToAttributeValue(zap.NewNop(), 12.3)
-	assert.NoError(t, err)
+func TestConvertToValueFloat(t *testing.T) {
+	value := pcommon.NewValueEmpty()
+	assert.NoError(t, convertToValue(zap.NewNop(), 12.3, value))
 	assert.Equal(t, pcommon.NewValueDouble(12.3), value)
 }
 
-func Test_ConvertAttributeValueMap(t *testing.T) {
-	value, err := convertInterfaceToAttributeValue(zap.NewNop(), map[string]interface{}{"foo": "bar"})
-	assert.NoError(t, err)
+func TestConvertToValueMap(t *testing.T) {
+	value := pcommon.NewValueEmpty()
+	assert.NoError(t, convertToValue(zap.NewNop(), map[string]interface{}{"foo": "bar"}, value))
 	atts := pcommon.NewValueMap()
-	attMap := atts.MapVal()
-	attMap.InsertString("foo", "bar")
+	attMap := atts.Map()
+	attMap.PutStr("foo", "bar")
 	assert.Equal(t, atts, value)
 }
 
-func Test_ConvertAttributeValueArray(t *testing.T) {
-	value, err := convertInterfaceToAttributeValue(zap.NewNop(), []interface{}{"foo"})
-	assert.NoError(t, err)
+func TestConvertToValueArray(t *testing.T) {
+	value := pcommon.NewValueEmpty()
+	assert.NoError(t, convertToValue(zap.NewNop(), []interface{}{"foo"}, value))
 	arrValue := pcommon.NewValueSlice()
-	arr := arrValue.SliceVal()
-	arr.AppendEmpty().SetStringVal("foo")
+	arr := arrValue.Slice()
+	arr.AppendEmpty().SetStr("foo")
 	assert.Equal(t, arrValue, value)
 }
 
-func Test_ConvertAttributeValueInvalid(t *testing.T) {
-	value, err := convertInterfaceToAttributeValue(zap.NewNop(), splunk.Event{})
-	assert.Error(t, err)
-	assert.Equal(t, pcommon.NewValueEmpty(), value)
+func TestConvertToValueInvalid(t *testing.T) {
+	assert.Error(t, convertToValue(zap.NewNop(), splunk.Event{}, pcommon.NewValueEmpty()))
 }
 
-func Test_ConvertAttributeValueInvalidInMap(t *testing.T) {
-	value, err := convertInterfaceToAttributeValue(zap.NewNop(), map[string]interface{}{"foo": splunk.Event{}})
-	assert.Error(t, err)
-	assert.Equal(t, pcommon.NewValueEmpty(), value)
+func TestConvertToValueInvalidInMap(t *testing.T) {
+	assert.Error(t, convertToValue(zap.NewNop(), map[string]interface{}{"foo": splunk.Event{}}, pcommon.NewValueEmpty()))
 }
 
-func Test_ConvertAttributeValueInvalidInArray(t *testing.T) {
-	value, err := convertInterfaceToAttributeValue(zap.NewNop(), []interface{}{splunk.Event{}})
-	assert.Error(t, err)
-	assert.Equal(t, pcommon.NewValueEmpty(), value)
+func TestConvertToValueInvalidInArray(t *testing.T) {
+	assert.Error(t, convertToValue(zap.NewNop(), []interface{}{splunk.Event{}}, pcommon.NewValueEmpty()))
 }

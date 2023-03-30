@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/unmarshalertest"
@@ -67,7 +67,7 @@ func TestNewMetricsReceiver(t *testing.T) {
 			cfg.RecordType = testCase.recordType
 			got, err := newMetricsReceiver(
 				cfg,
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				defaultMetricsUnmarshalers(zap.NewNop()),
 				testCase.consumer,
 			)

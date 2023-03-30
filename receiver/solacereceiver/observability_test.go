@@ -33,17 +33,26 @@ type metricsTestCase struct {
 }
 
 func TestRecordMetrics(t *testing.T) {
+	metrics := newTestMetrics(t)
 	testCases := []metricsTestCase{
-		{recordFailedReconnection, viewFailedReconnections, failedReconnections, 3, 3},
-		{recordRecoverableUnmarshallingError, viewRecoverableUnmarshallingErrors, recoverableUnmarshallingErrors, 3, 3},
-		{recordFatalUnmarshallingError, viewFatalUnmarshallingErrors, fatalUnmarshallingErrors, 3, 3},
-		{recordDroppedSpanMessages, viewDroppedSpanMessages, droppedSpanMessages, 3, 3},
-		{recordReceivedSpanMessages, viewReceivedSpanMessages, receivedSpanMessages, 3, 3},
-		{recordReportedSpans, viewReportedSpans, reportedSpans, 3, 3},
+		{metrics.recordFailedReconnection, metrics.views.failedReconnections, metrics.stats.failedReconnections, 3, 3},
+		{metrics.recordRecoverableUnmarshallingError, metrics.views.recoverableUnmarshallingErrors, metrics.stats.recoverableUnmarshallingErrors, 3, 3},
+		{metrics.recordFatalUnmarshallingError, metrics.views.fatalUnmarshallingErrors, metrics.stats.fatalUnmarshallingErrors, 3, 3},
+		{metrics.recordDroppedSpanMessages, metrics.views.droppedSpanMessages, metrics.stats.droppedSpanMessages, 3, 3},
+		{metrics.recordReceivedSpanMessages, metrics.views.receivedSpanMessages, metrics.stats.receivedSpanMessages, 3, 3},
+		{metrics.recordReportedSpans, metrics.views.reportedSpans, metrics.stats.reportedSpans, 3, 3},
 		{func() {
-			recordReceiverStatus(receiverStateTerminated)
-		}, viewReceiverStatus, receiverStatus, 3, int(receiverStateTerminated)},
-		{recordNeedUpgrade, viewNeedUpgrade, needUpgrade, 3, 1},
+			metrics.recordReceiverStatus(receiverStateTerminated)
+		}, metrics.views.receiverStatus, metrics.stats.receiverStatus, 3, int(receiverStateTerminated)},
+		{metrics.recordNeedUpgrade, metrics.views.needUpgrade, metrics.stats.needUpgrade, 3, 1},
+		{func() {
+			metrics.recordFlowControlStatus(flowControlStateControlled)
+		}, metrics.views.flowControlStatus, metrics.stats.flowControlStatus, 3, 1},
+		{func() {
+			metrics.recordFlowControlRecentRetries(5)
+		}, metrics.views.flowControlRecentRetries, metrics.stats.flowControlRecentRetries, 3, 5},
+		{metrics.recordFlowControlTotal, metrics.views.flowControlTotal, metrics.stats.flowControlTotal, 3, 3},
+		{metrics.recordFlowControlSingleSuccess, metrics.views.flowControlSingleSuccess, metrics.stats.flowControlSingleSuccess, 3, 3},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.m.Name(), func(t *testing.T) {
@@ -73,17 +82,42 @@ func validateMetric(t *testing.T, v *view.View, expected interface{}) {
 	}
 }
 
-// TestRegisterViewsExpectingPanic validates that if an error is returned from view.Register, we panic and don't continue with initialization
-func TestRegisterViewsExpectingPanic(t *testing.T) {
-	droppedSpanMessagesName := viewDroppedSpanMessages.Name
-	defer func() {
-		viewDroppedSpanMessages.Name = droppedSpanMessagesName
-		registerMetrics()
-	}()
-	defer func() {
-		r := recover()
-		assert.NotNil(t, r)
-	}()
-	viewDroppedSpanMessages.Name = viewReceivedSpanMessages.Name
-	registerMetrics()
+// TestRegisterViewsExpectingFailure validates that if an error is returned from view.Register, we panic and don't continue with initialization
+func TestRegisterViewsExpectingFailure(t *testing.T) {
+	statName := "solacereceiver/" + t.Name() + "/failed_reconnections"
+	stat := stats.Int64(statName, "", stats.UnitDimensionless)
+	err := view.Register(&view.View{
+		Name:        buildReceiverCustomMetricName(statName),
+		Description: "some description",
+		Measure:     stat,
+		Aggregation: view.Sum(),
+	})
+	require.NoError(t, err)
+	metrics, err := newOpenCensusMetrics(t.Name())
+	assert.Error(t, err)
+	assert.Nil(t, metrics)
+}
+
+// newTestMetrics builds a new metrics that will cleanup when testing.T completes
+func newTestMetrics(t *testing.T) *opencensusMetrics {
+	m, err := newOpenCensusMetrics(t.Name())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		unregisterMetrics(m)
+	})
+	return m
+}
+
+// unregisterMetrics is used to unregister the metrics for testing purposes
+func unregisterMetrics(metrics *opencensusMetrics) {
+	view.Unregister(
+		metrics.views.failedReconnections,
+		metrics.views.recoverableUnmarshallingErrors,
+		metrics.views.fatalUnmarshallingErrors,
+		metrics.views.droppedSpanMessages,
+		metrics.views.receivedSpanMessages,
+		metrics.views.reportedSpans,
+		metrics.views.receiverStatus,
+		metrics.views.needUpgrade,
+	)
 }

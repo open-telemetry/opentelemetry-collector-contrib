@@ -4,7 +4,7 @@ This guide is specific to the transform processor.  All guidelines in [Collector
 
 ## New Functions
 
-If a new function is not specific to the transform processor it should be added to the [telemetry query language](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/telemetryquerylanguage) instead.
+If a new function is not specific to the transform processor it should be added to the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) instead.
 
 All new functions must be added via a new file.  Function files must start with `func_`.  Functions that are usable in multiple pipelines must be placed in `internal/common`.  Functions that are specific to a pipeline must be placed in `internal/<pipeline>`.
 
@@ -16,4 +16,4 @@ All new functions should have integration tests added to any usable pipeline's `
 
 ## New Values
 
-When adding new values to the grammar you must update the [Telemetry Query Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/telemetryquerylanguage/tql/CONTRIBUTING.md)
+When adding new values to the grammar you must update the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/CONTRIBUTING.md)

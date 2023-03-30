@@ -102,7 +102,7 @@ func evtRender(context uintptr, fragment uintptr, flags uint32, bufferSize uint3
 	propertyCount := new(uint32)
 	_, _, err := renderProc.Call(context, fragment, uintptr(flags), uintptr(bufferSize), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(bufferUsed)), uintptr(unsafe.Pointer(propertyCount)))
 	if err != ErrorSuccess {
-		return nil, nil, err
+		return bufferUsed, propertyCount, err
 	}
 
 	return bufferUsed, propertyCount, nil
@@ -149,11 +149,12 @@ func evtOpenPublisherMetadata(session uintptr, publisherIdentity *uint16, logFil
 }
 
 // evtFormatMessage is the direct syscall implementation of EvtFormatMessage (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtformatmessage)
-func evtFormatMessage(publisherMetadata uintptr, event uintptr, messageID uint32, valueCount uint32, values uintptr, flags uint32, bufferSize uint32, buffer *byte, bufferUsed *uint32) error {
+func evtFormatMessage(publisherMetadata uintptr, event uintptr, messageID uint32, valueCount uint32, values uintptr, flags uint32, bufferSize uint32, buffer *byte) (*uint32, error) {
+	bufferUsed := new(uint32)
 	_, _, err := formatMessageProc.Call(publisherMetadata, event, uintptr(messageID), uintptr(valueCount), values, uintptr(flags), uintptr(bufferSize), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(bufferUsed)))
 	if err != ErrorSuccess {
-		return err
+		return bufferUsed, err
 	}
 
-	return nil
+	return bufferUsed, nil
 }

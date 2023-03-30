@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/go-multierror"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -49,10 +49,10 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a key value parser operator.
 type Config struct {
-	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
+	helper.ParserConfig `mapstructure:",squash"`
 
-	Delimiter     string `mapstructure:"delimiter" yaml:"delimiter"`
-	PairDelimiter string `mapstructure:"pair_delimiter" yaml:"pair_delimiter"`
+	Delimiter     string `mapstructure:"delimiter"`
+	PairDelimiter string `mapstructure:"pair_delimiter"`
 }
 
 // Build will build a key value parser operator.
@@ -120,7 +120,7 @@ func (kv *Parser) parser(input string, delimiter string) (map[string]interface{}
 		m := strings.Split(raw, delimiter)
 		if len(m) != 2 {
 			e := fmt.Errorf("expected '%s' to split by '%s' into two items, got %d", raw, delimiter, len(m))
-			err = multierror.Append(err, e)
+			err = multierr.Append(err, e)
 			continue
 		}
 

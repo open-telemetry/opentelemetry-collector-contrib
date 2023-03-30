@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -27,50 +28,53 @@ import (
 	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 )
 
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
-	require.NoError(t, configtest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewID("filelog").String())
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	assert.Equal(t, len(cfg.Receivers), 1)
-
-	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID("filelog")])
+	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
 	t.Parallel()
 
 	cfg := testdataConfigYaml()
-	cfg.StartAt = "middle"
+	cfg.InputConfig.StartAt = "middle"
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		new(consumertest.LogsSink),
 	)
@@ -84,12 +88,9 @@ func TestReadStaticFile(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-
 	cfg := testdataConfigYaml()
-	cfg.Converter.MaxFlushCount = 10
-	cfg.Converter.FlushInterval = time.Millisecond
 
-	converter := adapter.NewConverter()
+	converter := adapter.NewConverter(zap.NewNop())
 	converter.Start()
 	defer converter.Stop()
 
@@ -97,7 +98,7 @@ func TestReadStaticFile(t *testing.T) {
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), 3, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -139,20 +140,25 @@ func TestReadRotatingFiles(t *testing.T) {
 			sequential:   false,
 		},
 		{
-			name:         "MoveCreateTimestamped",
-			copyTruncate: false,
-			sequential:   false,
-		},
-		{
 			name:         "CopyTruncateSequential",
 			copyTruncate: true,
 			sequential:   true,
 		},
-		{
-			name:         "MoveCreateSequential",
-			copyTruncate: false,
-			sequential:   true,
-		},
+	}
+	if runtime.GOOS != "windows" {
+		// Windows has very poor support for moving active files, so rotation is less commonly used
+		tests = append(tests, []rotationTest{
+			{
+				name:         "MoveCreateTimestamped",
+				copyTruncate: false,
+				sequential:   false,
+			},
+			{
+				name:         "MoveCreateSequential",
+				copyTruncate: false,
+				sequential:   true,
+			},
+		}...)
 	}
 
 	for _, tc := range tests {
@@ -175,8 +181,6 @@ func (rt *rotationTest) Run(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 
 	cfg := rotationTestConfig(tempDir)
-	cfg.Converter.MaxFlushCount = 1
-	cfg.Converter.FlushInterval = time.Millisecond
 
 	// With a max of 100 logs per file and 1 backup file, rotation will occur
 	// when more than 100 logs are written, and deletion when more than 200 are written.
@@ -186,14 +190,14 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	// Build expected outputs
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
-	converter := adapter.NewConverter()
+	converter := adapter.NewConverter(zap.NewNop())
 	converter.Start()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), numLogs, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -257,26 +261,26 @@ func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 func testdataConfigYaml() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators: adapter.OperatorConfigs{
-				map[string]interface{}{
-					"type":  "regex_parser",
-					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
-					"severity": map[string]interface{}{
-						"parse_from": "attributes.sev",
-					},
-					"timestamp": map[string]interface{}{
-						"layout":     "%Y-%m-%d",
-						"parse_from": "attributes.time",
-					},
+			Operators: []operator.Config{
+				{
+					Builder: func() *regex.Config {
+						cfg := regex.NewConfig()
+						cfg.Regex = "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"
+						sevField := entry.NewAttributeField("sev")
+						sevCfg := helper.NewSeverityConfig()
+						sevCfg.ParseFrom = &sevField
+						cfg.SeverityConfig = &sevCfg
+						timeField := entry.NewAttributeField("time")
+						timeCfg := helper.NewTimeParser()
+						timeCfg.Layout = "%Y-%m-%d"
+						timeCfg.ParseFrom = &timeField
+						cfg.TimeParser = &timeCfg
+						return cfg
+					}(),
 				},
 			},
-			Converter: adapter.ConverterConfig{
-				MaxFlushCount: 100,
-				FlushInterval: 100 * time.Millisecond,
-			},
 		},
-		Config: func() file.Config {
+		InputConfig: func() file.Config {
 			c := file.NewConfig()
 			c.Include = []string{"testdata/simple.log"}
 			c.StartAt = "beginning"
@@ -288,24 +292,26 @@ func testdataConfigYaml() *FileLogConfig {
 func rotationTestConfig(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators: adapter.OperatorConfigs{
-				map[string]interface{}{
-					"type":  "regex_parser",
-					"regex": "^(?P<ts>\\d{4}-\\d{2}-\\d{2}) (?P<msg>[^\n]+)",
-					"timestamp": map[interface{}]interface{}{
-						"layout":     "%Y-%m-%d",
-						"parse_from": "body.ts",
-					},
+			Operators: []operator.Config{
+				{
+					Builder: func() *regex.Config {
+						cfg := regex.NewConfig()
+						cfg.Regex = "^(?P<ts>\\d{4}-\\d{2}-\\d{2}) (?P<msg>[^\n]+)"
+						timeField := entry.NewAttributeField("ts")
+						timeCfg := helper.NewTimeParser()
+						timeCfg.Layout = "%Y-%m-%d"
+						timeCfg.ParseFrom = &timeField
+						cfg.TimeParser = &timeCfg
+						return cfg
+					}(),
 				},
 			},
-			Converter: adapter.ConverterConfig{},
 		},
-		Config: func() file.Config {
+		InputConfig: func() file.Config {
 			c := file.NewConfig()
 			c.Include = []string{fmt.Sprintf("%s/*", tempDir)}
 			c.StartAt = "beginning"
-			c.PollInterval = helper.Duration{Duration: 10 * time.Millisecond}
+			c.PollInterval = 10 * time.Millisecond
 			c.IncludeFileName = false
 			return *c
 		}(),

@@ -17,15 +17,12 @@ package adapter
 import (
 	"context"
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -39,7 +36,7 @@ func init() {
 
 // UnstartableConfig is the configuration of an unstartable mock operator
 type UnstartableConfig struct {
-	helper.OutputConfig `yaml:",inline"`
+	helper.OutputConfig `mapstructure:",squash"`
 }
 
 // UnstartableOperator is an operator that will build but not start
@@ -49,15 +46,11 @@ type UnstartableOperator struct {
 	helper.OutputOperator
 }
 
-func newUnstartableParams() map[string]interface{} {
-	return map[string]interface{}{"type": "unstartable_operator"}
-}
-
-// NewUnstartableConfig creates new output config
-func NewUnstartableConfig() *UnstartableConfig {
-	return &UnstartableConfig{
+// newUnstartableConfig creates new output config
+func NewUnstartableConfig() operator.Config {
+	return operator.NewConfig(&UnstartableConfig{
 		OutputConfig: helper.NewOutputConfig("unstartable_operator", "unstartable_operator"),
-	}
+	})
 }
 
 // Build will build an unstartable operator
@@ -89,53 +82,27 @@ const testType = "test"
 
 type TestConfig struct {
 	BaseConfig `mapstructure:",squash"`
-	Input      InputConfig `mapstructure:",remain"`
+	Input      operator.Config `mapstructure:",squash"`
 }
 type TestReceiverType struct{}
 
-func (f TestReceiverType) Type() config.Type {
+func (f TestReceiverType) Type() component.Type {
 	return testType
 }
 
-func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
+func (f TestReceiverType) CreateDefaultConfig() component.Config {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(testType)),
-			Operators:        OperatorConfigs{},
-			Converter: ConverterConfig{
-				MaxFlushCount: 1,
-				FlushInterval: 100 * time.Millisecond,
-			},
+			Operators: []operator.Config{},
 		},
-		Input: InputConfig{},
+		Input: operator.NewConfig(noop.NewConfig()),
 	}
 }
 
-func (f TestReceiverType) BaseConfig(cfg config.Receiver) BaseConfig {
+func (f TestReceiverType) BaseConfig(cfg component.Config) BaseConfig {
 	return cfg.(*TestConfig).BaseConfig
 }
 
-func (f TestReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	testConfig := cfg.(*TestConfig)
-
-	// Allow tests to run without implementing input config
-	if testConfig.Input["type"] == nil {
-		return &operator.Config{Builder: noop.NewConfig()}, nil
-	}
-
-	// Allow tests to explicitly prompt a failure
-	if testConfig.Input["type"] == "unknown" {
-		return nil, errors.New("unknown input type")
-	}
-	return &operator.Config{Builder: NewUnstartableConfig()}, nil
-}
-
-func newMockPersister() *persister {
-	return &persister{
-		client: storagetest.NewInMemoryClient(
-			component.KindReceiver,
-			config.NewComponentID("foolog"),
-			"test",
-		),
-	}
+func (f TestReceiverType) InputConfig(cfg component.Config) operator.Config {
+	return cfg.(*TestConfig).Input
 }

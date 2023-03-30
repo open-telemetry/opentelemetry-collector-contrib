@@ -19,8 +19,8 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -52,25 +52,23 @@ var (
 )
 
 // NewFactory returns a new factory for the Span processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, stability))
+		processor.WithTraces(createTracesProcessor, stability))
 }
 
-func createDefaultConfig() config.Processor {
-	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
 func createTracesProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 
 	// 'from_attributes' or 'to_attributes' under 'name' has to be set for the span
 	// processor to be valid. If not set and not enforced, the processor would do no work.
@@ -94,7 +92,7 @@ func createTracesProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTracesProcessorWithCreateSettings(
+	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,

@@ -21,36 +21,40 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 )
 
 var (
 	cfg = &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
-			Operators: adapter.OperatorConfigs{
-				map[string]interface{}{
-					"type":  "regex_parser",
-					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
-					"severity": map[string]interface{}{
-						"parse_from": "attributes.sev",
-					},
-					"timestamp": map[string]interface{}{
-						"layout":     "%Y-%m-%d %H:%M:%S",
-						"parse_from": "attributes.time",
-					},
+			Operators: []operator.Config{
+				{
+					Builder: func() *regex.Config {
+						cfg := regex.NewConfig()
+						cfg.Regex = "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"
+						sevField := entry.NewAttributeField("sev")
+						sevCfg := helper.NewSeverityConfig()
+						sevCfg.ParseFrom = &sevField
+						cfg.SeverityConfig = &sevCfg
+						timeField := entry.NewAttributeField("time")
+						timeCfg := helper.NewTimeParser()
+						timeCfg.Layout = "%Y-%m-%d %H:%M:%S"
+						timeCfg.ParseFrom = &timeField
+						cfg.TimeParser = &timeCfg
+						return cfg
+					}(),
 				},
-			},
-			Converter: adapter.ConverterConfig{
-				MaxFlushCount: 100,
-				FlushInterval: 100 * time.Millisecond,
 			},
 		},
 	}
@@ -73,17 +77,17 @@ type testLogMessage struct {
 	attributes   *map[string]pcommon.Value
 }
 
-// Temporary abstraction to avoid "unused" linter
+// This func is a workaround to avoid the "unused" lint error while the test is skipped
 var skip = func(t *testing.T, why string) {
 	t.Skip(why)
 }
 
 func TestLogsTransformProcessor(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9761")
-	baseMessage := pcommon.NewValueString("2022-01-01 01:02:03 INFO this is a test message")
-	spanID := pcommon.NewSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
-	traceID := pcommon.NewTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
-	infoSeverityText := "Info"
+	skip(t, "See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9761")
+	baseMessage := pcommon.NewValueStr("2022-01-01 01:02:03 INFO this is a test message")
+	spanID := pcommon.SpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
+	traceID := pcommon.TraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
+	infoSeverityText := "INFO"
 
 	tests := []struct {
 		name           string
@@ -113,12 +117,12 @@ func TestLogsTransformProcessor(t *testing.T) {
 			parsedMessages: []testLogMessage{
 				{
 					body:         baseMessage,
-					severity:     plog.SeverityNumberINFO,
+					severity:     plog.SeverityNumberInfo,
 					severityText: &infoSeverityText,
 					attributes: &map[string]pcommon.Value{
-						"msg":  pcommon.NewValueString("this is a test message"),
-						"time": pcommon.NewValueString("2022-01-01 01:02:03"),
-						"sev":  pcommon.NewValueString("INFO"),
+						"msg":  pcommon.NewValueStr("this is a test message"),
+						"time": pcommon.NewValueStr("2022-01-01 01:02:03"),
+						"sev":  pcommon.NewValueStr("INFO"),
 					},
 					spanID:       spanID,
 					traceID:      traceID,
@@ -128,12 +132,12 @@ func TestLogsTransformProcessor(t *testing.T) {
 				},
 				{
 					body:         baseMessage,
-					severity:     plog.SeverityNumberINFO,
+					severity:     plog.SeverityNumberInfo,
 					severityText: &infoSeverityText,
 					attributes: &map[string]pcommon.Value{
-						"msg":  pcommon.NewValueString("this is a test message"),
-						"time": pcommon.NewValueString("2022-01-01 01:02:03"),
-						"sev":  pcommon.NewValueString("INFO"),
+						"msg":  pcommon.NewValueStr("this is a test message"),
+						"time": pcommon.NewValueStr("2022-01-01 01:02:03"),
+						"sev":  pcommon.NewValueStr("INFO"),
 					},
 					spanID:       spanID,
 					traceID:      traceID,
@@ -149,7 +153,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tln := new(consumertest.LogsSink)
 			factory := NewFactory()
-			ltp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, tln)
+			ltp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, ltp.Capabilities().MutatesData)
 
@@ -160,13 +164,10 @@ func TestLogsTransformProcessor(t *testing.T) {
 			wantLogData := generateLogData(tt.parsedMessages)
 			err = ltp.ConsumeLogs(context.Background(), sourceLogData)
 			require.NoError(t, err)
+			time.Sleep(200 * time.Millisecond)
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
-
-			for i := 0; i < logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len(); i++ {
-				logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i).Attributes().Sort()
-			}
-			assert.EqualValues(t, wantLogData, logs[0])
+			assert.NoError(t, plogtest.CompareLogs(wantLogData, logs[0]))
 		})
 	}
 }
@@ -191,16 +192,15 @@ func generateLogData(messages []testLogMessage) plog.Logs {
 		}
 		if content.attributes != nil {
 			for k, v := range *content.attributes {
-				log.Attributes().Insert(k, v)
+				v.CopyTo(log.Attributes().PutEmpty(k))
 			}
-			log.Attributes().Sort()
 		}
 
 		log.SetSpanID(content.spanID)
 		log.SetTraceID(content.traceID)
 
 		if content.flags != uint32(0x00) {
-			log.SetFlags(content.flags)
+			log.SetFlags(plog.LogRecordFlags(content.flags))
 		}
 	}
 

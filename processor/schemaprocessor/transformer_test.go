@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -42,7 +42,7 @@ func SchemaHandler(t *testing.T) func(wr http.ResponseWriter, r *http.Request) {
 }
 
 func newTestTransformer(t *testing.T) *transformer {
-	trans, err := newTransformer(context.Background(), newDefaultConfiguration(), component.ProcessorCreateSettings{
+	trans, err := newTransformer(context.Background(), newDefaultConfiguration(), processor.CreateSettings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zaptest.NewLogger(t),
 		},
@@ -86,8 +86,7 @@ func TestTransformerProcessing(t *testing.T) {
 		s := in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().AppendEmpty()
 		s.SetName("http.request")
 		s.SetKind(ptrace.SpanKindConsumer)
-		s.SetSpanID(pcommon.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7}))
-		s.SetTraceState(ptrace.TraceStateEmpty)
+		s.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 		s.CopyTo(in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0))
 
 		out, err := trans.processTraces(context.Background(), in)

@@ -69,7 +69,7 @@ func TestResolvedOnlyOnce(t *testing.T) {
 
 func TestFailOnMissingEndpoints(t *testing.T) {
 	// prepare
-	expected := []string{}
+	var expected []string
 
 	// test
 	res, err := newStaticResolver(expected)

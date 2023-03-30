@@ -1,15 +1,2 @@
-receivers:
-  nop:
-
-processors:
-  nop:
-
-exporters:
-  parquet:
-    path: /var/output/log.parquet
-service:
-  pipelines:
-    metrics:
-      receivers: [nop]
-      processors: [nop]
-      exporters: [parquet]
+parquet:
+  path: /var/output/log.parquet

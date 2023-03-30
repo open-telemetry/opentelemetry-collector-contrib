@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,91 +18,47 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
-	queries []tql.Query
-	logger  *zap.Logger
+	contexts []consumer.Metrics
+	logger   *zap.Logger
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	queries, err := tql.ParseQueries(statements, functions, tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings) (*Processor, error) {
+	pc, err := common.NewMetricParserCollection(settings, common.WithMetricParser(MetricFunctions()), common.WithDataPointParser(DataPointFunctions()), common.WithMetricErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
+
+	contexts := make([]consumer.Metrics, len(contextStatements))
+	for i, cs := range contextStatements {
+		context, err := pc.ParseContextStatements(cs)
+		if err != nil {
+			return nil, err
+		}
+		contexts[i] = context
+	}
+
 	return &Processor{
-		queries: queries,
-		logger:  settings.Logger,
+		contexts: contexts,
+		logger:   settings.Logger,
 	}, nil
 }
 
-func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetric.Metrics, error) {
-	ctx := tqlmetrics.MetricTransformContext{}
-	for i := 0; i < td.ResourceMetrics().Len(); i++ {
-		rmetrics := td.ResourceMetrics().At(i)
-		ctx.Resource = rmetrics.Resource()
-		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
-			smetrics := rmetrics.ScopeMetrics().At(j)
-			ctx.InstrumentationScope = smetrics.Scope()
-			metrics := smetrics.Metrics()
-			ctx.Metrics = metrics
-			for k := 0; k < metrics.Len(); k++ {
-				ctx.Metric = metrics.At(k)
-				switch ctx.Metric.DataType() {
-				case pmetric.MetricDataTypeSum:
-					p.handleNumberDataPoints(ctx, ctx.Metric.Sum().DataPoints())
-				case pmetric.MetricDataTypeGauge:
-					p.handleNumberDataPoints(ctx, ctx.Metric.Gauge().DataPoints())
-				case pmetric.MetricDataTypeHistogram:
-					p.handleHistogramDataPoints(ctx, ctx.Metric.Histogram().DataPoints())
-				case pmetric.MetricDataTypeExponentialHistogram:
-					p.handleExponetialHistogramDataPoints(ctx, ctx.Metric.ExponentialHistogram().DataPoints())
-				case pmetric.MetricDataTypeSummary:
-					p.handleSummaryDataPoints(ctx, ctx.Metric.Summary().DataPoints())
-				}
-			}
+func (p *Processor) ProcessMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	for _, c := range p.contexts {
+		err := c.ConsumeMetrics(ctx, md)
+		if err != nil {
+			p.logger.Error("failed processing metrics", zap.Error(err))
+			return md, err
 		}
 	}
-	return td, nil
-}
-
-func (p *Processor) handleNumberDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.NumberDataPointSlice) {
-	for i := 0; i < dps.Len(); i++ {
-		ctx.DataPoint = dps.At(i)
-		p.callFunctions(ctx)
-	}
-}
-
-func (p *Processor) handleHistogramDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.HistogramDataPointSlice) {
-	for i := 0; i < dps.Len(); i++ {
-		ctx.DataPoint = dps.At(i)
-		p.callFunctions(ctx)
-	}
-}
-
-func (p *Processor) handleExponetialHistogramDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.ExponentialHistogramDataPointSlice) {
-	for i := 0; i < dps.Len(); i++ {
-		ctx.DataPoint = dps.At(i)
-		p.callFunctions(ctx)
-	}
-}
-
-func (p *Processor) handleSummaryDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.SummaryDataPointSlice) {
-	for i := 0; i < dps.Len(); i++ {
-		ctx.DataPoint = dps.At(i)
-		p.callFunctions(ctx)
-	}
-}
-
-func (p *Processor) callFunctions(ctx tqlmetrics.MetricTransformContext) {
-	for _, statement := range p.queries {
-		if statement.Condition(ctx) {
-			statement.Function(ctx)
-		}
-	}
+	return md, nil
 }

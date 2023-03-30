@@ -106,53 +106,24 @@ var (
 		lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12),
 			nil...),
 	}
-	bounds  = pcommon.NewImmutableFloat64Slice([]float64{0.1, 0.5, 0.99})
-	buckets = pcommon.NewImmutableUInt64Slice([]uint64{1, 2, 3})
-
-	quantileBounds = []float64{0.15, 0.9, 0.99}
-	quantileValues = []float64{7, 8, 9}
-	quantiles      = getQuantiles(quantileBounds, quantileValues)
 
 	validIntGauge    = "valid_IntGauge"
 	validDoubleGauge = "valid_DoubleGauge"
-	validIntSum      = "valid_IntSum"
-	validSum         = "valid_Sum"
 	validHistogram   = "valid_Histogram"
-	validSummary     = "valid_Summary"
-	suffixedCounter  = "valid_IntSum_total"
 
 	// valid metrics as input should not return error
 	validMetrics1 = map[string]pmetric.Metric{
 		validIntGauge:    getIntGaugeMetric(validIntGauge, lbs1, intVal1, time1),
 		validDoubleGauge: getDoubleGaugeMetric(validDoubleGauge, lbs1, floatVal1, time1),
-		validIntSum:      getIntSumMetric(validIntSum, lbs1, intVal1, time1),
-		suffixedCounter:  getIntSumMetric(suffixedCounter, lbs1, intVal1, time1),
-		validSum:         getSumMetric(validSum, lbs1, floatVal1, time1),
-		validHistogram:   getHistogramMetric(validHistogram, lbs1, time1, floatVal1, uint64(intVal1), bounds, buckets),
-		validSummary:     getSummaryMetric(validSummary, lbs1, time1, floatVal1, uint64(intVal1), quantiles),
-	}
-
-	empty = "empty"
-
-	// Category 1: type and data field doesn't match
-	emptyGauge     = "emptyGauge"
-	emptySum       = "emptySum"
-	emptyHistogram = "emptyHistogram"
-	emptySummary   = "emptySummary"
-
-	// Category 2: invalid type and temporality combination
-	emptyCumulativeSum       = "emptyCumulativeSum"
-	emptyCumulativeHistogram = "emptyCumulativeHistogram"
-
-	// different metrics that will not pass validate metrics and will cause the exporter to return an error
-	invalidMetrics = map[string]pmetric.Metric{
-		empty:                    pmetric.NewMetric(),
-		emptyGauge:               getEmptyGaugeMetric(emptyGauge),
-		emptySum:                 getEmptySumMetric(emptySum),
-		emptyHistogram:           getEmptyHistogramMetric(emptyHistogram),
-		emptySummary:             getEmptySummaryMetric(emptySummary),
-		emptyCumulativeSum:       getEmptyCumulativeSumMetric(emptyCumulativeSum),
-		emptyCumulativeHistogram: getEmptyCumulativeHistogramMetric(emptyCumulativeHistogram),
+		validHistogram: getHistogramMetric(
+			validHistogram,
+			lbs1,
+			pmetric.AggregationTemporalityCumulative,
+			time1,
+			floatVal1,
+			uint64(intVal1),
+			[]float64{0.1, 0.5, 0.99}, []uint64{1, 2, 3},
+		),
 	}
 )
 
@@ -161,7 +132,7 @@ var (
 func getAttributes(labels ...string) pcommon.Map {
 	attributeMap := pcommon.NewMap()
 	for i := 0; i < len(labels); i += 2 {
-		attributeMap.UpsertString(labels[i], labels[i+1])
+		attributeMap.PutStr(labels[i], labels[i+1])
 	}
 	return attributeMap
 }
@@ -214,67 +185,40 @@ func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []promp
 	}
 }
 
-func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value float64, traceID string, spanID string, attributeKey string, attributeValue string) *pmetric.HistogramDataPoint {
+func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value float64, traceID string, spanID string, attributeKey string, attributeValue string) pmetric.HistogramDataPoint {
 	h := pmetric.NewHistogramDataPoint()
 
 	e := h.Exemplars().AppendEmpty()
-	e.SetDoubleVal(value)
+	e.SetDoubleValue(value)
 	e.SetTimestamp(pcommon.NewTimestampFromTime(time))
-	e.FilteredAttributes().Insert(attributeKey, pcommon.NewValueString(attributeValue))
+	e.FilteredAttributes().PutStr(attributeKey, attributeValue)
 
 	if traceID != "" {
 		var traceIDBytes [16]byte
 		traceIDBytesSlice, err := hex.DecodeString(traceID)
 		require.NoErrorf(t, err, "error decoding trace id: %v", err)
 		copy(traceIDBytes[:], traceIDBytesSlice)
-		e.SetTraceID(pcommon.NewTraceID(traceIDBytes))
+		e.SetTraceID(traceIDBytes)
 	}
 	if spanID != "" {
 		var spanIDBytes [8]byte
 		spanIDBytesSlice, err := hex.DecodeString(spanID)
 		require.NoErrorf(t, err, "error decoding span id: %v", err)
 		copy(spanIDBytes[:], spanIDBytesSlice)
-		e.SetSpanID(pcommon.NewSpanID(spanIDBytes))
+		e.SetSpanID(spanIDBytes)
 	}
 
-	return &h
-}
-
-func getHistogramDataPoint() *pmetric.HistogramDataPoint {
-	h := pmetric.NewHistogramDataPoint()
-
-	return &h
-}
-
-func getQuantiles(bounds []float64, values []float64) pmetric.ValueAtQuantileSlice {
-	quantiles := pmetric.NewValueAtQuantileSlice()
-	quantiles.EnsureCapacity(len(bounds))
-
-	for i := 0; i < len(bounds); i++ {
-		quantile := quantiles.AppendEmpty()
-		quantile.SetQuantile(bounds[i])
-		quantile.SetValue(values[i])
-	}
-
-	return quantiles
-}
-
-func getEmptyGaugeMetric(name string) pmetric.Metric {
-	metric := pmetric.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-	return metric
+	return h
 }
 
 func getIntGaugeMetric(name string, attributes pcommon.Map, value int64, ts uint64) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	if strings.HasPrefix(name, "staleNaN") {
-		dp.Flags().SetNoRecordedValue(true)
+		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetIntVal(value)
+	dp.SetIntValue(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
@@ -285,12 +229,11 @@ func getIntGaugeMetric(name string, attributes pcommon.Map, value int64, ts uint
 func getDoubleGaugeMetric(name string, attributes pcommon.Map, value float64, ts uint64) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	if strings.HasPrefix(name, "staleNaN") {
-		dp.Flags().SetNoRecordedValue(true)
+		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetDoubleVal(value)
+	dp.SetDoubleValue(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
@@ -298,23 +241,21 @@ func getDoubleGaugeMetric(name string, attributes pcommon.Map, value float64, ts
 	return metric
 }
 
-func getEmptySumMetric(name string) pmetric.Metric {
+func getIntSumMetric(
+	name string,
+	attributes pcommon.Map,
+	temporality pmetric.AggregationTemporality,
+	value int64,
+	ts uint64,
+) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeSum)
-	return metric
-}
-
-func getIntSumMetric(name string, attributes pcommon.Map, value int64, ts uint64) pmetric.Metric {
-	metric := pmetric.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeSum)
-	metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	metric.SetEmptySum().SetAggregationTemporality(temporality)
 	dp := metric.Sum().DataPoints().AppendEmpty()
 	if strings.HasPrefix(name, "staleNaN") {
-		dp.Flags().SetNoRecordedValue(true)
+		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetIntVal(value)
+	dp.SetIntValue(value)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
@@ -322,85 +263,44 @@ func getIntSumMetric(name string, attributes pcommon.Map, value int64, ts uint64
 	return metric
 }
 
-func getEmptyCumulativeSumMetric(name string) pmetric.Metric {
+func getHistogramMetric(
+	name string,
+	attributes pcommon.Map,
+	temporality pmetric.AggregationTemporality,
+	ts uint64,
+	sum float64,
+	count uint64,
+	bounds []float64,
+	buckets []uint64,
+) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeSum)
-	metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	return metric
-}
-
-func getSumMetric(name string, attributes pcommon.Map, value float64, ts uint64) pmetric.Metric {
-	metric := pmetric.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeSum)
-	metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	dp := metric.Sum().DataPoints().AppendEmpty()
-	if strings.HasPrefix(name, "staleNaN") {
-		dp.Flags().SetNoRecordedValue(true)
-	}
-	dp.SetDoubleVal(value)
-	attributes.CopyTo(dp.Attributes())
-
-	dp.SetStartTimestamp(pcommon.Timestamp(0))
-	dp.SetTimestamp(pcommon.Timestamp(ts))
-	return metric
-}
-
-func getEmptyHistogramMetric(name string) pmetric.Metric {
-	metric := pmetric.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeHistogram)
-	return metric
-}
-
-func getEmptyCumulativeHistogramMetric(name string) pmetric.Metric {
-	metric := pmetric.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeHistogram)
-	metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	return metric
-}
-
-func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum float64, count uint64, bounds pcommon.ImmutableFloat64Slice,
-	buckets pcommon.ImmutableUInt64Slice) pmetric.Metric {
-	metric := pmetric.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeHistogram)
-	metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	metric.SetEmptyHistogram().SetAggregationTemporality(temporality)
 	dp := metric.Histogram().DataPoints().AppendEmpty()
 	if strings.HasPrefix(name, "staleNaN") {
-		dp.Flags().SetNoRecordedValue(true)
+		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
-	dp.SetBucketCounts(buckets)
-	dp.SetExplicitBounds(bounds)
+	dp.BucketCounts().FromRaw(buckets)
+	dp.ExplicitBounds().FromRaw(bounds)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetTimestamp(pcommon.Timestamp(ts))
 	return metric
 }
 
-func getEmptySummaryMetric(name string) pmetric.Metric {
+func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float64, count uint64, quantiles pmetric.SummaryDataPointValueAtQuantileSlice) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeSummary)
-	return metric
-}
-
-func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float64, count uint64, quantiles pmetric.ValueAtQuantileSlice) pmetric.Metric {
-	metric := pmetric.NewMetric()
-	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeSummary)
-	dp := metric.Summary().DataPoints().AppendEmpty()
+	dp := metric.SetEmptySummary().DataPoints().AppendEmpty()
 	if strings.HasPrefix(name, "staleNaN") {
-		dp.Flags().SetNoRecordedValue(true)
+		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		dp.Attributes().Upsert(k, v)
+		v.CopyTo(dp.Attributes().PutEmpty(k))
 		return true
 	})
 
@@ -410,16 +310,6 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 	quantiles.At(0).Quantile()
 
 	return metric
-}
-
-func getResource(resources map[string]pcommon.Value) pcommon.Resource {
-	resource := pcommon.NewResource()
-
-	for k, v := range resources {
-		resource.Attributes().Upsert(k, v)
-	}
-
-	return resource
 }
 
 func getBucketBoundsData(values []float64) []bucketBoundsData {

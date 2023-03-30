@@ -21,17 +21,17 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/atomic"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"google.golang.org/grpc"
 	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
@@ -40,7 +40,7 @@ import (
 )
 
 var (
-	consumerNum = atomic.NewInt32(0)
+	consumerNum = &atomic.Int32{}
 	sumNum      = 10000
 )
 
@@ -92,7 +92,7 @@ func test(nGoroutine int, nStream int, t *testing.T) {
 	exporter, server, m := doInit(nStream, t)
 	consumerNum.Store(-int32(nStream))
 	l := testdata.GenerateLogsOneLogRecordNoResource()
-	l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetIntVal(0)
+	l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetInt(0)
 
 	for i := 0; i < nStream; i++ {
 		err := exporter.pushLogs(context.Background(), l)
@@ -131,8 +131,7 @@ func test(nGoroutine int, nStream int, t *testing.T) {
 func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHandler2) {
 	server, addr, m := initializeGRPC(grpc.MaxConcurrentStreams(100))
 	tt := &Config{
-		NumStreams:       numStream,
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		NumStreams: numStream,
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      true,
 			NumConsumers: 1,
@@ -147,9 +146,9 @@ func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHan
 	}
 
 	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
-	got, err := exporterhelper.NewLogsExporterWithContext(
+	got, err := exporterhelper.NewLogsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		tt,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -201,7 +200,7 @@ func (h *mockLogHandler2) Collect(stream logpb.LogReportService_CollectServer) e
 			return stream.SendAndClose(&v3.Commands{})
 		}
 		if err == nil {
-			consumerNum.Inc()
+			consumerNum.Add(1)
 			if consumerNum.Load() >= int32(sumNum) {
 				end := time.Now().UnixMilli()
 				h.stopChan <- end

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,14 +15,15 @@
 package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 
 import (
-	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -86,30 +87,53 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 	// Convert the log resources to mezmo lines...
 	resourceLogs := ld.ResourceLogs()
 	for i := 0; i < resourceLogs.Len(); i++ {
-		ills := resourceLogs.At(i).ScopeLogs()
-		for j := 0; j < ills.Len(); j++ {
-			logs := ills.At(j).LogRecords()
+		resource := resourceLogs.At(i).Resource()
+		resourceHostName, hasResourceHostName := resource.Attributes().Get("host.name")
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logs := scopeLogs.At(j).LogRecords()
 
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
 				// Convert Attributes to meta fields being mindful of the maxMetaDataSize restriction
 				attrs := map[string]string{}
-				attrs["trace.id"] = log.TraceID().HexString()
-				attrs["span.id"] = log.SpanID().HexString()
+				if hasResourceHostName {
+					attrs["hostname"] = resourceHostName.AsString()
+				}
+
+				if traceID := log.TraceID(); !traceID.IsEmpty() {
+					attrs["trace.id"] = hex.EncodeToString(traceID[:])
+				}
+
+				if spanID := log.SpanID(); !spanID.IsEmpty() {
+					attrs["span.id"] = hex.EncodeToString(spanID[:])
+				}
+
 				log.Attributes().Range(func(k string, v pcommon.Value) bool {
-					attrs[k] = truncateString(v.StringVal(), maxMetaDataSize)
+					attrs[k] = truncateString(v.Str(), maxMetaDataSize)
 					return true
 				})
 
 				s, _ := log.Attributes().Get("appname")
-				app := s.StringVal()
+				app := s.Str()
+
+				tstamp := log.Timestamp().AsTime().UTC().UnixMilli()
+				if tstamp == 0 {
+					tstamp = time.Now().UTC().UnixMilli()
+				}
+
+				logLevel := truncateString(log.SeverityText(), maxLogLevelLen)
+				if logLevel == "" {
+					logLevel = "info"
+				}
 
 				line := MezmoLogLine{
-					Timestamp: log.Timestamp().AsTime().UTC().UnixMilli(),
-					Line:      truncateString(log.Body().StringVal(), maxMessageSize),
+					Timestamp: tstamp,
+					Line:      truncateString(log.Body().Str(), maxMessageSize),
 					App:       truncateString(app, maxAppnameLen),
-					Level:     truncateString(log.SeverityText(), maxLogLevelLen),
+					Level:     logLevel,
 					Meta:      attrs,
 				}
 				lines = append(lines, line)
@@ -154,19 +178,14 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 }
 
 func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {
-	// TODO When the Mezmo backend requirement to have a `hostname` value in the URI is removed, this hostname will no longer be needed.
-	var hostname = "otel"
-
-	url := fmt.Sprintf("%s?hostname=%s", m.config.IngestURL, hostname)
-
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer([]byte(post)))
+	req, _ := http.NewRequest("POST", m.config.IngestURL, strings.NewReader(post))
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", m.userAgentString)
-	req.Header.Add("apikey", m.config.IngestKey)
+	req.Header.Add("apikey", string(m.config.IngestKey))
 
 	var res *http.Response
-	if res, errs = http.DefaultClient.Do(req); errs != nil {
+	if res, errs = m.client.Do(req); errs != nil {
 		return fmt.Errorf("failed to POST log to Mezmo: %w", errs)
 	}
 	if res.StatusCode >= 400 {

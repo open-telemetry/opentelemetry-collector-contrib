@@ -18,10 +18,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
@@ -34,7 +34,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config",
 			cfg: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		}, {
 			desc: "valid config with no metric settings",
@@ -48,23 +48,56 @@ func TestValidate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			actualErr := tc.cfg.Validate()
-			require.NoError(t, actualErr)
+			require.NoError(t, component.ValidateConfig(tc.cfg))
 		})
 	}
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.Nil(t, err)
+	t.Run("default", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+		require.NoError(t, err)
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig()
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
+		sub, err := cm.Sub("sqlserver")
+		require.NoError(t, err)
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	require.Equal(t, len(cfg.Receivers), 1)
+		assert.NoError(t, component.ValidateConfig(cfg))
+		assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+	})
 
-	require.Equal(t, factory.CreateDefaultConfig(), cfg.Receivers[config.NewComponentID("sqlserver")])
+	t.Run("named", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+		require.NoError(t, err)
+
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig()
+
+		expected := factory.CreateDefaultConfig().(*Config)
+		expected.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
+			Metrics: metadata.DefaultMetricsSettings(),
+			ResourceAttributes: metadata.ResourceAttributesSettings{
+				SqlserverDatabaseName: metadata.ResourceAttributeSettings{
+					Enabled: true,
+				},
+				SqlserverInstanceName: metadata.ResourceAttributeSettings{
+					Enabled: true,
+				},
+				SqlserverComputerName: metadata.ResourceAttributeSettings{
+					Enabled: true,
+				},
+			},
+		}
+		expected.ComputerName = "CustomServer"
+		expected.InstanceName = "CustomInstance"
+
+		sub, err := cm.Sub("sqlserver/named")
+		require.NoError(t, err)
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+		assert.NoError(t, component.ValidateConfig(cfg))
+		assert.Equal(t, expected, cfg)
+	})
 }

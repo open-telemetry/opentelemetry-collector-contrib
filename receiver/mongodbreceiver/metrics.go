@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
+var errKeyNotFound = errors.New("could not find key for metric")
+
 var operationsMap = map[string]metadata.AttributeOperation{
 	"insert":   metadata.AttributeOperationInsert,
 	"queries":  metadata.AttributeOperationQuery,
@@ -40,6 +42,24 @@ var documentMap = map[string]metadata.AttributeOperation{
 	"inserted": metadata.AttributeOperationInsert,
 	"updated":  metadata.AttributeOperationUpdate,
 	"deleted":  metadata.AttributeOperationDelete,
+}
+
+var lockTypeMap = map[string]metadata.AttributeLockType{
+	"ParallelBatchWriterMode":    metadata.AttributeLockTypeParallelBatchWriteMode,
+	"ReplicationStateTransition": metadata.AttributeLockTypeReplicationStateTransition,
+	"Global":                     metadata.AttributeLockTypeGlobal,
+	"Database":                   metadata.AttributeLockTypeDatabase,
+	"Collection":                 metadata.AttributeLockTypeCollection,
+	"Mutex":                      metadata.AttributeLockTypeMutex,
+	"Metadata":                   metadata.AttributeLockTypeMetadata,
+	"oplog":                      metadata.AttributeLockTypeOplog,
+}
+
+var lockModeMap = map[string]metadata.AttributeLockMode{
+	"R": metadata.AttributeLockModeShared,
+	"W": metadata.AttributeLockModeExclusive,
+	"r": metadata.AttributeLockModeIntentShared,
+	"w": metadata.AttributeLockModeIntentExclusive,
 }
 
 const (
@@ -118,7 +138,7 @@ func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, db
 	// Mongo version 4.4+ no longer returns numExtents since it is part of the obsolete MMAPv1
 	// https://www.mongodb.com/docs/manual/release-notes/4.4-compatibility/#mmapv1-cleanup
 	mongo44, _ := version.NewVersion("4.4")
-	if s.mongoVersion.LessThan(mongo44) {
+	if s.mongoVersion != nil && s.mongoVersion.LessThan(mongo44) {
 		metricPath := []string{"numExtents"}
 		metricName := "mongodb.extent.count"
 		val, err := collectMetric(doc, metricPath)
@@ -132,13 +152,7 @@ func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, db
 
 // ServerStatus
 func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	mongo40, _ := version.NewVersion("4.0")
 	for ctVal, ct := range metadata.MapAttributeConnectionType {
-		// Mongo version 4.0 added active
-		// reference: https://www.mongodb.com/docs/v4.0/reference/command/serverStatus/#serverstatus.connections.active
-		if s.mongoVersion.LessThan(mongo40) && ctVal == "active" {
-			continue
-		}
 		metricPath := []string{"connections", ctVal}
 		metricName := "mongodb.connection.count"
 		metricAttributes := fmt.Sprintf("%s, %s", ctVal, dbName)
@@ -182,13 +196,6 @@ func (s *mongodbScraper) recordDocumentOperations(now pcommon.Timestamp, doc bso
 }
 
 func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	// Collect session count for version 3.0+
-	// https://www.mongodb.com/docs/v3.0/reference/command/serverStatus/#serverStatus.wiredTiger.session
-	mongo30, _ := version.NewVersion("3.0")
-	if s.mongoVersion.LessThan(mongo30) {
-		return
-	}
-
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
 		errs.AddPartial(1, errors.New("failed to find storage engine for session count"))
@@ -209,6 +216,19 @@ func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, e
 	s.mb.RecordMongodbSessionCountDataPoint(now, val)
 }
 
+func (s *mongodbScraper) recordLatencyTime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	for operationVal, operation := range metadata.MapAttributeOperationLatency {
+		metricPath := []string{"opLatencies", operationVal + "s", "latency"}
+		metricName := "mongodb.operation.latency.time"
+		val, err := collectMetric(doc, metricPath)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
+			continue
+		}
+		s.mb.RecordMongodbOperationLatencyTimeDataPoint(now, val, operation)
+	}
+}
+
 // Admin Stats
 func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	for operationVal, operation := range metadata.MapAttributeOperation {
@@ -223,15 +243,20 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 	}
 }
 
-func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	// Collect Cache Hits & Misses if wiredTiger storage engine is used
-	// WiredTiger.cache metrics are available in 3.0+
-	// https://www.mongodb.com/docs/v4.0/reference/command/serverStatus/#serverstatus.wiredTiger.cache
-	mongo30, _ := version.NewVersion("3.0")
-	if s.mongoVersion.LessThan(mongo30) {
-		return
+func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	for operationVal, operation := range metadata.MapAttributeOperation {
+		metricPath := []string{"opcountersRepl", operationVal}
+		metricName := "mongodb.operation.repl.count"
+		val, err := collectMetric(doc, metricPath)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
+			continue
+		}
+		s.mb.RecordMongodbOperationReplCountDataPoint(now, val, operation)
 	}
+}
 
+func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
 		errs.AddPartial(1, errors.New("failed to find storage engine for cache operations"))
@@ -314,31 +339,169 @@ func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, e
 	}
 }
 
-// Index Stats
-func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bson.M, dbName string, collectionName string, errs *scrapererror.ScrapeErrors) {
-	// Collect the index access given a collection and database if version is >= 3.2
-	// https://www.mongodb.com/docs/v3.2/reference/operator/aggregation/indexStats/
+func (s *mongodbScraper) recordUptime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"uptimeMillis"}
+	metricName := "mongodb.uptime"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbUptimeDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordHealth(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"ok"}
+	metricName := "mongodb.health"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbHealthDataPoint(now, val)
+}
+
+// Lock Metrics are only supported by MongoDB v3.2+
+func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
 	mongo32, _ := version.NewVersion("3.2")
-	if s.mongoVersion.GreaterThanOrEqual(mongo32) {
-		metricName := "mongodb.index.access.count"
-		var indexAccessTotal int64
-		for _, doc := range documents {
-			metricAttributes := fmt.Sprintf("%s, %s", dbName, collectionName)
-			indexAccess, ok := doc["accesses"].(bson.M)["ops"]
-			if !ok {
-				err := errors.New("could not find key for index access metric")
-				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
-				return
+	if s.mongoVersion.LessThan(mongo32) {
+		return
+	}
+	mongo42, _ := version.NewVersion("4.2")
+	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
+		for lockModeKey, lockModeAttribute := range lockModeMap {
+			// Continue if the lock type is not supported by current server's MongoDB version
+			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == "ParallelBatchWriterMode" || lockTypeKey == "ReplicationStateTransition") {
+				continue
 			}
-			indexAccessValue, err := parseInt(indexAccess)
+			metricPath := []string{"locks", lockTypeKey, "acquireCount", lockModeKey}
+			metricName := "mongodb.lock.acquire.count"
+			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
+			val, err := collectMetric(doc, metricPath)
+			// MongoDB only publishes this lock metric is it is available.
+			// Do not raise error when key is not found
+			if errors.Is(err, errKeyNotFound) {
+				continue
+			}
 			if err != nil {
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
-				return
+				continue
 			}
-			indexAccessTotal += indexAccessValue
+			s.mb.RecordMongodbLockAcquireCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
 		}
-		s.mb.RecordMongodbIndexAccessCountDataPoint(now, indexAccessTotal, dbName, collectionName)
 	}
+}
+
+func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
+	mongo32, _ := version.NewVersion("3.2")
+	if s.mongoVersion.LessThan(mongo32) {
+		return
+	}
+	mongo42, _ := version.NewVersion("4.2")
+	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
+		for lockModeKey, lockModeAttribute := range lockModeMap {
+			// Continue if the lock type is not supported by current server's MongoDB version
+			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == "ParallelBatchWriterMode" || lockTypeKey == "ReplicationStateTransition") {
+				continue
+			}
+			metricPath := []string{"locks", lockTypeKey, "acquireWaitCount", lockModeKey}
+			metricName := "mongodb.lock.acquire.wait_count"
+			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
+			val, err := collectMetric(doc, metricPath)
+			// MongoDB only publishes this lock metric is it is available.
+			// Do not raise error when key is not found
+			if errors.Is(err, errKeyNotFound) {
+				continue
+			}
+			if err != nil {
+				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
+				continue
+			}
+			s.mb.RecordMongodbLockAcquireWaitCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+		}
+	}
+}
+
+func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
+	mongo32, _ := version.NewVersion("3.2")
+	if s.mongoVersion.LessThan(mongo32) {
+		return
+	}
+	mongo42, _ := version.NewVersion("4.2")
+	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
+		for lockModeKey, lockModeAttribute := range lockModeMap {
+			// Continue if the lock type is not supported by current server's MongoDB version
+			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == "ParallelBatchWriterMode" || lockTypeKey == "ReplicationStateTransition") {
+				continue
+			}
+			metricPath := []string{"locks", lockTypeKey, "timeAcquiringMicros", lockModeKey}
+			metricName := "mongodb.lock.acquire.time"
+			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
+			val, err := collectMetric(doc, metricPath)
+			// MongoDB only publishes this lock metric is it is available.
+			// Do not raise error when key is not found
+			if errors.Is(err, errKeyNotFound) {
+				continue
+			}
+			if err != nil {
+				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
+				continue
+			}
+			s.mb.RecordMongodbLockAcquireTimeDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+		}
+	}
+}
+
+func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
+	mongo32, _ := version.NewVersion("3.2")
+	if s.mongoVersion.LessThan(mongo32) {
+		return
+	}
+	mongo42, _ := version.NewVersion("4.2")
+	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
+		for lockModeKey, lockModeAttribute := range lockModeMap {
+			// Continue if the lock type is not supported by current server's MongoDB version
+			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == "ParallelBatchWriterMode" || lockTypeKey == "ReplicationStateTransition") {
+				continue
+			}
+			metricPath := []string{"locks", lockTypeKey, "deadlockCount", lockModeKey}
+			metricName := "mongodb.lock.deadlock.count"
+			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
+			val, err := collectMetric(doc, metricPath)
+			// MongoDB only publishes this lock metric is it is available.
+			// Do not raise error when key is not found
+			if errors.Is(err, errKeyNotFound) {
+				continue
+			}
+			if err != nil {
+				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
+				continue
+			}
+			s.mb.RecordMongodbLockDeadlockCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+		}
+	}
+}
+
+// Index Stats
+func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bson.M, dbName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.index.access.count"
+	var indexAccessTotal int64
+	for _, doc := range documents {
+		metricAttributes := fmt.Sprintf("%s, %s", dbName, collectionName)
+		indexAccess, ok := doc["accesses"].(bson.M)["ops"]
+		if !ok {
+			err := errors.New("could not find key for index access metric")
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
+			return
+		}
+		indexAccessValue, err := parseInt(indexAccess)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
+			return
+		}
+		indexAccessTotal += indexAccessValue
+	}
+	s.mb.RecordMongodbIndexAccessCountDataPoint(now, indexAccessTotal, dbName, collectionName)
 }
 
 // Top Stats
@@ -391,9 +554,9 @@ func getOperationTimeValues(document bson.M, collectionPathName, operation strin
 func digForCollectionPathNames(document bson.M) ([]string, error) {
 	docTotals, ok := document["totals"].(bson.M)
 	if !ok {
-		return nil, errors.New("could not find key for metric")
+		return nil, errKeyNotFound
 	}
-	collectionPathNames := []string{}
+	var collectionPathNames []string
 	for collectionPathName := range docTotals {
 		if collectionPathName != "note" {
 			collectionPathNames = append(collectionPathNames, collectionPathName)
@@ -414,7 +577,7 @@ func dig(document bson.M, path []string) (interface{}, error) {
 	curItem, remainingPath := path[0], path[1:]
 	value := document[curItem]
 	if value == nil {
-		return 0, errors.New("could not find key for metric")
+		return 0, errKeyNotFound
 	}
 	if len(remainingPath) == 0 {
 		return value, nil

@@ -15,13 +15,15 @@
 package networkscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper/internal/metadata"
 )
 
 // Config relating to Network Metric Scraper.
 type Config struct {
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	internal.ScraperConfig
 	// Include specifies a filter on the network interfaces that should be included from the generated metrics.
 	Include MatchConfig `mapstructure:"include"`
 	// Exclude specifies a filter on the network interfaces that should be excluded from the generated metrics.

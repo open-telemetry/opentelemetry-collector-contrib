@@ -45,61 +45,61 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 	span.Attributes().Range(func(key string, value pcommon.Value) bool {
 		switch key {
 		case conventions.AttributeHTTPMethod:
-			info.Request.Method = awsxray.String(value.StringVal())
+			info.Request.Method = awsxray.String(value.Str())
 			hasHTTP = true
 		case conventions.AttributeHTTPClientIP:
-			info.Request.ClientIP = awsxray.String(value.StringVal())
+			info.Request.ClientIP = awsxray.String(value.Str())
 			info.Request.XForwardedFor = aws.Bool(true)
 			hasHTTP = true
 		case conventions.AttributeHTTPUserAgent:
-			info.Request.UserAgent = awsxray.String(value.StringVal())
+			info.Request.UserAgent = awsxray.String(value.Str())
 			hasHTTP = true
 		case conventions.AttributeHTTPStatusCode:
-			info.Response.Status = aws.Int64(value.IntVal())
+			info.Response.Status = aws.Int64(value.Int())
 			hasHTTP = true
 		case conventions.AttributeHTTPURL:
-			urlParts[key] = value.StringVal()
+			urlParts[key] = value.Str()
 			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
 		case conventions.AttributeHTTPScheme:
-			urlParts[key] = value.StringVal()
+			urlParts[key] = value.Str()
 			hasHTTP = true
 		case conventions.AttributeHTTPHost:
-			urlParts[key] = value.StringVal()
+			urlParts[key] = value.Str()
 			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
 		case conventions.AttributeHTTPTarget:
-			urlParts[key] = value.StringVal()
+			urlParts[key] = value.Str()
 			hasHTTP = true
 		case conventions.AttributeHTTPServerName:
-			urlParts[key] = value.StringVal()
+			urlParts[key] = value.Str()
 			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
 		case conventions.AttributeNetHostPort:
-			urlParts[key] = value.StringVal()
+			urlParts[key] = value.Str()
 			hasHTTP = true
 			if len(urlParts[key]) == 0 {
-				urlParts[key] = strconv.FormatInt(value.IntVal(), 10)
+				urlParts[key] = strconv.FormatInt(value.Int(), 10)
 			}
 		case conventions.AttributeHostName:
-			urlParts[key] = value.StringVal()
+			urlParts[key] = value.Str()
 			hasHTTPRequestURLAttributes = true
 		case conventions.AttributeNetHostName:
-			urlParts[key] = value.StringVal()
+			urlParts[key] = value.Str()
 			hasHTTPRequestURLAttributes = true
 		case conventions.AttributeNetPeerName:
-			urlParts[key] = value.StringVal()
+			urlParts[key] = value.Str()
 		case conventions.AttributeNetPeerPort:
-			urlParts[key] = value.StringVal()
+			urlParts[key] = value.Str()
 			if len(urlParts[key]) == 0 {
-				urlParts[key] = strconv.FormatInt(value.IntVal(), 10)
+				urlParts[key] = strconv.FormatInt(value.Int(), 10)
 			}
 		case conventions.AttributeNetPeerIP:
 			// Prefer HTTP forwarded information (AttributeHTTPClientIP) when present.
 			if info.Request.ClientIP == nil {
-				info.Request.ClientIP = awsxray.String(value.StringVal())
+				info.Request.ClientIP = awsxray.String(value.Str())
 			}
-			urlParts[key] = value.StringVal()
+			urlParts[key] = value.Str()
 			hasHTTPRequestURLAttributes = true
 		default:
 			filtered[key] = value
@@ -143,9 +143,9 @@ func extractResponseSizeFromEvents(span ptrace.Span) int64 {
 
 func extractResponseSizeFromAttributes(attributes pcommon.Map) int64 {
 	typeVal, ok := attributes.Get("message.type")
-	if ok && typeVal.StringVal() == "RECEIVED" {
+	if ok && typeVal.Str() == "RECEIVED" {
 		if sizeVal, ok := attributes.Get(conventions.AttributeMessagingMessagePayloadSizeBytes); ok {
-			return sizeVal.IntVal()
+			return sizeVal.Int()
 		}
 	}
 	return 0

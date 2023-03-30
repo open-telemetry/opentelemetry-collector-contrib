@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,16 +17,15 @@ package chronyreceiver
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
@@ -35,24 +34,22 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err, "Must not error on creating Nop factories")
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yml"))
+	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
+	cfg := factory.CreateDefaultConfig()
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", "config.yml"), factories)
-	require.NoError(t, err, "Must not error when loading configuration")
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "custom").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	chronyConf := cfg.Receivers[config.NewComponentIDWithName(typeStr, "custom")]
-	expect := &Config{
+	assert.Equal(t, &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
-		MetricsSettings:           metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 		Endpoint:                  "udp://localhost:3030",
 		Timeout:                   10 * time.Second,
-	}
-	expect.SetIDName("custom")
-	assert.Equal(t, expect, chronyConf)
+	}, cfg)
 }
 
 func TestValidate(t *testing.T) {

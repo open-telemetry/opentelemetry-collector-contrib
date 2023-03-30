@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@ package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/lib/pq"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -38,6 +40,10 @@ type tableIdentifier string
 // indexIdentifier is a unique string that identifies a particular index and is separated by the "|" character
 type indexIdentifer string
 
+// errNoLastArchive is an error that occurs when there is no previous wal archive, so there is no way to compute the
+// last archived point
+var errNoLastArchive = errors.New("no last archive found, not able to calculate oldest WAL age")
+
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
@@ -46,6 +52,9 @@ type client interface {
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
+	getReplicationStats(ctx context.Context) ([]replicationStats, error)
+	getLatestWalAgeSeconds(ctx context.Context) (int64, error)
+	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
@@ -94,7 +103,9 @@ func sslConnectionString(tls configtls.TLSClientSetting) string {
 }
 
 func newPostgreSQLClient(conf postgreSQLConfig) (*postgreSQLClient, error) {
-	dbField := ""
+	// postgres will assume the supplied user as the database name if none is provided,
+	// so we must specify a databse name even when we are just collecting the list of databases.
+	dbField := "dbname=postgres"
 	if conf.database != "" {
 		dbField = fmt.Sprintf("dbname=%s ", conf.database)
 	}
@@ -109,7 +120,7 @@ func newPostgreSQLClient(conf postgreSQLConfig) (*postgreSQLClient, error) {
 		host = fmt.Sprintf("/%s", host)
 	}
 
-	connStr := fmt.Sprintf("port=%s host=%s user=%s password=%s %s%s", port, host, conf.username, conf.password, dbField, sslConnectionString(conf.tls))
+	connStr := fmt.Sprintf("port=%s host=%s user=%s password=%s %s %s", port, host, conf.username, conf.password, dbField, sslConnectionString(conf.tls))
 
 	conn, err := pq.NewConnector(connStr)
 	if err != nil {
@@ -277,15 +288,15 @@ type tableIOStats struct {
 }
 
 func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error) {
-	query := `SELECT schemaname || '.' || relname AS table, 
-	coalesce(heap_blks_read, 0) AS heap_read, 
-	coalesce(heap_blks_hit, 0) AS heap_hit, 
-	coalesce(idx_blks_read, 0) AS idx_read, 
-	coalesce(idx_blks_hit, 0) AS idx_hit, 
-	coalesce(toast_blks_read, 0) AS toast_read, 
-	coalesce(toast_blks_hit, 0) AS toast_hit, 
-	coalesce(tidx_blks_read, 0) AS tidx_read, 
-	coalesce(tidx_blks_hit, 0) AS tidx_hit 
+	query := `SELECT schemaname || '.' || relname AS table,
+	coalesce(heap_blks_read, 0) AS heap_read,
+	coalesce(heap_blks_hit, 0) AS heap_hit,
+	coalesce(idx_blks_read, 0) AS idx_read,
+	coalesce(idx_blks_hit, 0) AS idx_hit,
+	coalesce(toast_blks_read, 0) AS toast_read,
+	coalesce(toast_blks_hit, 0) AS toast_hit,
+	coalesce(tidx_blks_read, 0) AS tidx_read,
+	coalesce(tidx_blks_hit, 0) AS tidx_hit
 	FROM pg_statio_user_tables;`
 
 	tios := map[tableIdentifier]tableIOStats{}
@@ -365,8 +376,8 @@ func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (
 type bgStat struct {
 	checkpointsReq       int64
 	checkpointsScheduled int64
-	checkpointWriteTime  int64
-	checkpointSyncTime   int64
+	checkpointWriteTime  float64
+	checkpointSyncTime   float64
 	bgWrites             int64
 	backendWrites        int64
 	bufferBackendWrites  int64
@@ -377,7 +388,7 @@ type bgStat struct {
 }
 
 func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
-	query := `SELECT 
+	query := `SELECT
 	checkpoints_req AS checkpoint_req,
 	checkpoints_timed AS checkpoint_scheduled,
 	checkpoint_write_time AS checkpoint_duration_write,
@@ -393,7 +404,7 @@ func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error
 	row := c.client.QueryRowContext(ctx, query)
 	var (
 		checkpointsReq, checkpointsScheduled               int64
-		checkpointSyncTime, checkpointWriteTime            int64
+		checkpointSyncTime, checkpointWriteTime            float64
 		bgWrites, bufferCheckpoints, bufferAllocated       int64
 		bufferBackendWrites, bufferFsyncWrites, maxWritten int64
 	)
@@ -427,6 +438,79 @@ func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error
 	}, nil
 }
 
+func (c *postgreSQLClient) getMaxConnections(ctx context.Context) (int64, error) {
+	query := `SHOW max_connections;`
+	row := c.client.QueryRowContext(ctx, query)
+	var maxConns int64
+	err := row.Scan(&maxConns)
+	return maxConns, err
+}
+
+type replicationStats struct {
+	clientAddr   string
+	pendingBytes int64
+	flushLag     int64
+	replayLag    int64
+	writeLag     int64
+}
+
+func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
+	query := `SELECT
+	client_addr,
+	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
+	extract('epoch' from coalesce(write_lag, '-1 seconds')),
+	extract('epoch' from coalesce(flush_lag, '-1 seconds')),
+	extract('epoch' from coalesce(replay_lag, '-1 seconds'))
+	FROM pg_stat_replication;
+	`
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query pg_stat_replication: %w", err)
+	}
+	defer rows.Close()
+	var rs []replicationStats
+	var errors error
+	for rows.Next() {
+		var client string
+		var replicationBytes, writeLag, flushLag, replayLag int64
+		err = rows.Scan(&client, &replicationBytes, &writeLag, &flushLag, &replayLag)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		rs = append(rs, replicationStats{
+			clientAddr:   client,
+			pendingBytes: replicationBytes,
+			replayLag:    replayLag,
+			writeLag:     writeLag,
+			flushLag:     flushLag,
+		})
+	}
+
+	return rs, errors
+}
+
+func (c *postgreSQLClient) getLatestWalAgeSeconds(ctx context.Context) (int64, error) {
+	query := `SELECT
+	coalesce(last_archived_time, CURRENT_TIMESTAMP) AS last_archived_wal,
+	CURRENT_TIMESTAMP
+	FROM pg_stat_archiver;
+	`
+	row := c.client.QueryRowContext(ctx, query)
+	var lastArchivedWal, currentInstanceTime time.Time
+	err := row.Scan(&lastArchivedWal, &currentInstanceTime)
+	if err != nil {
+		return 0, err
+	}
+
+	if lastArchivedWal.Equal(currentInstanceTime) {
+		return 0, errNoLastArchive
+	}
+
+	age := int64(currentInstanceTime.Sub(lastArchivedWal).Seconds())
+	return age, nil
+}
+
 func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) {
 	query := `SELECT datname FROM pg_database
 	WHERE datistemplate = false;`
@@ -436,7 +520,7 @@ func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) 
 	}
 	defer rows.Close()
 
-	databases := []string{}
+	var databases []string
 	for rows.Next() {
 		var database string
 		if err := rows.Scan(&database); err != nil {
@@ -450,7 +534,7 @@ func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) 
 
 func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) string {
 	if len(databases) > 0 {
-		queryDatabases := []string{}
+		var queryDatabases []string
 		for _, db := range databases {
 			queryDatabases = append(queryDatabases, fmt.Sprintf("'%s'", db))
 		}

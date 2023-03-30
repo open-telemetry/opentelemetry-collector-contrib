@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
@@ -35,19 +35,19 @@ const (
 	defaultTimeout  = 3 * time.Second
 )
 
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		newDefaultConfig,
-		component.WithMetricsReceiver(newMetricsReceiver, stability))
+		receiver.WithMetrics(newMetricsReceiver, stability))
 }
 
 func newMetricsReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
-	rCfg config.Receiver,
+	set receiver.CreateSettings,
+	rCfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	cfg := rCfg.(*Config)
 
 	expVar := newExpVarScraper(cfg, set)
@@ -68,13 +68,13 @@ func newMetricsReceiver(
 	)
 }
 
-func newDefaultConfig() config.Receiver {
+func newDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultTimeout,
 		},
-		MetricsConfig: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }

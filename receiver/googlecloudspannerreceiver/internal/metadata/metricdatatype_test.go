@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,25 +22,25 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func TestNewMetricDataType(t *testing.T) {
-	metricDataType := NewMetricDataType(pmetric.MetricDataTypeGauge, pmetric.MetricAggregationTemporalityDelta, true)
+func TestNewMetricType(t *testing.T) {
+	metricDataType := NewMetricType(pmetric.MetricTypeGauge, pmetric.AggregationTemporalityDelta, true)
 
 	require.NotNil(t, metricDataType)
-	assert.Equal(t, metricDataType.MetricDataType(), pmetric.MetricDataTypeGauge)
-	assert.Equal(t, metricDataType.AggregationTemporality(), pmetric.MetricAggregationTemporalityDelta)
+	assert.Equal(t, metricDataType.MetricType(), pmetric.MetricTypeGauge)
+	assert.Equal(t, metricDataType.AggregationTemporality(), pmetric.AggregationTemporalityDelta)
 	assert.True(t, metricDataType.IsMonotonic())
 }
 
-func TestMetricValueDataType_MetricDataType(t *testing.T) {
-	valueDataType := metricValueDataType{dataType: pmetric.MetricDataTypeGauge}
+func TestMetricValueDataType_MetricType(t *testing.T) {
+	valueDataType := metricValueDataType{dataType: pmetric.MetricTypeGauge}
 
-	assert.Equal(t, valueDataType.MetricDataType(), pmetric.MetricDataTypeGauge)
+	assert.Equal(t, valueDataType.MetricType(), pmetric.MetricTypeGauge)
 }
 
 func TestMetricValueDataType_AggregationTemporality(t *testing.T) {
-	valueDataType := metricValueDataType{aggregationTemporality: pmetric.MetricAggregationTemporalityDelta}
+	valueDataType := metricValueDataType{aggregationTemporality: pmetric.AggregationTemporalityDelta}
 
-	assert.Equal(t, valueDataType.AggregationTemporality(), pmetric.MetricAggregationTemporalityDelta)
+	assert.Equal(t, valueDataType.AggregationTemporality(), pmetric.AggregationTemporalityDelta)
 }
 
 func TestMetricValueDataType_IsMonotonic(t *testing.T) {

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
@@ -28,7 +28,7 @@ import (
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	metadata.MetricsSettings                `mapstructure:"metrics"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 	// Endpoint is the published address or unix socket
 	// that allows clients to connect to:
 	// The allowed format is:
@@ -42,15 +42,15 @@ type Config struct {
 }
 
 var (
-	_ config.Receiver = (*Config)(nil)
+	_ component.Config = (*Config)(nil)
 
 	errInvalidValue = errors.New("invalid value")
 )
 
-func newDefaultCongfig() config.Receiver {
+func newDefaultCongfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
-		MetricsSettings:           metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 
 		Endpoint: "unix:///var/run/chrony/chronyd.sock",
 		Timeout:  10 * time.Second,

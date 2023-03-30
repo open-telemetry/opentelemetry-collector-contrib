@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/otelcol"
 )
 
 const (
@@ -34,14 +34,14 @@ type CfgInfo struct {
 	// the name of the component group, e.g. "receiver"
 	Group string
 	// the component type, e.g. "otlpreceiver.Config"
-	Type config.Type
+	Type component.Type
 	// an instance of the component's configuration struct
 	CfgInstance interface{}
 }
 
 // GetAllCfgInfos accepts a Factories struct, then creates and returns a CfgInfo
 // for each of its components.
-func GetAllCfgInfos(components component.Factories) []CfgInfo {
+func GetAllCfgInfos(components otelcol.Factories) []CfgInfo {
 	var out []CfgInfo
 	for _, f := range components.Receivers {
 		out = append(out, CfgInfo{
@@ -77,8 +77,8 @@ func GetAllCfgInfos(components component.Factories) []CfgInfo {
 // GetCfgInfo accepts a Factories struct, then creates and returns the default
 // config for the component specified by the passed-in componentType and
 // componentName.
-func GetCfgInfo(components component.Factories, componentType, componentName string) (CfgInfo, error) {
-	t := config.Type(componentName)
+func GetCfgInfo(components otelcol.Factories, componentType, componentName string) (CfgInfo, error) {
+	t := component.Type(componentName)
 	switch componentType {
 	case receiver:
 		f := components.Receivers[t]

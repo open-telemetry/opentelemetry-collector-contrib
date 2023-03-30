@@ -1,10 +1,10 @@
 # Elasticsearch Exporter
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [beta]    |
-| Supported pipeline types | logs      |
-| Distributions            | [contrib] |
+| Status                   |             |
+| ------------------------ |-------------|
+| Stability                | [beta]      |
+| Supported pipeline types | logs,traces |
+| Distributions            | [contrib]   |
 
 This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www.elastic.co/elasticsearch).
 
@@ -20,7 +20,15 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
 - `index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
-  name to publish events to. The default value is `logs-generic-default`.
+  name to publish events to. The default value is `logs-generic-default`. Note: To better differentiate between log indexes and traces indexes, `index` option are deprecated and replaced with below `logs_index`
+- `logs_index`: The
+  [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
+  or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
+  name to publish events to. The default value is `logs-generic-default`
+- `traces_index`: The
+  [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
+  or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
+  name to publish traces to. The default value is `traces-generic-default`.
 - `pipeline` (optional): Optional [Ingest Node](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html)
   pipeline ID used for processing documents published by the exporter.
 - `flush`: Event bulk buffer flush settings
@@ -47,7 +55,10 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
     will reject documents that have duplicate fields.
   - `dedot` (default=true): When enabled attributes with `.` will be split into
     proper json objects.
-
+- `sending_queue`
+  - `enabled` (default = false)
+  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
+  - `queue_size` (default = 5000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
 ### HTTP settings
 
 - `read_buffer_size` (default=0): Read buffer size.
@@ -85,9 +96,27 @@ nodes will automatically be used for load balancing.
 
 ```yaml
 exporters:
-  elasticsearch:
-    endpoints:
-    - "https://localhost:9200"
+  elasticsearch/trace:
+    endpoints: [https://elastic.example.com:9200]
+    traces_index: trace_index
+  elasticsearch/log:
+    endpoints: [http://localhost:9200]
+    logs_index: my_log_index
+    sending_queue:
+      enabled: true
+      num_consumers: 20
+      queue_size: 1000
+······
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [elasticsearch/log]
+    traces:
+      receivers: [otlp]
+      exporters: [elasticsearch/trace]
+      processors: [batch]
 ```
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -46,7 +46,7 @@ func serializeHistogramPoint(name, prefix string, dims dimensions.NormalizedDime
 func serializeHistogram(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, metricLines []string) []string {
 	hist := metric.Histogram()
 
-	if hist.AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative {
+	if hist.AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
 		logger.Warn(
 			"dropping cumulative histogram",
 			zap.String("name", metric.Name()),

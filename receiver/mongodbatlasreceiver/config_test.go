@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,10 +15,16 @@
 package mongodbatlasreceiver
 
 import (
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 func TestValidate(t *testing.T) {
@@ -38,6 +44,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
+					Mode:     alertModeListen,
 				},
 			},
 		},
@@ -47,6 +54,7 @@ func TestValidate(t *testing.T) {
 				Alerts: AlertConfig{
 					Enabled: true,
 					Secret:  "some_secret",
+					Mode:    alertModeListen,
 				},
 			},
 			expectedErr: errNoEndpoint.Error(),
@@ -57,6 +65,7 @@ func TestValidate(t *testing.T) {
 				Alerts: AlertConfig{
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
+					Mode:     alertModeListen,
 				},
 			},
 			expectedErr: errNoSecret.Error(),
@@ -68,6 +77,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Endpoint: "7706",
 					Secret:   "some_secret",
+					Mode:     alertModeListen,
 				},
 			},
 			expectedErr: "failed to split endpoint into 'host:port' pair",
@@ -79,6 +89,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
+					Mode:     alertModeListen,
 					TLS: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							CertFile: "some_cert_file",
@@ -95,6 +106,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
+					Mode:     alertModeListen,
 					TLS: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							KeyFile: "some_key_file",
@@ -144,6 +156,88 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errClusterConfig.Error(),
 		},
+		{
+			name: "Invalid Alerts Retrieval ProjectConfig",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled: true,
+					Mode:    alertModePoll,
+					Projects: []*ProjectConfig{
+						{
+							Name:            "Project1",
+							EnableAuditLogs: false,
+							ExcludeClusters: []string{"cluster1"},
+							IncludeClusters: []string{"cluster2"},
+						},
+					},
+					PageSize: defaultAlertsPageSize,
+				},
+			},
+			expectedErr: errClusterConfig.Error(),
+		},
+		{
+			name: "Invalid Alerts Poll No Projects",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled:  true,
+					Mode:     alertModePoll,
+					Projects: []*ProjectConfig{},
+					PageSize: defaultAlertsPageSize,
+				},
+			},
+			expectedErr: errNoProjects.Error(),
+		},
+		{
+			name: "Valid Alerts Config",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled: true,
+					Mode:    alertModePoll,
+					Projects: []*ProjectConfig{
+						{
+							Name: "Project1",
+						},
+					},
+					PageSize: defaultAlertsPageSize,
+				},
+			},
+		},
+		{
+			name: "Invalid Alerts Mode",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled:  true,
+					Mode:     "invalid type",
+					Projects: []*ProjectConfig{},
+				},
+			},
+			expectedErr: errNoModeRecognized.Error(),
+		},
+		{
+			name: "Invalid Page Size",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled: true,
+					Mode:    alertModePoll,
+					Projects: []*ProjectConfig{
+						{
+							Name: "Test",
+						},
+					},
+					PageSize: -1,
+				},
+			},
+			expectedErr: errPageSizeIncorrect.Error(),
+		},
+		{
+			name: "Invalid events config - no projects",
+			input: Config{
+				Events: &EventsConfig{
+					Projects: []*ProjectConfig{},
+				},
+			},
+			expectedErr: errNoProjects.Error(),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -157,4 +251,54 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
+	expected.PrivateKey = "my-private-key"
+	expected.PublicKey = "my-public-key"
+	expected.Logs = LogConfig{
+		Enabled: true,
+		Projects: []*ProjectConfig{
+			{
+				Name: "Project 0",
+			},
+		},
+	}
+	expected.Alerts = AlertConfig{
+		Enabled: true,
+		Mode:    alertModePoll,
+		Projects: []*ProjectConfig{
+			{
+				Name:            "Project 0",
+				IncludeClusters: []string{"Cluster0"},
+			},
+		},
+		PageSize:     defaultAlertsPageSize,
+		MaxPages:     defaultAlertsMaxPages,
+		PollInterval: time.Minute,
+	}
+
+	expected.Events = &EventsConfig{
+		Projects: []*ProjectConfig{
+			{
+				Name: "Project 0",
+			},
+		},
+		PollInterval: time.Minute,
+		MaxPages:     defaultEventsMaxPages,
+		PageSize:     defaultEventsPageSize,
+	}
+	require.Equal(t, expected, cfg)
 }

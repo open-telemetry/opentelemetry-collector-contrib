@@ -25,14 +25,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"golang.org/x/sys/windows/svc/eventlog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 )
 
@@ -40,22 +41,19 @@ func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
-	require.NoError(t, configtest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, len(cfg.Receivers), 1)
-
-	assert.Equal(t, createTestConfig(), cfg.Receivers[config.NewComponentID("windowseventlog")])
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	assert.Equal(t, createTestConfig(), cfg)
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
@@ -63,7 +61,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	cfg := &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{},
-		Config: func() windows.Config {
+		InputConfig: func() windows.Config {
 			c := windows.NewConfig()
 			c.StartAt = "middle"
 			return *c
@@ -72,7 +70,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		new(consumertest.LogsSink),
 	)
@@ -82,7 +80,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 func TestReadWindowsEventLogger(t *testing.T) {
 	ctx := context.Background()
 	factory := NewFactory()
-	createSettings := componenttest.NewNopReceiverCreateSettings()
+	createSettings := receivertest.NewNopCreateSettings()
 	cfg := createTestConfig()
 	sink := new(consumertest.LogsSink)
 
@@ -118,7 +116,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	require.Equal(t, 1, records.Len())
 
 	record := records.At(0)
-	body := record.Body().MapVal().AsRaw()
+	body := record.Body().Map().AsRaw()
 
 	strs := []string{"Test log"}
 	test := make([]interface{}, len(strs))
@@ -138,10 +136,9 @@ func TestReadWindowsEventLogger(t *testing.T) {
 func createTestConfig() *WindowsLogConfig {
 	return &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators: []operator.Config{},
 		},
-		Config: func() windows.Config {
+		InputConfig: func() windows.Config {
 			c := windows.NewConfig()
 			c.Channel = "application"
 			c.StartAt = "end"

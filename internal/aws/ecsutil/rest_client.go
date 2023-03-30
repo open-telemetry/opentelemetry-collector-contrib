@@ -18,7 +18,6 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
@@ -37,8 +36,8 @@ type nopHost struct {
 	component.Host
 }
 
-func (nh *nopHost) GetExtensions() map[config.ComponentID]component.Extension {
-	return map[config.ComponentID]component.Extension{}
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return map[component.ID]component.Component{}
 }
 
 // RestClient is swappable for testing.

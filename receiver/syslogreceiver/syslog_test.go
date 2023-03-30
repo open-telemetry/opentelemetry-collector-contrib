@@ -24,13 +24,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
@@ -49,16 +51,16 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	var conn net.Conn
-	if cfg.Config.TCP != nil {
-		conn, err = net.Dial("tcp", "0.0.0.0:29018")
+	if cfg.InputConfig.TCP != nil {
+		conn, err = net.Dial("tcp", "127.0.0.1:29018")
 		require.NoError(t, err)
 	} else {
-		conn, err = net.Dial("udp", "0.0.0.0:29018")
+		conn, err = net.Dial("udp", "127.0.0.1:29018")
 		require.NoError(t, err)
 	}
 
@@ -87,33 +89,28 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID(typeStr)])
+	sub, err := cm.Sub("syslog")
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
 func testdataConfigYaml() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
-			Converter: adapter.ConverterConfig{
-				FlushInterval: 100 * time.Millisecond,
-				WorkerCount:   1,
-			},
+			Operators: []operator.Config{},
 		},
-		Config: func() syslog.Config {
+		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.TCP = &tcp.NewConfig().BaseConfig
-			c.TCP.ListenAddress = "0.0.0.0:29018"
+			c.TCP.ListenAddress = "127.0.0.1:29018"
 			c.Protocol = "rfc5424"
 			return *c
 		}(),
@@ -123,17 +120,12 @@ func testdataConfigYaml() *SysLogConfig {
 func testdataUDPConfig() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
-			Converter: adapter.ConverterConfig{
-				FlushInterval: 100 * time.Millisecond,
-				WorkerCount:   1,
-			},
+			Operators: []operator.Config{},
 		},
-		Config: func() syslog.Config {
+		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.UDP = &udp.NewConfig().BaseConfig
-			c.UDP.ListenAddress = "0.0.0.0:29018"
+			c.UDP.ListenAddress = "127.0.0.1:29018"
 			c.Protocol = "rfc5424"
 			return *c
 		}(),
@@ -145,17 +137,16 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators: []operator.Config{},
 		},
-		Config: func() syslog.Config {
+		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.TCP = &tcp.NewConfig().BaseConfig
 			c.Protocol = "fake"
 			return *c
 		}(),
 	}
-	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, sink)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), badCfg, sink)
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }

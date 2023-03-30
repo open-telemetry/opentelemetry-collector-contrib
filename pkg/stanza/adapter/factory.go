@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	rcvr "go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
@@ -28,54 +28,34 @@ import (
 
 // LogReceiverType is the interface used by stanza-based log receivers
 type LogReceiverType interface {
-	Type() config.Type
-	CreateDefaultConfig() config.Receiver
-	BaseConfig(config.Receiver) BaseConfig
-	DecodeInputConfig(config.Receiver) (*operator.Config, error)
+	Type() component.Type
+	CreateDefaultConfig() component.Config
+	BaseConfig(component.Config) BaseConfig
+	InputConfig(component.Config) operator.Config
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
-func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) rcvr.Factory {
+	return rcvr.NewFactory(
 		logReceiverType.Type(),
 		logReceiverType.CreateDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver(logReceiverType), sl),
+		rcvr.WithLogs(createLogsReceiver(logReceiverType), sl),
 	)
 }
 
-func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsReceiverFunc {
+func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 	return func(
 		ctx context.Context,
-		params component.ReceiverCreateSettings,
-		cfg config.Receiver,
+		params rcvr.CreateSettings,
+		cfg component.Config,
 		nextConsumer consumer.Logs,
-	) (component.LogsReceiver, error) {
-		inputCfg, err := logReceiverType.DecodeInputConfig(cfg)
-		if err != nil {
-			return nil, err
-		}
-
+	) (rcvr.Logs, error) {
+		inputCfg := logReceiverType.InputConfig(cfg)
 		baseCfg := logReceiverType.BaseConfig(cfg)
-		operatorCfgs, err := baseCfg.DecodeOperatorConfigs()
-		if err != nil {
-			return nil, err
-		}
 
-		operators := append([]operator.Config{*inputCfg}, operatorCfgs...)
+		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
 
-		emitterOpts := []LogEmitterOption{
-			LogEmitterWithLogger(params.Logger.Sugar()),
-		}
-
-		if baseCfg.Converter.MaxFlushCount > 0 {
-			emitterOpts = append(emitterOpts, LogEmitterWithMaxBatchSize(baseCfg.Converter.MaxFlushCount))
-		}
-
-		if baseCfg.Converter.FlushInterval > 0 {
-			emitterOpts = append(emitterOpts, LogEmitterWithFlushInterval(baseCfg.Converter.FlushInterval))
-		}
-
-		emitter := NewLogEmitter(emitterOpts...)
+		emitter := NewLogEmitter(params.Logger.Sugar())
 		pipe, err := pipeline.Config{
 			Operators:     operators,
 			DefaultOutput: emitter,
@@ -84,26 +64,23 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 			return nil, err
 		}
 
-		opts := []ConverterOption{
-			WithLogger(params.Logger),
-		}
-
-		if baseCfg.Converter.WorkerCount > 0 {
-			opts = append(opts, WithWorkerCount(baseCfg.Converter.WorkerCount))
-		}
-		converter := NewConverter(opts...)
-		obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             cfg.ID(),
+		converter := NewConverter(params.Logger)
+		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             params.ID,
 			ReceiverCreateSettings: params,
 		})
+		if err != nil {
+			return nil, err
+		}
 		return &receiver{
-			id:        cfg.ID(),
+			id:        params.ID,
 			pipe:      pipe,
 			emitter:   emitter,
 			consumer:  nextConsumer,
 			logger:    params.Logger,
 			converter: converter,
 			obsrecv:   obsrecv,
+			storageID: baseCfg.StorageID,
 		}, nil
 	}
 }

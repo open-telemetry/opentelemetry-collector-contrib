@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,13 +32,13 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-	// Metrics defines which metrics to enable for the scraper
-	Metrics    metadata.MetricsSettings `mapstructure:"metrics"`
-	Hosts      []confignet.NetAddr      `mapstructure:"hosts"`
-	Username   string                   `mapstructure:"username"`
-	Password   string                   `mapstructure:"password"`
-	ReplicaSet string                   `mapstructure:"replica_set,omitempty"`
-	Timeout    time.Duration            `mapstructure:"timeout"`
+	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Hosts                         []confignet.NetAddr `mapstructure:"hosts"`
+	Username                      string              `mapstructure:"username"`
+	Password                      string              `mapstructure:"password"`
+	ReplicaSet                    string              `mapstructure:"replica_set,omitempty"`
+	Timeout                       time.Duration       `mapstructure:"timeout"`
 }
 
 func (c *Config) Validate() error {
@@ -95,7 +95,7 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 }
 
 func (c *Config) hostlist() []string {
-	hosts := []string{}
+	var hosts []string
 	for _, ep := range c.Hosts {
 		hosts = append(hosts, ep.Endpoint)
 	}

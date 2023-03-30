@@ -58,20 +58,19 @@ type swExporter struct {
 func newSwExporter(_ context.Context, cfg *Config, settings component.TelemetrySettings) *swExporter {
 	oce := &swExporter{
 		cfg:      cfg,
-		metadata: metadata.New(cfg.GRPCClientSettings.Headers),
+		metadata: metadata.New(nil),
 		settings: settings,
+	}
+	for k, v := range cfg.GRPCClientSettings.Headers {
+		oce.metadata.Set(k, string(v))
 	}
 	return oce
 }
 
 // start creates the gRPC client Connection
 func (oce *swExporter) start(ctx context.Context, host component.Host) error {
-	dialOpts, err := oce.cfg.GRPCClientSettings.ToDialOptions(host, oce.settings)
+	clientConn, err := oce.cfg.GRPCClientSettings.ToClientConn(ctx, host, oce.settings)
 	if err != nil {
-		return err
-	}
-	var clientConn *grpc.ClientConn
-	if clientConn, err = grpc.DialContext(ctx, oce.cfg.GRPCClientSettings.Endpoint, dialOpts...); err != nil {
 		return err
 	}
 
@@ -100,6 +99,9 @@ func (oce *swExporter) start(ctx context.Context, host component.Host) error {
 }
 
 func (oce *swExporter) shutdown(context.Context) error {
+	if oce.grpcClientConn == nil {
+		return nil
+	}
 	if oce.logsClients != nil {
 		// First remove all the clients from the channel.
 		for i := 0; i < oce.cfg.NumStreams; i++ {
@@ -188,7 +190,7 @@ func (oce *swExporter) createLogServiceRPC() (*logsClientWithCancel, error) {
 	// Initiate the log service by sending over node identifier info.
 	ctx, cancel := context.WithCancel(context.Background())
 	if len(oce.cfg.Headers) > 0 {
-		ctx = metadata.NewOutgoingContext(ctx, metadata.New(oce.cfg.Headers))
+		ctx = metadata.NewOutgoingContext(ctx, oce.metadata.Copy())
 	}
 	// Cannot use grpc.WaitForReady(cfg.WaitForReady) because will block forever.
 	logClient, err := oce.logSvcClient.Collect(ctx)
@@ -203,7 +205,7 @@ func (oce *swExporter) createMetricServiceRPC() (*metricsClientWithCancel, error
 	// Initiate the metric service by sending over node identifier info.
 	ctx, cancel := context.WithCancel(context.Background())
 	if len(oce.cfg.Headers) > 0 {
-		ctx = metadata.NewOutgoingContext(ctx, metadata.New(oce.cfg.Headers))
+		ctx = metadata.NewOutgoingContext(ctx, oce.metadata.Copy())
 	}
 	// Cannot use grpc.WaitForReady(cfg.WaitForReady) because will block forever.
 	metricClient, err := oce.metricSvcClient.CollectBatch(ctx)

@@ -17,39 +17,44 @@ package storagetest // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 type StorageHost struct {
 	component.Host
-	extensions map[config.ComponentID]component.Extension
+	extensions map[component.ID]component.Component
 }
 
 func NewStorageHost() *StorageHost {
 	return &StorageHost{
 		Host:       componenttest.NewNopHost(),
-		extensions: make(map[config.ComponentID]component.Extension),
+		extensions: make(map[component.ID]component.Component),
 	}
+}
+
+func (h *StorageHost) WithExtension(id component.ID, ext extension.Extension) *StorageHost {
+	h.extensions[id] = ext
+	return h
 }
 
 func (h *StorageHost) WithInMemoryStorageExtension(name string) *StorageHost {
 	ext := NewInMemoryStorageExtension(name)
-	h.extensions[ext.ID()] = ext
+	h.extensions[ext.ID] = ext
 	return h
 }
 
 func (h *StorageHost) WithFileBackedStorageExtension(name, storageDir string) *StorageHost {
 	ext := NewFileBackedStorageExtension(name, storageDir)
-	h.extensions[ext.ID()] = ext
+	h.extensions[ext.ID] = ext
 	return h
 }
 
 func (h *StorageHost) WithNonStorageExtension(name string) *StorageHost {
 	ext := NewNonStorageExtension(name)
-	h.extensions[ext.ID()] = ext
+	h.extensions[ext.ID] = ext
 	return h
 }
 
-func (h *StorageHost) GetExtensions() map[config.ComponentID]component.Extension {
+func (h *StorageHost) GetExtensions() map[component.ID]component.Component {
 	return h.extensions
 }

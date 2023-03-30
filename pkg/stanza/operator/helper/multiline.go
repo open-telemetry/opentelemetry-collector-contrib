@@ -19,101 +19,9 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
-	"time"
 
 	"golang.org/x/text/encoding"
 )
-
-// FlusherConfig is a configuration of Flusher helper
-type FlusherConfig struct {
-	Period Duration `mapstructure:"force_flush_period"  json:"force_flush_period" yaml:"force_flush_period"`
-}
-
-// NewFlusherConfig creates a default Flusher config
-func NewFlusherConfig() FlusherConfig {
-	return FlusherConfig{
-		// Empty or `0s` means that we will never force flush
-		Period: Duration{Duration: time.Millisecond * 500},
-	}
-}
-
-// Build creates Flusher from configuration
-func (c *FlusherConfig) Build() *Flusher {
-	return &Flusher{
-		lastDataChange:     time.Now(),
-		forcePeriod:        c.Period.Raw(),
-		previousDataLength: 0,
-	}
-}
-
-// Flusher keeps information about flush state
-type Flusher struct {
-	// forcePeriod defines time from last flush which should pass before setting force to true.
-	// Never forces if forcePeriod is set to 0
-	forcePeriod time.Duration
-
-	// lastDataChange tracks date of last data change (including new data and flushes)
-	lastDataChange time.Time
-
-	// previousDataLength:
-	// if previousDataLength = 0 - no new data have been received after flush
-	// if previousDataLength > 0 - there is data which has not been flushed yet and it doesn't changed since lastDataChange
-	previousDataLength int
-}
-
-func (f *Flusher) UpdateDataChangeTime(length int) {
-	// Skip if length is greater than 0 and didn't changed
-	if length > 0 && length == f.previousDataLength {
-		return
-	}
-
-	// update internal properties with new values if data length changed
-	// because it means that data is flowing and being processed
-	f.previousDataLength = length
-	f.lastDataChange = time.Now()
-}
-
-// Flushed reset data length
-func (f *Flusher) Flushed() {
-	f.UpdateDataChangeTime(0)
-}
-
-// ShouldFlush returns true if data should be forcefully flushed
-func (f *Flusher) ShouldFlush() bool {
-	// Returns true if there is f.forcePeriod after f.lastDataChange and data length is greater than 0
-	return f.forcePeriod > 0 && time.Since(f.lastDataChange) > f.forcePeriod && f.previousDataLength > 0
-}
-
-func (f *Flusher) SplitFunc(splitFunc bufio.SplitFunc) bufio.SplitFunc {
-	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		advance, token, err = splitFunc(data, atEOF)
-
-		// Return as it is in case of error
-		if err != nil {
-			return
-		}
-
-		// Return token
-		if token != nil {
-			// Inform flusher that we just flushed
-			f.Flushed()
-			return
-		}
-
-		// If there is no token, force flush eventually
-		if f.ShouldFlush() {
-			// Inform flusher that we just flushed
-			f.Flushed()
-			token = trimWhitespaces(data)
-			advance = len(data)
-			return
-		}
-
-		// Inform flusher that we didn't flushed
-		f.UpdateDataChangeTime(len(data))
-		return
-	}
-}
 
 // Multiline consists of splitFunc and variables needed to perform force flush
 type Multiline struct {
@@ -131,17 +39,17 @@ func NewMultilineConfig() MultilineConfig {
 
 // MultilineConfig is the configuration of a multiline helper
 type MultilineConfig struct {
-	LineStartPattern string `mapstructure:"line_start_pattern"  json:"line_start_pattern" yaml:"line_start_pattern"`
-	LineEndPattern   string `mapstructure:"line_end_pattern"    json:"line_end_pattern"   yaml:"line_end_pattern"`
+	LineStartPattern string `mapstructure:"line_start_pattern"`
+	LineEndPattern   string `mapstructure:"line_end_pattern"`
 }
 
 // Build will build a Multiline operator.
-func (c MultilineConfig) Build(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
-	return c.getSplitFunc(enc, flushAtEOF, force, maxLogSize)
+func (c MultilineConfig) Build(enc encoding.Encoding, flushAtEOF, preserveLeadingWhitespaces, preserveTrailingWhitespaces bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
+	return c.getSplitFunc(enc, flushAtEOF, force, maxLogSize, preserveLeadingWhitespaces, preserveTrailingWhitespaces)
 }
 
 // getSplitFunc returns split function for bufio.Scanner basing on configured pattern
-func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
+func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int, preserveLeadingWhitespaces, preserveTrailingWhitespaces bool) (bufio.SplitFunc, error) {
 	endPattern := c.LineEndPattern
 	startPattern := c.LineStartPattern
 
@@ -158,7 +66,7 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 	case enc == encoding.Nop:
 		return SplitNone(maxLogSize), nil
 	case endPattern == "" && startPattern == "":
-		splitFunc, err = NewNewlineSplitFunc(enc, flushAtEOF)
+		splitFunc, err = NewNewlineSplitFunc(enc, flushAtEOF, getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces))
 
 		if err != nil {
 			return nil, err
@@ -168,13 +76,13 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 		if err != nil {
 			return nil, fmt.Errorf("compile line end regex: %w", err)
 		}
-		splitFunc = NewLineEndSplitFunc(re, flushAtEOF)
+		splitFunc = NewLineEndSplitFunc(re, flushAtEOF, getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces))
 	case startPattern != "":
 		re, err := regexp.Compile("(?m)" + c.LineStartPattern)
 		if err != nil {
 			return nil, fmt.Errorf("compile line start regex: %w", err)
 		}
-		splitFunc = NewLineStartSplitFunc(re, flushAtEOF)
+		splitFunc = NewLineStartSplitFunc(re, flushAtEOF, getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces))
 	default:
 		return nil, fmt.Errorf("unreachable")
 	}
@@ -188,13 +96,13 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 
 // NewLineStartSplitFunc creates a bufio.SplitFunc that splits an incoming stream into
 // tokens that start with a match to the regex pattern provided
-func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
+func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool, trimFunc trimFunc) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		firstLoc := re.FindIndex(data)
 		if firstLoc == nil {
 			// Flush if no more data is expected
 			if len(data) != 0 && atEOF && flushAtEOF {
-				token = trimWhitespaces(data)
+				token = trimFunc(data)
 				advance = len(data)
 				return
 			}
@@ -206,7 +114,7 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		if firstMatchStart != 0 {
 			// the beginning of the file does not match the start pattern, so return a token up to the first match so we don't lose data
 			advance = firstMatchStart
-			token = trimWhitespaces(data[0:firstMatchStart])
+			token = trimFunc(data[0:firstMatchStart])
 
 			// return if non-matching pattern is not only whitespaces
 			if token != nil {
@@ -221,7 +129,7 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 
 		// Flush if no more data is expected
 		if atEOF && flushAtEOF {
-			token = trimWhitespaces(data)
+			token = trimFunc(data)
 			advance = len(data)
 			return
 		}
@@ -233,40 +141,22 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		}
 		secondMatchStart := secondLoc[0] + secondLocOfset
 
-		advance = secondMatchStart                                      // start scanning at the beginning of the second match
-		token = trimWhitespaces(data[firstMatchStart:secondMatchStart]) // the token begins at the first match, and ends at the beginning of the second match
+		advance = secondMatchStart                               // start scanning at the beginning of the second match
+		token = trimFunc(data[firstMatchStart:secondMatchStart]) // the token begins at the first match, and ends at the beginning of the second match
 		err = nil
 		return
 	}
 }
 
-// SplitNone doesn't split any of the bytes, it reads in all of the bytes and returns it all at once. This is for when the encoding is nop
-func SplitNone(maxLogSize int) bufio.SplitFunc {
-	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if len(data) >= maxLogSize {
-			return maxLogSize, data[:maxLogSize], nil
-		}
-
-		if !atEOF {
-			return 0, nil, nil
-		}
-
-		if len(data) == 0 {
-			return 0, nil, nil
-		}
-		return len(data), data, nil
-	}
-}
-
 // NewLineEndSplitFunc creates a bufio.SplitFunc that splits an incoming stream into
 // tokens that end with a match to the regex pattern provided
-func NewLineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
+func NewLineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool, trimFunc trimFunc) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		loc := re.FindIndex(data)
 		if loc == nil {
 			// Flush if no more data is expected
 			if len(data) != 0 && atEOF && flushAtEOF {
-				token = trimWhitespaces(data)
+				token = trimFunc(data)
 				advance = len(data)
 				return
 			}
@@ -280,7 +170,7 @@ func NewLineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		}
 
 		advance = loc[1]
-		token = trimWhitespaces(data[:loc[1]])
+		token = trimFunc(data[:loc[1]])
 		err = nil
 		return
 	}
@@ -288,7 +178,7 @@ func NewLineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 
 // NewNewlineSplitFunc splits log lines by newline, just as bufio.ScanLines, but
 // never returning an token using EOF as a terminator
-func NewNewlineSplitFunc(enc encoding.Encoding, flushAtEOF bool) (bufio.SplitFunc, error) {
+func NewNewlineSplitFunc(enc encoding.Encoding, flushAtEOF bool, trimFunc trimFunc) (bufio.SplitFunc, error) {
 	newline, err := encodedNewline(enc)
 	if err != nil {
 		return nil, err
@@ -308,12 +198,12 @@ func NewNewlineSplitFunc(enc encoding.Encoding, flushAtEOF bool) (bufio.SplitFun
 			// We have a full newline-terminated line.
 			token = bytes.TrimSuffix(data[:i], carriageReturn)
 
-			return i + len(newline), trimWhitespaces(token), nil
+			return i + len(newline), trimFunc(token), nil
 		}
 
 		// Flush if no more data is expected
 		if atEOF && flushAtEOF {
-			token = trimWhitespaces(data)
+			token = trimFunc(data)
 			advance = len(data)
 			return
 		}
@@ -335,57 +225,44 @@ func encodedCarriageReturn(enc encoding.Encoding) ([]byte, error) {
 	return out[:nDst], err
 }
 
-func trimWhitespaces(data []byte) []byte {
+type trimFunc func([]byte) []byte
+
+func noTrim(token []byte) []byte {
+	return token
+}
+
+func trimLeadingWhitespacesFunc(data []byte) []byte {
 	// TrimLeft to strip EOF whitespaces in case of using $ in regex
 	// For some reason newline and carriage return are being moved to beginning of next log
-	// TrimRight to strip all whitespaces from the end of log
-	token := bytes.TrimLeft(bytes.TrimRight(data, "\r\n\t "), "\r\n")
+	token := bytes.TrimLeft(data, "\r\n\t ")
 	if token == nil {
 		return []byte{}
 	}
 	return token
 }
 
-// SplitterConfig consolidates MultilineConfig and FlusherConfig
-type SplitterConfig struct {
-	EncodingConfig EncodingConfig  `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
-	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"                      json:"multiline,omitempty"                     yaml:"multiline,omitempty"`
-	Flusher        FlusherConfig   `mapstructure:",squash,omitempty"                        json:",inline,omitempty"                       yaml:",inline,omitempty"`
+func trimTrailingWhitespacesFunc(data []byte) []byte {
+	// TrimRight to strip all whitespaces from the end of log
+	token := bytes.TrimRight(data, "\r\n\t ")
+	if token == nil {
+		return []byte{}
+	}
+	return token
 }
 
-// NewSplitterConfig returns default SplitterConfig
-func NewSplitterConfig() SplitterConfig {
-	return SplitterConfig{
-		EncodingConfig: NewEncodingConfig(),
-		Multiline:      NewMultilineConfig(),
-		Flusher:        NewFlusherConfig(),
-	}
+func trimWhitespacesFunc(data []byte) []byte {
+	return trimLeadingWhitespacesFunc(trimTrailingWhitespacesFunc(data))
 }
 
-// Build builds Splitter struct
-func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, error) {
-	enc, err := c.EncodingConfig.Build()
-	if err != nil {
-		return nil, err
+func getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces bool) trimFunc {
+	if preserveLeadingWhitespaces && preserveTrailingWhitespaces {
+		return noTrim
 	}
-
-	flusher := c.Flusher.Build()
-	splitFunc, err := c.Multiline.Build(enc.Encoding, flushAtEOF, flusher, maxLogSize)
-
-	if err != nil {
-		return nil, err
+	if preserveLeadingWhitespaces {
+		return trimTrailingWhitespacesFunc
 	}
-
-	return &Splitter{
-		Encoding:  enc,
-		Flusher:   flusher,
-		SplitFunc: splitFunc,
-	}, nil
-}
-
-// Splitter consolidates Flusher and dependent splitFunc
-type Splitter struct {
-	Encoding  Encoding
-	SplitFunc bufio.SplitFunc
-	Flusher   *Flusher
+	if preserveTrailingWhitespaces {
+		return trimLeadingWhitespacesFunc
+	}
+	return trimWhitespacesFunc
 }

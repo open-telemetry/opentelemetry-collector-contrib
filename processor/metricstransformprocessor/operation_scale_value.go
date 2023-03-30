@@ -15,31 +15,21 @@
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func (mtp *metricsTransformProcessor) scaleValueOp(metric *metricspb.Metric, op internalOperation) {
-	for _, ts := range metric.Timeseries {
-		for _, dp := range ts.Points {
-			switch metric.MetricDescriptor.Type {
-			case metricspb.MetricDescriptor_GAUGE_INT64, metricspb.MetricDescriptor_CUMULATIVE_INT64:
-				dp.Value = &metricspb.Point_Int64Value{Int64Value: int64(float64(dp.GetInt64Value()) * op.configOperation.Scale)}
-			case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
-				dp.Value = &metricspb.Point_DoubleValue{DoubleValue: dp.GetDoubleValue() * op.configOperation.Scale}
-			}
-		}
-	}
-}
-
-// scaleValueOp scales a numeric metric value. Applicable to sum and gauge metrics only.
+// scaleValueOp scales the numeric metric value of sum and gauge metrics.
+// For histograms it scales the value of the sum and the explicit bounds.
 func scaleValueOp(metric pmetric.Metric, op internalOperation, f internalFilter) {
 	var dps pmetric.NumberDataPointSlice
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		dps = metric.Gauge().DataPoints()
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dps = metric.Sum().DataPoints()
+	case pmetric.MetricTypeHistogram:
+		scaleHistogramOp(metric, op, f)
+		return
 	default:
 		return
 	}
@@ -51,9 +41,44 @@ func scaleValueOp(metric pmetric.Metric, op internalOperation, f internalFilter)
 		}
 		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
-			dp.SetIntVal(int64(float64(dp.IntVal()) * op.configOperation.Scale))
+			dp.SetIntValue(int64(float64(dp.IntValue()) * op.configOperation.Scale))
 		case pmetric.NumberDataPointValueTypeDouble:
-			dp.SetDoubleVal(dp.DoubleVal() * op.configOperation.Scale)
+			dp.SetDoubleValue(dp.DoubleValue() * op.configOperation.Scale)
+		}
+	}
+}
+
+func scaleHistogramOp(metric pmetric.Metric, op internalOperation, f internalFilter) {
+	var dps = metric.Histogram().DataPoints()
+
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		if !f.matchAttrs(dp.Attributes()) {
+			continue
+		}
+
+		if dp.HasSum() {
+			dp.SetSum(dp.Sum() * op.configOperation.Scale)
+		}
+		if dp.HasMin() {
+			dp.SetMin(dp.Min() * op.configOperation.Scale)
+		}
+		if dp.HasMax() {
+			dp.SetMax(dp.Max() * op.configOperation.Scale)
+		}
+
+		for bounds, bi := dp.ExplicitBounds(), 0; bi < bounds.Len(); bi++ {
+			bounds.SetAt(bi, bounds.At(bi)*op.configOperation.Scale)
+		}
+
+		for exemplars, ei := dp.Exemplars(), 0; ei < exemplars.Len(); ei++ {
+			exemplar := exemplars.At(ei)
+			switch exemplar.ValueType() {
+			case pmetric.ExemplarValueTypeInt:
+				exemplar.SetIntValue(int64(float64(exemplar.IntValue()) * op.configOperation.Scale))
+			case pmetric.ExemplarValueTypeDouble:
+				exemplar.SetDoubleValue(exemplar.DoubleValue() * op.configOperation.Scale)
+			}
 		}
 	}
 }

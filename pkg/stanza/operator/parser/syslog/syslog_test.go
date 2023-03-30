@@ -20,11 +20,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -89,50 +87,4 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry to be processed")
 	}
-}
-
-func TestConfig(t *testing.T) {
-	expect := NewConfigWithID("test")
-	expect.Protocol = RFC3164
-	expect.ParseFrom = entry.NewBodyField("from")
-	expect.ParseTo = entry.NewBodyField("to")
-
-	t.Run("mapstructure", func(t *testing.T) {
-		input := map[string]interface{}{
-			"id":         "test",
-			"type":       "syslog_parser",
-			"protocol":   RFC3164,
-			"parse_from": "body.from",
-			"parse_to":   "body.to",
-			"on_error":   "send",
-		}
-		var actual Config
-		err := helper.UnmarshalMapstructure(input, &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
-
-	t.Run("yaml", func(t *testing.T) {
-		input := `
-type: syslog_parser
-id: test
-on_error: "send"
-protocol: rfc3164
-parse_from: body.from
-parse_to: body.to`
-		var actual Config
-		err := yaml.Unmarshal([]byte(input), &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
-}
-
-func TestParserInvalidLocation(t *testing.T) {
-	config := NewConfigWithID("test")
-	config.Location = "not_a_location"
-	config.Protocol = RFC3164
-
-	_, err := config.Build(testutil.Logger(t))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to load location "+config.Location)
 }

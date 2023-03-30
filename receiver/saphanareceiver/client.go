@@ -154,7 +154,7 @@ func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query *monitor
 	defer rows.Close()
 
 	errors := scrapererror.ScrapeErrors{}
-	data := []map[string]string{}
+	var data []map[string]string
 
 ROW_ITERATOR:
 	for rows.Next() {

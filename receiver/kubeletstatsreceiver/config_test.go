@@ -16,17 +16,16 @@ package kubeletstatsreceiver
 
 import (
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
@@ -35,146 +34,165 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
 	duration := 10 * time.Second
-	defaultCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "default")].(*Config)
-	require.Equal(t, &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "default")),
-			CollectionInterval: duration,
-		},
-		ClientConfig: kube.ClientConfig{
-			APIConfig: k8sconfig.APIConfig{
-				AuthType: "tls",
-			},
-		},
-		MetricGroupsToCollect: []kubelet.MetricGroup{
-			kubelet.ContainerMetricGroup,
-			kubelet.PodMetricGroup,
-			kubelet.NodeMetricGroup,
-		},
-		Metrics: metadata.DefaultMetricsSettings(),
-	}, defaultCfg)
 
-	tlsCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "tls")].(*Config)
-	require.Equal(t, &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "tls")),
-			CollectionInterval: duration,
-		},
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: "1.2.3.4:5555",
-		},
-		ClientConfig: kube.ClientConfig{
-			APIConfig: k8sconfig.APIConfig{
-				AuthType: "tls",
+	tests := []struct {
+		id          component.ID
+		expected    component.Config
+		expectedErr error
+	}{
+		{
+			id: component.NewIDWithName(typeStr, "default"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: duration,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "tls",
+					},
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
-			TLSSetting: configtls.TLSSetting{
-				CAFile:   "/path/to/ca.crt",
-				CertFile: "/path/to/apiserver.crt",
-				KeyFile:  "/path/to/apiserver.key",
+		},
+		{
+			id: component.NewIDWithName(typeStr, "tls"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: duration,
+				},
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "1.2.3.4:5555",
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "tls",
+					},
+					TLSSetting: configtls.TLSSetting{
+						CAFile:   "/path/to/ca.crt",
+						CertFile: "/path/to/apiserver.crt",
+						KeyFile:  "/path/to/apiserver.key",
+					},
+					InsecureSkipVerify: true,
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
-			InsecureSkipVerify: true,
 		},
-		MetricGroupsToCollect: []kubelet.MetricGroup{
-			kubelet.ContainerMetricGroup,
-			kubelet.PodMetricGroup,
-			kubelet.NodeMetricGroup,
+		{
+			id: component.NewIDWithName(typeStr, "sa"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: duration,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "serviceAccount",
+					},
+					InsecureSkipVerify: true,
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
-	}, tlsCfg)
+		{
+			id: component.NewIDWithName(typeStr, "metadata"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: duration,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "serviceAccount",
+					},
+				},
+				ExtraMetadataLabels: []kubelet.MetadataLabel{
+					kubelet.MetadataLabelContainerID,
+					kubelet.MetadataLabelVolumeType,
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "metric_groups"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: 20 * time.Second,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "serviceAccount",
+					},
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+					kubelet.VolumeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "metadata_with_k8s_api"),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: duration,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "serviceAccount",
+					},
+				},
+				ExtraMetadataLabels: []kubelet.MetadataLabel{
+					kubelet.MetadataLabelVolumeType,
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				K8sAPIConfig:         &k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
+		},
+	}
 
-	saCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "sa")].(*Config)
-	require.Equal(t, &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "sa")),
-			CollectionInterval: duration,
-		},
-		ClientConfig: kube.ClientConfig{
-			APIConfig: k8sconfig.APIConfig{
-				AuthType: "serviceAccount",
-			},
-			InsecureSkipVerify: true,
-		},
-		MetricGroupsToCollect: []kubelet.MetricGroup{
-			kubelet.ContainerMetricGroup,
-			kubelet.PodMetricGroup,
-			kubelet.NodeMetricGroup,
-		},
-		Metrics: metadata.DefaultMetricsSettings(),
-	}, saCfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	metadataCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "metadata")].(*Config)
-	require.Equal(t, &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "metadata")),
-			CollectionInterval: duration,
-		},
-		ClientConfig: kube.ClientConfig{
-			APIConfig: k8sconfig.APIConfig{
-				AuthType: "serviceAccount",
-			},
-		},
-		ExtraMetadataLabels: []kubelet.MetadataLabel{
-			kubelet.MetadataLabelContainerID,
-			kubelet.MetadataLabelVolumeType,
-		},
-		MetricGroupsToCollect: []kubelet.MetricGroup{
-			kubelet.ContainerMetricGroup,
-			kubelet.PodMetricGroup,
-			kubelet.NodeMetricGroup,
-		},
-		Metrics: metadata.DefaultMetricsSettings(),
-	}, metadataCfg)
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	metricGroupsCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "metric_groups")].(*Config)
-	require.Equal(t, &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "metric_groups")),
-			CollectionInterval: 20 * time.Second,
-		},
-		ClientConfig: kube.ClientConfig{
-			APIConfig: k8sconfig.APIConfig{
-				AuthType: "serviceAccount",
-			},
-		},
-		MetricGroupsToCollect: []kubelet.MetricGroup{
-			kubelet.PodMetricGroup,
-			kubelet.NodeMetricGroup,
-			kubelet.VolumeMetricGroup,
-		},
-		Metrics: metadata.DefaultMetricsSettings(),
-	}, metricGroupsCfg)
-
-	metadataWithK8sAPICfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "metadata_with_k8s_api")].(*Config)
-	require.Equal(t, &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "metadata_with_k8s_api")),
-			CollectionInterval: duration,
-		},
-		ClientConfig: kube.ClientConfig{
-			APIConfig: k8sconfig.APIConfig{
-				AuthType: "serviceAccount",
-			},
-		},
-		ExtraMetadataLabels: []kubelet.MetadataLabel{
-			kubelet.MetadataLabelVolumeType,
-		},
-		MetricGroupsToCollect: []kubelet.MetricGroup{
-			kubelet.ContainerMetricGroup,
-			kubelet.PodMetricGroup,
-			kubelet.NodeMetricGroup,
-		},
-		K8sAPIConfig: &k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-		Metrics:      metadata.DefaultMetricsSettings(),
-	}, metadataWithK8sAPICfg)
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestGetReceiverOptions(t *testing.T) {
@@ -201,7 +219,6 @@ func TestGetReceiverOptions(t *testing.T) {
 				},
 			},
 			want: &scraperOptions{
-				id: config.NewComponentID(typeStr),
 				extraMetadataLabels: []kubelet.MetadataLabel{
 					kubelet.MetadataLabelContainerID,
 				},
@@ -245,7 +262,6 @@ func TestGetReceiverOptions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					CollectionInterval: 10 * time.Second,
 				},
 				ExtraMetadataLabels:   tt.fields.extraMetadataLabels,
@@ -253,13 +269,12 @@ func TestGetReceiverOptions(t *testing.T) {
 				K8sAPIConfig:          tt.fields.k8sAPIConfig,
 			}
 			got, err := cfg.getReceiverOptions()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getReceiverOptions() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getReceiverOptions() got = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

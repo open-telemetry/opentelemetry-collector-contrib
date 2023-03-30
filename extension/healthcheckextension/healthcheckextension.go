@@ -24,6 +24,7 @@ import (
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 )
 
@@ -37,7 +38,7 @@ type healthCheckExtension struct {
 	settings component.TelemetrySettings
 }
 
-var _ component.PipelineWatcher = (*healthCheckExtension)(nil)
+var _ extension.PipelineWatcher = (*healthCheckExtension)(nil)
 
 func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) error {
 
@@ -55,7 +56,7 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 	if !hc.config.CheckCollectorPipeline.Enabled {
 		// Mount HC handler
 		mux := http.NewServeMux()
-		mux.Handle(hc.config.Path, hc.state.Handler())
+		mux.Handle(hc.config.Path, hc.baseHandler())
 		hc.server.Handler = mux
 		hc.stopCh = make(chan struct{})
 		go func() {
@@ -80,7 +81,7 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 		ticker := time.NewTicker(time.Second)
 
 		mux := http.NewServeMux()
-		mux.Handle(hc.config.Path, hc.handler())
+		mux.Handle(hc.config.Path, hc.checkCollectorPipelineHandler())
 		hc.server.Handler = mux
 		hc.stopCh = make(chan struct{})
 		go func() {
@@ -108,13 +109,35 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 	return nil
 }
 
+// base handler function
+func (hc *healthCheckExtension) baseHandler() http.Handler {
+	if hc.config.ResponseBody != nil {
+		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			if hc.state.Get() == healthcheck.Ready {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(hc.config.ResponseBody.Healthy))
+			} else {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				_, _ = w.Write([]byte(hc.config.ResponseBody.Unhealthy))
+			}
+		})
+	}
+	return hc.state.Handler()
+}
+
 // new handler function used for check collector pipeline
-func (hc *healthCheckExtension) handler() http.Handler {
+func (hc *healthCheckExtension) checkCollectorPipelineHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		if hc.check() && hc.state.Get() == healthcheck.Ready {
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
+			if hc.config.ResponseBody != nil {
+				_, _ = w.Write([]byte(hc.config.ResponseBody.Healthy))
+			}
 		} else {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
+			if hc.config.ResponseBody != nil {
+				_, _ = w.Write([]byte(hc.config.ResponseBody.Unhealthy))
+			}
 		}
 	})
 }

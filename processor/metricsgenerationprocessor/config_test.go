@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -29,14 +29,13 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id           config.ComponentID
-		expected     config.Processor
+		id           component.ID
+		expected     component.Config
 		errorMessage string
 	}{
 		{
-			id: config.NewComponentIDWithName(typeStr, ""),
+			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Rules: []Rule{
 					{
 						Name:      "new_metric",
@@ -58,31 +57,31 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "missing_new_metric"),
+			id:           component.NewIDWithName(typeStr, "missing_new_metric"),
 			errorMessage: fmt.Sprintf("missing required field %q", nameFieldName),
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "missing_type"),
+			id:           component.NewIDWithName(typeStr, "missing_type"),
 			errorMessage: fmt.Sprintf("missing required field %q", typeFieldName),
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "invalid_generation_type"),
+			id:           component.NewIDWithName(typeStr, "invalid_generation_type"),
 			errorMessage: fmt.Sprintf("%q must be in %q", typeFieldName, generationTypeKeys()),
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "missing_operand1"),
+			id:           component.NewIDWithName(typeStr, "missing_operand1"),
 			errorMessage: fmt.Sprintf("missing required field %q", metric1FieldName),
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "missing_operand2"),
+			id:           component.NewIDWithName(typeStr, "missing_operand2"),
 			errorMessage: fmt.Sprintf("missing required field %q for generation type %q", metric2FieldName, calculate),
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "missing_scale_by"),
+			id:           component.NewIDWithName(typeStr, "missing_scale_by"),
 			errorMessage: fmt.Sprintf("field %q required to be greater than 0 for generation type %q", scaleByFieldName, scale),
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "invalid_operation"),
+			id:           component.NewIDWithName(typeStr, "invalid_operation"),
 			errorMessage: fmt.Sprintf("%q must be in %q", operationFieldName, operationTypeKeys()),
 		},
 	}
@@ -96,13 +95,13 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

@@ -5,7 +5,7 @@ on:
 
 jobs:
   add-labels:
-    if: ${{ !github.event.issue.pull_request && (github.event.comment.body == '/help-wanted' || github.event.comment.body == '/good-first-issue' ) }}
+    if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/label') && github.repository_owner == 'open-telemetry' }}
 
     runs-on: ubuntu-latest
     steps:
@@ -20,3 +20,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE: ${{ github.event.issue.number }}
           COMMENT: ${{ github.event.comment.body }}
+          SENDER: ${{ github.event.sender.login }}

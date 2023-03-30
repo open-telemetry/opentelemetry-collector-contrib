@@ -3,12 +3,22 @@ name: sqlserverreceiver
 resource_attributes:
   sqlserver.database.name:
     description: The name of the SQL Server database.
+    enabled: true
+    type: string
+  sqlserver.instance.name:
+    description: The name of the SQL Server instance being monitored.
+    enabled: false
+    type: string
+  sqlserver.computer.name:
+    description: The name of the SQL Server instance being monitored.
+    enabled: false
     type: string
 
 attributes:
   page.operations:
-    value: type
+    name_override: type
     description: The page operation types.
+    type: string
     enum: [read, write]
 
 metrics:

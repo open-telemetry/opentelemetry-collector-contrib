@@ -20,10 +20,10 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/obsreport"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -31,21 +31,23 @@ import (
 )
 
 type receiver struct {
-	id     config.ComponentID
+	id     component.ID
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
-	pipe          pipeline.Pipeline
-	emitter       *LogEmitter
-	consumer      consumer.Logs
+	pipe      pipeline.Pipeline
+	emitter   *LogEmitter
+	consumer  consumer.Logs
+	converter *Converter
+	logger    *zap.Logger
+	obsrecv   *obsreport.Receiver
+
+	storageID     *component.ID
 	storageClient storage.Client
-	converter     *Converter
-	logger        *zap.Logger
-	obsrecv       *obsreport.Receiver
 }
 
 // Ensure this receiver adheres to required interface
-var _ component.LogsReceiver = (*receiver)(nil)
+var _ rcvr.Logs = (*receiver)(nil)
 
 // Start tells the receiver to start
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
@@ -57,7 +59,7 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("storage client: %w", err)
 	}
 
-	if err := r.pipe.Start(r.getPersister()); err != nil {
+	if err := r.pipe.Start(r.storageClient); err != nil {
 		return fmt.Errorf("start stanza: %w", err)
 	}
 
@@ -141,12 +143,19 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 
 // Shutdown is invoked during service shutdown
 func (r *receiver) Shutdown(ctx context.Context) error {
+	if r.cancel == nil {
+		return nil
+	}
+
 	r.logger.Info("Stopping stanza receiver")
 	pipelineErr := r.pipe.Stop()
 	r.converter.Stop()
 	r.cancel()
 	r.wg.Wait()
 
-	clientErr := r.storageClient.Close(ctx)
-	return multierr.Combine(pipelineErr, clientErr)
+	if r.storageClient != nil {
+		clientErr := r.storageClient.Close(ctx)
+		return multierr.Combine(pipelineErr, clientErr)
+	}
+	return pipelineErr
 }

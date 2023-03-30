@@ -117,7 +117,7 @@ func InitSyncPollTimeout(pollTimeout time.Duration) Option {
 }
 
 func getStringifiedOptions(options ...Option) string {
-	opts := make([]string, 0)
+	var opts []string
 	for _, option := range options {
 		opts = append(opts, option.name)
 	}

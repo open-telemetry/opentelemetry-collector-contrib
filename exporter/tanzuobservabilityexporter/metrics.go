@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/wavefronthq/wavefront-sdk-go/histogram"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/atomic"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -60,15 +60,17 @@ var (
 
 // metricsConsumer instances consume OTEL metrics
 type metricsConsumer struct {
-	consumerMap           map[pmetric.MetricDataType]typedMetricConsumer
+	consumerMap           map[pmetric.MetricType]typedMetricConsumer
 	sender                flushCloser
 	reportInternalMetrics bool
+	config                MetricsConfig
 }
 
 type metricInfo struct {
 	pmetric.Metric
-	Source    string
-	SourceKey string
+	Source        string
+	SourceKey     string
+	ResourceAttrs map[string]string
 }
 
 // newMetricsConsumer returns a new metricsConsumer. consumers are the
@@ -81,8 +83,9 @@ func newMetricsConsumer(
 	consumers []typedMetricConsumer,
 	sender flushCloser,
 	reportInternalMetrics bool,
+	config MetricsConfig,
 ) *metricsConsumer {
-	consumerMap := make(map[pmetric.MetricDataType]typedMetricConsumer, len(consumers))
+	consumerMap := make(map[pmetric.MetricType]typedMetricConsumer, len(consumers))
 	for _, consumer := range consumers {
 		if consumerMap[consumer.Type()] != nil {
 			panic("duplicate consumer type detected: " + consumer.Type().String())
@@ -93,6 +96,7 @@ func newMetricsConsumer(
 		consumerMap:           consumerMap,
 		sender:                sender,
 		reportInternalMetrics: reportInternalMetrics,
+		config:                config,
 	}
 }
 
@@ -104,14 +108,20 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pmetric.Metrics) error
 	var errs []error
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i).Resource().Attributes()
-		source, sourceKey := getSourceAndKey(rm)
+		resAttrs := rms.At(i).Resource().Attributes()
+		source, sourceKey := getSourceAndKey(resAttrs)
 		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
-				mi := metricInfo{Metric: m, Source: source, SourceKey: sourceKey}
+				var resAttrsMap map[string]string
+				if c.config.ResourceAttrsIncluded {
+					resAttrsMap = attributesToTags(resAttrs)
+				} else if !c.config.AppTagsExcluded {
+					resAttrsMap = appAttributesToTags(resAttrs)
+				}
+				mi := metricInfo{Metric: m, Source: source, SourceKey: sourceKey, ResourceAttrs: resAttrsMap}
 				select {
 				case <-ctx.Done():
 					return multierr.Combine(append(errs, errors.New("context canceled"))...)
@@ -147,7 +157,7 @@ func (c *metricsConsumer) pushInternalMetrics(errs *[]error) {
 }
 
 func (c *metricsConsumer) pushSingleMetric(mi metricInfo, errs *[]error) {
-	dataType := mi.DataType()
+	dataType := mi.Type()
 	consumer := c.consumerMap[dataType]
 	if consumer == nil {
 		*errs = append(
@@ -163,7 +173,7 @@ type typedMetricConsumer interface {
 
 	// Type returns the type of metric this consumer consumes. For example
 	// Gauge, Sum, or Histogram
-	Type() pmetric.MetricDataType
+	Type() pmetric.MetricType
 
 	// Consume consumes the metric from the metricInfo and appends any errors encountered to errs
 	Consume(mi metricInfo, errs *[]error)
@@ -196,18 +206,18 @@ func report(count *atomic.Int64, name string, tags map[string]string, sender gau
 // metrics with missing values.
 func logMissingValue(metric pmetric.Metric, settings component.TelemetrySettings, count *atomic.Int64) {
 	namef := zap.String(metricNameString, metric.Name())
-	typef := zap.String(metricTypeString, metric.DataType().String())
+	typef := zap.String(metricTypeString, metric.Type().String())
 	settings.Logger.Debug("Metric missing value", namef, typef)
-	count.Inc()
+	count.Add(1)
 }
 
 // getValue gets the floating point value out of a NumberDataPoint
 func getValue(numberDataPoint pmetric.NumberDataPoint) (float64, error) {
 	switch numberDataPoint.ValueType() {
 	case pmetric.NumberDataPointValueTypeInt:
-		return float64(numberDataPoint.IntVal()), nil
+		return float64(numberDataPoint.IntValue()), nil
 	case pmetric.NumberDataPointValueTypeDouble:
-		return numberDataPoint.DoubleVal(), nil
+		return numberDataPoint.DoubleValue(), nil
 	default:
 		return 0.0, errors.New("unsupported metric value type")
 	}
@@ -226,7 +236,7 @@ func pushGaugeNumberDataPoint(
 	settings component.TelemetrySettings,
 	missingValues *atomic.Int64,
 ) {
-	tags := attributesToTagsForMetrics(numberDataPoint.Attributes(), mi.SourceKey)
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, numberDataPoint.Attributes(), newMap(mi.ResourceAttrs))
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
 	value, err := getValue(numberDataPoint)
 	if err != nil {
@@ -257,12 +267,12 @@ func newGaugeConsumer(
 	return &gaugeConsumer{
 		sender:        sender,
 		settings:      settings,
-		missingValues: atomic.NewInt64(0),
+		missingValues: &atomic.Int64{},
 	}
 }
 
-func (g *gaugeConsumer) Type() pmetric.MetricDataType {
-	return pmetric.MetricDataTypeGauge
+func (g *gaugeConsumer) Type() pmetric.MetricType {
+	return pmetric.MetricTypeGauge
 }
 
 func (g *gaugeConsumer) Consume(mi metricInfo, errs *[]error) {
@@ -296,17 +306,17 @@ func newSumConsumer(
 	return &sumConsumer{
 		sender:        sender,
 		settings:      settings,
-		missingValues: atomic.NewInt64(0),
+		missingValues: &atomic.Int64{},
 	}
 }
 
-func (s *sumConsumer) Type() pmetric.MetricDataType {
-	return pmetric.MetricDataTypeSum
+func (s *sumConsumer) Type() pmetric.MetricType {
+	return pmetric.MetricTypeSum
 }
 
 func (s *sumConsumer) Consume(mi metricInfo, errs *[]error) {
 	sum := mi.Sum()
-	isDelta := sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta
+	isDelta := sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta
 	numberDataPoints := sum.DataPoints()
 	for i := 0; i < numberDataPoints.Len(); i++ {
 		// If sum is a delta type, send it to tanzu observability as a
@@ -326,7 +336,7 @@ func (s *sumConsumer) PushInternalMetrics(errs *[]error) {
 }
 
 func (s *sumConsumer) pushNumberDataPoint(mi metricInfo, numberDataPoint pmetric.NumberDataPoint, errs *[]error) {
-	tags := attributesToTagsForMetrics(numberDataPoint.Attributes(), mi.SourceKey)
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, numberDataPoint.Attributes(), newMap(mi.ResourceAttrs))
 	value, err := getValue(numberDataPoint)
 	if err != nil {
 		logMissingValue(mi.Metric, s.settings, s.missingValues)
@@ -349,8 +359,8 @@ type histogramReporting struct {
 func newHistogramReporting(settings component.TelemetrySettings) *histogramReporting {
 	return &histogramReporting{
 		settings:                 settings,
-		malformedHistograms:      atomic.NewInt64(0),
-		noAggregationTemporality: atomic.NewInt64(0),
+		malformedHistograms:      &atomic.Int64{},
+		noAggregationTemporality: &atomic.Int64{},
 	}
 }
 
@@ -369,14 +379,14 @@ func (r *histogramReporting) NoAggregationTemporality() int64 {
 func (r *histogramReporting) LogMalformed(metric pmetric.Metric) {
 	namef := zap.String(metricNameString, metric.Name())
 	r.settings.Logger.Debug("Malformed histogram", namef)
-	r.malformedHistograms.Inc()
+	r.malformedHistograms.Add(1)
 }
 
 // LogNoAggregationTemporality logs seeing a histogram metric with no aggregation temporality
 func (r *histogramReporting) LogNoAggregationTemporality(metric pmetric.Metric) {
 	namef := zap.String(metricNameString, metric.Name())
 	r.settings.Logger.Debug("histogram metric missing aggregation temporality", namef)
-	r.noAggregationTemporality.Inc()
+	r.noAggregationTemporality.Add(1)
 }
 
 // Report sends the counts in this instance to wavefront.
@@ -412,7 +422,7 @@ func newHistogramConsumer(
 	}
 }
 
-func (h *histogramConsumer) Type() pmetric.MetricDataType {
+func (h *histogramConsumer) Type() pmetric.MetricType {
 	return h.spec.Type()
 }
 
@@ -420,9 +430,9 @@ func (h *histogramConsumer) Consume(mi metricInfo, errs *[]error) {
 	aggregationTemporality := h.spec.AggregationTemporality(mi.Metric)
 	var consumer histogramDataPointConsumer
 	switch aggregationTemporality {
-	case pmetric.MetricAggregationTemporalityDelta:
+	case pmetric.AggregationTemporalityDelta:
 		consumer = h.delta
-	case pmetric.MetricAggregationTemporalityCumulative:
+	case pmetric.AggregationTemporalityCumulative:
 		consumer = h.cumulative
 	default:
 		h.reporting.LogNoAggregationTemporality(mi.Metric)
@@ -474,7 +484,7 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 		return
 	}
 	name := mi.Name()
-	tags := attributesToTagsForMetrics(point.Attributes, mi.SourceKey)
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, point.Attributes, newMap(mi.ResourceAttrs))
 	if leTag, ok := tags["le"]; ok {
 		tags["_le"] = leTag
 	}
@@ -510,7 +520,7 @@ func (d *deltaHistogramDataPointConsumer) Consume(
 		return
 	}
 	name := mi.Name()
-	tags := attributesToTagsForMetrics(point.Attributes, mi.SourceKey)
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, point.Attributes, newMap(mi.ResourceAttrs))
 	err := d.sender.SendDistribution(
 		name, point.AsDelta(), allGranularity, point.SecondsSinceEpoch, mi.Source, tags)
 	if err != nil {
@@ -531,8 +541,8 @@ func newSummaryConsumer(
 	return &summaryConsumer{sender: sender, settings: settings}
 }
 
-func (s *summaryConsumer) Type() pmetric.MetricDataType {
-	return pmetric.MetricDataTypeSummary
+func (s *summaryConsumer) Type() pmetric.MetricType {
+	return pmetric.MetricTypeSummary
 }
 
 func (s *summaryConsumer) Consume(mi metricInfo, errs *[]error) {
@@ -553,7 +563,7 @@ func (s *summaryConsumer) sendSummaryDataPoint(
 ) {
 	name := mi.Name()
 	ts := summaryDataPoint.Timestamp().AsTime().Unix()
-	tags := attributesToTagsForMetrics(summaryDataPoint.Attributes(), mi.SourceKey)
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, summaryDataPoint.Attributes(), newMap(mi.ResourceAttrs))
 	count := summaryDataPoint.Count()
 	sum := summaryDataPoint.Sum()
 
@@ -582,13 +592,6 @@ func (s *summaryConsumer) sendMetric(
 	if err != nil {
 		*errs = append(*errs, err)
 	}
-}
-
-func attributesToTagsForMetrics(attributes pcommon.Map, sourceKey string) map[string]string {
-	tags := attributesToTags(attributes)
-	delete(tags, sourceKey)
-	replaceSource(tags)
-	return tags
 }
 
 func quantileTagValue(quantile float64) string {
@@ -701,20 +704,20 @@ func (b *bucketHistogramDataPoint) centroidValue(index int) float64 {
 }
 
 type histogramSpecification interface {
-	Type() pmetric.MetricDataType
-	AggregationTemporality(metric pmetric.Metric) pmetric.MetricAggregationTemporality
+	Type() pmetric.MetricType
+	AggregationTemporality(metric pmetric.Metric) pmetric.AggregationTemporality
 	DataPoints(metric pmetric.Metric) []bucketHistogramDataPoint
 }
 
 type regularHistogramSpecification struct {
 }
 
-func (regularHistogramSpecification) Type() pmetric.MetricDataType {
-	return pmetric.MetricDataTypeHistogram
+func (regularHistogramSpecification) Type() pmetric.MetricType {
+	return pmetric.MetricTypeHistogram
 }
 
 func (regularHistogramSpecification) AggregationTemporality(
-	metric pmetric.Metric) pmetric.MetricAggregationTemporality {
+	metric pmetric.Metric) pmetric.AggregationTemporality {
 	return metric.Histogram().AggregationTemporality()
 }
 
@@ -725,12 +728,12 @@ func (regularHistogramSpecification) DataPoints(metric pmetric.Metric) []bucketH
 type exponentialHistogramSpecification struct {
 }
 
-func (exponentialHistogramSpecification) Type() pmetric.MetricDataType {
-	return pmetric.MetricDataTypeExponentialHistogram
+func (exponentialHistogramSpecification) Type() pmetric.MetricType {
+	return pmetric.MetricTypeExponentialHistogram
 }
 
 func (exponentialHistogramSpecification) AggregationTemporality(
-	metric pmetric.Metric) pmetric.MetricAggregationTemporality {
+	metric pmetric.Metric) pmetric.AggregationTemporality {
 	return metric.ExponentialHistogram().AggregationTemporality()
 }
 

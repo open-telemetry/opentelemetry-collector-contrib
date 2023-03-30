@@ -6,14 +6,30 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsSettings provides settings for hostmetricsreceiver/load metrics.
@@ -37,6 +53,19 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesSettings provides settings for hostmetricsreceiver/load metrics.
+type ResourceAttributesSettings struct {
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{}
+}
+
 type metricSystemCPULoadAverage15m struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -48,7 +77,7 @@ func (m *metricSystemCPULoadAverage15m) init() {
 	m.data.SetName("system.cpu.load_average.15m")
 	m.data.SetDescription("Average CPU Load over 15 minutes.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSystemCPULoadAverage15m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -58,7 +87,7 @@ func (m *metricSystemCPULoadAverage15m) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -97,7 +126,7 @@ func (m *metricSystemCPULoadAverage1m) init() {
 	m.data.SetName("system.cpu.load_average.1m")
 	m.data.SetDescription("Average CPU Load over 1 minute.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSystemCPULoadAverage1m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -107,7 +136,7 @@ func (m *metricSystemCPULoadAverage1m) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -146,7 +175,7 @@ func (m *metricSystemCPULoadAverage5m) init() {
 	m.data.SetName("system.cpu.load_average.5m")
 	m.data.SetDescription("Average CPU Load over 5 minutes.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSystemCPULoadAverage5m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -156,7 +185,7 @@ func (m *metricSystemCPULoadAverage5m) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -184,6 +213,12 @@ func newMetricSystemCPULoadAverage5m(settings MetricSettings) metricSystemCPULoa
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -192,6 +227,7 @@ type MetricsBuilder struct {
 	resourceCapacity              int                 // maximum observed number of resource attributes.
 	metricsBuffer                 pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                     component.BuildInfo // contains version information
+	resourceAttributesSettings    ResourceAttributesSettings
 	metricSystemCPULoadAverage15m metricSystemCPULoadAverage15m
 	metricSystemCPULoadAverage1m  metricSystemCPULoadAverage1m
 	metricSystemCPULoadAverage5m  metricSystemCPULoadAverage5m
@@ -207,14 +243,29 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                 pmetric.NewMetrics(),
-		buildInfo:                     buildInfo,
-		metricSystemCPULoadAverage15m: newMetricSystemCPULoadAverage15m(settings.SystemCPULoadAverage15m),
-		metricSystemCPULoadAverage1m:  newMetricSystemCPULoadAverage1m(settings.SystemCPULoadAverage1m),
-		metricSystemCPULoadAverage5m:  newMetricSystemCPULoadAverage5m(settings.SystemCPULoadAverage5m),
+		buildInfo:                     settings.BuildInfo,
+		resourceAttributesSettings:    mbc.ResourceAttributes,
+		metricSystemCPULoadAverage15m: newMetricSystemCPULoadAverage15m(mbc.Metrics.SystemCPULoadAverage15m),
+		metricSystemCPULoadAverage1m:  newMetricSystemCPULoadAverage1m(mbc.Metrics.SystemCPULoadAverage1m),
+		metricSystemCPULoadAverage5m:  newMetricSystemCPULoadAverage5m(mbc.Metrics.SystemCPULoadAverage5m),
 	}
 	for _, op := range options {
 		op(mb)
@@ -233,19 +284,19 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {
@@ -271,8 +322,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSystemCPULoadAverage15m.emit(ils.Metrics())
 	mb.metricSystemCPULoadAverage1m.emit(ils.Metrics())
 	mb.metricSystemCPULoadAverage5m.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -285,8 +337,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

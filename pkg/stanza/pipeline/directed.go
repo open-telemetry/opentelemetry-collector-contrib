@@ -98,7 +98,7 @@ func (p *DirectedPipeline) Render() ([]byte, error) {
 
 // Operators returns a slice of operators that make up the pipeline graph
 func (p *DirectedPipeline) Operators() []operator.Operator {
-	operators := make([]operator.Operator, 0)
+	var operators []operator.Operator
 	if nodes, err := topo.Sort(p.Graph); err == nil {
 		for _, node := range nodes {
 			operators = append(operators, node.(OperatorNode).Operator())

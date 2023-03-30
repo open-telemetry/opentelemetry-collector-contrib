@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ const defaultEndpoint = "http://localhost:8098"
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	Username                                string                   `mapstructure:"username"`
-	Password                                string                   `mapstructure:"password"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
+	Username                                string                        `mapstructure:"username"`
+	Password                                string                        `mapstructure:"password"`
+	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:"metrics"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields

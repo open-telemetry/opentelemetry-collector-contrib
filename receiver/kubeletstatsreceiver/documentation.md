@@ -2,95 +2,396 @@
 
 # kubeletstatsreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **container.cpu.time** | Container CPU time | s | Sum(Double) | <ul> </ul> |
-| **container.cpu.utilization** | Container CPU utilization | 1 | Gauge(Double) | <ul> </ul> |
-| **container.filesystem.available** | Container filesystem available | By | Gauge(Int) | <ul> </ul> |
-| **container.filesystem.capacity** | Container filesystem capacity | By | Gauge(Int) | <ul> </ul> |
-| **container.filesystem.usage** | Container filesystem usage | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.available** | Container memory available | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.major_page_faults** | Container memory major_page_faults | 1 | Gauge(Int) | <ul> </ul> |
-| **container.memory.page_faults** | Container memory page_faults | 1 | Gauge(Int) | <ul> </ul> |
-| **container.memory.rss** | Container memory rss | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.usage** | Container memory usage | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.working_set** | Container memory working_set | By | Gauge(Int) | <ul> </ul> |
-| **k8s.node.cpu.time** | Node CPU time | s | Sum(Double) | <ul> </ul> |
-| **k8s.node.cpu.utilization** | Node CPU utilization | 1 | Gauge(Double) | <ul> </ul> |
-| **k8s.node.filesystem.available** | Node filesystem available | By | Gauge(Int) | <ul> </ul> |
-| **k8s.node.filesystem.capacity** | Node filesystem capacity | By | Gauge(Int) | <ul> </ul> |
-| **k8s.node.filesystem.usage** | Node filesystem usage | By | Gauge(Int) | <ul> </ul> |
-| **k8s.node.memory.available** | Node memory available | By | Gauge(Int) | <ul> </ul> |
-| **k8s.node.memory.major_page_faults** | Node memory major_page_faults | 1 | Gauge(Int) | <ul> </ul> |
-| **k8s.node.memory.page_faults** | Node memory page_faults | 1 | Gauge(Int) | <ul> </ul> |
-| **k8s.node.memory.rss** | Node memory rss | By | Gauge(Int) | <ul> </ul> |
-| **k8s.node.memory.usage** | Node memory usage | By | Gauge(Int) | <ul> </ul> |
-| **k8s.node.memory.working_set** | Node memory working_set | By | Gauge(Int) | <ul> </ul> |
-| **k8s.node.network.errors** | Node network errors | 1 | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
-| **k8s.node.network.errors.receive** | Node network receive errors | 1 | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **k8s.node.network.errors.transmit** | Node network transmission errors | 1 | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **k8s.node.network.io** | Node network IO | By | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
-| **k8s.node.network.io.receive** | Node network IO received | By | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **k8s.node.network.io.transmit** | Node network IO transmitted | By | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **k8s.pod.cpu.time** | Pod CPU time | s | Sum(Double) | <ul> </ul> |
-| **k8s.pod.cpu.utilization** | Pod CPU utilization | 1 | Gauge(Double) | <ul> </ul> |
-| **k8s.pod.filesystem.available** | Pod filesystem available | By | Gauge(Int) | <ul> </ul> |
-| **k8s.pod.filesystem.capacity** | Pod filesystem capacity | By | Gauge(Int) | <ul> </ul> |
-| **k8s.pod.filesystem.usage** | Pod filesystem usage | By | Gauge(Int) | <ul> </ul> |
-| **k8s.pod.memory.available** | Pod memory available | By | Gauge(Int) | <ul> </ul> |
-| **k8s.pod.memory.major_page_faults** | Pod memory major_page_faults | 1 | Gauge(Int) | <ul> </ul> |
-| **k8s.pod.memory.page_faults** | Pod memory page_faults | 1 | Gauge(Int) | <ul> </ul> |
-| **k8s.pod.memory.rss** | Pod memory rss | By | Gauge(Int) | <ul> </ul> |
-| **k8s.pod.memory.usage** | Pod memory usage | By | Gauge(Int) | <ul> </ul> |
-| **k8s.pod.memory.working_set** | Pod memory working_set | By | Gauge(Int) | <ul> </ul> |
-| **k8s.pod.network.errors** | Pod network errors | 1 | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
-| **k8s.pod.network.errors.receive** | Pod network receive errors | 1 | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **k8s.pod.network.errors.transmit** | Pod network transmission errors | 1 | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **k8s.pod.network.io** | Pod network IO | By | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
-| **k8s.pod.network.io.receive** | Pod network IO received | By | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **k8s.pod.network.io.transmit** | Pod network IO transmitted | By | Sum(Int) | <ul> <li>interface</li> </ul> |
-| **k8s.volume.available** | The number of available bytes in the volume. | By | Gauge(Int) | <ul> </ul> |
-| **k8s.volume.capacity** | The total capacity in bytes of the volume. | By | Gauge(Int) | <ul> </ul> |
-| **k8s.volume.inodes** | The total inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
-| **k8s.volume.inodes.free** | The free inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
-| **k8s.volume.inodes.used** | The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems. | 1 | Gauge(Int) | <ul> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Resource attributes
+### container.cpu.time
 
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| aws.volume.id | The id of the AWS Volume | String |
-| container.id | Container id used to identify container | String |
-| fs.type | The filesystem type of the Volume | String |
-| gce.pd.name | The name of the persistent disk in GCE | String |
-| glusterfs.endpoints.name | The endpoint name that details Glusterfs topology | String |
-| glusterfs.path | Glusterfs volume path | String |
-| k8s.container.name | Container name used by container runtime | String |
-| k8s.namespace.name | The name of the namespace that the pod is running in | String |
-| k8s.node.name | The name of the Node | String |
-| k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | String |
-| k8s.pod.name | The name of the Pod | String |
-| k8s.pod.uid | The UID of the Pod | String |
-| k8s.volume.name | The name of the Volume | String |
-| k8s.volume.type | The type of the Volume | String |
-| partition | The partition in the Volume | String |
+Container CPU time
 
-## Metric attributes
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+### container.cpu.utilization
+
+Container CPU utilization
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### container.filesystem.available
+
+Container filesystem available
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### container.filesystem.capacity
+
+Container filesystem capacity
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### container.filesystem.usage
+
+Container filesystem usage
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### container.memory.available
+
+Container memory available
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### container.memory.major_page_faults
+
+Container memory major_page_faults
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### container.memory.page_faults
+
+Container memory page_faults
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### container.memory.rss
+
+Container memory rss
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### container.memory.usage
+
+Container memory usage
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### container.memory.working_set
+
+Container memory working_set
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.cpu.time
+
+Node CPU time
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+### k8s.node.cpu.utilization
+
+Node CPU utilization
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.node.filesystem.available
+
+Node filesystem available
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.filesystem.capacity
+
+Node filesystem capacity
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.filesystem.usage
+
+Node filesystem usage
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.memory.available
+
+Node memory available
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.memory.major_page_faults
+
+Node memory major_page_faults
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.node.memory.page_faults
+
+Node memory page_faults
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.node.memory.rss
+
+Node memory rss
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.memory.usage
+
+Node memory usage
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.memory.working_set
+
+Node memory working_set
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.network.errors
+
+Node network errors
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| direction | Direction of flow of bytes/operations (receive or transmit). | receive, transmit |
-| interface | Name of the network interface. |  |
+| interface | Name of the network interface. | Any Str |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+
+### k8s.node.network.io
+
+Node network IO
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| interface | Name of the network interface. | Any Str |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+
+### k8s.pod.cpu.time
+
+Pod CPU time
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+### k8s.pod.cpu.utilization
+
+Pod CPU utilization
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.pod.filesystem.available
+
+Pod filesystem available
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.pod.filesystem.capacity
+
+Pod filesystem capacity
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.pod.filesystem.usage
+
+Pod filesystem usage
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.pod.memory.available
+
+Pod memory available
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.pod.memory.major_page_faults
+
+Pod memory major_page_faults
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.pod.memory.page_faults
+
+Pod memory page_faults
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.pod.memory.rss
+
+Pod memory rss
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.pod.memory.usage
+
+Pod memory usage
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.pod.memory.working_set
+
+Pod memory working_set
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.pod.network.errors
+
+Pod network errors
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| interface | Name of the network interface. | Any Str |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+
+### k8s.pod.network.io
+
+Pod network IO
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| interface | Name of the network interface. | Any Str |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+
+### k8s.volume.available
+
+The number of available bytes in the volume.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.volume.capacity
+
+The total capacity in bytes of the volume.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.volume.inodes
+
+The total inodes in the filesystem.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.volume.inodes.free
+
+The free inodes in the filesystem.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.volume.inodes.used
+
+The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| aws.volume.id | The id of the AWS Volume | Any Str | true |
+| container.id | Container id used to identify container | Any Str | true |
+| fs.type | The filesystem type of the Volume | Any Str | true |
+| gce.pd.name | The name of the persistent disk in GCE | Any Str | true |
+| glusterfs.endpoints.name | The endpoint name that details Glusterfs topology | Any Str | true |
+| glusterfs.path | Glusterfs volume path | Any Str | true |
+| k8s.container.name | Container name used by container runtime | Any Str | true |
+| k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true |
+| k8s.node.name | The name of the Node | Any Str | true |
+| k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Any Str | true |
+| k8s.pod.name | The name of the Pod | Any Str | true |
+| k8s.pod.uid | The UID of the Pod | Any Str | true |
+| k8s.volume.name | The name of the Volume | Any Str | true |
+| k8s.volume.type | The type of the Volume | Any Str | true |
+| partition | The partition in the Volume | Any Str | true |

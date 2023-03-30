@@ -39,10 +39,10 @@ func containerStatsToMetrics(ts time.Time, container container, stats *container
 	rs := md.ResourceMetrics().AppendEmpty()
 
 	resourceAttr := rs.Resource().Attributes()
-	resourceAttr.InsertString(conventions.AttributeContainerRuntime, "podman")
-	resourceAttr.InsertString(conventions.AttributeContainerName, stats.Name)
-	resourceAttr.InsertString(conventions.AttributeContainerID, stats.ContainerID)
-	resourceAttr.InsertString(conventions.AttributeContainerImageName, container.Image)
+	resourceAttr.PutStr(conventions.AttributeContainerRuntime, "podman")
+	resourceAttr.PutStr(conventions.AttributeContainerName, stats.Name)
+	resourceAttr.PutStr(conventions.AttributeContainerID, stats.ContainerID)
+	resourceAttr.PutStr(conventions.AttributeContainerImageName, container.Image)
 
 	ms := rs.ScopeMetrics().AppendEmpty().Metrics()
 	appendIOMetrics(ms, stats, pbts)
@@ -95,27 +95,23 @@ func initMetric(ms pmetric.MetricSlice, name, unit string) pmetric.Metric {
 
 func sum(ilm pmetric.MetricSlice, metricName string, unit string, points []point, ts pcommon.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
-
-	metric.SetDataType(pmetric.MetricDataTypeSum)
-	sum := metric.Sum()
+	sum := metric.SetEmptySum()
 	sum.SetIsMonotonic(true)
-	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 	dataPoints := sum.DataPoints()
 
 	for _, pt := range points {
 		dataPoint := dataPoints.AppendEmpty()
 		dataPoint.SetTimestamp(ts)
-		dataPoint.SetIntVal(int64(pt.intVal))
+		dataPoint.SetIntValue(int64(pt.intVal))
 		setDataPointAttributes(dataPoint, pt.attributes)
 	}
 }
 
 func gauge(ms pmetric.MetricSlice, metricName string, unit string) pmetric.NumberDataPointSlice {
 	metric := initMetric(ms, metricName, unit)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-
-	gauge := metric.Gauge()
+	gauge := metric.SetEmptyGauge()
 	return gauge.DataPoints()
 }
 
@@ -124,7 +120,7 @@ func gaugeI(ms pmetric.MetricSlice, metricName string, unit string, points []poi
 	for _, pt := range points {
 		dataPoint := dataPoints.AppendEmpty()
 		dataPoint.SetTimestamp(ts)
-		dataPoint.SetIntVal(int64(pt.intVal))
+		dataPoint.SetIntValue(int64(pt.intVal))
 		setDataPointAttributes(dataPoint, pt.attributes)
 	}
 }
@@ -134,13 +130,13 @@ func gaugeF(ms pmetric.MetricSlice, metricName string, unit string, points []poi
 	for _, pt := range points {
 		dataPoint := dataPoints.AppendEmpty()
 		dataPoint.SetTimestamp(ts)
-		dataPoint.SetDoubleVal(pt.doubleVal)
+		dataPoint.SetDoubleValue(pt.doubleVal)
 		setDataPointAttributes(dataPoint, pt.attributes)
 	}
 }
 
 func setDataPointAttributes(dataPoint pmetric.NumberDataPoint, attributes map[string]string) {
 	for k, v := range attributes {
-		dataPoint.Attributes().InsertString(k, v)
+		dataPoint.Attributes().PutStr(k, v)
 	}
 }

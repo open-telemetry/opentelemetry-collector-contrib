@@ -20,20 +20,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		Topic:            "",
-		Encoding:         defaultEncoding,
-		ConsumerName:     defaultConsumerName,
-		Subscription:     defaultSubscription,
-		Endpoint:         defaultServiceURL,
-		Authentication:   Authentication{},
+		Topic:          "",
+		Encoding:       defaultEncoding,
+		ConsumerName:   defaultConsumerName,
+		Subscription:   defaultSubscription,
+		Endpoint:       defaultServiceURL,
+		Authentication: Authentication{},
 	}, cfg)
 }
 
@@ -43,7 +41,7 @@ func TestCreateTracesReceiver_err_addr(t *testing.T) {
 	cfg.Endpoint = "invalid:6650"
 
 	f := pulsarReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshalers()}
-	r, err := f.createTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	r, err := f.createTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -53,7 +51,7 @@ func TestCreateTracesReceiver_err_marshallers(t *testing.T) {
 	cfg.Endpoint = defaultServiceURL
 
 	f := pulsarReceiverFactory{tracesUnmarshalers: make(map[string]TracesUnmarshaler)}
-	r, err := f.createTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	r, err := f.createTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -61,7 +59,7 @@ func TestCreateTracesReceiver_err_marshallers(t *testing.T) {
 func Test_CreateTraceReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	f := pulsarReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshalers()}
-	recv, err := f.createTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	recv, err := f.createTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, recv)
 }
@@ -72,7 +70,7 @@ func TestCreateMetricsReceiver_err_addr(t *testing.T) {
 	cfg.Endpoint = "invalid:6650"
 
 	f := pulsarReceiverFactory{metricsUnmarshalers: defaultMetricsUnmarshalers()}
-	r, err := f.createMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	r, err := f.createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -82,7 +80,7 @@ func TestCreateMetricsReceiver_err_marshallers(t *testing.T) {
 	cfg.Endpoint = defaultServiceURL
 
 	f := pulsarReceiverFactory{metricsUnmarshalers: make(map[string]MetricsUnmarshaler)}
-	r, err := f.createMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	r, err := f.createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -91,7 +89,7 @@ func Test_CreateMetricsReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	f := pulsarReceiverFactory{metricsUnmarshalers: defaultMetricsUnmarshalers()}
 
-	recv, err := f.createMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	recv, err := f.createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, recv)
 }
@@ -102,7 +100,7 @@ func TestCreateLogsReceiver_err_addr(t *testing.T) {
 	cfg.Endpoint = "invalid:6650"
 
 	f := pulsarReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers()}
-	r, err := f.createLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -112,7 +110,7 @@ func TestCreateLogsReceiver_err_marshallers(t *testing.T) {
 	cfg.Endpoint = defaultServiceURL
 
 	f := pulsarReceiverFactory{logsUnmarshalers: make(map[string]LogsUnmarshaler)}
-	r, err := f.createLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -122,7 +120,7 @@ func Test_CreateLogsReceiver(t *testing.T) {
 	cfg.Endpoint = defaultServiceURL
 
 	f := pulsarReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers()}
-	recv, err := f.createLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	recv, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, recv)
 }

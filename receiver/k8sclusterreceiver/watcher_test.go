@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,7 +36,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 		metadataConsumers []metadataConsumer
 	}
 	type args struct {
-		exporters                   map[config.ComponentID]component.Exporter
+		exporters                   map[component.ID]component.Component
 		metadataExportersFromConfig []string
 	}
 	tests := []struct {
@@ -50,8 +49,8 @@ func TestSetupMetadataExporters(t *testing.T) {
 			"Unsupported exporter",
 			fields{},
 			args{
-				exporters: map[config.ComponentID]component.Exporter{
-					config.NewComponentID("nop"): MockExporter{},
+				exporters: map[component.ID]component.Component{
+					component.NewID("nop"): MockExporter{},
 				},
 				metadataExportersFromConfig: []string{"nop"},
 			},
@@ -62,8 +61,8 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{
 				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeMetadata},
 			},
-			args{exporters: map[config.ComponentID]component.Exporter{
-				config.NewComponentID("nop"): mockExporterWithK8sMetadata{},
+			args{exporters: map[component.ID]component.Component{
+				component.NewID("nop"): mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"nop"},
 			},
@@ -74,8 +73,8 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{
 				metadataConsumers: []metadataConsumer{},
 			},
-			args{exporters: map[config.ComponentID]component.Exporter{
-				config.NewComponentID("nop"): mockExporterWithK8sMetadata{},
+			args{exporters: map[component.ID]component.Component{
+				component.NewID("nop"): mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"nop/1"},
 			},

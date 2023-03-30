@@ -22,6 +22,7 @@ import (
 	"time"
 
 	pubsub "cloud.google.com/go/pubsub/apiv1"
+	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -29,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
-	pubsubpb "google.golang.org/genproto/googleapis/pubsub/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

@@ -1,4 +1,0 @@
-type: regex_parser
-regex: '^Host=(?P<host>[^,]+), Logger=(?P<logger_name_field>.*)$'
-scope_name:
-  parse_from: body.logger_name_field

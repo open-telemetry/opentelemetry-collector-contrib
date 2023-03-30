@@ -2,17 +2,12 @@ syntax = "proto3";
 
 package solace.messaging.proto.broker.trace.receive.v1;
 
-// Version 1.0
+// A message will be compatible with this specification if its topic matches:
+// _telemetry/broker/trace/receive/v1[/additional/topic/levels]
 //
-// Messages with a topic of matching the following topic contain a v1.x
-// specification of this message.
-// #telemetry/broker/trace/receive/v1[/<additional/topic/levels]
-// Note that the specification allows for additional topic levels to be added
-// in the future. Receiving clients must not assume there are no additional
-// topic levels.
-//
-// The versioning strategy follows semantic versioning such that all v1.x
-// specifications are compatible with each other.
+// Note that the topic above allows for additional topic levels to be added in
+// the future. Receiving clients must not assume there are no additional topic
+// levels.
 //
 // This message describes telemetry data that a Solace PubSub+ broker captures 
 // when a received message is identified as a message to be traced.
@@ -26,7 +21,7 @@ package solace.messaging.proto.broker.trace.receive.v1;
 //   Special priority is given to fields that can be repeated.
 // - Field numbers 16+ are used for other attributes.
 //
-// Next available field ID: 39
+// Next available field ID: 40
 //
 message SpanData {
 
@@ -40,7 +35,17 @@ message SpanData {
   // If not present, this is a root span. If present, this is an 8-byte span ID
   // of the parent span.
   optional bytes parent_span_id = 16;
+
+  // tracestate string value, as per
+  // <https://www.w3.org/TR/trace-context/#tracestate-header>
   optional string trace_state = 17;
+
+  // A baggage string formatted as described here:
+  // https://www.w3.org/TR/baggage/#x3-2-1-1-baggage-string
+  // This string may be truncated if the complete string, as received, would
+  // cause the broker's limit for application message properties to be exceeded.
+  // See dropped_application_message_properties for more details.
+  optional string baggage = 39;
 
   // The start and end timestamps of the receive span. The start of the span is
   // when Guaranteed Messaging processing begins in the broker.
@@ -68,16 +73,17 @@ message SpanData {
   // NON_PERSISTENT when it is enqueued.
   DeliveryMode delivery_mode = 19;
 
-  // The receiving broker's router-name and message-vpn-name.
+  // The receiving broker's router-name at the time the message was received.
+  string router_name = 20;
+
+  // The receiving broker's message-vpn name. This field may be removed in the
+  // future without a major version change since the field is specified as
+  // optional.
   //
-  // These fields may be removed in the future. If they are removed, this will
-  // not result in a major version change since the initial specification makes
-  // no promise to provide them.
-  //
-  // Rather than rely on them, receiving clients should use an SMF API to
-  // extract the PEER_ROUTER_NAME and VPN_NAME_IN_USE from the API's Session
-  // object.
-  optional string router_name = 20;
+  // Rather than rely on this field, receiving clients should obtain the VPN
+  // by using an SMF API to extract the VPN_NAME_IN_USE from the API's Session
+  // object. The message_vpn_name of all messages received from via an SMF
+  // API's session will match the session's VPN_NAME_IN_USE.
   optional string message_vpn_name = 21;
 
   // The receiving broker's SolOS version when the message was initially
@@ -149,10 +155,17 @@ message SpanData {
   // captured.
   map<string, UserPropertyValue> user_properties = 14;
 
-  // If true, not all user properties in the original message were captured in
-  // the user_properties map because limits were exceeded. The broker supports
-  // up to a total of 8KiB of user property data.
-  bool dropped_user_properties = 37;
+  // Application message properties refers to the collection of:
+  // * trace_state
+  // * application_message_id
+  // * correlation_id
+  // * baggage
+  // * user_properties
+  // The broker supports up to a total of 8KiB of application message
+  // properties. If the total amount of application message properties in the
+  // message being traced exceeds this limit, this flag is used to indicate
+  // some properties were dropped.
+  bool dropped_application_message_properties = 37;
 
   // If present, this indicates the message is being rejected to the publisher
   // and matches the error string provided back to the publisher as an error.
@@ -238,17 +251,48 @@ message SpanData {
   message TransactionEvent {
     sfixed64 time_unix_nano = 1;
     enum Type {
+      // COMMIT and ROLLBACK are always initiated by either a CLIENT or ADMIN.
+      // The initiator is ADMIN when the management interface is used to
+      // to perform a heuristic commit or rollback.
       COMMIT = 0;
       ROLLBACK = 1;
+      // PREPARE and END can only occur with a CLIENT initiator, and spans for
+      // these operations are only generated if the operation fails. Therefore,
+      // the error_description of the TransactionEvent will always be present
+      // for END and PREPARE.
       END = 2;
       PREPARE = 3;
+
+      // The initiator of a SESSION_TIMEOUT is always BROKER. All messages
+      // received as part of the transaction are discarded.
+      SESSION_TIMEOUT = 4;
+
+      // The initiator of ROLLBACK_ONLY is always BROKER. The first such event
+      // in a transaction always has an error_description in the span,
+      // indicating there was a problem processing the message when it was
+      // received, and the message is being discarded. This also transitions
+      // the transaction itself to a "rollback only" state, which causes
+      // all subsequent messages received as part of the transaction to also
+      // be discarded. Spans generated by these subsequent discards will not
+      // have the span's error_description set, but all ROLLBACK_ONLY
+      // transaction events will have an error_description set, which indicate
+      // the transaction's error.
+      // 
+      // Since the only record of these messages in the context of the
+      // transaction has been discarded, no further span can be generated in
+      // the context of a client, admin, or session timeout operation. When a
+      // subsequent operation such as rollback or commit occurs on a
+      // transaction marked rollback only, only messages received prior to the
+      // error triggering the transition to rollback only will generate
+      // receive spans.
+      ROLLBACK_ONLY = 5;
     }
     Type type = 2;
     
     enum Initiator {
       CLIENT = 0;
       ADMIN = 1;
-      SESSION_TIMEOUT = 2;
+      BROKER = 2;
     }
     Initiator initiator = 3;
 
@@ -296,13 +340,21 @@ message SpanData {
     // destination, but it is not being enqueued due to the description.
     optional string error_description = 4;
 
-    // This will never be set when there is not an error_desription present.
-    // If this is set, it indicates that all other non-errored enqueue events
-    // part of this span are rejected. In other words, regardless of what some
-    // enqueue events may indicate, the message is not enqueued to any
-    // destinations. When this is set, the span's error_description is always
-    // set and the span's error_description is always sent to the publisher in
-    // the rejection message.
+    // This flag being set on one or more enqueue events for a message implies
+    // that the message is not enqueued to any destination, regardless of the
+    // presence of successful enqueue events in the span.
+    //
+    // This will never be set when there is not an error_description present. If
+    // this is set, it indicates that the error described by error_description
+    // is a cause for the message to be rejected.
+    //
+    // Rejected non-transacted messages cause the message to be nacked to the
+    // publisher and rejected transacted messages result in a change in
+    // transacted session state that will cause a future commit attempt to fail.
+    //
+    // The cause for message rejection indicated to the client in either a
+    // message nack or commit failure response is the error_description of the
+    // first enqueue event that has this flag set.
     bool rejects_all_enqueues = 5;
   }
 }

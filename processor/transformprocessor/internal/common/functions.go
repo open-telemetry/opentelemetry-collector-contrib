@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,26 +15,40 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions/tqlcommon"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions/tqlotel"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-var registry = map[string]interface{}{
-	"TraceID":              tqlotel.TraceID,
-	"SpanID":               tqlotel.SpanID,
-	"IsMatch":              tqlcommon.IsMatch,
-	"keep_keys":            tqlotel.KeepKeys,
-	"set":                  tqlcommon.Set,
-	"truncate_all":         tqlotel.TruncateAll,
-	"limit":                tqlotel.Limit,
-	"replace_match":        tqlcommon.ReplaceMatch,
-	"replace_all_matches":  tqlotel.ReplaceAllMatches,
-	"replace_pattern":      tqlcommon.ReplacePattern,
-	"replace_all_patterns": tqlotel.ReplaceAllPatterns,
-	"delete_key":           tqlotel.DeleteKey,
-	"delete_matching_keys": tqlotel.DeleteMatchingKeys,
+func Functions[K any]() map[string]interface{} {
+	return map[string]interface{}{
+		"TraceID":              ottlfuncs.TraceID[K],
+		"SpanID":               ottlfuncs.SpanID[K],
+		"IsMatch":              ottlfuncs.IsMatch[K],
+		"Concat":               ottlfuncs.Concat[K],
+		"Split":                ottlfuncs.Split[K],
+		"Int":                  ottlfuncs.Int[K],
+		"ConvertCase":          ottlfuncs.ConvertCase[K],
+		"ParseJSON":            ottlfuncs.ParseJSON[K],
+		"Substring":            ottlfuncs.Substring[K],
+		"keep_keys":            ottlfuncs.KeepKeys[K],
+		"set":                  ottlfuncs.Set[K],
+		"truncate_all":         ottlfuncs.TruncateAll[K],
+		"limit":                ottlfuncs.Limit[K],
+		"replace_match":        ottlfuncs.ReplaceMatch[K],
+		"replace_all_matches":  ottlfuncs.ReplaceAllMatches[K],
+		"replace_pattern":      ottlfuncs.ReplacePattern[K],
+		"replace_all_patterns": ottlfuncs.ReplaceAllPatterns[K],
+		"delete_key":           ottlfuncs.DeleteKey[K],
+		"delete_matching_keys": ottlfuncs.DeleteMatchingKeys[K],
+		"merge_maps":           ottlfuncs.MergeMaps[K],
+	}
 }
 
-func Functions() map[string]interface{} {
-	return registry
+func ResourceFunctions() map[string]interface{} {
+	return Functions[ottlresource.TransformContext]()
+}
+
+func ScopeFunctions() map[string]interface{} {
+	return Functions[ottlscope.TransformContext]()
 }

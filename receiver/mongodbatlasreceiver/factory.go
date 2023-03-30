@@ -18,11 +18,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
@@ -37,27 +38,23 @@ const (
 )
 
 // NewFactory creates a factory for MongoDB Atlas receiver
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() rcvr.Factory {
+	return rcvr.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability),
-		component.WithLogsReceiver(createCombinedLogReceiver, stability))
+		rcvr.WithMetrics(createMetricsReceiver, stability),
+		rcvr.WithLogs(createCombinedLogReceiver, stability))
 
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	params rcvr.CreateSettings,
+	rConf component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (rcvr.Metrics, error) {
 	cfg := rConf.(*Config)
-	recv, err := newMongoDBAtlasReceiver(params, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
-	}
-
+	recv := newMongoDBAtlasReceiver(params, cfg)
 	ms, err := newMongoDBAtlasScraper(recv)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scaper instance: %w", err)
@@ -67,49 +64,61 @@ func createMetricsReceiver(
 }
 
 func createCombinedLogReceiver(
-	_ context.Context,
-	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	ctx context.Context,
+	params rcvr.CreateSettings,
+	rConf component.Config,
 	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (rcvr.Logs, error) {
 	cfg := rConf.(*Config)
 
-	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled {
-		return nil, errors.New("one of 'alerts' or 'logs' must be enabled")
+	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled && cfg.Events == nil {
+		return nil, errors.New("one of 'alerts', 'events' or 'logs' must be enabled")
 	}
 
 	var err error
-	recv := &combindedLogsReceiver{}
+	recv := &combinedLogsReceiver{
+		id:        params.ID,
+		storageID: cfg.StorageID,
+	}
 
 	if cfg.Alerts.Enabled {
-		recv.alerts, err = newAlertsReceiver(params.Logger, cfg.Alerts, consumer)
+		recv.alerts, err = newAlertsReceiver(params, cfg, consumer)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create a MongoDB Atlas Alerts Receiver instance: %w", err)
 		}
 	}
 
 	if cfg.Logs.Enabled {
-		recv.logs, err = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create a MongoDB Atlas Logs Receiver instance: %w", err)
-		}
+		recv.logs = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
+	}
+
+	if cfg.Events != nil {
+		recv.events = newEventsReceiver(params, cfg, consumer)
 	}
 
 	return recv, nil
 }
 
-func createDefaultConfig() config.Receiver {
-	return &Config{
+func createDefaultConfig() component.Config {
+	c := &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		Granularity:               defaultGranularity,
 		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
-		Metrics:                   metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 		Alerts: AlertConfig{
-			Enabled: defaultAlertsEnabled,
+			Enabled:      defaultAlertsEnabled,
+			Mode:         alertModeListen,
+			PollInterval: defaultAlertsPollInterval,
+			PageSize:     defaultAlertsPageSize,
+			MaxPages:     defaultAlertsMaxPages,
 		},
 		Logs: LogConfig{
 			Enabled:  defaultLogsEnabled,
 			Projects: []*ProjectConfig{},
 		},
 	}
+	// reset default of 1 minute to be 3 minutes in order to avoid null values for some metrics that do not publish
+	// more frequently
+	c.ScraperControllerSettings.CollectionInterval = 3 * time.Minute
+	return c
 }

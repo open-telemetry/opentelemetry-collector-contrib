@@ -160,9 +160,6 @@ func (m *MetricDeclaration) MatchesLabels(labels map[string]string) bool {
 // returns dimensions that only contains labels from in the given label set.
 func (m *MetricDeclaration) ExtractDimensions(labels map[string]string) (dimensions [][]string) {
 	for _, dimensionSet := range m.Dimensions {
-		if len(dimensionSet) == 0 {
-			continue
-		}
 		includeSet := true
 		for _, dim := range dimensionSet {
 			if _, ok := labels[dim]; !ok {

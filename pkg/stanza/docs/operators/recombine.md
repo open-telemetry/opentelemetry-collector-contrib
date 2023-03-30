@@ -18,6 +18,7 @@ The `recombine` operator combines consecutive logs into single logs based on sim
 | `force_flush_period` | `5s`             | Flush timeout after which entries will be flushed aborting the wait for their sub parts to be merged with. |
 | `source_identifier`  | `$attributes["file.path"]` | The [field](../types/field.md) to separate one source of logs from others when combining them. |
 | `max_sources`        | 1000             | The maximum number of unique sources allowed concurrently to be tracked for combining separately. |
+| `max_log_size`       | 0                | The maximum bytes size of the combined field. Once the size exceeds the limit, all received entries of the source will be combined and flushed. "0" of max_log_size means no limit. |
 
 Exactly one of `is_first_entry` and `is_last_entry` must be specified.
 
@@ -82,7 +83,7 @@ Output logs:
 
 #### Recombine stack traces into multiline logs
 
-Some apps output multiple log lines which are in fact a single log message. A common example is a stack trace:
+Some apps output multiple log lines which are in fact a single log record. A common example is a stack trace:
 
 ```console
 java.lang.Exception: Stack trace
@@ -94,7 +95,7 @@ java.lang.Exception: Stack trace
         at Main.main(Main.java:3)
 ```
 
-To recombine such log lines into a single log message, you need a way to tell when a log message starts or ends.
+To recombine such log lines into a single log record, you need a way to tell when a log record starts or ends.
 In the example above, the first line differs from the other lines in not starting with a whitespace.
 This can be expressed with the following configuration:
 

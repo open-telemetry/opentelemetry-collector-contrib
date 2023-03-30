@@ -21,8 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -38,11 +37,11 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
-		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().InsertString("my-label", "myapp-type")
-		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().InsertString("custom", "custom")
+		logRecord.Body().SetStr("mylog")
+		logRecord.Attributes().PutStr(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().PutStr("my-label", "myapp-type")
+		logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().PutStr("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
 	sl.LogRecords().AppendEmpty()
@@ -51,11 +50,10 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 }
 
 func TestNewLogsExporter(t *testing.T) {
-	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		Region:           "ap-beijing",
-		LogSet:           "demo-logset",
-		Topic:            "demo-topic",
+	got, err := newLogsExporter(exportertest.NewNopCreateSettings(), &Config{
+		Region: "ap-beijing",
+		LogSet: "demo-logset",
+		Topic:  "demo-topic",
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
@@ -66,7 +64,7 @@ func TestNewLogsExporter(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
-	got, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), &Config{})
+	got, err := newLogsExporter(exportertest.NewNopCreateSettings(), &Config{})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 }

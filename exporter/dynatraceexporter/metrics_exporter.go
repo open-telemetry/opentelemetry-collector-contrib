@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -42,8 +43,8 @@ const (
 )
 
 // NewExporter exports to a Dynatrace Metrics v2 API
-func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Config) *exporter {
-	confDefaultDims := []dimensions.Dimension{}
+func newMetricsExporter(params exp.CreateSettings, cfg *config.Config) *exporter {
+	var confDefaultDims []dimensions.Dimension
 	for key, value := range cfg.DefaultDimensions {
 		confDefaultDims = append(confDefaultDims, dimensions.NewDimension(key, value))
 	}
@@ -82,7 +83,7 @@ type exporter struct {
 
 // for backwards-compatibility with deprecated `Tags` config option
 func dimensionsFromTags(tags []string) dimensions.NormalizedDimensionList {
-	dims := []dimensions.Dimension{}
+	var dims []dimensions.Dimension
 	for _, tag := range tags {
 		parts := strings.SplitN(tag, "=", 2)
 		if len(parts) == 2 {
@@ -120,7 +121,7 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) erro
 }
 
 func (e *exporter) serializeMetrics(md pmetric.Metrics) []string {
-	lines := make([]string, 0)
+	var lines []string
 
 	resourceMetrics := md.ResourceMetrics()
 
@@ -139,7 +140,7 @@ func (e *exporter) serializeMetrics(md pmetric.Metrics) []string {
 					e.settings.Logger.Warn(
 						"failed to serialize",
 						zap.String("name", metric.Name()),
-						zap.String("data-type", metric.DataType().String()),
+						zap.String("data-type", metric.Type().String()),
 						zap.Error(err),
 					)
 				}
@@ -150,7 +151,7 @@ func (e *exporter) serializeMetrics(md pmetric.Metrics) []string {
 				e.settings.Logger.Debug(
 					"Serialized metric data",
 					zap.String("name", metric.Name()),
-					zap.String("data-type", metric.DataType().String()),
+					zap.String("data-type", metric.Type().String()),
 					zap.Int("data-len", len(metricLines)),
 				)
 			}
@@ -218,6 +219,8 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 
 	defer resp.Body.Close()
 
+	responseBody, rbUnmarshalErr := e.unmarshalResponseBody(resp)
+
 	if resp.StatusCode == http.StatusRequestEntityTooLarge {
 		// If a payload is too large, resending it will not help
 		return consumererror.NewPermanent(fmt.Errorf("payload too large"))
@@ -225,19 +228,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 
 	if resp.StatusCode == http.StatusBadRequest {
 		// At least some metrics were not accepted
-		bodyBytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			// if the response cannot be read, do not retry the batch as it may have been successful
-			e.settings.Logger.Error("Failed to read response from Dynatrace", zap.Error(err))
-			return nil
-		}
-
-		responseBody := metricsResponse{}
-		if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
-			// if the response cannot be read, do not retry the batch as it may have been successful
-			bodyStr := string(bodyBytes)
-			bodyStr = truncateString(bodyStr, 1000)
-			e.settings.Logger.Error("Failed to unmarshal response from Dynatrace", zap.Error(err), zap.String("body", bodyStr))
+		if rbUnmarshalErr != nil {
 			return nil
 		}
 
@@ -275,6 +266,24 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 		return consumererror.NewPermanent(fmt.Errorf("metrics ingest v2 module not found - ensure module is enabled and endpoint is correct"))
 	}
 
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return consumererror.NewPermanent(
+			fmt.Errorf("The server responded that too many requests have been sent. Please check your export interval and batch sizes and see https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit for more information"),
+		)
+	}
+
+	if resp.StatusCode > http.StatusBadRequest { // '400 Bad Request' itself is handled above
+		return consumererror.NewPermanent(fmt.Errorf(`Received error response status: "%v"`, resp.Status))
+	}
+
+	if rbUnmarshalErr == nil {
+		e.settings.Logger.Debug(
+			"Export successful. Response from Dynatrace:",
+			zap.Int("accepted-lines", responseBody.Ok),
+			zap.String("status", resp.Status),
+		)
+	}
+
 	// No known errors
 	return nil
 }
@@ -290,6 +299,26 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	e.client = client
 
 	return nil
+}
+
+func (e *exporter) unmarshalResponseBody(resp *http.Response) (metricsResponse, error) {
+	bodyBytes, err := io.ReadAll(resp.Body)
+	responseBody := metricsResponse{}
+	if err != nil {
+		// if the response cannot be read, do not retry the batch as it may have been successful
+		e.settings.Logger.Error("Failed to read response from Dynatrace", zap.Error(err))
+		return responseBody, fmt.Errorf("Failed to read response")
+	}
+
+	if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
+		// if the response cannot be read, do not retry the batch as it may have been successful
+		bodyStr := string(bodyBytes)
+		bodyStr = truncateString(bodyStr, 1000)
+		e.settings.Logger.Error("Failed to unmarshal response from Dynatrace", zap.Error(err), zap.String("body", bodyStr))
+		return responseBody, fmt.Errorf("Failed to unmarshal response")
+	}
+
+	return responseBody, nil
 }
 
 func truncateString(str string, num int) string {

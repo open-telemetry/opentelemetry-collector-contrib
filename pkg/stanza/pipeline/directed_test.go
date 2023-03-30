@@ -223,7 +223,7 @@ func TestPipelineStartOrder(t *testing.T) {
 }
 
 func TestPipelineStopOrder(t *testing.T) {
-	stopOrder := []int{}
+	var stopOrder []int
 
 	mockOperator1 := testutil.NewMockOperator("operator1")
 	mockOperator2 := testutil.NewMockOperator("operator2")

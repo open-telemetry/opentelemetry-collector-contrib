@@ -21,11 +21,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func addStartTime(startTime *float64, span *ptrace.Span) {
+func addStartTime(startTime *float64, span ptrace.Span) {
 	span.SetStartTimestamp(floatSecToNanoEpoch(startTime))
 }
 
-func addEndTime(endTime *float64, span *ptrace.Span) {
+func addEndTime(endTime *float64, span ptrace.Span) {
 	if endTime != nil {
 		span.SetEndTimestamp(floatSecToNanoEpoch(endTime))
 	}

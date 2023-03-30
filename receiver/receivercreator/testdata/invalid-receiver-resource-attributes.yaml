@@ -8,16 +8,3 @@ receivers:
           key: value
         resource_attributes:
           one: null
-
-processors:
-  nop:
-
-exporters:
-  nop:
-
-service:
-  pipelines:
-    metrics:
-      receivers: [receiver_creator]
-      processors: [nop]
-      exporters: [nop]

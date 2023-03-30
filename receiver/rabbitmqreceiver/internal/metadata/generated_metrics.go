@@ -6,13 +6,29 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsSettings provides settings for rabbitmqreceiver metrics.
@@ -43,6 +59,32 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		RabbitmqMessagePublished: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesSettings provides settings for rabbitmqreceiver metrics.
+type ResourceAttributesSettings struct {
+	RabbitmqNodeName  ResourceAttributeSettings `mapstructure:"rabbitmq.node.name"`
+	RabbitmqQueueName ResourceAttributeSettings `mapstructure:"rabbitmq.queue.name"`
+	RabbitmqVhostName ResourceAttributeSettings `mapstructure:"rabbitmq.vhost.name"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		RabbitmqNodeName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		RabbitmqQueueName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		RabbitmqVhostName: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -85,9 +127,9 @@ func (m *metricRabbitmqConsumerCount) init() {
 	m.data.SetName("rabbitmq.consumer.count")
 	m.data.SetDescription("The number of consumers currently reading from the queue.")
 	m.data.SetUnit("{consumers}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricRabbitmqConsumerCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -97,7 +139,7 @@ func (m *metricRabbitmqConsumerCount) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -136,9 +178,9 @@ func (m *metricRabbitmqMessageAcknowledged) init() {
 	m.data.SetName("rabbitmq.message.acknowledged")
 	m.data.SetDescription("The number of messages acknowledged by consumers.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricRabbitmqMessageAcknowledged) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -148,7 +190,7 @@ func (m *metricRabbitmqMessageAcknowledged) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -187,9 +229,9 @@ func (m *metricRabbitmqMessageCurrent) init() {
 	m.data.SetName("rabbitmq.message.current")
 	m.data.SetDescription("The total number of messages currently in the queue.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -200,8 +242,8 @@ func (m *metricRabbitmqMessageCurrent) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", messageStateAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("state", messageStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -240,9 +282,9 @@ func (m *metricRabbitmqMessageDelivered) init() {
 	m.data.SetName("rabbitmq.message.delivered")
 	m.data.SetDescription("The number of messages delivered to consumers.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricRabbitmqMessageDelivered) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -252,7 +294,7 @@ func (m *metricRabbitmqMessageDelivered) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -291,9 +333,9 @@ func (m *metricRabbitmqMessageDropped) init() {
 	m.data.SetName("rabbitmq.message.dropped")
 	m.data.SetDescription("The number of messages dropped as unroutable.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricRabbitmqMessageDropped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -303,7 +345,7 @@ func (m *metricRabbitmqMessageDropped) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -342,9 +384,9 @@ func (m *metricRabbitmqMessagePublished) init() {
 	m.data.SetName("rabbitmq.message.published")
 	m.data.SetDescription("The number of messages published to a queue.")
 	m.data.SetUnit("{messages}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricRabbitmqMessagePublished) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -354,7 +396,7 @@ func (m *metricRabbitmqMessagePublished) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -382,6 +424,12 @@ func newMetricRabbitmqMessagePublished(settings MetricSettings) metricRabbitmqMe
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -390,6 +438,7 @@ type MetricsBuilder struct {
 	resourceCapacity                  int                 // maximum observed number of resource attributes.
 	metricsBuffer                     pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                         component.BuildInfo // contains version information
+	resourceAttributesSettings        ResourceAttributesSettings
 	metricRabbitmqConsumerCount       metricRabbitmqConsumerCount
 	metricRabbitmqMessageAcknowledged metricRabbitmqMessageAcknowledged
 	metricRabbitmqMessageCurrent      metricRabbitmqMessageCurrent
@@ -408,17 +457,32 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
-		buildInfo:                         buildInfo,
-		metricRabbitmqConsumerCount:       newMetricRabbitmqConsumerCount(settings.RabbitmqConsumerCount),
-		metricRabbitmqMessageAcknowledged: newMetricRabbitmqMessageAcknowledged(settings.RabbitmqMessageAcknowledged),
-		metricRabbitmqMessageCurrent:      newMetricRabbitmqMessageCurrent(settings.RabbitmqMessageCurrent),
-		metricRabbitmqMessageDelivered:    newMetricRabbitmqMessageDelivered(settings.RabbitmqMessageDelivered),
-		metricRabbitmqMessageDropped:      newMetricRabbitmqMessageDropped(settings.RabbitmqMessageDropped),
-		metricRabbitmqMessagePublished:    newMetricRabbitmqMessagePublished(settings.RabbitmqMessagePublished),
+		buildInfo:                         settings.BuildInfo,
+		resourceAttributesSettings:        mbc.ResourceAttributes,
+		metricRabbitmqConsumerCount:       newMetricRabbitmqConsumerCount(mbc.Metrics.RabbitmqConsumerCount),
+		metricRabbitmqMessageAcknowledged: newMetricRabbitmqMessageAcknowledged(mbc.Metrics.RabbitmqMessageAcknowledged),
+		metricRabbitmqMessageCurrent:      newMetricRabbitmqMessageCurrent(mbc.Metrics.RabbitmqMessageCurrent),
+		metricRabbitmqMessageDelivered:    newMetricRabbitmqMessageDelivered(mbc.Metrics.RabbitmqMessageDelivered),
+		metricRabbitmqMessageDropped:      newMetricRabbitmqMessageDropped(mbc.Metrics.RabbitmqMessageDropped),
+		metricRabbitmqMessagePublished:    newMetricRabbitmqMessagePublished(mbc.Metrics.RabbitmqMessagePublished),
 	}
 	for _, op := range options {
 		op(mb)
@@ -437,40 +501,46 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithRabbitmqNodeName sets provided value as "rabbitmq.node.name" attribute for current resource.
 func WithRabbitmqNodeName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("rabbitmq.node.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.RabbitmqNodeName.Enabled {
+			rm.Resource().Attributes().PutStr("rabbitmq.node.name", val)
+		}
 	}
 }
 
 // WithRabbitmqQueueName sets provided value as "rabbitmq.queue.name" attribute for current resource.
 func WithRabbitmqQueueName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("rabbitmq.queue.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.RabbitmqQueueName.Enabled {
+			rm.Resource().Attributes().PutStr("rabbitmq.queue.name", val)
+		}
 	}
 }
 
 // WithRabbitmqVhostName sets provided value as "rabbitmq.vhost.name" attribute for current resource.
 func WithRabbitmqVhostName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("rabbitmq.vhost.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.RabbitmqVhostName.Enabled {
+			rm.Resource().Attributes().PutStr("rabbitmq.vhost.name", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {
@@ -498,8 +568,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricRabbitmqMessageDelivered.emit(ils.Metrics())
 	mb.metricRabbitmqMessageDropped.emit(ils.Metrics())
 	mb.metricRabbitmqMessagePublished.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -512,8 +583,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

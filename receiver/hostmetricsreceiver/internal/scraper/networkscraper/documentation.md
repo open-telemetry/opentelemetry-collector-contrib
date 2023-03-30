@@ -2,42 +2,113 @@
 
 # hostmetricsreceiver/network
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **system.network.connections** | The number of connections. | {connections} | Sum(Int) | <ul> <li>protocol</li> <li>state</li> </ul> |
-| system.network.conntrack.count | The count of entries in conntrack table. | {entries} | Sum(Int) | <ul> </ul> |
-| system.network.conntrack.max | The limit for entries in the conntrack table. | {entries} | Sum(Int) | <ul> </ul> |
-| **system.network.dropped** | The number of packets dropped. (Deprecated) | {packets} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
-| **system.network.dropped.receive** | The number of packets dropped on receive. | {packets} | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.network.dropped.transmit** | The number of packets dropped on transmit. | {packets} | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.network.errors** | The number of errors encountered. (Deprecated) | {errors} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
-| **system.network.errors.receive** | The number of errors encountered on receive. | {errors} | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.network.errors.transmit** | The number of errors encountered on transmit. | {errors} | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.network.io** | The number of bytes transmitted and received. (Deprecated) | By | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
-| **system.network.io.receive** | The number of bytes received. | By | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.network.io.transmit** | The number of bytes transmitted. | By | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.network.packets** | The number of packets transferred. (Deprecated) | {packets} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
-| **system.network.packets.receive** | The number of packets received. | {packets} | Sum(Int) | <ul> <li>device</li> </ul> |
-| **system.network.packets.transmit** | The number of packets transmitted. | {packets} | Sum(Int) | <ul> <li>device</li> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Metric attributes
+### system.network.connections
+
+The number of connections.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {connections} | Sum | Int | Cumulative | false |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| device | Name of the network interface. |  |
-| direction | Direction of flow of bytes/operations (receive or transmit). | receive, transmit |
-| protocol | Network protocol, e.g. TCP or UDP. | tcp |
-| state | State of the network connection. |  |
+| protocol | Network protocol, e.g. TCP or UDP. | Str: ``tcp`` |
+| state | State of the network connection. | Any Str |
+
+### system.network.dropped
+
+The number of packets dropped.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {packets} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the network interface. | Any Str |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+
+### system.network.errors
+
+The number of errors encountered.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {errors} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the network interface. | Any Str |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+
+### system.network.io
+
+The number of bytes transmitted and received.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the network interface. | Any Str |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+
+### system.network.packets
+
+The number of packets transferred.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {packets} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the network interface. | Any Str |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### system.network.conntrack.count
+
+The count of entries in conntrack table.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {entries} | Sum | Int | Cumulative | false |
+
+### system.network.conntrack.max
+
+The limit for entries in the conntrack table.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {entries} | Sum | Int | Cumulative | false |

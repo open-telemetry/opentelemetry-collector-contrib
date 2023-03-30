@@ -13,6 +13,60 @@ receivers:
       # The presence of the gRPC section enables the gRPC server on the default port (4317)
       grpc:
 
+  # The hostmetrics receiver is required to get correct infrastructure metrics in Datadog.
+  hostmetrics:
+    collection_interval: 10s
+    scrapers:
+      paging:
+        metrics:
+          system.paging.utilization:
+            enabled: true
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      disk:
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      load:
+      memory:
+      network:
+      processes:
+  # # Comment out this block below to get access to system metrics regarding
+  # # the OpenTelemetry Collector and its environment, such as spans or metrics
+  # # processed, running and sent, queue sizes, uptime, k8s information
+  # # and much more.
+  #
+  # # The prometheus receiver scrapes essential metrics regarding the OpenTelemetry Collector.
+  # prometheus:
+  #   config:
+  #     scrape_configs:
+  #     - job_name: 'otelcol'
+  #       scrape_interval: 10s
+  #       static_configs:
+  #       - targets: ['0.0.0.0:8888']
+
+  # Read more about the filelog receiver here https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver.
+  filelog:
+    include_file_path: true
+    poll_interval: 500ms
+    include:
+      # Logs will be collected from the below file path. Please ensure it is correct or edit as needed.
+      - /var/log/**/*example*/*.log
+     # # It is essential to extract the trace_id and span_id from the logs in order to ensure that logs / traces correlation works.
+     # # For JSON logs, json_parser will parse the body into attributes, while trace_parser will extract the trace_id and span_id.
+     # operators:
+     #  - id : parse_body
+     #    type: json_parser
+     #  - id: trace
+     #    type: trace_parser
+     #    trace_id:
+     #      parse_from: attributes.trace_id
+     #    span_id:
+     #      parse_from: attributes.span_id
+
 # Read more about processors here: https://opentelemetry.io/docs/collector/configuration/#processors
 #
 # Some processors are recommended in all pipelines:
@@ -22,6 +76,11 @@ processors:
   # It is necessary for the Datadog traces exporter to work optimally,
   # and is recommended for any production pipeline.
   batch:
+    # Datadog APM Intake limit is 3.2MB. Let's make sure the batches do not
+    # go over that.
+    send_batch_max_size: 1000
+    send_batch_size: 100
+    timeout: 10s
 
   # The resource detection processor adds context related to the cloud provider the Collector is running on.
   # It is necessary **only** on gateway deployment mode, to correctly identify the host that telemetry data comes from.
@@ -61,7 +120,7 @@ exporters:
       ## The Datadog API key to associate your Agent's data with your organization.
       ## Create a new API key here: https://app.datadoghq.com/account/settings
       #
-      key: ${DD_API_KEY}
+      key: ${env:DD_API_KEY}
 
       ## @param site - string - optional - default: datadoghq.com
       ## The site of the Datadog intake to send Agent data to.
@@ -119,10 +178,17 @@ exporters:
         #
         # mode: distributions
 
+        ## Deprecated [v0.75.0]: use `send_aggreggations` instead.
         ## @param send_count_sum_metrics - boolean - optional - default: false
-        ## Whether to report sum and count as separate histogram metrics.
+        ## Whether to report sum, count, min and max as separate histogram metrics.
         #
         # send_count_sum_metrics: false
+
+        ## @param send_aggreggations - boolean - optional - default: false
+        ## Whether to report sum, count, min and max as separate histogram metrics.
+        #
+        # send_aggreggations: false
+
 
       ## @param sums - custom object - optional
       ## Sums specific configuration.
@@ -212,6 +278,17 @@ exporters:
       #
       # tags: []
 
+    ## @param logs - custom object - optional
+    ## Logs exporter specific configuration.
+    #
+    # logs:
+      ## @param dump_payloads - bool - optional
+      ## If set to true, payloads will be dumped when logging level is set to debug. Please note that
+      ## This may result in an escaping loop if a filelog receiver is watching the collector log output.
+      ## See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16380
+      #
+      # dump_payloads: false
+
 # `service` defines the Collector pipelines, observability settings and extensions.
 service:
   # `pipelines` defines the data pipelines. Multiple data pipelines for a type may be defined.
@@ -219,7 +296,7 @@ service:
     # Pipelines starting with `metrics` or `metrics/` define a metrics pipeline.
     metrics:
       # This pipeline has an OTLP receiver, a batch processor and a Datadog exporter.
-      receivers: [otlp]
+      receivers: [hostmetrics, otlp]
       processors: [batch]
       exporters: [datadog]
     # Pipelines starting with `traces` or `traces/` define a traces pipeline.
@@ -229,14 +306,21 @@ service:
       processors: [batch]
       exporters: [datadog]
 
-    ## To send data to the gateway on gateway deployment mode, define these pipelines instead.
-    ##
-    ## metrics/gateway:
-    ##   receivers: [otlp]
-    ##   processors: [batch, resourcedetection]
-    ##   exporters: [otlp]
-    ##
-    ## traces/gateway:
-    ##   receivers: [otlp]
-    ##   processors: [batch, resourcedetection]
-    ##   exporters: [otlp]
+    # Pipelines starting with `logs` or `logs/` define a logs pipeline.
+    logs:
+      # This pipeline has an OTLP receiver, filelog receiver, a batch processor and a Datadog exporter.
+      receivers: [otlp, filelog]
+      processors: [batch]
+      exporters: [datadog]
+
+      # # To send data to the gateway on gateway deployment mode, define these pipelines instead.
+      #
+      # metrics/gateway:
+      #   receivers: [otlp]
+      #   processors: [batch, resourcedetection]
+      #   exporters: [otlp]
+      #
+      # traces/gateway:
+      #   receivers: [otlp]
+      #   processors: [batch, resourcedetection]
+      #   exporters: [otlp]

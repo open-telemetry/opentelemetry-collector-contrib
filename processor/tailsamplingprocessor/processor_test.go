@@ -20,6 +20,7 @@ import (
 	"errors"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -28,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -40,7 +40,7 @@ const (
 	defaultTestDecisionWait = 30 * time.Second
 )
 
-var testPolicy = []PolicyCfg{{Name: "test-policy", Type: AlwaysSample}}
+var testPolicy = []PolicyCfg{{sharedPolicyCfg: sharedPolicyCfg{Name: "test-policy", Type: AlwaysSample}}}
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
@@ -197,7 +197,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
-		numTracesOnMap:  atomic.NewUint64(0),
+		numTracesOnMap:  &atomic.Uint64{},
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -258,7 +258,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
-		numTracesOnMap:  atomic.NewUint64(0),
+		numTracesOnMap:  &atomic.Uint64{},
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -326,7 +326,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
-		numTracesOnMap:  atomic.NewUint64(0),
+		numTracesOnMap:  &atomic.Uint64{},
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -389,7 +389,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
-		numTracesOnMap:  atomic.NewUint64(0),
+		numTracesOnMap:  &atomic.Uint64{},
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -452,7 +452,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
-		numTracesOnMap:  atomic.NewUint64(0),
+		numTracesOnMap:  &atomic.Uint64{},
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -497,6 +497,73 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	require.Equal(t, 0, msp.SpanCount())
 }
 
+func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
+	const maxSize = 100
+	nextConsumer := new(consumertest.TracesSink)
+	mpe1 := &mockPolicyEvaluator{}
+	mpe2 := &mockPolicyEvaluator{}
+	tsp := &tailSamplingSpanProcessor{
+		ctx:             context.Background(),
+		nextConsumer:    nextConsumer,
+		maxNumTraces:    maxSize,
+		logger:          zap.NewNop(),
+		decisionBatcher: newSyncIDBatcher(1),
+		policies: []*policy{
+			{name: "mock-policy-1", evaluator: mpe1, ctx: context.TODO()},
+			{name: "mock-policy-2", evaluator: mpe2, ctx: context.TODO()},
+		},
+		deleteChan:      make(chan pcommon.TraceID, maxSize),
+		policyTicker:    &manualTTicker{},
+		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  &atomic.Uint64{},
+	}
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+
+	// We are going to create 2 spans belonging to the same trace
+	traceID := uInt64ToTraceID(1)
+
+	// The combined decision from the policies is NotSampled
+	mpe1.NextDecision = sampling.InvertSampled
+	mpe2.NextDecision = sampling.NotSampled
+
+	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
+	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(uInt64ToSpanID(spanIndex))
+		return traces
+	}
+
+	// Generate and deliver first span
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), spanIndexToTraces(1)))
+
+	// The first tick won't do anything
+	tsp.samplingPolicyOnTick()
+	require.EqualValues(t, 0, mpe1.EvaluationCount)
+	require.EqualValues(t, 0, mpe2.EvaluationCount)
+
+	// This will cause policy evaluations on the first span
+	tsp.samplingPolicyOnTick()
+
+	// Both policies should have been evaluated once
+	require.EqualValues(t, 1, mpe1.EvaluationCount)
+	require.EqualValues(t, 1, mpe2.EvaluationCount)
+
+	// The final decision SHOULD be NotSampled.
+	require.EqualValues(t, 0, nextConsumer.SpanCount())
+
+	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
+	// The policies should NOT be evaluated again.
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), spanIndexToTraces(2)))
+	require.EqualValues(t, 1, mpe1.EvaluationCount)
+	require.EqualValues(t, 1, mpe2.EvaluationCount)
+	require.EqualValues(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
+}
+
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	const maxSize = 100
 	const decisionWaitSeconds = 1
@@ -515,7 +582,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
-		numTracesOnMap:  atomic.NewUint64(0),
+		numTracesOnMap:  &atomic.Uint64{},
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -550,8 +617,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	receivedTraces := msp.AllTraces()
 	for i, traceID := range traceIds {
-		trace := findTrace(receivedTraces, traceID)
-		require.NotNil(t, trace, "Trace was not received. TraceId %s", traceID.HexString())
+		trace := findTrace(t, receivedTraces, traceID)
 		require.EqualValues(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
 
 		expected := expectedSpanIds[i]
@@ -559,9 +625,9 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		// might have received out of order, sort for comparison
 		sort.Slice(got, func(i, j int) bool {
-			bytesA := got[i].Bytes()
+			bytesA := got[i]
 			a := binary.BigEndian.Uint64(bytesA[:])
-			bytesB := got[j].Bytes()
+			bytesB := got[j]
 			b := binary.BigEndian.Uint64(bytesB[:])
 			return a < b
 		})
@@ -570,8 +636,8 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	}
 }
 
-func collectSpanIds(trace *ptrace.Traces) []pcommon.SpanID {
-	spanIDs := make([]pcommon.SpanID, 0)
+func collectSpanIds(trace ptrace.Traces) []pcommon.SpanID {
+	var spanIDs []pcommon.SpanID
 
 	for i := 0; i < trace.ResourceSpans().Len(); i++ {
 		ilss := trace.ResourceSpans().At(i).ScopeSpans()
@@ -589,14 +655,15 @@ func collectSpanIds(trace *ptrace.Traces) []pcommon.SpanID {
 	return spanIDs
 }
 
-func findTrace(a []ptrace.Traces, traceID pcommon.TraceID) *ptrace.Traces {
+func findTrace(t *testing.T, a []ptrace.Traces, traceID pcommon.TraceID) ptrace.Traces {
 	for _, batch := range a {
 		id := batch.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-		if traceID.Bytes() == id.Bytes() {
-			return &batch
+		if traceID == id {
+			return batch
 		}
 	}
-	return nil
+	t.Fatalf("Trace was not received. TraceId %s", traceID)
+	return ptrace.Traces{}
 }
 
 func generateIdsAndBatches(numIds int) ([]pcommon.TraceID, []ptrace.Traces) {
@@ -604,10 +671,7 @@ func generateIdsAndBatches(numIds int) ([]pcommon.TraceID, []ptrace.Traces) {
 	spanID := 0
 	var tds []ptrace.Traces
 	for i := 0; i < numIds; i++ {
-		traceID := [16]byte{}
-		binary.BigEndian.PutUint64(traceID[:8], 1)
-		binary.BigEndian.PutUint64(traceID[8:], uint64(i+1))
-		traceIds[i] = pcommon.NewTraceID(traceID)
+		traceIds[i] = uInt64ToTraceID(uint64(i))
 		// Send each span in a separate batch
 		for j := 0; j <= i; j++ {
 			td := simpleTraces()
@@ -623,11 +687,18 @@ func generateIdsAndBatches(numIds int) ([]pcommon.TraceID, []ptrace.Traces) {
 	return traceIds, tds
 }
 
+func uInt64ToTraceID(id uint64) pcommon.TraceID {
+	traceID := [16]byte{}
+	binary.BigEndian.PutUint64(traceID[:8], id)
+	binary.BigEndian.PutUint64(traceID[8:], id+1)
+	return pcommon.TraceID(traceID)
+}
+
 // uInt64ToSpanID converts the uint64 representation of a SpanID to pcommon.SpanID.
 func uInt64ToSpanID(id uint64) pcommon.SpanID {
 	spanID := [8]byte{}
 	binary.BigEndian.PutUint64(spanID[:], id)
-	return pcommon.NewSpanID(spanID)
+	return pcommon.SpanID(spanID)
 }
 
 type mockPolicyEvaluator struct {
@@ -696,7 +767,7 @@ func (s *syncIDBatcher) Stop() {
 }
 
 func simpleTraces() ptrace.Traces {
-	return simpleTracesWithID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	return simpleTracesWithID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
 }
 
 func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {

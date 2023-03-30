@@ -1,3 +1,0 @@
-type: copy
-from: resource.key
-to: resource.one.two.three

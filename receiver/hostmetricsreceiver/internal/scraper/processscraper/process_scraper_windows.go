@@ -18,6 +18,7 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"fmt"
 	"path/filepath"
 	"regexp"
 
@@ -25,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 )
 
 func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTime *cpu.TimesStat) {
@@ -32,15 +34,26 @@ func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTime *cpu.TimesS
 	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.System, metadata.AttributeStateSystem)
 }
 
-func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
-	exe, err := proc.Exe()
-	if err != nil {
-		return nil, err
+func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization ucal.CPUUtilization) {
+	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.User, metadata.AttributeStateUser)
+	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.System, metadata.AttributeStateSystem)
+}
+
+func getProcessName(proc processHandle, exePath string) (string, error) {
+	if exePath == "" {
+		return "", fmt.Errorf("executable path is empty")
 	}
 
-	name := filepath.Base(exe)
-	executable := &executableMetadata{name: name, path: exe}
-	return executable, nil
+	return filepath.Base(exePath), nil
+}
+
+func getProcessExecutable(proc processHandle) (string, error) {
+	exe, err := proc.Exe()
+	if err != nil {
+		return "", err
+	}
+
+	return exe, nil
 }
 
 // matches the first argument before an unquoted space or slash

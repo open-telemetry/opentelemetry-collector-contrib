@@ -2,57 +2,281 @@
 
 # postgresqlreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **postgresql.backends** | The number of backends. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
-| **postgresql.bgwriter.buffers.allocated** | Number of buffers allocated. | {buffers} | Sum(Int) | <ul> </ul> |
-| **postgresql.bgwriter.buffers.writes** | Number of buffers written. | {buffers} | Sum(Int) | <ul> <li>bg_buffer_source</li> </ul> |
-| **postgresql.bgwriter.checkpoint.count** | The number of checkpoints performed. | {checkpoints} | Sum(Int) | <ul> <li>bg_checkpoint_type</li> </ul> |
-| **postgresql.bgwriter.duration** | Total time spent writing and syncing files to disk by checkpoints. | ms | Sum(Int) | <ul> <li>bg_duration_type</li> </ul> |
-| **postgresql.bgwriter.maxwritten** | Number of times the background writer stopped a cleaning scan because it had written too many buffers. |  | Sum(Int) | <ul> </ul> |
-| **postgresql.blocks_read** | The number of blocks read. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>source</li> </ul> |
-| **postgresql.commits** | The number of commits. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
-| **postgresql.database.count** | Number of user databases. | {databases} | Sum(Int) | <ul> </ul> |
-| **postgresql.db_size** | The database disk usage. | By | Sum(Int) | <ul> <li>database</li> </ul> |
-| **postgresql.index.scans** | The number of index scans on a table. | {scans} | Sum(Int) | <ul> </ul> |
-| **postgresql.index.size** | The size of the index on disk. | By | Gauge(Int) | <ul> </ul> |
-| **postgresql.operations** | The number of db row operations. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>operation</li> </ul> |
-| **postgresql.rollbacks** | The number of rollbacks. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
-| **postgresql.rows** | The number of rows in the database. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>state</li> </ul> |
-| **postgresql.table.count** | Number of user tables in a database. |  | Sum(Int) | <ul> </ul> |
-| **postgresql.table.size** | Disk space used by a table. | By | Sum(Int) | <ul> </ul> |
-| **postgresql.table.vacuum.count** | Number of times a table has manually been vacuumed. | {vacuums} | Sum(Int) | <ul> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Resource attributes
+### postgresql.backends
 
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| postgresql.database.name | The name of the database. | String |
-| postgresql.index.name | The name of the index on a table. | String |
-| postgresql.table.name | The schema name followed by the table name. | String |
+The number of backends.
 
-## Metric attributes
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| bg_buffer_source (source) | The source of a buffer write. | backend, backend_fsync, checkpoints, bgwriter |
-| bg_checkpoint_type (type) | The type of checkpoint state. | requested, scheduled |
-| bg_duration_type (type) | The type of time spent during the checkpoint. | sync, write |
-| database | The name of the database. |  |
-| operation | The database operation. | ins, upd, del, hot_upd |
-| source | The block read source type. | heap_read, heap_hit, idx_read, idx_hit, toast_read, toast_hit, tidx_read, tidx_hit |
-| state | The tuple (row) state. | dead, live |
-| table | The schema name followed by the table name. |  |
+| database | The name of the database. | Any Str |
+
+### postgresql.bgwriter.buffers.allocated
+
+Number of buffers allocated.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {buffers} | Sum | Int | Cumulative | true |
+
+### postgresql.bgwriter.buffers.writes
+
+Number of buffers written.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {buffers} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| source | The source of a buffer write. | Str: ``backend``, ``backend_fsync``, ``checkpoints``, ``bgwriter`` |
+
+### postgresql.bgwriter.checkpoint.count
+
+The number of checkpoints performed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {checkpoints} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The type of checkpoint state. | Str: ``requested``, ``scheduled`` |
+
+### postgresql.bgwriter.duration
+
+Total time spent writing and syncing files to disk by checkpoints.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ms | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The type of time spent during the checkpoint. | Str: ``sync``, ``write`` |
+
+### postgresql.bgwriter.maxwritten
+
+Number of times the background writer stopped a cleaning scan because it had written too many buffers.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+|  | Sum | Int | Cumulative | true |
+
+### postgresql.blocks_read
+
+The number of blocks read.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of the database. | Any Str |
+| table | The schema name followed by the table name. | Any Str |
+| source | The block read source type. | Str: ``heap_read``, ``heap_hit``, ``idx_read``, ``idx_hit``, ``toast_read``, ``toast_hit``, ``tidx_read``, ``tidx_hit`` |
+
+### postgresql.commits
+
+The number of commits.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of the database. | Any Str |
+
+### postgresql.connection.max
+
+Configured maximum number of client connections allowed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connections} | Gauge | Int |
+
+### postgresql.database.count
+
+Number of user databases.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {databases} | Sum | Int | Cumulative | false |
+
+### postgresql.db_size
+
+The database disk usage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of the database. | Any Str |
+
+### postgresql.index.scans
+
+The number of index scans on a table.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {scans} | Sum | Int | Cumulative | true |
+
+### postgresql.index.size
+
+The size of the index on disk.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### postgresql.operations
+
+The number of db row operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of the database. | Any Str |
+| table | The schema name followed by the table name. | Any Str |
+| operation | The database operation. | Str: ``ins``, ``upd``, ``del``, ``hot_upd`` |
+
+### postgresql.replication.data_delay
+
+The amount of data delayed in replication.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str |
+
+### postgresql.rollbacks
+
+The number of rollbacks.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of the database. | Any Str |
+
+### postgresql.rows
+
+The number of rows in the database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of the database. | Any Str |
+| table | The schema name followed by the table name. | Any Str |
+| state | The tuple (row) state. | Str: ``dead``, ``live`` |
+
+### postgresql.table.count
+
+Number of user tables in a database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+|  | Sum | Int | Cumulative | false |
+
+### postgresql.table.size
+
+Disk space used by a table.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### postgresql.table.vacuum.count
+
+Number of times a table has manually been vacuumed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {vacuums} | Sum | Int | Cumulative | true |
+
+### postgresql.wal.age
+
+Age of the oldest WAL file.
+
+This metric requires WAL to be enabled with at least one replica.
+
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+### postgresql.wal.lag
+
+Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
+
+This metric requires WAL to be enabled with at least one replica.
+
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The operation which is responsible for the lag. | Str: ``flush``, ``replay``, ``write`` |
+| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| postgresql.database.name | The name of the database. | Any Str | true |
+| postgresql.index.name | The name of the index on a table. | Any Str | true |
+| postgresql.table.name | The schema name followed by the table name. | Any Str | true |

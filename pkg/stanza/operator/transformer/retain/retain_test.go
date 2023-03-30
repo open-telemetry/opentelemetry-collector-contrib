@@ -54,7 +54,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"retain_single",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("key"))
 				return cfg
 			}(),
@@ -71,7 +71,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"retain_multi",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("key"))
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("nested2"))
 				return cfg
@@ -104,7 +104,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"retain_multilevel",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("foo"))
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("one", "two"))
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("foo"))
@@ -180,7 +180,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"retain_nest",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("nested2"))
 				return cfg
 			}(),
@@ -211,7 +211,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"retain_nested_value",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("nested2", "nestedkey2"))
 				return cfg
 			}(),
@@ -242,7 +242,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"retain_single_attribute",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key"))
 				return cfg
 			}(),
@@ -265,7 +265,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"retain_multi_attribute",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key1"))
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key2"))
 				return cfg
@@ -292,7 +292,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"retain_single_resource",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key"))
 				return cfg
 			}(),
@@ -315,7 +315,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"retain_multi_resource",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key1"))
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key2"))
 				return cfg
@@ -342,7 +342,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"retain_one_of_each",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key1"))
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key3"))
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("key"))
@@ -378,7 +378,7 @@ func TestBuildAndProcess(t *testing.T) {
 			"retain_a_non_existent_key",
 			false,
 			func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("aNonExsistentKey"))
 				return cfg
 			}(),

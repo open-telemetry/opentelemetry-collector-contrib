@@ -3,6 +3,7 @@ name: memcachedreceiver
 attributes:
   command:
     description: The type of command.
+    type: string
     enum:
     - get
     - set
@@ -10,22 +11,26 @@ attributes:
     - touch
   direction:
     description: Direction of data flow.
+    type: string
     enum:
     - sent
     - received
   type:
     description: Result of cache request.
+    type: string
     enum:
     - hit
     - miss
   operation:
     description: The type of operation.
+    type: string
     enum:
     - increment
     - decrement
     - get
   state:
     description: The type of CPU usage.
+    type: string
     enum:
     - system
     - user
@@ -83,7 +88,6 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: []
-  # produced when receiver.memcachedreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   memcached.network:
     enabled: true
     description: Bytes transferred over the network.
@@ -93,26 +97,6 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [direction]
-  # produced when receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  memcached.network.sent:
-    enabled: true
-    description: Bytes sent over the network.
-    unit: by
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation: cumulative
-    attributes: []
-  # produced when receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
-  memcached.network.received:
-    enabled: true
-    description: Bytes received over the network.
-    unit: by
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation: cumulative
-    attributes: []
   memcached.operations:
     enabled: true
     description:  Operation counts.

@@ -32,6 +32,7 @@ const (
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
 	tagNodeName             = "k8s.node.name"
 	tagStartTime            = "k8s.pod.start_time"
+	tagHostName             = "k8s.pod.hostname"
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
@@ -40,6 +41,7 @@ const (
 
 	ResourceSource   = "resource_attribute"
 	ConnectionSource = "connection"
+	K8sIPLabelName   = "k8s.pod.ip"
 )
 
 // PodIdentifierAttribute represents AssociationSource with matching value for pod
@@ -182,6 +184,7 @@ type FieldFilter struct {
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
+	CronJobName        bool
 	Deployment         bool
 	DaemonSetUID       bool
 	DaemonSetName      bool
@@ -190,6 +193,7 @@ type ExtractionRules struct {
 	Namespace          bool
 	PodName            bool
 	PodUID             bool
+	PodHostName        bool
 	ReplicaSetID       bool
 	ReplicaSetName     bool
 	StatefulSetUID     bool
@@ -211,7 +215,7 @@ type FieldExtractionRule struct {
 	Name string
 	// Key is used to lookup k8s pod fields.
 	Key string
-	// KeyRegex is a regular expression used to extract a Key that matches the regex.
+	// KeyRegex is a regular expression(full length match) used to extract a Key that matches the regex.
 	KeyRegex             *regexp.Regexp
 	HasKeyRegexReference bool
 	// Regex is a regular expression used to extract a sub-part of a field value.
@@ -243,7 +247,7 @@ func (r *FieldExtractionRule) extractFromMetadata(metadata map[string]string, ta
 			if r.KeyRegex.MatchString(k) && v != "" {
 				var name string
 				if r.HasKeyRegexReference {
-					result := []byte{}
+					var result []byte
 					name = string(r.KeyRegex.ExpandString(result, r.Name, k, r.KeyRegex.FindStringSubmatchIndex(k)))
 				} else {
 					name = fmt.Sprintf(formatter, k)

@@ -6,13 +6,29 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsSettings provides settings for couchdbreceiver metrics.
@@ -51,6 +67,24 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		CouchdbHttpdViews: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesSettings provides settings for couchdbreceiver metrics.
+type ResourceAttributesSettings struct {
+	CouchdbNodeName ResourceAttributeSettings `mapstructure:"couchdb.node.name"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		CouchdbNodeName: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -165,7 +199,7 @@ func (m *metricCouchdbAverageRequestTime) init() {
 	m.data.SetName("couchdb.average_request_time")
 	m.data.SetDescription("The average duration of a served request.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricCouchdbAverageRequestTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -175,7 +209,7 @@ func (m *metricCouchdbAverageRequestTime) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -214,9 +248,9 @@ func (m *metricCouchdbDatabaseOpen) init() {
 	m.data.SetName("couchdb.database.open")
 	m.data.SetDescription("The number of open databases.")
 	m.data.SetUnit("{databases}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricCouchdbDatabaseOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -226,7 +260,7 @@ func (m *metricCouchdbDatabaseOpen) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -265,9 +299,9 @@ func (m *metricCouchdbDatabaseOperations) init() {
 	m.data.SetName("couchdb.database.operations")
 	m.data.SetDescription("The number of database operations.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -278,8 +312,8 @@ func (m *metricCouchdbDatabaseOperations) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("operation", operationAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -318,9 +352,9 @@ func (m *metricCouchdbFileDescriptorOpen) init() {
 	m.data.SetName("couchdb.file_descriptor.open")
 	m.data.SetDescription("The number of open file descriptors.")
 	m.data.SetUnit("{files}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricCouchdbFileDescriptorOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -330,7 +364,7 @@ func (m *metricCouchdbFileDescriptorOpen) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -369,9 +403,9 @@ func (m *metricCouchdbHttpdBulkRequests) init() {
 	m.data.SetName("couchdb.httpd.bulk_requests")
 	m.data.SetDescription("The number of bulk requests.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricCouchdbHttpdBulkRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -381,7 +415,7 @@ func (m *metricCouchdbHttpdBulkRequests) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -420,9 +454,9 @@ func (m *metricCouchdbHttpdRequests) init() {
 	m.data.SetName("couchdb.httpd.requests")
 	m.data.SetDescription("The number of HTTP requests by method.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -433,8 +467,8 @@ func (m *metricCouchdbHttpdRequests) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("http.method", httpMethodAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("http.method", httpMethodAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -473,9 +507,9 @@ func (m *metricCouchdbHttpdResponses) init() {
 	m.data.SetName("couchdb.httpd.responses")
 	m.data.SetDescription("The number of each HTTP status code.")
 	m.data.SetUnit("{responses}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -486,8 +520,8 @@ func (m *metricCouchdbHttpdResponses) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("http.status_code", httpStatusCodeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("http.status_code", httpStatusCodeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -526,9 +560,9 @@ func (m *metricCouchdbHttpdViews) init() {
 	m.data.SetName("couchdb.httpd.views")
 	m.data.SetDescription("The number of views read.")
 	m.data.SetUnit("{views}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -539,8 +573,8 @@ func (m *metricCouchdbHttpdViews) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("view", viewAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("view", viewAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -568,6 +602,12 @@ func newMetricCouchdbHttpdViews(settings MetricSettings) metricCouchdbHttpdViews
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -576,6 +616,7 @@ type MetricsBuilder struct {
 	resourceCapacity                int                 // maximum observed number of resource attributes.
 	metricsBuffer                   pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                       component.BuildInfo // contains version information
+	resourceAttributesSettings      ResourceAttributesSettings
 	metricCouchdbAverageRequestTime metricCouchdbAverageRequestTime
 	metricCouchdbDatabaseOpen       metricCouchdbDatabaseOpen
 	metricCouchdbDatabaseOperations metricCouchdbDatabaseOperations
@@ -596,19 +637,34 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                   pmetric.NewMetrics(),
-		buildInfo:                       buildInfo,
-		metricCouchdbAverageRequestTime: newMetricCouchdbAverageRequestTime(settings.CouchdbAverageRequestTime),
-		metricCouchdbDatabaseOpen:       newMetricCouchdbDatabaseOpen(settings.CouchdbDatabaseOpen),
-		metricCouchdbDatabaseOperations: newMetricCouchdbDatabaseOperations(settings.CouchdbDatabaseOperations),
-		metricCouchdbFileDescriptorOpen: newMetricCouchdbFileDescriptorOpen(settings.CouchdbFileDescriptorOpen),
-		metricCouchdbHttpdBulkRequests:  newMetricCouchdbHttpdBulkRequests(settings.CouchdbHttpdBulkRequests),
-		metricCouchdbHttpdRequests:      newMetricCouchdbHttpdRequests(settings.CouchdbHttpdRequests),
-		metricCouchdbHttpdResponses:     newMetricCouchdbHttpdResponses(settings.CouchdbHttpdResponses),
-		metricCouchdbHttpdViews:         newMetricCouchdbHttpdViews(settings.CouchdbHttpdViews),
+		buildInfo:                       settings.BuildInfo,
+		resourceAttributesSettings:      mbc.ResourceAttributes,
+		metricCouchdbAverageRequestTime: newMetricCouchdbAverageRequestTime(mbc.Metrics.CouchdbAverageRequestTime),
+		metricCouchdbDatabaseOpen:       newMetricCouchdbDatabaseOpen(mbc.Metrics.CouchdbDatabaseOpen),
+		metricCouchdbDatabaseOperations: newMetricCouchdbDatabaseOperations(mbc.Metrics.CouchdbDatabaseOperations),
+		metricCouchdbFileDescriptorOpen: newMetricCouchdbFileDescriptorOpen(mbc.Metrics.CouchdbFileDescriptorOpen),
+		metricCouchdbHttpdBulkRequests:  newMetricCouchdbHttpdBulkRequests(mbc.Metrics.CouchdbHttpdBulkRequests),
+		metricCouchdbHttpdRequests:      newMetricCouchdbHttpdRequests(mbc.Metrics.CouchdbHttpdRequests),
+		metricCouchdbHttpdResponses:     newMetricCouchdbHttpdResponses(mbc.Metrics.CouchdbHttpdResponses),
+		metricCouchdbHttpdViews:         newMetricCouchdbHttpdViews(mbc.Metrics.CouchdbHttpdViews),
 	}
 	for _, op := range options {
 		op(mb)
@@ -627,26 +683,28 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithCouchdbNodeName sets provided value as "couchdb.node.name" attribute for current resource.
 func WithCouchdbNodeName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("couchdb.node.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.CouchdbNodeName.Enabled {
+			rm.Resource().Attributes().PutStr("couchdb.node.name", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {
@@ -676,8 +734,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricCouchdbHttpdRequests.emit(ils.Metrics())
 	mb.metricCouchdbHttpdResponses.emit(ils.Metrics())
 	mb.metricCouchdbHttpdViews.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -690,8 +749,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

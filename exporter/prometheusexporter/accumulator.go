@@ -16,6 +16,7 @@ package prometheusexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +24,6 @@ import (
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -89,18 +89,18 @@ func (a *lastValueAccumulator) Accumulate(rm pmetric.ResourceMetrics) (n int) {
 func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, il pcommon.InstrumentationScope, resourceAttrs pcommon.Map, now time.Time) int {
 	a.logger.Debug(fmt.Sprintf("accumulating metric: %s", metric.Name()))
 
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		return a.accumulateGauge(metric, il, resourceAttrs, now)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		return a.accumulateSum(metric, il, resourceAttrs, now)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		return a.accumulateHistogram(metric, il, resourceAttrs, now)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return a.accumulateSummary(metric, il, resourceAttrs, now)
 	default:
 		a.logger.With(
-			zap.String("data_type", string(metric.DataType())),
+			zap.String("data_type", string(metric.Type())),
 			zap.String("metric_name", metric.Name()),
 		).Error("failed to translate metric")
 	}
@@ -128,9 +128,9 @@ func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, il pcomm
 			continue
 		}
 
-		mm := createMetric(metric)
-		ip.CopyTo(mm.Summary().DataPoints().AppendEmpty())
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: mm, resourceAttrs: resourceAttrs, scope: il, updated: now})
+		m := copyMetricMetadata(metric)
+		ip.CopyTo(m.SetEmptySummary().DataPoints().AppendEmpty())
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 		n++
 	}
 
@@ -150,8 +150,8 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, il pcommon
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
-			m := createMetric(metric)
-			ip.CopyTo(m.Gauge().DataPoints().AppendEmpty())
+			m := copyMetricMetadata(metric)
+			ip.CopyTo(m.SetEmptyGauge().DataPoints().AppendEmpty())
 			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 			n++
 			continue
@@ -163,8 +163,8 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, il pcommon
 			continue
 		}
 
-		m := createMetric(metric)
-		ip.CopyTo(m.Gauge().DataPoints().AppendEmpty())
+		m := copyMetricMetadata(metric)
+		ip.CopyTo(m.SetEmptyGauge().DataPoints().AppendEmpty())
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 		n++
 	}
@@ -175,12 +175,12 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 	sum := metric.Sum()
 
 	// Drop metrics with unspecified aggregations
-	if sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityUnspecified {
+	if sum.AggregationTemporality() == pmetric.AggregationTemporalityUnspecified {
 		return
 	}
 
 	// Drop non-monotonic and non-cumulative metrics
-	if sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta && !sum.IsMonotonic() {
+	if sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta && !sum.IsMonotonic() {
 		return
 	}
 
@@ -196,9 +196,9 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
-			m := createMetric(metric)
-			m.Sum().SetIsMonotonic(metric.Sum().IsMonotonic())
-			m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			m := copyMetricMetadata(metric)
+			m.SetEmptySum().SetIsMonotonic(metric.Sum().IsMonotonic())
+			m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
 			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 			n++
@@ -206,24 +206,26 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 		}
 		mv := v.(*accumulatedValue)
 
-		m := createMetric(metric)
-		m.Sum().SetIsMonotonic(metric.Sum().IsMonotonic())
-		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-
-		switch sum.AggregationTemporality() {
-		case pmetric.MetricAggregationTemporalityDelta:
-			AccumulateNumericValues(mv.value.Sum().DataPoints().At(0), ip, m.Sum().DataPoints().AppendEmpty())
-		case pmetric.MetricAggregationTemporalityCumulative:
-			if ip.Timestamp().AsTime().Before(mv.value.Sum().DataPoints().At(0).Timestamp().AsTime()) {
-				// only keep datapoint with latest timestamp
-				continue
-			}
-
-			ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
-		default:
-			// unsupported temporality
+		if ip.Timestamp().AsTime().Before(mv.value.Sum().DataPoints().At(0).Timestamp().AsTime()) {
+			// only keep datapoint with latest timestamp
 			continue
 		}
+
+		// Delta-to-Cumulative
+		if sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta && ip.StartTimestamp() == mv.value.Sum().DataPoints().At(0).Timestamp() {
+			ip.SetStartTimestamp(mv.value.Sum().DataPoints().At(0).StartTimestamp())
+			switch ip.ValueType() {
+			case pmetric.NumberDataPointValueTypeInt:
+				ip.SetIntValue(ip.IntValue() + mv.value.Sum().DataPoints().At(0).IntValue())
+			case pmetric.NumberDataPointValueTypeDouble:
+				ip.SetDoubleValue(ip.DoubleValue() + mv.value.Sum().DataPoints().At(0).DoubleValue())
+			}
+		}
+
+		m := copyMetricMetadata(metric)
+		m.SetEmptySum().SetIsMonotonic(metric.Sum().IsMonotonic())
+		m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 		n++
 	}
@@ -235,6 +237,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 	histogram := metric.Histogram()
 
 	dps := histogram.DataPoints()
+
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
@@ -246,22 +249,21 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
-			m := createMetric(metric)
-			ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
-			m.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			m := copyMetricMetadata(metric)
+			ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
 			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 			n++
 			continue
 		}
 		mv := v.(*accumulatedValue)
 
-		m := createMetric(metric)
-		m.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m := copyMetricMetadata(metric)
+		m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		switch histogram.AggregationTemporality() {
-		case pmetric.MetricAggregationTemporalityDelta:
+		case pmetric.AggregationTemporalityDelta:
 			AccumulateHistogramValues(mv.value.Histogram().DataPoints().At(0), ip, m.Histogram().DataPoints().AppendEmpty())
-		case pmetric.MetricAggregationTemporalityCumulative:
+		case pmetric.AggregationTemporalityCumulative:
 			if ip.Timestamp().AsTime().Before(mv.value.Histogram().DataPoints().At(0).Timestamp().AsTime()) {
 				// only keep datapoint with latest timestamp
 				continue
@@ -272,6 +274,9 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 			// unsupported temporality
 			continue
 		}
+
+		ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+		m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 		n++
 	}
@@ -304,35 +309,30 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map) {
 
 func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcommon.Map, resourceAttrs pcommon.Map) string {
 	var b strings.Builder
-	b.WriteString(metric.DataType().String())
+	b.WriteString(metric.Type().String())
 	b.WriteString("*" + ilmName)
 	b.WriteString("*" + metric.Name())
-	attributes.Sort().Range(func(k string, v pcommon.Value) bool {
-		b.WriteString("*" + k + "*" + v.AsString())
+	attrs := make([]string, 0, attributes.Len())
+	attributes.Range(func(k string, v pcommon.Value) bool {
+		attrs = append(attrs, k+"*"+v.AsString())
 		return true
 	})
-
-	// We only include the job and instance labels in the final output. So we should only construct the signature based on those.
-	if serviceName, ok := resourceAttrs.Get(conventions.AttributeServiceName); ok {
-		val := serviceName.AsString()
-		if serviceNamespace, ok := resourceAttrs.Get(conventions.AttributeServiceNamespace); ok {
-			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
-		}
-		b.WriteString("*" + model.JobLabel + "*" + val)
+	sort.Strings(attrs)
+	b.WriteString("*" + strings.Join(attrs, "*"))
+	if job, ok := extractJob(resourceAttrs); ok {
+		b.WriteString("*" + model.JobLabel + "*" + job)
 	}
-	if instance, ok := resourceAttrs.Get(conventions.AttributeServiceInstanceID); ok {
-		b.WriteString("*" + model.InstanceLabel + "*" + instance.AsString())
+	if instance, ok := extractInstance(resourceAttrs); ok {
+		b.WriteString("*" + model.InstanceLabel + "*" + instance)
 	}
-
 	return b.String()
 }
 
-func createMetric(metric pmetric.Metric) pmetric.Metric {
+func copyMetricMetadata(metric pmetric.Metric) pmetric.Metric {
 	m := pmetric.NewMetric()
 	m.SetName(metric.Name())
 	m.SetDescription(metric.Description())
 	m.SetUnit(metric.Unit())
-	m.SetDataType(metric.DataType())
 
 	return m
 }
@@ -356,9 +356,9 @@ func AccumulateNumericValues(prev, current, dest pmetric.NumberDataPoint) {
 
 	switch newer.ValueType() {
 	case pmetric.NumberDataPointValueTypeDouble:
-		dest.SetDoubleVal(newer.DoubleVal() + older.DoubleVal())
+		dest.SetDoubleValue(newer.DoubleValue() + older.DoubleValue())
 	case pmetric.NumberDataPointValueTypeInt:
-		dest.SetIntVal(newer.IntVal() + older.IntVal())
+		dest.SetIntValue(newer.IntValue() + older.IntValue())
 	}
 }
 
@@ -401,7 +401,7 @@ func AccumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 		for i := 0; i < newer.BucketCounts().Len(); i++ {
 			counts[i] = newer.BucketCounts().At(i) + older.BucketCounts().At(i)
 		}
-		dest.SetBucketCounts(pcommon.NewImmutableUInt64Slice(counts))
+		// dest.SetBucketCounts(pcommon.NewImmutableUInt64Slice(counts))
 	} else {
 		// use new value if bucket bounds do not match
 		dest.SetCount(newer.Count())
@@ -409,8 +409,8 @@ func AccumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 			dest.SetSum(newer.Sum())
 		}
 
-		dest.SetBucketCounts(newer.BucketCounts())
+		// dest.SetBucketCounts(newer.BucketCounts())
 	}
 
-	dest.SetExplicitBounds(newer.ExplicitBounds())
+	// dest.SetExplicitBounds(newer.ExplicitBounds())
 }

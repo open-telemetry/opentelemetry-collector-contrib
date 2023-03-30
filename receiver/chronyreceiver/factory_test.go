@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
@@ -33,37 +33,39 @@ func TestType(t *testing.T) {
 	t.Parallel()
 
 	factory := NewFactory()
-	assert.Equal(t, config.Type("chrony"), factory.Type(), "Must match the expected type")
+	assert.Equal(t, component.Type("chrony"), factory.Type(), "Must match the expected type")
 }
 
 func TestValidConfig(t *testing.T) {
 	t.Parallel()
 
 	factory := NewFactory()
-	assert.NoError(t, configtest.CheckConfigStruct(factory.CreateDefaultConfig()))
+	assert.NoError(t, componenttest.CheckConfigStruct(factory.CreateDefaultConfig()))
 }
 
 func TestCreatingMetricsReceiver(t *testing.T) {
 	t.Parallel()
 
 	factory := NewFactory()
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.Metrics = metadata.MetricsSettings{
+		NtpTimeCorrection: metadata.MetricSettings{
+			Enabled: true,
+		},
+		NtpSkew: metadata.MetricSettings{
+			Enabled: true,
+		},
+	}
 	mem, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 30 * time.Second,
 			},
-			MetricsSettings: metadata.MetricsSettings{
-				NtpTimeCorrection: metadata.MetricSettings{
-					Enabled: true,
-				},
-				NtpSkew: metadata.MetricSettings{
-					Enabled: true,
-				},
-			},
-			Endpoint: "udp://localhost:323",
-			Timeout:  10 * time.Second,
+			MetricsBuilderConfig: mbc,
+			Endpoint:             "udp://localhost:323",
+			Timeout:              10 * time.Second,
 		},
 		consumertest.NewNop(),
 	)

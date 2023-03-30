@@ -76,7 +76,7 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 	attrMap := r.Attributes()
 	getExitCodeAd, found := attrMap.Get(attributeContainerExitCode)
 	require.EqualValues(t, true, found)
-	require.EqualValues(t, 2, getExitCodeAd.IntVal())
+	require.EqualValues(t, 2, getExitCodeAd.Int())
 	require.EqualValues(t, 11, attrMap.Len())
 	expected := map[string]string{
 		conventions.AttributeContainerName:      "container-1",
@@ -105,6 +105,7 @@ func TestTaskResource(t *testing.T) {
 		PullStoppedAt:    "2020-10-02T00:43:06.31288465Z",
 		KnownStatus:      "RUNNING",
 		LaunchType:       "EC2",
+		ServiceName:      "MyService",
 	}
 	r := taskResource(tm)
 	require.NotNil(t, r)
@@ -126,6 +127,7 @@ func TestTaskResource(t *testing.T) {
 		conventions.AttributeAWSECSLaunchtype:      conventions.AttributeAWSECSLaunchtypeEC2,
 		conventions.AttributeCloudRegion:           "us-west-2",
 		conventions.AttributeCloudAccountID:        "111122223333",
+		attributeECSServiceName:                    "MyService",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -142,6 +144,7 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 		PullStoppedAt:    "2020-10-02T00:43:06.31288465Z",
 		KnownStatus:      "RUNNING",
 		LaunchType:       "EC2",
+		ServiceName:      "MyService",
 	}
 	r := taskResource(tm)
 	require.NotNil(t, r)
@@ -164,6 +167,7 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 		conventions.AttributeAWSECSLaunchtype:      conventions.AttributeAWSECSLaunchtypeEC2,
 		conventions.AttributeCloudRegion:           "us-west-2",
 		conventions.AttributeCloudAccountID:        "803860917211",
+		attributeECSServiceName:                    "MyService",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -174,7 +178,7 @@ func verifyAttributeMap(t *testing.T, expected map[string]string, found pcommon.
 		attributeVal, found := found.Get(key)
 		require.EqualValues(t, true, found)
 
-		require.EqualValues(t, val, attributeVal.StringVal())
+		require.EqualValues(t, val, attributeVal.Str())
 	}
 }
 

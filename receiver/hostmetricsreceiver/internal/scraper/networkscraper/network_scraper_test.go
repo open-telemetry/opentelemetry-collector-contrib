@@ -25,85 +25,76 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper/internal/metadata"
 )
 
 func TestScrape(t *testing.T) {
 	type testCase struct {
-		name                                   string
-		config                                 Config
-		bootTimeFunc                           func() (uint64, error)
-		ioCountersFunc                         func(bool) ([]net.IOCountersStat, error)
-		connectionsFunc                        func(string) ([]net.ConnectionStat, error)
-		conntrackFunc                          func() ([]net.FilterStat, error)
-		expectNetworkMetrics                   bool
-		expectedStartTime                      pcommon.Timestamp
-		newErrRegex                            string
-		initializationErr                      string
-		expectedErr                            string
-		expectedErrCount                       int
-		expectMetricsWithDirectionAttribute    bool
-		expectMetricsWithoutDirectionAttribute bool
-		mutateScraper                          func(*scraper)
+		name                 string
+		config               Config
+		bootTimeFunc         func() (uint64, error)
+		ioCountersFunc       func(bool) ([]net.IOCountersStat, error)
+		connectionsFunc      func(string) ([]net.ConnectionStat, error)
+		conntrackFunc        func() ([]net.FilterStat, error)
+		expectNetworkMetrics bool
+		expectedStartTime    pcommon.Timestamp
+		newErrRegex          string
+		initializationErr    string
+		expectedErr          string
+		expectedErrCount     int
+		mutateScraper        func(*scraper)
 	}
 
 	testCases := []testCase{
 		{
 			name: "Standard",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
-			expectNetworkMetrics:                true,
-			expectMetricsWithDirectionAttribute: true,
+			expectNetworkMetrics: true,
 		},
 		{
 			name: "Standard with direction removed",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
-			expectNetworkMetrics:                   true,
-			expectMetricsWithDirectionAttribute:    false,
-			expectMetricsWithoutDirectionAttribute: true,
-			mutateScraper: func(s *scraper) {
-				s.emitMetricsWithDirectionAttribute = false
-				s.emitMetricsWithoutDirectionAttribute = true
-			},
+			expectNetworkMetrics: true,
 		},
 		{
 			name: "Validate Start Time",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
-			bootTimeFunc:                        func() (uint64, error) { return 100, nil },
-			expectNetworkMetrics:                true,
-			expectMetricsWithDirectionAttribute: true,
-			expectedStartTime:                   100 * 1e9,
+			bootTimeFunc:         func() (uint64, error) { return 100, nil },
+			expectNetworkMetrics: true,
+			expectedStartTime:    100 * 1e9,
 		},
 		{
 			name: "Include Filter that matches nothing",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
-				Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Include:              MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
 			expectNetworkMetrics: false,
 		},
 		{
 			name: "Invalid Include Filter",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
-				Include: MatchConfig{Interfaces: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Include:              MatchConfig{Interfaces: []string{"test"}},
 			},
 			newErrRegex: "^error creating network interface include filters:",
 		},
 		{
 			name: "Invalid Exclude Filter",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
-				Exclude: MatchConfig{Interfaces: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Exclude:              MatchConfig{Interfaces: []string{"test"}},
 			},
 			newErrRegex: "^error creating network interface exclude filters:",
 		},
@@ -125,19 +116,18 @@ func TestScrape(t *testing.T) {
 			expectedErrCount: connectionsMetricsLen,
 		},
 		{
-			name: "Conntrack error ignorred if metric disabled",
+			name: "Conntrack error ignored if metric disabled",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(), // conntrack metrics are disabled by default
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(), // conntrack metrics are disabled by default
 			},
-			conntrackFunc:                       func() ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
-			expectNetworkMetrics:                true,
-			expectMetricsWithDirectionAttribute: true,
+			conntrackFunc:        func() ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
+			expectNetworkMetrics: true,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newNetworkScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
+			scraper, err := newNetworkScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
@@ -186,12 +176,7 @@ func TestScrape(t *testing.T) {
 
 			expectedMetricCount := 1
 			if test.expectNetworkMetrics {
-				if test.expectMetricsWithoutDirectionAttribute {
-					expectedMetricCount += 8
-				}
-				if test.expectMetricsWithDirectionAttribute {
-					expectedMetricCount += 4
-				}
+				expectedMetricCount += 4
 			}
 			assert.Equal(t, expectedMetricCount, md.MetricCount())
 
@@ -199,33 +184,12 @@ func TestScrape(t *testing.T) {
 			idx := 0
 			assertNetworkConnectionsMetricValid(t, metrics.At(idx))
 			if test.expectNetworkMetrics {
-				if test.expectMetricsWithoutDirectionAttribute {
-					assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped.receive",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.dropped.transmit",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.errors.receive",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.errors.transmit",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+5), "system.network.io.receive",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+6), "system.network.io.transmit",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+7), "system.network.packets.receive",
-						test.expectedStartTime, true)
-					assertNetworkIOMetricValid(t, metrics.At(idx+8), "system.network.packets.transmit",
-						test.expectedStartTime, true)
-				}
-				if test.expectMetricsWithDirectionAttribute {
-					assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped",
-						test.expectedStartTime, false)
-					assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.errors", test.expectedStartTime,
-						false)
-					assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.io", test.expectedStartTime, false)
-					assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.packets",
-						test.expectedStartTime, false)
-				}
+				assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped",
+					test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.errors", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.io", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.packets",
+					test.expectedStartTime)
 				internal.AssertSameTimeStampForMetrics(t, metrics, 1, 5)
 				idx += 4
 			}
@@ -235,26 +199,20 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertNetworkIOMetricValid(t *testing.T, metric pmetric.Metric, expectedName string, startTime pcommon.Timestamp, expectDirectionRemoved bool) {
+func assertNetworkIOMetricValid(t *testing.T, metric pmetric.Metric, expectedName string, startTime pcommon.Timestamp) {
 	assert.Equal(t, expectedName, metric.Name())
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
-	if expectDirectionRemoved {
-		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 1)
-	} else {
-		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
-	}
+	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	if !expectDirectionRemoved {
-		internal.AssertSumMetricHasAttribute(t, metric, 0, "direction")
-	}
+	internal.AssertSumMetricHasAttribute(t, metric, 0, "direction")
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
 	assert.Equal(t, metric.Name(), "system.network.connections")
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol",
-		pcommon.NewValueString(metadata.AttributeProtocolTcp.String()))
+		pcommon.NewValueStr(metadata.AttributeProtocolTcp.String()))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
 }

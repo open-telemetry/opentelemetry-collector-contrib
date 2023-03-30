@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
@@ -72,7 +73,7 @@ func NewOCTraceDataSender(host string, port int) testbed.TraceDataSender {
 func (ote *ocTracesDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)
@@ -106,7 +107,7 @@ func NewOCMetricDataSender(host string, port int) testbed.MetricDataSender {
 func (ome *ocMetricsDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)

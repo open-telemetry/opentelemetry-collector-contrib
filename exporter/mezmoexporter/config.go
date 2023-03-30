@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import (
 	"net/url"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -29,9 +29,9 @@ const (
 	defaultTimeout time.Duration = 5 * time.Second
 
 	// defaultIngestURL
-	defaultIngestURL = "https://logs.logdna.com/log/ingest"
+	defaultIngestURL = "https://logs.mezmo.com/otel/ingest/rest"
 
-	// See https://docs.logdna.com/docs/ingestion#service-limits for details
+	// See https://docs.mezmo.com/docs/Mezmo-ingestion-service-limits for details
 
 	// Maximum payload in bytes that can be POST'd to the REST endpoint
 	maxBodySize     = 10 * 1024 * 1024
@@ -43,7 +43,6 @@ const (
 
 // Config defines configuration for Mezmo exporter.
 type Config struct {
-	config.ExporterSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
@@ -52,7 +51,7 @@ type Config struct {
 	IngestURL string `mapstructure:"ingest_url"`
 
 	// Token is the authentication token provided by Mezmo.
-	IngestKey string `mapstructure:"ingest_key"`
+	IngestKey configopaque.String `mapstructure:"ingest_key"`
 }
 
 // returns default http client settings
@@ -68,11 +67,11 @@ func (c *Config) Validate() error {
 
 	parsed, err = url.Parse(c.IngestURL)
 	if c.IngestURL == "" || err != nil {
-		return fmt.Errorf("\"ingest_url\" must be a valid URL")
+		return fmt.Errorf(`"ingest_url" must be a valid URL`)
 	}
 
 	if parsed.Host == "" {
-		return fmt.Errorf("\"ingest_url\" must contain a valid host")
+		return fmt.Errorf(`"ingest_url" must contain a valid host`)
 	}
 
 	return nil

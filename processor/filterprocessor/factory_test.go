@@ -22,27 +22,29 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	pType := factory.Type()
 
-	assert.Equal(t, pType, config.Type("filter"))
+	assert.Equal(t, pType, component.Type("filter"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ErrorMode: ottl.PropagateError,
 	})
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateProcessors(t *testing.T) {
@@ -94,16 +96,16 @@ func TestCreateProcessors(t *testing.T) {
 
 				sub, err := cm.Sub(k)
 				require.NoError(t, err)
-				require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+				require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 				tp, tErr := factory.CreateTracesProcessor(
 					context.Background(),
-					componenttest.NewNopProcessorCreateSettings(),
+					processortest.NewNopCreateSettings(),
 					cfg, consumertest.NewNop(),
 				)
 				mp, mErr := factory.CreateMetricsProcessor(
 					context.Background(),
-					componenttest.NewNopProcessorCreateSettings(),
+					processortest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)

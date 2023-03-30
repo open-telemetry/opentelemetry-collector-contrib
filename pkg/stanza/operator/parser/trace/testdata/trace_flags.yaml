@@ -1,3 +1,0 @@
-type: trace_parser
-trace_flags:
-  parse_from: body.app_trace_flags_id

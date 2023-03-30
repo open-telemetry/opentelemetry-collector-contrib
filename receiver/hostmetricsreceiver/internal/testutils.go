@@ -32,7 +32,7 @@ func AssertDescriptorEqual(t *testing.T, expected pmetric.Metric, actual pmetric
 	assert.Equal(t, expected.Name(), actual.Name())
 	assert.Equal(t, expected.Description(), actual.Description())
 	assert.Equal(t, expected.Unit(), actual.Unit())
-	assert.Equal(t, expected.DataType(), actual.DataType())
+	assert.Equal(t, expected.Type(), actual.Type())
 }
 
 func AssertSumMetricHasAttributeValue(t *testing.T, metric pmetric.Metric, index int, labelName string, expectedVal pcommon.Value) {
@@ -78,7 +78,7 @@ func AssertSameTimeStampForMetrics(t *testing.T, metrics pmetric.MetricSlice, st
 	var ts pcommon.Timestamp
 	for i := startIdx; i < endIdx; i++ {
 		metric := metrics.At(i)
-		if metric.DataType() == pmetric.MetricDataTypeSum {
+		if metric.Type() == pmetric.MetricTypeSum {
 			ddps := metric.Sum().DataPoints()
 			for j := 0; j < ddps.Len(); j++ {
 				if ts == 0 {

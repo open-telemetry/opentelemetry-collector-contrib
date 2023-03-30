@@ -35,12 +35,26 @@ func TestReplacePatternValidTaskId(t *testing.T) {
 	input := "{TaskId}"
 
 	attrMap := pcommon.NewMap()
-	attrMap.UpsertString("aws.ecs.cluster.name", "test-cluster-name")
-	attrMap.UpsertString("aws.ecs.task.id", "test-task-id")
+	attrMap.PutStr("aws.ecs.cluster.name", "test-cluster-name")
+	attrMap.PutStr("aws.ecs.task.id", "test-task-id")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 
 	assert.Equal(t, "test-task-id", s)
+	assert.True(t, success)
+}
+
+func TestReplacePatternValidServiceName(t *testing.T) {
+	logger := zap.NewNop()
+
+	input := "{ServiceName}"
+
+	attrMap := pcommon.NewMap()
+	attrMap.PutStr("service.name", "some-test-service")
+
+	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
+
+	assert.Equal(t, "some-test-service", s)
 	assert.True(t, success)
 }
 
@@ -50,8 +64,8 @@ func TestReplacePatternValidClusterName(t *testing.T) {
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
 	attrMap := pcommon.NewMap()
-	attrMap.UpsertString("aws.ecs.cluster.name", "test-cluster-name")
-	attrMap.UpsertString("aws.ecs.task.id", "test-task-id")
+	attrMap.PutStr("aws.ecs.cluster.name", "test-cluster-name")
+	attrMap.PutStr("aws.ecs.task.id", "test-task-id")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 
@@ -65,7 +79,7 @@ func TestReplacePatternMissingAttribute(t *testing.T) {
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
 	attrMap := pcommon.NewMap()
-	attrMap.UpsertString("aws.ecs.task.id", "test-task-id")
+	attrMap.PutStr("aws.ecs.task.id", "test-task-id")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 
@@ -79,8 +93,8 @@ func TestReplacePatternValidPodName(t *testing.T) {
 	input := "/aws/eks/containerinsights/{PodName}/performance"
 
 	attrMap := pcommon.NewMap()
-	attrMap.UpsertString("aws.eks.cluster.name", "test-cluster-name")
-	attrMap.UpsertString("PodName", "test-pod-001")
+	attrMap.PutStr("aws.eks.cluster.name", "test-cluster-name")
+	attrMap.PutStr("PodName", "test-pod-001")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 
@@ -94,8 +108,8 @@ func TestReplacePatternValidPod(t *testing.T) {
 	input := "/aws/eks/containerinsights/{PodName}/performance"
 
 	attrMap := pcommon.NewMap()
-	attrMap.UpsertString("aws.eks.cluster.name", "test-cluster-name")
-	attrMap.UpsertString("pod", "test-pod-001")
+	attrMap.PutStr("aws.eks.cluster.name", "test-cluster-name")
+	attrMap.PutStr("pod", "test-pod-001")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 
@@ -109,7 +123,7 @@ func TestReplacePatternMissingPodName(t *testing.T) {
 	input := "/aws/eks/containerinsights/{PodName}/performance"
 
 	attrMap := pcommon.NewMap()
-	attrMap.UpsertString("aws.eks.cluster.name", "test-cluster-name")
+	attrMap.PutStr("aws.eks.cluster.name", "test-cluster-name")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 
@@ -123,7 +137,7 @@ func TestReplacePatternAttrPlaceholderClusterName(t *testing.T) {
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
 	attrMap := pcommon.NewMap()
-	attrMap.UpsertString("ClusterName", "test-cluster-name")
+	attrMap.PutStr("ClusterName", "test-cluster-name")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 
@@ -137,7 +151,7 @@ func TestReplacePatternWrongKey(t *testing.T) {
 	input := "/aws/ecs/containerinsights/{WrongKey}/performance"
 
 	attrMap := pcommon.NewMap()
-	attrMap.UpsertString("ClusterName", "test-task-id")
+	attrMap.PutStr("ClusterName", "test-task-id")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 
@@ -151,7 +165,7 @@ func TestReplacePatternNilAttrValue(t *testing.T) {
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
 	attrMap := pcommon.NewMap()
-	attrMap.InsertNull("ClusterName")
+	attrMap.PutEmpty("ClusterName")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 
@@ -165,8 +179,8 @@ func TestReplacePatternValidTaskDefinitionFamily(t *testing.T) {
 	input := "{TaskDefinitionFamily}"
 
 	attrMap := pcommon.NewMap()
-	attrMap.UpsertString("aws.ecs.cluster.name", "test-cluster-name")
-	attrMap.UpsertString("aws.ecs.task.family", "test-task-definition-family")
+	attrMap.PutStr("aws.ecs.cluster.name", "test-cluster-name")
+	attrMap.PutStr("aws.ecs.task.family", "test-task-definition-family")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 
@@ -224,7 +238,7 @@ func TestGetNamespace(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			rms := internaldata.OCToMetrics(tc.metric.Node, tc.metric.Resource, tc.metric.Metrics)
 			rm := rms.ResourceMetrics().At(0)
-			namespace := getNamespace(&rm, tc.configNamespace)
+			namespace := getNamespace(rm, tc.configNamespace)
 			assert.Equal(t, tc.namespace, namespace)
 		})
 	}
@@ -360,7 +374,7 @@ func TestGetLogInfo(t *testing.T) {
 					LogGroupName:  tc.configLogGroup,
 					LogStreamName: tc.configLogStream,
 				}
-				logGroup, logStream, success := getLogInfo(&rms[i], tc.namespace, config)
+				logGroup, logStream, success := getLogInfo(rms[i], tc.namespace, config)
 				assert.Equal(t, tc.logGroup, logGroup)
 				assert.Equal(t, tc.logStream, logStream)
 				assert.True(t, success)

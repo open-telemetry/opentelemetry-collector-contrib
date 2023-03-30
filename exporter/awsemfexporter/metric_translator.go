@@ -28,9 +28,8 @@ import (
 
 const (
 	// OTel instrumentation lib name as dimension
-	oTellibDimensionKey          = "OTelLib"
-	defaultNamespace             = "default"
-	noInstrumentationLibraryName = "Undefined"
+	oTellibDimensionKey = "OTelLib"
+	defaultNamespace    = "default"
 
 	// DimensionRollupOptions
 	zeroAndSingleDimensionRollup = "ZeroAndSingleDimensionRollup"
@@ -41,12 +40,12 @@ const (
 	fieldPrometheusMetricType = "prom_metric_type"
 )
 
-var fieldPrometheusTypes = map[pmetric.MetricDataType]string{
-	pmetric.MetricDataTypeNone:      "",
-	pmetric.MetricDataTypeGauge:     "gauge",
-	pmetric.MetricDataTypeSum:       "counter",
-	pmetric.MetricDataTypeHistogram: "histogram",
-	pmetric.MetricDataTypeSummary:   "summary",
+var fieldPrometheusTypes = map[pmetric.MetricType]string{
+	pmetric.MetricTypeEmpty:     "",
+	pmetric.MetricTypeGauge:     "gauge",
+	pmetric.MetricTypeSum:       "counter",
+	pmetric.MetricTypeHistogram: "histogram",
+	pmetric.MetricTypeSummary:   "summary",
 }
 
 type cWMetrics struct {
@@ -69,19 +68,19 @@ type cWMetricStats struct {
 }
 
 type groupedMetricMetadata struct {
-	namespace   string
-	timestampMs int64
-	logGroup    string
-	logStream   string
+	namespace                  string
+	timestampMs                int64
+	logGroup                   string
+	logStream                  string
+	metricDataType             pmetric.MetricType
+	retainInitialValueForDelta bool
 }
 
 // cWMetricMetadata represents the metadata associated with a given CloudWatch metric
 type cWMetricMetadata struct {
 	groupedMetricMetadata
-	instrumentationLibraryName string
-
-	receiver       string
-	metricDataType pmetric.MetricDataType
+	instrumentationScopeName string
+	receiver                 string
 }
 
 type metricTranslator struct {
@@ -91,7 +90,7 @@ type metricTranslator struct {
 func newMetricTranslator(config Config) metricTranslator {
 	mt := map[string]MetricDescriptor{}
 	for _, descriptor := range config.MetricDescriptors {
-		mt[descriptor.metricName] = descriptor
+		mt[descriptor.MetricName] = descriptor
 	}
 	return metricTranslator{
 		metricDescriptor: mt,
@@ -99,23 +98,21 @@ func newMetricTranslator(config Config) metricTranslator {
 }
 
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
-func (mt metricTranslator) translateOTelToGroupedMetric(rm *pmetric.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
+func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-	var instrumentationLibName string
+	var instrumentationScopeName string
 	cWNamespace := getNamespace(rm, config.Namespace)
 	logGroup, logStream, patternReplaceSucceeded := getLogInfo(rm, cWNamespace, config)
 
 	ilms := rm.ScopeMetrics()
 	var metricReceiver string
 	if receiver, ok := rm.Resource().Attributes().Get(attributeReceiver); ok {
-		metricReceiver = receiver.StringVal()
+		metricReceiver = receiver.Str()
 	}
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
-		if ilm.Scope().Name() == "" {
-			instrumentationLibName = noInstrumentationLibraryName
-		} else {
-			instrumentationLibName = ilm.Scope().Name()
+		if ilm.Scope().Name() != "" {
+			instrumentationScopeName = ilm.Scope().Name()
 		}
 
 		metrics := ilm.Metrics()
@@ -123,16 +120,16 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pmetric.ResourceMetr
 			metric := metrics.At(k)
 			metadata := cWMetricMetadata{
 				groupedMetricMetadata: groupedMetricMetadata{
-					namespace:   cWNamespace,
-					timestampMs: timestamp,
-					logGroup:    logGroup,
-					logStream:   logStream,
+					namespace:      cWNamespace,
+					timestampMs:    timestamp,
+					logGroup:       logGroup,
+					logStream:      logStream,
+					metricDataType: metric.Type(),
 				},
-				instrumentationLibraryName: instrumentationLibName,
-				receiver:                   metricReceiver,
-				metricDataType:             metric.DataType(),
+				instrumentationScopeName: instrumentationScopeName,
+				receiver:                 metricReceiver,
 			}
-			err := addToGroupedMetric(&metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
+			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
 			if err != nil {
 				return err
 			}
@@ -250,7 +247,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 	// If the whole batch of metrics don't match any metric declarations, drop them
 	if len(metricDeclarations) == 0 {
 		labelsStr, _ := json.Marshal(labels)
-		metricNames := make([]string, 0)
+		var metricNames []string
 		for metricName := range groupedMetric.metrics {
 			metricNames = append(metricNames, metricName)
 		}

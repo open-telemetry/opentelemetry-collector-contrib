@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,12 +51,27 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
-		logRecord.Body().SetStringVal("10byteslog")
-		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().InsertString("my-label", "myapp-type")
-		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().InsertString("custom", "custom")
+		logRecord.Body().SetStr("10byteslog")
+		logRecord.Attributes().PutStr(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().PutStr("my-label", "myapp-type")
+		logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().PutStr("custom", "custom")
 		logRecord.SetTimestamp(ts)
+	}
+
+	return logs
+}
+
+func createMinimalAttributesLogData(numberOfLogs int) plog.Logs {
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.ScopeLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+
+	for i := 0; i < numberOfLogs; i++ {
+		logRecord := sl.LogRecords().AppendEmpty()
+		logRecord.Body().SetStr("minimal attribute log")
 	}
 
 	return logs
@@ -76,7 +91,7 @@ func createMaxLogData() plog.Logs {
 	for i := 0; i < lineCnt; i++ {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
-		logRecord.Body().SetStringVal(randString(maxMessageSize))
+		logRecord.Body().SetStr(randString(maxMessageSize))
 		logRecord.SetTimestamp(ts)
 	}
 
@@ -94,7 +109,7 @@ func createSizedPayloadLogData(payloadSize int) plog.Logs {
 
 	ts := pcommon.Timestamp(0)
 	logRecord := sl.LogRecords().AppendEmpty()
-	logRecord.Body().SetStringVal(maxMsg)
+	logRecord.Body().SetStr(maxMsg)
 	logRecord.SetTimestamp(ts)
 
 	return logs
@@ -197,6 +212,38 @@ func TestLogsExporter(t *testing.T) {
 		err := exporter.pushLogData(context.Background(), logs)
 		require.NoError(t, err)
 	})
+}
+
+func TestAddsRequiredAttributes(t *testing.T) {
+	httpServerParams := testServerParams{
+		t: t,
+		assertionsCallback: func(req *http.Request, body MezmoLogBody) (int, string) {
+			assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+			assert.Equal(t, "mezmo-otel-exporter/"+buildInfo.Version, req.Header.Get("User-Agent"))
+
+			lines := body.Lines
+			for _, line := range lines {
+				assert.True(t, line.Timestamp > 0)
+				assert.Equal(t, line.Level, "info")
+				assert.Equal(t, line.App, "")
+				assert.Equal(t, line.Line, "minimal attribute log")
+			}
+
+			return http.StatusOK, ""
+		},
+	}
+	server := createHTTPServer(&httpServerParams)
+	defer server.instance.Close()
+
+	log, _ := createLogger()
+	config := &Config{
+		IngestURL: server.url,
+	}
+	exporter := createExporter(t, config, log)
+
+	logs := createMinimalAttributesLogData(4)
+	err := exporter.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
 }
 
 func Test404IngestError(t *testing.T) {

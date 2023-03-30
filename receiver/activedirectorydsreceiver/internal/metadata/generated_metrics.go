@@ -6,13 +6,29 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsSettings provides settings for activedirectorydsreceiver metrics.
@@ -94,6 +110,19 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesSettings provides settings for activedirectorydsreceiver metrics.
+type ResourceAttributesSettings struct {
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{}
 }
 
 // AttributeBindType specifies the a value bind_type attribute.
@@ -297,9 +326,9 @@ func (m *metricActiveDirectoryDsBindRate) init() {
 	m.data.SetName("active_directory.ds.bind.rate")
 	m.data.SetDescription("The number of binds per second serviced by this domain controller.")
 	m.data.SetUnit("{binds}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -310,8 +339,8 @@ func (m *metricActiveDirectoryDsBindRate) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("type", bindTypeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("type", bindTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -350,7 +379,7 @@ func (m *metricActiveDirectoryDsLdapBindLastSuccessfulTime) init() {
 	m.data.SetName("active_directory.ds.ldap.bind.last_successful.time")
 	m.data.SetDescription("The amount of time taken for the last successful LDAP bind.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricActiveDirectoryDsLdapBindLastSuccessfulTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -360,7 +389,7 @@ func (m *metricActiveDirectoryDsLdapBindLastSuccessfulTime) recordDataPoint(star
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -399,9 +428,9 @@ func (m *metricActiveDirectoryDsLdapBindRate) init() {
 	m.data.SetName("active_directory.ds.ldap.bind.rate")
 	m.data.SetDescription("The number of successful LDAP binds per second.")
 	m.data.SetUnit("{binds}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricActiveDirectoryDsLdapBindRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -411,7 +440,7 @@ func (m *metricActiveDirectoryDsLdapBindRate) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -450,9 +479,9 @@ func (m *metricActiveDirectoryDsLdapClientSessionCount) init() {
 	m.data.SetName("active_directory.ds.ldap.client.session.count")
 	m.data.SetDescription("The number of connected LDAP client sessions.")
 	m.data.SetUnit("{sessions}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricActiveDirectoryDsLdapClientSessionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -462,7 +491,7 @@ func (m *metricActiveDirectoryDsLdapClientSessionCount) recordDataPoint(start pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -501,9 +530,9 @@ func (m *metricActiveDirectoryDsLdapSearchRate) init() {
 	m.data.SetName("active_directory.ds.ldap.search.rate")
 	m.data.SetDescription("The number of LDAP searches per second.")
 	m.data.SetUnit("{searches}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricActiveDirectoryDsLdapSearchRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -513,7 +542,7 @@ func (m *metricActiveDirectoryDsLdapSearchRate) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -552,7 +581,7 @@ func (m *metricActiveDirectoryDsNameCacheHitRate) init() {
 	m.data.SetName("active_directory.ds.name_cache.hit_rate")
 	m.data.SetDescription("The percentage of directory object name component lookups that are satisfied by the Directory System Agent's name cache.")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricActiveDirectoryDsNameCacheHitRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -562,7 +591,7 @@ func (m *metricActiveDirectoryDsNameCacheHitRate) recordDataPoint(start pcommon.
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -601,9 +630,9 @@ func (m *metricActiveDirectoryDsNotificationQueued) init() {
 	m.data.SetName("active_directory.ds.notification.queued")
 	m.data.SetDescription("The number of pending update notifications that have been queued to push to clients.")
 	m.data.SetUnit("{notifications}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricActiveDirectoryDsNotificationQueued) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -613,7 +642,7 @@ func (m *metricActiveDirectoryDsNotificationQueued) recordDataPoint(start pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -652,9 +681,9 @@ func (m *metricActiveDirectoryDsOperationRate) init() {
 	m.data.SetName("active_directory.ds.operation.rate")
 	m.data.SetDescription("The number of operations performed per second.")
 	m.data.SetUnit("{operations}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -665,8 +694,8 @@ func (m *metricActiveDirectoryDsOperationRate) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("type", operationTypeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("type", operationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -705,9 +734,9 @@ func (m *metricActiveDirectoryDsReplicationNetworkIo) init() {
 	m.data.SetName("active_directory.ds.replication.network.io")
 	m.data.SetDescription("The amount of network data transmitted by the Directory Replication Agent.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -718,9 +747,9 @@ func (m *metricActiveDirectoryDsReplicationNetworkIo) recordDataPoint(start pcom
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
-	dp.Attributes().InsertString("type", networkDataTypeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("type", networkDataTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -759,9 +788,9 @@ func (m *metricActiveDirectoryDsReplicationObjectRate) init() {
 	m.data.SetName("active_directory.ds.replication.object.rate")
 	m.data.SetDescription("The number of objects transmitted by the Directory Replication Agent per second.")
 	m.data.SetUnit("{objects}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -772,8 +801,8 @@ func (m *metricActiveDirectoryDsReplicationObjectRate) recordDataPoint(start pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -812,9 +841,9 @@ func (m *metricActiveDirectoryDsReplicationOperationPending) init() {
 	m.data.SetName("active_directory.ds.replication.operation.pending")
 	m.data.SetDescription("The number of pending replication operations for the Directory Replication Agent.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricActiveDirectoryDsReplicationOperationPending) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -824,7 +853,7 @@ func (m *metricActiveDirectoryDsReplicationOperationPending) recordDataPoint(sta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -863,9 +892,9 @@ func (m *metricActiveDirectoryDsReplicationPropertyRate) init() {
 	m.data.SetName("active_directory.ds.replication.property.rate")
 	m.data.SetDescription("The number of properties transmitted by the Directory Replication Agent per second.")
 	m.data.SetUnit("{properties}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -876,8 +905,8 @@ func (m *metricActiveDirectoryDsReplicationPropertyRate) recordDataPoint(start p
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -916,9 +945,9 @@ func (m *metricActiveDirectoryDsReplicationSyncObjectPending) init() {
 	m.data.SetName("active_directory.ds.replication.sync.object.pending")
 	m.data.SetDescription("The number of objects remaining until the full sync completes for the Directory Replication Agent.")
 	m.data.SetUnit("{objects}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricActiveDirectoryDsReplicationSyncObjectPending) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -928,7 +957,7 @@ func (m *metricActiveDirectoryDsReplicationSyncObjectPending) recordDataPoint(st
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -967,9 +996,9 @@ func (m *metricActiveDirectoryDsReplicationSyncRequestCount) init() {
 	m.data.SetName("active_directory.ds.replication.sync.request.count")
 	m.data.SetDescription("The number of sync requests made by the Directory Replication Agent.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -980,8 +1009,8 @@ func (m *metricActiveDirectoryDsReplicationSyncRequestCount) recordDataPoint(sta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("result", syncResultAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("result", syncResultAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1020,9 +1049,9 @@ func (m *metricActiveDirectoryDsReplicationValueRate) init() {
 	m.data.SetName("active_directory.ds.replication.value.rate")
 	m.data.SetDescription("The number of values transmitted by the Directory Replication Agent per second.")
 	m.data.SetUnit("{values}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1033,9 +1062,9 @@ func (m *metricActiveDirectoryDsReplicationValueRate) recordDataPoint(start pcom
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
-	dp.Attributes().InsertString("type", valueTypeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("type", valueTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1074,9 +1103,9 @@ func (m *metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued) init(
 	m.data.SetName("active_directory.ds.security_descriptor_propagations_event.queued")
 	m.data.SetDescription("The number of security descriptor propagation events that are queued for processing.")
 	m.data.SetUnit("{events}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1086,7 +1115,7 @@ func (m *metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued) recor
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1125,9 +1154,9 @@ func (m *metricActiveDirectoryDsSuboperationRate) init() {
 	m.data.SetName("active_directory.ds.suboperation.rate")
 	m.data.SetDescription("The rate of sub-operations performed.")
 	m.data.SetUnit("{suboperations}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1138,8 +1167,8 @@ func (m *metricActiveDirectoryDsSuboperationRate) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("type", suboperationTypeAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("type", suboperationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1178,9 +1207,9 @@ func (m *metricActiveDirectoryDsThreadCount) init() {
 	m.data.SetName("active_directory.ds.thread.count")
 	m.data.SetDescription("The number of threads in use by the directory service.")
 	m.data.SetUnit("{threads}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricActiveDirectoryDsThreadCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1190,7 +1219,7 @@ func (m *metricActiveDirectoryDsThreadCount) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1218,6 +1247,12 @@ func newMetricActiveDirectoryDsThreadCount(settings MetricSettings) metricActive
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1226,6 +1261,7 @@ type MetricsBuilder struct {
 	resourceCapacity                                                 int                 // maximum observed number of resource attributes.
 	metricsBuffer                                                    pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                                        component.BuildInfo // contains version information
+	resourceAttributesSettings                                       ResourceAttributesSettings
 	metricActiveDirectoryDsBindRate                                  metricActiveDirectoryDsBindRate
 	metricActiveDirectoryDsLdapBindLastSuccessfulTime                metricActiveDirectoryDsLdapBindLastSuccessfulTime
 	metricActiveDirectoryDsLdapBindRate                              metricActiveDirectoryDsLdapBindRate
@@ -1256,29 +1292,44 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            ms,
+		ResourceAttributes: ras,
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                   pmetric.NewMetrics(),
-		buildInfo:                       buildInfo,
-		metricActiveDirectoryDsBindRate: newMetricActiveDirectoryDsBindRate(settings.ActiveDirectoryDsBindRate),
-		metricActiveDirectoryDsLdapBindLastSuccessfulTime:                newMetricActiveDirectoryDsLdapBindLastSuccessfulTime(settings.ActiveDirectoryDsLdapBindLastSuccessfulTime),
-		metricActiveDirectoryDsLdapBindRate:                              newMetricActiveDirectoryDsLdapBindRate(settings.ActiveDirectoryDsLdapBindRate),
-		metricActiveDirectoryDsLdapClientSessionCount:                    newMetricActiveDirectoryDsLdapClientSessionCount(settings.ActiveDirectoryDsLdapClientSessionCount),
-		metricActiveDirectoryDsLdapSearchRate:                            newMetricActiveDirectoryDsLdapSearchRate(settings.ActiveDirectoryDsLdapSearchRate),
-		metricActiveDirectoryDsNameCacheHitRate:                          newMetricActiveDirectoryDsNameCacheHitRate(settings.ActiveDirectoryDsNameCacheHitRate),
-		metricActiveDirectoryDsNotificationQueued:                        newMetricActiveDirectoryDsNotificationQueued(settings.ActiveDirectoryDsNotificationQueued),
-		metricActiveDirectoryDsOperationRate:                             newMetricActiveDirectoryDsOperationRate(settings.ActiveDirectoryDsOperationRate),
-		metricActiveDirectoryDsReplicationNetworkIo:                      newMetricActiveDirectoryDsReplicationNetworkIo(settings.ActiveDirectoryDsReplicationNetworkIo),
-		metricActiveDirectoryDsReplicationObjectRate:                     newMetricActiveDirectoryDsReplicationObjectRate(settings.ActiveDirectoryDsReplicationObjectRate),
-		metricActiveDirectoryDsReplicationOperationPending:               newMetricActiveDirectoryDsReplicationOperationPending(settings.ActiveDirectoryDsReplicationOperationPending),
-		metricActiveDirectoryDsReplicationPropertyRate:                   newMetricActiveDirectoryDsReplicationPropertyRate(settings.ActiveDirectoryDsReplicationPropertyRate),
-		metricActiveDirectoryDsReplicationSyncObjectPending:              newMetricActiveDirectoryDsReplicationSyncObjectPending(settings.ActiveDirectoryDsReplicationSyncObjectPending),
-		metricActiveDirectoryDsReplicationSyncRequestCount:               newMetricActiveDirectoryDsReplicationSyncRequestCount(settings.ActiveDirectoryDsReplicationSyncRequestCount),
-		metricActiveDirectoryDsReplicationValueRate:                      newMetricActiveDirectoryDsReplicationValueRate(settings.ActiveDirectoryDsReplicationValueRate),
-		metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: newMetricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued(settings.ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued),
-		metricActiveDirectoryDsSuboperationRate:                          newMetricActiveDirectoryDsSuboperationRate(settings.ActiveDirectoryDsSuboperationRate),
-		metricActiveDirectoryDsThreadCount:                               newMetricActiveDirectoryDsThreadCount(settings.ActiveDirectoryDsThreadCount),
+		buildInfo:                       settings.BuildInfo,
+		resourceAttributesSettings:      mbc.ResourceAttributes,
+		metricActiveDirectoryDsBindRate: newMetricActiveDirectoryDsBindRate(mbc.Metrics.ActiveDirectoryDsBindRate),
+		metricActiveDirectoryDsLdapBindLastSuccessfulTime:                newMetricActiveDirectoryDsLdapBindLastSuccessfulTime(mbc.Metrics.ActiveDirectoryDsLdapBindLastSuccessfulTime),
+		metricActiveDirectoryDsLdapBindRate:                              newMetricActiveDirectoryDsLdapBindRate(mbc.Metrics.ActiveDirectoryDsLdapBindRate),
+		metricActiveDirectoryDsLdapClientSessionCount:                    newMetricActiveDirectoryDsLdapClientSessionCount(mbc.Metrics.ActiveDirectoryDsLdapClientSessionCount),
+		metricActiveDirectoryDsLdapSearchRate:                            newMetricActiveDirectoryDsLdapSearchRate(mbc.Metrics.ActiveDirectoryDsLdapSearchRate),
+		metricActiveDirectoryDsNameCacheHitRate:                          newMetricActiveDirectoryDsNameCacheHitRate(mbc.Metrics.ActiveDirectoryDsNameCacheHitRate),
+		metricActiveDirectoryDsNotificationQueued:                        newMetricActiveDirectoryDsNotificationQueued(mbc.Metrics.ActiveDirectoryDsNotificationQueued),
+		metricActiveDirectoryDsOperationRate:                             newMetricActiveDirectoryDsOperationRate(mbc.Metrics.ActiveDirectoryDsOperationRate),
+		metricActiveDirectoryDsReplicationNetworkIo:                      newMetricActiveDirectoryDsReplicationNetworkIo(mbc.Metrics.ActiveDirectoryDsReplicationNetworkIo),
+		metricActiveDirectoryDsReplicationObjectRate:                     newMetricActiveDirectoryDsReplicationObjectRate(mbc.Metrics.ActiveDirectoryDsReplicationObjectRate),
+		metricActiveDirectoryDsReplicationOperationPending:               newMetricActiveDirectoryDsReplicationOperationPending(mbc.Metrics.ActiveDirectoryDsReplicationOperationPending),
+		metricActiveDirectoryDsReplicationPropertyRate:                   newMetricActiveDirectoryDsReplicationPropertyRate(mbc.Metrics.ActiveDirectoryDsReplicationPropertyRate),
+		metricActiveDirectoryDsReplicationSyncObjectPending:              newMetricActiveDirectoryDsReplicationSyncObjectPending(mbc.Metrics.ActiveDirectoryDsReplicationSyncObjectPending),
+		metricActiveDirectoryDsReplicationSyncRequestCount:               newMetricActiveDirectoryDsReplicationSyncRequestCount(mbc.Metrics.ActiveDirectoryDsReplicationSyncRequestCount),
+		metricActiveDirectoryDsReplicationValueRate:                      newMetricActiveDirectoryDsReplicationValueRate(mbc.Metrics.ActiveDirectoryDsReplicationValueRate),
+		metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: newMetricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued(mbc.Metrics.ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued),
+		metricActiveDirectoryDsSuboperationRate:                          newMetricActiveDirectoryDsSuboperationRate(mbc.Metrics.ActiveDirectoryDsSuboperationRate),
+		metricActiveDirectoryDsThreadCount:                               newMetricActiveDirectoryDsThreadCount(mbc.Metrics.ActiveDirectoryDsThreadCount),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1297,19 +1348,19 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {
@@ -1349,8 +1400,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued.emit(ils.Metrics())
 	mb.metricActiveDirectoryDsSuboperationRate.emit(ils.Metrics())
 	mb.metricActiveDirectoryDsThreadCount.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -1363,8 +1415,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

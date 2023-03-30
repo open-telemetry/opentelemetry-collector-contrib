@@ -18,11 +18,12 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -31,7 +32,7 @@ import (
 // jaegerDataReceiver implements Jaeger format receiver.
 type jaegerDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.TracesReceiver
+	receiver receiver.Traces
 }
 
 // NewJaegerDataReceiver creates a new Jaeger DataReceiver that will listen on the specified port after Start
@@ -44,10 +45,10 @@ func (jr *jaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 	factory := jaegerreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
 	cfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
-		NetAddr: confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", jr.Port), Transport: "tcp"},
+		NetAddr: confignet.NetAddr{Endpoint: fmt.Sprintf("127.0.0.1:%d", jr.Port), Transport: "tcp"},
 	}
 	var err error
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	jr.receiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
 	if err != nil {
 		return err
@@ -64,7 +65,7 @@ func (jr *jaegerDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   jaeger:
-    endpoint: "localhost:%d"
+    endpoint: "127.0.0.1:%d"
     tls:
       insecure: true`, jr.Port)
 }

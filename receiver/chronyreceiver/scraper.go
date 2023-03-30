@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"github.com/tilinna/clock"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
@@ -31,10 +31,10 @@ type chronyScraper struct {
 	mb     *metadata.MetricsBuilder
 }
 
-func newScraper(ctx context.Context, client chrony.Client, cfg *Config, set component.ReceiverCreateSettings) *chronyScraper {
+func newScraper(ctx context.Context, client chrony.Client, cfg *Config, set receiver.CreateSettings) *chronyScraper {
 	return &chronyScraper{
 		client: client,
-		mb: metadata.NewMetricsBuilder(cfg.MetricsSettings, set.BuildInfo,
+		mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, set,
 			metadata.WithStartTime(pcommon.NewTimestampFromTime(clock.FromContext(ctx).Now())),
 		),
 	}

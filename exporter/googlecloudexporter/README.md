@@ -6,7 +6,9 @@
 | Supported pipeline types | traces, metrics, logs |
 | Distributions            | [contrib]             |
 
-This exporter can be used to send metrics and traces to Google Cloud Monitoring and Trace (formerly known as Stackdriver) respectively.
+This exporter can be used to send metrics to [Google Cloud Monitoring](https://cloud.google.com/monitoring)
+(formerly Stackdriver), traces to [Google Cloud Trace](https://cloud.google.com/trace),
+and logs to [Google Cloud Logging](https://cloud.google.com/logging).
 
 ## Getting started
 
@@ -40,11 +42,6 @@ These instructions are to get you up and running quickly with the GCP exporter i
           http:
     exporters:
       googlecloud:
-        # Google Cloud Monitoring returns an error if any of the points are invalid, but still accepts the valid points.
-        # Retrying successfully sent points is guaranteed to fail because the points were already written.
-        # This results in a loop of unnecessary retries.  For now, disable retry_on_failure.
-        retry_on_failure:
-          enabled: false
         log:
           default_log_name: opentelemetry.io/collector-exported-log
     processors:
@@ -99,7 +96,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
     ```sh
     docker run \
       --volume ~/.config/gcloud/application_default_credentials.json:/etc/otel/key.json \
-      --volume $(pwd)/config.yaml:/etc/otel/config.yaml \
+      --volume $(pwd)/config.yaml:/etc/otelcol-contrib/config.yaml \
       --env GOOGLE_APPLICATION_CREDENTIALS=/etc/otel/key.json \
       -p 4317:4317 \
       -p 4318:4318 \
@@ -134,6 +131,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
 The following configuration options are supported:
 
 - `project` (default = Fetch from Credentials): GCP project identifier.
+- `destination_project_quota` (optional): Counts quota for traces and metrics against the project to which the data is sent (as opposed to the project associated with the Collector's service account. For example, when setting `project_id` or using [multi-project export](#multi-project-exporting). (default = false)
 - `user_agent` (default = `opentelemetry-collector-contrib {{version}}`): Override the user agent string sent on requests to Cloud Monitoring (currently only applies to metrics). Specify `{{version}}` to include the application version number.
 - `impersonate` (optional): Configuration for service account impersonation
   - `target_principal`: TargetPrincipal is the email address of the service account to impersonate.
@@ -149,10 +147,12 @@ The following configuration options are supported:
   - `create_service_timeseries` (default = false): If true, this will send all timeseries using `CreateServiceTimeSeries`. Implicitly, this sets `skip_create_descriptor` to true.
   - `create_metric_descriptor_buffer_size` (default = 10): Buffer size for the channel which asynchronously calls CreateMetricDescriptor.
   - `service_resource_labels` (default = true):  If true, the exporter will copy OTel's service.name, service.namespace, and service.instance.id resource attributes into the GCM timeseries metric labels.
-  - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in metric labels.
+  - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in metric labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
     - `prefix`: Match resource keys by prefix.
+    - `regex`: Match resource keys by regex.
   - `cumulative_normalization` (default = true): If true, normalizes cumulative metrics without start times or with explicit reset points by subtracting subsequent points from the initial point. It is enabled by default. Since it caches starting points, it may result inincreased memory usage.
   - `sum_of_squared_deviation` (default = false): If true, enables calculation of an estimated sum of squared deviation.  It is an estimate, and is not exact.
+  - `compression` (optional): Enable gzip compression for gRPC requests (valid vlaues: `gzip`).
 - `trace` (optional): Configuration for sending traces to Cloud Trace.
   - `endpoint` (default = cloudtrace.googleapis.com): Endpoint where trace data is going to be sent to.
   - `use_insecure` (default = false): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "". Replaces `use_insecure`.
@@ -163,8 +163,12 @@ The following configuration options are supported:
   - `endpoint` (default = logging.googleapis.com): Endpoint where log data is going to be sent to. D
   - `use_insecure` (default = false): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
   - `default_log_name` (optional): Defines a default name for log entries. If left unset, and a log entry does not have the `gcp.log_name` attribute set, the exporter will return an error processing that entry.
+  - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in log labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
+    - `prefix`: Match resource keys by prefix.
+    - `regex`: Match resource keys by regex.
+  - `compression` (optional): Enable gzip compression for gRPC requests (valid vlaues: `gzip`).
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
-  - `enabled` (default = true)
+  - `enabled` (default = false)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
   - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
   - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
@@ -306,23 +310,17 @@ additional flexibility in parsing log severity from incoming entries.
 
 By default, the exporter sends telemetry to the project specified by `project` in the configuration. This can be overridden on a per-metrics basis using the `gcp.project.id` resource attribute. For example, if a metric has a label `project`, you could use the `groupbyattrs` processor to promote it to a resource label, and the `resource` processor to rename the attribute from `project` to `gcp.project.id`.
 
+### Multi-Project quota usage
+
+The `gcp.project.id` label can be combined with the `destination_project_quota` option to attribute quota usage to the project parsed by the label. This feature is currently only available
+for traces and metrics. The Collector's default service account will need `roles/serviceusage.serviceUsageConsumer` IAM permissions in the destination quota project.
+
+Note that this option will not work  if a quota project is already defined in your Collector's GCP credentials. In this case, the telemetry will fail to export with a "project not found" error.
+This can be done by manually editing your [ADC file](https://cloud.google.com/docs/authentication/application-default-credentials#personal) (if it exists) to remove the `quota_project_id` entry line.
+
 ## Features and Feature-Gates
 
-See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/service/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
-
-**BETA**: `exporter.googlecloud.OTLPDirect`
-
-The `exporter.googlecloud.OTLPDirect` is enabled by default starting in v0.50.0, and can be disabled via `--feature-gates=-exporter.googlecloud.OTLPDirect`. The new googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus.  See the [Breaking Changes documentation](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/exporter/collector/breaking-changes.md#breaking-changes-vs-old-googlecloud-exporter) for breaking changes that will occur as a result of this feature.
-
-If you are broken by changes described there, or have encountered an issue with the new implementation, please open an issue [here](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/issues/new)
-
-If you disable the feature-gate, you can continue to set removed legacy configuration options:
-
-- `endpoint` (optional): Endpoint where data is going to be sent to.
-- `use_insecure` (optional): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "".
-- `timeout` (optional): Timeout for all API calls. If not set, defaults to 12 seconds.
-- `resource_mappings` (optional): ResourceMapping defines mapping of resources from source (OpenCensus) to target (Google Cloud).
-  - `label_mappings` (optional): Optional flag signals whether we can proceed with transformation if a label is missing in the resource.
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

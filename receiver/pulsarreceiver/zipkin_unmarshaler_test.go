@@ -1,4 +1,4 @@
-// Copyright 2020 The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,14 +37,14 @@ var v2FromTranslator zipkinv2.FromTranslator
 func TestUnmarshalZipkin(t *testing.T) {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, "my_service")
+	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "my_service")
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
 	span.SetStartTimestamp(pcommon.Timestamp(1597759000))
 	span.SetEndTimestamp(pcommon.Timestamp(1597769000))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	span.SetParentSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 0}))
+	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	span.SetParentSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 0})
 	spans, err := v2FromTranslator.FromTraces(td)
 	require.NoError(t, err)
 

@@ -20,28 +20,99 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	require.EqualError(t, err, "exporter \"file\" has invalid configuration: path must be non-empty")
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
-	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, e0, factory.CreateDefaultConfig())
+	tests := []struct {
+		id           component.ID
+		expected     component.Config
+		errorMessage string
+	}{
+		{
+			id: component.NewIDWithName(typeStr, "2"),
+			expected: &Config{
+				Path: "./filename.json",
+				Rotation: &Rotation{
+					MaxMegabytes: 10,
+					MaxDays:      3,
+					MaxBackups:   3,
+					LocalTime:    true,
+				},
+				FormatType: formatTypeJSON,
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "3"),
+			expected: &Config{
+				Path: "./filename",
+				Rotation: &Rotation{
+					MaxMegabytes: 10,
+					MaxDays:      3,
+					MaxBackups:   3,
+					LocalTime:    true,
+				},
+				FormatType:  formatTypeProto,
+				Compression: compressionZSTD,
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "rotation_with_default_settings"),
+			expected: &Config{
+				Path:       "./foo",
+				FormatType: formatTypeJSON,
+				Rotation: &Rotation{
+					MaxBackups: defaultMaxBackups,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "rotation_with_custom_settings"),
+			expected: &Config{
+				Path: "./foo",
+				Rotation: &Rotation{
+					MaxMegabytes: 1234,
+					MaxBackups:   defaultMaxBackups,
+				},
+				FormatType: formatTypeJSON,
+			},
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "compression_error"),
+			errorMessage: "compression is not supported",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "format_error"),
+			errorMessage: "format type is not supported",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, ""),
+			errorMessage: "path must be non-empty",
+		},
+	}
 
-	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
-	assert.Equal(t, e1,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-			Path:             "./filename.json",
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			if tt.expected == nil {
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				return
+			}
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
 		})
+	}
 }

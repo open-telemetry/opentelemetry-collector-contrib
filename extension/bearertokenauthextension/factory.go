@@ -18,30 +18,34 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension/internal/metadata"
 )
 
 const (
 	// The value of extension "type" in configuration.
 	typeStr = "bearertokenauth"
+
+	defaultScheme = "Bearer"
 )
 
 // NewFactory creates a factory for the static bearer token Authenticator extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactoryWithStabilityLevel(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelBeta,
+		metadata.Stability,
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		Scheme: defaultScheme,
 	}
 }
 
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 	return newBearerTokenAuth(cfg.(*Config), set.Logger), nil
 }

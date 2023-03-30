@@ -32,31 +32,13 @@ import (
 func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (pmetric.Metrics, int) {
 	numDroppedTimeSeries := 0
 	md := pmetric.NewMetrics()
-
+	scopeMetricsMap := make(map[[4]string]pmetric.ScopeMetrics)
 	for _, event := range events {
-		resourceMetrics := pmetric.NewResourceMetrics()
-		if resourceCustomizer != nil {
-			resourceCustomizer(resourceMetrics.Resource())
-		}
-		attrs := resourceMetrics.Resource().Attributes()
-		if event.Host != "" {
-			attrs.InsertString(config.HecToOtelAttrs.Host, event.Host)
-		}
-		if event.Source != "" {
-			attrs.InsertString(config.HecToOtelAttrs.Source, event.Source)
-		}
-		if event.SourceType != "" {
-			attrs.InsertString(config.HecToOtelAttrs.SourceType, event.SourceType)
-		}
-		if event.Index != "" {
-			attrs.InsertString(config.HecToOtelAttrs.Index, event.Index)
-		}
-
 		values := event.GetMetricValues()
 
 		labels := buildAttributes(event.Fields)
 
-		metrics := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics()
+		metrics := pmetric.NewMetricSlice()
 		for metricName, metricValue := range values {
 			pointTimestamp := convertTimestamp(event.Time)
 			metric := pmetric.NewMetric()
@@ -83,10 +65,35 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 			}
 		}
 
-		if metrics.Len() > 0 {
-			tgt := md.ResourceMetrics().AppendEmpty()
-			resourceMetrics.CopyTo(tgt)
+		if metrics.Len() == 0 {
+			continue
 		}
+		key := [4]string{event.Host, event.Source, event.SourceType, event.Index}
+		var sm pmetric.ScopeMetrics
+		var found bool
+		if sm, found = scopeMetricsMap[key]; !found {
+			resourceMetrics := md.ResourceMetrics().AppendEmpty()
+			sm = resourceMetrics.ScopeMetrics().AppendEmpty()
+			scopeMetricsMap[key] = sm
+
+			attrs := resourceMetrics.Resource().Attributes()
+			if event.Host != "" {
+				attrs.PutStr(config.HecToOtelAttrs.Host, event.Host)
+			}
+			if event.Source != "" {
+				attrs.PutStr(config.HecToOtelAttrs.Source, event.Source)
+			}
+			if event.SourceType != "" {
+				attrs.PutStr(config.HecToOtelAttrs.SourceType, event.SourceType)
+			}
+			if event.Index != "" {
+				attrs.PutStr(config.HecToOtelAttrs.Index, event.Index)
+			}
+			if resourceCustomizer != nil {
+				resourceCustomizer(resourceMetrics.Resource())
+			}
+		}
+		metrics.MoveAndAppendTo(sm.Metrics())
 	}
 
 	return md, numDroppedTimeSeries
@@ -107,20 +114,18 @@ func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pmetri
 func addIntGauge(metrics pmetric.MetricSlice, metricName string, value int64, ts pcommon.Timestamp, attributes pcommon.Map) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-	intPt := metric.Gauge().DataPoints().AppendEmpty()
+	intPt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	intPt.SetTimestamp(ts)
-	intPt.SetIntVal(value)
+	intPt.SetIntValue(value)
 	attributes.CopyTo(intPt.Attributes())
 }
 
 func addDoubleGauge(metrics pmetric.MetricSlice, metricName string, value float64, ts pcommon.Timestamp, attributes pcommon.Map) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-	doublePt := metric.Gauge().DataPoints().AppendEmpty()
+	doublePt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	doublePt.SetTimestamp(ts)
-	doublePt.SetDoubleVal(value)
+	doublePt.SetDoubleValue(value)
 	attributes.CopyTo(doublePt.Attributes())
 }
 
@@ -145,7 +150,7 @@ func buildAttributes(dimensions map[string]interface{}) pcommon.Map {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
-		attributes.InsertString(key, fmt.Sprintf("%v", val))
+		attributes.PutStr(key, fmt.Sprintf("%v", val))
 	}
 	return attributes
 }

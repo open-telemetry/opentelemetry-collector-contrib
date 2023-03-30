@@ -16,12 +16,9 @@ package lokiexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter"
 )
 
 const (
@@ -30,54 +27,21 @@ const (
 	stability = component.StabilityLevelBeta
 )
 
-// NewFactory creates a factory for Loki exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+// NewFactory creates a factory for the legacy Loki exporter.
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
-		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter, stability),
+		createDefaultLegacyConfig,
+		exporter.WithLogs(createLogsExporter, stability),
 	)
 }
 
-func createDefaultConfig() config.Exporter {
-	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "",
-			Timeout:  30 * time.Second,
-			Headers:  map[string]string{},
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			WriteBufferSize: 512 * 1024,
-		},
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-		TenantID:      "",
-		Labels: LabelsConfig{
-			Attributes:         map[string]string{},
-			ResourceAttributes: map[string]string{},
-		},
-	}
-}
-
-func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	expCfg := config.(*Config)
 
-	if err := expCfg.validate(); err != nil {
-		return nil, err
+	if expCfg.isLegacy() {
+		return createLegacyLogsExporter(ctx, set, expCfg)
 	}
 
-	exp := newExporter(expCfg, set.TelemetrySettings)
-
-	return exporterhelper.NewLogsExporterWithContext(
-		ctx,
-		set,
-		expCfg,
-		exp.pushLogData,
-		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings),
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.stop),
-	)
+	return createNextLogsExporter(ctx, set, expCfg)
 }

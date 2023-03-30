@@ -9,7 +9,6 @@ For instance, a user may read lines from a file using the `file_input` operator.
 Inputs:
 - [file_input](./file_input.md)
 - [journald_input](./journald_input.md)
-- [k8s_event_input](./k8s_event_input.md)
 - [stdin](./stdin.md)
 - [syslog_input](./syslog_input.md)
 - [tcp_input](./tcp_input.md)
@@ -25,6 +24,7 @@ Parsers:
 - [time_parser](./time_parser.md)
 - [trace_parser](./trace_parser.md)
 - [uri_parser](./uri_parser.md)
+- [key_value_parser](./key_value_parser.md)
 
 Outputs:
 - [file_output](./file_output.md)
@@ -36,6 +36,7 @@ General purpose:
 - [filter](./filter.md)
 - [flatten](./flatten.md)
 - [move](./move.md)
+- [noop](./noop.md)
 - [recombine](./recombine.md)
 - [remove](./remove.md)
 - [retain](./retain.md)

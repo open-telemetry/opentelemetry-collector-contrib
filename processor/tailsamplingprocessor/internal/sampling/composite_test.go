@@ -14,6 +14,7 @@
 package sampling
 
 import (
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -21,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -33,38 +33,35 @@ func (f FakeTimeProvider) getCurSecond() int64 {
 	return f.second
 }
 
-var traceID = pcommon.NewTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
+var traceID = pcommon.TraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
 
 func createTrace() *TraceData {
-	trace := &TraceData{SpanCount: atomic.NewInt64(1)}
+	spanCount := &atomic.Int64{}
+	spanCount.Store(1)
+	trace := &TraceData{SpanCount: spanCount, ReceivedBatches: ptrace.NewTraces()}
 	return trace
 }
 
-func newTraceID() pcommon.TraceID {
-	r := [16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F}
-	return pcommon.NewTraceID(r)
-}
-
 func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
-	var traceBatches []ptrace.Traces
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
 	))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 16, 0, time.UTC),
 	))
-	span.Attributes().InsertInt(key, val)
+	span.Attributes().PutInt(key, val)
 
-	traceBatches = append(traceBatches, traces)
+	spanCount := &atomic.Int64{}
+	spanCount.Store(1)
 	return &TraceData{
-		ReceivedBatches: traceBatches,
-		SpanCount:       atomic.NewInt64(1),
+		ReceivedBatches: traces,
+		SpanCount:       spanCount,
 	}
 }
 
@@ -112,29 +109,26 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 	n2 := NewAlwaysSample(zap.NewNop())
 	c := NewComposite(zap.NewNop(), 3, []SubPolicyEvalParams{{n1, 1}, {n2, 1}}, timeProvider)
 
-	trcID := newTraceID()
-	trace := newTraceWithKV(trcID, "tag", int64(10))
+	trace := newTraceWithKV(traceID, "tag", int64(10))
 
-	decision, err := c.Evaluate(trcID, trace)
+	decision, err := c.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The first policy is NewNumericAttributeFilter and trace tag matches criteria, so the decision should be Sampled.
 	expected := Sampled
 	assert.Equal(t, decision, expected)
 
-	trcID = newTraceID()
-	trace = newTraceWithKV(trcID, "tag", int64(11))
+	trace = newTraceWithKV(traceID, "tag", int64(11))
 
-	decision, err = c.Evaluate(trcID, trace)
+	decision, err = c.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The first policy is NewNumericAttributeFilter and trace tag matches criteria, so the decision should be Sampled.
 	expected = NotSampled
 	assert.Equal(t, decision, expected)
 
-	trcID = newTraceID()
-	trace = newTraceWithKV(trcID, "tag", int64(1001))
-	decision, err = c.Evaluate(trcID, trace)
+	trace = newTraceWithKV(traceID, "tag", int64(1001))
+	decision, err = c.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The first policy fails as the tag value is higher than the range set where as the second policy is AlwaysSample, so the decision should be Sampled.

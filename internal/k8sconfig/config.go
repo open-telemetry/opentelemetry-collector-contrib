@@ -22,6 +22,7 @@ import (
 
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	k8sruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -54,6 +55,7 @@ var authTypes = map[AuthType]bool{
 	AuthTypeNone:           true,
 	AuthTypeServiceAccount: true,
 	AuthTypeKubeConfig:     true,
+	AuthTypeTLS:            true,
 }
 
 // APIConfig contains options relevant to connecting to the K8s API
@@ -74,8 +76,8 @@ func (c APIConfig) Validate() error {
 	return nil
 }
 
-// createRestConfig creates an Kubernetes API config from user configuration.
-func createRestConfig(apiConf APIConfig) (*rest.Config, error) {
+// CreateRestConfig creates an Kubernetes API config from user configuration.
+func CreateRestConfig(apiConf APIConfig) (*rest.Config, error) {
 	var authConf *rest.Config
 	var err error
 
@@ -131,12 +133,31 @@ func MakeClient(apiConf APIConfig) (k8s.Interface, error) {
 		return nil, err
 	}
 
-	authConf, err := createRestConfig(apiConf)
+	authConf, err := CreateRestConfig(apiConf)
 	if err != nil {
 		return nil, err
 	}
 
 	client, err := k8s.NewForConfig(authConf)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}
+
+// MakeDynamicClient can take configuration if needed for other types of auth
+func MakeDynamicClient(apiConf APIConfig) (dynamic.Interface, error) {
+	if err := apiConf.Validate(); err != nil {
+		return nil, err
+	}
+
+	authConf, err := CreateRestConfig(apiConf)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := dynamic.NewForConfig(authConf)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +172,7 @@ func MakeOpenShiftQuotaClient(apiConf APIConfig) (quotaclientset.Interface, erro
 		return nil, err
 	}
 
-	authConf, err := createRestConfig(apiConf)
+	authConf, err := CreateRestConfig(apiConf)
 	if err != nil {
 		return nil, err
 	}

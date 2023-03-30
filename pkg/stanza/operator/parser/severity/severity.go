@@ -45,8 +45,8 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a severity parser operator.
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
-	helper.SeverityConfig    `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	helper.SeverityConfig    `mapstructure:",omitempty,squash"`
 }
 
 // Build will build a severity parser operator.

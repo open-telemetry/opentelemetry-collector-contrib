@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
-func addHTTP(seg *awsxray.Segment, span *ptrace.Span) {
+func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 	if seg.HTTP == nil {
 		return
 	}
@@ -30,17 +30,17 @@ func addHTTP(seg *awsxray.Segment, span *ptrace.Span) {
 	attrs := span.Attributes()
 	if req := seg.HTTP.Request; req != nil {
 		// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-http
-		addString(req.Method, conventions.AttributeHTTPMethod, &attrs)
+		addString(req.Method, conventions.AttributeHTTPMethod, attrs)
 
 		if req.ClientIP != nil {
 			// since the ClientIP is not nil, this means that this segment is generated
 			// by a server serving an incoming request
-			attrs.UpsertString(conventions.AttributeHTTPClientIP, *req.ClientIP)
+			attrs.PutStr(conventions.AttributeHTTPClientIP, *req.ClientIP)
 		}
 
-		addString(req.UserAgent, conventions.AttributeHTTPUserAgent, &attrs)
-		addString(req.URL, conventions.AttributeHTTPURL, &attrs)
-		addBool(req.XForwardedFor, awsxray.AWSXRayXForwardedForAttribute, &attrs)
+		addString(req.UserAgent, conventions.AttributeHTTPUserAgent, attrs)
+		addString(req.URL, conventions.AttributeHTTPURL, attrs)
+		addBool(req.XForwardedFor, awsxray.AWSXRayXForwardedForAttribute, attrs)
 	}
 
 	if resp := seg.HTTP.Response; resp != nil {
@@ -51,15 +51,15 @@ func addHTTP(seg *awsxray.Segment, span *ptrace.Span) {
 			// then the span status. Since we are also setting the span attribute
 			// below, the span status code here will not be actually used
 			span.Status().SetCode(otStatus)
-			attrs.UpsertInt(conventions.AttributeHTTPStatusCode, *resp.Status)
+			attrs.PutInt(conventions.AttributeHTTPStatusCode, *resp.Status)
 		}
 
 		switch val := resp.ContentLength.(type) {
 		case string:
-			addString(&val, conventions.AttributeHTTPResponseContentLength, &attrs)
+			addString(&val, conventions.AttributeHTTPResponseContentLength, attrs)
 		case float64:
 			lengthPointer := int64(val)
-			addInt64(&lengthPointer, conventions.AttributeHTTPResponseContentLength, &attrs)
+			addInt64(&lengthPointer, conventions.AttributeHTTPResponseContentLength, attrs)
 		}
 	}
 

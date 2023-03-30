@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,10 +46,13 @@ func SplitNetworkEndpoint(addr string) (network, endpoint string, err error) {
 		if host == "" {
 			return "", "", fmt.Errorf("missing hostname: %w", ErrInvalidNetwork)
 		}
-	case "unix":
+	case "unix", "unixgram":
 		if _, err := os.Stat(endpoint); err != nil {
 			return "", "", err
 		}
+		// Chrony uses socket type DGRAM which converts to `unixgram`,
+		// in order to preserve configuration of existing clients, this will overwrite the network type
+		network = "unixgram"
 	default:
 		return "", "", fmt.Errorf("unknown network %s: %w", network, ErrInvalidNetwork)
 	}

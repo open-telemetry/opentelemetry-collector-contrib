@@ -43,6 +43,7 @@ type WatchClient struct {
 	informer          cache.SharedInformer
 	namespaceInformer cache.SharedInformer
 	replicasetRegex   *regexp.Regexp
+	cronJobRegex      *regexp.Regexp
 	deleteQueue       []deleteRequest
 	stopCh            chan struct{}
 
@@ -63,6 +64,10 @@ type WatchClient struct {
 // format: [deployment-name]-[Random-String-For-ReplicaSet]
 var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 
+// Extract CronJob name from the Job name. Job name is created using
+// format: [cronjob-name]-[time-hash-int]
+var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
+
 // New initializes a new k8s Client.
 func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace) (Client, error) {
 	c := &WatchClient{
@@ -72,6 +77,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		Associations:    associations,
 		Exclude:         exclude,
 		replicasetRegex: rRegex,
+		cronJobRegex:    cronJobRegex,
 		stopCh:          make(chan struct{}),
 	}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
@@ -116,18 +122,24 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() {
-	c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
 	})
+	if err != nil {
+		c.logger.Error("error adding event handler to pod informer", zap.Error(err))
+	}
 	go c.informer.Run(c.stopCh)
 
-	c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
 		UpdateFunc: c.handleNamespaceUpdate,
 		DeleteFunc: c.handleNamespaceDelete,
 	})
+	if err != nil {
+		c.logger.Error("error adding event handler to namespace informer", zap.Error(err))
+	}
 	go c.namespaceInformer.Run(c.stopCh)
 }
 
@@ -276,6 +288,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		tags[conventions.AttributeK8SPodName] = pod.Name
 	}
 
+	if c.Rules.PodHostName {
+		tags[tagHostName] = pod.Spec.Hostname
+	}
+
 	if c.Rules.Namespace {
 		tags[conventions.AttributeK8SNamespaceName] = pod.GetNamespace()
 	}
@@ -296,7 +312,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		c.Rules.DaemonSetUID || c.Rules.DaemonSetName ||
 		c.Rules.JobUID || c.Rules.JobName ||
 		c.Rules.StatefulSetUID || c.Rules.StatefulSetName ||
-		c.Rules.Deployment {
+		c.Rules.Deployment || c.Rules.CronJobName {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
@@ -328,6 +344,12 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[conventions.AttributeK8SStatefulSetName] = ref.Name
 				}
 			case "Job":
+				if c.Rules.CronJobName {
+					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
+					if len(parts) == 2 {
+						tags[conventions.AttributeK8SCronJobName] = parts[1]
+					}
+				}
 				if c.Rules.JobUID {
 					tags[conventions.AttributeK8SJobUID] = string(ref.UID)
 				}
@@ -358,12 +380,16 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) map[string
 	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
-			imageParts := strings.Split(spec.Image, ":")
+			nameTagSep := strings.LastIndex(spec.Image, ":")
 			if c.Rules.ContainerImageName {
-				container.ImageName = imageParts[0]
+				if nameTagSep > 0 {
+					container.ImageName = spec.Image[:nameTagSep]
+				} else {
+					container.ImageName = spec.Image
+				}
 			}
-			if c.Rules.ContainerImageTag && len(imageParts) > 1 {
-				container.ImageTag = imageParts[1]
+			if c.Rules.ContainerImageTag && nameTagSep > 0 {
+				container.ImageTag = spec.Image[nameTagSep+1:]
 			}
 			containers[spec.Name] = container
 		}
@@ -432,7 +458,7 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 
 // getIdentifiersFromAssoc returns list of PodIdentifiers for given pod
 func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
-	ids := []PodIdentifier{}
+	var ids []PodIdentifier
 	for _, assoc := range c.Associations {
 		ret := PodIdentifier{}
 		skip := false
@@ -464,6 +490,9 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 					attr = pod.PodUID
 				case conventions.AttributeHostName:
 					attr = pod.Address
+				// k8s.pod.ip is set by passthrough mode
+				case K8sIPLabelName:
+					attr = pod.Address
 				default:
 					if v, ok := pod.Attributes[source.Name]; ok {
 						attr = v
@@ -494,6 +523,10 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 		ids = append(ids, PodIdentifier{
 			PodIdentifierAttributeFromConnection(pod.Address),
 		})
+		// k8s.pod.ip is set by passthrough mode
+		ids = append(ids, PodIdentifier{
+			PodIdentifierAttributeFromResourceAttribute(K8sIPLabelName, pod.Address),
+		})
 	}
 
 	return ids
@@ -508,11 +541,11 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	for _, id := range c.getIdentifiersFromAssoc(newPod) {
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
 		// and only replace old pod if scheduled time of new pod is newer or equal.
-		// This should fix the case where scheduler has assigned the same attribtues (like IP address)
+		// This should fix the case where scheduler has assigned the same attributes (like IP address)
 		// to a new pod but update event for the old pod came in later.
 		if p, ok := c.Pods[id]; ok {
-			if p.StartTime != nil && !p.StartTime.Before(pod.Status.StartTime) {
-				return
+			if pod.Status.StartTime.Before(p.StartTime) {
+				continue
 			}
 		}
 		c.Pods[id] = newPod

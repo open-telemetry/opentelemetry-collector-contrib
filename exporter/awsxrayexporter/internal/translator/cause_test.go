@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -34,26 +35,22 @@ func TestCauseWithExceptions(t *testing.T) {
 
 	event1 := span.Events().AppendEmpty()
 	event1.SetName(ExceptionEventName)
-	attributes := pcommon.NewMap()
-	attributes.InsertString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
-	attributes.InsertString(conventions.AttributeExceptionMessage, "bad state")
-	attributes.InsertString(conventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
+	event1.Attributes().PutStr(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
+	event1.Attributes().PutStr(conventions.AttributeExceptionMessage, "bad state")
+	event1.Attributes().PutStr(conventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
 	at io.opentelemetry.sdk.trace.RecordEventsReadableSpanTest.recordException(RecordEventsReadableSpanTest.java:626)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 Caused by: java.lang.IllegalArgumentException: bad argument`)
-	attributes.CopyTo(event1.Attributes())
 
 	event2 := span.Events().AppendEmpty()
 	event2.SetName(ExceptionEventName)
-	attributes = pcommon.NewMap()
-	attributes.InsertString(conventions.AttributeExceptionType, "EmptyError")
-	attributes.CopyTo(event2.Attributes())
+	event2.Attributes().PutStr(conventions.AttributeExceptionType, "EmptyError")
 
 	filtered, _ := makeHTTP(span)
 
 	res := pcommon.NewResource()
-	res.Attributes().InsertString(conventions.AttributeTelemetrySDKLanguage, "java")
+	res.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isFault)
@@ -97,16 +94,14 @@ Caused by: java.lang.IllegalArgumentException: bad argument`
 
 	event1 := span.Events().AppendEmpty()
 	event1.SetName(ExceptionEventName)
-	attributes := pcommon.NewMap()
-	attributes.InsertString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
-	attributes.InsertString(conventions.AttributeExceptionMessage, "bad state")
-	attributes.InsertString(conventions.AttributeExceptionStacktrace, exceptionStack)
-	attributes.CopyTo(event1.Attributes())
+	event1.Attributes().PutStr(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
+	event1.Attributes().PutStr(conventions.AttributeExceptionMessage, "bad state")
+	event1.Attributes().PutStr(conventions.AttributeExceptionStacktrace, exceptionStack)
 
 	filtered, _ := makeHTTP(span)
 
 	res := pcommon.NewResource()
-	res.Attributes().InsertString(conventions.AttributeTelemetrySDKLanguage, "java")
+	res.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.False(t, isFault)
@@ -139,14 +134,12 @@ func EventWithoutExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.Sta
 
 	event1 := span.Events().AppendEmpty()
 	event1.SetName("NotException")
-	attributes := pcommon.NewMap()
-	attributes.InsertString(conventions.AttributeHTTPMethod, "Post")
-	attributes.CopyTo(event1.Attributes())
+	event1.Attributes().PutStr(conventions.AttributeHTTPMethod, "Post")
 
 	filtered, _ := makeHTTP(span)
 
 	res := pcommon.NewResource()
-	res.Attributes().InsertString(conventions.AttributeTelemetrySDKLanguage, "java")
+	res.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.False(t, isFault)
@@ -175,9 +168,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := testWriters.borrow()
-	if err := w.Encode(cause); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(cause))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
@@ -202,9 +193,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := testWriters.borrow()
-	if err := w.Encode(cause); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(cause))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
@@ -290,7 +279,7 @@ func constructExceptionServerSpan(attributes map[string]interface{}, statuscode 
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := ptrace.NewSpanStatus()
+	status := ptrace.NewStatus()
 	status.SetCode(statuscode)
 	status.CopyTo(span.Status())
 
@@ -853,34 +842,24 @@ func TestParseExceptionWithInnerExceptionStacktrace(t *testing.T) {
 	message := "test"
 
 	// We ignore the exception type / message from the stacktrace
-	stacktrace := `System.Exception: test
-	at integration_test_app.Controllers.AppController.OutgoingHttp() in /Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs:line 21
-	at lambda_method(Closure , Object , Object[] )
-	at Microsoft.Extensions.Internal.ObjectMethodExecutor.Execute(Object target, Object[] parameters)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.SyncObjectResultExecutor.Execute(IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Logged|12_1(ControllerActionInvoker invoker)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
-	--- End of stack trace from previous location where exception was thrown ---
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|19_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
-	at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|6_0(Endpoint endpoint, Task requestTask, ILogger logger)
-	at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
-	at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware.Invoke(HttpContext context)`
+	stacktrace := "System.Exception: Second exception happened\r\n" +
+		" ---> System.Exception: Error happened when get weatherforecasts\r\n" +
+		"   at TestAppApi.Services.ForecastService.GetWeatherForecasts() in D:\\Users\\foobar\\test-app\\TestAppApi\\Services\\ForecastService.cs:line 9\r\n" +
+		"   --- End of inner exception stack trace ---\r\n" +
+		"   at TestAppApi.Services.ForecastService.GetWeatherForecasts() in D:\\Users\\foobar\\test-app\\TestAppApi\\Services\\ForecastService.cs:line 12\r\n" +
+		"   at TestAppApi.Controllers.WeatherForecastController.Get() in D:\\Users\\foobar\\test-app\\TestAppApi\\Controllers\\WeatherForecastController.cs:line 31"
 
 	exceptions := parseException(exceptionType, message, stacktrace, "dotnet")
 	assert.Len(t, exceptions, 1)
 	assert.Equal(t, "System.Exception", *exceptions[0].Type)
 	assert.Equal(t, "test", *exceptions[0].Message)
-	assert.Len(t, exceptions[0].Stack, 14)
-	assert.Equal(t, "integration_test_app.Controllers.AppController.OutgoingHttp()", *exceptions[0].Stack[0].Label)
-	assert.Equal(t, "/Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs", *exceptions[0].Stack[0].Path)
-	assert.Equal(t, 21, *exceptions[0].Stack[0].Line)
-	assert.Equal(t, "Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|19_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)", *exceptions[0].Stack[9].Label)
-	assert.Equal(t, "", *exceptions[0].Stack[9].Path)
-	assert.Equal(t, 0, *exceptions[0].Stack[9].Line)
+	assert.Len(t, exceptions[0].Stack, 3)
+	assert.Equal(t, "TestAppApi.Services.ForecastService.GetWeatherForecasts()", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "D:\\Users\\foobar\\test-app\\TestAppApi\\Services\\ForecastService.cs", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 9, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "TestAppApi.Controllers.WeatherForecastController.Get()", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "D:\\Users\\foobar\\test-app\\TestAppApi\\Controllers\\WeatherForecastController.cs", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 31, *exceptions[0].Stack[2].Line)
 }
 
 func TestParseExceptionWithMalformedStacktrace(t *testing.T) {

@@ -21,14 +21,14 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
-
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
 	// This setting is required if CloudID is not set and if the
@@ -49,8 +49,14 @@ type Config struct {
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html
 	//
-	// This setting is required.
+	// Deprecated: `index` is deprecated and replaced with `logs_index`.
 	Index string `mapstructure:"index"`
+
+	// This setting is required when logging pipelines used.
+	LogsIndex string `mapstructure:"logs_index"`
+
+	// This setting is required when traces pipelines used.
+	TracesIndex string `mapstructure:"traces_index"`
 
 	// Pipeline configures the ingest node pipeline name that should be used to process the
 	// events.
@@ -90,12 +96,12 @@ type AuthenticationSettings struct {
 	User string `mapstructure:"user"`
 
 	// Password is used to configure HTTP Basic Authentication.
-	Password string `mapstructure:"password"`
+	Password configopaque.String `mapstructure:"password"`
 
 	// APIKey is used to configure ApiKey based Authentication.
 	//
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html
-	APIKey string `mapstructure:"api_key"`
+	APIKey configopaque.String `mapstructure:"api_key"`
 }
 
 // DiscoverySettings defines Elasticsearch node discovery related settings.
@@ -171,7 +177,6 @@ const (
 var (
 	errConfigNoEndpoint    = errors.New("endpoints or cloudid must be specified")
 	errConfigEmptyEndpoint = errors.New("endpoints must not include empty entries")
-	errConfigNoIndex       = errors.New("index must be specified")
 )
 
 func (m MappingMode) String() string {
@@ -215,10 +220,6 @@ func (cfg *Config) Validate() error {
 		if endpoint == "" {
 			return errConfigEmptyEndpoint
 		}
-	}
-
-	if cfg.Index == "" {
-		return errConfigNoIndex
 	}
 
 	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {

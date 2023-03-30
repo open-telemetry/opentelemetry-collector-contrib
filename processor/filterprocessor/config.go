@@ -19,25 +19,36 @@ import (
 	"fmt"
 	"strings"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// ErrorMode determines how the processor reacts to errors that occur while processing an OTTL condition.
+	// Valid values are `ignore` and `propagate`.
+	// `ignore` means the processor ignores errors returned by conditions and continues on to the next condition. This is the recommended mode.
+	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
+	// The default value is `propagate`.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
 	Metrics MetricFilters `mapstructure:"metrics"`
 
 	Logs LogFilters `mapstructure:"logs"`
 
-	Spans SpanFilters `mapstructure:"spans"`
+	Spans filterconfig.MatchConfig `mapstructure:"spans"`
+
+	Traces TraceFilters `mapstructure:"traces"`
 }
 
 // MetricFilters filters by Metric properties.
@@ -54,19 +65,29 @@ type MetricFilters struct {
 
 	// RegexpConfig specifies options for the Regexp match type
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`
+
+	// MetricConditions is a list of OTTL conditions for an ottlmetric context.
+	// If any condition resolves to true, the metric will be dropped.
+	// Supports `and`, `or`, and `()`
+	MetricConditions []string `mapstructure:"metric"`
+
+	// DataPointConditions is a list of OTTL conditions for an ottldatapoint context.
+	// If any condition resolves to true, the datapoint will be dropped.
+	// Supports `and`, `or`, and `()`
+	DataPointConditions []string `mapstructure:"datapoint"`
 }
 
-// SpanFilters filters by Span attributes and various other fields, Regexp config is per matcher
-type SpanFilters struct {
-	// Include match properties describe spans that should be included in the Collector Service pipeline,
-	// all other spans should be dropped from further processing.
-	// If both Include and Exclude are specified, Include filtering occurs first.
-	Include *filterconfig.MatchProperties `mapstructure:"include"`
+// TraceFilters filters by OTTL conditions
+type TraceFilters struct {
+	// SpanConditions is a list of OTTL conditions for an ottlspan context.
+	// If any condition resolves to true, the span will be dropped.
+	// Supports `and`, `or`, and `()`
+	SpanConditions []string `mapstructure:"span"`
 
-	// Exclude match properties describe spans that should be excluded from the Collector Service pipeline,
-	// all other spans should be included.
-	// If both Include and Exclude are specified, Include filtering occurs first.
-	Exclude *filterconfig.MatchProperties `mapstructure:"exclude"`
+	// SpanEventConditions is a list of OTTL conditions for an ottlspanevent context.
+	// If any condition resolves to true, the span event will be dropped.
+	// Supports `and`, `or`, and `()`
+	SpanEventConditions []string `mapstructure:"spanevent"`
 }
 
 // LogFilters filters by Log properties.
@@ -79,6 +100,11 @@ type LogFilters struct {
 	// all other logs should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *LogMatchProperties `mapstructure:"exclude"`
+
+	// LogConditions is a list of OTTL conditions for an ottllog context.
+	// If any condition resolves to true, the log event will be dropped.
+	// Supports `and`, `or`, and `()`
+	LogConditions []string `mapstructure:"log_record"`
 }
 
 // LogMatchType specifies the strategy for matching against `plog.Log`s.
@@ -92,54 +118,54 @@ const (
 )
 
 var severityToNumber = map[string]plog.SeverityNumber{
-	"1":      plog.SeverityNumberTRACE,
-	"2":      plog.SeverityNumberTRACE2,
-	"3":      plog.SeverityNumberTRACE3,
-	"4":      plog.SeverityNumberTRACE4,
-	"5":      plog.SeverityNumberDEBUG,
-	"6":      plog.SeverityNumberDEBUG2,
-	"7":      plog.SeverityNumberDEBUG3,
-	"8":      plog.SeverityNumberDEBUG4,
-	"9":      plog.SeverityNumberINFO,
-	"10":     plog.SeverityNumberINFO2,
-	"11":     plog.SeverityNumberINFO3,
-	"12":     plog.SeverityNumberINFO4,
-	"13":     plog.SeverityNumberWARN,
-	"14":     plog.SeverityNumberWARN2,
-	"15":     plog.SeverityNumberWARN3,
-	"16":     plog.SeverityNumberWARN4,
-	"17":     plog.SeverityNumberERROR,
-	"18":     plog.SeverityNumberERROR2,
-	"19":     plog.SeverityNumberERROR3,
-	"20":     plog.SeverityNumberERROR4,
-	"21":     plog.SeverityNumberFATAL,
-	"22":     plog.SeverityNumberFATAL2,
-	"23":     plog.SeverityNumberFATAL3,
-	"24":     plog.SeverityNumberFATAL4,
-	"TRACE":  plog.SeverityNumberTRACE,
-	"TRACE2": plog.SeverityNumberTRACE2,
-	"TRACE3": plog.SeverityNumberTRACE3,
-	"TRACE4": plog.SeverityNumberTRACE4,
-	"DEBUG":  plog.SeverityNumberDEBUG,
-	"DEBUG2": plog.SeverityNumberDEBUG2,
-	"DEBUG3": plog.SeverityNumberDEBUG3,
-	"DEBUG4": plog.SeverityNumberDEBUG4,
-	"INFO":   plog.SeverityNumberINFO,
-	"INFO2":  plog.SeverityNumberINFO2,
-	"INFO3":  plog.SeverityNumberINFO3,
-	"INFO4":  plog.SeverityNumberINFO4,
-	"WARN":   plog.SeverityNumberWARN,
-	"WARN2":  plog.SeverityNumberWARN2,
-	"WARN3":  plog.SeverityNumberWARN3,
-	"WARN4":  plog.SeverityNumberWARN4,
-	"ERROR":  plog.SeverityNumberERROR,
-	"ERROR2": plog.SeverityNumberERROR2,
-	"ERROR3": plog.SeverityNumberERROR3,
-	"ERROR4": plog.SeverityNumberERROR4,
-	"FATAL":  plog.SeverityNumberFATAL,
-	"FATAL2": plog.SeverityNumberFATAL2,
-	"FATAL3": plog.SeverityNumberFATAL3,
-	"FATAL4": plog.SeverityNumberFATAL4,
+	"1":      plog.SeverityNumberTrace,
+	"2":      plog.SeverityNumberTrace2,
+	"3":      plog.SeverityNumberTrace3,
+	"4":      plog.SeverityNumberTrace4,
+	"5":      plog.SeverityNumberDebug,
+	"6":      plog.SeverityNumberDebug2,
+	"7":      plog.SeverityNumberDebug3,
+	"8":      plog.SeverityNumberDebug4,
+	"9":      plog.SeverityNumberInfo,
+	"10":     plog.SeverityNumberInfo2,
+	"11":     plog.SeverityNumberInfo3,
+	"12":     plog.SeverityNumberInfo4,
+	"13":     plog.SeverityNumberWarn,
+	"14":     plog.SeverityNumberWarn2,
+	"15":     plog.SeverityNumberWarn3,
+	"16":     plog.SeverityNumberWarn4,
+	"17":     plog.SeverityNumberError,
+	"18":     plog.SeverityNumberError2,
+	"19":     plog.SeverityNumberError3,
+	"20":     plog.SeverityNumberError4,
+	"21":     plog.SeverityNumberFatal,
+	"22":     plog.SeverityNumberFatal2,
+	"23":     plog.SeverityNumberFatal3,
+	"24":     plog.SeverityNumberFatal4,
+	"TRACE":  plog.SeverityNumberTrace,
+	"TRACE2": plog.SeverityNumberTrace2,
+	"TRACE3": plog.SeverityNumberTrace3,
+	"TRACE4": plog.SeverityNumberTrace4,
+	"DEBUG":  plog.SeverityNumberDebug,
+	"DEBUG2": plog.SeverityNumberDebug2,
+	"DEBUG3": plog.SeverityNumberDebug3,
+	"DEBUG4": plog.SeverityNumberDebug4,
+	"INFO":   plog.SeverityNumberInfo,
+	"INFO2":  plog.SeverityNumberInfo2,
+	"INFO3":  plog.SeverityNumberInfo3,
+	"INFO4":  plog.SeverityNumberInfo4,
+	"WARN":   plog.SeverityNumberWarn,
+	"WARN2":  plog.SeverityNumberWarn2,
+	"WARN3":  plog.SeverityNumberWarn3,
+	"WARN4":  plog.SeverityNumberWarn4,
+	"ERROR":  plog.SeverityNumberError,
+	"ERROR2": plog.SeverityNumberError2,
+	"ERROR3": plog.SeverityNumberError3,
+	"ERROR4": plog.SeverityNumberError4,
+	"FATAL":  plog.SeverityNumberFatal,
+	"FATAL2": plog.SeverityNumberFatal2,
+	"FATAL3": plog.SeverityNumberFatal3,
+	"FATAL4": plog.SeverityNumberFatal4,
 }
 
 var errInvalidSeverity = errors.New("not a valid severity")
@@ -249,19 +275,54 @@ func (lmp LogSeverityNumberMatchProperties) validate() error {
 	return lmp.Min.validate()
 }
 
-var _ config.Processor = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
-	var err error
-
-	if cfg.Logs.Include != nil {
-		err = multierr.Append(err, cfg.Logs.Include.validate())
+	if (cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil) && (cfg.Spans.Include != nil || cfg.Spans.Exclude != nil) {
+		return fmt.Errorf("cannot use ottl conditions and include/exclude for spans at the same time")
+	}
+	if (cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil) && (cfg.Metrics.Include != nil || cfg.Metrics.Exclude != nil) {
+		return fmt.Errorf("cannot use ottl conditions and include/exclude for metrics at the same time")
+	}
+	if cfg.Logs.LogConditions != nil && (cfg.Logs.Include != nil || cfg.Logs.Exclude != nil) {
+		return fmt.Errorf("cannot use ottl conditions and include/exclude for logs at the same time")
 	}
 
-	if cfg.Logs.Exclude != nil {
-		err = multierr.Append(err, cfg.Logs.Exclude.validate())
+	var errors error
+
+	if cfg.Traces.SpanConditions != nil {
+		_, err := filterottl.NewBoolExprForSpan(cfg.Traces.SpanConditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+		errors = multierr.Append(errors, err)
 	}
 
-	return err
+	if cfg.Traces.SpanEventConditions != nil {
+		_, err := filterottl.NewBoolExprForSpanEvent(cfg.Traces.SpanEventConditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+		errors = multierr.Append(errors, err)
+	}
+
+	if cfg.Metrics.MetricConditions != nil {
+		_, err := filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, common.MetricFunctions(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+		errors = multierr.Append(errors, err)
+	}
+
+	if cfg.Metrics.DataPointConditions != nil {
+		_, err := filterottl.NewBoolExprForDataPoint(cfg.Metrics.DataPointConditions, filterottl.StandardDataPointFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+		errors = multierr.Append(errors, err)
+	}
+
+	if cfg.Logs.LogConditions != nil {
+		_, err := filterottl.NewBoolExprForLog(cfg.Logs.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+		errors = multierr.Append(errors, err)
+	}
+
+	if cfg.Logs.LogConditions != nil && cfg.Logs.Include != nil {
+		errors = multierr.Append(errors, cfg.Logs.Include.validate())
+	}
+
+	if cfg.Logs.LogConditions != nil && cfg.Logs.Exclude != nil {
+		errors = multierr.Append(errors, cfg.Logs.Exclude.validate())
+	}
+
+	return errors
 }

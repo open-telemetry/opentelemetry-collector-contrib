@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -34,18 +34,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 var testPayloads = []string{
-	"metric-threshold-closed.json",
-	"new-primary.json",
+	"metric-threshold-closed.yaml",
+	"new-primary.yaml",
 }
 
 const (
@@ -64,10 +68,11 @@ func TestAlertsReceiver(t *testing.T) {
 
 			recv, err := fact.CreateLogsReceiver(
 				context.Background(),
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
+						Mode:     alertModeListen,
 						Secret:   testSecret,
 						Endpoint: testAddr,
 					},
@@ -83,11 +88,7 @@ func TestAlertsReceiver(t *testing.T) {
 				require.NoError(t, recv.Shutdown(context.Background()))
 			}()
 
-			payloadFile, err := os.Open(filepath.Join("testdata", "alerts", "sample-payloads", payloadName))
-			require.NoError(t, err)
-			defer payloadFile.Close()
-
-			payload, err := io.ReadAll(payloadFile)
+			payload, err := os.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", payloadName))
 			require.NoError(t, err)
 
 			req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%s", testPort), bytes.NewBuffer(payload))
@@ -111,10 +112,10 @@ func TestAlertsReceiver(t *testing.T) {
 
 			logs := sink.AllLogs()[0]
 
-			expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
+			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
 			require.NoError(t, err)
 
-			require.NoError(t, compareLogs(*expectedLogs, logs))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -131,11 +132,12 @@ func TestAlertsReceiverTLS(t *testing.T) {
 
 			recv, err := fact.CreateLogsReceiver(
 				context.Background(),
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
 						Secret:   testSecret,
+						Mode:     alertModeListen,
 						Endpoint: testAddr,
 						TLS: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
@@ -156,11 +158,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 				require.NoError(t, recv.Shutdown(context.Background()))
 			}()
 
-			payloadFile, err := os.Open(filepath.Join("testdata", "alerts", "sample-payloads", payloadName))
-			require.NoError(t, err)
-			defer payloadFile.Close()
-
-			payload, err := io.ReadAll(payloadFile)
+			payload, err := os.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", payloadName))
 			require.NoError(t, err)
 
 			req, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
@@ -187,12 +185,78 @@ func TestAlertsReceiverTLS(t *testing.T) {
 
 			logs := sink.AllLogs()[0]
 
-			expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
+			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
 			require.NoError(t, err)
 
-			require.NoError(t, compareLogs(*expectedLogs, logs))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
 		})
 	}
+}
+
+func TestAtlasPoll(t *testing.T) {
+	mockClient := mockAlertsClient{}
+
+	alerts := []mongodbatlas.Alert{}
+	for _, pl := range testPayloads {
+		payloadFile, err := os.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", pl))
+		require.NoError(t, err)
+
+		alert := mongodbatlas.Alert{}
+		err = json.Unmarshal(payloadFile, &alert)
+		require.NoError(t, err)
+
+		alerts = append(alerts, alert)
+	}
+
+	mockClient.On("GetProject", mock.Anything, testProjectName).Return(&mongodbatlas.Project{
+		ID:    testProjectID,
+		Name:  testProjectName,
+		OrgID: testOrgID,
+	}, nil)
+	mockClient.On("GetAlerts", mock.Anything, testProjectID, mock.Anything).Return(alerts, false, nil)
+
+	sink := &consumertest.LogsSink{}
+	fact := NewFactory()
+
+	recv, err := fact.CreateLogsReceiver(
+		context.Background(),
+		receivertest.NewNopCreateSettings(),
+		&Config{
+			Alerts: AlertConfig{
+				Enabled: true,
+				Mode:    alertModePoll,
+				Projects: []*ProjectConfig{
+					{
+						Name: testProjectName,
+					},
+				},
+				PollInterval: 1 * time.Second,
+				PageSize:     defaultAlertsPageSize,
+				MaxPages:     defaultAlertsMaxPages,
+			},
+		},
+		sink,
+	)
+	require.NoError(t, err)
+
+	rcvr, ok := recv.(*combinedLogsReceiver)
+	require.True(t, ok)
+	rcvr.alerts.client = &mockClient
+
+	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 5*time.Second, 10*time.Millisecond)
+
+	err = recv.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	logs := sink.AllLogs()[0]
+	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "alerts", "golden", "retrieved-logs.json"))
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
 }
 
 func calculateHMACb64(secret string, payload []byte) (string, error) {
@@ -215,30 +279,8 @@ func calculateHMACb64(secret string, payload []byte) (string, error) {
 	return buf.String(), nil
 }
 
-func readLogs(path string) (*plog.Logs, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	b, err := io.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-
-	logs, err := plog.NewJSONUnmarshaler().UnmarshalLogs(b)
-	return &logs, err
-}
-
 func clientWithCert(path string) (*http.Client, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	b, err := io.ReadAll(f)
+	b, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}

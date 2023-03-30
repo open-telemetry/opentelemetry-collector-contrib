@@ -19,52 +19,45 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
+
+type testHost struct {
+	component.Host
+	t *testing.T
+}
+
+// ReportFatalError causes the test to be run to fail.
+func (h *testHost) ReportFatalError(err error) {
+	h.t.Fatalf("receiver reported a fatal error: %v", err)
+}
+
+var _ component.Host = (*testHost)(nil)
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.NetAddr.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
 
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 	tReceiver, err := createMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 }
 
-func TestCreateReceiverWithConfigErr(t *testing.T) {
-	cfg := &Config{
-		AggregationInterval: -1,
-		TimerHistogramMapping: []protocol.TimerHistogramMapping{
-			{StatsdType: "timing", ObserverType: "gauge"},
-		},
-	}
-	receiver, err := createMetricsReceiver(
-		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
-		cfg,
-		consumertest.NewNop(),
-	)
-	assert.Error(t, err, "aggregation_interval must be a positive duration")
-	assert.Nil(t, receiver)
-
-}
-
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 	receiver, err := createMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		createDefaultConfig(),
 		nil,
 	)

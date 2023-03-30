@@ -19,28 +19,41 @@ import (
 	"encoding/json"
 	"math"
 	"os"
-	"sort"
 	"testing"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/google/go-cmp/cmp"
 	"github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
-// compareTraceData compares got to want while ignoring order. Both are modified in place.
-func compareTraceData(t *testing.T, got []traceData, want []traceData) {
-	sortTraceByNodeName(want)
-	sortTraceByNodeName(got)
-	if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
-		t.Errorf("Unexpected difference:\n%v", diff)
+// compareTraces compares got to want while ignoring order. Both are modified in place.
+func compareTraces(t *testing.T, want ptrace.Traces, got ptrace.Traces) {
+	require.Equal(t, mapperTraces(t, want), mapperTraces(t, got))
+}
+
+func mapperTraces(t *testing.T, td ptrace.Traces) map[string]map[string]ptrace.Span {
+	ret := map[string]map[string]ptrace.Span{}
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
+		service, found := rs.Resource().Attributes().Get(conventions.AttributeServiceName)
+		require.True(t, found)
+		sps, ok := ret[service.Str()]
+		if !ok {
+			sps = map[string]ptrace.Span{}
+			ret[service.Str()] = map[string]ptrace.Span{}
+		}
+		spans := rs.ScopeSpans().At(0).Spans()
+		for j := 0; j < spans.Len(); j++ {
+			sps[spans.At(j).Name()] = spans.At(j)
+		}
 	}
+	return ret
 }
 
 func TestV1ThriftToTraces(t *testing.T) {
@@ -64,22 +77,24 @@ func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
 	err = json.Unmarshal(blob, &ztSpans)
 	require.NoError(t, err, "Failed to unmarshal json into zipkin v1 thrift")
 
-	reqs, err := v1ThriftBatchToOCProto(ztSpans)
+	reqs, err := thriftBatchToTraces(ztSpans)
 	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
-	require.Equal(t, 2, len(reqs), "Invalid trace service requests count")
-
-	// Ensure the order of nodes
-	sort.Slice(reqs, func(i, j int) bool {
-		return reqs[i].Node.ServiceInfo.Name < reqs[j].Node.ServiceInfo.Name
-	})
+	require.Equal(t, 2, reqs.ResourceSpans().Len(), "Invalid trace service requests count")
 
 	// First span didn't have a host/endpoint to give service name, use the local component.
-	got := reqs[0].Node.ServiceInfo.Name
-	require.Equal(t, "myLocalComponent", got)
+	gotFirst, found := reqs.ResourceSpans().At(0).Resource().Attributes().Get(conventions.AttributeServiceName)
+	require.True(t, found)
 
-	// Second span have a host/endpoint to give service name, do not use local component.
-	got = reqs[1].Node.ServiceInfo.Name
-	require.Equal(t, "myServiceName", got)
+	gotSecond, found := reqs.ResourceSpans().At(1).Resource().Attributes().Get(conventions.AttributeServiceName)
+	require.True(t, found)
+
+	if gotFirst.AsString() == "myLocalComponent" {
+		require.Equal(t, "myLocalComponent", gotFirst.Str())
+		require.Equal(t, "myServiceName", gotSecond.Str())
+	} else {
+		require.Equal(t, "myServiceName", gotFirst.Str())
+		require.Equal(t, "myLocalComponent", gotSecond.Str())
+	}
 }
 
 func TestV1ThriftToOCProto(t *testing.T) {
@@ -90,10 +105,10 @@ func TestV1ThriftToOCProto(t *testing.T) {
 	err = json.Unmarshal(blob, &ztSpans)
 	require.NoError(t, err, "Failed to unmarshal json into zipkin v1 thrift")
 
-	got, err := v1ThriftBatchToOCProto(ztSpans)
+	got, err := thriftBatchToTraces(ztSpans)
 	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
 
-	compareTraceData(t, got, ocBatchesFromZipkinV1)
+	compareTraces(t, got, tracesFromZipkinV1)
 }
 
 func BenchmarkV1ThriftToOCProto(b *testing.B) {
@@ -105,78 +120,88 @@ func BenchmarkV1ThriftToOCProto(b *testing.B) {
 	require.NoError(b, err, "Failed to unmarshal json into zipkin v1 thrift")
 
 	for n := 0; n < b.N; n++ {
-		v1ThriftBatchToOCProto(ztSpans) // nolint:errcheck
+		_, err = thriftBatchToTraces(ztSpans)
+		require.NoError(b, err)
 	}
 }
 
 func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 	type test struct {
+		name           string
 		haveTags       []*zipkincore.BinaryAnnotation
-		wantAttributes *tracepb.Span_Attributes
-		wantStatus     *tracepb.Status
+		wantAttributes pcommon.Map
+		wantStatus     ptrace.Status
 	}
 
 	cases := []test{
-		// too large code for OC
 		{
+			name: "too large code for OC",
 			haveTags: []*zipkincore.BinaryAnnotation{{
 				Key:            conventions.OtelStatusCode,
 				Value:          uint64ToBytes(math.MaxInt64),
 				AnnotationType: zipkincore.AnnotationType_I64,
 			}},
-			wantAttributes: nil,
-			wantStatus:     nil,
+			wantAttributes: pcommon.NewMap(),
+			wantStatus:     ptrace.NewStatus(),
 		},
-		// only status.code tag
 		{
+			name: "census.status_code int64",
 			haveTags: []*zipkincore.BinaryAnnotation{{
-				Key:            conventions.OtelStatusCode,
+				Key:            tagZipkinCensusCode,
 				Value:          uint64ToBytes(5),
 				AnnotationType: zipkincore.AnnotationType_I64,
 			}},
-			wantAttributes: nil,
-			wantStatus: &tracepb.Status{
-				Code: 5,
-			},
+			wantAttributes: pcommon.NewMap(),
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 		},
 		{
+			name: "census.status_code int32",
 			haveTags: []*zipkincore.BinaryAnnotation{{
-				Key:            conventions.OtelStatusCode,
+				Key:            tagZipkinCensusCode,
 				Value:          uint32ToBytes(6),
 				AnnotationType: zipkincore.AnnotationType_I32,
 			}},
-			wantAttributes: nil,
-			wantStatus: &tracepb.Status{
-				Code: 6,
-			},
+			wantAttributes: pcommon.NewMap(),
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 		},
 		{
+			name: "census.status_code int16",
 			haveTags: []*zipkincore.BinaryAnnotation{{
-				Key:            conventions.OtelStatusCode,
+				Key:            tagZipkinCensusCode,
 				Value:          uint16ToBytes(7),
 				AnnotationType: zipkincore.AnnotationType_I16,
 			}},
-			wantAttributes: nil,
-			wantStatus: &tracepb.Status{
-				Code: 7,
-			},
+			wantAttributes: pcommon.NewMap(),
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 		},
-		// only status.message tag
 		{
+			name: "only status.message tag",
 			haveTags: []*zipkincore.BinaryAnnotation{{
 				Key:            conventions.OtelStatusDescription,
 				Value:          []byte("Forbidden"),
 				AnnotationType: zipkincore.AnnotationType_STRING,
 			}},
-			wantAttributes: nil,
-			wantStatus:     nil,
+			wantAttributes: pcommon.NewMap(),
+			wantStatus:     ptrace.NewStatus(),
 		},
-		// both status.code and status.message
 		{
+			name: "both status.code and status.message",
 			haveTags: []*zipkincore.BinaryAnnotation{
 				{
 					Key:            conventions.OtelStatusCode,
-					Value:          uint32ToBytes(13),
+					Value:          uint32ToBytes(2),
 					AnnotationType: zipkincore.AnnotationType_I32,
 				},
 				{
@@ -185,15 +210,17 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 			},
-			wantAttributes: nil,
-			wantStatus: &tracepb.Status{
-				Code:    13,
-				Message: "Forbidden",
-			},
+			wantAttributes: pcommon.NewMap(),
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				ret.SetMessage("Forbidden")
+				return ret
+			}(),
 		},
 
-		// http status.code
 		{
+			name: "http status.code",
 			haveTags: []*zipkincore.BinaryAnnotation{
 				{
 					Key:            "http.status_code",
@@ -206,28 +233,22 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 			},
-			wantAttributes: &tracepb.Span_Attributes{
-				AttributeMap: map[string]*tracepb.AttributeValue{
-					conventions.AttributeHTTPStatusCode: {
-						Value: &tracepb.AttributeValue_IntValue{
-							IntValue: 404,
-						},
-					},
-					tracetranslator.TagHTTPStatusMsg: {
-						Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "NotFound"},
-						},
-					},
-				},
-			},
-			wantStatus: &tracepb.Status{
-				Code:    5,
-				Message: "NotFound",
-			},
+			wantAttributes: func() pcommon.Map {
+				ret := pcommon.NewMap()
+				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				return ret
+			}(),
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				ret.SetMessage("NotFound")
+				return ret
+			}(),
 		},
 
-		// http and oc
 		{
+			name: "http and otel",
 			haveTags: []*zipkincore.BinaryAnnotation{
 				{
 					Key:            "http.status_code",
@@ -241,7 +262,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				},
 				{
 					Key:            conventions.OtelStatusCode,
-					Value:          uint32ToBytes(13),
+					Value:          uint32ToBytes(2),
 					AnnotationType: zipkincore.AnnotationType_I32,
 				},
 				{
@@ -250,28 +271,22 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 			},
-			wantAttributes: &tracepb.Span_Attributes{
-				AttributeMap: map[string]*tracepb.AttributeValue{
-					conventions.AttributeHTTPStatusCode: {
-						Value: &tracepb.AttributeValue_IntValue{
-							IntValue: 404,
-						},
-					},
-					tracetranslator.TagHTTPStatusMsg: {
-						Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "NotFound"},
-						},
-					},
-				},
-			},
-			wantStatus: &tracepb.Status{
-				Code:    13,
-				Message: "Forbidden",
-			},
+			wantAttributes: func() pcommon.Map {
+				ret := pcommon.NewMap()
+				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				return ret
+			}(),
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				ret.SetMessage("Forbidden")
+				return ret
+			}(),
 		},
 
-		// http and only oc code
 		{
+			name: "http and only otel code",
 			haveTags: []*zipkincore.BinaryAnnotation{
 				{
 					Key:            "http.status_code",
@@ -285,30 +300,24 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 				},
 				{
 					Key:            conventions.OtelStatusCode,
-					Value:          uint32ToBytes(14),
+					Value:          uint32ToBytes(2),
 					AnnotationType: zipkincore.AnnotationType_I32,
 				},
 			},
-			wantAttributes: &tracepb.Span_Attributes{
-				AttributeMap: map[string]*tracepb.AttributeValue{
-					conventions.AttributeHTTPStatusCode: {
-						Value: &tracepb.AttributeValue_IntValue{
-							IntValue: 404,
-						},
-					},
-					tracetranslator.TagHTTPStatusMsg: {
-						Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "NotFound"},
-						},
-					},
-				},
-			},
-			wantStatus: &tracepb.Status{
-				Code: 14,
-			},
+			wantAttributes: func() pcommon.Map {
+				ret := pcommon.NewMap()
+				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				return ret
+			}(),
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 		},
-		// http and only oc message
 		{
+			name: "http and only oc message",
 			haveTags: []*zipkincore.BinaryAnnotation{
 				{
 					Key:            "http.status_code",
@@ -326,28 +335,22 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 			},
-			wantAttributes: &tracepb.Span_Attributes{
-				AttributeMap: map[string]*tracepb.AttributeValue{
-					conventions.AttributeHTTPStatusCode: {
-						Value: &tracepb.AttributeValue_IntValue{
-							IntValue: 404,
-						},
-					},
-					tracetranslator.TagHTTPStatusMsg: {
-						Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "NotFound"},
-						},
-					},
-				},
-			},
-			wantStatus: &tracepb.Status{
-				Code:    5,
-				Message: "NotFound",
-			},
+			wantAttributes: func() pcommon.Map {
+				ret := pcommon.NewMap()
+				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				return ret
+			}(),
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				ret.SetMessage("NotFound")
+				return ret
+			}(),
 		},
 
-		// census tags
 		{
+			name: "census tags",
 			haveTags: []*zipkincore.BinaryAnnotation{
 				{
 					Key:            "census.status_code",
@@ -360,15 +363,17 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 			},
-			wantAttributes: nil,
-			wantStatus: &tracepb.Status{
-				Code:    18,
-				Message: "RPCError",
-			},
+			wantAttributes: pcommon.NewMap(),
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				ret.SetMessage("RPCError")
+				return ret
+			}(),
 		},
 
-		// census tags priority over others
 		{
+			name: "census tags priority over others",
 			haveTags: []*zipkincore.BinaryAnnotation{
 				{
 					Key:            "census.status_code",
@@ -401,48 +406,41 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_I32,
 				},
 			},
-			wantAttributes: &tracepb.Span_Attributes{
-				AttributeMap: map[string]*tracepb.AttributeValue{
-					conventions.AttributeHTTPStatusCode: {
-						Value: &tracepb.AttributeValue_IntValue{
-							IntValue: 404,
-						},
-					},
-					tracetranslator.TagHTTPStatusMsg: {
-						Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "NotFound"},
-						},
-					},
-				},
-			},
-			wantStatus: &tracepb.Status{
-				Code:    18,
-				Message: "RPCError",
-			},
+			wantAttributes: func() pcommon.Map {
+				ret := pcommon.NewMap()
+				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				return ret
+			}(),
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				ret.SetMessage("RPCError")
+				return ret
+			}(),
 		},
 	}
 
-	for i, c := range cases {
-		zSpans := []*zipkincore.Span{{
-			ID:                1,
-			TraceID:           1,
-			BinaryAnnotations: c.haveTags,
-		}}
-		gb, err := v1ThriftBatchToOCProto(zSpans)
-		if err != nil {
-			t.Errorf("#%d: Unexpected error: %v", i, err)
-			continue
-		}
-		gs := gb[0].Spans[0]
-		require.Equal(t, c.wantAttributes, gs.Attributes, "Unsuccessful conversion %d", i)
-		require.Equal(t, c.wantStatus, gs.Status, "Unsuccessful conversion %d", i)
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			zSpans := []*zipkincore.Span{{
+				ID:                1,
+				TraceID:           1,
+				BinaryAnnotations: c.haveTags,
+			}}
+			td, err := thriftBatchToTraces(zSpans)
+			require.NoError(t, err)
+			gs := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+			require.Equal(t, c.wantAttributes.AsRaw(), gs.Attributes().AsRaw())
+			require.Equal(t, c.wantStatus, gs.Status())
+		})
 	}
 }
 
-func TestThriftHTTPToGRPCStatusCode(t *testing.T) {
+func TestThriftHTTPToStatusCode(t *testing.T) {
 	for i := int32(100); i <= 600; i++ {
-		wantStatus := ocStatusCodeFromHTTP(i)
-		gb, err := v1ThriftBatchToOCProto([]*zipkincore.Span{{
+		wantStatus := statusCodeFromHTTP(i)
+		td, err := thriftBatchToTraces([]*zipkincore.Span{{
 			ID:      1,
 			TraceID: 1,
 			BinaryAnnotations: []*zipkincore.BinaryAnnotation{
@@ -453,12 +451,9 @@ func TestThriftHTTPToGRPCStatusCode(t *testing.T) {
 				},
 			},
 		}})
-		if err != nil {
-			t.Errorf("#%d: Unexpected error: %v", i, err)
-			continue
-		}
-		gs := gb[0].Spans[0]
-		require.Equal(t, wantStatus, gs.Status.Code, "Unsuccessful conversion %d", i)
+		require.NoError(t, err)
+		gs := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		require.EqualValues(t, wantStatus, gs.Status().Code(), "Unsuccessful conversion %d", i)
 	}
 }
 

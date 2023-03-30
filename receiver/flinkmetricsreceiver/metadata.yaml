@@ -5,30 +5,36 @@ resource_attributes:
   host.name:
     description: The host name.
     type: string
+    enabled: true
   flink.taskmanager.id:
     description: The taskmanager ID.
     type: string
+    enabled: true
   flink.job.name:
     description: The job name.
     type: string
+    enabled: true
   flink.task.name:
     description: The task name.
     type: string
+    enabled: true
   flink.subtask.index:
     description: The subtask index.
     type: string
+    enabled: true
   flink.resource.type:
     description: The flink scope type in which a metric belongs to.
     type: string
+    enabled: true
     enum: [ jobmanager, taskmanager ]
 
 attributes:
   operator_name:
-    value: name
+    name_override: name
     description: The operator name.
     type: string
   garbage_collector_name:
-    value: name
+    name_override: name
     description: The names for the parallel scavenge and garbage first garbage collectors.
     type: string
     enum: [ PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation ]

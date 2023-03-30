@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package extractors
 
 import (
@@ -36,7 +35,7 @@ func AssertContainsTaggedFloat(
 		if val, ok := val.(float64); ok {
 			actualValue = val
 			if (val >= expectedValue-delta) && (val <= expectedValue+delta) {
-				//Found the point, return without failing
+				// Found the point, return without failing
 				return
 			}
 		} else {

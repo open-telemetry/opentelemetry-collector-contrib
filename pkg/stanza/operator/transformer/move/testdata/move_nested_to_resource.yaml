@@ -1,3 +1,0 @@
-type: move
-from: body.nested
-to: resource.NewNested

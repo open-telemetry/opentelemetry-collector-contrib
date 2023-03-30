@@ -26,13 +26,42 @@ import (
 
 	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
+
+func testEmitFunc(emitChan chan *emitParams) EmitFunc {
+	return func(_ context.Context, attrs *FileAttributes, token []byte) {
+		copied := make([]byte, len(token))
+		copy(copied, token)
+		emitChan <- &emitParams{attrs, copied}
+	}
+}
 
 // includeDir is a builder-like helper for quickly setting up a test config
 func (c *Config) includeDir(dir string) *Config {
 	c.Include = append(c.Include, fmt.Sprintf("%s/*", dir))
+	return c
+}
+
+// withHeader is a builder-like helper for quickly setting up a test config header
+func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
+	regexOpConfig := regex.NewConfig()
+	regexOpConfig.Regex = extractRegex
+
+	c.Header = &HeaderConfig{
+		Pattern: headerMatchPattern,
+		MetadataOperators: []operator.Config{
+			{
+				Builder: regexOpConfig,
+			},
+		},
+	}
+
 	return c
 }
 
@@ -53,9 +82,7 @@ func buildTestManager(t *testing.T, cfg *Config) (*Manager, chan *emitParams) {
 }
 
 func buildTestManagerWithEmit(t *testing.T, cfg *Config, emitChan chan *emitParams) *Manager {
-	input, err := cfg.Build(testutil.Logger(t), func(_ context.Context, attrs *FileAttributes, token []byte) {
-		emitChan <- &emitParams{attrs, token}
-	})
+	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(emitChan))
 	require.NoError(t, err)
 	return input
 }
@@ -147,6 +174,16 @@ func waitForToken(t *testing.T, c chan *emitParams, expected []byte) {
 	}
 }
 
+func waitForTokenHeaderAttributes(t *testing.T, c chan *emitParams, expected []byte, headerAttributes map[string]any) {
+	select {
+	case call := <-c:
+		require.Equal(t, expected, call.token)
+		require.Equal(t, headerAttributes, call.attrs.HeaderAttributes)
+	case <-time.After(3 * time.Second):
+		require.FailNow(t, fmt.Sprintf("Timed out waiting for token: %s", expected))
+	}
+}
+
 func waitForTokens(t *testing.T, c chan *emitParams, expected [][]byte) {
 	actual := make([][]byte, 0, len(expected))
 LOOP:
@@ -172,4 +209,28 @@ func expectNoTokensUntil(t *testing.T, c chan *emitParams, d time.Duration) {
 		require.FailNow(t, "Received unexpected message", "Message: %s", token)
 	case <-time.After(d):
 	}
+}
+
+const mockOperatorType = "mock"
+
+func init() {
+	operator.Register(mockOperatorType, func() operator.Builder { return newMockOperatorConfig(NewConfig()) })
+}
+
+type mockOperatorConfig struct {
+	helper.BasicConfig `mapstructure:",squash"`
+	*Config            `mapstructure:",squash"`
+}
+
+func newMockOperatorConfig(cfg *Config) *mockOperatorConfig {
+	return &mockOperatorConfig{
+		BasicConfig: helper.NewBasicConfig(mockOperatorType, mockOperatorType),
+		Config:      cfg,
+	}
+}
+
+// This function is impelmented for compatibility with operatortest
+// but is not meant to be used directly
+func (h *mockOperatorConfig) Build(*zap.SugaredLogger) (operator.Operator, error) {
+	panic("not impelemented")
 }

@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -39,10 +40,6 @@ type sumologicexporter struct {
 }
 
 func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologicexporter, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
 	sfs := newSourceFormats(cfg)
 
 	f, err := newFilter(cfg.MetadataAttributes)
@@ -68,14 +65,14 @@ func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologic
 
 func newLogsExporter(
 	cfg *Config,
-	set component.ExporterCreateSettings,
-) (component.LogsExporter, error) {
+	set exporter.CreateSettings,
+) (exporter.Logs, error) {
 	se, err := initExporter(cfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
 	}
 
-	return exporterhelper.NewLogsExporterWithContext(
+	return exporterhelper.NewLogsExporter(
 		context.TODO(),
 		set,
 		cfg,
@@ -91,14 +88,14 @@ func newLogsExporter(
 
 func newMetricsExporter(
 	cfg *Config,
-	set component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
+	set exporter.CreateSettings,
+) (exporter.Metrics, error) {
 	se, err := initExporter(cfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporterWithContext(
+	return exporterhelper.NewMetricsExporter(
 		context.TODO(),
 		set,
 		cfg,
@@ -165,14 +162,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
-				// copy resource attributes into logs attributes
-				// log attributes have precedence over resource attributes
-				rl.Resource().Attributes().Range(func(k string, v pcommon.Value) bool {
-					log.Attributes().Insert(k, v)
-					return true
-				})
-
-				currentMetadata = sdr.filter.filterIn(log.Attributes())
+				currentMetadata = sdr.filter.mergeAndFilterIn(rl.Resource().Attributes(), log.Attributes())
 
 				// If metadata differs from currently buffered, flush the buffer
 				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {
@@ -271,7 +261,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 					attributes: attributes,
 				}
 
-				currentMetadata = sdr.filter.filterIn(attributes)
+				currentMetadata = sdr.filter.mergeAndFilterIn(attributes)
 
 				// If metadata differs from currently buffered, flush the buffer
 				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {

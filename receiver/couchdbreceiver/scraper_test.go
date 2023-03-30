@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -27,15 +26,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
 
@@ -44,44 +45,46 @@ func TestScrape(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Username = "otelu"
 	cfg.Password = "otelp"
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, component.ValidateConfig(cfg))
 
 	t.Run("scrape from couchdb version 2.31", func(t *testing.T) {
 		mockClient := new(MockClient)
 		mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
-		scraper := newCouchdbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.client = mockClient
 
 		actualMetrics, err := scraper.scrape(context.Background())
 		require.NoError(t, err)
 
-		expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+		expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	})
 
 	t.Run("scrape from couchdb 3.12", func(t *testing.T) {
 		mockClient := new(MockClient)
 		mockClient.On("GetStats", "_local").Return(getStats("response_3.12.json"))
-		scraper := newCouchdbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.client = mockClient
 
 		actualMetrics, err := scraper.scrape(context.Background())
 		require.NoError(t, err)
 
-		expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+		expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	})
 
 	t.Run("scrape returns nothing", func(t *testing.T) {
 		mockClient := new(MockClient)
 		mockClient.On("GetStats", "_local").Return(map[string]interface{}{}, nil)
-		scraper := newCouchdbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.client = mockClient
 
 		metrics, err := scraper.scrape(context.Background())
@@ -94,7 +97,7 @@ func TestScrape(t *testing.T) {
 	})
 
 	t.Run("scrape error: failed to connect to client", func(t *testing.T) {
-		scraper := newCouchdbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
 
 		_, err := scraper.scrape(context.Background())
 		require.NotNil(t, err)
@@ -103,7 +106,7 @@ func TestScrape(t *testing.T) {
 
 	t.Run("scrape error: get stats endpoint error", func(t *testing.T) {
 		obs, logs := observer.New(zap.ErrorLevel)
-		settings := componenttest.NewNopReceiverCreateSettings()
+		settings := receivertest.NewNopCreateSettings()
 		settings.Logger = zap.New(obs)
 		mockClient := new(MockClient)
 		mockClient.On("GetStats", "_local").Return(getStats(""))
@@ -131,9 +134,9 @@ func TestStart(t *testing.T) {
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
-		require.NoError(t, cfg.Validate())
+		require.NoError(t, component.ValidateConfig(cfg))
 
-		scraper := newCouchdbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
 		require.NoError(t, err)
 	})
@@ -143,9 +146,9 @@ func TestStart(t *testing.T) {
 		cfg.HTTPClientSettings.TLSSetting.CAFile = "/non/existent"
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
-		require.NoError(t, cfg.Validate())
+		require.NoError(t, component.ValidateConfig(cfg))
 
-		scraper := newCouchdbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
 		require.NotNil(t, err)
 	})
@@ -154,29 +157,32 @@ func TestStart(t *testing.T) {
 func TestMetricSettings(t *testing.T) {
 	mockClient := new(MockClient)
 	mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
-	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{},
-		Metrics: metadata.MetricsSettings{
-			CouchdbAverageRequestTime: metadata.MetricSettings{Enabled: false},
-			CouchdbDatabaseOpen:       metadata.MetricSettings{Enabled: false},
-			CouchdbDatabaseOperations: metadata.MetricSettings{Enabled: true},
-			CouchdbFileDescriptorOpen: metadata.MetricSettings{Enabled: false},
-			CouchdbHttpdBulkRequests:  metadata.MetricSettings{Enabled: false},
-			CouchdbHttpdRequests:      metadata.MetricSettings{Enabled: false},
-			CouchdbHttpdResponses:     metadata.MetricSettings{Enabled: false},
-			CouchdbHttpdViews:         metadata.MetricSettings{Enabled: false},
-		},
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.Metrics = metadata.MetricsSettings{
+		CouchdbAverageRequestTime: metadata.MetricSettings{Enabled: false},
+		CouchdbDatabaseOpen:       metadata.MetricSettings{Enabled: false},
+		CouchdbDatabaseOperations: metadata.MetricSettings{Enabled: true},
+		CouchdbFileDescriptorOpen: metadata.MetricSettings{Enabled: false},
+		CouchdbHttpdBulkRequests:  metadata.MetricSettings{Enabled: false},
+		CouchdbHttpdRequests:      metadata.MetricSettings{Enabled: false},
+		CouchdbHttpdResponses:     metadata.MetricSettings{Enabled: false},
+		CouchdbHttpdViews:         metadata.MetricSettings{Enabled: false},
 	}
-	scraper := newCouchdbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+	cfg := &Config{
+		HTTPClientSettings:   confighttp.HTTPClientSettings{},
+		MetricsBuilderConfig: mbc,
+	}
+	scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
 	scraper.client = mockClient
 
 	metrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expected, err := golden.ReadMetrics(filepath.Join("testdata", "scraper", "only_db_ops.json"))
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "scraper", "only_db_ops.yaml"))
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expected, metrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expected, metrics, pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	require.Equal(t, metrics.MetricCount(), 1)
 }
 
@@ -191,13 +197,7 @@ func getStats(filename string) (map[string]interface{}, error) {
 		return stats, nil
 	}
 
-	file, err := os.Open(path.Join("testdata", "scraper", filename))
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	body, err := io.ReadAll(file)
+	body, err := os.ReadFile(path.Join("testdata", "scraper", filename))
 	if err != nil {
 		return nil, err
 	}

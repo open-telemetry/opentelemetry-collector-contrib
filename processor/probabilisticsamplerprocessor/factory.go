@@ -16,10 +16,13 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"context"
+	"sync"
 
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 )
 
 const (
@@ -29,26 +32,44 @@ const (
 	stability = component.StabilityLevelBeta
 )
 
+var onceMetrics sync.Once
+
 // NewFactory returns a new factory for the Probabilistic sampler processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	onceMetrics.Do(func() {
+		// TODO: Handle this err
+		_ = view.Register(SamplingProcessorMetricViews(configtelemetry.LevelNormal)...)
+	})
+
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, stability))
+		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithLogs(createLogsProcessor, component.StabilityLevelAlpha))
 }
 
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		AttributeSource: defaultAttributeSource,
 	}
 }
 
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	return newTracesProcessor(ctx, set, cfg.(*Config), nextConsumer)
+}
+
+// createLogsProcessor creates a log processor based on this config.
+func createLogsProcessor(
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (processor.Logs, error) {
+	return newLogsProcessor(ctx, set, nextConsumer, cfg.(*Config))
 }

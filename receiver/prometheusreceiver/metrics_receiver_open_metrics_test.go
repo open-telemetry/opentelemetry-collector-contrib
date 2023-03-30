@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -51,9 +52,12 @@ var skippedTests = map[string]struct{}{
 	"bad_repeated_metadata_1": {}, "bad_repeated_metadata_3": {}, "bad_stateset_info_values_0": {},
 	"bad_stateset_info_values_1": {}, "bad_stateset_info_values_2": {}, "bad_stateset_info_values_3": {},
 	"bad_timestamp_4": {}, "bad_timestamp_5": {}, "bad_timestamp_7": {}, "bad_unit_6": {}, "bad_unit_7": {},
+	"bad_exemplars_on_unallowed_samples_0": {}, "bad_exemplars_on_unallowed_metric_types_0": {},
+	"bad_exemplars_on_unallowed_samples_1": {}, "bad_exemplars_on_unallowed_metric_types_1": {},
+	"bad_exemplars_on_unallowed_samples_3": {}, "bad_exemplars_on_unallowed_metric_types_2": {},
 }
 
-func verifyPositiveTarget(t *testing.T, _ *testData, mds []*pmetric.ResourceMetrics) {
+func verifyPositiveTarget(t *testing.T, _ *testData, mds []pmetric.ResourceMetrics) {
 	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 1, metrics)
@@ -65,7 +69,7 @@ func TestOpenMetricsPositive(t *testing.T) {
 		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10148")
 	}
 	targetsMap := getOpenMetricsTestData(false)
-	targets := make([]*testData, 0)
+	var targets []*testData
 	for k, v := range targetsMap {
 		testData := &testData{
 			name: k,
@@ -78,10 +82,10 @@ func TestOpenMetricsPositive(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
-func verifyNegativeTarget(t *testing.T, td *testData, mds []*pmetric.ResourceMetrics) {
+func verifyNegativeTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
 	// failing negative tests are skipped since prometheus scrape package is currently not fully
 	// compatible with OpenMetrics tests and successfully scrapes some invalid metrics
 	// see: https://github.com/prometheus/prometheus/issues/9699
@@ -96,10 +100,9 @@ func verifyNegativeTarget(t *testing.T, td *testData, mds []*pmetric.ResourceMet
 
 // Test open metrics negative test cases
 func TestOpenMetricsNegative(t *testing.T) {
-	skip(t, "Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9119")
 
 	targetsMap := getOpenMetricsTestData(true)
-	targets := make([]*testData, 0)
+	var targets []*testData
 	for k, v := range targetsMap {
 		testData := &testData{
 			name: k,
@@ -112,7 +115,7 @@ func TestOpenMetricsNegative(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 // reads test data from testdata/openmetrics directory
@@ -182,11 +185,11 @@ func TestInfoStatesetMetrics(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 
 }
 
-func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 

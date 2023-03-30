@@ -20,30 +20,31 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 func TestReporterObservability(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	receiverID := component.NewIDWithName(typeStr, "fake_receiver")
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := config.NewComponentIDWithName(typeStr, "fake_receiver")
-	reporter := newReporter(receiverID, tt.ToReceiverCreateSettings())
+	reporter, err := newReporter(tt.ToReceiverCreateSettings())
+	require.NoError(t, err)
 
 	ctx := reporter.OnDataReceived(context.Background())
 
 	reporter.OnMetricsProcessed(ctx, 17, nil)
 
-	require.NoError(t, obsreporttest.CheckReceiverMetrics(tt, receiverID, "tcp", 17, 0))
+	require.NoError(t, tt.CheckReceiverMetrics("tcp", 17, 0))
 
 	// Below just exercise the error paths.
 	err = errors.New("fake error for tests")
 	reporter.OnTranslationError(ctx, err)
 	reporter.OnMetricsProcessed(ctx, 10, err)
 
-	require.NoError(t, obsreporttest.CheckReceiverMetrics(tt, receiverID, "tcp", 17, 10))
+	require.NoError(t, tt.CheckReceiverMetrics("tcp", 17, 10))
 }

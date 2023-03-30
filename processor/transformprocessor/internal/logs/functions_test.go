@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,10 +18,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func Test_DefaultFunctions(t *testing.T) {
-	assert.Equal(t, common.Functions(), Functions())
+func Test_LogFunctions(t *testing.T) {
+	expected := common.Functions[ottllog.TransformContext]()
+	actual := LogFunctions()
+	require.Equal(t, len(expected), len(actual))
+	for k := range actual {
+		assert.Contains(t, expected, k)
+	}
 }

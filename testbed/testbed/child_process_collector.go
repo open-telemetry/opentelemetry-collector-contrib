@@ -24,14 +24,15 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"text/template"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
-	"go.uber.org/atomic"
 )
 
 // childProcessCollector implements the OtelcolRunner interface as a child process on the same machine executing
@@ -411,8 +412,9 @@ func (cp *childProcessCollector) checkAllowedResourceUsage() error {
 
 	// Check if current RAM usage exceeds expected.
 	if cp.resourceSpec.ExpectedMaxRAM != 0 && cp.ramMiBCur.Load() > cp.resourceSpec.ExpectedMaxRAM {
+		formattedCurRAM := strconv.FormatUint(uint64(cp.ramMiBCur.Load()), 10)
 		errMsg = fmt.Sprintf("RAM consumption is %s MiB, max expected is %d MiB",
-			cp.ramMiBCur.String(), cp.resourceSpec.ExpectedMaxRAM)
+			formattedCurRAM, cp.resourceSpec.ExpectedMaxRAM)
 	}
 
 	if errMsg == "" {

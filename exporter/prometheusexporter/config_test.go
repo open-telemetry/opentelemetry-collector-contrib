@@ -21,49 +21,61 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
+	t.Parallel()
 
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, e0, factory.CreateDefaultConfig())
-
-	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
-	assert.Equal(t, e1,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-			HTTPServerSettings: confighttp.HTTPServerSettings{
-				Endpoint: "1.2.3.4:1234",
-				TLSSetting: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: "certs/server.crt",
-						KeyFile:  "certs/server.key",
-						CAFile:   "certs/ca.crt",
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id:       component.NewIDWithName(typeStr, ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: component.NewIDWithName(typeStr, "2"),
+			expected: &Config{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: "1.2.3.4:1234",
+					TLSSetting: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "certs/server.crt",
+							KeyFile:  "certs/server.key",
+							CAFile:   "certs/ca.crt",
+						},
 					},
 				},
+				Namespace: "test-space",
+				ConstLabels: map[string]string{
+					"label1":        "value1",
+					"another label": "spaced value",
+				},
+				SendTimestamps:   true,
+				MetricExpiration: 60 * time.Minute,
 			},
-			Namespace: "test-space",
-			ConstLabels: map[string]string{
-				"label1":        "value1",
-				"another label": "spaced value",
-			},
-			SendTimestamps:   true,
-			MetricExpiration: 60 * time.Minute,
-		})
+		},
+	}
 
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }

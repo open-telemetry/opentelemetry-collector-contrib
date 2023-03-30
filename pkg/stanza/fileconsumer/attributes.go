@@ -21,10 +21,16 @@ import (
 )
 
 type FileAttributes struct {
-	Name         string
-	Path         string
-	NameResolved string
-	PathResolved string
+	Name             string `json:"-"`
+	Path             string `json:"-"`
+	NameResolved     string `json:"-"`
+	PathResolved     string `json:"-"`
+	HeaderAttributes map[string]any
+}
+
+// HeaderAttributesCopy gives a copy of the HeaderAttributes, in order to restrict mutation of the HeaderAttributes.
+func (f *FileAttributes) HeaderAttributesCopy() map[string]any {
+	return mapCopy(f.HeaderAttributes)
 }
 
 // resolveFileAttributes resolves file attributes

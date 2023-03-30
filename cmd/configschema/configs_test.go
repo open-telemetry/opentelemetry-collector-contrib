@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/otelcol"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 )
@@ -75,7 +75,7 @@ func TestGetConfig(t *testing.T) {
 	}
 }
 
-func testComponents() component.Factories {
+func testComponents() otelcol.Factories {
 	cmps, err := components.Components()
 	if err != nil {
 		panic(err)

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,70 +21,95 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-func getTestSummaryMetric() pmetric.Metric {
-	metricInput := pmetric.NewMetric()
-	metricInput.SetDataType(pmetric.MetricDataTypeSummary)
-	metricInput.SetName("summary_metric")
-	input := metricInput.Summary().DataPoints().AppendEmpty()
-	input.SetCount(100)
-	input.SetSum(12.34)
+func Test_ConvertSummaryCountValToSum(t *testing.T) {
+	tests := []summaryTestCase{
+		{
+			name:         "convert_summary_count_val_to_sum",
+			input:        getTestSummaryMetric(),
+			temporality:  "delta",
+			monotonicity: false,
+			want: func(metrics pmetric.MetricSlice) {
+				summaryMetric := getTestSummaryMetric()
+				summaryMetric.CopyTo(metrics.AppendEmpty())
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				sumMetric.Sum().SetIsMonotonic(false)
 
-	qVal1 := input.QuantileValues().AppendEmpty()
-	qVal1.SetValue(1)
-	qVal1.SetQuantile(.99)
+				sumMetric.SetName("summary_metric_count")
+				dp := sumMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(100)
 
-	qVal2 := input.QuantileValues().AppendEmpty()
-	qVal2.SetValue(2)
-	qVal2.SetQuantile(.95)
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name:         "convert_summary_count_val_to_sum (monotonic)",
+			input:        getTestSummaryMetric(),
+			temporality:  "delta",
+			monotonicity: true,
+			want: func(metrics pmetric.MetricSlice) {
+				summaryMetric := getTestSummaryMetric()
+				summaryMetric.CopyTo(metrics.AppendEmpty())
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				sumMetric.Sum().SetIsMonotonic(true)
 
-	qVal3 := input.QuantileValues().AppendEmpty()
-	qVal3.SetValue(3)
-	qVal3.SetQuantile(.50)
+				sumMetric.SetName("summary_metric_count")
+				dp := sumMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(100)
 
-	attrs := getTestAttributes()
-	attrs.CopyTo(input.Attributes())
-	return metricInput
-}
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name:         "convert_summary_count_val_to_sum",
+			input:        getTestSummaryMetric(),
+			temporality:  "cumulative",
+			monotonicity: false,
+			want: func(metrics pmetric.MetricSlice) {
+				summaryMetric := getTestSummaryMetric()
+				summaryMetric.CopyTo(metrics.AppendEmpty())
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sumMetric.Sum().SetIsMonotonic(false)
 
-func getTestGaugeMetric() pmetric.Metric {
-	metricInput := pmetric.NewMetric()
-	metricInput.SetDataType(pmetric.MetricDataTypeGauge)
-	metricInput.SetName("gauge_metric")
-	input := metricInput.Gauge().DataPoints().AppendEmpty()
-	input.SetIntVal(12)
+				sumMetric.SetName("summary_metric_count")
+				dp := sumMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(100)
 
-	attrs := getTestAttributes()
-	attrs.CopyTo(input.Attributes())
-	return metricInput
-}
-
-func getTestAttributes() pcommon.Map {
-	attrs := pcommon.NewMap()
-	attrs.InsertString("test", "hello world")
-	attrs.InsertInt("test2", 3)
-	attrs.InsertBool("test3", true)
-	return attrs
-}
-
-func summaryTest(tests []summaryTestCase, t *testing.T) {
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name:         "convert_summary_count_val_to_sum (no op)",
+			input:        getTestGaugeMetric(),
+			temporality:  "cumulative",
+			monotonicity: false,
+			want: func(metrics pmetric.MetricSlice) {
+				gaugeMetric := getTestGaugeMetric()
+				gaugeMetric.CopyTo(metrics.AppendEmpty())
+			},
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := tql.NewFunctionCall(tt.inv, Functions(), tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
+			evaluate, err := convertSummaryCountValToSum(tt.temporality, tt.monotonicity)
 			assert.NoError(t, err)
-			evaluate(tqlmetrics.MetricTransformContext{
-				InstrumentationScope: pcommon.NewInstrumentationScope(),
-				Resource:             pcommon.NewResource(),
-				Metric:               tt.input,
-				Metrics:              actualMetrics,
-			})
+
+			_, err = evaluate(nil, ottldatapoint.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			assert.Nil(t, err)
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)
@@ -93,129 +118,7 @@ func summaryTest(tests []summaryTestCase, t *testing.T) {
 	}
 }
 
-type summaryTestCase struct {
-	name  string
-	input pmetric.Metric
-	inv   tql.Invocation
-	want  func(pmetric.MetricSlice)
-}
-
-func Test_ConvertSummarySumValToSum(t *testing.T) {
-	tests := []summaryTestCase{
-		{
-			name:  "convert_summary_sum_val_to_sum",
-			input: getTestSummaryMetric(),
-			inv: tql.Invocation{
-				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []tql.Value{
-					{
-						String: tqltest.Strp("delta"),
-					},
-					{
-						Bool: (*tql.Boolean)(tqltest.Boolp(false)),
-					},
-				},
-			},
-			want: func(metrics pmetric.MetricSlice) {
-				summaryMetric := getTestSummaryMetric()
-				summaryMetric.CopyTo(metrics.AppendEmpty())
-				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
-				sumMetric.Sum().SetIsMonotonic(false)
-
-				sumMetric.SetName("summary_metric_sum")
-				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(12.34)
-
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
-			},
-		},
-		{
-			name:  "convert_summary_sum_val_to_sum (monotonic)",
-			input: getTestSummaryMetric(),
-			inv: tql.Invocation{
-				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []tql.Value{
-					{
-						String: tqltest.Strp("delta"),
-					},
-					{
-						Bool: (*tql.Boolean)(tqltest.Boolp(true)),
-					},
-				},
-			},
-			want: func(metrics pmetric.MetricSlice) {
-				summaryMetric := getTestSummaryMetric()
-				summaryMetric.CopyTo(metrics.AppendEmpty())
-				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
-				sumMetric.Sum().SetIsMonotonic(true)
-
-				sumMetric.SetName("summary_metric_sum")
-				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(12.34)
-
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
-			},
-		},
-		{
-			name:  "convert_summary_sum_val_to_sum (cumulative)",
-			input: getTestSummaryMetric(),
-			inv: tql.Invocation{
-				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []tql.Value{
-					{
-						String: tqltest.Strp("cumulative"),
-					},
-					{
-						Bool: (*tql.Boolean)(tqltest.Boolp(false)),
-					},
-				},
-			},
-			want: func(metrics pmetric.MetricSlice) {
-				summaryMetric := getTestSummaryMetric()
-				summaryMetric.CopyTo(metrics.AppendEmpty())
-				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-				sumMetric.Sum().SetIsMonotonic(false)
-
-				sumMetric.SetName("summary_metric_sum")
-				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleVal(12.34)
-
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
-			},
-		},
-		{
-			name:  "convert_summary_sum_val_to_sum (no op)",
-			input: getTestGaugeMetric(),
-			inv: tql.Invocation{
-				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []tql.Value{
-					{
-						String: tqltest.Strp("delta"),
-					},
-					{
-						Bool: (*tql.Boolean)(tqltest.Boolp(false)),
-					},
-				},
-			},
-			want: func(metrics pmetric.MetricSlice) {
-				gaugeMetric := getTestGaugeMetric()
-				gaugeMetric.CopyTo(metrics.AppendEmpty())
-			},
-		},
-	}
-	summaryTest(tests, t)
-}
-
-func Test_ConvertSummarySumValToSum_validation(t *testing.T) {
+func Test_ConvertSummaryCountValToSum_validation(t *testing.T) {
 	tests := []struct {
 		name          string
 		stringAggTemp string
@@ -227,7 +130,7 @@ func Test_ConvertSummarySumValToSum_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := convertSummarySumValToSum(tt.stringAggTemp, true)
+			_, err := convertSummaryCountValToSum(tt.stringAggTemp, true)
 			assert.Error(t, err, "unknown aggregation temporality: not a real aggregation temporality")
 		})
 	}
