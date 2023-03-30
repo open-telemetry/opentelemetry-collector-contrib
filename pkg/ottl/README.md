@@ -59,7 +59,7 @@ Values are passed as input to an Invocation or are used in a Boolean Expression.
 
 #### Paths
 
-A Path Value is a reference to a telemetry field.  Paths are made up of lowercase identifiers, dots (`.`), and square brackets combined with a string key (`["key"]`).  **The interpretation of a Path is NOT implemented by the OTTL.**  Instead, the user must provide a `PathExpressionParser` that the OTTL can use to interpret paths.  As a result, how the Path parts are used is up to the user.  However, it is recommended, that the parts be used like so:
+A Path Value is a reference to a telemetry field.  Paths are made up of lowercase identifiers separated by dots (`.`), and optionally terminating with square brackets combined with a string key (`["key"]`). Dots (`.`) and lowercase identifiers cannot be included after brackets/keys (`["key"]`).  **The interpretation of a Path is NOT implemented by the OTTL.**  Instead, the user must provide a `PathExpressionParser` that the OTTL can use to interpret paths.  As a result, how the Path parts are used is up to the user.  However, it is recommended, that the parts be used like so:
 
 - Identifiers are used to map to a telemetry field.
 - Dots (`.`) are used to separate nested fields.
