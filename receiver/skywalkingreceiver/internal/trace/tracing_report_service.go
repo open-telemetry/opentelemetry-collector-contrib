@@ -44,8 +44,8 @@ type Receiver struct {
 	agent.UnimplementedTraceSegmentReportServiceServer
 }
 
-// New creates a new Receiver reference.
-func New(nextConsumer consumer.Traces, set receiver.CreateSettings) (*Receiver, error) {
+// NewReceiver creates a new Receiver reference.
+func NewReceiver(nextConsumer consumer.Traces, set receiver.CreateSettings) (*Receiver, error) {
 	grpcObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             set.ID,
 		Transport:              grpcTransport,

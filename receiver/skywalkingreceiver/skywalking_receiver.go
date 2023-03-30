@@ -82,7 +82,7 @@ func (sr *swReceiver) registerTraceConsumer(tc consumer.Traces) error {
 		return component.ErrNilNextConsumer
 	}
 	var err error
-	sr.traceReceiver, err = trace.New(tc, sr.settings)
+	sr.traceReceiver, err = trace.NewReceiver(tc, sr.settings)
 	if err != nil {
 		return err
 	}
