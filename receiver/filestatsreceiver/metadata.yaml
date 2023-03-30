@@ -24,24 +24,29 @@ attributes:
 
 metrics:
   file.mtime:
-    description: Timestamp of the last modification of the file or folder, in seconds since Epoch.
+    description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
     enabled: true
-    gauge:
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
     unit: "s"
   file.ctime:
-    description: Timestamp of the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, 
-      this metric tracks metadata changes such as permissions or renaming the file.
+    description: Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.
     enabled: false
-    gauge:
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
     unit: "s"
     attributes:
       - file.permissions
   file.atime:
-    description: Timestamp of the last access of the file or folder, in seconds since Epoch. Not supported on Windows.
+    description: Elapsed time since last access of the file or folder, in seconds since Epoch.
     enabled: false
-    gauge:
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
     unit: "s"
   file.size:

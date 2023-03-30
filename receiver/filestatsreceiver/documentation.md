@@ -14,11 +14,11 @@ metrics:
 
 ### file.mtime
 
-Timestamp of the last modification of the file or folder, in seconds since Epoch.
+Elapsed time since the last modification of the file or folder, in seconds since Epoch.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | false |
 
 ### file.size
 
@@ -40,19 +40,19 @@ metrics:
 
 ### file.atime
 
-Timestamp of the last access of the file or folder, in seconds since Epoch. Not supported on Windows.
+Elapsed time since last access of the file or folder, in seconds since Epoch.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | false |
 
 ### file.ctime
 
-Timestamp of the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.
+Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | false |
 
 #### Attributes
 

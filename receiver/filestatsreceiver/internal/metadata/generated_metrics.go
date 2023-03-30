@@ -87,16 +87,18 @@ type metricFileAtime struct {
 // init fills file.atime metric with initial data.
 func (m *metricFileAtime) init() {
 	m.data.SetName("file.atime")
-	m.data.SetDescription("Timestamp of the last access of the file or folder, in seconds since Epoch. Not supported on Windows.")
+	m.data.SetDescription("Elapsed time since last access of the file or folder, in seconds since Epoch.")
 	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricFileAtime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -104,14 +106,14 @@ func (m *metricFileAtime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Ti
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricFileAtime) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFileAtime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -136,17 +138,19 @@ type metricFileCtime struct {
 // init fills file.ctime metric with initial data.
 func (m *metricFileCtime) init() {
 	m.data.SetName("file.ctime")
-	m.data.SetDescription("Timestamp of the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.")
+	m.data.SetDescription("Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.")
 	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
 func (m *metricFileCtime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, filePermissionsAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -155,14 +159,14 @@ func (m *metricFileCtime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Ti
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricFileCtime) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFileCtime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -187,16 +191,18 @@ type metricFileMtime struct {
 // init fills file.mtime metric with initial data.
 func (m *metricFileMtime) init() {
 	m.data.SetName("file.mtime")
-	m.data.SetDescription("Timestamp of the last modification of the file or folder, in seconds since Epoch.")
+	m.data.SetDescription("Elapsed time since the last modification of the file or folder, in seconds since Epoch.")
 	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricFileMtime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -204,14 +210,14 @@ func (m *metricFileMtime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Ti
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricFileMtime) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFileMtime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
