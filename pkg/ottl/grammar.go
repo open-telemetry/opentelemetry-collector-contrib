@@ -239,7 +239,7 @@ func (v *value) checkForCustomError() error {
 	return nil
 }
 
-// Path represents a telemetry path mathExpression.
+// Path represents telemetry on the underlying signal.  What identifiers are allowed and value is returned is based on the context being used.
 type Path struct {
 	Fields []string `parser:"@Lowercase ( '.' @Lowercase )*"`
 	MapKey *string  `parser:"( '[' @String ']' )?"`
