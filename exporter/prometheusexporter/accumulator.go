@@ -270,7 +270,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 				continue
 			}
 
-			ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+			ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
 		default:
 			// unsupported temporality
 			continue

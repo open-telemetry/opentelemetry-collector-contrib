@@ -93,6 +93,7 @@ func TestAccumulateHistogram(t *testing.T) {
 	t.Run("ResetBuckets/Ignore", func(t *testing.T) {
 		// should ignore metric from the past
 		n := a.Accumulate(resourceMetrics2)
+
 		require.Equal(t, 1, n)
 
 		m, ok := a.registeredMetrics.Load(signature)
