@@ -41,6 +41,7 @@ Available Functions:
 - [replace_pattern](#replace_pattern)
 - [set](#set)
 - [truncate_all](#truncate_all)
+- [uuid](#uuid)
 
 ### delete_key
 
@@ -252,7 +253,13 @@ Examples:
 - `truncate_all(attributes, 100)`
 
 
-- `truncate_all(resource.attributes, 50)`
+- `truncate_all(resource.attributes, 50)
+
+### uuid
+
+`uuid()`
+
+The `uuid` function generated a v4 uuid string.
 
 ## Converters
 

@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/alecthomas/participle/v2 v2.0.0
 	github.com/gobwas/glob v0.2.3
+	github.com/google/uuid v1.3.0
 	github.com/iancoleman/strcase v0.2.0
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.8.2
