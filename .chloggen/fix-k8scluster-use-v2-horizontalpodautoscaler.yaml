@@ -2,7 +2,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: receiver/k8scluste
+component: receiver/k8scluster
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Use newer v2 HorizontalPodAutoscaler for Kubernetes 1.26
