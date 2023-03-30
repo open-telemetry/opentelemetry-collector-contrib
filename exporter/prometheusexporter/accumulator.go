@@ -251,6 +251,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 		if !ok {
 			m := copyMetricMetadata(metric)
 			ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+			m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 			n++
 			continue
@@ -269,14 +270,11 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 				continue
 			}
 
-			ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
+			ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
 		default:
 			// unsupported temporality
 			continue
 		}
-
-		ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
-		m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 		n++
 	}
