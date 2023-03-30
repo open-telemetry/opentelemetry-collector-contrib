@@ -21,6 +21,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
@@ -86,7 +87,7 @@ func GetMetrics(hpa *autoscalingv2.HorizontalPodAutoscaler) []*agentmetricspb.Ex
 
 	return []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			Resource: getResourceForHPA(hpa),
+			Resource: getResourceForHPA(&hpa.ObjectMeta),
 			Metrics:  metrics,
 		},
 	}
@@ -122,30 +123,19 @@ func GetMetricsBeta(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) []*agentmet
 
 	return []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			Resource: getResourceForHPABeta(hpa),
+			Resource: getResourceForHPA(&hpa.ObjectMeta),
 			Metrics:  metrics,
 		},
 	}
 }
 
-func getResourceForHPA(hpa *autoscalingv2.HorizontalPodAutoscaler) *resourcepb.Resource {
+func getResourceForHPA(om *v1.ObjectMeta) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: constants.K8sType,
 		Labels: map[string]string{
-			constants.K8sKeyHPAUID:                string(hpa.UID),
-			constants.K8sKeyHPAName:               hpa.Name,
-			conventions.AttributeK8SNamespaceName: hpa.Namespace,
-		},
-	}
-}
-
-func getResourceForHPABeta(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) *resourcepb.Resource {
-	return &resourcepb.Resource{
-		Type: constants.K8sType,
-		Labels: map[string]string{
-			constants.K8sKeyHPAUID:                string(hpa.UID),
-			constants.K8sKeyHPAName:               hpa.Name,
-			conventions.AttributeK8SNamespaceName: hpa.Namespace,
+			constants.K8sKeyHPAUID:                string(om.UID),
+			constants.K8sKeyHPAName:               om.Name,
+			conventions.AttributeK8SNamespaceName: om.Namespace,
 		},
 	}
 }
