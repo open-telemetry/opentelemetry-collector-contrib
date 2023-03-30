@@ -228,36 +228,7 @@ func (er *eventsReceiver) transformProjectEvents(now pcommon.Timestamp, events [
 	ra := resourceLogs.Resource().Attributes()
 	ra.PutStr("mongodbatlas.project.name", p.Name)
 	ra.PutStr("mongodbatlas.org.id", p.OrgID)
-
-	for _, event := range events {
-
-		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-		bodyBytes, err := json.Marshal(event)
-		if err != nil {
-			er.logger.Error("unable to unmarshal event into body string", zap.Error(err))
-			continue
-		}
-		logRecord.Body().SetStr(string(bodyBytes))
-
-		// ISO-8601 formatted
-		ts, err := time.Parse(time.RFC3339, event.Created)
-		if err != nil {
-			er.logger.Warn("unable to interpret when an event was created, expecting a RFC3339 timestamp", zap.String("timestamp", event.Created), zap.String("event", event.ID))
-			logRecord.SetTimestamp(now)
-		} else {
-			logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-		}
-		logRecord.SetObservedTimestamp(now)
-
-		attrs := logRecord.Attributes()
-		// always present attributes
-		attrs.PutStr("event.domain", "mongodbatlas")
-		attrs.PutStr("type", event.EventTypeName)
-		attrs.PutStr("id", event.ID)
-		attrs.PutStr("group.id", event.GroupID)
-
-		parseOptionalAttributes(&attrs, event)
-	}
+	er.transformEvents(now, events, &resourceLogs)
 	return logs
 }
 
@@ -266,7 +237,11 @@ func (er *eventsReceiver) transformOrgEvents(now pcommon.Timestamp, events []*mo
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	ra := resourceLogs.Resource().Attributes()
 	ra.PutStr("mongodbatlas.org.id", o.ID)
+	er.transformEvents(now, events, &resourceLogs)
+	return logs
+}
 
+func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, resourceLogs *plog.ResourceLogs) {
 	for _, event := range events {
 
 		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -296,7 +271,6 @@ func (er *eventsReceiver) transformOrgEvents(now pcommon.Timestamp, events []*mo
 
 		parseOptionalAttributes(&attrs, event)
 	}
-	return logs
 }
 
 func (er *eventsReceiver) checkpoint(ctx context.Context) error {
