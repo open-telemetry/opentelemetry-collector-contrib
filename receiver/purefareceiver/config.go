@@ -15,10 +15,12 @@
 package purefareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
@@ -64,6 +66,23 @@ type ReloadIntervals struct {
 }
 
 func (c *Config) Validate() error {
-	// TODO(dgoscn): perform config validation
-	return nil
+	var errs error
+
+	if c.Settings.ReloadIntervals.Array == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'array' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Hosts == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'hosts' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Directories == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'directories' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Pods == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'pods' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Volumes == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'volumes' must be provided"))
+	}
+
+	return errs
 }

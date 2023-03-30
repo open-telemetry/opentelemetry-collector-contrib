@@ -186,7 +186,7 @@ receiver/influxdbreceiver/                               @open-telemetry/collect
 receiver/iisreceiver/                                    @open-telemetry/collector-contrib-approvers @mrod1598 @djaglowski
 receiver/jaegerreceiver/                                 @open-telemetry/collector-contrib-approvers @jpkrohling
 receiver/jmxreceiver/                                    @open-telemetry/collector-contrib-approvers @rmfitzpatrick
-receiver/journaldreceiver/                               @open-telemetry/collector-contrib-approvers
+receiver/journaldreceiver/                               @open-telemetry/collector-contrib-approvers @sumo-drosiek @djaglowski
 receiver/k8sclusterreceiver/                             @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/k8seventsreceiver/                              @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/k8sobjectsreceiver/                             @open-telemetry/collector-contrib-approvers @dmitryax @harshit-splunk

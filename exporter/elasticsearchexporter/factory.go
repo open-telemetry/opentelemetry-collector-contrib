@@ -44,7 +44,10 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	qs := exporterhelper.NewDefaultQueueSettings()
+	qs.Enabled = false
 	return &Config{
+		QueueSettings: qs,
 		HTTPClientSettings: HTTPClientSettings{
 			Timeout: 90 * time.Second,
 		},
@@ -73,11 +76,12 @@ func createLogsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	if cfg.(*Config).Index != "" {
+	cf := cfg.(*Config)
+	if cf.Index != "" {
 		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
 	}
 
-	exporter, err := newLogsExporter(set.Logger, cfg.(*Config))
+	exporter, err := newLogsExporter(set.Logger, cf)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch logs exporter: %w", err)
 	}
@@ -88,6 +92,7 @@ func createLogsExporter(
 		cfg,
 		exporter.pushLogsData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithQueue(cf.QueueSettings),
 	)
 }
 
@@ -95,10 +100,16 @@ func createTracesExporter(ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config) (exporter.Traces, error) {
 
-	exporter, err := newTracesExporter(set.Logger, cfg.(*Config))
+	cf := cfg.(*Config)
+	exporter, err := newTracesExporter(set.Logger, cf)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch traces exporter: %w", err)
 	}
-	return exporterhelper.NewTracesExporter(ctx, set, cfg, exporter.pushTraceData,
-		exporterhelper.WithShutdown(exporter.Shutdown))
+	return exporterhelper.NewTracesExporter(
+		ctx,
+		set,
+		cfg,
+		exporter.pushTraceData,
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithQueue(cf.QueueSettings))
 }

@@ -352,7 +352,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			receiver, messagingService, unmarshaller := newReceiver(t)
-			delay := 5 * time.Millisecond
+			delay := 50 * time.Millisecond
 			// Increase delay on windows due to tick granularity
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17197
 			if runtime.GOOS == "windows" {
@@ -461,7 +461,12 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 	receiver, messagingService, unmarshaller := newReceiver(t)
 	// we won't wait 10 seconds since we will interrupt well before
-	retryInterval := 20 * time.Millisecond
+	retryInterval := 50 * time.Millisecond
+	// Increase delay on windows due to tick granularity
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19409
+	if runtime.GOOS == "windows" {
+		retryInterval = 500 * time.Millisecond
+	}
 	var retryCount int64 = 5
 	receiver.config.Flow.DelayedRetry.Delay = retryInterval
 	var err error

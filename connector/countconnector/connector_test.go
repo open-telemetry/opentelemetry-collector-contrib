@@ -271,15 +271,15 @@ func TestTracesToMetrics(t *testing.T) {
 				assert.NoError(t, conn.Shutdown(context.Background()))
 			}()
 
-			testSpans, err := golden.ReadTraces(filepath.Join("testdata", "traces", "input.json"))
+			testSpans, err := golden.ReadTraces(filepath.Join("testdata", "traces", "input.yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, conn.ConsumeTraces(context.Background(), testSpans))
 
 			allMetrics := sink.AllMetrics()
 			assert.Equal(t, 1, len(allMetrics))
 
-			// golden.WriteMetrics(t, filepath.Join("testdata", "traces", tc.name+".json"), allMetrics[0])
-			expected, err := golden.ReadMetrics(filepath.Join("testdata", "traces", tc.name+".json"))
+			// golden.WriteMetrics(t, filepath.Join("testdata", "traces", tc.name+".yaml"), allMetrics[0])
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "traces", tc.name+".yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
 				pmetrictest.IgnoreTimestamp(),
@@ -479,15 +479,15 @@ func TestMetricsToMetrics(t *testing.T) {
 				assert.NoError(t, conn.Shutdown(context.Background()))
 			}()
 
-			testMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "input.json"))
+			testMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "input.yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, conn.ConsumeMetrics(context.Background(), testMetrics))
 
 			allMetrics := sink.AllMetrics()
 			assert.Equal(t, 1, len(allMetrics))
 
-			// golden.WriteMetrics(t, filepath.Join("testdata", "metrics", tc.name+".json"), allMetrics[0])
-			expected, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", tc.name+".json"))
+			// golden.WriteMetrics(t, filepath.Join("testdata", "metrics", tc.name+".yaml"), allMetrics[0])
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", tc.name+".yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
 				pmetrictest.IgnoreTimestamp(),
@@ -651,15 +651,15 @@ func TestLogsToMetrics(t *testing.T) {
 				assert.NoError(t, conn.Shutdown(context.Background()))
 			}()
 
-			testLogs, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.json"))
+			testLogs, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs))
 
 			allMetrics := sink.AllMetrics()
 			assert.Equal(t, 1, len(allMetrics))
 
-			// golden.WriteMetrics(t, filepath.Join("testdata", "logs", tc.name+".json"), allMetrics[0])
-			expected, err := golden.ReadMetrics(filepath.Join("testdata", "logs", tc.name+".json"))
+			// golden.WriteMetrics(t, filepath.Join("testdata", "logs", tc.name+".yaml"), allMetrics[0])
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "logs", tc.name+".yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
 				pmetrictest.IgnoreTimestamp(),
