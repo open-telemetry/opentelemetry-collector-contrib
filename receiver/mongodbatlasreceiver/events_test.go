@@ -117,7 +117,7 @@ func TestPoll(t *testing.T) {
 				Name: testProjectName,
 			},
 		},
-		Orgs: []*OrgConfig{
+		Organizations: []*OrgConfig{
 			{
 				ID: testOrgID,
 			},
@@ -162,7 +162,7 @@ func TestProjectGetFailure(t *testing.T) {
 				Name: "fake-project",
 			},
 		},
-		Orgs: []*OrgConfig{
+		Organizations: []*OrgConfig{
 			{
 				ID: "fake-org",
 			},
@@ -195,7 +195,7 @@ func (mec *mockEventsClient) setupMock(t *testing.T) {
 	mec.setupGetProject()
 	mec.setupGetOrganization()
 	mec.On("GetProjectEvents", mock.Anything, mock.Anything, mock.Anything).Return(mec.loadTestEvents(t, "project-events.json"), false, nil)
-	mec.On("GetOrgEvents", mock.Anything, mock.Anything, mock.Anything).Return(mec.loadTestEvents(t, "org-events.json"), false, nil)
+	mec.On("GetOrganizationEvents", mock.Anything, mock.Anything, mock.Anything).Return(mec.loadTestEvents(t, "org-events.json"), false, nil)
 }
 
 func (mec *mockEventsClient) setupGetProject() {
@@ -240,7 +240,7 @@ func (mec *mockEventsClient) GetOrganization(ctx context.Context, oID string) (*
 	return args.Get(0).(*mongodbatlas.Organization), args.Error(1)
 }
 
-func (mec *mockEventsClient) GetOrgEvents(ctx context.Context, oID string, opts *internal.GetEventsOptions) ([]*mongodbatlas.Event, bool, error) {
+func (mec *mockEventsClient) GetOrganizationEvents(ctx context.Context, oID string, opts *internal.GetEventsOptions) ([]*mongodbatlas.Event, bool, error) {
 	args := mec.Called(ctx, oID, opts)
 	return args.Get(0).([]*mongodbatlas.Event), args.Bool(1), args.Error(2)
 }

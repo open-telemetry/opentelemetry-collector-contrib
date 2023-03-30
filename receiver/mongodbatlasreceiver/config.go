@@ -66,12 +66,12 @@ type LogConfig struct {
 
 // EventsConfig is the configuration options for events collection
 type EventsConfig struct {
-	Projects     []*ProjectConfig `mapstructure:"projects"`
-	Orgs         []*OrgConfig     `mapstructure:"orgs"`
-	PollInterval time.Duration    `mapstructure:"poll_interval"`
-	Types        []string         `mapstructure:"types"`
-	PageSize     int64            `mapstructure:"page_size"`
-	MaxPages     int64            `mapstructure:"max_pages"`
+	Projects      []*ProjectConfig `mapstructure:"projects"`
+	Organizations []*OrgConfig     `mapstructure:"organizations"`
+	PollInterval  time.Duration    `mapstructure:"poll_interval"`
+	Types         []string         `mapstructure:"types"`
+	PageSize      int64            `mapstructure:"page_size"`
+	MaxPages      int64            `mapstructure:"max_pages"`
 }
 
 type ProjectConfig struct {
@@ -215,7 +215,7 @@ func (a AlertConfig) validateListenConfig() error {
 }
 
 func (e EventsConfig) validate() error {
-	if len(e.Projects) == 0 && len(e.Orgs) == 0 {
+	if len(e.Projects) == 0 && len(e.Organizations) == 0 {
 		return errNoEvents
 	}
 	return nil

@@ -688,7 +688,7 @@ func (s *MongoDBAtlasClient) GetProjectEvents(ctx context.Context, groupID strin
 }
 
 // GetOrgEvents returns the events specified for the set organizations
-func (s *MongoDBAtlasClient) GetOrgEvents(ctx context.Context, orgID string, opts *GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error) {
+func (s *MongoDBAtlasClient) GetOrganizationEvents(ctx context.Context, orgID string, opts *GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error) {
 	lo := mongodbatlas.ListOptions{
 		PageNum:      opts.PageNum,
 		ItemsPerPage: opts.PageSize,

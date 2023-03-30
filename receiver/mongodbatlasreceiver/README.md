@@ -61,7 +61,7 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
 - `events`
   - `projects`
     - `name` Name of the Project to discover events from.
-  - `orgs`
+  - `organizations`
     - `id` ID of the Organization to discover events from.
   - `poll_interval` (default `1m`)
     - How often the receiver will poll the Events API for new events.
@@ -132,7 +132,7 @@ receivers:
     events:
       projects:
         - name: "project 1"
-      orgs:
+      organizations:
         - id: "5b478b3afc4625789ce616a3"
       poll_interval: 1m
       page_size: 100

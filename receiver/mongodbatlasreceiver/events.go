@@ -44,7 +44,7 @@ type eventsClient interface {
 	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
 	GetProjectEvents(ctx context.Context, groupID string, opts *internal.GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error)
 	GetOrganization(ctx context.Context, orgID string) (*mongodbatlas.Organization, error)
-	GetOrgEvents(ctx context.Context, orgID string, opts *internal.GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error)
+	GetOrganizationEvents(ctx context.Context, orgID string, opts *internal.GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error)
 }
 
 type eventsReceiver struct {
@@ -147,7 +147,7 @@ func (er *eventsReceiver) pollEvents(ctx context.Context) error {
 		er.pollProject(ctx, project, pc, st, et)
 	}
 
-	for _, pc := range er.cfg.Events.Orgs {
+	for _, pc := range er.cfg.Events.Organizations {
 		org, err := er.client.GetOrganization(ctx, pc.ID)
 		if err != nil {
 			er.logger.Error("error retrieving org information for "+pc.ID+":", zap.Error(err))
@@ -200,14 +200,14 @@ func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organiz
 			MinDate:    startTime,
 		}
 
-		projectEvents, hasNext, err := er.client.GetOrgEvents(ctx, org.ID, opts)
+		organizationEvents, hasNext, err := er.client.GetOrganizationEvents(ctx, org.ID, opts)
 		if err != nil {
 			er.logger.Error("unable to get events for organization", zap.Error(err), zap.String("organization", p.ID))
 			break
 		}
 
 		now := pcommon.NewTimestampFromTime(now)
-		logs := er.transformOrgEvents(now, projectEvents, org)
+		logs := er.transformOrgEvents(now, organizationEvents, org)
 
 		if logs.LogRecordCount() > 0 {
 			if err = er.consumer.ConsumeLogs(ctx, logs); err != nil {

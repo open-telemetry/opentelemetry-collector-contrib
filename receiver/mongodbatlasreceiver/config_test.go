@@ -296,7 +296,7 @@ func TestLoadConfig(t *testing.T) {
 				Name: "Project 0",
 			},
 		},
-		Orgs: []*OrgConfig{
+		Organizations: []*OrgConfig{
 			{
 				ID: "5b478b3afc4625789ce616a3",
 			},
