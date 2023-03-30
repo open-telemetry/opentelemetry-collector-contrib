@@ -66,7 +66,7 @@ func TestNginxIntegration(t *testing.T) {
 	hostname, err := container.Host(context.Background())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "integration", "expected.json")
+	expectedFile := filepath.Join("testdata", "integration", "expected.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 

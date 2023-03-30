@@ -144,6 +144,18 @@ func repeat(what int, times int) []int {
 	return result
 }
 
+// these runes are used to generate long log messages that will compress down to a number of bytes we can rely on for testing.
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789wersgdgr43q3zvbcgv65ew 346xx$gt5/kuopo89.nytqasdfghjklpoiuy")
+
+func repeatableString(length int) string {
+	b := make([]rune, length)
+	for i := range b {
+		l := i % len(letterRunes)
+		b[i] = letterRunes[l]
+	}
+	return string(b)
+}
+
 func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().EnsureCapacity(numResources)
@@ -641,6 +653,27 @@ func TestReceiveLogs(t *testing.T) {
 				compressed: true,
 			},
 		},
+		{
+			name: "one event with 1340 bytes, then one triggering compression (going over 1500 bytes) and bypassing the max length, moving to a separate batch",
+			logs: func() plog.Logs {
+				firstLog := createLogData(1, 1, 2)
+				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(repeatableString(1340))
+				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(repeatableString(2800000))
+				return firstLog
+			}(),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthLogs = 10000 // small so we can reproduce without allocating big logs.
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"otel.log.name":"0_0_0"`}, {`"otel.log.name":"0_0_1"`},
+				},
+				numBatches: 2,
+				compressed: true,
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -648,7 +681,7 @@ func TestReceiveLogs(t *testing.T) {
 			got, err := runLogExport(test.conf, test.logs, test.want.numBatches, t)
 
 			require.NoError(t, err)
-			require.Len(t, got, test.want.numBatches)
+			require.Equal(t, test.want.numBatches, len(got))
 
 			for i := 0; i < test.want.numBatches; i++ {
 				require.NotZero(t, got[i])

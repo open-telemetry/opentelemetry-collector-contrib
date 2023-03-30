@@ -115,6 +115,8 @@ The following settings can be optionally configured:
       - Default: `1000` 
 - `cache_loop` - the time to cleans the cache periodically
 - `store_expiration_loop`  the time to expire old entries from the store periodically.
+- `virtual_node_peer_attributes` the list of attributes need to match for building virtual server node, the higher the front, the higher the priority.
+  - Default: `[db.name, net.sock.peer.addr, net.peer.name, rpc.service, net.sock.peer.name, net.peer.name, http.url, http.target]`
 
 ## Example configuration
 
@@ -138,7 +140,9 @@ processors:
       max_items: 200 # Amount of edges that will be stored in the storeMap      
     cache_loop: 2m # the time to cleans the cache periodically
     store_expiration_loop: 10s # the time to expire old entries from the store periodically.
-
+    virtual_node_peer_attributes:
+      - db.name
+      - rpc.service
 exporters:
   prometheus/servicegraph:
     endpoint: localhost:9090

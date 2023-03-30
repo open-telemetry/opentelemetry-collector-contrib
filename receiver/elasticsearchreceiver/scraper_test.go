@@ -36,9 +36,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
 
-const fullExpectedMetricsPath = "./testdata/expected_metrics/full.json"
-const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.json"
-const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.json"
+const fullExpectedMetricsPath = "./testdata/expected_metrics/full.yaml"
+const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.yaml"
+const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.yaml"
 
 func TestMain(m *testing.M) {
 	// Enable the feature gates before all tests to avoid flaky tests.

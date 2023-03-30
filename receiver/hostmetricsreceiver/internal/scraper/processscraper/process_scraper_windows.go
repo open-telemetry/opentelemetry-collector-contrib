@@ -18,6 +18,7 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"fmt"
 	"path/filepath"
 	"regexp"
 
@@ -38,15 +39,21 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.System, metadata.AttributeStateSystem)
 }
 
-func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
-	exe, err := proc.Exe()
-	if err != nil {
-		return nil, err
+func getProcessName(proc processHandle, exePath string) (string, error) {
+	if exePath == "" {
+		return "", fmt.Errorf("executable path is empty")
 	}
 
-	name := filepath.Base(exe)
-	executable := &executableMetadata{name: name, path: exe}
-	return executable, nil
+	return filepath.Base(exePath), nil
+}
+
+func getProcessExecutable(proc processHandle) (string, error) {
+	exe, err := proc.Exe()
+	if err != nil {
+		return "", err
+	}
+
+	return exe, nil
 }
 
 // matches the first argument before an unquoted space or slash

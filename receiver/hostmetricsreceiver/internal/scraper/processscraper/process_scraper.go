@@ -128,7 +128,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(memoryUtilizationMetricsLen, fmt.Errorf("error reading memory utilization for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		if err = s.scrapeAndAppendDiskMetrics(now, md.handle); err != nil {
+		if err = s.scrapeAndAppendDiskMetrics(now, md.handle); err != nil && !s.config.MuteProcessIOError {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
@@ -183,13 +183,22 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		pid := handles.Pid(i)
 		handle := handles.At(i)
 
-		executable, err := getProcessExecutable(handle)
+		exe, err := getProcessExecutable(handle)
+		if err != nil {
+			if !s.config.MuteProcessExeError {
+				errs.AddPartial(1, fmt.Errorf("error reading process executable for pid %v: %w", pid, err))
+			}
+		}
+
+		name, err := getProcessName(handle, exe)
 		if err != nil {
 			if !s.config.MuteProcessNameError {
 				errs.AddPartial(1, fmt.Errorf("error reading process name for pid %v: %w", pid, err))
 			}
 			continue
 		}
+
+		executable := &executableMetadata{name: name, path: exe}
 
 		// filter processes by name
 		if (s.includeFS != nil && !s.includeFS.Matches(executable.name)) ||
@@ -294,6 +303,9 @@ func (s *scraper) scrapeAndAppendDiskMetrics(now pcommon.Timestamp, handle proce
 
 	io, err := handle.IOCounters()
 	if err != nil {
+		if s.config.MuteProcessIOError {
+			return nil
+		}
 		return err
 	}
 

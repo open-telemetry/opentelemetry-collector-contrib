@@ -68,7 +68,7 @@ func TestScrape(t *testing.T) {
 	metrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "expected_metrics.json"))
+	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "expected_metrics.yaml"))
 	require.NoError(t, err)
 
 	err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp())

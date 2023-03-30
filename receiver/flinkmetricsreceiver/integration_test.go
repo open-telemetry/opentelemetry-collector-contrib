@@ -135,7 +135,7 @@ func TestFlinkIntegration(t *testing.T) {
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 
 	actualMetrics := consumer.AllMetrics()[0]
-	expectedFile := filepath.Join("testdata", "integration", "expected.json")
+	expectedFile := filepath.Join("testdata", "integration", "expected.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),

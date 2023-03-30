@@ -57,11 +57,12 @@ func TestLoadConfig(t *testing.T) {
 					WriteBufferSize: 512 * 1024,
 				},
 				Logs: configgrpc.GRPCClientSettings{
-					Endpoint: "https://",
+					Endpoint:    "https://",
+					Compression: "gzip",
 				},
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: "",
+					Compression: "gzip",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
 						Insecure:           false,
@@ -74,8 +75,7 @@ func TestLoadConfig(t *testing.T) {
 					BalancerName:    "",
 				},
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint:    "",
-					Compression: "",
+					Endpoint: "",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
 						Insecure:           false,
@@ -109,11 +109,12 @@ func TestLoadConfig(t *testing.T) {
 					WriteBufferSize: 512 * 1024,
 				},
 				Logs: configgrpc.GRPCClientSettings{
-					Endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					Compression: "gzip",
 				},
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: "",
+					Compression: "gzip",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
 						Insecure:           false,
@@ -128,8 +129,7 @@ func TestLoadConfig(t *testing.T) {
 				AppNameAttributes:   []string{"service.namespace"},
 				SubSystemAttributes: []string{"service.name"},
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint:    "",
-					Compression: "",
+					Endpoint: "",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
 						Insecure:           false,
