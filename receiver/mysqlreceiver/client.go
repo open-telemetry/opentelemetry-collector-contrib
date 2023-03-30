@@ -26,6 +26,7 @@ import (
 
 type client interface {
 	Connect() error
+	getVersion() (string, error)
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
 	getTableIoWaitsStats() ([]TableIoWaitsStats, error)
@@ -201,6 +202,18 @@ func (c *mySQLClient) Connect() error {
 	return nil
 }
 
+// getVersion queries the db for the version.
+func (c *mySQLClient) getVersion() (string, error) {
+	query := "SELECT VERSION();"
+	var version string
+	err := c.client.QueryRow(query).Scan(&version)
+	if err != nil {
+		return "", err
+	}
+
+	return version, nil
+}
+
 // getGlobalStats queries the db for global status metrics.
 func (c *mySQLClient) getGlobalStats() (map[string]string, error) {
 	query := "SHOW GLOBAL STATUS;"
@@ -340,6 +353,15 @@ func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, e
 }
 
 func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
+	version, err := c.getVersion()
+	if err != nil {
+		return nil, err
+	}
+
+	if version < "8.0.22" {
+		return nil, nil
+	}
+
 	query := "SHOW REPLICA STATUS"
 	rows, err := c.client.Query(query)
 

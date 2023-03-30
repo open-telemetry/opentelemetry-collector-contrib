@@ -163,7 +163,7 @@ func TestExporter_pushLogData(t *testing.T) {
 			errFunc: func(err error) {
 				var e consumererror.Logs
 				require.True(t, errors.As(err, &e))
-				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
+				assert.Equal(t, 10, e.Data().LogRecordCount())
 			},
 		},
 		{
@@ -176,7 +176,7 @@ func TestExporter_pushLogData(t *testing.T) {
 			errFunc: func(err error) {
 				var e consumererror.Logs
 				require.True(t, errors.As(err, &e))
-				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
+				assert.Equal(t, 10, e.Data().LogRecordCount())
 			},
 		},
 		{
@@ -237,7 +237,7 @@ func TestExporter_pushLogData(t *testing.T) {
 			errFunc: func(err error) {
 				var e consumererror.Logs
 				require.True(t, errors.As(err, &e))
-				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
+				assert.Equal(t, 10, e.Data().LogRecordCount())
 			},
 		},
 	}

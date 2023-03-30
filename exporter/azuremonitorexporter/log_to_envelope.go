@@ -29,7 +29,7 @@ type logPacker struct {
 	logger *zap.Logger
 }
 
-func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contracts.Envelope {
+func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource pcommon.Resource, instrumentationScope pcommon.InstrumentationScope) *contracts.Envelope {
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
 	envelope.Time = toTime(timestampFromLogRecord(logRecord)).Format(time.RFC3339Nano)
@@ -51,6 +51,13 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contract
 	data.BaseData = messageData
 	data.BaseType = messageData.BaseType()
 	envelope.Data = data
+
+	resourceAttributes := resource.Attributes()
+	applyResourcesToDataProperties(messageData.Properties, resourceAttributes)
+	applyInstrumentationScopeValueToDataProperties(messageData.Properties, instrumentationScope)
+	applyCloudTagsToEnvelope(envelope, resourceAttributes)
+
+	setAttributesAsProperties(logRecord.Attributes(), messageData.Properties)
 
 	packer.sanitize(func() []string { return messageData.Sanitize() })
 	packer.sanitize(func() []string { return envelope.Sanitize() })
@@ -99,4 +106,11 @@ func timestampFromLogRecord(lr plog.LogRecord) pcommon.Timestamp {
 	}
 
 	return pcommon.NewTimestampFromTime(timeNow())
+}
+
+func setAttributesAsProperties(attributeMap pcommon.Map, properties map[string]string) {
+	attributeMap.Range(func(k string, v pcommon.Value) bool {
+		properties[k] = v.AsString()
+		return true
+	})
 }

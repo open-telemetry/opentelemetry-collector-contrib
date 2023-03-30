@@ -35,6 +35,13 @@ import (
 
 // Config defines configuration for Resource processor.
 type Config struct {
+	// ErrorMode determines how the processor reacts to errors that occur while processing an OTTL condition.
+	// Valid values are `ignore` and `propagate`.
+	// `ignore` means the processor ignores errors returned by conditions and continues on to the next condition. This is the recommended mode.
+	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
+	// The default value is `propagate`.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
+
 	Metrics MetricFilters `mapstructure:"metrics"`
 
 	Logs LogFilters `mapstructure:"logs"`

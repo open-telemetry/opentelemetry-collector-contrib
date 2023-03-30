@@ -29,11 +29,11 @@ as the specified metric label key.
 - `excluded_images` (no default, all running containers monitored): A list of strings,
 [regexes](https://golang.org/pkg/regexp/), or [globs](https://github.com/gobwas/glob) whose referent container image
 names will not be among the queried containers. `!`-prefixed negations are possible for all item types to signify that
-only unmatched container image names should be monitored.
+only unmatched container image names should be excluded.
     - Regexes must be placed between `/` characters: `/my?egex/`.  Negations are to be outside the forward slashes:
-    `!/my?egex/` will monitor all containers whose name doesn't match the compiled regex `my?egex`.
+    `!/my?egex/` will exclude all containers whose name doesn't match the compiled regex `my?egex`.
     - Globs are non-regex items (e.g. `/items/`) containing any of the following: `*[]{}?`.  Negations are supported:
-    `!my*container` will monitor all containers whose image name doesn't match the blob `my*container`.
+    `!my*container` will exclude all containers whose image name doesn't match the blob `my*container`.
 - `timeout` (default = `5s`): The request timeout for any docker daemon query.
 - `api_version` (default = `1.22`): The Docker client API version (must be 1.22+). [Docker API versions](https://docs.docker.com/engine/api/).
 - `metrics` (defaults at [./documentation.md](./documentation.md)): Enables/disables individual metrics. See [./documentation.md](./documentation.md) for full detail.

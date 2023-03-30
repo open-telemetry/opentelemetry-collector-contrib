@@ -70,6 +70,7 @@ func TestStartAndShutdownRemote(t *testing.T) {
 
 	// create the config, pointing to the mock server
 	cfg := testConfig()
+	cfg.GRPCServerSettings.NetAddr.Endpoint = "127.0.0.1:0"
 	cfg.Source.Remote = &configgrpc.GRPCClientSettings{
 		Endpoint:     fmt.Sprintf("127.0.0.1:%d", lis.Addr().(*net.TCPAddr).Port),
 		WaitForReady: true,

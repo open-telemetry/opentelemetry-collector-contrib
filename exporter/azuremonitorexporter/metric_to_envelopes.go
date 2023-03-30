@@ -130,7 +130,14 @@ func (m scalarMetric) getTimedDataPoints() []*timedMetricDataPoint {
 		numberDataPoint := m.dataPointSlice.At(i)
 		dataPoint := contracts.NewDataPoint()
 		dataPoint.Name = m.name
-		dataPoint.Value = numberDataPoint.DoubleValue()
+		switch numberDataPoint.ValueType() {
+		case pmetric.NumberDataPointValueTypeDouble:
+			dataPoint.Value = numberDataPoint.DoubleValue()
+		case pmetric.NumberDataPointValueTypeInt:
+			dataPoint.Value = float64(numberDataPoint.IntValue())
+		case pmetric.NumberDataPointValueTypeEmpty:
+			dataPoint.Value = 0
+		}
 		dataPoint.Count = 1
 		dataPoint.Kind = contracts.Measurement
 		timedDataPoints[i] = &timedMetricDataPoint{

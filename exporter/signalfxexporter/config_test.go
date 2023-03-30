@@ -51,6 +51,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	seventy := 70
+	idleConnTimeout := 30 * time.Second
 
 	tests := []struct {
 		id       component.ID
@@ -65,13 +66,15 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				AccessToken: "testToken",
 				Realm:       "us1",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second,
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Timeout: 2 * time.Second,
 					Headers: map[string]configopaque.String{
 						"added-entry": "added value",
 						"dot.test":    "test",
 					},
 					MaxIdleConns:        &seventy,
 					MaxIdleConnsPerHost: &seventy,
+					IdleConnTimeout:     &idleConnTimeout,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:             true,

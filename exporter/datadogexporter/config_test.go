@@ -94,12 +94,12 @@ func TestValidate(t *testing.T) {
 				API: APIConfig{Key: "notnull"},
 				Metrics: MetricsConfig{
 					HistConfig: HistogramConfig{
-						Mode:         HistogramModeNoBuckets,
-						SendCountSum: false,
+						Mode:             HistogramModeNoBuckets,
+						SendAggregations: false,
 					},
 				},
 			},
-			err: "'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics",
+			err: "'nobuckets' mode and `send_aggregation_metrics` set to false will send no histogram metrics",
 		},
 		{
 			name: "TLS settings are valid",

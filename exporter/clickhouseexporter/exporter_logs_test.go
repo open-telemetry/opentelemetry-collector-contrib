@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -73,9 +73,9 @@ func TestLogsExporter_New(t *testing.T) {
 			var err error
 			exporter, err := newLogsExporter(zap.NewNop(), test.config)
 			err = multierr.Append(err, err)
-			err = multierr.Append(err, exporter.start(context.TODO(), nil))
 
 			if exporter != nil {
+				err = multierr.Append(err, exporter.start(context.TODO(), nil))
 				defer func() {
 					require.NoError(t, exporter.shutdown(context.TODO()))
 				}()

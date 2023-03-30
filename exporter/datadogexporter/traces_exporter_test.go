@@ -16,6 +16,7 @@ package datadogexporter
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -32,12 +33,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
@@ -154,10 +154,7 @@ func TestTracesSource(t *testing.T) {
 
 	assert := assert.New(t)
 	params := exportertest.NewNopCreateSettings()
-	reg := featuregate.NewRegistry()
-	reg.MustRegister(metadata.HostnamePreviewFeatureGate.ID(), featuregate.StageBeta)
-	assert.NoError(reg.Set(metadata.HostnamePreviewFeatureGate.ID(), true))
-	f := newFactoryWithRegistry(reg)
+	f := NewFactory()
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(err)
 
@@ -179,8 +176,12 @@ func TestTracesSource(t *testing.T) {
 	// getHostTagsV2 extracts the host and tags from the native DatadogV2 metrics series payload
 	// body found in data.
 	getHostTagsV2 := func(data []byte) (host string, tags []string) {
+		buf := bytes.NewBuffer(data)
+		reader, derr := gzip.NewReader(buf)
+		assert.NoError(derr)
+		dec := json.NewDecoder(reader)
 		var p datadogV2.MetricPayload
-		assert.NoError(json.Unmarshal(data, &p))
+		assert.NoError(dec.Decode(&p))
 		assert.Len(p.Series, 1)
 		assert.Len(p.Series[0].Resources, 1)
 		return *p.Series[0].Resources[0].Name, p.Series[0].Tags
@@ -339,7 +340,7 @@ func TestPushTraceData(t *testing.T) {
 	assert.NoError(t, err)
 
 	body := <-server.MetadataChan
-	var recvMetadata metadata.HostMetadata
+	var recvMetadata hostmetadata.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")

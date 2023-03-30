@@ -15,6 +15,8 @@
 package datadogexporter
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -37,7 +39,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
@@ -59,8 +61,8 @@ func TestNewExporter(t *testing.T) {
 			},
 			DeltaTTL: 3600,
 			HistConfig: HistogramConfig{
-				Mode:         HistogramModeDistributions,
-				SendCountSum: false,
+				Mode:             HistogramModeDistributions,
+				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
@@ -87,7 +89,7 @@ func TestNewExporter(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	body := <-server.MetadataChan
-	var recvMetadata metadata.HostMetadata
+	var recvMetadata hostmetadata.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
@@ -333,10 +335,15 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			} else {
 				assert.Equal(t, "gzip", seriesRecorder.Header.Get("Accept-Encoding"))
 				assert.Equal(t, "application/json", seriesRecorder.Header.Get("Content-Type"))
+				assert.Equal(t, "gzip", seriesRecorder.Header.Get("Content-Encoding"))
 				assert.Equal(t, "otelcol/latest", seriesRecorder.Header.Get("User-Agent"))
 				assert.NoError(t, err)
+				buf := bytes.NewBuffer(seriesRecorder.ByteBody)
+				reader, err := gzip.NewReader(buf)
+				assert.NoError(t, err)
+				dec := json.NewDecoder(reader)
 				var actual map[string]interface{}
-				assert.NoError(t, json.Unmarshal(seriesRecorder.ByteBody, &actual))
+				assert.NoError(t, dec.Decode(&actual))
 				assert.EqualValues(t, tt.expectedSeries, actual)
 			}
 			if tt.expectedSketchPayload == nil {
@@ -376,8 +383,8 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			},
 			DeltaTTL: 3600,
 			HistConfig: HistogramConfig{
-				Mode:         HistogramModeDistributions,
-				SendCountSum: false,
+				Mode:             HistogramModeDistributions,
+				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
@@ -404,7 +411,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	body := <-server.MetadataChan
-	var recvMetadata metadata.HostMetadata
+	var recvMetadata hostmetadata.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")

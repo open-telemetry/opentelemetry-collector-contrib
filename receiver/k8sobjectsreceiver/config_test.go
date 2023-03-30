@@ -132,10 +132,10 @@ func TestValidateResourceConflict(t *testing.T) {
 	assert.Equal(t, "group2", rCfg.Objects[0].gvr.Group)
 }
 
-func TestInvalidPullConfig(t *testing.T) {
+func TestPullResourceVersion(t *testing.T) {
 	t.Parallel()
 
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid_pull_config.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "pull_resource_version_config.yaml"))
 	require.NoError(t, err)
 
 	factory := NewFactory()
@@ -149,11 +149,8 @@ func TestInvalidPullConfig(t *testing.T) {
 	err = component.ValidateConfig(cfg)
 	require.Error(t, err)
 
-	cfg.makeDiscoveryClient = getMockDiscoveryClient
-
-	err = component.ValidateConfig(cfg)
-	require.Error(t, err)
-	require.Equal(t, err.Error(), "resource version is invalid for mode: pull")
+	require.Equal(t, "1", cfg.Objects[0].ResourceVersion)
+	require.Equal(t, "", cfg.Objects[1].ResourceVersion)
 }
 
 func TestWatchResourceVersion(t *testing.T) {

@@ -26,6 +26,7 @@ type TaskMetadata struct {
 	PullStartedAt    string              `json:"PullStartedAt,omitempty"`
 	PullStoppedAt    string              `json:"PullStoppedAt,omitempty"`
 	Revision         string              `json:"Revision,omitempty"`
+	ServiceName      string              `json:"ServiceName,omitempty"`
 	TaskARN          string              `json:"TaskARN,omitempty"`
 }
 

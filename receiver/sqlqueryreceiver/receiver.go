@@ -30,7 +30,7 @@ type sqlOpenerFunc func(driverName, dataSourceName string) (*sql.DB, error)
 
 type dbProviderFunc func() (*sql.DB, error)
 
-type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
+type clientProviderFunc func(db, string, *zap.Logger) dbClient
 
 func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
 	return func(

@@ -63,7 +63,7 @@ func taskResource(tm ecsutil.TaskMetadata) pcommon.Resource {
 	resource.Attributes().PutStr(attributeECSTaskRevision, tm.Revision)
 	resource.Attributes().PutStr(conventions.AttributeAWSECSTaskRevision, tm.Revision)
 
-	resource.Attributes().PutStr(attributeECSServiceName, "undefined")
+	resource.Attributes().PutStr(attributeECSServiceName, tm.ServiceName)
 
 	resource.Attributes().PutStr(conventions.AttributeCloudAvailabilityZone, tm.AvailabilityZone)
 	resource.Attributes().PutStr(attributeECSTaskPullStartedAt, tm.PullStartedAt)

@@ -35,7 +35,7 @@ import (
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
@@ -65,8 +65,8 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
 	}
 
-	if cfg.Metrics.HistConfig.SendCountSum {
-		options = append(options, otlpmetrics.WithCountSumMetrics())
+	if cfg.Metrics.HistConfig.SendAggregations {
+		options = append(options, otlpmetrics.WithHistogramAggregations())
 	}
 
 	if cfg.Metrics.SummaryConfig.Mode == SummaryModeGauges {
@@ -91,11 +91,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 		numberMode = otlpmetrics.NumberModeCumulativeToDelta
 	}
 
-	options = append(options, otlpmetrics.WithNumberMode(numberMode))
-
-	if metadata.HostnamePreviewFeatureGate.IsEnabled() {
-		options = append(options, otlpmetrics.WithPreviewHostnameFromAttributes())
-	}
+	options = append(options, otlpmetrics.WithNumberMode(numberMode), otlpmetrics.WithPreviewHostnameFromAttributes())
 
 	return otlpmetrics.NewTranslator(logger, options...)
 }
@@ -192,7 +188,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			if md.ResourceMetrics().Len() > 0 {
 				attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 			}
-			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
+			go hostmetadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
 	}
 	var consumer otlpmetrics.Consumer
@@ -226,7 +222,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			exp.params.Logger.Debug("exporting native Datadog payload", zap.Any("metric", ms))
 			_, experr := exp.retrier.DoWithRetries(ctx, func(context.Context) error {
 				ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
-				_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms})
+				_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms}, *clientutil.GZipSubmitMetricsOptionalParameters)
 				return clientutil.WrapError(merr, httpresp)
 			})
 			err = multierr.Append(err, experr)

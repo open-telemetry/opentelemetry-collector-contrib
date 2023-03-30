@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/logicmonitor/lm-data-sdk-go/api/logs"
+	"github.com/logicmonitor/lm-data-sdk-go/model"
 	"github.com/logicmonitor/lm-data-sdk-go/utils"
 	"github.com/logicmonitor/lm-data-sdk-go/utils/translator"
 	"go.opentelemetry.io/collector/component"
@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	logs "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter/internal/logs"
 )
 
 // These are logicmonitor specific constants needed to map the resource with the logs on logicmonitor platform.
@@ -36,13 +38,13 @@ const (
 )
 
 type logExporter struct {
-	config          *Config
-	logIngestClient *logs.LMLogIngest
-	settings        component.TelemetrySettings
+	config   *Config
+	sender   *logs.Sender
+	settings component.TelemetrySettings
 }
 
 // Create new logicmonitor logs exporter
-func newLogsExporter(cfg component.Config, set exporter.CreateSettings) *logExporter {
+func newLogsExporter(_ context.Context, cfg component.Config, set exporter.CreateSettings) *logExporter {
 	oCfg := cfg.(*Config)
 
 	return &logExporter{
@@ -51,7 +53,7 @@ func newLogsExporter(cfg component.Config, set exporter.CreateSettings) *logExpo
 	}
 }
 
-func (e *logExporter) start(_ context.Context, host component.Host) error {
+func (e *logExporter) start(ctx context.Context, host component.Host) error {
 	client, err := e.config.HTTPClientSettings.ToClient(host, e.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %w", err)
@@ -62,22 +64,18 @@ func (e *logExporter) start(_ context.Context, host component.Host) error {
 		AccessKey:   string(e.config.APIToken.AccessKey),
 		BearerToken: string(e.config.Headers["Authorization"]),
 	}
-	options := []logs.Option{
-		logs.WithLogBatchingDisabled(),
-		logs.WithAuthentication(authParams),
-		logs.WithHTTPClient(client),
-		logs.WithEndpoint(e.config.Endpoint),
-	}
 
-	e.logIngestClient, err = logs.NewLMLogIngest(context.Background(), options...)
+	e.sender, err = logs.NewSender(ctx, e.config.Endpoint, client, authParams, e.settings.Logger)
 	if err != nil {
-		return fmt.Errorf("failed to initialize LMLogIngest: %w", err)
+		return err
 	}
 	return nil
 }
 
 func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 	resourceLogs := lg.ResourceLogs()
+	var payload []model.LogInput
+
 	for i := 0; i < resourceLogs.Len(); i++ {
 		resourceLog := resourceLogs.At(i)
 		libraryLogs := resourceLog.ScopeLogs()
@@ -103,16 +101,11 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 				})
 
 				e.settings.Logger.Debug("Sending log data", zap.String("body", log.Body().Str()), zap.Any("resourcemap", resourceMapperMap), zap.Any("metadatamap", logMetadataMap))
-				payload := translator.ConvertToLMLogInput(log.Body().AsRaw(), timestampFromLogRecord(log).String(), resourceMapperMap, logMetadataMap)
-				err := e.logIngestClient.SendLogs(ctx, payload)
-				if err != nil {
-					e.settings.Logger.Error("error while exporting logs ", zap.Error(err), zap.String("body", log.Body().Str()), zap.Any("resourcemap", resourceMapperMap), zap.Any("metadatamap", logMetadataMap))
-					continue
-				}
+				payload = append(payload, translator.ConvertToLMLogInput(log.Body().AsRaw(), timestampFromLogRecord(log).String(), resourceMapperMap, logMetadataMap))
 			}
 		}
 	}
-	return nil
+	return e.sender.SendLogs(ctx, payload)
 }
 
 func timestampFromLogRecord(lr plog.LogRecord) pcommon.Timestamp {

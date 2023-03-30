@@ -138,8 +138,8 @@ and the rest of contributors.
   available configuration settings so users can copy and modify them as needed.
 - Run `make crosslink` to update intra-repository dependencies. It will add a `replace` directive to `go.mod` file of every intra-repository dependant. This is necessary for your component to be included in the contrib executable.
 - Add your component to `versions.yaml`.
-- All components must be included in [`internal/components/`](./internal/components) and in the respective testing
-  harnesses. To align with the test goal of the project, components must be testable within the framework defined within
+- All components included in the distribution must be included in [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml) 
+  and in the respective testing harnesses. To align with the test goal of the project, components must be testable within the framework defined within
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
 - Add the sponsor for your component and yourself to a new line for your component in the

@@ -22,8 +22,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -161,9 +159,6 @@ func createKubernetesProcessor(
 ) (*kubernetesprocessor, error) {
 	kp := &kubernetesprocessor{logger: params.Logger}
 
-	warnDeprecatedMetadataConfig(kp.logger, cfg)
-	warnDeprecatedPodAssociationConfig(kp.logger, cfg)
-
 	err := errWrongKeyConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -214,41 +209,6 @@ func createProcessorOpts(cfg component.Config) []option {
 	return opts
 }
 
-func warnDeprecatedMetadataConfig(logger *zap.Logger, cfg component.Config) {
-	oCfg := cfg.(*Config)
-	for _, field := range oCfg.Extract.Metadata {
-		var oldName, newName string
-		switch field {
-		case metdataNamespace:
-			oldName = metdataNamespace
-			newName = conventions.AttributeK8SNamespaceName
-		case metadataPodName:
-			oldName = metadataPodName
-			newName = conventions.AttributeK8SPodName
-		case metadataPodUID:
-			oldName = metadataPodUID
-			newName = conventions.AttributeK8SPodUID
-		case metadataStartTime:
-			oldName = metadataStartTime
-			newName = metadataPodStartTime
-		case metadataDeployment:
-			oldName = metadataDeployment
-			newName = conventions.AttributeK8SDeploymentName
-		case metadataNode:
-			oldName = metadataNode
-			newName = conventions.AttributeK8SNodeName
-		case deprecatedMetadataCluster:
-			logger.Warn("cluster metadata param has been deprecated and will be removed soon")
-		case conventions.AttributeK8SClusterName:
-			logger.Warn("k8s.cluster.name metadata param has been deprecated and will be removed soon")
-		}
-		if oldName != "" {
-			logger.Warn(fmt.Sprintf("%s has been deprecated in favor of %s for k8s-tagger processor", oldName, newName))
-		}
-	}
-
-}
-
 func errWrongKeyConfig(cfg component.Config) error {
 	oCfg := cfg.(*Config)
 
@@ -259,43 +219,4 @@ func errWrongKeyConfig(cfg component.Config) error {
 	}
 
 	return nil
-}
-
-func warnDeprecatedPodAssociationConfig(logger *zap.Logger, cfg component.Config) {
-	oCfg := cfg.(*Config)
-	deprecated := ""
-	actual := ""
-	for _, assoc := range oCfg.Association {
-		if assoc.From == "" && assoc.Name == "" {
-			continue
-		}
-
-		deprecated += fmt.Sprintf(`
-- from: %s`, assoc.From)
-		actual += fmt.Sprintf(`
-- sources:
-  - from: %s`, assoc.From)
-
-		if assoc.Name != "" {
-			deprecated += fmt.Sprintf(`
-  name: %s`, assoc.Name)
-		}
-
-		if assoc.From != kube.ConnectionSource {
-			actual += fmt.Sprintf(`
-    name: %s`, assoc.Name)
-		}
-	}
-
-	if deprecated != "" {
-		logger.Warn(fmt.Sprintf(`Deprecated pod_association configuration detected. Please replace:
-
-pod_association:%s
-
-with
-
-pod_association:%s
-
-`, deprecated, actual))
-	}
 }

@@ -29,6 +29,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
@@ -63,12 +64,12 @@ func TestStartAndShutdown(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			sink := &consumertest.LogsSink{}
 			r := newEventsReceiver(receivertest.NewNopCreateSettings(), tc.getConfig(), sink)
-			err := r.Start(context.Background(), componenttest.NewNopHost())
+			err := r.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
 			if tc.expectedStartErr != nil {
 				require.ErrorContains(t, err, tc.expectedStartErr.Error())
-				return
+			} else {
+				require.NoError(t, err)
 			}
-			require.NoError(t, err)
 			err = r.Shutdown(context.Background())
 			if tc.expectedShutdownErr != nil {
 				require.ErrorContains(t, err, tc.expectedShutdownErr.Error())
@@ -96,7 +97,7 @@ func TestContextDone(t *testing.T) {
 	r.client = mClient
 
 	ctx, cancel := context.WithCancel(context.Background())
-	err := r.Start(ctx, componenttest.NewNopHost())
+	err := r.Start(ctx, componenttest.NewNopHost(), storage.NewNopClient())
 	require.NoError(t, err)
 	cancel()
 
@@ -125,7 +126,7 @@ func TestPoll(t *testing.T) {
 	mClient.setupMock(t)
 	r.client = mClient
 
-	err := r.Start(context.Background(), componenttest.NewNopHost())
+	err := r.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
@@ -158,7 +159,7 @@ func TestProjectGetFailure(t *testing.T) {
 	mClient := &mockEventsClient{}
 	mClient.On("GetProject", mock.Anything, "fake-project").Return(nil, fmt.Errorf("unable to get project: %d", http.StatusUnauthorized))
 
-	err := r.Start(context.Background(), componenttest.NewNopHost())
+	err := r.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
 	require.NoError(t, err)
 
 	require.Never(t, func() bool {
