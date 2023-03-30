@@ -12,7 +12,7 @@
 
 This extension implements a `configauth.ServerAuthenticator`, to be used in receivers inside the `auth` settings. The authenticator type has to be set to `jwt`.
 The incoming request is expected to have a `Authorization` header, with a value of `Bearer <token>`. The token is then validated using the configured `secret` setting.
-Currently, only HS256 is supported and we enrich the client context field `Auth` with the claims from the token. You can use this information in a processor like [`attributesprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor) pipelines to filter or enrich the data.
+Currently, only HS256 is supported and we enrich the client context field `Auth` with the claims from the token. You can use this information in a processor like [`attributesprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor) to filter or enrich the data.
 
 The following JWT fields are attached to the `Auth` field in the client context:
 
