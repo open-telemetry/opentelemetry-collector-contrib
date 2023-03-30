@@ -258,7 +258,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 		mv := v.(*accumulatedValue)
 
 		m := copyMetricMetadata(metric)
-		m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		m.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		switch histogram.AggregationTemporality() {
 		case pmetric.AggregationTemporalityDelta:

@@ -30,7 +30,7 @@ func TestAccumulateHistogram(t *testing.T) {
 	appendHistogram := func(ts time.Time, count uint64, sum float64, counts []uint64, bounds []float64, metrics pmetric.MetricSlice) {
 		metric := metrics.AppendEmpty()
 		metric.SetName("test_metric")
-		metric.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		metric.SetDescription("test description")
 		dp := metric.Histogram().DataPoints().AppendEmpty()
 		dp.SetCount(count)
