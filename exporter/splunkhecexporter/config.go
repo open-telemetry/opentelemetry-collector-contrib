@@ -31,9 +31,9 @@ import (
 const (
 	// hecPath is the default HEC path on the Splunk instance.
 	hecPath                          = "services/collector"
-	defaultContentLengthLogsLimit    = 2 * 1024 * 1024
-	defaultContentLengthMetricsLimit = 2 * 1024 * 1024
-	defaultContentLengthTracesLimit  = 2 * 1024 * 1024
+	defaultContentLengthLogsLimit    = 5 * 1024 * 1024
+	defaultContentLengthMetricsLimit = 5 * 1024 * 1024
+	defaultContentLengthTracesLimit  = 5 * 1024 * 1024
 	defaultMaxEventSize              = 5 * 1024 * 1024
 	maxContentLengthLogsLimit        = 800 * 1024 * 1024
 	maxContentLengthMetricsLimit     = 800 * 1024 * 1024

@@ -66,9 +66,9 @@ func TestLoadConfig(t *testing.T) {
 				ProfilingDataEnabled:    true,
 				ExportRaw:               true,
 				MaxEventSize:            5 * 1024 * 1024,
-				MaxContentLengthLogs:    2 * 1024 * 1024,
-				MaxContentLengthMetrics: 2 * 1024 * 1024,
-				MaxContentLengthTraces:  2 * 1024 * 1024,
+				MaxContentLengthLogs:    5 * 1024 * 1024,
+				MaxContentLengthMetrics: 5 * 1024 * 1024,
+				MaxContentLengthTraces:  5 * 1024 * 1024,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Timeout:  10 * time.Second,
 					Endpoint: "https://splunk:8088/services/collector",
