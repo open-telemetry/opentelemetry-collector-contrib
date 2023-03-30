@@ -131,31 +131,29 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 
 func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 	if val != nil && len(val.Fields) > 0 {
-		return newPathGetSetter(val.Fields)
+		return newPathGetSetter(*val)
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
-func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
-	switch path[0].Name {
+func newPathGetSetter(path ottl.Path) (ottl.GetSetter[TransformContext], error) {
+	switch path.Fields[0] {
 	case "cache":
-		mapKey := path[0].MapKey
-		if mapKey == nil {
+		if path.MapKey == nil {
 			return accessCache(), nil
 		}
-		return accessCacheKey(mapKey), nil
+		return accessCacheKey(path.MapKey), nil
 	case "resource":
-		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
+		return ottlcommon.ResourcePathGetSetter[TransformContext](ottl.Path{Fields: path.Fields[1:], MapKey: path.MapKey})
 	case "instrumentation_scope":
-		return ottlcommon.ScopePathGetSetter[TransformContext](path[1:])
+		return ottlcommon.ScopePathGetSetter[TransformContext](ottl.Path{Fields: path.Fields[1:], MapKey: path.MapKey})
 	case "metric":
-		return ottlcommon.MetricPathGetSetter[TransformContext](path[1:])
+		return ottlcommon.MetricPathGetSetter[TransformContext](ottl.Path{Fields: path.Fields[1:], MapKey: path.MapKey})
 	case "attributes":
-		mapKey := path[0].MapKey
-		if mapKey == nil {
+		if path.MapKey == nil {
 			return accessAttributes(), nil
 		}
-		return accessAttributesKey(mapKey), nil
+		return accessAttributesKey(path.MapKey), nil
 	case "start_time_unix_nano":
 		return accessStartTimeUnixNano(), nil
 	case "time_unix_nano":
@@ -181,20 +179,20 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 	case "zero_count":
 		return accessZeroCount(), nil
 	case "positive":
-		if len(path) == 1 {
+		if len(path.Fields) == 1 {
 			return accessPositive(), nil
 		}
-		switch path[1].Name {
+		switch path.Fields[1] {
 		case "offset":
 			return accessPositiveOffset(), nil
 		case "bucket_counts":
 			return accessPositiveBucketCounts(), nil
 		}
 	case "negative":
-		if len(path) == 1 {
+		if len(path.Fields) == 1 {
 			return accessNegative(), nil
 		}
-		switch path[1].Name {
+		switch path.Fields[1] {
 		case "offset":
 			return accessNegativeOffset(), nil
 		case "bucket_counts":

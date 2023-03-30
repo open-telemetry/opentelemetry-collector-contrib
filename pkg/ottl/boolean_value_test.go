@@ -38,10 +38,8 @@ func valueFor(x any) value {
 			// if the string is NAME construct a path of "name".
 			val.Literal = &mathExprLiteral{
 				Path: &Path{
-					Fields: []Field{
-						{
-							Name: "name",
-						},
+					Fields: []string{
+						"name",
 					},
 				},
 			}

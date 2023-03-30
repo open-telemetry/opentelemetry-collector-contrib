@@ -27,17 +27,16 @@ type ResourceContext interface {
 	GetResource() pcommon.Resource
 }
 
-func ResourcePathGetSetter[K ResourceContext](path []ottl.Field) (ottl.GetSetter[K], error) {
-	if len(path) == 0 {
+func ResourcePathGetSetter[K ResourceContext](path ottl.Path) (ottl.GetSetter[K], error) {
+	if len(path.Fields) == 0 {
 		return accessResource[K](), nil
 	}
-	switch path[0].Name {
+	switch path.Fields[0] {
 	case "attributes":
-		mapKey := path[0].MapKey
-		if mapKey == nil {
+		if path.MapKey == nil {
 			return accessResourceAttributes[K](), nil
 		}
-		return accessResourceAttributesKey[K](mapKey), nil
+		return accessResourceAttributesKey[K](path.MapKey), nil
 	case "dropped_attributes_count":
 		return accessResourceDroppedAttributesCount[K](), nil
 	}

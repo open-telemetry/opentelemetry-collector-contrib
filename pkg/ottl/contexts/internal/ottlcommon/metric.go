@@ -39,11 +39,11 @@ var MetricSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"METRIC_DATA_TYPE_SUMMARY":               ottl.Enum(pmetric.MetricTypeSummary),
 }
 
-func MetricPathGetSetter[K MetricContext](path []ottl.Field) (ottl.GetSetter[K], error) {
-	if len(path) == 0 {
+func MetricPathGetSetter[K MetricContext](path ottl.Path) (ottl.GetSetter[K], error) {
+	if len(path.Fields) == 0 {
 		return accessMetric[K](), nil
 	}
-	switch path[0].Name {
+	switch path.Fields[0] {
 	case "name":
 		return accessName[K](), nil
 	case "description":

@@ -37,17 +37,15 @@ func Test_MetricPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		fields   []string
 		orig     interface{}
 		newVal   interface{}
 		modified func(metric pmetric.Metric)
 	}{
 		{
 			name: "metric name",
-			path: []ottl.Field{
-				{
-					Name: "name",
-				},
+			fields: []string{
+				"name",
 			},
 			orig:   "name",
 			newVal: "new name",
@@ -57,10 +55,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric description",
-			path: []ottl.Field{
-				{
-					Name: "description",
-				},
+			fields: []string{
+				"description",
 			},
 			orig:   "description",
 			newVal: "new description",
@@ -70,10 +66,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric unit",
-			path: []ottl.Field{
-				{
-					Name: "unit",
-				},
+			fields: []string{
+				"unit",
 			},
 			orig:   "unit",
 			newVal: "new unit",
@@ -83,10 +77,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric type",
-			path: []ottl.Field{
-				{
-					Name: "type",
-				},
+			fields: []string{
+				"type",
 			},
 			orig:   int64(pmetric.MetricTypeSum),
 			newVal: int64(pmetric.MetricTypeSum),
@@ -95,10 +87,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric aggregation_temporality",
-			path: []ottl.Field{
-				{
-					Name: "aggregation_temporality",
-				},
+			fields: []string{
+				"aggregation_temporality",
 			},
 			orig:   int64(2),
 			newVal: int64(1),
@@ -108,10 +98,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric is_monotonic",
-			path: []ottl.Field{
-				{
-					Name: "is_monotonic",
-				},
+			fields: []string{
+				"is_monotonic",
 			},
 			orig:   true,
 			newVal: false,
@@ -121,10 +109,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric data points",
-			path: []ottl.Field{
-				{
-					Name: "data_points",
-				},
+			fields: []string{
+				"data_points",
 			},
 			orig:   refMetric.Sum().DataPoints(),
 			newVal: newDataPoints,
@@ -135,7 +121,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := MetricPathGetSetter[*metricContext](tt.path)
+			accessor, err := MetricPathGetSetter[*metricContext](ottl.Path{Fields: tt.fields})
 			assert.NoError(t, err)
 
 			metric := createMetricTelemetry()

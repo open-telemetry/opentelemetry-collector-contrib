@@ -110,23 +110,22 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 
 func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 	if val != nil && len(val.Fields) > 0 {
-		return newPathGetSetter(val.Fields)
+		return newPathGetSetter(*val)
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
-func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
-	switch path[0].Name {
+func newPathGetSetter(path ottl.Path) (ottl.GetSetter[TransformContext], error) {
+	switch path.Fields[0] {
 	case "cache":
-		mapKey := path[0].MapKey
-		if mapKey == nil {
+		if path.MapKey == nil {
 			return accessCache(), nil
 		}
-		return accessCacheKey(mapKey), nil
+		return accessCacheKey(path.MapKey), nil
 	case "resource":
-		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
+		return ottlcommon.ResourcePathGetSetter[TransformContext](ottl.Path{Fields: path.Fields[1:], MapKey: path.MapKey})
 	case "instrumentation_scope":
-		return ottlcommon.ScopePathGetSetter[TransformContext](path[1:])
+		return ottlcommon.ScopePathGetSetter[TransformContext](ottl.Path{Fields: path.Fields[1:], MapKey: path.MapKey})
 	default:
 		return ottlcommon.MetricPathGetSetter[TransformContext](path)
 	}

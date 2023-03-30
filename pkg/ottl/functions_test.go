@@ -90,10 +90,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Literal: &mathExprLiteral{
 							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "name",
-									},
+								Fields: []string{
+									"name",
 								},
 							},
 						},
@@ -112,10 +110,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Literal: &mathExprLiteral{
 							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "name",
-									},
+								Fields: []string{
+									"name",
 								},
 							},
 						},
@@ -391,10 +387,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								{
 									Literal: &mathExprLiteral{
 										Path: &Path{
-											Fields: []Field{
-												{
-													Name: "name",
-												},
+											Fields: []string{
+												"name",
 											},
 										},
 									},
@@ -468,10 +462,8 @@ func Test_NewFunctionCall(t *testing.T) {
 												{
 													Literal: &mathExprLiteral{
 														Path: &Path{
-															Fields: []Field{
-																{
-																	Name: "name",
-																},
+															Fields: []string{
+																"name",
 															},
 														},
 													},
@@ -519,10 +511,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								{
 									Literal: &mathExprLiteral{
 										Path: &Path{
-											Fields: []Field{
-												{
-													Name: "name",
-												},
+											Fields: []string{
+												"name",
 											},
 										},
 									},
@@ -530,10 +520,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								{
 									Literal: &mathExprLiteral{
 										Path: &Path{
-											Fields: []Field{
-												{
-													Name: "name",
-												},
+											Fields: []string{
+												"name",
 											},
 										},
 									},
@@ -576,10 +564,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Literal: &mathExprLiteral{
 							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "name",
-									},
+								Fields: []string{
+									"name",
 								},
 							},
 						},
@@ -596,10 +582,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Literal: &mathExprLiteral{
 							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "name",
-									},
+								Fields: []string{
+									"name",
 								},
 							},
 						},
@@ -616,10 +600,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Literal: &mathExprLiteral{
 							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "name",
-									},
+								Fields: []string{
+									"name",
 								},
 							},
 						},
@@ -670,10 +652,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								{
 									Literal: &mathExprLiteral{
 										Path: &Path{
-											Fields: []Field{
-												{
-													Name: "name",
-												},
+											Fields: []string{
+												"name",
 											},
 										},
 									},
@@ -686,10 +666,8 @@ func Test_NewFunctionCall(t *testing.T) {
 												{
 													Literal: &mathExprLiteral{
 														Path: &Path{
-															Fields: []Field{
-																{
-																	Name: "name",
-																},
+															Fields: []string{
+																"name",
 															},
 														},
 													},
@@ -751,10 +729,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Literal: &mathExprLiteral{
 							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "name",
-									},
+								Fields: []string{
+									"name",
 								},
 							},
 						},
@@ -835,10 +811,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Literal: &mathExprLiteral{
 							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "name",
-									},
+								Fields: []string{
+									"name",
 								},
 							},
 						},

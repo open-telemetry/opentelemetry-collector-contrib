@@ -43,37 +43,36 @@ var SpanSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"STATUS_CODE_ERROR":     ottl.Enum(ptrace.StatusCodeError),
 }
 
-func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], error) {
-	if len(path) == 0 {
+func SpanPathGetSetter[K SpanContext](path ottl.Path) (ottl.GetSetter[K], error) {
+	if len(path.Fields) == 0 {
 		return accessSpan[K](), nil
 	}
 
-	switch path[0].Name {
+	switch path.Fields[0] {
 	case "trace_id":
-		if len(path) == 1 {
+		if len(path.Fields) == 1 {
 			return accessTraceID[K](), nil
 		}
-		if path[1].Name == "string" {
+		if path.Fields[1] == "string" {
 			return accessStringTraceID[K](), nil
 		}
 	case "span_id":
-		if len(path) == 1 {
+		if len(path.Fields) == 1 {
 			return accessSpanID[K](), nil
 		}
-		if path[1].Name == "string" {
+		if path.Fields[1] == "string" {
 			return accessStringSpanID[K](), nil
 		}
 	case "trace_state":
-		mapKey := path[0].MapKey
-		if mapKey == nil {
+		if path.MapKey == nil {
 			return accessTraceState[K](), nil
 		}
-		return accessTraceStateKey[K](mapKey), nil
+		return accessTraceStateKey[K](path.MapKey), nil
 	case "parent_span_id":
-		if len(path) == 1 {
+		if len(path.Fields) == 1 {
 			return accessParentSpanID[K](), nil
 		}
-		if path[1].Name == "string" {
+		if path.Fields[1] == "string" {
 			return accessStringParentSpanID[K](), nil
 		}
 	case "name":
@@ -85,11 +84,10 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 	case "end_time_unix_nano":
 		return accessEndTimeUnixNano[K](), nil
 	case "attributes":
-		mapKey := path[0].MapKey
-		if mapKey == nil {
+		if path.MapKey == nil {
 			return accessAttributes[K](), nil
 		}
-		return accessAttributesKey[K](mapKey), nil
+		return accessAttributesKey[K](path.MapKey), nil
 	case "dropped_attributes_count":
 		return accessSpanDroppedAttributesCount[K](), nil
 	case "events":
@@ -101,10 +99,10 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 	case "dropped_links_count":
 		return accessDroppedLinksCount[K](), nil
 	case "status":
-		if len(path) == 1 {
+		if len(path.Fields) == 1 {
 			return accessStatus[K](), nil
 		}
-		switch path[1].Name {
+		switch path.Fields[1] {
 		case "code":
 			return accessStatusCode[K](), nil
 		case "message":

@@ -89,10 +89,8 @@ func Test_newGetter(t *testing.T) {
 			val: value{
 				Literal: &mathExprLiteral{
 					Path: &Path{
-						Fields: []Field{
-							{
-								Name: "name",
-							},
+						Fields: []string{
+							"name",
 						},
 					},
 				},
@@ -222,10 +220,8 @@ func Test_newGetter(t *testing.T) {
 						{
 							Literal: &mathExprLiteral{
 								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "name",
-										},
+									Fields: []string{
+										"name",
 									},
 								},
 							},

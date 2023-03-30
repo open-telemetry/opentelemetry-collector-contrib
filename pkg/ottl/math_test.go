@@ -25,21 +25,21 @@ import (
 )
 
 func mathParsePath(val *Path) (GetSetter[interface{}], error) {
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "one" {
+	if val != nil && len(val.Fields) > 0 && val.Fields[0] == "one" {
 		return &StandardGetSetter[interface{}]{
 			Getter: func(context.Context, interface{}) (interface{}, error) {
 				return int64(1), nil
 			},
 		}, nil
 	}
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "two" {
+	if val != nil && len(val.Fields) > 0 && val.Fields[0] == "two" {
 		return &StandardGetSetter[interface{}]{
 			Getter: func(context.Context, interface{}) (interface{}, error) {
 				return int64(2), nil
 			},
 		}, nil
 	}
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "three" && val.Fields[1].Name == "one" {
+	if val != nil && len(val.Fields) > 0 && val.Fields[0] == "three" && val.Fields[1] == "one" {
 		return &StandardGetSetter[interface{}]{
 			Getter: func(context.Context, interface{}) (interface{}, error) {
 				return 3.1, nil

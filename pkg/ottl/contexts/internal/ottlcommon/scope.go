@@ -27,22 +27,21 @@ type InstrumentationScopeContext interface {
 	GetInstrumentationScope() pcommon.InstrumentationScope
 }
 
-func ScopePathGetSetter[K InstrumentationScopeContext](path []ottl.Field) (ottl.GetSetter[K], error) {
-	if len(path) == 0 {
+func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path) (ottl.GetSetter[K], error) {
+	if len(path.Fields) == 0 {
 		return accessInstrumentationScope[K](), nil
 	}
 
-	switch path[0].Name {
+	switch path.Fields[0] {
 	case "name":
 		return accessInstrumentationScopeName[K](), nil
 	case "version":
 		return accessInstrumentationScopeVersion[K](), nil
 	case "attributes":
-		mapKey := path[0].MapKey
-		if mapKey == nil {
+		if path.MapKey == nil {
 			return accessInstrumentationScopeAttributes[K](), nil
 		}
-		return accessInstrumentationScopeAttributesKey[K](mapKey), nil
+		return accessInstrumentationScopeAttributesKey[K](path.MapKey), nil
 	case "dropped_attributes_count":
 		return accessInstrumentationScopeDroppedAttributesCount[K](), nil
 	}

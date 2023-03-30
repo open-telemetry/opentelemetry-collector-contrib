@@ -42,16 +42,16 @@ func Test_newPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     ottl.Path
 		orig     interface{}
 		newVal   interface{}
 		modified func(metric pmetric.Metric, cache pcommon.Map)
 	}{
 		{
 			name: "metric name",
-			path: []ottl.Field{
-				{
-					Name: "name",
+			path: ottl.Path{
+				Fields: []string{
+					"name",
 				},
 			},
 			orig:   "name",
@@ -62,9 +62,9 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric description",
-			path: []ottl.Field{
-				{
-					Name: "description",
+			path: ottl.Path{
+				Fields: []string{
+					"description",
 				},
 			},
 			orig:   "description",
@@ -75,9 +75,9 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric unit",
-			path: []ottl.Field{
-				{
-					Name: "unit",
+			path: ottl.Path{
+				Fields: []string{
+					"unit",
 				},
 			},
 			orig:   "unit",
@@ -88,9 +88,9 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric type",
-			path: []ottl.Field{
-				{
-					Name: "type",
+			path: ottl.Path{
+				Fields: []string{
+					"type",
 				},
 			},
 			orig:   int64(pmetric.MetricTypeSum),
@@ -100,9 +100,9 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric aggregation_temporality",
-			path: []ottl.Field{
-				{
-					Name: "aggregation_temporality",
+			path: ottl.Path{
+				Fields: []string{
+					"aggregation_temporality",
 				},
 			},
 			orig:   int64(2),
@@ -113,9 +113,9 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric is_monotonic",
-			path: []ottl.Field{
-				{
-					Name: "is_monotonic",
+			path: ottl.Path{
+				Fields: []string{
+					"is_monotonic",
 				},
 			},
 			orig:   true,
@@ -126,9 +126,9 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric data points",
-			path: []ottl.Field{
-				{
-					Name: "data_points",
+			path: ottl.Path{
+				Fields: []string{
+					"data_points",
 				},
 			},
 			orig:   refMetric.Sum().DataPoints(),
@@ -139,9 +139,9 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "cache",
-			path: []ottl.Field{
-				{
-					Name: "cache",
+			path: ottl.Path{
+				Fields: []string{
+					"cache",
 				},
 			},
 			orig:   pcommon.NewMap(),
@@ -152,11 +152,11 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "cache access",
-			path: []ottl.Field{
-				{
-					Name:   "cache",
-					MapKey: ottltest.Strp("temp"),
+			path: ottl.Path{
+				Fields: []string{
+					"cache",
 				},
+				MapKey: ottltest.Strp("temp"),
 			},
 			orig:   nil,
 			newVal: "new value",

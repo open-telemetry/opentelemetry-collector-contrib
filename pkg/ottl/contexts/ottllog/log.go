@@ -137,23 +137,22 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 
 func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 	if val != nil && len(val.Fields) > 0 {
-		return newPathGetSetter(val.Fields)
+		return newPathGetSetter(*val)
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
-func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
-	switch path[0].Name {
+func newPathGetSetter(path ottl.Path) (ottl.GetSetter[TransformContext], error) {
+	switch path.Fields[0] {
 	case "cache":
-		mapKey := path[0].MapKey
-		if mapKey == nil {
+		if path.MapKey == nil {
 			return accessCache(), nil
 		}
-		return accessCacheKey(mapKey), nil
+		return accessCacheKey(path.MapKey), nil
 	case "resource":
-		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
+		return ottlcommon.ResourcePathGetSetter[TransformContext](ottl.Path{Fields: path.Fields[1:], MapKey: path.MapKey})
 	case "instrumentation_scope":
-		return ottlcommon.ScopePathGetSetter[TransformContext](path[1:])
+		return ottlcommon.ScopePathGetSetter[TransformContext](ottl.Path{Fields: path.Fields[1:], MapKey: path.MapKey})
 	case "time_unix_nano":
 		return accessTimeUnixNano(), nil
 	case "observed_time_unix_nano":
@@ -165,27 +164,26 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 	case "body":
 		return accessBody(), nil
 	case "attributes":
-		mapKey := path[0].MapKey
-		if mapKey == nil {
+		if path.MapKey == nil {
 			return accessAttributes(), nil
 		}
-		return accessAttributesKey(mapKey), nil
+		return accessAttributesKey(path.MapKey), nil
 	case "dropped_attributes_count":
 		return accessDroppedAttributesCount(), nil
 	case "flags":
 		return accessFlags(), nil
 	case "trace_id":
-		if len(path) == 1 {
+		if len(path.Fields) == 1 {
 			return accessTraceID(), nil
 		}
-		if path[1].Name == "string" {
+		if path.Fields[1] == "string" {
 			return accessStringTraceID(), nil
 		}
 	case "span_id":
-		if len(path) == 1 {
+		if len(path.Fields) == 1 {
 			return accessSpanID(), nil
 		}
-		if path[1].Name == "string" {
+		if path.Fields[1] == "string" {
 			return accessStringSpanID(), nil
 		}
 	}
