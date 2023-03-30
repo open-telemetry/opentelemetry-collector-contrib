@@ -453,6 +453,7 @@ func combine(transform internalTransform, metrics pmetric.MetricSlice) pmetric.M
 func copyMetricDetails(from, to pmetric.Metric) {
 	to.SetName(from.Name())
 	to.SetUnit(from.Unit())
+	to.SetDescription(from.Description())
 	switch from.Type() {
 	case pmetric.MetricTypeGauge:
 		to.SetEmptyGauge()
