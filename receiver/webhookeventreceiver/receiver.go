@@ -10,17 +10,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/server/router/session"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/docker/docker/api/server/router/session"
+    "github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
 var (
     errNilLogsConsumer = errors.New("Missing a logs consumer")
-    errMissingEndpoint     = errors.New("Missing a receiver endpoint")
+    errMissingEndpoint = errors.New("Missing a receiver endpoint")
 )
 
 type eventReceiver struct {
@@ -33,10 +35,26 @@ type eventReceiver struct {
     logger      *zap.Logger
 }
 
+// start function manages receiver startup tasks. part of the receiver.Logs interface.
 func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
+    // noop if not nil. if start has not been called before these values should be nil. 
+    if er.server != nil && er.server.Handler != nil {
+        return nil 
+    }
+
+    // create listener from config
+    ln, err := er.cfg.HTTPServerSettings.ToListener()
+    if err != nil {
+        return err
+    }
+
+    // set up router
+    router := gin.
+
     return nil
 }
 
+// stop function manages receiver shutdown tasks. part of the receiver.Logs interface.
 func (er *eventReceiver) Shutdown(ctx context.Context) error {
     return nil
 }
