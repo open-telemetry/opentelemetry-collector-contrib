@@ -49,7 +49,8 @@ type Config struct {
 	// - status.code
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
-	Dimensions []Dimension `mapstructure:"dimensions"`
+	Dimensions                []Dimension `mapstructure:"dimensions"`
+	OverrideDefaultDimensions []Dimension `mapstructure:"override_default_dimensions"`
 
 	// DimensionsCacheSize defines the size of cache for storing Dimensions, which helps to avoid cache memory growing
 	// indefinitely over the lifetime of the collector.
@@ -86,7 +87,7 @@ var _ component.ConfigValidator = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (c Config) Validate() error {
-	err := validateDimensions(c.Dimensions)
+	err := validateDimensions(c.Dimensions, c.OverrideDefaultDimensions)
 	if err != nil {
 		return err
 	}
@@ -114,10 +115,19 @@ func (c Config) GetAggregationTemporality() pmetric.AggregationTemporality {
 }
 
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions.
-func validateDimensions(dimensions []Dimension) error {
+func validateDimensions(dimensions []Dimension, overrideDefaultDimensions []Dimension) error {
 	labelNames := make(map[string]struct{})
-	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey} {
-		labelNames[key] = struct{}{}
+	if len(overrideDefaultDimensions) > 0 {
+		for _, key := range overrideDefaultDimensions {
+			if _, ok := labelNames[key.Name]; ok {
+				return fmt.Errorf("duplicate dimension name %s", key.Name)
+			}
+			labelNames[key.Name] = struct{}{}
+		}
+	} else {
+		for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey} {
+			labelNames[key] = struct{}{}
+		}
 	}
 
 	for _, key := range dimensions {

@@ -128,9 +128,10 @@ func TestGetAggregationTemporality(t *testing.T) {
 
 func TestValidateDimensions(t *testing.T) {
 	for _, tc := range []struct {
-		name        string
-		dimensions  []Dimension
-		expectedErr string
+		name                      string
+		dimensions                []Dimension
+		overrideDefaultDimensions []Dimension
+		expectedErr               string
 	}{
 		{
 			name:       "no additional dimensions",
@@ -158,9 +159,28 @@ func TestValidateDimensions(t *testing.T) {
 			},
 			expectedErr: "duplicate dimension name service_name",
 		},
+		{
+			name: "no duplicate dimensions in overrideDefaultDimensions and dimensions",
+			dimensions: []Dimension{
+				{Name: "service_name"},
+			},
+			overrideDefaultDimensions: []Dimension{
+				{Name: "http.service"},
+			},
+		},
+		{
+			name: "duplicate dimensions in overrideDefaultDimensions and dimensions",
+			dimensions: []Dimension{
+				{Name: "service_name"},
+			},
+			overrideDefaultDimensions: []Dimension{
+				{Name: "service_name"},
+			},
+			expectedErr: "duplicate dimension name service_name",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateDimensions(tc.dimensions)
+			err := validateDimensions(tc.dimensions, tc.overrideDefaultDimensions)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
 			} else {
