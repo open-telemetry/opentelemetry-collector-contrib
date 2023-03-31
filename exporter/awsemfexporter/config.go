@@ -17,6 +17,7 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -79,14 +80,19 @@ type Config struct {
 	// Note that at the moment in order to use this feature the value "kubernetes" must also be added to the ParseJSONEncodedAttributeValues array in order to be used
 	EKSFargateContainerInsightsEnabled bool `mapstructure:"eks_fargate_container_insights_enabled"`
 
-	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
+	// ResourceToTelemetrySettings is an option for converting resource attrihutes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
-	// DetailedMetrics is the options for retaining detailed datapoint values in exported metrics (e.g instead of exporting a quantile as a statistical value,
+	// DetailedMetrics is an option for retaining detailed datapoint values in exported metrics (e.g instead of exporting a quantile as a statistical value,
 	// preserve the quantile's population)
 	DetailedMetrics bool `mapstructure:"detailed_metrics"`
+
+	// EnableEMFVersion1 is an option for sending metrics to CloudWatchLogs with Embedded Metric Format version 1 (with "_aws")
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure
+	// Otherwise, sending metrics as Embedded Metric Format version 0 (without "_aws")
+	EnableEMFVersion1 bool `mapstructure:"enable_emf_version_1"`
 
 	// logger is the Logger used for writing error/warning logs
 	logger *zap.Logger
@@ -101,6 +107,8 @@ type MetricDescriptor struct {
 	// the descriptor will only be configured if empty.
 	Overwrite bool `mapstructure:"overwrite"`
 }
+
+var _ component.Config = (*Config)(nil)
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
 func (config *Config) Validate() error {
