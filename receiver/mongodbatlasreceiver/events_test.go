@@ -136,7 +136,7 @@ func TestPoll(t *testing.T) {
 	err = r.Shutdown(context.Background())
 	require.NoError(t, err)
 
-	expected, err := golden.ReadLogs(filepath.Join("testdata", "events", "golden", "events.json"))
+	expected, err := golden.ReadLogs(filepath.Join("testdata", "events", "golden", "events.yaml"))
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
