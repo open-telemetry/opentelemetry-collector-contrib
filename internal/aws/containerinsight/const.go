@@ -68,6 +68,12 @@ const (
 	MemReservedCapacity        = "memory_reserved_capacity"
 	MemUtilizationOverPodLimit = "memory_utilization_over_pod_limit"
 
+	ProcessCount        = "process_count"
+	FileDescriptorCount = "fd_count"
+	SocketCount         = "socket_count"
+	ThreadsCurrent      = "thread_current"
+	ThreadsMax          = "threads_max"
+
 	NetIfce       = "interface"
 	NetRxBytes    = "network_rx_bytes"
 	NetRxPackets  = "network_rx_packets"

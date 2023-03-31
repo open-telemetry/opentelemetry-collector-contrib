@@ -24,12 +24,12 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
-
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
+	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores/kubeletutil"
 )
 
@@ -415,8 +415,7 @@ func (p *PodStore) decorateMem(metric CIMetric, pod *corev1.Pod) {
 
 func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 	if metric.GetTag(ci.MetricType) == ci.TypePod {
-		metric.AddTag(ci.PodStatus, string(pod.Status.Phase))
-		var curContainerRestarts int
+		curContainerRestarts := 0
 		for _, containerStatus := range pod.Status.ContainerStatuses {
 			curContainerRestarts += int(containerStatus.RestartCount)
 		}
@@ -433,6 +432,62 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 			}
 			p.setPrevMeasurement(ci.TypePod, podKey, prevPodMeasurement{containersRestarts: curContainerRestarts})
 		}
+
+		// Getting the pod phase to know the pod's lifecycle (whether the pod is ready for serving traffics - succeed, etc)
+		// https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
+		podStatusUnknownCount := 0
+		podStatusPendingCount := 0
+		podStatusRunningCount := 0
+		podStatusFailedCount := 0
+		podStatusSucceededCount := 0
+		switch pod.Status.Phase {
+		case corev1.PodSucceeded:
+			podStatusSucceededCount += 1
+		case corev1.PodPending:
+			podStatusPendingCount += 1
+		case corev1.PodRunning:
+			podStatusRunningCount += 1
+		case corev1.PodFailed:
+			podStatusFailedCount += 1
+		case corev1.PodUnknown:
+			podStatusUnknownCount += 1
+		}
+
+		metric.AddTag(ci.PodStatus, string(pod.Status.Phase))
+		metric.AddField(ci.PodStatusRunning, podStatusRunningCount)
+		metric.AddField(ci.PodStatusFailed, podStatusFailedCount)
+		metric.AddField(ci.PodStatusPending, podStatusPendingCount)
+		metric.AddField(ci.PodStatusUnknown, podStatusUnknownCount)
+		metric.AddField(ci.PodStatusSucceeded, podStatusSucceededCount)
+
+		// Getting the pod phase to know the pod's lifecycle (whether the pod is ready for serving traffics - succeed, etc)
+		// https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
+		podConditionReadyCount := 0
+		podConditionScheduledCount := 0
+		podConditionIntializedCount := 0
+		podConditionContainerReadyCount := 0
+		podConditionDistuptionTargetCount := 0
+		for _, condition := range pod.Status.Conditions {
+			switch condition.Type {
+			case corev1.PodReady:
+				podConditionReadyCount += 1
+			case corev1.PodScheduled:
+				podConditionScheduledCount += 1
+			case corev1.PodInitialized:
+				podConditionIntializedCount += 1
+			case corev1.ContainersReady:
+				podConditionContainerReadyCount += 1
+			case corev1.DisruptionTarget:
+				podConditionDistuptionTargetCount += 1
+			}
+		}
+
+		metric.AddField(ci.PodStatusReady, podConditionReadyCount)
+		metric.AddField(ci.PodStatusScheduled, podConditionScheduledCount)
+		metric.AddField(ci.PodStatusInitialized, podConditionIntializedCount)
+		metric.AddField(ci.PodStatusDisruption, podConditionDistuptionTargetCount)
+		metric.AddField(ci.PodStatusContainersReady, podConditionContainerReadyCount)
+
 	} else if metric.GetTag(ci.MetricType) == ci.TypeContainer {
 		if containerName := metric.GetTag(ci.ContainerNamekey); containerName != "" {
 			for _, containerStatus := range pod.Status.ContainerStatuses {
@@ -625,6 +680,7 @@ func (p *PodStore) addPodOwnersAndPodName(metric CIMetric, pod *corev1.Pod, kube
 
 func addContainerCount(metric CIMetric, pod *corev1.Pod) {
 	runningContainerCount := 0
+
 	for _, containerStatus := range pod.Status.ContainerStatuses {
 		if containerStatus.State.Running != nil {
 			runningContainerCount++

@@ -18,9 +18,8 @@ import (
 	"regexp"
 
 	cinfo "github.com/google/cadvisor/info/v1"
-	"go.uber.org/zap"
-
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"go.uber.org/zap"
 )
 
 var allowedPaths = regexp.MustCompile(`^(tmpfs|\/dev\/.*|overlay)$`)
@@ -75,12 +74,10 @@ func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMem
 }
 
 func NewFileSystemMetricExtractor(logger *zap.Logger) *FileSystemMetricExtractor {
-	fse := &FileSystemMetricExtractor{
+	return &FileSystemMetricExtractor{
 		logger:          logger,
 		allowListRegexP: allowedPaths,
 	}
-
-	return fse
 }
 
 func getFSMetricType(containerType string, logger *zap.Logger) string {
