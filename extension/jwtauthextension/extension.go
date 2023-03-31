@@ -92,26 +92,8 @@ func (e *jwtExtension) authenticate(ctx context.Context, headers map[string][]st
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		subject, err := claims.GetSubject()
-		if err != nil {
-			return ctx, fmt.Errorf("failed to get subject from token: %w", err)
-		}
-
-		issuer, err := claims.GetIssuer()
-		if err != nil {
-			return ctx, fmt.Errorf("failed to get issuer from token: %w", err)
-		}
-
-		audience, err := claims.GetAudience()
-		if err != nil {
-			return ctx, fmt.Errorf("failed to get audience from token: %w", err)
-		}
-
 		cl := client.FromContext(ctx)
 		cl.Auth = &authData{
-			issuer:    issuer,
-			audience:  audience,
-			subject:   subject,
 			jwtClaims: claims,
 		}
 		return client.NewContext(ctx, cl), nil

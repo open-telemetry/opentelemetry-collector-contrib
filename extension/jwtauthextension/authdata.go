@@ -22,9 +22,6 @@ import (
 var _ client.AuthData = (*authData)(nil)
 
 type authData struct {
-	issuer    string
-	subject   string
-	audience  []string
 	jwtClaims jwt.MapClaims
 }
 
