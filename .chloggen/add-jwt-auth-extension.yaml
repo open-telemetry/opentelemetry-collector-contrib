@@ -1,0 +1,11 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: new_component
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: jwtauthextension
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Provide JWT authentication for OTLP receiver.
+
+# One or more tracking issues related to the change
+issues: []
