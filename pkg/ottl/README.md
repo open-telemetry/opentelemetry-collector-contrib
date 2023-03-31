@@ -55,7 +55,7 @@ Values are passed as input to an Invocation or are used in a Boolean Expression.
 - [Literals](#literals)
 - [Enums](#enums)
 - [Converters](#converters)
-- [Math Expressions](#math_expressions)
+- [Math Expressions](#math-expressions)
 
 #### Paths
 
@@ -66,7 +66,7 @@ A Path Value is a reference to a telemetry field.  Paths are made up of lowercas
 - Square brackets and keys (`["key"]`) are used to access values within maps.
 
 When accessing a map's value, if the given key does not exist, `nil` will be returned.
-This can be used to check for the presence of a key within a map within a [Boolean Expression](#boolean_expressions).
+This can be used to check for the presence of a key within a map within a [Boolean Expression](#boolean-expressions).
 
 Example Paths
 - `name`
