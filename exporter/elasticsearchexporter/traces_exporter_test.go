@@ -186,11 +186,11 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 
 		mustSendTracesWithAttributes(t, exporter,
 			map[string]string{
-				tracesPrefixKey: "attrprefix-",
-				tracesSuffixKey: suffix,
+				indexPrefix: "attrprefix-",
+				indexSuffix: suffix,
 			},
 			map[string]string{
-				tracesPrefixKey: prefix,
+				indexPrefix: prefix,
 			},
 		)
 

@@ -196,11 +196,11 @@ func TestExporter_PushEvent(t *testing.T) {
 
 		mustSendLogsWithAttributes(t, exporter,
 			map[string]string{
-				logsPrefixKey: "attrprefix-",
-				logsSuffixKey: suffix,
+				indexPrefix: "attrprefix-",
+				indexSuffix: suffix,
 			},
 			map[string]string{
-				logsPrefixKey: prefix,
+				indexPrefix: prefix,
 			},
 		)
 

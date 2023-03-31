@@ -26,11 +26,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	logsPrefixKey = "logs_index_prefix"
-	logsSuffixKey = "logs_index_suffix"
-)
-
 type elasticsearchLogsExporter struct {
 	logger *zap.Logger
 
@@ -119,8 +114,8 @@ func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Lo
 func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		prefix := getFromBothResourceAndAttribute(logsPrefixKey, resource, record)
-		suffix := getFromBothResourceAndAttribute(logsSuffixKey, resource, record)
+		prefix := getFromBothResourceAndAttribute(indexPrefix, resource, record)
+		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, record)
 
 		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
 	}
