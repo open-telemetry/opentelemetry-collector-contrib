@@ -14,13 +14,8 @@ This extension implements a `configauth.ServerAuthenticator`, to be used in rece
 The incoming request is expected to have a `Authorization` header, with a value of `Bearer <token>`. The token is then validated using the configured `secret` setting.
 Currently, only HS256 is supported and we enrich the client context field `Auth` with the claims from the token. You can use this information in a processor like [`attributesprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor) to filter or enrich the data.
 
-The following JWT fields are attached to the `Auth` field in the client context:
-
-- `sub` - In the JSON Web Token (JWT) standard, the "sub" (subject) claim is a string that identifies the principal that is the subject of the JWT. This can be a human user, an organization, or a service. The "sub" claim is used to provide some basic information about the context in which the JWT was issued.
-- `iss` - In the JSON Web Token (JWT) standard, the "iss" (issuer) claim is a string that identifies the principal that issued the JWT. This can be a human user, an organization, or a service.
-- `aud` - In the JSON Web Token (JWT) standard, the "aud" (audience) claim is a string or array of strings that identifies the recipients that the JWT is intended for. This can be a specific application, a set of applications, or the general public.
-
-Custom claims can be accessed on the `Auth` data with the dot notation, e.g. `GetAttribute("jwtClaims.yourClaim")`. Only one level of nesting is supported.
+All claims can be accessed on the `Auth` data with the dot notation, e.g. `GetAttribute("jwtClaims.iss")`. Only one level of nesting is supported.
+Claims with multiple value like `aud` can be accessed with `GetAttribute("audience")`.
 
 ## Configuration
 
