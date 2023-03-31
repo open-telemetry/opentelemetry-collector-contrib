@@ -5,7 +5,7 @@ change_type: enhancement
 component: prometheusexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Accumulate sums and histograms with delta temporality
+note: Accumulate histograms with delta temporality
 
 # One or more tracking issues related to the change
 issues: [4968]
