@@ -64,11 +64,11 @@ func TestJWTAuthenticationSucceeded(t *testing.T) {
 
 	clientInfo := client.FromContext(ctx)
 
-	assert.Equal(t, "test", clientInfo.Auth.GetAttribute("issuer"))
-	assert.Equal(t, "somebody", clientInfo.Auth.GetAttribute("subject"))
-	assert.Equal(t, []string{"somebody_else"}, clientInfo.Auth.GetAttribute("audience"))
-	assert.Equal(t, "123456789", clientInfo.Auth.GetAttribute("jwtClaims.projectID"))
-	assert.IsType(t, clientInfo.Auth.GetAttribute("jwtClaims"), jwt.MapClaims{})
+	assert.Equal(t, "test", clientInfo.Auth.GetAttribute("iss"))
+	assert.Equal(t, "somebody", clientInfo.Auth.GetAttribute("sub"))
+	assert.Equal(t, []any{"somebody_else"}, clientInfo.Auth.GetAttribute("aud"))
+	assert.Equal(t, "123456789", clientInfo.Auth.GetAttribute("projectID"))
+	assert.Len(t, clientInfo.Auth.GetAttributeNames(), 7) // 6 standard claims + 1 custom claim
 
 	// test, upper-case header
 	ctx, err = p.Authenticate(context.Background(), map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", signingString)}})
@@ -79,11 +79,11 @@ func TestJWTAuthenticationSucceeded(t *testing.T) {
 
 	clientInfo = client.FromContext(ctx)
 
-	assert.Equal(t, "test", clientInfo.Auth.GetAttribute("issuer"))
-	assert.Equal(t, "somebody", clientInfo.Auth.GetAttribute("subject"))
-	assert.Equal(t, []string{"somebody_else"}, clientInfo.Auth.GetAttribute("audience"))
-	assert.Equal(t, "123456789", clientInfo.Auth.GetAttribute("jwtClaims.projectID"))
-	assert.IsType(t, clientInfo.Auth.GetAttribute("jwtClaims"), jwt.MapClaims{})
+	assert.Equal(t, "test", clientInfo.Auth.GetAttribute("iss"))
+	assert.Equal(t, "somebody", clientInfo.Auth.GetAttribute("sub"))
+	assert.Equal(t, []any{"somebody_else"}, clientInfo.Auth.GetAttribute("aud"))
+	assert.Equal(t, "123456789", clientInfo.Auth.GetAttribute("projectID"))
+	assert.Len(t, clientInfo.Auth.GetAttributeNames(), 7) // 6 standard claims + 1 custom claim
 }
 
 func TestJWTExpired(t *testing.T) {

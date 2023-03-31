@@ -53,6 +53,7 @@ func newExtension(cfg *Config, logger *zap.Logger) (auth.Server, error) {
 		logger:    logger,
 		jwtSecret: []byte(cfg.JWTSecret),
 	}
+
 	return auth.NewServer(auth.WithServerStart(oe.start), auth.WithServerAuthenticate(oe.authenticate)), nil
 }
 
