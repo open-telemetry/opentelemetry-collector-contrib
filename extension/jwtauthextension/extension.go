@@ -76,7 +76,7 @@ func (e *jwtExtension) authenticate(ctx context.Context, headers map[string][]st
 
 	rawToken := parts[1]
 
-	token, err := jwt.Parse(rawToken, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(rawToken, jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -90,26 +90,31 @@ func (e *jwtExtension) authenticate(ctx context.Context, headers map[string][]st
 		return nil, errJWTInvalid
 	}
 
-	subject, err := token.Claims.GetSubject()
-	if err != nil {
-		return ctx, fmt.Errorf("failed to get subject from token: %w", err)
-	}
+	if claims, ok := token.Claims.(jwt.MapClaims); ok {
+		subject, err := claims.GetSubject()
+		if err != nil {
+			return ctx, fmt.Errorf("failed to get subject from token: %w", err)
+		}
 
-	issuer, err := token.Claims.GetIssuer()
-	if err != nil {
-		return ctx, fmt.Errorf("failed to get issuer from token: %w", err)
-	}
+		issuer, err := claims.GetIssuer()
+		if err != nil {
+			return ctx, fmt.Errorf("failed to get issuer from token: %w", err)
+		}
 
-	audience, err := token.Claims.GetAudience()
-	if err != nil {
-		return ctx, fmt.Errorf("failed to get audience from token: %w", err)
-	}
+		audience, err := claims.GetAudience()
+		if err != nil {
+			return ctx, fmt.Errorf("failed to get audience from token: %w", err)
+		}
 
-	cl := client.FromContext(ctx)
-	cl.Auth = &authData{
-		issuer:   issuer,
-		audience: audience,
-		subject:  subject,
+		cl := client.FromContext(ctx)
+		cl.Auth = &authData{
+			issuer:    issuer,
+			audience:  audience,
+			subject:   subject,
+			jwtClaims: claims,
+		}
+		return client.NewContext(ctx, cl), nil
+	} else {
+		return ctx, fmt.Errorf("failed to get claims from token: %w", err)
 	}
-	return client.NewContext(ctx, cl), nil
 }

@@ -14,14 +14,19 @@
 
 package jwtauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jwtauthextension"
 
-import "go.opentelemetry.io/collector/client"
+import (
+	"github.com/golang-jwt/jwt/v5"
+	"go.opentelemetry.io/collector/client"
+	"strings"
+)
 
 var _ client.AuthData = (*authData)(nil)
 
 type authData struct {
-	issuer   string
-	subject  string
-	audience []string
+	issuer    string
+	subject   string
+	audience  []string
+	jwtClaims jwt.MapClaims
 }
 
 func (a *authData) GetAttribute(name string) interface{} {
@@ -32,11 +37,19 @@ func (a *authData) GetAttribute(name string) interface{} {
 		return a.subject
 	case "audience":
 		return a.audience
+	case "jwtClaims":
+		return a.jwtClaims
 	default:
+		segments := strings.Split(name, ".")
+		if strings.HasPrefix(name, "jwtClaims.") && len(segments) == 2 {
+			if val, ok := a.jwtClaims[segments[1]]; ok {
+				return val
+			}
+		}
 		return nil
 	}
 }
 
 func (*authData) GetAttributeNames() []string {
-	return []string{"issuer", "subject", "audience"}
+	return []string{"issuer", "subject", "audience", "jwtClaims"}
 }

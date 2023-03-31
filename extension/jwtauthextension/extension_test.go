@@ -38,15 +38,19 @@ func TestJWTAuthenticationSucceeded(t *testing.T) {
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+	cc := jwt.MapClaims{
 		// A usual scenario is to set the expiration time relative to the current time
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		NotBefore: jwt.NewNumericDate(time.Now()),
-		Issuer:    "test",
-		Subject:   "somebody",
-		Audience:  []string{"somebody_else"},
-	})
+		"exp": jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+		"iat": jwt.NewNumericDate(time.Now()),
+		"nbf": jwt.NewNumericDate(time.Now()),
+		"iss": "test",
+		"sub": "somebody",
+		"aud": []string{"somebody_else"},
+
+		// This is a custom claim
+		"projectID": "123456789",
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, cc)
 
 	signingString, err := token.SignedString(mySigningKey)
 	assert.NoError(t, err)
@@ -58,6 +62,14 @@ func TestJWTAuthenticationSucceeded(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
 
+	clientInfo := client.FromContext(ctx)
+
+	assert.Equal(t, "test", clientInfo.Auth.GetAttribute("issuer"))
+	assert.Equal(t, "somebody", clientInfo.Auth.GetAttribute("subject"))
+	assert.Equal(t, []string{"somebody_else"}, clientInfo.Auth.GetAttribute("audience"))
+	assert.Equal(t, "123456789", clientInfo.Auth.GetAttribute("jwtClaims.projectID"))
+	assert.IsType(t, clientInfo.Auth.GetAttribute("jwtClaims"), jwt.MapClaims{})
+
 	// test, upper-case header
 	ctx, err = p.Authenticate(context.Background(), map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", signingString)}})
 
@@ -65,11 +77,13 @@ func TestJWTAuthenticationSucceeded(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
 
-	clientInfo := client.FromContext(ctx)
+	clientInfo = client.FromContext(ctx)
 
 	assert.Equal(t, "test", clientInfo.Auth.GetAttribute("issuer"))
 	assert.Equal(t, "somebody", clientInfo.Auth.GetAttribute("subject"))
 	assert.Equal(t, []string{"somebody_else"}, clientInfo.Auth.GetAttribute("audience"))
+	assert.Equal(t, "123456789", clientInfo.Auth.GetAttribute("jwtClaims.projectID"))
+	assert.IsType(t, clientInfo.Auth.GetAttribute("jwtClaims"), jwt.MapClaims{})
 }
 
 func TestJWTExpired(t *testing.T) {

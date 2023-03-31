@@ -16,9 +16,11 @@ Currently, only HS256 is supported and we enrich the client context field `Auth`
 
 The following JWT fields are attached to the `Auth` field in the client context:
 
-- `subject` - In the JSON Web Token (JWT) standard, the "sub" (subject) claim is a string that identifies the principal that is the subject of the JWT. This can be a human user, an organization, or a service. The "sub" claim is used to provide some basic information about the context in which the JWT was issued.
-- `issuer` - In the JSON Web Token (JWT) standard, the "iss" (issuer) claim is a string that identifies the principal that issued the JWT. This can be a human user, an organization, or a service.
-- `audience` - In the JSON Web Token (JWT) standard, the "aud" (audience) claim is a string or array of strings that identifies the recipients that the JWT is intended for. This can be a specific application, a set of applications, or the general public.
+- `sub` - In the JSON Web Token (JWT) standard, the "sub" (subject) claim is a string that identifies the principal that is the subject of the JWT. This can be a human user, an organization, or a service. The "sub" claim is used to provide some basic information about the context in which the JWT was issued.
+- `iss` - In the JSON Web Token (JWT) standard, the "iss" (issuer) claim is a string that identifies the principal that issued the JWT. This can be a human user, an organization, or a service.
+- `aud` - In the JSON Web Token (JWT) standard, the "aud" (audience) claim is a string or array of strings that identifies the recipients that the JWT is intended for. This can be a specific application, a set of applications, or the general public.
+
+Custom claims can be accessed on the `Auth` data with the dot notation, e.g. `GetAttribute("jwtClaims.yourClaim")`. Only one level of nesting is supported.
 
 ## Configuration
 
