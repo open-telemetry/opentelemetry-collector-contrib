@@ -70,7 +70,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	exporterCfg := &Config{
 		Namespace: "test",
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":8787",
+			Endpoint: "localhost:8787",
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 2 * time.Hour,
