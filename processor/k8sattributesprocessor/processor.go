@@ -170,22 +170,18 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 	default:
 		return
 	}
-	// addIfAbsent reports whether it has added the value v to the resource attribute k.
-	// It is false when v is empty or k is already set.
-	addIfAbsent := func(k, v string) bool {
-		if v == "" {
-			return false
-		}
-		if _, ok := attrs.Get(k); ok {
-			return false
-		}
-		attrs.PutStr(k, v)
-		return true
+	if _, ok := attrs.Get(conventions.AttributeK8SContainerName); !ok && containerSpec.Name != "" {
+		attrs.PutStr(conventions.AttributeK8SContainerName, containerSpec.Name)
 	}
-	addIfAbsent(conventions.AttributeK8SContainerName, containerSpec.Name)
-	addIfAbsent(conventions.AttributeContainerImageName, containerSpec.ImageName)
-	addIfAbsent(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
-	if !addIfAbsent(conventions.AttributeContainerID, containerSpec.ID) {
+	if _, ok := attrs.Get(conventions.AttributeContainerImageName); !ok && containerSpec.ImageName != "" {
+		attrs.PutStr(conventions.AttributeContainerImageName, containerSpec.ImageName)
+	}
+	if _, ok := attrs.Get(conventions.AttributeContainerImageTag); !ok && containerSpec.ImageTag != "" {
+		attrs.PutStr(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
+	}
+	if _, ok := attrs.Get(conventions.AttributeContainerID); !ok && containerSpec.ID != "" {
+		attrs.PutStr(conventions.AttributeContainerID, containerSpec.ID)
+	} else {
 		// attempt to get container ID from restart count
 		runID := -1
 		runIDAttr, ok := attrs.Get(conventions.AttributeK8SContainerRestartCount)
