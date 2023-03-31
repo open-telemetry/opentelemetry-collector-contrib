@@ -22,7 +22,7 @@ In order to collect logs, at least one project must be specified. By default, lo
 
 In order to collect project events, the requesting API key needs the appropriate permission which at minimum is the `Project Read Only` role. Project events are specific to a single project.
 
-In order to collect organization events, the requesting API needs the appropriate permission which at minimum is the `Organization Member` role. Organization events are collected across all the projects hosted on Atlas within the organization. These events are not associated with a project.
+In order to collect organization events, the requesting API key needs the appropriate permission which at minimum is the `Organization Member` role. Organization events are collected across all the projects hosted on Atlas within the organization. These events are not associated with a project.
 
 MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/logs/#logs) recommends a polling interval of 5 minutes.
 

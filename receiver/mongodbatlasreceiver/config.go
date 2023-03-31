@@ -116,7 +116,7 @@ var (
 
 	// Logs Receiver Errors
 	errNoProjects    = errors.New("at least one 'project' must be specified")
-	errNoEvents      = errors.New("at least one 'project' or 'org' event type must be specified")
+	errNoEvents      = errors.New("at least one 'project' or 'organizations' event type must be specified")
 	errClusterConfig = errors.New("only one of 'include_clusters' or 'exclude_clusters' may be specified")
 )
 
