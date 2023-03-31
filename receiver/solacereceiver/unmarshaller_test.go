@@ -553,6 +553,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 					"special_key": nil,
 				},
 			},
+			// we no longer expect the port when the IP is not present
 			want: map[string]interface{}{
 				"messaging.system":                                        "SolacePubSub+",
 				"messaging.operation":                                     "receive",
@@ -565,13 +566,11 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.solace.delivery_mode":                          "Unknown Delivery Mode (1000)",
 				"messaging.solace.dropped_enqueue_events_success":         int64(42),
 				"messaging.solace.dropped_enqueue_events_failed":          int64(24),
-				"net.host.port":                                           int64(55555),
-				"net.peer.port":                                           int64(12345),
 				"messaging.solace.broker_receive_time_unix_nano":          int64(1357924680),
 				"messaging.solace.dropped_application_message_properties": true,
 			},
 			// Invalid delivery mode, missing IPs, invalid baggage string
-			expectedUnmarshallingErrors: 4,
+			expectedUnmarshallingErrors: 2,
 		},
 	}
 	for _, tt := range tests {
@@ -588,6 +587,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 // Validate that all event types are properly handled and appended into the span data
 func TestUnmarshallerEvents(t *testing.T) {
 	someErrorString := "some error"
+	somePartitionNumber := uint32(345)
 	tests := []struct {
 		name                 string
 		spanData             *model_v1.SpanData
@@ -604,8 +604,9 @@ func TestUnmarshallerEvents(t *testing.T) {
 			spanData: &model_v1.SpanData{
 				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
 					{
-						Dest:         &model_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
-						TimeUnixNano: 123456789,
+						Dest:            &model_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
+						TimeUnixNano:    123456789,
+						PartitionNumber: &somePartitionNumber,
 					},
 				},
 			},
@@ -613,6 +614,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
+					"messaging.solace.partition_number":     345,
 				})
 			},
 		},
