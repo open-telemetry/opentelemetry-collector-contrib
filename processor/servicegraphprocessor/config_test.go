@@ -49,8 +49,9 @@ func TestLoadConfig(t *testing.T) {
 				TTL:      time.Second,
 				MaxItems: 10,
 			},
-			CacheLoop:           2 * time.Minute,
-			StoreExpirationLoop: 10 * time.Second,
+			CacheLoop:                 2 * time.Minute,
+			StoreExpirationLoop:       10 * time.Second,
+			VirtualNodePeerAttributes: []string{"db.name", "rpc.service"},
 		},
 		cfg.Processors[component.NewID(typeStr)],
 	)

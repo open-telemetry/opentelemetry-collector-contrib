@@ -16,8 +16,6 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"log"
-	"os"
-	"path/filepath"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -28,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 )
@@ -255,29 +254,22 @@ type FileDataProvider struct {
 // NewFileDataProvider creates an instance of FileDataProvider which generates test data
 // loaded from a file.
 func NewFileDataProvider(filePath string, dataType component.DataType) (*FileDataProvider, error) {
-	buf, err := os.ReadFile(filepath.Clean(filePath))
-	if err != nil {
-		return nil, err
-	}
-
 	dp := &FileDataProvider{}
+	var err error
 	// Load the message from the file and count the data points.
 	switch dataType {
 	case component.DataTypeTraces:
-		unmarshaler := &ptrace.JSONUnmarshaler{}
-		if dp.traces, err = unmarshaler.UnmarshalTraces(buf); err != nil {
+		if dp.traces, err = golden.ReadTraces(filePath); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.traces.SpanCount()
 	case component.DataTypeMetrics:
-		unmarshaler := &pmetric.JSONUnmarshaler{}
-		if dp.metrics, err = unmarshaler.UnmarshalMetrics(buf); err != nil {
+		if dp.metrics, err = golden.ReadMetrics(filePath); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.metrics.DataPointCount()
 	case component.DataTypeLogs:
-		unmarshaler := &plog.JSONUnmarshaler{}
-		if dp.logs, err = unmarshaler.UnmarshalLogs(buf); err != nil {
+		if dp.logs, err = golden.ReadLogs(filePath); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.logs.LogRecordCount()

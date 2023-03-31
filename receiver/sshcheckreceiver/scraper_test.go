@@ -96,20 +96,20 @@ func TestScraper(t *testing.T) {
 	}{
 		{
 			name:     "metrics_golden",
-			filename: "metrics_golden.json",
+			filename: "metrics_golden.yaml",
 		},
 		{
 			name:       "metrics_golden_sftp",
-			filename:   "metrics_golden_sftp.json",
+			filename:   "metrics_golden_sftp.yaml",
 			enableSFTP: true,
 		},
 		{
 			name:     "cannot_authenticate",
-			filename: "cannot_authenticate.json",
+			filename: "cannot_authenticate.yaml",
 		},
 		{
 			name:     "invalid_endpoint",
-			filename: "invalid_endpoint.json",
+			filename: "invalid_endpoint.yaml",
 		},
 	}
 
