@@ -49,7 +49,7 @@ func createDefaultConfig() component.Config {
 		LogStreamName:                   "",
 		Namespace:                       "",
 		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
-		EnableEMFVersion1:               true,
+		Version:                         "1",
 		RetainInitialValueOfDeltaMetric: false,
 		OutputDestination:               "cloudwatch",
 		logger:                          zap.NewNop(),

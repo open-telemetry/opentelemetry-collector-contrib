@@ -79,6 +79,7 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 		metricTranslator: newMetricTranslator(*config),
 		retryCnt:         *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
+		pusherMap:        map[cwlogs.PusherKey]cwlogs.Pusher{},
 	}
 
 	return emfExporter, nil

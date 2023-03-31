@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package resourcedetectionprocessor implements a processor for specifying resource
-// labels to be added to OpenCensus trace data and metrics data.
+//go:generate mdatagen metadata.yaml
+
+// package resourcedetectionprocessor implements a processor
+// which can be used to detect resource information from the host,
+// in a format that conforms to the OpenTelemetry resource semantic conventions, and append or
+// override the resource value in telemetry data with this information.
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"

@@ -28,7 +28,11 @@ func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTime *cpu.TimesS
 
 func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization ucal.CPUUtilization) {}
 
-func getProcessExecutable(processHandle) (*executableMetadata, error) {
+func getProcessName(processHandle, string) (string, error) {
+	return nil, nil
+}
+
+func getProcessExecutable(processHandle) (string, error) {
 	return nil, nil
 }
 

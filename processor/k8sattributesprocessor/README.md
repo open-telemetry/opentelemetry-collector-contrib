@@ -116,11 +116,14 @@ k8sattributes:
         - k8s.node.name
         - k8s.pod.start_time
     pod_association:
-     - from: resource_attribute
-       name: k8s.pod.ip
-     - from: resource_attribute
-       name: k8s.pod.uid
-     - from: connection
+      - sources:
+          - from: resource_attribute
+            name: k8s.pod.ip
+      - sources:
+          - from: resource_attribute
+            name: k8s.pod.uid
+      - sources:
+          - from: connection
 ```
 
 ## Role-based access control

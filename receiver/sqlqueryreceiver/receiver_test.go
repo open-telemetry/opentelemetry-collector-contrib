@@ -59,6 +59,6 @@ func fakeDBConnect(string, string) (*sql.DB, error) {
 	return nil, nil
 }
 
-func mkFakeClient(db *sql.DB, s string, logger *zap.Logger) dbClient {
-	return &fakeDBClient{responses: [][]metricRow{{{"foo": "111"}}}}
+func mkFakeClient(db, string, *zap.Logger) dbClient {
+	return &fakeDBClient{stringMaps: [][]stringMap{{{"foo": "111"}}}}
 }

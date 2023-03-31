@@ -89,10 +89,10 @@ type Config struct {
 	// preserve the quantile's population)
 	DetailedMetrics bool `mapstructure:"detailed_metrics"`
 
-	// EnableEMFVersion1 is an option for sending metrics to CloudWatchLogs with Embedded Metric Format version 1 (with "_aws")
+	// Version is an option for sending metrics to CloudWatchLogs with Embedded Metric Format in selected version  (with "_aws")
 	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure
 	// Otherwise, sending metrics as Embedded Metric Format version 0 (without "_aws")
-	EnableEMFVersion1 bool `mapstructure:"enable_emf_version_1"`
+	Version string `mapstructure:"version"`
 
 	// logger is the Logger used for writing error/warning logs
 	logger *zap.Logger

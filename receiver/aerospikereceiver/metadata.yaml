@@ -1,5 +1,11 @@
 name: aerospikereceiver
 
+status:
+  type: receiver
+  stability: alpha
+  pipelines: [metrics]
+  distributions: [contrib]
+
 resource_attributes:
   aerospike.node.name:
     description: Name of the Aerospike node collected from
