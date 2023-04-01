@@ -663,16 +663,19 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		},
 		{
 			name:          "Exe Error",
+			osFilter:      "darwin",
 			exeError:      errors.New("err1"),
 			expectedError: `error reading process executable for pid 1: err1`,
 		},
 		{
 			name:          "Cmdline Error",
+			osFilter:      "darwin",
 			cmdlineError:  errors.New("err2"),
 			expectedError: `error reading command for process "test" (pid 1): err2`,
 		},
 		{
 			name:          "Username Error",
+			osFilter:      "darwin",
 			usernameError: errors.New("err3"),
 			expectedError: `error reading username for process "test" (pid 1): err3`,
 		},
@@ -693,46 +696,55 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		},
 		{
 			name:               "Memory Percent Error",
+			osFilter:           "darwin",
 			memoryPercentError: errors.New("err-mem-percent"),
 			expectedError:      `error reading memory utilization for process "test" (pid 1): err-mem-percent`,
 		},
 		{
 			name:            "IO Counters Error",
+			osFilter:        "darwin",
 			ioCountersError: errors.New("err7"),
 			expectedError:   `error reading disk usage for process "test" (pid 1): err7`,
 		},
 		{
 			name:           "Parent PID Error",
+			osFilter:       "darwin",
 			parentPidError: errors.New("err8"),
 			expectedError:  `error reading parent pid for process "test" (pid 1): err8`,
 		},
 		{
 			name:            "Page Faults Error",
+			osFilter:        "darwin",
 			pageFaultsError: errors.New("err-paging"),
 			expectedError:   `error reading memory paging info for process "test" (pid 1): err-paging`,
 		},
 		{
 			name:            "Thread count Error",
+			osFilter:        "darwin",
 			numThreadsError: errors.New("err8"),
 			expectedError:   `error reading thread info for process "test" (pid 1): err8`,
 		},
 		{
 			name:                "Context Switches Error",
+			osFilter:            "darwin",
 			numCtxSwitchesError: errors.New("err9"),
 			expectedError:       `error reading context switch counts for process "test" (pid 1): err9`,
 		},
 		{
 			name:          "File Descriptors Error",
+			osFilter:      "darwin",
 			numFDsError:   errors.New("err10"),
 			expectedError: `error reading open file descriptor count for process "test" (pid 1): err10`,
 		},
 		{
 			name:          "Signals Pending Error",
+			osFilter:      "darwin",
 			rlimitError:   errors.New("err-rlimit"),
 			expectedError: `error reading pending signals for process "test" (pid 1): err-rlimit`,
 		},
 		{
 			name:                "Multiple Errors",
+			osFilter:            "darwin",
 			cmdlineError:        errors.New("err2"),
 			usernameError:       errors.New("err3"),
 			createTimeError:     errors.New("err4"),
@@ -760,6 +772,15 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		},
 	}
 
+	if runtime.GOOS == "darwin" {
+		darwinTestCase := testCase{
+			name:          "Darwin Cmdline Error",
+			cmdlineError:  errors.New("err2"),
+			expectedError: `error reading process executable for pid 1: err2; error reading command for process "test" (pid 1): err2`,
+		}
+		testCases = append(testCases, darwinTestCase)
+	}
+
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			if test.osFilter == runtime.GOOS {
@@ -767,7 +788,9 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			}
 
 			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
-			enableOptionalMetrics(&metricsBuilderConfig.Metrics)
+			if runtime.GOOS != "darwin" {
+				enableOptionalMetrics(&metricsBuilderConfig.Metrics)
+			}
 
 			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsBuilderConfig})
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
@@ -809,6 +832,12 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 
+			// In darwin we get the exe path with Cmdline()
+			executableError := test.exeError
+			if runtime.GOOS == "darwin" {
+				executableError = test.cmdlineError
+			}
+
 			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
@@ -817,7 +846,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
 			if isPartial {
-				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
+				expectedFailures := getExpectedScrapeFailures(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
 				var scraperErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &scraperErr)
 				assert.Equal(t, expectedFailures, scraperErr.Failed)
@@ -838,25 +867,25 @@ func getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPerce
 	if memError == nil {
 		expectedLen += memoryMetricsLen
 	}
-	if memPercentError == nil {
+	if memPercentError == nil && runtime.GOOS != "darwin" {
 		expectedLen += memoryUtilizationMetricsLen
 	}
-	if diskError == nil {
+	if diskError == nil && runtime.GOOS != "darwin" {
 		expectedLen += diskMetricsLen
 	}
-	if pageFaultsError == nil {
+	if pageFaultsError == nil && runtime.GOOS != "darwin" {
 		expectedLen += pagingMetricsLen
 	}
-	if rlimitError == nil {
+	if rlimitError == nil && runtime.GOOS != "darwin" {
 		expectedLen += signalMetricsLen
 	}
-	if threadError == nil {
+	if threadError == nil && runtime.GOOS != "darwin" {
 		expectedLen += threadMetricsLen
 	}
-	if contextSwitchError == nil {
+	if contextSwitchError == nil && runtime.GOOS != "darwin" {
 		expectedLen += contextSwitchMetricsLen
 	}
-	if fileDescriptorError == nil {
+	if fileDescriptorError == nil && runtime.GOOS != "darwin" {
 		expectedLen += fileDescriptorMetricsLen
 	}
 
@@ -871,6 +900,13 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPerc
 		return 1
 	}
 	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
+
+	// excluding unsupported metrics from darwin 'metricsLen'
+	if runtime.GOOS == "darwin" {
+		darwinMetricsLen := cpuMetricsLen + memoryMetricsLen
+		return darwinMetricsLen - expectedMetricsLen
+	}
+
 	return metricsLen - expectedMetricsLen
 }
 
