@@ -99,3 +99,16 @@ The following settings are required:
 
 - `secret` (string): The secret used to validate the token. You can also use an environment variable `${ENV_VAR_NAME}`.
 - `attribute` (string): The header name to look for auth data. Defaults to `authorization`.
+
+## Client support
+
+OTEL clients can use the `WithHeaders` option to set the `Authorization` header.
+
+```go
+client := otlptracehttp.NewClient(
+    otlptracehttp.WithEndpoint(endpoint),
+    otlptracehttp.WithHeaders(map[string]string{
+        "Authorization": "Bearer <secret>",
+    }),
+)
+```
