@@ -8,4 +8,4 @@ component: jwtauthextension
 note: Provide JWT authentication for OTLP receiver.
 
 # One or more tracking issues related to the change
-issues: []
+issues: [20539]
