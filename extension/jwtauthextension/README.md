@@ -93,3 +93,10 @@ service:
 ```
 
 </tr></table>
+
+## Configuration
+
+The following settings are required:
+
+- `secret` (string): The secret used to validate the token. You can also use an environment variable `${ENV_VAR_NAME}`.
+- `attribute` (string): The header name to look for auth data. Defaults to `authorization`.
