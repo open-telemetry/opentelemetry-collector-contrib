@@ -87,7 +87,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      # Use the attributesprocessor to add the project_id to the data
+      # Apply the processor
       processors: [attributes/from_auth_context]
       exporters: [logging]
 ```
