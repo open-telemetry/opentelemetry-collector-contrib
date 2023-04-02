@@ -29,7 +29,6 @@ Currently, only HS256 is supported. We enrich the client context field `Auth` wi
 extensions:
   jwt:
     # The secret used to validate the token
-    # You can also use an environment variable ${ENV_VAR_NAME}
     secret: "secret"
 
 receivers:
@@ -71,7 +70,7 @@ receivers:
           authenticator: jwt
 
 processors:
-  # Add the project_id from the token to the data
+  # Extract the project id from the auth context
   attributes/from_auth_context:
     actions:
       - key: project.id
