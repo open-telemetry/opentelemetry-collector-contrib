@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parque
 go 1.19
 
 require (
-	go.opentelemetry.io/collector/component v0.74.0
+	go.opentelemetry.io/collector/component v0.74.1-0.20230330220613-d4c25d43b318
 	go.opentelemetry.io/collector/exporter v0.74.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc8
+	go.opentelemetry.io/collector/pdata v1.0.0-rc8.0.20230330220613-d4c25d43b318
 )
 
 require (
@@ -22,10 +22,10 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.74.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.74.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.74.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.74.0 // indirect
+	go.opentelemetry.io/collector v0.74.1-0.20230330220613-d4c25d43b318 // indirect
+	go.opentelemetry.io/collector/confmap v0.74.1-0.20230330220613-d4c25d43b318 // indirect
+	go.opentelemetry.io/collector/consumer v0.74.1-0.20230330220613-d4c25d43b318 // indirect
+	go.opentelemetry.io/collector/featuregate v0.74.1-0.20230330220613-d4c25d43b318 // indirect
 	go.opentelemetry.io/collector/receiver v0.74.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect

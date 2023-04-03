@@ -4,10 +4,10 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.74.0
-	go.opentelemetry.io/collector/featuregate v0.74.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc8
-	go.opentelemetry.io/collector/semconv v0.74.0
+	go.opentelemetry.io/collector v0.74.1-0.20230330220613-d4c25d43b318
+	go.opentelemetry.io/collector/featuregate v0.74.1-0.20230330220613-d4c25d43b318
+	go.opentelemetry.io/collector/pdata v1.0.0-rc8.0.20230330220613-d4c25d43b318
+	go.opentelemetry.io/collector/semconv v0.74.1-0.20230330220613-d4c25d43b318
 	go.uber.org/zap v1.24.0
 	gopkg.in/yaml.v3 v3.0.1
 )
