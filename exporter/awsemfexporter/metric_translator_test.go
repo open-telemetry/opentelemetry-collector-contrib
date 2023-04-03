@@ -16,7 +16,6 @@ package awsemfexporter
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"sort"
 	"testing"
@@ -38,15 +37,6 @@ import (
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
-
-func readFromFile(filename string) string {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		panic(err)
-	}
-	str := string(data)
-	return str
-}
 
 func createMetricTestData() *agentmetricspb.ExportMetricsServiceRequest {
 	request := &agentmetricspb.ExportMetricsServiceRequest{

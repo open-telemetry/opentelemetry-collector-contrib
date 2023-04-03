@@ -8,7 +8,8 @@
 
 Receives metrics from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) 
 via their [monitoring APIs](https://docs.atlas.mongodb.com/reference/api/monitoring-and-logs/),
-as well as alerts via a configured [webhook](https://www.mongodb.com/docs/atlas/tutorial/third-party-service-integrations/).
+as well as alerts via a configured [webhook](https://www.mongodb.com/docs/atlas/tutorial/third-party-service-integrations/)
+and events from [events APIs](https://www.mongodb.com/docs/atlas/reference/api/events/).
 
 ## Getting Started
 
@@ -18,6 +19,10 @@ The MongoDB Atlas receiver takes the following parameters. `public_key` and
 below both values are being pulled from the environment.
 
 In order to collect logs, at least one project must be specified. By default, logs for all clusters within a project will be collected. Clusters can be limited using either the `include_clusters` or `exclude_clusters` setting.
+
+In order to collect project events, the requesting API key needs the appropriate permission which at minimum is the `Project Read Only` role. Project events are specific to a single project.
+
+In order to collect organization events, the requesting API key needs the appropriate permission which at minimum is the `Organization Member` role. Organization events are collected across all the projects hosted on Atlas within the organization. These events are not associated with a project.
 
 MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/logs/#logs) recommends a polling interval of 5 minutes.
 
@@ -59,7 +64,9 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
     - `exclude_clusters` (default empty)
 - `events`
   - `projects`
-    - `name` Name of the Project to discover events from
+    - `name` Name of the Project to discover events from.
+  - `organizations`
+    - `id` ID of the Organization to discover events from.
   - `poll_interval` (default `1m`)
     - How often the receiver will poll the Events API for new events.
   - `page_size` (default `100`)
@@ -129,6 +136,8 @@ receivers:
     events:
       projects:
         - name: "project 1"
+      organizations:
+        - id: "5b478b3afc4625789ce616a3"
       poll_interval: 1m
       page_size: 100
       max_pages: 25

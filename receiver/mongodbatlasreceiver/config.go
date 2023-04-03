@@ -66,11 +66,12 @@ type LogConfig struct {
 
 // EventsConfig is the configuration options for events collection
 type EventsConfig struct {
-	Projects     []*ProjectConfig `mapstructure:"projects"`
-	PollInterval time.Duration    `mapstructure:"poll_interval"`
-	Types        []string         `mapstructure:"types"`
-	PageSize     int64            `mapstructure:"page_size"`
-	MaxPages     int64            `mapstructure:"max_pages"`
+	Projects      []*ProjectConfig `mapstructure:"projects"`
+	Organizations []*OrgConfig     `mapstructure:"organizations"`
+	PollInterval  time.Duration    `mapstructure:"poll_interval"`
+	Types         []string         `mapstructure:"types"`
+	PageSize      int64            `mapstructure:"page_size"`
+	MaxPages      int64            `mapstructure:"max_pages"`
 }
 
 type ProjectConfig struct {
@@ -81,6 +82,10 @@ type ProjectConfig struct {
 
 	includesByClusterName map[string]struct{}
 	excludesByClusterName map[string]struct{}
+}
+
+type OrgConfig struct {
+	ID string `mapstructure:"id"`
 }
 
 func (pc *ProjectConfig) populateIncludesAndExcludes() *ProjectConfig {
@@ -111,6 +116,7 @@ var (
 
 	// Logs Receiver Errors
 	errNoProjects    = errors.New("at least one 'project' must be specified")
+	errNoEvents      = errors.New("at least one 'project' or 'organizations' event type must be specified")
 	errClusterConfig = errors.New("only one of 'include_clusters' or 'exclude_clusters' may be specified")
 )
 
@@ -209,8 +215,8 @@ func (a AlertConfig) validateListenConfig() error {
 }
 
 func (e EventsConfig) validate() error {
-	if len(e.Projects) == 0 {
-		return errNoProjects
+	if len(e.Projects) == 0 && len(e.Organizations) == 0 {
+		return errNoEvents
 	}
 	return nil
 }
