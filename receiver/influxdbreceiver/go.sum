@@ -164,8 +164,8 @@ github.com/influxdata/influxdb-client-go/v2 v2.12.2 h1:uYABKdrEKlYm+++qfKdbgaHKB
 github.com/influxdata/influxdb-client-go/v2 v2.12.2/go.mod h1:YteV91FiQxRdccyJ2cHvj2f/5sq4y4Njqu1fQzsQCOU=
 github.com/influxdata/influxdb-observability/common v0.3.4 h1:9OD3fnRE/F++vt/SZqwodaxI+Bl9kKWlmHpRHlGwKuU=
 github.com/influxdata/influxdb-observability/common v0.3.4/go.mod h1:6GXfzb+wON9f2e2I7JW+NFmpPDdwhC67L4tkkCU5MMA=
-github.com/influxdata/influxdb-observability/influx2otel v0.3.4 h1:eGPxWfItXwLF1jyGLlMhmlxPMKowcyufug3RDg2dXmw=
-github.com/influxdata/influxdb-observability/influx2otel v0.3.4/go.mod h1:/7F4LjKVytOTclZWMYkqBNVpv4gv5Uz6Bm5ifT+k638=
+github.com/influxdata/influxdb-observability/influx2otel v0.3.5 h1:6J+rlUDbyF/u1ozBNvkp2p+g5kl8YUCowuvfzrPR0Qw=
+github.com/influxdata/influxdb-observability/influx2otel v0.3.5/go.mod h1:+KNBwdVa6e6U0USnu1Uw3914/97vomuN7dJlqHWleUk=
 github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c h1:qSHzRbhzK8RdXOsAdfDgO49TtqC1oZ+acxPrkfTxcCs=
 github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
 github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 h1:W9WBk7wlPfJLvMCdtV4zPulc4uCPrlywQOmbFOhgQNU=
@@ -255,7 +255,7 @@ github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRW
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/npillmayer/nestext v0.1.3/go.mod h1:h2lrijH8jpicr25dFY+oAJLyzlya6jhnuG+zWp9L0Uk=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.73.0 h1:OSzBQJtz311E32x8NiQ64TVtjKBuRZPHykYtDFq65Z4=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.74.0 h1:DmOc+i5N1Ut23tJnHJUIcne5JWnYh6x2VL7YG4PP+tg=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pascaldekloe/goe v0.1.0/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.7.0/go.mod h1:vwGMzjaWMwyfHwgIBhI2YUM4fB6nL6lVAvS1LBMMhTE=
