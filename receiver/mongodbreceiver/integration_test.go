@@ -142,8 +142,9 @@ func TestMongodbIntegration(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		// tt is being captured by the anonymous function below, so we need to create a new variable.
-		// If we don't, all tests will run with the last value of tt.
+		// Without tt := tt, tt is captured by the anonymous function passed to t.Run() in the for loop.
+		// This can lead to unexpected behaviour because the anonymous function may not execute immediately, which means that the
+		// value of tt may have changed by the time the function is actually executed.
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
