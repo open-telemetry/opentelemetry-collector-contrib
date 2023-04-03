@@ -143,7 +143,7 @@ func TestMongodbIntegration(t *testing.T) {
 
 	for _, tt := range testCases {
 		// Without tt := tt, tt is captured by the anonymous function passed to t.Run() in the for loop.
-		// This can lead to unexpected behaviour because the anonymous function may not execute immediately, which means that the
+		// This can lead to unexpected behavior because the anonymous function may not execute immediately, which means that the
 		// value of tt may have changed by the time the function is actually executed.
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
