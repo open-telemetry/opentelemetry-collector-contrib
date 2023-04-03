@@ -5,7 +5,7 @@ change_type: bug_fix
 component: splunkhecexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add a test showing what happens if we have a log record that is past what the collector can send.
+note: Do not send data to a Splunk backend if no data is present in the batch. Previously compressed batches would not correctly detect data was not present in the batch.
 
 # One or more tracking issues related to the change
 issues: [20290]
