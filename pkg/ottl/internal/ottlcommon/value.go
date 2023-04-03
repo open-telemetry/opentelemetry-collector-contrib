@@ -16,29 +16,12 @@ package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func GetValue(val pcommon.Value) interface{} {
-	switch val.Type() {
-	case pcommon.ValueTypeStr:
-		return val.Str()
-	case pcommon.ValueTypeBool:
-		return val.Bool()
-	case pcommon.ValueTypeInt:
-		return val.Int()
-	case pcommon.ValueTypeDouble:
-		return val.Double()
-	case pcommon.ValueTypeMap:
-		return val.Map()
-	case pcommon.ValueTypeSlice:
-		return val.Slice()
-	case pcommon.ValueTypeBytes:
-		return val.Bytes().AsRaw()
-	}
-	return nil
-}
-
-func SetValue(value pcommon.Value, val interface{}) {
+func SetValue(value pcommon.Value, val interface{}) error {
+	var err error
 	switch v := val.(type) {
 	case string:
 		value.SetStr(v)
@@ -79,14 +62,15 @@ func SetValue(value pcommon.Value, val interface{}) {
 		value.SetEmptySlice().EnsureCapacity(len(v))
 		for _, a := range v {
 			pval := value.Slice().AppendEmpty()
-			SetValue(pval, a)
+			err = SetValue(pval, a)
 		}
 	case pcommon.Map:
 		v.CopyTo(value.SetEmptyMap())
 	case map[string]interface{}:
 		value.SetEmptyMap()
 		for mk, mv := range v {
-			SetMapValue(value.Map(), mk, mv)
+			err = SetMapValue(value.Map(), []ottl.Key{{String: &mk}}, mv)
 		}
 	}
+	return err
 }

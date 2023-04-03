@@ -15,26 +15,104 @@
 package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func GetMapValue(attrs pcommon.Map, mapKey string) interface{} {
-	val, ok := attrs.Get(mapKey)
-	if !ok {
-		return nil
+func GetMapValue(m pcommon.Map, keys []ottl.Key) (interface{}, error) {
+	if len(keys) == 0 {
+		return nil, fmt.Errorf("cannot get map value without key")
 	}
-	return GetValue(val)
+	if keys[0].String == nil {
+		return nil, fmt.Errorf("non-string indexing is not supported")
+	}
+
+	val, ok := m.Get(*keys[0].String)
+	if !ok {
+		return nil, nil
+	}
+	for i := 1; i < len(keys); i++ {
+		switch val.Type() {
+		case pcommon.ValueTypeMap:
+			if keys[i].String == nil {
+				return nil, fmt.Errorf("map must be indexed by a string")
+			}
+			val, ok = val.Map().Get(*keys[i].String)
+			if !ok {
+				return nil, fmt.Errorf("key not found in map")
+			}
+		case pcommon.ValueTypeSlice:
+			if keys[i].Int == nil {
+				return nil, fmt.Errorf("slice must be indexed by an int")
+			}
+			if int(*keys[i].Int) >= val.Slice().Len() {
+				return nil, fmt.Errorf("index out of bounds")
+			}
+			val = val.Slice().At(int(*keys[i].Int))
+		default:
+			return nil, fmt.Errorf("type %v does not support string indexing", val.Type())
+		}
+	}
+	return ottl.GetValue(val), nil
 }
 
-func SetMapValue(attrs pcommon.Map, mapKey string, val interface{}) {
-	var value pcommon.Value
-	switch val.(type) {
-	case []string, []bool, []int64, []float64, [][]byte, []any:
-		value = pcommon.NewValueSlice()
-	default:
-		value = pcommon.NewValueEmpty()
+func SetMapValue(m pcommon.Map, keys []ottl.Key, val interface{}) error {
+	if len(keys) == 0 {
+		return fmt.Errorf("cannot set map value without key")
 	}
 
-	SetValue(value, val)
-	value.CopyTo(attrs.PutEmpty(mapKey))
+	var newValue pcommon.Value
+	switch val.(type) {
+	case []string, []bool, []int64, []float64, [][]byte, []any:
+		newValue = pcommon.NewValueSlice()
+	default:
+		newValue = pcommon.NewValueEmpty()
+	}
+	err := SetValue(newValue, val)
+	if err != nil {
+		return err
+	}
+
+	currentValue, ok := m.Get(*keys[0].String)
+	if !ok {
+		currentValue = m.PutEmpty(*keys[0].String)
+	}
+
+	for i := 1; i < len(keys); i++ {
+		switch currentValue.Type() {
+		case pcommon.ValueTypeMap:
+			if keys[i].String == nil {
+				return fmt.Errorf("map must be indexed by a string")
+			}
+			currentValue, ok = currentValue.Map().Get(*keys[i].String)
+			if !ok {
+				currentValue = currentValue.Map().PutEmpty(*keys[i].String)
+			}
+		case pcommon.ValueTypeSlice:
+			if keys[i].Int == nil {
+				return fmt.Errorf("slice must be indexed by an int")
+			}
+			if int(*keys[i].Int) > currentValue.Slice().Len() {
+				return fmt.Errorf("index out of bounds")
+			}
+			currentValue = currentValue.Slice().At(int(*keys[i].Int))
+		case pcommon.ValueTypeEmpty:
+			if keys[i].String != nil {
+				currentValue = currentValue.SetEmptyMap().PutEmpty(*keys[i].String)
+			} else if keys[i].Int != nil {
+				currentValue.SetEmptySlice()
+				for k := 0; k < int(*keys[i].Int); k++ {
+					currentValue.Slice().AppendEmpty()
+				}
+				currentValue = currentValue.Slice().AppendEmpty()
+			}
+		default:
+			return fmt.Errorf("type %v does not support string indexing", currentValue.Type())
+		}
+	}
+	newValue.CopyTo(currentValue)
+	return nil
 }

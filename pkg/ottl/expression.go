@@ -69,10 +69,58 @@ func (l literal[K]) Get(context.Context, K) (interface{}, error) {
 
 type exprGetter[K any] struct {
 	expr Expr[K]
+	keys []Key
 }
 
 func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
-	return g.expr.Eval(ctx, tCtx)
+	result, err := g.expr.Eval(ctx, tCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	if g.keys == nil {
+		return result, nil
+	}
+
+	for _, k := range g.keys {
+		switch {
+		case k.String != nil:
+			switch r := result.(type) {
+			case pcommon.Map:
+				val, ok := r.Get(*k.String)
+				if !ok {
+					return nil, fmt.Errorf("key not found in map")
+				}
+				result = GetValue(val)
+			case map[string]interface{}:
+				val, ok := r[*k.String]
+				if !ok {
+					return nil, fmt.Errorf("key not found in map")
+				}
+				result = val
+			default:
+				return nil, fmt.Errorf("type, %T, does not support string indexing", result)
+			}
+		case k.Int != nil:
+			switch r := result.(type) {
+			case pcommon.Slice:
+				if int(*k.Int) >= r.Len() {
+					return nil, fmt.Errorf("index out of bounds")
+				}
+				result = GetValue(r.At(int(*k.Int)))
+			case []interface{}:
+				if int(*k.Int) >= len(r) {
+					return nil, fmt.Errorf("index out of bounds")
+				}
+				result = r[*k.Int]
+			default:
+				return nil, fmt.Errorf("type, %T, does not support int indexing", result)
+			}
+		default:
+			return nil, fmt.Errorf("neither map nor slice index were set; this is an error in OTTL")
+		}
+	}
+	return result, nil
 }
 
 type listGetter[K any] struct {
@@ -239,5 +287,6 @@ func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
 	}
 	return &exprGetter[K]{
 		expr: call,
+		keys: c.Keys,
 	}, nil
 }

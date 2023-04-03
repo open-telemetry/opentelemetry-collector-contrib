@@ -31,7 +31,46 @@ func hello[K any]() (ExprFunc[K], error) {
 	}, nil
 }
 
+func pmap[K any]() (ExprFunc[K], error) {
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		m := pcommon.NewMap()
+		m.PutEmptyMap("foo").PutStr("bar", "pass")
+		return m, nil
+	}, nil
+}
+
+func basicMap[K any]() (ExprFunc[K], error) {
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		return map[string]interface{}{
+			"foo": map[string]interface{}{
+				"bar": "pass",
+			},
+		}, nil
+	}, nil
+}
+
+func pslice[K any]() (ExprFunc[K], error) {
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		s := pcommon.NewSlice()
+		s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("pass")
+		return s, nil
+	}, nil
+}
+
+func basicSlice[K any]() (ExprFunc[K], error) {
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		return []interface{}{
+			[]interface{}{
+				"pass",
+			},
+		}, nil
+	}, nil
+}
+
 func Test_newGetter(t *testing.T) {
+	m := pcommon.NewMap()
+	m.PutEmptyMap("foo").PutStr("bar", "pass")
+
 	tests := []struct {
 		name string
 		val  value
@@ -100,6 +139,29 @@ func Test_newGetter(t *testing.T) {
 			want: "bear",
 		},
 		{
+			name: "complex path expression",
+			val: value{
+				Literal: &mathExprLiteral{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "attributes",
+								Keys: []Key{
+									{
+										String: ottltest.Strp("foo"),
+									},
+									{
+										String: ottltest.Strp("bar"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
 			name: "function call",
 			val: value{
 				Literal: &mathExprLiteral{
@@ -109,6 +171,82 @@ func Test_newGetter(t *testing.T) {
 				},
 			},
 			want: "world",
+		},
+		{
+			name: "function call nested pcommon map",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PMap",
+						Keys: []Key{
+							{
+								String: ottltest.Strp("foo"),
+							},
+							{
+								String: ottltest.Strp("bar"),
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
+			name: "function call nested map",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Map",
+						Keys: []Key{
+							{
+								String: ottltest.Strp("foo"),
+							},
+							{
+								String: ottltest.Strp("bar"),
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
+			name: "function call pcommon slice",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PSlice",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
+			name: "function call nested slice",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Slice",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
 		},
 		{
 			name: "enum",
@@ -289,7 +427,13 @@ func Test_newGetter(t *testing.T) {
 		},
 	}
 
-	functions := map[string]interface{}{"Hello": hello[interface{}]}
+	functions := map[string]interface{}{
+		"Hello":  hello[interface{}],
+		"PMap":   pmap[interface{}],
+		"Map":    basicMap[interface{}],
+		"PSlice": pslice[interface{}],
+		"Slice":  basicSlice[interface{}],
+	}
 
 	p, _ := NewParser[any](
 		functions,
