@@ -13,16 +13,16 @@ require (
 	github.com/prometheus/common v0.42.0
 	github.com/prometheus/prometheus v0.43.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.74.0
-	go.opentelemetry.io/collector/component v0.74.0
-	go.opentelemetry.io/collector/confmap v0.74.0
-	go.opentelemetry.io/collector/consumer v0.74.0
-	go.opentelemetry.io/collector/exporter v0.74.0
-	go.opentelemetry.io/collector/featuregate v0.74.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc8
-	go.opentelemetry.io/collector/processor/batchprocessor v0.74.0
-	go.opentelemetry.io/collector/receiver v0.74.0
-	go.opentelemetry.io/collector/semconv v0.74.0
+	go.opentelemetry.io/collector v0.75.0
+	go.opentelemetry.io/collector/component v0.75.0
+	go.opentelemetry.io/collector/confmap v0.75.0
+	go.opentelemetry.io/collector/consumer v0.75.0
+	go.opentelemetry.io/collector/exporter v0.75.0
+	go.opentelemetry.io/collector/featuregate v0.75.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9
+	go.opentelemetry.io/collector/processor/batchprocessor v0.75.0
+	go.opentelemetry.io/collector/receiver v0.75.0
+	go.opentelemetry.io/collector/semconv v0.75.0
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v2 v2.4.0

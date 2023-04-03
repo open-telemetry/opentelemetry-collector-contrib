@@ -160,17 +160,17 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.75.0
-	go.opentelemetry.io/collector v0.74.0
-	go.opentelemetry.io/collector/exporter v0.74.0
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.74.0
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.74.0
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.74.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.74.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.74.0
-	go.opentelemetry.io/collector/processor/batchprocessor v0.74.0
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.74.0
-	go.opentelemetry.io/collector/receiver v0.74.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.74.0
+	go.opentelemetry.io/collector v0.75.0
+	go.opentelemetry.io/collector/exporter v0.75.0
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.75.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.75.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.75.0
+	go.opentelemetry.io/collector/extension/ballastextension v0.75.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.75.0
+	go.opentelemetry.io/collector/processor/batchprocessor v0.75.0
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.75.0
+	go.opentelemetry.io/collector/receiver v0.75.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.75.0
 )
 
 require (
@@ -582,12 +582,12 @@ require (
 	go.mongodb.org/atlas v0.24.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/component v0.74.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.74.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.74.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.74.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc8 // indirect
-	go.opentelemetry.io/collector/semconv v0.74.0 // indirect
+	go.opentelemetry.io/collector/component v0.75.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.75.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.75.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.75.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9 // indirect
+	go.opentelemetry.io/collector/semconv v0.75.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.40.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.15.0 // indirect
