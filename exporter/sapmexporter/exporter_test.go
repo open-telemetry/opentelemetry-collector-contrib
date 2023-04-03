@@ -122,7 +122,7 @@ func hasToken(batches []*model.Batch) bool {
 	return false
 }
 
-func buildTestTrace() ptrace.Traces {
+func buildTestTrace() (ptrace.Traces, error) {
 	trace := ptrace.NewTraces()
 	trace.ResourceSpans().EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
@@ -136,16 +136,16 @@ func buildTestTrace() ptrace.Traces {
 		var spanIDBytes [8]byte
 		_, err := rand.Read(traceIDBytes[:])
 		if err != nil {
-			panic(err)
+			return trace, err
 		}
 		_, err = rand.Read(spanIDBytes[:])
 		if err != nil {
-			panic(err)
+			return trace, err
 		}
 		span.SetTraceID(traceIDBytes)
 		span.SetSpanID(spanIDBytes)
 	}
-	return trace
+	return trace, nil
 }
 
 func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
@@ -209,7 +209,8 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 			assert.Nil(t, err)
 			assert.NotNil(t, se, "failed to create trace exporter")
 
-			trace := buildTestTrace()
+			trace, testTraceErr := buildTestTrace()
+			require.NoError(t, testTraceErr)
 			err = se.pushTraceData(context.Background(), trace)
 
 			if tt.sendError {

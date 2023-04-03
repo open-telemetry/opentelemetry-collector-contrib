@@ -19,7 +19,6 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"math/big"
 	"testing"
 	"time"
 
@@ -247,12 +246,9 @@ func newTraceID() pcommon.TraceID {
 
 func constructW3CTraceID() pcommon.TraceID {
 	var r [16]byte
-	for i := range r {
-		n, err := rand.Int(rand.Reader, big.NewInt(128))
-		if err != nil {
-			panic(err)
-		}
-		r[i] = byte(n.Int64())
+	_, err := rand.Read(r[:])
+	if err != nil {
+		panic(err)
 	}
 	return r
 }

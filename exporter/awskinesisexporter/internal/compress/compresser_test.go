@@ -91,7 +91,7 @@ func benchmarkCompressor(b *testing.B, format string, len int) {
 	b.Helper()
 
 	source := rand.NewSource(time.Now().UnixMilli())
-	rand := rand.New(source)
+	genRand := rand.New(source)
 
 	compressor, err := compress.NewCompressor(format)
 	require.NoError(b, err, "Must not error when given a valid format")
@@ -99,7 +99,7 @@ func benchmarkCompressor(b *testing.B, format string, len int) {
 
 	data := make([]byte, len)
 	for i := 0; i < len; i++ {
-		data[i] = byte(rand.Int31())
+		data[i] = byte(genRand.Int31())
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
