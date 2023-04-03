@@ -7,20 +7,20 @@ require (
 	github.com/apache/thrift v0.18.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.41.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.74.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.74.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.74.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.75.0
 	github.com/openzipkin/zipkin-go v0.4.1
 	github.com/stretchr/testify v1.8.2
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.74.0
-	go.opentelemetry.io/collector/component v0.74.0
-	go.opentelemetry.io/collector/confmap v0.74.0
-	go.opentelemetry.io/collector/consumer v0.74.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc8
-	go.opentelemetry.io/collector/receiver v0.74.0
-	go.opentelemetry.io/collector/semconv v0.74.0
+	go.opentelemetry.io/collector v0.75.0
+	go.opentelemetry.io/collector/component v0.75.0
+	go.opentelemetry.io/collector/confmap v0.75.0
+	go.opentelemetry.io/collector/consumer v0.75.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9
+	go.opentelemetry.io/collector/receiver v0.75.0
+	go.opentelemetry.io/collector/semconv v0.75.0
 	go.uber.org/zap v1.24.0
 )
 
@@ -59,8 +59,8 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector/exporter v0.74.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.74.0 // indirect
+	go.opentelemetry.io/collector/exporter v0.75.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.75.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect

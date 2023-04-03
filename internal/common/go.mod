@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector/featuregate v0.74.0
+	go.opentelemetry.io/collector/featuregate v0.75.0
 	go.uber.org/zap v1.24.0
 )
 
