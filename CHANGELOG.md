@@ -27,7 +27,6 @@
 
 - `filereceiver`: Add basic file reading capabilities to file receiver. Second PR. (#14638)
   This component is not yet enabled.
-- `s3exporter`: Add aws s3 exporter, config + exporter stub (#9979).
 
 ### 💡 Enhancements 💡
 
