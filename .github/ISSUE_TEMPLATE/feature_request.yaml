@@ -26,6 +26,7 @@ body:
       - exporter/awscloudwatchlogs
       - exporter/awsemf
       - exporter/awskinesis
+      - exporter/awss3
       - exporter/awsxray
       - exporter/azuredataexplorer
       - exporter/azuremonitor
