@@ -172,9 +172,7 @@ func TestMongodbIntegration(t *testing.T) {
 			require.NoError(t, rcvr.Shutdown(context.Background()))
 			actualMetrics := consumer.AllMetrics()[1]
 
-			// expectedFile := filepath.Join("testdata", "integration", tt.testFile)
 			expectedFile := filepath.Join("testdata", "integration", fmt.Sprintf("expected.%s.yaml", tt.name))
-			// golden.WriteMetrics(t, expectedFile, actualMetrics)
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 
