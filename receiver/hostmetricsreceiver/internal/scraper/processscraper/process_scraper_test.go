@@ -662,9 +662,15 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError: `error reading process name for pid 1: err1`,
 		},
 		{
-			name:          "Exe Error",
-			exeError:      errors.New("err1"),
-			expectedError: `error reading process executable for pid 1: err1`,
+			name:     "Exe Error",
+			exeError: errors.New("err1"),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return `error reading process executable for pid 1: err1; ` +
+						`error reading process name for pid 1: executable path is empty`
+				}
+				return `error reading process executable for pid 1: err1`
+			}(),
 		},
 		{
 			name:          "Cmdline Error",
@@ -809,7 +815,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 
-			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
+			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
@@ -826,7 +832,11 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) (int, int) {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError error) (int, int) {
+	if runtime.GOOS == "windows" && exeError != nil {
+		return 0, 0
+	}
+
 	if nameError != nil {
 		return 0, 0
 	}
@@ -867,10 +877,14 @@ func getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPerce
 }
 
 func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) int {
+	if runtime.GOOS == "windows" && exeError != nil {
+		return 2
+	}
+
 	if nameError != nil || exeError != nil {
 		return 1
 	}
-	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
 	return metricsLen - expectedMetricsLen
 }
 
@@ -878,6 +892,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
 	processNameError := errors.New("err1")
+	processEmptyExeError := errors.New("executable path is empty")
 
 	type testCase struct {
 		name                 string
@@ -907,21 +922,38 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			muteProcessNameError: false,
 			muteProcessExeError:  true,
 			muteProcessIOError:   true,
-			expectedError:        fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
+				}
+				return fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
+			}(),
 		},
 		{
 			name:                 "Process Name Error Enabled And Process Exe Error Enabled And Process IO Error Muted",
 			muteProcessNameError: false,
 			muteProcessExeError:  false,
 			muteProcessIOError:   true,
-			expectedError: fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
-				fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+						fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
+				}
+				return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+					fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
+			}(),
 		},
 		{
 			name:            "Process Name Error Default (Enabled) And Process Exe Error Default (Enabled) And Process IO Error Default (Enabled)",
 			omitConfigField: true,
-			expectedError: fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
-				fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+						fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
+				}
+				return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+					fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
+			}(),
 		},
 	}
 
