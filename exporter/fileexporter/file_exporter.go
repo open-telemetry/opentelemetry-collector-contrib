@@ -19,6 +19,7 @@ import (
 	"encoding/binary"
 	"io"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -58,6 +59,9 @@ type fileExporter struct {
 
 	formatType string
 	exporter   exportFunc
+
+	flushInterval int
+	flushTicker   *time.Ticker
 }
 
 func (e *fileExporter) consumeTraces(_ context.Context, td ptrace.Traces) error {
@@ -112,15 +116,57 @@ func exportMessageAsBuffer(e *fileExporter, buf []byte) error {
 	if err := binary.Write(e.file, binary.BigEndian, data); err != nil {
 		return err
 	}
+
 	return nil
 }
 
+func startFlusher(e *fileExporter) {
+	if e.flushTicker != nil {
+		// flusher is already running.
+		return
+	}
+
+	if e.flushInterval < 1 {
+		// Interval should be 1 or larger.
+		return
+	}
+	
+	ff, ok := e.file.(interface{ flush() error })
+	if !ok {
+		// Just in case.
+		return
+	}
+
+	// Start the ticker
+	e.flushTicker = time.NewTicker(time.Second * time.Duration(e.flushInterval))
+	go func() {
+		for e.flushTicker != nil {
+			<-e.flushTicker.C
+			e.mutex.Lock()
+			ff.flush()
+			e.mutex.Unlock()
+		}
+	}()
+}
+
+func stopFlusher(e *fileExporter) {
+	if e.flushTicker == nil {
+		return
+	}
+	e.flushTicker.Stop()
+	e.flushTicker = nil
+}
+
+// Start starts the flush timer.
 func (e *fileExporter) Start(context.Context, component.Host) error {
+	startFlusher(e)
 	return nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
 func (e *fileExporter) Shutdown(context.Context) error {
+	// Stop the flush timer.
+	stopFlusher(e)
 	return e.file.Close()
 }
 

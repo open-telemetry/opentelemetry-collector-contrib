@@ -44,6 +44,9 @@ type Config struct {
 	// Compression Codec used to export telemetry data
 	// Supported compression algorithms:`zstd`
 	Compression string `mapstructure:"compression"`
+
+	// FlushInterval number of seconds between flushes.
+	FlushInterval int `mapstructure:"flush_interval"`
 }
 
 // Rotation an option to rolling log files

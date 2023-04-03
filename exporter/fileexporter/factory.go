@@ -145,6 +145,7 @@ func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
 		exporter:         buildExportFunc(conf),
 		compression:      conf.Compression,
 		compressor:       buildCompressor(conf.Compression),
+		flushInterval:    conf.FlushInterval,
 	}
 }
 
