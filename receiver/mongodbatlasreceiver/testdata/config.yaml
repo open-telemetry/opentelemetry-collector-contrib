@@ -15,6 +15,8 @@ mongodbatlas:
   events:
     projects:
       - name: Project 0
+    organizations:
+      - id: 5b478b3afc4625789ce616a3
     poll_interval: 1m
     page_size: 100
     max_pages: 25
