@@ -10,7 +10,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/observiq/ctimefmt v1.0.0
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.75.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.74.0
 	go.opentelemetry.io/collector/component v0.74.0

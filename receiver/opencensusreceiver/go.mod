@@ -5,10 +5,10 @@ go 1.19
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.74.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.74.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.74.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.75.0
 	github.com/rs/cors v1.8.3
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.8.2

@@ -5,9 +5,9 @@ go 1.19
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.74.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.74.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.75.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.74.0
 	go.opentelemetry.io/collector/component v0.74.0
