@@ -132,7 +132,7 @@ var validEgressSpans = map[*egress_v1.SpanData_EgressSpan]ptrace.Span{
 		spanAttrs.PutStr("messaging.solace.client_username", "clientUsername")
 		spanAttrs.PutStr("messaging.solace.client_name", "clientName")
 		spanAttrs.PutBool("messaging.solace.message_replayed", false)
-		spanAttrs.PutStr("messaging.solace.send_operation.outcome", "flow unbound")
+		spanAttrs.PutStr("messaging.solace.send.outcome", "flow unbound")
 		return span
 	}(),
 	{
@@ -187,7 +187,7 @@ var validEgressSpans = map[*egress_v1.SpanData_EgressSpan]ptrace.Span{
 		spanAttrs.PutStr("messaging.solace.client_username", "someClientUsername")
 		spanAttrs.PutStr("messaging.solace.client_name", "someClient1234")
 		spanAttrs.PutBool("messaging.solace.message_replayed", false)
-		spanAttrs.PutStr("messaging.solace.send_operation.outcome", "accepted")
+		spanAttrs.PutStr("messaging.solace.send.outcome", "accepted")
 		txnEvent := span.Events().AppendEmpty()
 		txnEvent.SetName("session_timeout")
 		txnEvent.SetTimestamp(123456789)
@@ -250,7 +250,7 @@ var validEgressSpans = map[*egress_v1.SpanData_EgressSpan]ptrace.Span{
 		spanAttrs.PutStr("messaging.solace.client_username", "someOtherClientUsername")
 		spanAttrs.PutStr("messaging.solace.client_name", "someOtherClient1234")
 		spanAttrs.PutBool("messaging.solace.message_replayed", true)
-		spanAttrs.PutStr("messaging.solace.send_operation.outcome", "rejected")
+		spanAttrs.PutStr("messaging.solace.send.outcome", "rejected")
 		txnEvent := span.Events().AppendEmpty()
 		txnEvent.SetName("end")
 		txnEvent.SetTimestamp(223456789)
@@ -315,14 +315,14 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 	// does not include outcome or source. Attributes will override all fields in base
 	getSpan := func(attributes map[string]interface{}, name string) ptrace.Span {
 		base := map[string]interface{}{
-			"messaging.system":                        "SolacePubSub+",
-			"messaging.operation":                     "send",
-			"messaging.protocol":                      "MQTT",
-			"messaging.protocol_version":              "5.0",
-			"messaging.solace.client_username":        "someUser",
-			"messaging.solace.client_name":            "someName",
-			"messaging.solace.message_replayed":       false,
-			"messaging.solace.send_operation.outcome": "accepted",
+			"messaging.system":                  "SolacePubSub+",
+			"messaging.operation":               "send",
+			"messaging.protocol":                "MQTT",
+			"messaging.protocol_version":        "5.0",
+			"messaging.solace.client_username":  "someUser",
+			"messaging.solace.client_name":      "someName",
+			"messaging.solace.message_replayed": false,
+			"messaging.solace.send.outcome":     "accepted",
 		}
 		for key, val := range attributes {
 			base[key] = val
@@ -364,13 +364,37 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 			name: "With Topic Endpoint source",
 			spanData: getSendSpan(&egress_v1.SpanData_SendSpan{
 				Source: &egress_v1.SpanData_SendSpan_TopicEndpointName{
-					TopicEndpointName: "someTopic",
+					TopicEndpointName: "0123456789abcdef0123456789abcdeg",
 				},
 			}),
 			want: getSpan(map[string]interface{}{
-				"messaging.source.name": "someTopic",
+				"messaging.source.name": "0123456789abcdef0123456789abcdeg",
 				"messaging.source.kind": "topic-endpoint",
-			}, "someTopic send"),
+			}, "0123456789abcdef0123456789abcdeg send"),
+		},
+		{
+			name: "With Anonymous Queue source",
+			spanData: getSendSpan(&egress_v1.SpanData_SendSpan{
+				Source: &egress_v1.SpanData_SendSpan_QueueName{
+					QueueName: "#P2P/QTMP/myQueue",
+				},
+			}),
+			want: getSpan(map[string]interface{}{
+				"messaging.source.name": "#P2P/QTMP/myQueue",
+				"messaging.source.kind": "queue",
+			}, "(anonymous) send"),
+		},
+		{
+			name: "With Anonymous Topic Endpoint source",
+			spanData: getSendSpan(&egress_v1.SpanData_SendSpan{
+				Source: &egress_v1.SpanData_SendSpan_TopicEndpointName{
+					TopicEndpointName: "0123456789abcdef0123456789abcdef",
+				},
+			}),
+			want: getSpan(map[string]interface{}{
+				"messaging.source.name": "0123456789abcdef0123456789abcdef",
+				"messaging.source.kind": "topic-endpoint",
+			}, "(anonymous) send"),
 		},
 		{
 			name:                        "With Unknown Endpoint source",
@@ -403,9 +427,9 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 		t.Run("With outcome "+outcomeName, func(t *testing.T) {
 			u := newTestEgressV1Unmarshaller(t)
 			expected := getSpan(map[string]interface{}{
-				"messaging.source.name":                   "someQueue",
-				"messaging.source.kind":                   "queue",
-				"messaging.solace.send_operation.outcome": outcomeName,
+				"messaging.source.name":         "someQueue",
+				"messaging.source.kind":         "queue",
+				"messaging.solace.send.outcome": outcomeName,
 			}, "someQueue send")
 			spanData := getSendSpan(&egress_v1.SpanData_SendSpan{
 				Source: &egress_v1.SpanData_SendSpan_QueueName{

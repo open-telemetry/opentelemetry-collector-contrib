@@ -17,6 +17,7 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"encoding/hex"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -111,7 +112,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 		sourceNameKey = "messaging.source.name"
 		sourceKindKey = "messaging.source.kind"
 		replayedKey   = "messaging.solace.message_replayed"
-		outcomeKey    = "messaging.solace.send_operation.outcome"
+		outcomeKey    = "messaging.solace.send.outcome"
 	)
 	const (
 		sendSpanOperation = "send"
@@ -133,12 +134,20 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 	var name string
 	switch casted := sendSpan.Source.(type) {
 	case *egress_v1.SpanData_SendSpan_TopicEndpointName:
-		name = casted.TopicEndpointName
-		attributes.PutStr(sourceNameKey, name)
+		if isAnonymousTopicEndpoint(casted.TopicEndpointName) {
+			name = anonymousSendName
+		} else {
+			name = casted.TopicEndpointName
+		}
+		attributes.PutStr(sourceNameKey, casted.TopicEndpointName)
 		attributes.PutStr(sourceKindKey, topicEndpointKind)
 	case *egress_v1.SpanData_SendSpan_QueueName:
-		name = casted.QueueName
-		attributes.PutStr(sourceNameKey, name)
+		if isAnonymousQueue(casted.QueueName) {
+			name = anonymousSendName
+		} else {
+			name = casted.QueueName
+		}
+		attributes.PutStr(sourceNameKey, casted.QueueName)
 		attributes.PutStr(sourceKindKey, queueKind)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown source type %T", casted))
@@ -234,4 +243,24 @@ func (u *brokerTraceEgressUnmarshallerV1) mapTransactionEvent(transactionEvent *
 		u.logger.Warn(fmt.Sprintf("Unknown transaction ID type %T", transactionID))
 		u.metrics.recordRecoverableUnmarshallingError()
 	}
+}
+
+func isAnonymousQueue(name string) bool {
+	// all anonymous queues start with the prefix #P2P/QTMP
+	const anonymousQueuePrefix = "#P2P/QTMP"
+	return strings.HasPrefix(name, anonymousQueuePrefix)
+}
+
+func isAnonymousTopicEndpoint(name string) bool {
+	// all anonymous topic endpoints are made up of hex strings of length 32
+	if len(name) != 32 {
+		return false
+	}
+	for _, c := range []byte(name) { // []byte casting is more efficient in this loop
+		// check if we are outside 0-9 AND outside a-f
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
 }
