@@ -51,7 +51,7 @@ func TestPrometheusExporter(t *testing.T) {
 					"code0": "one0",
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: ":8999",
+					Endpoint: "localhost:8999",
 				},
 				SendTimestamps:   false,
 				MetricExpiration: 60 * time.Second,
@@ -60,7 +60,7 @@ func TestPrometheusExporter(t *testing.T) {
 		{
 			config: &Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: ":88999",
+					Endpoint: "localhost:88999",
 				},
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
@@ -109,7 +109,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 			"code2": "one2",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
 					CertFile: "./testdata/certs/server.crt",
@@ -194,7 +194,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 			"code1": "one1",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -276,7 +276,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			"code1": "one1",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -352,7 +352,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 			"code2": "one2",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
@@ -429,7 +429,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 			"code2": "one2",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
