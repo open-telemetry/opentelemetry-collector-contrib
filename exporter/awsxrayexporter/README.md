@@ -50,21 +50,21 @@ by the Span Resource object. X-Ray uses this data to generate inferred segments 
 The following exporter configuration parameters are supported. They mirror and have the same effect as the
 comparable AWS X-Ray Daemon configuration values.
 
-| Name                   | Description                                                                        | Default |
-| :--------------------- | :--------------------------------------------------------------------------------- | ------- |
-| `num_workers`          | Maximum number of concurrent calls to AWS X-Ray to upload documents.               | 8       |
-| `endpoint`             | Optionally override the default X-Ray service endpoint.                            |         |
-| `request_timeout`      | Number of seconds before timing out a request.                                     | 30      |
-| `max_retries`          | Maximun number of attempts to post a batch before failing.                         | 2       |
-| `no_verify_ssl`        | Enable or disable TLS certificate verification.                                    | false   |
-| `proxy_address`        | Upload segments to AWS X-Ray through a proxy.                                      |         |
-| `region`               | Send segments to AWS X-Ray service in a specific region.                           |         |
-| `local_mode`           | Local mode to skip EC2 instance metadata check.                                    | false   |
-| `resource_arn`         | Amazon Resource Name (ARN) of the AWS resource running the collector.              |         |
-| `role_arn`             | IAM role to upload segments to a different account.                                |         |
-| `indexed_attributes`   | List of attribute names to be converted to X-Ray annotations.                      |         |
-| `index_all_attributes` | Enable or disable conversion of all OpenTelemetry attributes to X-Ray annotations. | false   |
-| `aws_log_groups`       | List of log group names for CloudWatch.                                             | []      |
+| Name                      | Description                                                                        | Default |
+| :------------------------ | :--------------------------------------------------------------------------------- | ------- |
+| `num_workers`             | Maximum number of concurrent calls to AWS X-Ray to upload documents.               | 8       |
+| `endpoint`                | Optionally override the default X-Ray service endpoint.                            |         |
+| `request_timeout_seconds` | Number of seconds before timing out a request.                                     | 30      |
+| `max_retries`             | Maximun number of attempts to post a batch before failing.                         | 2       |
+| `no_verify_ssl`           | Enable or disable TLS certificate verification.                                    | false   |
+| `proxy_address`           | Upload segments to AWS X-Ray through a proxy.                                      |         |
+| `region`                  | Send segments to AWS X-Ray service in a specific region.                           |         |
+| `local_mode`              | Local mode to skip EC2 instance metadata check.                                    | false   |
+| `resource_arn`            | Amazon Resource Name (ARN) of the AWS resource running the collector.              |         |
+| `role_arn`                | IAM role to upload segments to a different account.                                |         |
+| `indexed_attributes`      | List of attribute names to be converted to X-Ray annotations.                      |         |
+| `index_all_attributes`    | Enable or disable conversion of all OpenTelemetry attributes to X-Ray annotations. | false   |
+| `aws_log_groups`          | List of log group names for CloudWatch.                                            | []      |
 
 ## Traces and logs correlation
 

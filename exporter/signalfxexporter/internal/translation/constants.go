@@ -84,8 +84,11 @@ translation_rules:
     sf_temp.cpu.utilization: 100
 
 # convert cpu metrics
+- action: copy_metrics
+  mapping:
+    system.cpu.time: sf_temp.system.cpu.time
 - action: split_metric
-  metric_name: system.cpu.time
+  metric_name: sf_temp.system.cpu.time
   dimension_key: state
   mapping:
     idle: sf_temp.cpu.idle
@@ -369,8 +372,11 @@ translation_rules:
     sf_temp.memory.utilization: 100
 
 # Virtual memory metrics
+- action: copy_metrics
+  mapping:
+    system.paging.operations: sf_temp.system.paging.operations
 - action: split_metric
-  metric_name: system.paging.operations
+  metric_name: sf_temp.system.paging.operations
   dimension_key: direction
   mapping:
     page_in: sf_temp.system.paging.operations.page_in
@@ -448,9 +454,11 @@ translation_rules:
     sf_temp.memory.used: true
     sf_temp.system.cpu.delta: true
     sf_temp.system.cpu.total: true
+    sf_temp.system.cpu.time: true
     sf_temp.system.cpu.usage: true
     sf_temp.system.filesystem.usage: true
     sf_temp.system.memory.usage: true
+    sf_temp.system.paging.operations: true
     sf_temp.system.paging.operations.page_in: true
     sf_temp.system.paging.operations.page_out: true
 `

@@ -15,10 +15,8 @@
 package helper
 
 import (
-	"fmt"
 	"testing"
 	"time"
-	"unsafe"
 
 	"github.com/stretchr/testify/require"
 )
@@ -65,11 +63,4 @@ func TestIPResolverWithMultipleStops(t *testing.T) {
 
 	resolver.Stop()
 	resolver.Stop()
-}
-
-func TestSizes(t *testing.T) {
-	fmt.Printf("string %v \n", unsafe.Sizeof(""))
-	fmt.Printf("cache entry %v \n", unsafe.Sizeof(cacheEntry{}))
-	fmt.Printf("time %v \n", unsafe.Sizeof(time.Now()))
-	fmt.Printf("time %v \n", unsafe.Sizeof(time.Now()))
 }

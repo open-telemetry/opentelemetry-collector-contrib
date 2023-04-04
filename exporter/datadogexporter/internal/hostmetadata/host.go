@@ -15,14 +15,11 @@
 package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
-	gocache "github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/internal/ec2"
@@ -31,17 +28,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/internal/k8s"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/provider"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/valid"
 )
 
-var HostnamePreviewFeatureGate = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadog.hostname.preview",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Use the 'preview' hostname resolution rules, which are consistent with Datadog cloud integration hostname resolution rules, and set 'host_metadata::hostname_source' to 'config_or_system' by default."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10424"),
+	featuregate.WithRegisterRemovalVersion("0.75.0"),
 )
 
-func buildPreviewProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
+func GetSourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
 	ecs, err := ecs.NewProvider(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build ECS Fargate provider: %w", err)
@@ -90,78 +87,4 @@ func buildPreviewProvider(set component.TelemetrySettings, configHostname string
 	}
 
 	return provider.Once(chain), nil
-}
-
-func buildCurrentProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
-	ec2Provider, err := ec2.NewProvider(set.Logger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build EC2 provider: %w", err)
-	}
-
-	return &currentProvider{
-		logger:         set.Logger,
-		configHostname: configHostname,
-		systemProvider: system.NewProvider(set.Logger),
-		ec2Provider:    ec2Provider,
-	}, nil
-}
-
-func GetSourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
-	if HostnamePreviewFeatureGate.IsEnabled() {
-		return buildPreviewProvider(set, configHostname)
-	}
-
-	return buildCurrentProvider(set, configHostname)
-}
-
-var _ source.Provider = (*currentProvider)(nil)
-
-type currentProvider struct {
-	logger         *zap.Logger
-	configHostname string
-	systemProvider *system.Provider
-	ec2Provider    *ec2.Provider
-}
-
-// Hostname gets the hostname according to configuration.
-// It checks in the following order
-// 1. Configuration
-// 2. Cache
-// 3. EC2 instance metadata
-// 4. System
-func (c *currentProvider) hostname(ctx context.Context) string {
-	if c.configHostname != "" {
-		return c.configHostname
-	}
-
-	if cacheVal, ok := hostnameCache.Get(cacheKeyHostname); ok {
-		return cacheVal.(string)
-	}
-
-	ec2Info := c.ec2Provider.HostInfo()
-	hostname := ec2Info.GetHostname(c.logger)
-
-	if hostname == "" {
-		// Get system hostname
-		var err error
-		src, err := c.systemProvider.Source(ctx)
-		if err != nil {
-			c.logger.Debug("system provider is unavailable", zap.Error(err))
-		} else {
-			hostname = src.Identifier
-		}
-	}
-
-	if err := valid.Hostname(hostname); err != nil {
-		// If invalid log but continue
-		c.logger.Error("Detected hostname is not valid", zap.Error(err))
-	}
-
-	c.logger.Debug("Canonical hostname automatically set", zap.String("hostname", hostname))
-	hostnameCache.Set(cacheKeyHostname, hostname, gocache.NoExpiration)
-	return hostname
-}
-
-func (c *currentProvider) Source(ctx context.Context) (source.Source, error) {
-	return source.Source{Kind: source.HostnameKind, Identifier: c.hostname(ctx)}, nil
 }

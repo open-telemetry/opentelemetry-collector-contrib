@@ -31,7 +31,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardGetSetter[pcommon.Map]{
+	target := &ottl.StandardTypeGetter[pcommon.Map, pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
 			return tCtx, nil
 		},
@@ -39,7 +39,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		target  ottl.Getter[pcommon.Map]
+		target  ottl.PMapGetter[pcommon.Map]
 		pattern string
 		want    func(pcommon.Map)
 	}{
@@ -91,7 +91,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 
 func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	target := &ottl.StandardGetSetter[interface{}]{
+	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
 		},
@@ -101,13 +101,11 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
-	assert.Nil(t, err)
-
-	assert.Equal(t, pcommon.NewValueInt(1), input)
+	assert.Error(t, err)
 }
 
 func Test_deleteMatchingKeys_get_nil(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
+	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
 		},
@@ -115,13 +113,12 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 
 	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
 	assert.NoError(t, err)
-	result, err := exprFunc(nil, nil)
-	assert.NoError(t, err)
-	assert.Nil(t, result)
+	_, err = exprFunc(nil, nil)
+	assert.Error(t, err)
 }
 
 func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
+	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			t.Errorf("nothing should be received in this scenario")
 			return nil, nil

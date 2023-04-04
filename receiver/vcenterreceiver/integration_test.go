@@ -19,6 +19,7 @@ package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -38,9 +39,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
-func TestEndtoEnd_ESX(t *testing.T) {
+func TestIntegrationESX(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		pw, set := simulator.DefaultLogin.Password()
+		require.True(t, set)
 		cfg := &Config{
+			Endpoint: fmt.Sprintf("%s://%s", c.URL().Scheme, c.URL().Host),
+			Username: simulator.DefaultLogin.Username(),
+			Password: pw,
 			TLSClientSetting: configtls.TLSClientSetting{
 				Insecure: true,
 			},
@@ -53,6 +59,7 @@ func TestEndtoEnd_ESX(t *testing.T) {
 			Client:         c,
 			SessionManager: s,
 		}
+		require.NoError(t, scraper.client.EnsureConnection(context.Background()))
 		scraper.client.vimDriver = c
 		scraper.client.finder = find.NewFinder(c)
 		// Performance metrics rely on time based publishing so this is inherently flaky for an
@@ -66,18 +73,15 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, metrics)
 
-		// the vcsim will auto assign the VM to one of the listed hosts, so this is a way to ignore the host.name for those vm metrics
-		// please see #10129
-		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-			if val, ok := metrics.ResourceMetrics().At(i).Resource().Attributes().Get("vcenter.host.name"); ok {
-				val.SetStr("DC0_C0_H0")
-			}
-		}
-
-		goldenPath := filepath.Join("testdata", "metrics", "integration-metrics.json")
+		goldenPath := filepath.Join("testdata", "metrics", "integration-metrics.yaml")
 		expectedMetrics, err := golden.ReadMetrics(goldenPath)
 		require.NoError(t, err)
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreMetricValues()))
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics,
+			// the simulator will auto assign which host a VM is on, so it will be inconsistent which vm is on which host
+			pmetrictest.IgnoreResourceAttributeValue("vcenter.host.name"),
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreMetricValues()))
 
 		err = scraper.Shutdown(ctx)
 		require.NoError(t, err)

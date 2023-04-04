@@ -23,13 +23,12 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor/internal/metadata"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "resource"
-	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -39,9 +38,9 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, stability),
-		processor.WithMetrics(createMetricsProcessor, stability),
-		processor.WithLogs(createLogsProcessor, stability))
+		processor.WithTraces(createTracesProcessor, metadata.Stability),
+		processor.WithMetrics(createMetricsProcessor, metadata.Stability),
+		processor.WithLogs(createLogsProcessor, metadata.Stability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.

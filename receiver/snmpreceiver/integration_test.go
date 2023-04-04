@@ -44,12 +44,12 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 		{
 			desc:                    "Integration test with v2c configuration",
 			configFilename:          "integration_test_v2c_config.yaml",
-			expectedResultsFilename: "v2c_config_expected_metrics.json",
+			expectedResultsFilename: "v2c_config_expected_metrics.yaml",
 		},
 		{
 			desc:                    "Integration test with v3 configuration",
 			configFilename:          "integration_test_v3_config.yaml",
-			expectedResultsFilename: "v3_config_expected_metrics.json",
+			expectedResultsFilename: "v3_config_expected_metrics.yaml",
 		},
 	}
 

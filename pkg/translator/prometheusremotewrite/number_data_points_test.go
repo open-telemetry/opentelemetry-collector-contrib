@@ -158,10 +158,10 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 			},
 			want: func() map[string]*prompb.TimeSeries {
 				labels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_sum"},
+					{Name: model.MetricNameLabel, Value: "test_sum_total"},
 				}
 				createdLabels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_sum" + createdSuffix},
+					{Name: model.MetricNameLabel, Value: "test_sum_total" + createdSuffix},
 				}
 				return map[string]*prompb.TimeSeries{
 					timeSeriesSignature(pmetric.MetricTypeSum.String(), &labels): {
@@ -194,7 +194,7 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 			},
 			want: func() map[string]*prompb.TimeSeries {
 				labels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_sum"},
+					{Name: model.MetricNameLabel, Value: "test_sum_total"},
 				}
 				return map[string]*prompb.TimeSeries{
 					timeSeriesSignature(pmetric.MetricTypeSum.String(), &labels): {

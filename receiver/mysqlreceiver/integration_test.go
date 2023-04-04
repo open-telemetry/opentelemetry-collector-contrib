@@ -63,7 +63,7 @@ func TestMySqlIntegration(t *testing.T) {
 
 		actualMetrics := consumer.AllMetrics()[0]
 
-		expectedFile := filepath.Join("testdata", "integration", "expected.8_0.json")
+		expectedFile := filepath.Join("testdata", "integration", "expected.8_0.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 

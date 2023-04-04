@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func ReplaceAllMatches[K any](target ottl.GetSetter[K], pattern string, replacement string) (ottl.ExprFunc[K], error) {
+func ReplaceAllMatches[K any](target ottl.PMapGetter[K], pattern string, replacement string) (ottl.ExprFunc[K], error) {
 	glob, err := glob.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
@@ -34,25 +34,12 @@ func ReplaceAllMatches[K any](target ottl.GetSetter[K], pattern string, replacem
 		if err != nil {
 			return nil, err
 		}
-		if val == nil {
-			return nil, nil
-		}
-		attrs, ok := val.(pcommon.Map)
-		if !ok {
-			return nil, nil
-		}
-		updated := pcommon.NewMap()
-		attrs.CopyTo(updated)
-		updated.Range(func(key string, value pcommon.Value) bool {
+		val.Range(func(key string, value pcommon.Value) bool {
 			if glob.Match(value.Str()) {
 				value.SetStr(replacement)
 			}
 			return true
 		})
-		err = target.Set(ctx, tCtx, updated)
-		if err != nil {
-			return nil, err
-		}
 		return nil, nil
 	}, nil
 }

@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
-					RequestTimeoutSeconds: 30,
+					RequestTimeoutSeconds: 120,
 					MaxRetries:            2,
 					NoVerifySSL:           false,
 					ProxyAddress:          "",
