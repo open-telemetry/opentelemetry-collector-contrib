@@ -9,7 +9,7 @@ package solace.messaging.proto.broker.trace.egress.v1;
 // future. Receiving clients must not assume there are no additional topic
 // levels.
 //
-// This message describes telemetry data that a Solace PubSub+ broker captures 
+// This message describes telemetry data that a Solace PubSub+ broker captures
 // in the egress portion of its data path.
 //
 // Fields with names that end in "time_unix_nano" are 64-bit timestamps, in
@@ -31,6 +31,10 @@ message SpanData {
   // object. The message_vpn_name of all messages received from via an SMF
   // API's session will match the session's VPN_NAME_IN_USE.
   optional string message_vpn_name = 3;
+
+  // The SolOS version of the broker generating the message. All elements of
+  // egress_spans will always have been created by the same broker version.
+  string solos_version = 4;
 
   message EgressSpan {
     // 16-byte globally unique trace ID. Any two spans with the same trace ID
@@ -54,7 +58,6 @@ message SpanData {
 
     oneof type_data {
       SendSpan send_span = 8;
-      DeleteSpan delete_span = 9;
     }
   }
 
@@ -68,16 +71,14 @@ message SpanData {
       string topic_endpoint_name = 2;
     }
 
-    bool queue_temporary = 3;
+    Outcome outcome =  3;
 
-    Outcome outcome =  4;
+    bool replayed_msg = 4;
 
-    bool replayed_msg = 5;
-    
-    string consumer_client_username = 6;
-    string consumer_client_name = 7;
-    string protocol = 8;
-    optional string protocol_version = 9;
+    string consumer_client_username = 5;
+    string consumer_client_name = 6;
+    string protocol = 7;
+    optional string protocol_version = 8;
 
     enum Outcome {
       ACCEPTED = 0;
@@ -88,32 +89,6 @@ message SpanData {
       TRANSACTION_COMMIT = 5;
       TRANSACTION_COMMIT_FAILED = 6;
       TRANSACTION_ROLLBACK = 7;
-    }
-  }
-
-  // This message contains data unique to delete spans generated in egress.
-  // The only implemented delete span currently implemented is the
-  // ENQUEUE_FAILURE reason. Other values are defined to allow their
-  // implementation to be added in the future without automatically requiring
-  // a change to the spec.
-  message DeleteSpan {
-    // The name of the queue or topic endpoint the message is being deleted
-    // from.
-    oneof source {
-      string queue_name = 1;
-      string topic_endpoint_name = 2;
-    }
-
-    bool queue_temporary = 3;
-
-    Reason reason = 4;
-
-    enum Reason {
-      TTL_EXPIRY = 0;
-      MAX_REDELIVERIES_EXCEEDED = 1;
-      ENQUEUE_FAILURE = 2;
-      ADMIN_MESSAGE_DELETE = 3;
-      ADMIN_QUEUE_DELETE = 4;
     }
   }
 
@@ -150,7 +125,7 @@ message SpanData {
       // have the span's error_description set, but all ROLLBACK_ONLY
       // transaction events will have an error_description set, which indicate
       // the transaction's error.
-      // 
+      //
       // Since the only record of these messages in the context of the
       // transaction has been discarded, no further span can be generated in
       // the context of a client, admin, or session timeout operation. When a
@@ -161,7 +136,7 @@ message SpanData {
       ROLLBACK_ONLY = 5;
     }
     Type type = 2;
-    
+
     enum Initiator {
       CLIENT = 0;
       ADMIN = 1;

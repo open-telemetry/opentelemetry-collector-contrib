@@ -53,6 +53,7 @@ func TestRecordMetrics(t *testing.T) {
 		}, metrics.views.flowControlRecentRetries, metrics.stats.flowControlRecentRetries, 3, 5},
 		{metrics.recordFlowControlTotal, metrics.views.flowControlTotal, metrics.stats.flowControlTotal, 3, 3},
 		{metrics.recordFlowControlSingleSuccess, metrics.views.flowControlSingleSuccess, metrics.stats.flowControlSingleSuccess, 3, 3},
+		{metrics.recordDroppedEgressSpan, metrics.views.droppedEgressSpans, metrics.stats.droppedEgressSpans, 3, 3},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.m.Name(), func(t *testing.T) {
