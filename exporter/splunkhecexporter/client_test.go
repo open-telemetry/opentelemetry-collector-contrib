@@ -522,6 +522,7 @@ func TestReceiveLogs(t *testing.T) {
 		batches    [][]string
 		numBatches int
 		compressed bool
+		wantErr    string
 	}
 
 	// The test cases depend on the constant minCompressionLen = 1500.
@@ -674,13 +675,36 @@ func TestReceiveLogs(t *testing.T) {
 				compressed: true,
 			},
 		},
+		{
+			name: "one event that is so large we cannot send it",
+			logs: func() plog.Logs {
+				firstLog := createLogData(1, 1, 1)
+				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(repeatableString(500000))
+				return firstLog
+			}(),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthLogs = 1800 // small so we can reproduce without allocating big logs.
+				return cfg
+			}(),
+			want: wantType{
+				batches:    [][]string{},
+				numBatches: 0,
+				compressed: true,
+				wantErr:    "timeout", // our server will time out waiting for the data.
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := runLogExport(test.conf, test.logs, test.want.numBatches, t)
 
-			require.NoError(t, err)
+			if test.want.wantErr != "" {
+				require.EqualError(t, err, test.want.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
 			require.Equal(t, test.want.numBatches, len(got))
 
 			for i := 0; i < test.want.numBatches; i++ {
