@@ -41,7 +41,6 @@ Available Functions:
 - [replace_pattern](#replace_pattern)
 - [set](#set)
 - [truncate_all](#truncate_all)
-- [uuid](#uuid)
 
 ### delete_key
 
