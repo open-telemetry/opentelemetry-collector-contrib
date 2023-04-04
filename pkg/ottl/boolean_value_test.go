@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -81,7 +80,7 @@ func comparisonHelper(left any, right any, op string) *comparison {
 }
 
 func Test_newComparisonEvaluator(t *testing.T) {
-	p := NewParser[any](
+	p, _ := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
 		componenttest.NewNopTelemetrySettings(),
@@ -132,10 +131,10 @@ func Test_newComparisonEvaluator(t *testing.T) {
 }
 
 func Test_newConditionEvaluator_invalid(t *testing.T) {
-	p := NewParser[any](
+	p, _ := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
 
@@ -165,10 +164,10 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 }
 
 func Test_newBooleanExpressionEvaluator(t *testing.T) {
-	p := NewParser[any](
+	p, _ := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
 

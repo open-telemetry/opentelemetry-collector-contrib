@@ -49,7 +49,7 @@ exclude_metrics:
 # CPU Metrics.
 - metric_name: system.cpu.time
   dimensions:
-    state: [interrupt, nice, softirq, steal, system, user, wait]
+    state: [idle, interrupt, nice, softirq, steal, system, user, wait]
 
 - metric_name: cpu.idle
   dimensions:

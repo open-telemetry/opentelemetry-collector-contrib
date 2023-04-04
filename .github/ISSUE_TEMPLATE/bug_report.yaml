@@ -26,11 +26,13 @@ body:
       - confmap/provider/s3provider
       - connector/count
       - connector/servicegraph
+      - connector/spanmetrics
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
       - exporter/awsemf
       - exporter/awskinesis
+      - exporter/awss3
       - exporter/awsxray
       - exporter/azuredataexplorer
       - exporter/azuremonitor
@@ -153,6 +155,7 @@ body:
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
+      - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
       - receiver/couchdb
@@ -180,6 +183,7 @@ body:
       - receiver/kafka
       - receiver/kafkametrics
       - receiver/kubeletstats
+      - receiver/loki
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas
@@ -193,7 +197,6 @@ body:
       - receiver/postgresql
       - receiver/prometheus
       - receiver/prometheusexec
-      - receiver/promtail
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb
@@ -219,6 +222,7 @@ body:
       - receiver/udplog
       - receiver/vcenter
       - receiver/wavefront
+      - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters
       - receiver/zipkin

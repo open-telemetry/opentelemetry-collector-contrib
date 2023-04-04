@@ -1,0 +1,7 @@
+name: azureeventhubreceiver
+
+status:
+  type: receiver
+  stability: alpha
+  pipelines: [logs, metrics]
+  distributions: [contrib]

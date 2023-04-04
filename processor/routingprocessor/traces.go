@@ -26,6 +26,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
@@ -43,6 +44,8 @@ type tracesProcessor struct {
 func newTracesProcessor(settings component.TelemetrySettings, config component.Config) *tracesProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
+	spanParser, _ := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings)
+
 	return &tracesProcessor{
 		logger: settings.Logger,
 		config: cfg,
@@ -50,7 +53,7 @@ func newTracesProcessor(settings component.TelemetrySettings, config component.C
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings),
+			spanParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
@@ -104,7 +107,11 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 		for key, route := range p.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, stx)
 			if err != nil {
-				return err
+				if p.config.ErrorMode == ottl.PropagateError {
+					return err
+				}
+				p.group("", groups, p.router.defaultExporters, rspans)
+				continue
 			}
 			if !isMatch {
 				matchCount--

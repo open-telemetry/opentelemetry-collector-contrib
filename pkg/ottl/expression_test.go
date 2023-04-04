@@ -19,7 +19,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -290,10 +291,10 @@ func Test_newGetter(t *testing.T) {
 
 	functions := map[string]interface{}{"Hello": hello[interface{}]}
 
-	p := NewParser[any](
+	p, _ := NewParser[any](
 		functions,
 		testParsePath,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
 
@@ -347,6 +348,16 @@ func Test_StandardTypeGetter(t *testing.T) {
 			valid:            false,
 			expectedErrorMsg: "expected string but got bool",
 		},
+		{
+			name: "nil",
+			getter: StandardTypeGetter[interface{}, string]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected string but got nil",
+		},
 	}
 
 	for _, tt := range tests {
@@ -354,7 +365,140 @@ func Test_StandardTypeGetter(t *testing.T) {
 			val, err := tt.getter.Get(context.Background(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.want, *val)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+func Test_StandardStringLikeGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StringLikeGetter[interface{}]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "string type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "str", nil
+				},
+			},
+			want:  "str",
+			valid: true,
+		},
+		{
+			name: "bool type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			want:  "true",
+			valid: true,
+		},
+		{
+			name: "int64 type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return int64(1), nil
+				},
+			},
+			want:  "1",
+			valid: true,
+		},
+		{
+			name: "float64 type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return 1.1, nil
+				},
+			},
+			want:  "1.1",
+			valid: true,
+		},
+		{
+			name: "byte[] type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return []byte{0}, nil
+				},
+			},
+			want:  "00",
+			valid: true,
+		},
+		{
+			name: "pcommon.map type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					m := pcommon.NewMap()
+					m.PutStr("test", "passed")
+					return m, nil
+				},
+			},
+			want:  `{"test":"passed"}`,
+			valid: true,
+		},
+		{
+			name: "pcommon.slice type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					s := pcommon.NewSlice()
+					v := s.AppendEmpty()
+					v.SetStr("test")
+					return s, nil
+				},
+			},
+			want:  `["test"]`,
+			valid: true,
+		},
+		{
+			name: "pcommon.value type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueInt(int64(100))
+					return v, nil
+				},
+			},
+			want:  "100",
+			valid: true,
+		},
+		{
+			name: "nil",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			want:  nil,
+			valid: true,
+		},
+		{
+			name: "invalid type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return make(chan int), nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported type: chan int",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				if tt.want == nil {
+					assert.Nil(t, val)
+				} else {
+					assert.Equal(t, tt.want, *val)
+				}
 			} else {
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}

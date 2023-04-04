@@ -536,6 +536,7 @@ func TestExtractionRules(t *testing.T) {
 		},
 		Spec: api_v1.PodSpec{
 			NodeName: "node1",
+			Hostname: "host1",
 		},
 		Status: api_v1.PodStatus{
 			PodIP: "1.1.1.1",
@@ -633,18 +634,20 @@ func TestExtractionRules(t *testing.T) {
 	}, {
 		name: "metadata",
 		rules: ExtractionRules{
-			Deployment: true,
-			Namespace:  true,
-			PodName:    true,
-			PodUID:     true,
-			Node:       true,
-			StartTime:  true,
+			Deployment:  true,
+			Namespace:   true,
+			PodName:     true,
+			PodUID:      true,
+			PodHostName: true,
+			Node:        true,
+			StartTime:   true,
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
 			"k8s.namespace.name":  "ns1",
 			"k8s.node.name":       "node1",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
+			"k8s.pod.hostname":    "host1",
 			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			"k8s.pod.start_time":  pod.GetCreationTimestamp().String(),
 		},
@@ -1037,7 +1040,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				},
 				{
 					Name:  "container2",
-					Image: "test/image2:0.2.0",
+					Image: "example.com:port1/image2:0.2.0",
 				},
 			},
 			InitContainers: []api_v1.Container{
@@ -1099,7 +1102,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			pod: pod,
 			want: map[string]*Container{
 				"container1":     {ImageName: "test/image1"},
-				"container2":     {ImageName: "test/image2"},
+				"container2":     {ImageName: "example.com:port1/image2"},
 				"init_container": {ImageName: "test/init-image"},
 			},
 		},
@@ -1163,7 +1166,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					},
 				},
 				"container2": {
-					ImageName: "test/image2",
+					ImageName: "example.com:port1/image2",
 					ImageTag:  "0.2.0",
 					Statuses: map[int]ContainerStatus{
 						2: {ContainerID: "container2-id-456"},

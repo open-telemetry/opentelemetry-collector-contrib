@@ -90,7 +90,8 @@ func (e *oidcExtension) start(context.Context, component.Host) error {
 
 // authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
 func (e *oidcExtension) authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	authHeaders := headers[e.cfg.Attribute]
+	metadata := client.NewMetadata(headers)
+	authHeaders := metadata.Get(e.cfg.Attribute)
 	if len(authHeaders) == 0 {
 		return ctx, errNotAuthenticated
 	}

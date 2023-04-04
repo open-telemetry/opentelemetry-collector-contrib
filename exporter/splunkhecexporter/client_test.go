@@ -144,6 +144,18 @@ func repeat(what int, times int) []int {
 	return result
 }
 
+// these runes are used to generate long log messages that will compress down to a number of bytes we can rely on for testing.
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789wersgdgr43q3zvbcgv65ew 346xx$gt5/kuopo89.nytqasdfghjklpoiuy")
+
+func repeatableString(length int) string {
+	b := make([]rune, length)
+	for i := range b {
+		l := i % len(letterRunes)
+		b[i] = letterRunes[l]
+	}
+	return string(b)
+}
+
 func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().EnsureCapacity(numResources)
@@ -215,7 +227,8 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	rr := make(chan receivedRequest)
 	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
-		Handler: &capture,
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	defer s.Close()
 	go func() {
@@ -267,7 +280,8 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 	rr := make(chan receivedRequest)
 	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
-		Handler: &capture,
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	defer s.Close()
 	go func() {
@@ -326,7 +340,8 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 	rr := make(chan receivedRequest)
 	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
-		Handler: &capture,
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	defer s.Close()
 	go func() {
@@ -507,6 +522,7 @@ func TestReceiveLogs(t *testing.T) {
 		batches    [][]string
 		numBatches int
 		compressed bool
+		wantErr    string
 	}
 
 	// The test cases depend on the constant minCompressionLen = 1500.
@@ -638,14 +654,58 @@ func TestReceiveLogs(t *testing.T) {
 				compressed: true,
 			},
 		},
+		{
+			name: "one event with 1340 bytes, then one triggering compression (going over 1500 bytes) and bypassing the max length, moving to a separate batch",
+			logs: func() plog.Logs {
+				firstLog := createLogData(1, 1, 2)
+				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(repeatableString(1340))
+				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(repeatableString(2800000))
+				return firstLog
+			}(),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthLogs = 10000 // small so we can reproduce without allocating big logs.
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"otel.log.name":"0_0_0"`}, {`"otel.log.name":"0_0_1"`},
+				},
+				numBatches: 2,
+				compressed: true,
+			},
+		},
+		{
+			name: "one event that is so large we cannot send it",
+			logs: func() plog.Logs {
+				firstLog := createLogData(1, 1, 1)
+				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(repeatableString(500000))
+				return firstLog
+			}(),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthLogs = 1800 // small so we can reproduce without allocating big logs.
+				return cfg
+			}(),
+			want: wantType{
+				batches:    [][]string{},
+				numBatches: 0,
+				compressed: true,
+				wantErr:    "timeout", // our server will time out waiting for the data.
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := runLogExport(test.conf, test.logs, test.want.numBatches, t)
 
-			require.NoError(t, err)
-			require.Len(t, got, test.want.numBatches)
+			if test.want.wantErr != "" {
+				require.EqualError(t, err, test.want.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, test.want.numBatches, len(got))
 
 			for i := 0; i < test.want.numBatches; i++ {
 				require.NotZero(t, got[i])
@@ -965,7 +1025,8 @@ func TestErrorReceived(t *testing.T) {
 		panic(err)
 	}
 	s := &http.Server{
-		Handler: &capture,
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	defer s.Close()
 	go func() {
@@ -1147,28 +1208,28 @@ func Test_pushLogData_PostError(t *testing.T) {
 	require.Error(t, err)
 	var logsErr consumererror.Logs
 	assert.ErrorAs(t, err, &logsErr)
-	assert.Equal(t, logs, logsErr.GetLogs())
+	assert.Equal(t, logs, logsErr.Data())
 
 	// 0 -> unlimited size batch, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, false
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &logsErr)
-	assert.Equal(t, logs, logsErr.GetLogs())
+	assert.Equal(t, logs, logsErr.Data())
 
 	// 200000 < 371888 -> multiple batches, true -> compression disabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, true
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &logsErr)
-	assert.Equal(t, logs, logsErr.GetLogs())
+	assert.Equal(t, logs, logsErr.Data())
 
 	// 200000 < 371888 -> multiple batches, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, false
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &logsErr)
-	assert.Equal(t, logs, logsErr.GetLogs())
+	assert.Equal(t, logs, logsErr.Data())
 }
 
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
@@ -1230,8 +1291,8 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	// Only the record that was not successfully sent should be returned
 	var logsErr consumererror.Logs
 	require.ErrorAs(t, err, &logsErr)
-	assert.Equal(t, 1, logsErr.GetLogs().ResourceLogs().Len())
-	assert.Equal(t, logs.ResourceLogs().At(1), logsErr.GetLogs().ResourceLogs().At(0))
+	assert.Equal(t, 1, logsErr.Data().ResourceLogs().Len())
+	assert.Equal(t, logs.ResourceLogs().At(1), logsErr.Data().ResourceLogs().At(0))
 }
 
 func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {

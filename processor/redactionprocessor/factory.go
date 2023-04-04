@@ -53,7 +53,7 @@ func createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
-	redaction, err := newRedaction(ctx, oCfg, set.Logger, next)
+	redaction, err := newRedaction(ctx, oCfg, set.Logger)
 	if err != nil {
 		// TODO: Placeholder for an error metric in the next PR
 		return nil, fmt.Errorf("error creating a redaction processor: %w", err)
@@ -65,7 +65,5 @@ func createTracesProcessor(
 		cfg,
 		next,
 		redaction.processTraces,
-		processorhelper.WithCapabilities(redaction.Capabilities()),
-		processorhelper.WithStart(redaction.Start),
-		processorhelper.WithShutdown(redaction.Shutdown))
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }

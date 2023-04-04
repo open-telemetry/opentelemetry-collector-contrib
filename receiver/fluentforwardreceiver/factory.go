@@ -49,5 +49,5 @@ func createLogsReceiver(
 ) (receiver.Logs, error) {
 
 	rCfg := cfg.(*Config)
-	return newFluentReceiver(params.Logger, rCfg, consumer)
+	return newFluentReceiver(params, rCfg, consumer)
 }

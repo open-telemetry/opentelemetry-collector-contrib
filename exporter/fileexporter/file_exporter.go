@@ -21,7 +21,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -61,11 +60,7 @@ type fileExporter struct {
 	exporter   exportFunc
 }
 
-func (e *fileExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+func (e *fileExporter) consumeTraces(_ context.Context, td ptrace.Traces) error {
 	buf, err := e.tracesMarshaler.MarshalTraces(td)
 	if err != nil {
 		return err
@@ -74,7 +69,7 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 	return e.exporter(e, buf)
 }
 
-func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+func (e *fileExporter) consumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	buf, err := e.metricsMarshaler.MarshalMetrics(md)
 	if err != nil {
 		return err
@@ -83,7 +78,7 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	return e.exporter(e, buf)
 }
 
-func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+func (e *fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	buf, err := e.logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return err

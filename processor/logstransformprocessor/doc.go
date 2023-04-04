@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package logstransformprocessor implements a processor for specifying resource
-// labels to be added to OpenCensus trace data and metrics data.
+// Package logstransformprocessor implements a processor
+// to apply log operators to logs coming from any receiver.
 package logstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor"

@@ -1074,8 +1074,8 @@ func TestConsumeMetadata(t *testing.T) {
 
 			select {
 			case <-c:
-			// wait 5ms longer than send delay
-			case <-time.After(time.Duration(tt.sendDelay)*time.Second + 5*time.Millisecond):
+			// wait 500ms longer than send delay
+			case <-time.After(time.Duration(tt.sendDelay)*time.Second + 500*time.Millisecond):
 				require.True(t, tt.shouldNotSendUpdate, "timeout waiting for response")
 			}
 
@@ -1287,6 +1287,44 @@ func TestTLSIngestConnection(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
+	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
+	require.NoError(t, err)
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.")
+	require.NoError(t, err)
+
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("system.cpu.time")
+	sum := m.SetEmptySum()
+	for _, state := range []string{"idle", "interrupt", "nice", "softirq", "steal", "system", "user", "wait"} {
+		for cpu := 0; cpu < 32; cpu++ {
+			dp := sum.DataPoints().AppendEmpty()
+			dp.SetDoubleValue(0)
+			dp.Attributes().PutStr("cpu", fmt.Sprintf("%d", cpu))
+			dp.Attributes().PutStr("state", state)
+		}
+	}
+	dps := converter.MetricsToSignalFxV2(md)
+	found := map[string]int64{}
+	for _, dp := range dps {
+		if dp.Metric == "cpu.num_processors" || dp.Metric == "cpu.idle" {
+			intVal := dp.Value.IntValue
+			require.NotNil(t, intVal, fmt.Sprintf("unexpected nil IntValue for %q", dp.Metric))
+			found[dp.Metric] = *intVal
+		} else {
+			// account for unexpected w/ test-failing placeholder
+			found[dp.Metric] = -1
+		}
+	}
+	require.Equal(t, map[string]int64{
+		"cpu.num_processors": 32,
+		"cpu.idle":           0,
+	}, found)
 }
 
 func TestTLSAPIConnection(t *testing.T) {

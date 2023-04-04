@@ -87,7 +87,7 @@ func TestMongodbIntegration(t *testing.T) {
 			name:      "4_0",
 			container: containerRequest4_0,
 			cfgMod: func(cfg *Config, endpoint string) {
-				cfg.Metrics.MongodbLockAcquireTime.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.MongodbLockAcquireTime.Enabled = false
 				cfg.Hosts = []confignet.NetAddr{
 					{
 						Endpoint: endpoint,
@@ -163,7 +163,7 @@ func TestMongodbIntegration(t *testing.T) {
 			require.NoError(t, rcvr.Shutdown(context.Background()))
 			actualMetrics := consumer.AllMetrics()[1]
 
-			expectedFile := filepath.Join("testdata", "integration", fmt.Sprintf("expected.%s.json", tt.name))
+			expectedFile := filepath.Join("testdata", "integration", fmt.Sprintf("expected.%s.yaml", tt.name))
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 

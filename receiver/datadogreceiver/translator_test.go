@@ -74,7 +74,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	if err := traces.UnmarshalMsgDictionary(payload); err != nil {
 		t.Fatal(err)
 	}
-	req, _ := http.NewRequest("POST", "/v0.5/traces", io.NopCloser(bytes.NewReader(payload)))
+	req, _ := http.NewRequest(http.MethodPost, "/v0.5/traces", io.NopCloser(bytes.NewReader(payload)))
 	translated := toTraces(&pb.TracerPayload{
 		LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 		LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
@@ -106,7 +106,7 @@ func TestTracePayloadV07Unmarshalling(t *testing.T) {
 	}
 	var reqBytes []byte
 	bytez, _ := apiPayload.MarshalMsg(reqBytes)
-	req, _ := http.NewRequest("POST", "/v0.7/traces", io.NopCloser(bytes.NewReader(bytez)))
+	req, _ := http.NewRequest(http.MethodPost, "/v0.7/traces", io.NopCloser(bytes.NewReader(bytez)))
 
 	translated, _ := handlePayload(req)
 	span := translated.GetChunks()[0].GetSpans()[0]

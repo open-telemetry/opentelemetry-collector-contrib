@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -29,9 +30,21 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "servicegraph"
 	// The stability level of the processor.
-	stability          = component.StabilityLevelAlpha
-	connectorStability = component.StabilityLevelDevelopment
+	stability                = component.StabilityLevelAlpha
+	connectorStability       = component.StabilityLevelDevelopment
+	virtualNodeFeatureGateID = "processor.servicegraph.virtualNode"
 )
+
+var virtualNodeFeatureGate *featuregate.Gate
+
+func init() {
+	virtualNodeFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		virtualNodeFeatureGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, when the edge expires, processor checks if it has peer attributes(`db.name, net.sock.peer.addr, net.peer.name, rpc.service, http.url, http.target`), and then aggregate the metrics with virtual node."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196"),
+	)
+}
 
 // NewFactory creates a factory for the servicegraph processor.
 func NewFactory() processor.Factory {
@@ -63,6 +76,8 @@ func createDefaultConfig() component.Config {
 			TTL:      2 * time.Second,
 			MaxItems: 1000,
 		},
+		CacheLoop:           time.Minute,
+		StoreExpirationLoop: 2 * time.Second,
 	}
 }
 

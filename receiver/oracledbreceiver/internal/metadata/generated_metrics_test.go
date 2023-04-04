@@ -17,30 +17,30 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testMetricsSet int
+type testConfigCollection int
 
 const (
-	testMetricsSetDefault testMetricsSet = iota
-	testMetricsSetAll
-	testMetricsSetNo
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name       string
-		metricsSet testMetricsSet
+		name      string
+		configSet testConfigCollection
 	}{
 		{
-			name:       "default",
-			metricsSet: testMetricsSetDefault,
+			name:      "default",
+			configSet: testSetDefault,
 		},
 		{
-			name:       "all_metrics",
-			metricsSet: testMetricsSetAll,
+			name:      "all_set",
+			configSet: testSetAll,
 		},
 		{
-			name:       "no_metrics",
-			metricsSet: testMetricsSetNo,
+			name:      "none_set",
+			configSet: testSetNone,
 		},
 	}
 	for _, test := range tests {
@@ -136,7 +136,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, "1", "attr-val")
+			mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -160,7 +160,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			metrics := mb.Emit(WithOracledbInstanceName("attr-val"))
 
-			if test.metricsSet == testMetricsSetNo {
+			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
@@ -181,10 +181,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.metricsSet == testMetricsSetDefault {
+			if test.configSet == testSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.metricsSet == testMetricsSetAll {
+			if test.configSet == testSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -209,7 +209,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.dml_locks.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum limit of active DML (Data Manipulation Language) locks.", ms.At(i).Description())
+					assert.Equal(t, "Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "{locks}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -247,7 +247,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.enqueue_locks.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum limit of active enqueue locks.", ms.At(i).Description())
+					assert.Equal(t, "Maximum limit of active enqueue locks, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "{locks}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -271,7 +271,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.enqueue_resources.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum limit of active enqueue resources.", ms.At(i).Description())
+					assert.Equal(t, "Maximum limit of active enqueue resources, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "{resources}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -393,7 +393,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.processes.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum limit of active processes.", ms.At(i).Description())
+					assert.Equal(t, "Maximum limit of active processes, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "{processes}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -417,7 +417,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.sessions.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum limit of active sessions.", ms.At(i).Description())
+					assert.Equal(t, "Maximum limit of active sessions, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "{sessions}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -447,7 +447,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.tablespace_size.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum size of tablespace in bytes.", ms.At(i).Description())
+					assert.Equal(t, "Maximum size of tablespace in bytes, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -477,7 +477,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.transactions.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum limit of active transactions.", ms.At(i).Description())
+					assert.Equal(t, "Maximum limit of active transactions, -1 if unlimited.", ms.At(i).Description())
 					assert.Equal(t, "{transactions}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -530,12 +530,12 @@ func TestMetricsBuilder(t *testing.T) {
 	}
 }
 
-func loadConfig(t *testing.T, name string) MetricsSettings {
+func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsSettings()
+	cfg := DefaultMetricsBuilderConfig()
 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
 	return cfg
 }

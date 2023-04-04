@@ -48,7 +48,13 @@ CREATE TABLE IF NOT EXISTS %s_summary (
 		Quantile Float64,
 		Value Float64
 	) CODEC(ZSTD(1)),
-    Flags UInt32  CODEC(ZSTD(1))
+    Flags UInt32  CODEC(ZSTD(1)),
+	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_scope_attr_key mapKeys(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_scope_attr_value mapValues(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_attr_key mapKeys(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_attr_value mapValues(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE MergeTree()
 %s
 PARTITION BY toDate(TimeUnix)
@@ -78,7 +84,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	summaryValueCounts = 18
 )
 
-var summaryPlaceholders = newPlaceholder(18)
+var summaryPlaceholders = newPlaceholder(summaryValueCounts)
 
 type summaryModel struct {
 	metricName        string
@@ -128,6 +134,8 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 			valueArgs[index+15] = quantiles
 			valueArgs[index+16] = values
 			valueArgs[index+17] = uint32(dp.Flags())
+
+			index += summaryValueCounts
 		}
 	}
 

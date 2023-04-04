@@ -35,7 +35,7 @@ func TestDataPointRecorders(t *testing.T) {
 	rs := &redisScraper{
 		redisSvc: newRedisSvc(newFakeClient()),
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(Config{}.Metrics, settings),
+		mb:       metadata.NewMetricsBuilder(Config{}.MetricsBuilderConfig, settings),
 	}
 	metricByRecorder := map[string]string{}
 	for metric, recorder := range rs.dataPointRecorders() {

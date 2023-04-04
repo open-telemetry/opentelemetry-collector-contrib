@@ -53,9 +53,9 @@ func createDefaultConfig() component.Config {
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultHTTPClientTimeout,
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
-		Nodes:   []string{"_all"},
-		Indices: []string{"_all"},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Nodes:                []string{"_all"},
+		Indices:              []string{"_all"},
 	}
 }
 

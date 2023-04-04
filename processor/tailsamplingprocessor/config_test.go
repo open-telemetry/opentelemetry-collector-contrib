@@ -97,7 +97,7 @@ func TestLoadConfig(t *testing.T) {
 					sharedPolicyCfg: sharedPolicyCfg{
 						Name:         "test-policy-8",
 						Type:         SpanCount,
-						SpanCountCfg: SpanCountCfg{MinSpans: 2},
+						SpanCountCfg: SpanCountCfg{MinSpans: 2, MaxSpans: 20},
 					},
 				},
 				{
@@ -105,6 +105,13 @@ func TestLoadConfig(t *testing.T) {
 						Name:          "test-policy-9",
 						Type:          TraceState,
 						TraceStateCfg: TraceStateCfg{Key: "key3", Values: []string{"value1", "value2"}},
+					},
+				},
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:                "test-policy-10",
+						Type:                BooleanAttribute,
+						BooleanAttributeCfg: BooleanAttributeCfg{Key: "key4", Value: true},
 					},
 				},
 				{

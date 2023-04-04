@@ -15,10 +15,12 @@
 package purefareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
@@ -32,8 +34,8 @@ type Config struct {
 	// Settings contains settings for the individual scrapers
 	Settings *Settings `mapstructure:"settings"`
 
-	// Arrays represents the list of arrays to query
-	Arrays []internal.ScraperConfig `mapstructure:"arrays"`
+	// Array represents the list of arrays to query
+	Array []internal.ScraperConfig `mapstructure:"array"`
 
 	// Hosts represents the list of hosts to query
 	Hosts []internal.ScraperConfig `mapstructure:"hosts"`
@@ -57,13 +59,30 @@ type Settings struct {
 
 type ReloadIntervals struct {
 	Array       time.Duration `mapstructure:"array"`
-	Host        time.Duration `mapstructure:"host"`
+	Hosts       time.Duration `mapstructure:"hosts"`
 	Directories time.Duration `mapstructure:"directories"`
 	Pods        time.Duration `mapstructure:"pods"`
 	Volumes     time.Duration `mapstructure:"volumes"`
 }
 
 func (c *Config) Validate() error {
-	// TODO(dgoscn): perform config validation
-	return nil
+	var errs error
+
+	if c.Settings.ReloadIntervals.Array == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'array' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Hosts == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'hosts' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Directories == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'directories' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Pods == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'pods' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Volumes == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'volumes' must be provided"))
+	}
+
+	return errs
 }

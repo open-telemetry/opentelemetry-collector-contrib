@@ -40,29 +40,29 @@ func TestScrape(t *testing.T) {
 		cfg.Username = "otel"
 		cfg.Password = "otel"
 		cfg.NetAddr = confignet.NetAddr{Endpoint: "localhost:3306"}
-		cfg.Metrics.MysqlStatementEventCount.Enabled = true
-		cfg.Metrics.MysqlStatementEventWaitTime.Enabled = true
-		cfg.Metrics.MysqlConnectionErrors.Enabled = true
-		cfg.Metrics.MysqlMysqlxWorkerThreads.Enabled = true
-		cfg.Metrics.MysqlJoins.Enabled = true
-		cfg.Metrics.MysqlTableOpenCache.Enabled = true
-		cfg.Metrics.MysqlQueryClientCount.Enabled = true
-		cfg.Metrics.MysqlQueryCount.Enabled = true
-		cfg.Metrics.MysqlQuerySlowCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlStatementEventCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlStatementEventWaitTime.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionErrors.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlMysqlxWorkerThreads.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlJoins.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableOpenCache.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlQueryClientCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlQueryCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlQuerySlowCount.Enabled = true
 
-		cfg.Metrics.MysqlTableLockWaitReadCount.Enabled = true
-		cfg.Metrics.MysqlTableLockWaitReadTime.Enabled = true
-		cfg.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
-		cfg.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitReadCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitReadTime.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
 
-		cfg.Metrics.MysqlClientNetworkIo.Enabled = true
-		cfg.Metrics.MysqlPreparedStatements.Enabled = true
-		cfg.Metrics.MysqlCommands.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlClientNetworkIo.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlPreparedStatements.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlCommands.Enabled = true
 
-		cfg.Metrics.MysqlReplicaSQLDelay.Enabled = true
-		cfg.Metrics.MysqlReplicaTimeBehindSource.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaSQLDelay.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTimeBehindSource.Enabled = true
 
-		cfg.Metrics.MysqlConnectionCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionCount.Enabled = true
 
 		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
@@ -80,7 +80,7 @@ func TestScrape(t *testing.T) {
 		actualMetrics, err := scraper.scrape(context.Background())
 		require.NoError(t, err)
 
-		expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+		expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
@@ -93,13 +93,13 @@ func TestScrape(t *testing.T) {
 		cfg.Username = "otel"
 		cfg.Password = "otel"
 		cfg.NetAddr = confignet.NetAddr{Endpoint: "localhost:3306"}
-		cfg.Metrics.MysqlReplicaSQLDelay.Enabled = true
-		cfg.Metrics.MysqlReplicaTimeBehindSource.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaSQLDelay.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTimeBehindSource.Enabled = true
 
-		cfg.Metrics.MysqlTableLockWaitReadCount.Enabled = true
-		cfg.Metrics.MysqlTableLockWaitReadTime.Enabled = true
-		cfg.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
-		cfg.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitReadCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitReadTime.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
 
 		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
@@ -115,7 +115,7 @@ func TestScrape(t *testing.T) {
 		actualMetrics, scrapeErr := scraper.scrape(context.Background())
 		require.Error(t, scrapeErr)
 
-		expectedFile := filepath.Join("testdata", "scraper", "expected_partial.json")
+		expectedFile := filepath.Join("testdata", "scraper", "expected_partial.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 		assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
@@ -161,6 +161,10 @@ func readFile(fname string) (map[string]string, error) {
 
 func (c *mockClient) Connect() error {
 	return nil
+}
+
+func (c *mockClient) getVersion() (string, error) {
+	return "8.0.27", nil
 }
 
 func (c *mockClient) getGlobalStats() (map[string]string, error) {

@@ -59,6 +59,36 @@ During the collector release process, all `./.chloggen/*.yaml` files are transcr
 
 Alternately, copy `./.chloggen/TEMPLATE.yaml`, or just create your file from scratch.
 
+## Portable Code
+
+In order to ensure compatibility with different operating systems, code should be portable. Below are some guidelines to follow when writing portable code:
+
+* Avoid using platform-specific libraries, features etc. Please opt for portable multi-platform solutions. 
+
+* Avoid hard-coding platform-specific values. Use environment variables or configuration files for storing platform-specific values.
+
+    For example, avoid using hard-coded file path
+    ```
+    filePath := "C:\Users\Bob\Documents\sampleData.csv"
+    ```
+
+    Instead environment variable or configuration file can be used.
+    ```
+    filePath := os.Getenv("DATA_FILE_PATH")
+    ```
+    or
+    ```
+    filePath := Configuration.Get("data_file_path")
+    ```
+
+* Be mindful of 
+  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\\) in Windows. Use the [`path/filepath` package](https://pkg.go.dev/path/filepath) when working with filepaths. 
+  - Consistent line ending formats such as Unix (LF) or Windows (CRLF).
+
+* Test your implementation thoroughly on different platforms if possible and fix any issues. 
+
+With above guidelines, you can write code that is more portable and easier to maintain across different platforms. 
+
 ## Adding New Components
 
 **Before** any code is written, [open an
@@ -108,8 +138,8 @@ and the rest of contributors.
   available configuration settings so users can copy and modify them as needed.
 - Run `make crosslink` to update intra-repository dependencies. It will add a `replace` directive to `go.mod` file of every intra-repository dependant. This is necessary for your component to be included in the contrib executable.
 - Add your component to `versions.yaml`.
-- All components must be included in [`internal/components/`](./internal/components) and in the respective testing
-  harnesses. To align with the test goal of the project, components must be testable within the framework defined within
+- All components included in the distribution must be included in [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml) 
+  and in the respective testing harnesses. To align with the test goal of the project, components must be testable within the framework defined within
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
 - Add the sponsor for your component and yourself to a new line for your component in the

@@ -27,11 +27,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver/internal/metadata"
 )
 
 const (
 	typeStr   = "otlpjsonfile"
-	stability = component.StabilityLevelAlpha
 	transport = "file"
 )
 
@@ -40,9 +40,9 @@ func NewFactory() rcvr.Factory {
 	return rcvr.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		rcvr.WithMetrics(createMetricsReceiver, stability),
-		rcvr.WithLogs(createLogsReceiver, stability),
-		rcvr.WithTraces(createTracesReceiver, stability))
+		rcvr.WithMetrics(createMetricsReceiver, metadata.Stability),
+		rcvr.WithLogs(createLogsReceiver, metadata.Stability),
+		rcvr.WithTraces(createTracesReceiver, metadata.Stability))
 }
 
 type Config struct {

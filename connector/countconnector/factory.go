@@ -20,6 +20,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
 
 const (
@@ -40,20 +47,7 @@ func NewFactory() connector.Factory {
 
 // createDefaultConfig creates the default configuration.
 func createDefaultConfig() component.Config {
-	return &Config{
-		Traces: MetricInfo{
-			Name:        defaultMetricNameSpans,
-			Description: defaultMetricDescSpans,
-		},
-		Metrics: MetricInfo{
-			Name:        defaultMetricNameDataPoints,
-			Description: defaultMetricDescDataPoints,
-		},
-		Logs: MetricInfo{
-			Name:        defaultMetricNameLogRecords,
-			Description: defaultMetricDescLogRecords,
-		},
-	}
+	return &Config{}
 }
 
 // createTracesToMetrics creates a traces to metrics connector based on provided config.
@@ -64,10 +58,51 @@ func createTracesToMetrics(
 	nextConsumer consumer.Metrics,
 ) (connector.Traces, error) {
 	c := cfg.(*Config)
-	return &count{cfg: *c, metricsConsumer: nextConsumer}, nil
+
+	spanMetricDefs := make(map[string]metricDef[ottlspan.TransformContext], len(c.Spans))
+	spanParser, err := newSpanParser(set.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
+	}
+	for name, info := range c.Spans {
+		md := metricDef[ottlspan.TransformContext]{
+			desc:  info.Description,
+			attrs: info.Attributes,
+		}
+		if len(info.Conditions) > 0 {
+			// Error checked in Config.Validate()
+			condition, _ := parseConditions(spanParser, info.Conditions)
+			md.condition = condition
+		}
+		spanMetricDefs[name] = md
+	}
+
+	spanEventMetricDefs := make(map[string]metricDef[ottlspanevent.TransformContext], len(c.SpanEvents))
+	spanEventParser, err := newSpanEventParser(set.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
+	}
+	for name, info := range c.SpanEvents {
+		md := metricDef[ottlspanevent.TransformContext]{
+			desc:  info.Description,
+			attrs: info.Attributes,
+		}
+		if len(info.Conditions) > 0 {
+			// Error checked in Config.Validate()
+			condition, _ := parseConditions(spanEventParser, info.Conditions)
+			md.condition = condition
+		}
+		spanEventMetricDefs[name] = md
+	}
+
+	return &count{
+		metricsConsumer:      nextConsumer,
+		spansMetricDefs:      spanMetricDefs,
+		spanEventsMetricDefs: spanEventMetricDefs,
+	}, nil
 }
 
-// createMetricsToMetrics creates a metrics connector based on provided config.
+// createMetricsToMetrics creates a metricds to metrics connector based on provided config.
 func createMetricsToMetrics(
 	_ context.Context,
 	set connector.CreateSettings,
@@ -75,7 +110,47 @@ func createMetricsToMetrics(
 	nextConsumer consumer.Metrics,
 ) (connector.Metrics, error) {
 	c := cfg.(*Config)
-	return &count{cfg: *c, metricsConsumer: nextConsumer}, nil
+
+	metricMetricDefs := make(map[string]metricDef[ottlmetric.TransformContext], len(c.Metrics))
+	metricParser, err := newMetricParser(set.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
+	}
+	for name, info := range c.Metrics {
+		md := metricDef[ottlmetric.TransformContext]{
+			desc: info.Description,
+		}
+		if len(info.Conditions) > 0 {
+			// Error checked in Config.Validate()
+			condition, _ := parseConditions(metricParser, info.Conditions)
+			md.condition = condition
+		}
+		metricMetricDefs[name] = md
+	}
+
+	dataPointMetricDefs := make(map[string]metricDef[ottldatapoint.TransformContext], len(c.DataPoints))
+	dataPointParser, err := newDataPointParser(set.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
+	}
+	for name, info := range c.DataPoints {
+		md := metricDef[ottldatapoint.TransformContext]{
+			desc:  info.Description,
+			attrs: info.Attributes,
+		}
+		if len(info.Conditions) > 0 {
+			// Error checked in Config.Validate()
+			condition, _ := parseConditions(dataPointParser, info.Conditions)
+			md.condition = condition
+		}
+		dataPointMetricDefs[name] = md
+	}
+
+	return &count{
+		metricsConsumer:      nextConsumer,
+		metricsMetricDefs:    metricMetricDefs,
+		dataPointsMetricDefs: dataPointMetricDefs,
+	}, nil
 }
 
 // createLogsToMetrics creates a logs to metrics connector based on provided config.
@@ -86,5 +161,33 @@ func createLogsToMetrics(
 	nextConsumer consumer.Metrics,
 ) (connector.Logs, error) {
 	c := cfg.(*Config)
-	return &count{cfg: *c, metricsConsumer: nextConsumer}, nil
+
+	metricDefs := make(map[string]metricDef[ottllog.TransformContext], len(c.Logs))
+	logParser, err := newLogParser(set.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
+	}
+	for name, info := range c.Logs {
+		md := metricDef[ottllog.TransformContext]{
+			desc:  info.Description,
+			attrs: info.Attributes,
+		}
+		if len(info.Conditions) > 0 {
+			// Error checked in Config.Validate()
+			condition, _ := parseConditions(logParser, info.Conditions)
+			md.condition = condition
+		}
+		metricDefs[name] = md
+	}
+
+	return &count{
+		metricsConsumer: nextConsumer,
+		logsMetricDefs:  metricDefs,
+	}, nil
+}
+
+type metricDef[K any] struct {
+	condition expr.BoolExpr[K]
+	desc      string
+	attrs     []AttributeConfig
 }

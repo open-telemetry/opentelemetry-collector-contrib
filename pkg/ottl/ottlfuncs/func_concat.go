@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Concat[K any](vals []ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], error) {
+func Concat[K any](vals []ottl.StringLikeGetter[K], delimiter string) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		builder := strings.Builder{}
 		for i, rv := range vals {
@@ -30,21 +30,11 @@ func Concat[K any](vals []ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], e
 			if err != nil {
 				return nil, err
 			}
-			switch v := val.(type) {
-			case string:
-				builder.WriteString(v)
-			case []byte:
-				builder.WriteString(fmt.Sprintf("%x", v))
-			case int64:
-				builder.WriteString(fmt.Sprint(v))
-			case float64:
-				builder.WriteString(fmt.Sprint(v))
-			case bool:
-				builder.WriteString(fmt.Sprint(v))
-			case nil:
-				builder.WriteString(fmt.Sprint(v))
+			if val == nil {
+				builder.WriteString(fmt.Sprint(val))
+			} else {
+				builder.WriteString(*val)
 			}
-
 			if i != len(vals)-1 {
 				builder.WriteString(delimiter)
 			}

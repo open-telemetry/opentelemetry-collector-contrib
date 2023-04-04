@@ -17,9 +17,8 @@ package regex // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"math"
 	"sync"
+	"sync/atomic"
 	"time"
-
-	"go.uber.org/atomic"
 )
 
 // cache allows operators to cache a value and look it up later
@@ -141,7 +140,7 @@ func newStartedAtomicLimiter(max uint64, interval uint64) *atomicLimiter {
 	}
 
 	a := &atomicLimiter{
-		count:    atomic.NewUint64(0),
+		count:    &atomic.Uint64{},
 		max:      max,
 		interval: time.Second * time.Duration(interval),
 	}
@@ -160,7 +159,7 @@ type atomicLimiter struct {
 	start    sync.Once
 }
 
-var _ limiter = &atomicLimiter{count: atomic.NewUint64(0)}
+var _ limiter = &atomicLimiter{count: &atomic.Uint64{}}
 
 // init initializes the limiter
 func (l *atomicLimiter) init() {
@@ -185,7 +184,7 @@ func (l *atomicLimiter) increment() {
 	if l.count.Load() == l.max {
 		return
 	}
-	l.count.Inc()
+	l.count.Add(1)
 }
 
 // Returns true if the cache is currently throttled, meaning a high

@@ -98,12 +98,15 @@ func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 }
 
 func (e *exporter) shutdown(context.Context) error {
+	if e.clientConn == nil {
+		return nil
+	}
 	return e.clientConn.Close()
 }
 
 func (e *exporter) enhanceContext(ctx context.Context) context.Context {
 	md := metadata.New(nil)
-	for k, v := range e.config.Logs.Headers {
+	for k, v := range e.config.Metrics.Headers {
 		md.Set(k, string(v))
 	}
 	return metadata.NewOutgoingContext(ctx, md)

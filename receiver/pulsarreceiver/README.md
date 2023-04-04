@@ -8,8 +8,6 @@
 
 Pulsar receiver receives logs, metrics, and traces from Pulsar.
 
-Supported pipeline types: logs, metrics, traces
-
 ## Getting Started
 
 The following settings can be optionally configured:

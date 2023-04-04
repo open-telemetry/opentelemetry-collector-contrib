@@ -54,8 +54,9 @@ GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
 PORTO               := $(TOOLS_BIN_DIR)/porto
 CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
-GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report 
+GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
 BUILDER             := $(TOOLS_BIN_DIR)/builder
+GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
@@ -91,7 +92,7 @@ all-pkg-dirs:
 .DEFAULT_GOAL := common
 
 .PHONY: common
-common: checklicense lint misspell
+common: lint
 
 .PHONY: test
 test:
@@ -165,10 +166,14 @@ fmt: $(GOIMPORTS)
 lint: $(LINT) checklicense misspell
 	$(LINT) run --allow-parallel-runners --build-tags integration
 
+.PHONY: govulncheck
+govulncheck: $(GOVULNCHECK)
+	$(GOVULNCHECK) ./...
+
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.18
+	$(GOCMD) mod tidy -compat=1.19
 
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell

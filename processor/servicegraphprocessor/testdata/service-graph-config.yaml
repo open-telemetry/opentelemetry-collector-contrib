@@ -14,6 +14,11 @@ processors:
     store:
       ttl: 1s
       max_items: 10
+    cache_loop: 2m
+    store_expiration_loop: 10s
+    virtual_node_peer_attributes:
+      - db.name
+      - rpc.service
 
 service:
   pipelines:

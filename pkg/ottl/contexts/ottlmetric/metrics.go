@@ -64,17 +64,36 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings, options ...Option) ottl.Parser[TransformContext] {
-	p := ottl.NewParser[TransformContext](
+func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
+	p, err := ottl.NewParser[TransformContext](
 		functions,
 		parsePath,
 		telemetrySettings,
 		ottl.WithEnumParser[TransformContext](parseEnum),
 	)
+	if err != nil {
+		return ottl.Parser[TransformContext]{}, err
+	}
 	for _, opt := range options {
 		opt(&p)
 	}
-	return p
+	return p, err
+}
+
+type StatementsOption func(*ottl.Statements[TransformContext])
+
+func WithErrorMode(errorMode ottl.ErrorMode) StatementsOption {
+	return func(s *ottl.Statements[TransformContext]) {
+		ottl.WithErrorMode[TransformContext](errorMode)(s)
+	}
+}
+
+func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySettings component.TelemetrySettings, options ...StatementsOption) ottl.Statements[TransformContext] {
+	s := ottl.NewStatements(statements, telemetrySettings)
+	for _, op := range options {
+		op(&s)
+	}
+	return s
 }
 
 var symbolTable = ottlcommon.MetricSymbolTable

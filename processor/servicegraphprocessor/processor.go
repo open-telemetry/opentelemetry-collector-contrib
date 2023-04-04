@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
@@ -46,6 +46,9 @@ const (
 var (
 	defaultLatencyHistogramBucketsMs = []float64{
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
+	}
+	defaultPeerAttributes = []string{
+		semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeNetSockPeerName, semconv.AttributeNetPeerName, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget,
 	}
 )
 
@@ -88,6 +91,18 @@ func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProc
 		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
 	}
 
+	if pConfig.CacheLoop <= 0 {
+		pConfig.CacheLoop = time.Minute
+	}
+
+	if pConfig.StoreExpirationLoop <= 0 {
+		pConfig.StoreExpirationLoop = 2 * time.Second
+	}
+
+	if pConfig.VirtualNodePeerAttributes == nil {
+		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
+	}
+
 	return &serviceGraphProcessor{
 		config:                         pConfig,
 		logger:                         logger,
@@ -124,11 +139,9 @@ func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) er
 		}
 	}
 
-	// TODO: Consider making this configurable.
-	go p.cacheLoop(time.Minute)
+	go p.cacheLoop(p.config.CacheLoop)
 
-	// TODO: Consider making this configurable.
-	go p.storeExpirationLoop(2 * time.Second)
+	go p.storeExpirationLoop(p.config.StoreExpirationLoop)
 
 	if p.tracesConsumer == nil {
 		p.logger.Info("Started servicegraphconnector")
@@ -222,6 +235,10 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
+						if virtualNodeFeatureGate.IsEnabled() {
+							p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
+						}
+
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
 						if dbName, ok := findAttributeValue(semconv.AttributeDBName, rAttributes, span.Attributes()); ok {
@@ -278,6 +295,15 @@ func (p *serviceGraphProcessor) upsertDimensions(kind string, m map[string]strin
 	}
 }
 
+func (p *serviceGraphProcessor) upsertPeerAttributes(m []string, peers map[string]string, spanAttr pcommon.Map) {
+	for _, s := range m {
+		if v, ok := findAttributeValue(s, spanAttr); ok {
+			peers[s] = v
+			break
+		}
+	}
+}
+
 func (p *serviceGraphProcessor) onComplete(e *store.Edge) {
 	p.logger.Debug(
 		"edge completed",
@@ -297,7 +323,25 @@ func (p *serviceGraphProcessor) onExpire(e *store.Edge) {
 		zap.String("connection_type", string(e.ConnectionType)),
 		zap.Stringer("trace_id", e.TraceID),
 	)
+
 	stats.Record(context.Background(), statExpiredEdges.M(1))
+
+	if virtualNodeFeatureGate.IsEnabled() {
+		// speculate virtual node before edge get expired.
+		// TODO: We could add some logic to check if the server span is an orphan.
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/17350#discussion_r1099949579
+		if len(e.ClientService) == 0 {
+			e.ClientService = "user"
+		}
+
+		if len(e.ServerService) == 0 {
+			e.ServerService = p.getPeerHost(p.config.VirtualNodePeerAttributes, e.Peer)
+		}
+
+		e.ConnectionType = store.VirtualNode
+
+		p.onComplete(e)
+	}
 }
 
 func (p *serviceGraphProcessor) aggregateMetricsForEdge(e *store.Edge) {
@@ -482,6 +526,17 @@ func (p *serviceGraphProcessor) storeExpirationLoop(d time.Duration) {
 			return
 		}
 	}
+}
+
+func (p *serviceGraphProcessor) getPeerHost(m []string, peers map[string]string) string {
+	peerStr := "unknown"
+	for _, s := range m {
+		if peer, ok := peers[s]; ok {
+			peerStr = peer
+			break
+		}
+	}
+	return peerStr
 }
 
 // cacheLoop periodically cleans the cache

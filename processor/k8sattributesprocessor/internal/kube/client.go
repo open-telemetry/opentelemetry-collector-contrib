@@ -288,6 +288,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		tags[conventions.AttributeK8SPodName] = pod.Name
 	}
 
+	if c.Rules.PodHostName {
+		tags[tagHostName] = pod.Spec.Hostname
+	}
+
 	if c.Rules.Namespace {
 		tags[conventions.AttributeK8SNamespaceName] = pod.GetNamespace()
 	}
@@ -376,12 +380,16 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) map[string
 	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
-			imageParts := strings.Split(spec.Image, ":")
+			nameTagSep := strings.LastIndex(spec.Image, ":")
 			if c.Rules.ContainerImageName {
-				container.ImageName = imageParts[0]
+				if nameTagSep > 0 {
+					container.ImageName = spec.Image[:nameTagSep]
+				} else {
+					container.ImageName = spec.Image
+				}
 			}
-			if c.Rules.ContainerImageTag && len(imageParts) > 1 {
-				container.ImageTag = imageParts[1]
+			if c.Rules.ContainerImageTag && nameTagSep > 0 {
+				container.ImageTag = spec.Image[nameTagSep+1:]
 			}
 			containers[spec.Name] = container
 		}

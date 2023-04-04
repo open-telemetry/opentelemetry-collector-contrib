@@ -50,16 +50,19 @@ processors:
     # allowed_keys list. The list of blocked_values is applied regardless. If
     # you just want to block values, set this to true.
     allow_all_keys: false
-    # allowed_keys is a list of span attribute keys that are allowed to pass
-    # through. The list is designed to fail closed. If allowed_keys is empty,
+    # allowed_keys is a list of span attribute keys that are kept on the span and
+    # processed. The list is designed to fail closed. If allowed_keys is empty,
     # no span attributes are allowed and all span attributes are removed. To
-    # allow all keys, set allow_all_keys to true. To allow the span attributes
-    # you know are good, add them to the list.
+    # allow all keys, set allow_all_keys to true.
     allowed_keys:
       - description
       - group
       - id
       - name
+    # Ignore the following attributes, allow them to pass without redaction.
+    # Any keys in this list are allowed so they don't need to be in both lists.
+    ignored_keys:
+      - safe_attribute
     # blocked_values is a list of regular expressions for blocking values of
     # allowed span attributes. Values that match are masked
     blocked_values:
@@ -79,6 +82,10 @@ processors:
 Refer to [config.yaml](./testdata/config.yaml) for how to fit the configuration
 into an OpenTelemetry Collector pipeline definition.
 
+Ignored attributes are processed first so they're always allowed and never
+blocked. This field should only be used where you know the data is always
+safe to send to the telemetry system.
+
 Only span attributes included on the list of allowed keys list are retained.
 If `allowed_keys` is empty, then no span attributes are allowed. All span
 attributes are removed in that case. To keep all span attributes, you should
@@ -93,5 +100,5 @@ attribute is retained. However, if there is a value such as a credit card
 number in the `notes` field that matched a regular expression on the list of
 blocked values, then that value is masked.
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

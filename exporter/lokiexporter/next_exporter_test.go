@@ -51,7 +51,7 @@ func TestPushLogData(t *testing.T) {
 			hints: map[string]interface{}{
 				"loki.attribute.labels": "host.name",
 			},
-			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
+			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
 			expectedLine:  `{"traceid":"01020304000000000000000000000000","attributes":{"http.status":200}}`,
 		},
 		{
@@ -63,7 +63,7 @@ func TestPushLogData(t *testing.T) {
 			hints: map[string]interface{}{
 				"loki.resource.labels": "host.name",
 			},
-			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
+			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
 			expectedLine:  `{"traceid":"01020304000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
 		},
 	}
@@ -169,11 +169,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 				label string
 			}{
 				"1": {
-					label: `{exporter="OTLP", tenant.id="1"}`,
+					label: `{exporter="OTLP", tenant_id="1"}`,
 					line:  `{"attributes":{"http.status":200}}`,
 				},
 				"2": {
-					label: `{exporter="OTLP", tenant.id="2"}`,
+					label: `{exporter="OTLP", tenant_id="2"}`,
 					line:  `{"attributes":{"http.status":200}}`,
 				},
 			},
@@ -233,11 +233,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 				label string
 			}{
 				"1": {
-					label: `{exporter="OTLP", tenant.id="1"}`,
+					label: `{exporter="OTLP", tenant_id="1"}`,
 					line:  `{"attributes":{"http.status":200}}`,
 				},
 				"2": {
-					label: `{exporter="OTLP", tenant.id="2"}`,
+					label: `{exporter="OTLP", tenant_id="2"}`,
 					line:  `{"attributes":{"http.status":200}}`,
 				},
 			},

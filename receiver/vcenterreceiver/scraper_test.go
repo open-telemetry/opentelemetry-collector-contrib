@@ -34,10 +34,10 @@ func TestScrape(t *testing.T) {
 	mockServer := mock.MockServer(t, false)
 
 	cfg := &Config{
-		Metrics:  metadata.DefaultMetricsSettings(),
-		Endpoint: mockServer.URL,
-		Username: mock.MockUsername,
-		Password: mock.MockPassword,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Endpoint:             mockServer.URL,
+		Username:             mock.MockUsername,
+		Password:             mock.MockPassword,
 	}
 
 	testScrape(ctx, t, cfg)
@@ -48,10 +48,10 @@ func TestScrape_TLS(t *testing.T) {
 	mockServer := mock.MockServer(t, true)
 
 	cfg := &Config{
-		Metrics:  metadata.DefaultMetricsSettings(),
-		Endpoint: mockServer.URL,
-		Username: mock.MockUsername,
-		Password: mock.MockPassword,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Endpoint:             mockServer.URL,
+		Username:             mock.MockUsername,
+		Password:             mock.MockPassword,
 	}
 
 	cfg.Insecure = true
@@ -67,7 +67,7 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
 	require.NoError(t, err)
 	require.NotEqual(t, metrics.MetricCount(), 0)
 
-	goldenPath := filepath.Join("testdata", "metrics", "expected.json")
+	goldenPath := filepath.Join("testdata", "metrics", "expected.yaml")
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
@@ -83,7 +83,7 @@ func TestScrape_NoClient(t *testing.T) {
 		config: &Config{
 			Endpoint: "http://vcsa.localnet",
 		},
-		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
+		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 		logger: zap.NewNop(),
 	}
 	metrics, err := scraper.scrape(ctx)

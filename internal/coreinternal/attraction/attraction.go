@@ -21,8 +21,15 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+)
+
+var enableSha256Gate = featuregate.GlobalRegistry().MustRegister(
+	"coreinternal.attraction.hash.sha256",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, switches hashing algorithm from SHA-1 to SHA-2 256"),
 )
 
 // Settings specifies the processor settings.
@@ -85,7 +92,9 @@ type ActionKeyValue struct {
 	// DELETE  - Deletes the attribute. If the key doesn't exist,
 	//           no action is performed.
 	// HASH    - Calculates the SHA-1 hash of an existing value and overwrites the
-	//           value with it's SHA-1 hash result.
+	//           value with its SHA-1 hash result. If the feature gate
+	//           `coreinternal.attraction.hash.sha256` is enabled, it uses SHA2-256
+	//           instead.
 	// EXTRACT - Extracts values using a regular expression rule from the input
 	//           'key' to target keys specified in the 'rule'. If a target key
 	//           already exists, it will be overridden.
@@ -132,8 +141,8 @@ const (
 	// Supports pattern which is matched against attribute key.
 	DELETE Action = "delete"
 
-	// HASH calculates the SHA-1 hash of an existing value and overwrites the
-	// value with it's SHA-1 hash result.
+	// HASH calculates the SHA-256 hash of an existing value and overwrites the
+	// value with it's SHA-256 hash result.
 	// Supports pattern which is matched against attribute key.
 	HASH Action = "hash"
 
@@ -405,7 +414,11 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 
 func hashAttribute(key string, attrs pcommon.Map) {
 	if value, exists := attrs.Get(key); exists {
-		sha1Hasher(value)
+		if enableSha256Gate.IsEnabled() {
+			sha2Hasher(value)
+		} else {
+			sha1Hasher(value)
+		}
 	}
 }
 

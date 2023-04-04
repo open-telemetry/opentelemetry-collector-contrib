@@ -427,10 +427,10 @@ func TestCompareMetrics(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := filepath.Join("testdata", tc.name)
 
-			expected, err := golden.ReadMetrics(filepath.Join(dir, "expected.json"))
+			expected, err := golden.ReadMetrics(filepath.Join(dir, "expected.yaml"))
 			require.NoError(t, err)
 
-			actual, err := golden.ReadMetrics(filepath.Join(dir, "actual.json"))
+			actual, err := golden.ReadMetrics(filepath.Join(dir, "actual.yaml"))
 			require.NoError(t, err)
 
 			err = CompareMetrics(expected, actual)

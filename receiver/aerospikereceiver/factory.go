@@ -28,7 +28,6 @@ import (
 
 const (
 	typeStr                      = "aerospike"
-	stability                    = component.StabilityLevelAlpha
 	defaultEndpoint              = "localhost:3000"
 	defaultTimeout               = 20 * time.Second
 	defaultCollectClusterMetrics = false
@@ -39,7 +38,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.Stability),
 	)
 }
 
@@ -80,6 +79,6 @@ func createDefaultConfig() component.Config {
 		Endpoint:              defaultEndpoint,
 		Timeout:               defaultTimeout,
 		CollectClusterMetrics: defaultCollectClusterMetrics,
-		Metrics:               metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:  metadata.DefaultMetricsBuilderConfig(),
 	}
 }

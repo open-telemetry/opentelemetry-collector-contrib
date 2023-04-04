@@ -26,6 +26,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
@@ -43,6 +44,8 @@ type logProcessor struct {
 func newLogProcessor(settings component.TelemetrySettings, config component.Config) *logProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
+	logParser, _ := ottllog.NewParser(common.Functions[ottllog.TransformContext](), settings)
+
 	return &logProcessor{
 		logger: settings.Logger,
 		config: cfg,
@@ -50,7 +53,7 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Conf
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottllog.NewParser(common.Functions[ottllog.TransformContext](), settings),
+			logParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
@@ -104,7 +107,11 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 		for key, route := range p.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, ltx)
 			if err != nil {
-				return err
+				if p.config.ErrorMode == ottl.PropagateError {
+					return err
+				}
+				p.group("", groups, p.router.defaultExporters, rlogs)
+				continue
 			}
 			if !isMatch {
 				matchCount--
