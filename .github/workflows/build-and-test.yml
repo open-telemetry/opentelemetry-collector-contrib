@@ -27,10 +27,8 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.19
       - name: Cache Go
@@ -51,16 +49,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
   check-codeowners:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Check Code Owner Existence
         run: ./.github/workflows/scripts/check-codeowners.sh check_code_owner_existence
       - name: Check Component Existence
@@ -87,10 +83,8 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.19
       - name: Cache Go
@@ -139,10 +133,8 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.19
       - name: Cache Go
@@ -216,10 +208,8 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
       - name: Cache Go
@@ -281,10 +271,8 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.19
       - name: Cache Go
@@ -319,10 +307,8 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.19
       - name: Cache Go
@@ -359,10 +345,8 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.19
       - name: Cache Go
@@ -400,8 +384,7 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Build Examples
         run: make build-examples
 
@@ -439,10 +422,8 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.19
       - name: Cache Go
@@ -481,8 +462,7 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Install Ruby
@@ -528,8 +508,7 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Download Binaries
@@ -569,8 +548,7 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Download Binaries
         uses: actions/download-artifact@v3
         with:
@@ -594,10 +572,8 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.19
       - name: Mkdir bin and dist
@@ -664,8 +640,7 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh
