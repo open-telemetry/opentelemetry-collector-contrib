@@ -80,6 +80,7 @@ func setupSSHServer(t *testing.T) *opensshContainer {
 }
 
 func TestScraper(t *testing.T) {
+	t.Skip("Skipping as the test fails intermittently, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19473")
 	if !supportedOS() {
 		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
 	}
