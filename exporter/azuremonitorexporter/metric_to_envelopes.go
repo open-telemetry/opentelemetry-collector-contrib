@@ -28,8 +28,9 @@ type metricPacker struct {
 }
 
 type timedMetricDataPoint struct {
-	dataPoint *contracts.DataPoint
-	timestamp pcommon.Timestamp
+	dataPoint  *contracts.DataPoint
+	timestamp  pcommon.Timestamp
+	attributes pcommon.Map
 }
 
 type metricTimedData interface {
@@ -66,6 +67,8 @@ func (packer *metricPacker) MetricToEnvelopes(metric pmetric.Metric, resource pc
 			applyResourcesToDataProperties(metricData.Properties, resourceAttributes)
 			applyInstrumentationScopeValueToDataProperties(metricData.Properties, instrumentationScope)
 			applyCloudTagsToEnvelope(envelope, resourceAttributes)
+
+			setAttributesAsProperties(timedDataPoint.attributes, metricData.Properties)
 
 			packer.sanitize(func() []string { return metricData.Sanitize() })
 			packer.sanitize(func() []string { return envelope.Sanitize() })
@@ -140,9 +143,11 @@ func (m scalarMetric) getTimedDataPoints() []*timedMetricDataPoint {
 		}
 		dataPoint.Count = 1
 		dataPoint.Kind = contracts.Measurement
+		numberDataPoint.Attributes()
 		timedDataPoints[i] = &timedMetricDataPoint{
-			dataPoint: dataPoint,
-			timestamp: numberDataPoint.Timestamp(),
+			dataPoint:  dataPoint,
+			timestamp:  numberDataPoint.Timestamp(),
+			attributes: numberDataPoint.Attributes(),
 		}
 	}
 	return timedDataPoints
@@ -173,8 +178,9 @@ func (m histogramMetric) getTimedDataPoints() []*timedMetricDataPoint {
 		dataPoint.Count = int(histogramDataPoint.Count())
 
 		timedDataPoints[i] = &timedMetricDataPoint{
-			dataPoint: dataPoint,
-			timestamp: histogramDataPoint.Timestamp(),
+			dataPoint:  dataPoint,
+			timestamp:  histogramDataPoint.Timestamp(),
+			attributes: histogramDataPoint.Attributes(),
 		}
 
 	}
@@ -206,8 +212,9 @@ func (m exponentialHistogramMetric) getTimedDataPoints() []*timedMetricDataPoint
 		dataPoint.Count = int(exponentialHistogramDataPoint.Count())
 
 		timedDataPoints[i] = &timedMetricDataPoint{
-			dataPoint: dataPoint,
-			timestamp: exponentialHistogramDataPoint.Timestamp(),
+			dataPoint:  dataPoint,
+			timestamp:  exponentialHistogramDataPoint.Timestamp(),
+			attributes: exponentialHistogramDataPoint.Attributes(),
 		}
 	}
 	return timedDataPoints
@@ -236,8 +243,9 @@ func (m summaryMetric) getTimedDataPoints() []*timedMetricDataPoint {
 		dataPoint.Count = int(summaryDataPoint.Count())
 
 		timedDataPoints[i] = &timedMetricDataPoint{
-			dataPoint: dataPoint,
-			timestamp: summaryDataPoint.Timestamp(),
+			dataPoint:  dataPoint,
+			timestamp:  summaryDataPoint.Timestamp(),
+			attributes: summaryDataPoint.Attributes(),
 		}
 
 	}
