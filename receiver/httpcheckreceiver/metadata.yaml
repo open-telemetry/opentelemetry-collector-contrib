@@ -1,4 +1,4 @@
-name: httpcheckreceiver
+type: httpcheckreceiver
 
 status:
   type: receiver
