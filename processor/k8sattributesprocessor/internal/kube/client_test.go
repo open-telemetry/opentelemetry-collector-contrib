@@ -1144,19 +1144,16 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			want: PodContainers{
 				ByID: map[string]*Container{
 					"container1-id-123": {
-						ID: "container1-id-123",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "container1-id-123"},
 						},
 					},
 					"container2-id-456": {
-						ID: "container2-id-456",
 						Statuses: map[int]ContainerStatus{
 							2: {ContainerID: "container2-id-456"},
 						},
 					},
 					"init-container-id-123": {
-						ID: "init-container-id-123",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "init-container-id-123"},
 						},
@@ -1164,19 +1161,16 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				},
 				ByName: map[string]*Container{
 					"container1": {
-						ID: "container1-id-123",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "container1-id-123"},
 						},
 					},
 					"container2": {
-						ID: "container2-id-456",
 						Statuses: map[int]ContainerStatus{
 							2: {ContainerID: "container2-id-456"},
 						},
 					},
 					"init_container": {
-						ID: "init-container-id-123",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "init-container-id-123"},
 						},
@@ -1195,7 +1189,6 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			want: PodContainers{
 				ByID: map[string]*Container{
 					"container1-id-123": {
-						ID:        "container1-id-123",
 						ImageName: "test/image1",
 						ImageTag:  "0.1.0",
 						Statuses: map[int]ContainerStatus{
@@ -1203,7 +1196,6 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 						},
 					},
 					"container2-id-456": {
-						ID:        "container2-id-456",
 						ImageName: "example.com:port1/image2",
 						ImageTag:  "0.2.0",
 						Statuses: map[int]ContainerStatus{
@@ -1211,7 +1203,6 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 						},
 					},
 					"init-container-id-123": {
-						ID:        "init-container-id-123",
 						ImageName: "test/init-image",
 						ImageTag:  "1.0.2",
 						Statuses: map[int]ContainerStatus{
@@ -1221,7 +1212,6 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				},
 				ByName: map[string]*Container{
 					"container1": {
-						ID:        "container1-id-123",
 						ImageName: "test/image1",
 						ImageTag:  "0.1.0",
 						Statuses: map[int]ContainerStatus{
@@ -1229,7 +1219,6 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 						},
 					},
 					"container2": {
-						ID:        "container2-id-456",
 						ImageName: "example.com:port1/image2",
 						ImageTag:  "0.2.0",
 						Statuses: map[int]ContainerStatus{
@@ -1237,7 +1226,6 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 						},
 					},
 					"init_container": {
-						ID:        "init-container-id-123",
 						ImageName: "test/init-image",
 						ImageTag:  "1.0.2",
 						Statuses: map[int]ContainerStatus{

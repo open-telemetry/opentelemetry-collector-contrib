@@ -774,7 +774,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 					Containers: kube.PodContainers{
 						ByName: map[string]*kube.Container{
 							"app": {
-								ID:        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 								Name:      "app",
 								ImageName: "test/app",
 								ImageTag:  "1.0.1",
@@ -789,7 +788,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			},
 			wantAttrs: map[string]string{
 				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
-				conventions.AttributeContainerID:        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 				conventions.AttributeK8SContainerName:   "app",
 				conventions.AttributeContainerImageName: "test/app",
 				conventions.AttributeContainerImageTag:  "1.0.1",
@@ -813,7 +811,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 					Containers: kube.PodContainers{
 						ByID: map[string]*kube.Container{
 							"767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd": {
-								ID:        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 								Name:      "app",
 								ImageName: "test/app",
 								ImageTag:  "1.0.1",

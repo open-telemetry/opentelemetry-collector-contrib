@@ -419,7 +419,6 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 		}
 		containers.ByID[containerID] = container
 		if c.Rules.ContainerID {
-			container.ID = containerID
 			if container.Statuses == nil {
 				container.Statuses = map[int]ContainerStatus{}
 			}

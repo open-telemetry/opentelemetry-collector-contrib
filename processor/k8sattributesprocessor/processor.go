@@ -170,41 +170,43 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 	default:
 		return
 	}
-	if _, ok := attrs.Get(conventions.AttributeK8SContainerName); !ok && containerSpec.Name != "" {
-		attrs.PutStr(conventions.AttributeK8SContainerName, containerSpec.Name)
+	if containerSpec.Name != "" {
+		if _, ok := attrs.Get(conventions.AttributeK8SContainerName); !ok {
+			attrs.PutStr(conventions.AttributeK8SContainerName, containerSpec.Name)
+		}
 	}
-	if _, ok := attrs.Get(conventions.AttributeContainerImageName); !ok && containerSpec.ImageName != "" {
-		attrs.PutStr(conventions.AttributeContainerImageName, containerSpec.ImageName)
+	if containerSpec.ImageName != "" {
+		if _, ok := attrs.Get(conventions.AttributeContainerImageName); !ok {
+			attrs.PutStr(conventions.AttributeContainerImageName, containerSpec.ImageName)
+		}
 	}
-	if _, ok := attrs.Get(conventions.AttributeContainerImageTag); !ok && containerSpec.ImageTag != "" {
-		attrs.PutStr(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
+	if containerSpec.ImageTag != "" {
+		if _, ok := attrs.Get(conventions.AttributeContainerImageTag); !ok {
+			attrs.PutStr(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
+		}
 	}
-	if _, ok := attrs.Get(conventions.AttributeContainerID); !ok && containerSpec.ID != "" {
-		attrs.PutStr(conventions.AttributeContainerID, containerSpec.ID)
+	// attempt to get container ID from restart count
+	runID := -1
+	runIDAttr, ok := attrs.Get(conventions.AttributeK8SContainerRestartCount)
+	if ok {
+		containerRunID, err := intFromAttribute(runIDAttr)
+		if err != nil {
+			kp.logger.Debug(err.Error())
+		} else {
+			runID = containerRunID
+		}
 	} else {
-		// attempt to get container ID from restart count
-		runID := -1
-		runIDAttr, ok := attrs.Get(conventions.AttributeK8SContainerRestartCount)
-		if ok {
-			containerRunID, err := intFromAttribute(runIDAttr)
-			if err != nil {
-				kp.logger.Debug(err.Error())
-			} else {
+		// take the highest runID (restart count) which represents the currently running container in most cases
+		for containerRunID := range containerSpec.Statuses {
+			if containerRunID > runID {
 				runID = containerRunID
 			}
-		} else {
-			// take the highest runID (restart count) which represents the currently running container in most cases
-			for containerRunID := range containerSpec.Statuses {
-				if containerRunID > runID {
-					runID = containerRunID
-				}
-			}
 		}
-		if runID != -1 {
-			if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
-				if _, found := attrs.Get(conventions.AttributeContainerID); !found {
-					attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
-				}
+	}
+	if runID != -1 {
+		if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
+			if _, found := attrs.Get(conventions.AttributeContainerID); !found {
+				attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
 			}
 		}
 	}

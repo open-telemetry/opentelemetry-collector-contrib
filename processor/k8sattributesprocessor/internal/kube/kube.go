@@ -136,7 +136,6 @@ type PodContainers struct {
 
 // Container stores resource attributes for a specific container defined by k8s pod spec.
 type Container struct {
-	ID        string
 	Name      string
 	ImageName string
 	ImageTag  string
