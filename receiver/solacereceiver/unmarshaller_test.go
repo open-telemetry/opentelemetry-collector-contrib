@@ -361,6 +361,12 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 // common helpers
 
 func compareSpans(t *testing.T, expected, actual ptrace.Span) {
+	assert.Equal(t, expected.Name(), actual.Name())
+	assert.Equal(t, expected.TraceID(), actual.TraceID())
+	assert.Equal(t, expected.SpanID(), actual.SpanID())
+	assert.Equal(t, expected.ParentSpanID(), actual.ParentSpanID())
+	assert.Equal(t, expected.StartTimestamp(), actual.StartTimestamp())
+	assert.Equal(t, expected.EndTimestamp(), actual.EndTimestamp())
 	assert.Equal(t, expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
 	require.Equal(t, expected.Events().Len(), actual.Events().Len())
 	for i := 0; i < expected.Events().Len(); i++ {

@@ -116,6 +116,7 @@ var validEgressSpans = map[*egress_v1.SpanData_EgressSpan]ptrace.Span{
 		},
 	}: func() ptrace.Span {
 		span := ptrace.NewSpan()
+		span.SetName("someQueue send")
 		span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
 		span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
 		span.SetStartTimestamp(234567890)
@@ -168,6 +169,7 @@ var validEgressSpans = map[*egress_v1.SpanData_EgressSpan]ptrace.Span{
 		},
 	}: func() ptrace.Span {
 		span := ptrace.NewSpan()
+		span.SetName("queueName send")
 		span.SetTraceID([16]byte{1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
 		span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 1})
 		span.SetStartTimestamp(1234567890)
@@ -231,6 +233,7 @@ var validEgressSpans = map[*egress_v1.SpanData_EgressSpan]ptrace.Span{
 	}: func() ptrace.Span {
 		// second send span
 		span := ptrace.NewSpan()
+		span.SetName("topicEndpointName send")
 		span.SetTraceID([16]byte{1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31})
 		span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 		span.SetParentSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
@@ -310,7 +313,7 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 	// creates a base attribute map that additional data can be added to
 	// does not include outcome or source. Attributes will override all fields in base
-	getAttributes := func(attributes map[string]interface{}) map[string]interface{} {
+	getSpan := func(attributes map[string]interface{}, name string) ptrace.Span {
 		base := map[string]interface{}{
 			"messaging.system":                        "SolacePubSub+",
 			"messaging.operation":                     "send",
@@ -324,7 +327,11 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 		for key, val := range attributes {
 			base[key] = val
 		}
-		return base
+		span := ptrace.NewSpan()
+		span.Attributes().FromRaw(base)
+		span.SetName(name)
+		span.SetKind(ptrace.SpanKindProducer)
+		return span
 	}
 	// sets the common fields from getAttributes
 	getSendSpan := func(base *egress_v1.SpanData_SendSpan) *egress_v1.SpanData_SendSpan {
@@ -338,7 +345,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 	tests := []struct {
 		name                        string
 		spanData                    *egress_v1.SpanData_SendSpan
-		want                        map[string]interface{}
+		want                        ptrace.Span
 		expectedUnmarshallingErrors interface{}
 	}{
 		{
@@ -348,10 +355,10 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 					QueueName: "someQueue",
 				},
 			}),
-			want: getAttributes(map[string]interface{}{
+			want: getSpan(map[string]interface{}{
 				"messaging.source.name": "someQueue",
 				"messaging.source.kind": "queue",
-			}),
+			}, "someQueue send"),
 		},
 		{
 			name: "With Topic Endpoint source",
@@ -360,24 +367,24 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 					TopicEndpointName: "someTopic",
 				},
 			}),
-			want: getAttributes(map[string]interface{}{
+			want: getSpan(map[string]interface{}{
 				"messaging.source.name": "someTopic",
 				"messaging.source.kind": "topic-endpoint",
-			}),
+			}, "someTopic send"),
 		},
 		{
 			name:                        "With Unknown Endpoint source",
 			spanData:                    getSendSpan(&egress_v1.SpanData_SendSpan{}),
-			want:                        getAttributes(map[string]interface{}{}),
+			want:                        getSpan(map[string]interface{}{}, "(unknown) send"),
 			expectedUnmarshallingErrors: 1,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			u := newTestEgressV1Unmarshaller(t)
-			actual := pcommon.NewMap()
-			u.mapSendSpanAttributes(tt.spanData, actual)
-			assert.Equal(t, tt.want, actual.AsRaw())
+			actual := ptrace.NewSpan()
+			u.mapSendSpan(tt.spanData, actual)
+			compareSpans(t, tt.want, actual)
 			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
 	}
@@ -395,20 +402,20 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 	for outcomeKey, outcomeName := range outcomes {
 		t.Run("With outcome "+outcomeName, func(t *testing.T) {
 			u := newTestEgressV1Unmarshaller(t)
-			expected := getAttributes(map[string]interface{}{
+			expected := getSpan(map[string]interface{}{
 				"messaging.source.name":                   "someQueue",
 				"messaging.source.kind":                   "queue",
 				"messaging.solace.send_operation.outcome": outcomeName,
-			})
+			}, "someQueue send")
 			spanData := getSendSpan(&egress_v1.SpanData_SendSpan{
 				Source: &egress_v1.SpanData_SendSpan_QueueName{
 					QueueName: "someQueue",
 				},
 				Outcome: outcomeKey,
 			})
-			actual := pcommon.NewMap()
-			u.mapSendSpanAttributes(spanData, actual)
-			assert.Equal(t, expected, actual.AsRaw())
+			actual := ptrace.NewSpan()
+			u.mapSendSpan(spanData, actual)
+			compareSpans(t, expected, actual)
 		})
 	}
 }

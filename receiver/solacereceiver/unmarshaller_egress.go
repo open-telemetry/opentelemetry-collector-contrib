@@ -71,10 +71,8 @@ func (u *brokerTraceEgressUnmarshallerV1) mapResourceSpanAttributes(spanData *eg
 func (u *brokerTraceEgressUnmarshallerV1) mapEgressSpan(spanData *egress_v1.SpanData_EgressSpan, clientSpans ptrace.SpanSlice) {
 	if spanData.GetSendSpan() != nil {
 		clientSpan := clientSpans.AppendEmpty()
-		clientSpan.SetName("")
-		clientSpan.SetKind(ptrace.SpanKindProducer)
 		u.mapEgressSpanCommon(spanData, clientSpan)
-		u.mapSendSpanAttributes(spanData.GetSendSpan(), clientSpan.Attributes())
+		u.mapSendSpan(spanData.GetSendSpan(), clientSpan)
 		if transactionEvent := spanData.GetTransactionEvent(); transactionEvent != nil {
 			u.mapTransactionEvent(transactionEvent, clientSpan.Events().AppendEmpty())
 		}
@@ -108,7 +106,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapEgressSpanCommon(spanData *egress_v
 	}
 }
 
-func (u *brokerTraceEgressUnmarshallerV1) mapSendSpanAttributes(sendSpan *egress_v1.SpanData_SendSpan, attributes pcommon.Map) {
+func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanData_SendSpan, span ptrace.Span) {
 	const (
 		sourceNameKey = "messaging.source.name"
 		sourceKindKey = "messaging.source.kind"
@@ -117,7 +115,14 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpanAttributes(sendSpan *egress
 	)
 	const (
 		sendSpanOperation = "send"
+		sendNameSuffix    = " send"
+		unknownSendName   = "(unknown)"
+		anonymousSendName = "(anonymous)"
 	)
+	// hard coded to producer span
+	span.SetKind(ptrace.SpanKindProducer)
+
+	attributes := span.Attributes()
 	attributes.PutStr(systemAttrKey, systemAttrValue)
 	attributes.PutStr(operationAttrKey, sendSpanOperation)
 	attributes.PutStr(protocolAttrKey, sendSpan.Protocol)
@@ -125,17 +130,22 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpanAttributes(sendSpan *egress
 		attributes.PutStr(protocolVersionAttrKey, *sendSpan.ProtocolVersion)
 	}
 	// we don't fatal out when we don't have a valid kind, instead just log and increment stats
+	var name string
 	switch casted := sendSpan.Source.(type) {
 	case *egress_v1.SpanData_SendSpan_TopicEndpointName:
-		attributes.PutStr(sourceNameKey, casted.TopicEndpointName)
+		name = casted.TopicEndpointName
+		attributes.PutStr(sourceNameKey, name)
 		attributes.PutStr(sourceKindKey, topicEndpointKind)
 	case *egress_v1.SpanData_SendSpan_QueueName:
-		attributes.PutStr(sourceNameKey, casted.QueueName)
+		name = casted.QueueName
+		attributes.PutStr(sourceNameKey, name)
 		attributes.PutStr(sourceKindKey, queueKind)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown source type %T", casted))
 		u.metrics.recordRecoverableUnmarshallingError()
+		name = unknownSendName
 	}
+	span.SetName(name + sendNameSuffix)
 
 	attributes.PutStr(clientUsernameAttrKey, sendSpan.ConsumerClientUsername)
 	attributes.PutStr(clientNameAttrKey, sendSpan.ConsumerClientName)
