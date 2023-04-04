@@ -263,7 +263,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 
 		switch histogram.AggregationTemporality() {
 		case pmetric.AggregationTemporalityDelta:
-			AccumulateHistogramValues(mv.value.Histogram().DataPoints().At(0), ip, m.Histogram().DataPoints().AppendEmpty())
+			accumulateHistogramValues(mv.value.Histogram().DataPoints().At(0), ip, m.Histogram().DataPoints().AppendEmpty())
 		case pmetric.AggregationTemporalityCumulative:
 			if ip.Timestamp().AsTime().Before(mv.value.Histogram().DataPoints().At(0).Timestamp().AsTime()) {
 				// only keep datapoint with latest timestamp
@@ -335,32 +335,7 @@ func copyMetricMetadata(metric pmetric.Metric) pmetric.Metric {
 	return m
 }
 
-func AccumulateNumericValues(prev, current, dest pmetric.NumberDataPoint) {
-	if current.StartTimestamp().AsTime().Before(prev.StartTimestamp().AsTime()) {
-		dest.SetStartTimestamp(current.StartTimestamp())
-	} else {
-		dest.SetStartTimestamp(prev.StartTimestamp())
-	}
-
-	older := prev
-	newer := current
-	if current.Timestamp().AsTime().Before(prev.Timestamp().AsTime()) {
-		older = current
-		newer = prev
-	}
-
-	newer.Attributes().CopyTo(dest.Attributes())
-	dest.SetTimestamp(newer.Timestamp())
-
-	switch newer.ValueType() {
-	case pmetric.NumberDataPointValueTypeDouble:
-		dest.SetDoubleValue(newer.DoubleValue() + older.DoubleValue())
-	case pmetric.NumberDataPointValueTypeInt:
-		dest.SetIntValue(newer.IntValue() + older.IntValue())
-	}
-}
-
-func AccumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
+func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 	if current.StartTimestamp().AsTime().Before(prev.StartTimestamp().AsTime()) {
 		dest.SetStartTimestamp(current.StartTimestamp())
 	} else {
@@ -399,7 +374,7 @@ func AccumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 		for i := 0; i < newer.BucketCounts().Len(); i++ {
 			counts[i] = newer.BucketCounts().At(i) + older.BucketCounts().At(i)
 		}
-		// dest.SetBucketCounts(pcommon.NewImmutableUInt64Slice(counts))
+		dest.BucketCounts().FromRaw(counts)
 	} else {
 		// use new value if bucket bounds do not match
 		dest.SetCount(newer.Count())
@@ -407,8 +382,8 @@ func AccumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 			dest.SetSum(newer.Sum())
 		}
 
-		// dest.SetBucketCounts(newer.BucketCounts())
+		dest.BucketCounts().FromRaw(newer.BucketCounts().AsRaw())
 	}
 
-	// dest.SetExplicitBounds(newer.ExplicitBounds())
+	dest.ExplicitBounds().FromRaw(newer.ExplicitBounds().AsRaw())
 }
