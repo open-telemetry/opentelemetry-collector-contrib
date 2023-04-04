@@ -130,7 +130,7 @@ func startFlusher(e *fileExporter) {
 		// Interval should be 1 or larger.
 		return
 	}
-	
+
 	ff, ok := e.file.(interface{ flush() error })
 	if !ok {
 		// Just in case.
