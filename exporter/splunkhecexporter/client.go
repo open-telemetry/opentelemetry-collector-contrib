@@ -124,8 +124,8 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 		profilingLocalHeaders[k] = v
 	}
 
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression)
-	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression)
+	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
+	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
 	var permanentErrors []error
 
 	var rls = ld.ResourceLogs()
@@ -221,6 +221,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		if accept {
 			continue
 		}
+		// fmt.Println(accept, len(b))
 
 		if state.containsData {
 			if err := c.postEvents(ctx, state, headers); err != nil {
@@ -241,6 +242,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 				fmt.Errorf("dropped log event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
 			continue
 		}
+		// fmt.Println(accept, len(b), state.rawLength)
 		if state.containsData {
 			// This means that the current record had overflown the buffer and was not sent
 			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
@@ -395,7 +397,7 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 // The batch content length is restricted to MaxContentLengthMetrics.
 // md metrics are parsed to Splunk events.
 func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, headers map[string]string) error {
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics, !c.config.DisableCompression)
+	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics, !c.config.DisableCompression, c.config.MaxEventSize)
 	var permanentErrors []error
 
 	var rms = md.ResourceMetrics()
@@ -430,7 +432,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 // The batch content length is restricted to MaxContentLengthMetrics.
 // td traces are parsed to Splunk events.
 func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, headers map[string]string) error {
-	bufState := makeBlankBufferState(c.config.MaxContentLengthTraces, !c.config.DisableCompression)
+	bufState := makeBlankBufferState(c.config.MaxContentLengthTraces, !c.config.DisableCompression, c.config.MaxEventSize)
 	var permanentErrors []error
 
 	var rts = td.ResourceSpans()

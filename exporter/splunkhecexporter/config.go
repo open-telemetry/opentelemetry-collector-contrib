@@ -36,6 +36,7 @@ const (
 	maxContentLengthLogsLimit        = 800 * 1024 * 1024
 	maxContentLengthMetricsLimit     = 800 * 1024 * 1024
 	maxContentLengthTracesLimit      = 800 * 1024 * 1024
+	defaultMaxEventSize              = 5 * 1024 * 1024
 )
 
 // OtelToHecFields defines the mapping of attributes to HEC fields
@@ -89,6 +90,10 @@ type Config struct {
 	// Maximum trace payload size in bytes. Default value is 2097152 bytes (2MiB).
 	// Maximum allowed value is 838860800 (~ 800 MB).
 	MaxContentLengthTraces uint `mapstructure:"max_content_length_traces"`
+
+	// Maximum payload size, raw uncompressed. Default value is 5242880 bytes (5MiB).
+	// Maximum allowed value is 838860800 (~ 800 MB).
+	MaxEventSize uint `mapstructure:"max_event_size"`
 
 	// App name is used to track telemetry information for Splunk App's using HEC by App name. Defaults to "OpenTelemetry Collector Contrib".
 	SplunkAppName string `mapstructure:"splunk_app_name"`
