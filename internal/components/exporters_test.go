@@ -21,7 +21,6 @@ package components
 import (
 	"context"
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -43,6 +42,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
