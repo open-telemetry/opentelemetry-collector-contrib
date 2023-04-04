@@ -14,13 +14,15 @@
 
 package cassandraexporter
 
-import "go.opentelemetry.io/collector/pdata/pcommon"
+import "encoding/json"
 
-func attributesToMap(attributes pcommon.Map) map[string]string {
-	m := make(map[string]string, attributes.Len())
-	attributes.Range(func(k string, v pcommon.Value) bool {
-		m[k] = v.AsString()
-		return true
-	})
-	return m
+func attributesToMap(attributes map[string]any) map[string]string {
+	newAttrMap := make(map[string]string)
+	for k, v := range attributes {
+		jsonV, err := json.Marshal(v)
+		if err == nil {
+			newAttrMap[k] = string(jsonV[:])
+		}
+	}
+	return newAttrMap
 }
