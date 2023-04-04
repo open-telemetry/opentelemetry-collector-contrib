@@ -633,6 +633,22 @@ func TestLogsToMetrics(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "nested_attribute",
+			cfg: &Config{
+				Logs: map[string]MetricInfo{
+					"log.count.by.nested.attr": {
+						Description: "Log count by attribute",
+						Attributes: []AttributeConfig{
+							{
+								Key: "nested.attribute.foo",
+								AnyDepth: true,
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {

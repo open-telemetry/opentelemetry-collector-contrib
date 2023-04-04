@@ -179,6 +179,24 @@ resourceLogs:
             spanId: ""
             timeUnixNano: "1581452773000000789"
             traceId: ""
+          - attributes:
+              - key: nested
+                value:
+                  kvlistValue: 
+                    values:
+                      - key: attribute
+                        value:
+                          kvlistValue: 
+                            values:
+                              - key: foo
+                                value:
+                                  stringValue: oof
+
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""  
           - body:
               stringValue: This is a log message
             spanId: ""

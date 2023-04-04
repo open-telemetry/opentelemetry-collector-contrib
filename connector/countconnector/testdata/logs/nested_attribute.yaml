@@ -1,0 +1,18 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Log count by attribute
+            name: log.count.by.nested.attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: nested.attribute.foo
+                      value:
+                        stringValue: oof
+                  timeUnixNano: "1678390948397427001"
+              isMonotonic: true
+        scope:
+          name: otelcol/countconnector
