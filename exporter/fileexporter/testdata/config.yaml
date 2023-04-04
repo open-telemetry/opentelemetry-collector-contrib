@@ -39,3 +39,7 @@ file/format_error:
 file/compression_error:
   path: ./filename.log
   compression: gzip
+
+file/flush_interval_5:
+  path: ./flushed
+  flush_interval: 5

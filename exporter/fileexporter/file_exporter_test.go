@@ -126,6 +126,7 @@ func TestFileTracesExporter(t *testing.T) {
 				exporter:        buildExportFunc(conf),
 				compression:     conf.Compression,
 				compressor:      buildCompressor(conf.Compression),
+				flushInterval:   conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
 
@@ -260,6 +261,7 @@ func TestFileMetricsExporter(t *testing.T) {
 				exporter:         buildExportFunc(conf),
 				compression:      conf.Compression,
 				compressor:       buildCompressor(conf.Compression),
+				flushInterval:    conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
 
@@ -396,6 +398,7 @@ func TestFileLogsExporter(t *testing.T) {
 				exporter:      buildExportFunc(conf),
 				compression:   conf.Compression,
 				compressor:    buildCompressor(conf.Compression),
+				flushInterval: conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
 

@@ -92,6 +92,14 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "format type is not supported",
 		},
 		{
+			id:           component.NewIDWithName(typeStr, "flush_interval_5"),
+			expected: &Config{
+				Path: "./flushed",
+				FlushInterval: 5,
+				FormatType: formatTypeJSON,
+			},
+		},
+		{
 			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "path must be non-empty",
 		},
