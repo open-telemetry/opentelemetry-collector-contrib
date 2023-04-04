@@ -28,6 +28,17 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
+const (
+	envAWSHostname     = "AWS_HOSTNAME"
+	envAWSInstanceID   = "AWS_INSTANCE_ID"
+	metadataHostname   = "hostname"
+	metadataInstanceID = "instance-id"
+
+	defaultQueueSize = 30
+	defaultBatchSize = 10
+	defaultInterval  = time.Minute
+)
+
 // Sender wraps a Recorder and periodically sends the records.
 type Sender interface {
 	Recorder
@@ -38,31 +49,33 @@ type Sender interface {
 }
 
 type telemetrySender struct {
+	// Recorder is the recorder wrapped by the sender.
 	Recorder
-
-	resourceARN string
-	instanceID  string
-	hostname    string
 
 	// logger is used to log dropped records.
 	logger *zap.Logger
 	// client is used to send the records.
 	client awsxray.XRayClient
 
-	// queue is used to keep records that failed to send for retry during
-	// the next period.
-	queue chan *xray.TelemetryRecord
-	// done is the channel used to stop the loop.
-	done chan struct{}
-	// interval is the amount of time between flushes.
+	resourceARN string
+	instanceID  string
+	hostname    string
+	// interval is the amount of time between record rotation and sending attempts.
 	interval time.Duration
 	// queueSize is the capacity of the queue.
 	queueSize int
-	// batchSize is the max number of records sent together.
+	// batchSize is the max number of records sent in one request.
 	batchSize int
 
+	// queue is used to keep records that failed to send for retry during
+	// the next period.
+	queue []*xray.TelemetryRecord
+
 	startOnce sync.Once
+	stopWait  sync.WaitGroup
 	stopOnce  sync.Once
+	// stopCh is the channel used to stop the loop.
+	stopCh chan struct{}
 }
 
 type Option interface {
@@ -102,6 +115,18 @@ func WithLogger(logger *zap.Logger) Option {
 func WithInterval(interval time.Duration) Option {
 	return pusherOptionFunc(func(r *telemetrySender) {
 		r.interval = interval
+	})
+}
+
+func WithQueueSize(queueSize int) Option {
+	return pusherOptionFunc(func(r *telemetrySender) {
+		r.queueSize = queueSize
+	})
+}
+
+func WithBatchSize(batchSize int) Option {
+	return pusherOptionFunc(func(r *telemetrySender) {
+		r.batchSize = batchSize
 	})
 }
 
@@ -183,95 +208,81 @@ func newSender(client awsxray.XRayClient, opts ...Option) *telemetrySender {
 		interval:  defaultInterval,
 		queueSize: defaultQueueSize,
 		batchSize: defaultBatchSize,
-		done:      make(chan struct{}),
+		stopCh:    make(chan struct{}),
 		Recorder:  NewRecorder(),
 	}
 	for _, opt := range opts {
 		opt.apply(sender)
 	}
-	sender.queue = make(chan *xray.TelemetryRecord, sender.queueSize)
 	return sender
 }
 
 // Start starts the loop to send the records.
-func (t *telemetrySender) Start() {
-	t.startOnce.Do(func() {
-		go t.start()
+func (ts *telemetrySender) Start() {
+	ts.startOnce.Do(func() {
+		ts.stopWait.Add(1)
+		go func() {
+			defer ts.stopWait.Done()
+			ts.start()
+		}()
 	})
 }
 
-// Stop closes the done channel to stop the loop.
-func (t *telemetrySender) Stop() {
-	t.stopOnce.Do(func() {
-		close(t.done)
+// Stop closes the stopCh channel to stop the loop.
+func (ts *telemetrySender) Stop() {
+	ts.stopOnce.Do(func() {
+		close(ts.stopCh)
+		ts.stopWait.Wait()
 	})
 }
 
-// start flushes the record once a minute if telemetry data was updated.
-func (t *telemetrySender) start() {
-	ticker := time.NewTicker(t.interval)
+// start sends the queued records once a minute if telemetry data was updated.
+func (ts *telemetrySender) start() {
+	ticker := time.NewTicker(ts.interval)
 	defer ticker.Stop()
 	for {
 		select {
+		case <-ts.stopCh:
+			return
 		case <-ticker.C:
-			if t.HasRecording() {
-				t.add(t.Rotate())
-				if failedToSend, err := t.send(t.flush()); err != nil {
-					for _, record := range failedToSend {
-						t.add(record)
-					}
-				}
+			if ts.HasRecording() {
+				ts.enqueue(ts.Rotate())
+				ts.send()
 			}
-		case <-t.done:
+		}
+	}
+}
+
+// enqueue the record. If queue is full, drop the head of the queue and add.
+func (ts *telemetrySender) enqueue(record *xray.TelemetryRecord) {
+	for len(ts.queue) >= ts.queueSize {
+		var dropped *xray.TelemetryRecord
+		dropped, ts.queue = ts.queue[0], ts.queue[1:]
+		if ts.logger != nil {
+			ts.logger.Debug("queue full, dropping telemetry record", zap.Time("dropped_timestamp", *dropped.Timestamp))
+		}
+	}
+	ts.queue = append(ts.queue, record)
+}
+
+// send the records in the queue in batches. Updates the queue.
+func (ts *telemetrySender) send() {
+	for i := len(ts.queue); i >= 0; i -= ts.batchSize {
+		startIndex := i - ts.batchSize
+		if startIndex < 0 {
+			startIndex = 0
+		}
+		input := &xray.PutTelemetryRecordsInput{
+			EC2InstanceId:    &ts.instanceID,
+			Hostname:         &ts.hostname,
+			ResourceARN:      &ts.resourceARN,
+			TelemetryRecords: ts.queue[startIndex:i],
+		}
+		if _, err := ts.client.PutTelemetryRecords(input); err != nil {
+			ts.RecordConnectionError(err)
+			ts.queue = ts.queue[:i]
 			return
 		}
 	}
-}
-
-// add to the queue. If queue is full, drop the head of the queue and try again.
-func (t *telemetrySender) add(record *xray.TelemetryRecord) {
-	select {
-	case t.queue <- record:
-	case <-t.done:
-	default:
-		dropped := <-t.queue
-		if t.logger != nil {
-			t.logger.Debug("queue full, dropping telemetry record", zap.Time("dropped_timestamp", *dropped.Timestamp))
-		}
-		t.queue <- record
-	}
-}
-
-// flush the queue into a slice of records.
-func (t *telemetrySender) flush() []*xray.TelemetryRecord {
-	var records []*xray.TelemetryRecord
-	for len(t.queue) > 0 {
-		records = append(records, <-t.queue)
-	}
-	return records
-}
-
-// send the records in batches. Returns the error and unsuccessfully sent records
-// if the PutTelemetryRecords call fails.
-func (t *telemetrySender) send(records []*xray.TelemetryRecord) ([]*xray.TelemetryRecord, error) {
-	if len(records) > 0 {
-		for i := 0; i < len(records); i += t.batchSize {
-			endIndex := i + t.batchSize
-			if endIndex > len(records) {
-				endIndex = len(records)
-			}
-			input := &xray.PutTelemetryRecordsInput{
-				EC2InstanceId:    &t.instanceID,
-				Hostname:         &t.hostname,
-				ResourceARN:      &t.resourceARN,
-				TelemetryRecords: records[i:endIndex],
-			}
-			_, err := t.client.PutTelemetryRecords(input)
-			if err != nil {
-				t.RecordConnectionError(err)
-				return records[i:], err
-			}
-		}
-	}
-	return nil, nil
+	ts.queue = ts.queue[:0]
 }

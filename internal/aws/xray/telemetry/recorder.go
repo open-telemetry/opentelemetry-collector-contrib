@@ -25,17 +25,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/xray"
 )
 
-const (
-	envAWSHostname     = "AWS_HOSTNAME"
-	envAWSInstanceID   = "AWS_INSTANCE_ID"
-	metadataHostname   = "hostname"
-	metadataInstanceID = "instance-id"
-
-	defaultQueueSize = 30
-	defaultBatchSize = 10
-	defaultInterval  = time.Minute
-)
-
 type Recorder interface {
 	// Rotate the current record by swapping it out with a new one. Returns
 	// the rotated record.
@@ -91,50 +80,50 @@ func NewRecord() *xray.TelemetryRecord {
 	}
 }
 
-func (r *telemetryRecorder) HasRecording() bool {
-	return r.hasRecording.Load()
+func (tr *telemetryRecorder) HasRecording() bool {
+	return tr.hasRecording.Load()
 }
 
 // Rotate the current record and swaps it out with a new record.
 // Sets the timestamp and returns the old record.
-func (r *telemetryRecorder) Rotate() *xray.TelemetryRecord {
+func (tr *telemetryRecorder) Rotate() *xray.TelemetryRecord {
 	snapshot := NewRecord()
-	snapshot.SetSegmentsSentCount(atomic.SwapInt64(r.record.SegmentsSentCount, 0))
-	snapshot.SetSegmentsReceivedCount(atomic.SwapInt64(r.record.SegmentsReceivedCount, 0))
-	snapshot.SetSegmentsRejectedCount(atomic.SwapInt64(r.record.SegmentsRejectedCount, 0))
-	snapshot.SetSegmentsSpilloverCount(atomic.SwapInt64(r.record.SegmentsSpilloverCount, 0))
-	snapshot.BackendConnectionErrors.SetHTTPCode4XXCount(atomic.SwapInt64(r.record.BackendConnectionErrors.HTTPCode4XXCount, 0))
-	snapshot.BackendConnectionErrors.SetHTTPCode5XXCount(atomic.SwapInt64(r.record.BackendConnectionErrors.HTTPCode5XXCount, 0))
-	snapshot.BackendConnectionErrors.SetTimeoutCount(atomic.SwapInt64(r.record.BackendConnectionErrors.TimeoutCount, 0))
-	snapshot.BackendConnectionErrors.SetConnectionRefusedCount(atomic.SwapInt64(r.record.BackendConnectionErrors.ConnectionRefusedCount, 0))
-	snapshot.BackendConnectionErrors.SetUnknownHostCount(atomic.SwapInt64(r.record.BackendConnectionErrors.UnknownHostCount, 0))
-	snapshot.BackendConnectionErrors.SetOtherCount(atomic.SwapInt64(r.record.BackendConnectionErrors.OtherCount, 0))
+	snapshot.SetSegmentsSentCount(atomic.SwapInt64(tr.record.SegmentsSentCount, 0))
+	snapshot.SetSegmentsReceivedCount(atomic.SwapInt64(tr.record.SegmentsReceivedCount, 0))
+	snapshot.SetSegmentsRejectedCount(atomic.SwapInt64(tr.record.SegmentsRejectedCount, 0))
+	snapshot.SetSegmentsSpilloverCount(atomic.SwapInt64(tr.record.SegmentsSpilloverCount, 0))
+	snapshot.BackendConnectionErrors.SetHTTPCode4XXCount(atomic.SwapInt64(tr.record.BackendConnectionErrors.HTTPCode4XXCount, 0))
+	snapshot.BackendConnectionErrors.SetHTTPCode5XXCount(atomic.SwapInt64(tr.record.BackendConnectionErrors.HTTPCode5XXCount, 0))
+	snapshot.BackendConnectionErrors.SetTimeoutCount(atomic.SwapInt64(tr.record.BackendConnectionErrors.TimeoutCount, 0))
+	snapshot.BackendConnectionErrors.SetConnectionRefusedCount(atomic.SwapInt64(tr.record.BackendConnectionErrors.ConnectionRefusedCount, 0))
+	snapshot.BackendConnectionErrors.SetUnknownHostCount(atomic.SwapInt64(tr.record.BackendConnectionErrors.UnknownHostCount, 0))
+	snapshot.BackendConnectionErrors.SetOtherCount(atomic.SwapInt64(tr.record.BackendConnectionErrors.OtherCount, 0))
 	snapshot.SetTimestamp(time.Now())
-	r.hasRecording.Store(false)
+	tr.hasRecording.Store(false)
 	return snapshot
 }
 
-func (r *telemetryRecorder) RecordSegmentsReceived(count int) {
-	atomic.AddInt64(r.record.SegmentsReceivedCount, int64(count))
-	r.hasRecording.Store(true)
+func (tr *telemetryRecorder) RecordSegmentsReceived(count int) {
+	atomic.AddInt64(tr.record.SegmentsReceivedCount, int64(count))
+	tr.hasRecording.Store(true)
 }
 
-func (r *telemetryRecorder) RecordSegmentsSent(count int) {
-	atomic.AddInt64(r.record.SegmentsSentCount, int64(count))
-	r.hasRecording.Store(true)
+func (tr *telemetryRecorder) RecordSegmentsSent(count int) {
+	atomic.AddInt64(tr.record.SegmentsSentCount, int64(count))
+	tr.hasRecording.Store(true)
 }
 
-func (r *telemetryRecorder) RecordSegmentsSpillover(count int) {
-	atomic.AddInt64(r.record.SegmentsSpilloverCount, int64(count))
-	r.hasRecording.Store(true)
+func (tr *telemetryRecorder) RecordSegmentsSpillover(count int) {
+	atomic.AddInt64(tr.record.SegmentsSpilloverCount, int64(count))
+	tr.hasRecording.Store(true)
 }
 
-func (r *telemetryRecorder) RecordSegmentsRejected(count int) {
-	atomic.AddInt64(r.record.SegmentsRejectedCount, int64(count))
-	r.hasRecording.Store(true)
+func (tr *telemetryRecorder) RecordSegmentsRejected(count int) {
+	atomic.AddInt64(tr.record.SegmentsRejectedCount, int64(count))
+	tr.hasRecording.Store(true)
 }
 
-func (r *telemetryRecorder) RecordConnectionError(err error) {
+func (tr *telemetryRecorder) RecordConnectionError(err error) {
 	if err == nil {
 		return
 	}
@@ -142,26 +131,26 @@ func (r *telemetryRecorder) RecordConnectionError(err error) {
 	if ok := errors.As(err, &requestFailure); ok {
 		switch requestFailure.StatusCode() / 100 {
 		case 5:
-			atomic.AddInt64(r.record.BackendConnectionErrors.HTTPCode5XXCount, 1)
+			atomic.AddInt64(tr.record.BackendConnectionErrors.HTTPCode5XXCount, 1)
 		case 4:
-			atomic.AddInt64(r.record.BackendConnectionErrors.HTTPCode4XXCount, 1)
+			atomic.AddInt64(tr.record.BackendConnectionErrors.HTTPCode4XXCount, 1)
 		default:
-			atomic.AddInt64(r.record.BackendConnectionErrors.OtherCount, 1)
+			atomic.AddInt64(tr.record.BackendConnectionErrors.OtherCount, 1)
 		}
 	} else {
 		var awsError awserr.Error
 		if ok = errors.As(err, &awsError); ok {
 			switch awsError.Code() {
 			case request.ErrCodeResponseTimeout:
-				atomic.AddInt64(r.record.BackendConnectionErrors.TimeoutCount, 1)
+				atomic.AddInt64(tr.record.BackendConnectionErrors.TimeoutCount, 1)
 			case request.ErrCodeRequestError:
-				atomic.AddInt64(r.record.BackendConnectionErrors.UnknownHostCount, 1)
+				atomic.AddInt64(tr.record.BackendConnectionErrors.UnknownHostCount, 1)
 			default:
-				atomic.AddInt64(r.record.BackendConnectionErrors.OtherCount, 1)
+				atomic.AddInt64(tr.record.BackendConnectionErrors.OtherCount, 1)
 			}
 		} else {
-			atomic.AddInt64(r.record.BackendConnectionErrors.OtherCount, 1)
+			atomic.AddInt64(tr.record.BackendConnectionErrors.OtherCount, 1)
 		}
 	}
-	r.hasRecording.Store(true)
+	tr.hasRecording.Store(true)
 }

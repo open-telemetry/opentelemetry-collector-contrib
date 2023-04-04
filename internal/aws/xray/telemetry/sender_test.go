@@ -51,12 +51,12 @@ func (m *mockClient) PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (
 }
 
 func TestRotateRace(t *testing.T) {
-	mc := &mockClient{count: &atomic.Int64{}}
-	mc.On("PutTelemetryRecords", mock.Anything).Return(nil, nil).Once()
-	mc.On("PutTelemetryRecords", mock.Anything).Return(nil, errors.New("error"))
-	recorder := newSender(mc, WithInterval(50*time.Millisecond))
-	recorder.Start()
-	defer recorder.Stop()
+	client := &mockClient{count: &atomic.Int64{}}
+	client.On("PutTelemetryRecords", mock.Anything).Return(nil, nil).Once()
+	client.On("PutTelemetryRecords", mock.Anything).Return(nil, errors.New("error"))
+	sender := newSender(client, WithInterval(100*time.Millisecond))
+	sender.Start()
+	defer sender.Stop()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
@@ -64,16 +64,16 @@ func TestRotateRace(t *testing.T) {
 		for {
 			select {
 			case <-ticker.C:
-				recorder.RecordSegmentsReceived(1)
-				recorder.RecordSegmentsSpillover(1)
-				recorder.RecordSegmentsRejected(1)
+				sender.RecordSegmentsReceived(1)
+				sender.RecordSegmentsSpillover(1)
+				sender.RecordSegmentsRejected(1)
 			case <-ctx.Done():
 				return
 			}
 		}
 	}()
 	assert.Eventually(t, func() bool {
-		return mc.count.Load() >= 2
+		return client.count.Load() >= 2
 	}, time.Second, 5*time.Millisecond)
 }
 
@@ -85,35 +85,52 @@ func TestIncludeMetadata(t *testing.T) {
 	assert.Empty(t, opts)
 	cfg.IncludeMetadata = true
 	opts = ToOptions(cfg, sess, set)
-	recorder := newSender(&mockClient{}, opts...)
-	assert.Equal(t, "", recorder.hostname)
-	assert.Equal(t, "", recorder.instanceID)
-	assert.Equal(t, "session_arn", recorder.resourceARN)
+	sender := newSender(&mockClient{}, opts...)
+	assert.Equal(t, "", sender.hostname)
+	assert.Equal(t, "", sender.instanceID)
+	assert.Equal(t, "session_arn", sender.resourceARN)
 	t.Setenv(envAWSHostname, "env_hostname")
 	t.Setenv(envAWSInstanceID, "env_instance_id")
 	opts = ToOptions(cfg, sess, &awsutil.AWSSessionSettings{})
-	recorder = newSender(&mockClient{}, opts...)
-	assert.Equal(t, "env_hostname", recorder.hostname)
-	assert.Equal(t, "env_instance_id", recorder.instanceID)
-	assert.Equal(t, "", recorder.resourceARN)
+	sender = newSender(&mockClient{}, opts...)
+	assert.Equal(t, "env_hostname", sender.hostname)
+	assert.Equal(t, "env_instance_id", sender.instanceID)
+	assert.Equal(t, "", sender.resourceARN)
 	cfg.Hostname = "cfg_hostname"
 	cfg.InstanceID = "cfg_instance_id"
 	cfg.ResourceARN = "cfg_arn"
 	opts = ToOptions(cfg, sess, &awsutil.AWSSessionSettings{})
-	recorder = newSender(&mockClient{}, opts...)
-	assert.Equal(t, "cfg_hostname", recorder.hostname)
-	assert.Equal(t, "cfg_instance_id", recorder.instanceID)
-	assert.Equal(t, "cfg_arn", recorder.resourceARN)
+	sender = newSender(&mockClient{}, opts...)
+	assert.Equal(t, "cfg_hostname", sender.hostname)
+	assert.Equal(t, "cfg_instance_id", sender.instanceID)
+	assert.Equal(t, "cfg_arn", sender.resourceARN)
 }
 
 func TestQueueOverflow(t *testing.T) {
 	obs, logs := observer.New(zap.DebugLevel)
-	recorder := newSender(&mockClient{}, WithLogger(zap.New(obs)))
-	for i := 1; i <= defaultQueueSize+20; i++ {
-		recorder.RecordSegmentsSent(i)
-		recorder.add(recorder.Rotate())
+	client := &mockClient{count: &atomic.Int64{}}
+	client.On("PutTelemetryRecords", mock.Anything).Return(nil, nil).Once()
+	client.On("PutTelemetryRecords", mock.Anything).Return(nil, errors.New("test"))
+	sender := newSender(
+		client,
+		WithLogger(zap.New(obs)),
+		WithInterval(time.Millisecond),
+		WithQueueSize(20),
+		WithBatchSize(5),
+	)
+	for i := 1; i <= 25; i++ {
+		sender.RecordSegmentsSent(i)
+		sender.enqueue(sender.Rotate())
 	}
-	assert.Equal(t, 20, logs.Len())
-	recorder.Stop()
-	recorder.add(recorder.Rotate())
+	// number of dropped records
+	assert.Equal(t, 5, logs.Len())
+	assert.Equal(t, 20, len(sender.queue))
+	sender.send()
+	// only one batch succeeded
+	assert.Equal(t, 15, len(sender.queue))
+	// verify that sent back of queue
+	for _, record := range sender.queue {
+		assert.Greater(t, *record.SegmentsSentCount, int64(5))
+		assert.LessOrEqual(t, *record.SegmentsSentCount, int64(20))
+	}
 }
