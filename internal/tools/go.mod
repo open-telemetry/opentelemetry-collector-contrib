@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.6.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.6.0
 	go.opentelemetry.io/build-tools/multimod v0.6.0
-	go.opentelemetry.io/collector/cmd/builder v0.71.1-0.20230208170110-ead716ac04aa
+	go.opentelemetry.io/collector/cmd/builder v0.75.0
 	golang.org/x/tools v0.7.0
 	golang.org/x/vuln v0.0.0-20230313161840-8a73a7e4f203
 )
@@ -194,7 +194,7 @@ require (
 	gitlab.com/bosi/decorder v0.2.3 // indirect
 	go.opentelemetry.io/build-tools v0.6.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	go.uber.org/multierr v1.10.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect

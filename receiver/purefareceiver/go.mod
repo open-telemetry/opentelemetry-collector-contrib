@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.75.0
 	go.opentelemetry.io/collector/consumer v0.75.0
 	go.opentelemetry.io/collector/receiver v0.75.0
-	go.uber.org/multierr v1.10.0
+	go.uber.org/multierr v1.11.0
 )
 
 require (
@@ -31,7 +31,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.232 // indirect
+	github.com/aws/aws-sdk-go v1.44.235 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20230112175826-46e39c7b9b43 // indirect
@@ -39,7 +39,7 @@ require (
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/digitalocean/godo v1.97.0 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v23.0.1+incompatible // indirect
+	github.com/docker/docker v23.0.2+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
