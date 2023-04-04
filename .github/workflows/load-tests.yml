@@ -28,10 +28,8 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.19
       - name: Cache Go
@@ -71,10 +69,8 @@ jobs:
         uses: runforesight/foresight-workflow-kit-action@v1
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.19
       - name: Cache Go

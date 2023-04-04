@@ -15,10 +15,8 @@ jobs:
         k8s-version: ["v1.26.0", "v1.25.3", "v1.24.7", "v1.23.13"]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.19   
       - name: Cache Go
