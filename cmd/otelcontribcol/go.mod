@@ -16,8 +16,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.75.0
