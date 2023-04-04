@@ -22,11 +22,11 @@ exporters:
   coralogix:
     # The Coralogix traces ingress endpoint
     traces:
-      endpoint: "otel-traces.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     metrics:
-      endpoint: "otel-metrics.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     logs:
-      endpoint: "otel-logs.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
 
     # Your Coralogix private key is sensitive
     private_key: "xxx"
@@ -55,7 +55,7 @@ The v0.67 version removed old Jaeger based tracing endpoint in favour of Opentel
 To migrate, please remove the old endpoint field, and change the configuration to `traces.endpoint` using the new Tracing endpoint.
 
 Old configuration:
-```
+```yaml
 exporters:
   coralogix:
     # The Coralogix traces ingress endpoint
@@ -63,12 +63,12 @@ exporters:
 ```
 
 New configuration:
-```
+```yaml
 exporters
   coralogix:
     # The Coralogix traces ingress endpoint
     traces:
-      endpoint: "otel-traces.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
 ```
 
 ### Coralogix's Endpoints 
@@ -77,11 +77,11 @@ Depending on your region, you might need to use a different endpoint. Here are t
 
 | Region  | Traces Endpoint                          | Metrics Endpoint                     | Logs Endpoint                     |
 |---------|------------------------------------------|------------------------------------- | --------------------------------- |
-| USA1    | `otel-traces.coralogix.us:443`      | `otel-metrics.coralogix.us:443`      | `otel-logs.coralogix.us:443`      |
-| APAC1   | `otel-traces.app.coralogix.in:443`  | `otel-metrics.coralogix.in:443`      | `otel-logs.coralogix.in:443`      | 
-| APAC2   | `otel-traces.coralogixsg.com:443`   | `otel-metrics.coralogixsg.com:443`   | `otel-logs.coralogixsg.com:443`   |
-| EUROPE1 | `otel-traces.coralogix.com:443`     | `otel-metrics.coralogix.com:443`     | `otel-logs.coralogix.com:443`     |
-| EUROPE2 | `otel-traces.eu2.coralogix.com:443` | `otel-metrics.eu2.coralogix.com:443` | `otel-logs.eu2.coralogix.com:443` |
+| USA1    | `ingress.coralogix.us:443`      | `ingress.coralogix.us:443`      | `ingress.coralogix.us:443`      |
+| APAC1   | `ingress.coralogix.in:443`  | `ingress.coralogix.in:443`      | `ingress.coralogix.in:443`      | 
+| APAC2   | `ingress.coralogixsg.com:443`   | `ingress.coralogixsg.com:443`   | `ingress.coralogixsg.com:443`   |
+| EUROPE1 | `ingress.coralogix.com:443`     | `ingress.coralogix.com:443`     | `ingress.coralogix.com:443`     |
+| EUROPE2 | `ingress.eu2.coralogix.com:443` | `ingress.eu2.coralogix.com:443` | `ingress.eu2.coralogix.com:443` |
 
 ### Application and SubSystem attributes
 
@@ -97,11 +97,11 @@ exporters:
   coralogix:
     # The Coralogix traces ingress endpoint
     traces:
-      endpoint: "otel-traces.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     metrics:
-      endpoint: "otel-metrics.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     logs:
-      endpoint: "otel-logs.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     application_name_attributes:
       - "service.namespace"
       - "k8s.namespace.name" 
@@ -119,7 +119,7 @@ exporters:
 OpenTelemetry Collector [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover Host Resource attributes, such as `host.name` and provide Resource attributes using environment variables, which can be used for setting AppName and SubSystem fields in Coralogix.
 
 Example: 
-```
+```yaml
 processors:
   resourcedetection/system:
     detectors: ["system", "env"]
@@ -134,16 +134,16 @@ OTEL_RESOURCE_ATTRIBUTES="env=production"
 
 You can configure Coralogix Exporter:
 
-```
+```yaml
 exporters:
   coralogix:
     # The Coralogix traces ingress endpoint
     traces:
-      endpoint: "otel-traces.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     metrics:
-      endpoint: "otel-metrics.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     logs:
-      endpoint: "otel-logs.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     application_name_attributes:
       - "env" 
     subsystem_name_attributes:
@@ -154,7 +154,7 @@ exporters:
 OpenTelemetry Collector [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover EC2 Resource attributes, such as EC2 tags as resource attributes.
 
 Example: 
-```
+```yaml
 processors:
  resourcedetection/ec2:
     detectors: ["ec2"]
@@ -167,7 +167,7 @@ processors:
 
 **_NOTE:_** In order to fetch EC2 tags, the IAM role assigned to the EC2 instance must have a policy that includes the `ec2:DescribeTags` permission.
 
-```
+```json
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -183,16 +183,16 @@ processors:
 
 You can configure Coralogix Exporter:
 
-```
+```yaml
 exporters:
   coralogix:
     # The Coralogix traces ingress endpoint
     traces:
-      endpoint: "otel-traces.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     metrics:
-      endpoint: "otel-metrics.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     logs:
-      endpoint: "otel-logs.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     application_name_attributes:
       - "ec2.tag.name" 
     subsystem_name_attributes:
@@ -202,7 +202,7 @@ exporters:
 ### Custom Attributes
 
 You can combine and create custom Resource attributes using [transform](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) processor. For example:
-```
+```yaml
     transform:
      logs:
        queries:
@@ -210,16 +210,16 @@ You can combine and create custom Resource attributes using [transform](https://
 ```
 
 Then you can use the custom Resource attribute in Coralogix exporter:
-```
+```yaml
 exporters:
   coralogix:
     # The Coralogix traces ingress endpoint
     traces:
-      endpoint: "otel-traces.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     metrics:
-      endpoint: "otel-metrics.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     logs:
-      endpoint: "otel-logs.coralogix.com:443"
+      endpoint: "ingress.coralogix.com:443"
     application_name_attributes:
       - "applicationName" 
     subsystem_name_attributes:
