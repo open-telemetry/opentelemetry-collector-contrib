@@ -56,6 +56,7 @@ type MetricInfo struct {
 type AttributeConfig struct {
 	Key          string `mapstructure:"key"`
 	DefaultValue string `mapstructure:"default_value"`
+	AnyDepth bool `mapstructure:"any_depth"`
 }
 
 func (c *Config) Validate() error {

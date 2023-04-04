@@ -332,6 +332,64 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "nested_attribute",
+			expect: &Config{
+				Spans: map[string]MetricInfo{
+					"my.nested.attribute.count": {
+						Description: "My span count by nested region.",
+						Attributes: []AttributeConfig{
+							{
+								Key: "env.nested.region",
+								DefaultValue: "other",
+							  AnyDepth: true,
+						  },
+						},
+					},
+				},
+				SpanEvents: map[string]MetricInfo{
+					"my.nested.attribute.count": {
+						Description: "My spanevent count by nested region.",
+						Attributes: []AttributeConfig{
+							{
+								Key: "env.nested.region",
+								DefaultValue: "other",
+							  AnyDepth: true,
+						  },
+						},
+					},
+				},
+				Metrics: map[string]MetricInfo{
+					"my.metric.count": {
+						Description: "My metric count.",
+					},
+				},
+				DataPoints: map[string]MetricInfo{
+					"my.nested.attribute.count": {
+						Description: "My datapoint count by nested region.",
+						Attributes: []AttributeConfig{
+							{
+								Key: "env.nested.region",
+								DefaultValue: "other",
+							  AnyDepth: true,
+						  },
+						},
+					},
+				},
+				Logs: map[string]MetricInfo{
+					"my.nested.attribute.count": {
+						Description: "My log record count by nested region.",
+						Attributes: []AttributeConfig{
+							{
+								Key: "env.nested.region",
+								DefaultValue: "other",
+							  AnyDepth: true,
+						  },
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
