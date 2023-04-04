@@ -258,7 +258,7 @@ Examples:
 
 `uuid()`
 
-The `uuid` function generated a v4 uuid string.
+The `uuid` function generates a v4 uuid string.
 
 ## Converters
 
