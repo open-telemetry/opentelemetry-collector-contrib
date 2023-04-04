@@ -54,8 +54,8 @@ func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) erro
 		countAttrs := pcommon.NewMap()
 		for _, attr := range md.attrs {
 			attrVal, ok := attrs.Get(attr.Key)
-			if !ok {
-				// couldn't find the attribute so check if it is nested
+			if !ok && attr.AnyDepth {
+				// couldn't find the attribute so check if it is nested when any_depth is true
 				attrVal, ok = getNestedAttribute(attr.Key, attrs) // shadows the OK from above on purpose
 			}
 			if ok {
