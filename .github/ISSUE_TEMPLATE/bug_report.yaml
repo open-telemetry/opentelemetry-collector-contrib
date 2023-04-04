@@ -152,6 +152,7 @@ body:
       - receiver/awsxray
       - receiver/azureblob
       - receiver/azureeventhub
+      - receiver/azuremonitor
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
