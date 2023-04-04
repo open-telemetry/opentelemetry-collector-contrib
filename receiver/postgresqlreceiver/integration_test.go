@@ -63,7 +63,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg.Insecure = true
 				return cfg
 			},
-			expectedFile: filepath.Join("testdata", "integration", "expected_single_db.json"),
+			expectedFile: filepath.Join("testdata", "integration", "expected_single_db.yaml"),
 		},
 		{
 			name: "multi_db",
@@ -77,7 +77,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg.Insecure = true
 				return cfg
 			},
-			expectedFile: filepath.Join("testdata", "integration", "expected_multi_db.json"),
+			expectedFile: filepath.Join("testdata", "integration", "expected_multi_db.yaml"),
 		},
 		{
 			name: "all_db",
@@ -91,7 +91,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg.Insecure = true
 				return cfg
 			},
-			expectedFile: filepath.Join("testdata", "integration", "expected_all_db.json"),
+			expectedFile: filepath.Join("testdata", "integration", "expected_all_db.yaml"),
 		},
 		{
 			name: "without_resource_attributes",
@@ -119,7 +119,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 					emitMetricsWithoutResourceAttributesFeatureGate.ID(), false,
 				))
 			},
-			expectedFile: filepath.Join("testdata", "integration", "expected_all_without_resource_attributes.json"),
+			expectedFile: filepath.Join("testdata", "integration", "expected_all_without_resource_attributes.yaml"),
 		},
 	}
 

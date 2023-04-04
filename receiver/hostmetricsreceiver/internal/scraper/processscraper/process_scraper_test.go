@@ -662,9 +662,15 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError: `error reading process name for pid 1: err1`,
 		},
 		{
-			name:          "Exe Error",
-			exeError:      errors.New("err1"),
-			expectedError: `error reading process name for pid 1: err1`,
+			name:     "Exe Error",
+			exeError: errors.New("err1"),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return `error reading process executable for pid 1: err1; ` +
+						`error reading process name for pid 1: executable path is empty`
+				}
+				return `error reading process executable for pid 1: err1`
+			}(),
 		},
 		{
 			name:          "Cmdline Error",
@@ -826,8 +832,12 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) (int, int) {
-	if nameError != nil || exeError != nil {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError error) (int, int) {
+	if runtime.GOOS == "windows" && exeError != nil {
+		return 0, 0
+	}
+
+	if nameError != nil {
 		return 0, 0
 	}
 
@@ -867,6 +877,10 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 }
 
 func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) int {
+	if runtime.GOOS == "windows" && exeError != nil {
+		return 2
+	}
+
 	if nameError != nil || exeError != nil {
 		return 1
 	}
@@ -874,32 +888,72 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPerc
 	return metricsLen - expectedMetricsLen
 }
 
-func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
+func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
 	processNameError := errors.New("err1")
+	processEmptyExeError := errors.New("executable path is empty")
 
 	type testCase struct {
 		name                 string
 		muteProcessNameError bool
+		muteProcessExeError  bool
+		muteProcessIOError   bool
 		omitConfigField      bool
 		expectedError        string
 	}
 
 	testCases := []testCase{
 		{
-			name:                 "Process Name Error Muted",
+			name:                 "Process Name Error Muted And Process Exe Error Muted And Process IO Error Muted",
 			muteProcessNameError: true,
+			muteProcessExeError:  true,
+			muteProcessIOError:   true,
 		},
 		{
-			name:                 "Process Name Error Enabled",
+			name:                 "Process Name Error Muted And Process Exe Error Enabled And Process IO Error Muted",
+			muteProcessNameError: true,
+			muteProcessExeError:  false,
+			muteProcessIOError:   true,
+			expectedError:        fmt.Sprintf("error reading process executable for pid 1: %v", processNameError),
+		},
+		{
+			name:                 "Process Name Error Enabled And Process Exe Error Muted And Process IO Error Muted",
 			muteProcessNameError: false,
-			expectedError:        fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			muteProcessExeError:  true,
+			muteProcessIOError:   true,
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
+				}
+				return fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
+			}(),
 		},
 		{
-			name:            "Process Name Error Default (Enabled)",
+			name:                 "Process Name Error Enabled And Process Exe Error Enabled And Process IO Error Muted",
+			muteProcessNameError: false,
+			muteProcessExeError:  false,
+			muteProcessIOError:   true,
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+						fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
+				}
+				return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+					fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
+			}(),
+		},
+		{
+			name:            "Process Name Error Default (Enabled) And Process Exe Error Default (Enabled) And Process IO Error Default (Enabled)",
 			omitConfigField: true,
-			expectedError:   fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+						fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
+				}
+				return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+					fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
+			}(),
 		},
 	}
 
@@ -908,6 +962,8 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 			config := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
 			if !test.omitConfigField {
 				config.MuteProcessNameError = test.muteProcessNameError
+				config.MuteProcessExeError = test.muteProcessExeError
+				config.MuteProcessIOError = test.muteProcessIOError
 			}
 			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
@@ -918,13 +974,18 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 			handleMock.On("Name").Return("test", processNameError)
 			handleMock.On("Exe").Return("test", processNameError)
 
+			if config.MuteProcessIOError {
+				handleMock.On("IOCounters").Return("test", errors.New("permission denied"))
+			}
+
 			scraper.getProcessHandles = func() (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 			}
 			md, err := scraper.scrape(context.Background())
 
 			assert.Zero(t, md.MetricCount())
-			if config.MuteProcessNameError {
+
+			if config.MuteProcessNameError && config.MuteProcessExeError {
 				assert.Nil(t, err)
 			} else {
 				assert.EqualError(t, err, test.expectedError)

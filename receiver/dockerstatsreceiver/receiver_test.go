@@ -176,12 +176,12 @@ func TestScrapeV2(t *testing.T) {
 	}{
 		{
 			desc:                "scrapeV2_single_container",
-			expectedMetricsFile: filepath.Join(mockFolder, "single_container", "expected_metrics.json"),
+			expectedMetricsFile: filepath.Join(mockFolder, "single_container", "expected_metrics.yaml"),
 			mockDockerEngine:    singleContainerEngineMock,
 		},
 		{
 			desc:                "scrapeV2_two_containers",
-			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.json"),
+			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.yaml"),
 			mockDockerEngine:    twoContainerEngineMock,
 		},
 	}

@@ -105,6 +105,8 @@ process:
     names: [ <process name>, ... ]
     match_type: <strict|regexp>
   mute_process_name_error: <true|false>
+  mute_process_exe_error: <true|false>
+  mute_process_io_error: <true|false>
   scrape_process_delay: <time>
 ```
 

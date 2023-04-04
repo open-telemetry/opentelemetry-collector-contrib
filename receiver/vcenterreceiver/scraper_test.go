@@ -67,7 +67,7 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
 	require.NoError(t, err)
 	require.NotEqual(t, metrics.MetricCount(), 0)
 
-	goldenPath := filepath.Join("testdata", "metrics", "expected.json")
+	goldenPath := filepath.Join("testdata", "metrics", "expected.yaml")
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
