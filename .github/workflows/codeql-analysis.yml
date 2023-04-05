@@ -14,11 +14,8 @@ jobs:
       CODEQL_EXTRACTOR_GO_BUILD_TRACING: 'on'
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: ~1.19.7
 

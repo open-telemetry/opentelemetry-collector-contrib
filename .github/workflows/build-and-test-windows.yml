@@ -36,16 +36,14 @@ jobs:
     runs-on: windows-latest
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - if: matrix.group == 'receiver-0'
         name: install IIS
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
       - if: matrix.group == 'receiver-0'
         name: Install Active Directory DS
         run: Install-WindowsFeature -name AD-Domain-Services -IncludeManagementTools
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: ~1.19.7
       - name: Cache Go
