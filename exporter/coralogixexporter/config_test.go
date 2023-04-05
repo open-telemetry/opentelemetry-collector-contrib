@@ -75,7 +75,8 @@ func TestLoadConfig(t *testing.T) {
 					BalancerName:    "",
 				},
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint: "",
+					Endpoint:    "https://",
+					Compression: "gzip",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
 						Insecure:           false,
@@ -129,7 +130,8 @@ func TestLoadConfig(t *testing.T) {
 				AppNameAttributes:   []string{"service.namespace"},
 				SubSystemAttributes: []string{"service.name"},
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint: "",
+					Endpoint:    "https://",
+					Compression: "gzip",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
 						Insecure:           false,
@@ -217,4 +219,31 @@ func TestLogsExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, me, "failed to create logs exporter")
 	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestSingleEndpointWithAllExporters(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "singleendpoint").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	params := exportertest.NewNopCreateSettings()
+	te, err := newTracesExporter(cfg, params)
+	assert.NoError(t, err)
+	assert.NotNil(t, te, "failed to create trace exporter")
+	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
+
+	me, err := newMetricsExporter(cfg, params)
+	require.NoError(t, err)
+	require.NotNil(t, me, "failed to create metrics exporter")
+	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
+
+	le, err := newLogsExporter(cfg, params)
+	require.NoError(t, err)
+	require.NotNil(t, le, "failed to create logs exporter")
+	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
 }

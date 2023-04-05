@@ -31,3 +31,14 @@ coralogix/all:
   application_name: "APP_NAME"
   subsystem_name: "SUBSYSTEM_NAME"
   timeout: 5s
+
+coralogix/singleendpoint:
+  endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  application_name_attributes:
+    - "service.namespace"
+  subsystem_name_attributes:
+    - "service.name"
+  private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  application_name: "APP_NAME"
+  subsystem_name: "SUBSYSTEM_NAME"
+  timeout: 5s

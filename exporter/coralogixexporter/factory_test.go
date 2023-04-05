@@ -55,10 +55,32 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NotNil(t, oexp)
 }
 
+func TestCreateMetricsExporterWithSingleEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
+
+	set := exportertest.NewNopCreateSettings()
+	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	require.Nil(t, err)
+	require.NotNil(t, oexp)
+}
+
 func TestCreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Logs.Endpoint = testutil.GetAvailableLocalAddress(t)
+
+	set := exportertest.NewNopCreateSettings()
+	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	require.Nil(t, err)
+	require.NotNil(t, oexp)
+}
+
+func TestCreateLogsExporterWithSingleEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
@@ -167,6 +189,28 @@ func TestCreateTracesExporter(t *testing.T) {
 				},
 			},
 			mustFailOnStart: true,
+		},
+		{
+			name: "UseEnpdoint",
+			config: Config{
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
+					Endpoint: endpoint,
+					TLSSetting: configtls.TLSClientSetting{
+						Insecure: false,
+					},
+				},
+			},
+		},
+		{
+			name: "UseSingleEndpoint",
+			config: Config{
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
+					Endpoint: endpoint,
+					TLSSetting: configtls.TLSClientSetting{
+						Insecure: false,
+					},
+				},
+			},
 		},
 	}
 

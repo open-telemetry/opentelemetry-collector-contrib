@@ -38,8 +38,8 @@ import (
 func newMetricsExporter(cfg component.Config, set exp.CreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
-	if oCfg.Metrics.Endpoint == "" || oCfg.Metrics.Endpoint == "https://" || oCfg.Metrics.Endpoint == "http://" {
-		return nil, errors.New("coralogix exporter config requires `metrics.endpoint` configuration")
+	if isEmpty(oCfg.Endpoint) && isEmpty(oCfg.Metrics.Endpoint) {
+		return nil, errors.New("coralogix exporter config requires `endpoint` or `metrics.endpoint` configuration")
 	}
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
@@ -62,8 +62,16 @@ type exporter struct {
 }
 
 func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
-	if e.clientConn, err = e.config.Metrics.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
-		return err
+
+	switch {
+	case !isEmpty(e.config.Metrics.Endpoint):
+		if e.clientConn, err = e.config.Metrics.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+			return err
+		}
+	case !isEmpty(e.config.Endpoint):
+		if e.clientConn, err = e.config.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+			return err
+		}
 	}
 
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)

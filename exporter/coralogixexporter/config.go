@@ -38,10 +38,9 @@ type Config struct {
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 
-	// Deprecated: [v0.60.0] Coralogix jaeger based trace endpoint
-	// will be removed in the next version
-	// Please use OTLP endpoint using traces.endpoint
+	// Coralogix single endpoint for logs, trace and metrics
 	configgrpc.GRPCClientSettings `mapstructure:",squash"`
+
 	// Coralogix traces ingress endpoint
 	Traces configgrpc.GRPCClientSettings `mapstructure:"traces"`
 
@@ -77,7 +76,7 @@ func (c *Config) Validate() error {
 		isEmpty(c.Traces.Endpoint) &&
 		isEmpty(c.Metrics.Endpoint) &&
 		isEmpty(c.Logs.Endpoint) {
-		return fmt.Errorf("`traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration file")
+		return fmt.Errorf("`endpoint` or `traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration file")
 	}
 	if c.PrivateKey == "" {
 		return fmt.Errorf("`privateKey` not specified, please fix the configuration file")
