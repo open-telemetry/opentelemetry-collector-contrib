@@ -20,14 +20,8 @@ Example configuration:
 ```yaml
 exporters:
   coralogix:
-    # The Coralogix traces ingress endpoint
-    traces:
-      endpoint: "ingress.coralogix.com:443"
-    metrics:
-      endpoint: "ingress.coralogix.com:443"
-    logs:
-      endpoint: "ingress.coralogix.com:443"
-
+    # The Coralogix domain
+    domain: "coralogix.com"
     # Your Coralogix private key is sensitive
     private_key: "xxx"
 
@@ -48,40 +42,56 @@ exporters:
     # (Optional) Timeout is the timeout for every attempt to send data to the backend.
     timeout: 30s
 ```
-### Tracing deprecation 
 
-The v0.67 version removed old Jaeger based tracing endpoint in favour of Opentelemetry based one.
+### v0.76.0 Coralogix Domain 
 
-To migrate, please remove the old endpoint field, and change the configuration to `traces.endpoint` using the new Tracing endpoint.
+Since v0.76.0 you can specify Coralogix domain in the configuration file instead of specifying different endpoints for traces, metrics and logs. For example, the configuration below, can be replaced with domain field:
+
 
 Old configuration:
 ```yaml
 exporters:
   coralogix:
-    # The Coralogix traces ingress endpoint
-    endpoint: "tracing-ingress.coralogix.com:9443"
-```
-
-New configuration:
-```yaml
-exporters
-  coralogix:
-    # The Coralogix traces ingress endpoint
     traces:
+      endpoint: "ingress.coralogix.com:443"
+    metrics:
+      endpoint: "ingress.coralogix.com:443"
+    logs:
       endpoint: "ingress.coralogix.com:443"
 ```
 
-### Coralogix's Endpoints 
+New configuration with domain field:
+```yaml
+exporters:
+  coralogix:
+    domain: "coralogix.com"
+```
+
+### Coralogix's Domain 
 
 Depending on your region, you might need to use a different endpoint. Here are the available Endpoints:
 
-| Region  | Traces Endpoint                          | Metrics Endpoint                     | Logs Endpoint                     |
-|---------|------------------------------------------|------------------------------------- | --------------------------------- |
-| USA1    | `ingress.coralogix.us:443`      | `ingress.coralogix.us:443`      | `ingress.coralogix.us:443`      |
-| APAC1   | `ingress.coralogix.in:443`  | `ingress.coralogix.in:443`      | `ingress.coralogix.in:443`      | 
-| APAC2   | `ingress.coralogixsg.com:443`   | `ingress.coralogixsg.com:443`   | `ingress.coralogixsg.com:443`   |
-| EUROPE1 | `ingress.coralogix.com:443`     | `ingress.coralogix.com:443`     | `ingress.coralogix.com:443`     |
-| EUROPE2 | `ingress.eu2.coralogix.com:443` | `ingress.eu2.coralogix.com:443` | `ingress.eu2.coralogix.com:443` |
+| Region  | Domain                        |
+|---------|---------------------------------|
+| USA1    | `coralogix.us`      |
+| APAC1   | `coralogix.in`      |
+| APAC2   | `coralogixsg.com`   |
+| EUROPE1 | `coralogix.com`     |
+| EUROPE2 | `eu2.coralogix.com` |
+
+Additionally, Coralogix supports AWS PrivateLink, which provides private connectivity between virtual private clouds (VPCs), supported AWS services, and your on-premises networks without exposing your traffic to the public internet.
+
+Here are available AWS PrivateLink domains:
+
+| Region  | Domain                      |
+|---------|-----------------------------|
+| USA1    | `private.coralogix.com`     |
+| APAC1   | `private.coralogix.in`      |
+| APAC2   | `private.coralogixsg.com`   |
+| EUROPE1 | `private.coralogix.com`     |
+| EUROPE2 | `private.eu2.coralogix.com` |
+
+Learn more about [AWS PrivateLink in the documentation page](https://coralogix.com/docs/coralogix-amazon-web-services-aws-privatelink-endpoints/).
 
 ### Application and SubSystem attributes
 
@@ -95,13 +105,7 @@ When using OpenTelemetry Collector with [k8sattribute](https://github.com/open-t
 ```yaml
 exporters:
   coralogix:
-    # The Coralogix traces ingress endpoint
-    traces:
-      endpoint: "ingress.coralogix.com:443"
-    metrics:
-      endpoint: "ingress.coralogix.com:443"
-    logs:
-      endpoint: "ingress.coralogix.com:443"
+    domain: "coralogix.com"
     application_name_attributes:
       - "service.namespace"
       - "k8s.namespace.name" 
@@ -137,13 +141,7 @@ You can configure Coralogix Exporter:
 ```yaml
 exporters:
   coralogix:
-    # The Coralogix traces ingress endpoint
-    traces:
-      endpoint: "ingress.coralogix.com:443"
-    metrics:
-      endpoint: "ingress.coralogix.com:443"
-    logs:
-      endpoint: "ingress.coralogix.com:443"
+    domain: "coralogix.com"
     application_name_attributes:
       - "env" 
     subsystem_name_attributes:
@@ -186,13 +184,7 @@ You can configure Coralogix Exporter:
 ```yaml
 exporters:
   coralogix:
-    # The Coralogix traces ingress endpoint
-    traces:
-      endpoint: "ingress.coralogix.com:443"
-    metrics:
-      endpoint: "ingress.coralogix.com:443"
-    logs:
-      endpoint: "ingress.coralogix.com:443"
+    domain: "coralogix.com"
     application_name_attributes:
       - "ec2.tag.name" 
     subsystem_name_attributes:
@@ -213,13 +205,7 @@ Then you can use the custom Resource attribute in Coralogix exporter:
 ```yaml
 exporters:
   coralogix:
-    # The Coralogix traces ingress endpoint
-    traces:
-      endpoint: "ingress.coralogix.com:443"
-    metrics:
-      endpoint: "ingress.coralogix.com:443"
-    logs:
-      endpoint: "ingress.coralogix.com:443"
+    domain: "coralogix.com"
     application_name_attributes:
       - "applicationName" 
     subsystem_name_attributes:

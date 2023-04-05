@@ -55,11 +55,32 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NotNil(t, oexp)
 }
 
+func TestCreateMetricsExporterWithDomain(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Domain = "localhost"
+
+	set := exportertest.NewNopCreateSettings()
+	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	require.Nil(t, err)
+	require.NotNil(t, oexp)
+}
+
 func TestCreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Logs.Endpoint = testutil.GetAvailableLocalAddress(t)
 
+	set := exportertest.NewNopCreateSettings()
+	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	require.Nil(t, err)
+	require.NotNil(t, oexp)
+}
+
+func TestCreateLogsExporterWithDomain(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Domain = "localhost"
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 	require.Nil(t, err)
@@ -167,6 +188,17 @@ func TestCreateTracesExporter(t *testing.T) {
 				},
 			},
 			mustFailOnStart: true,
+		},
+		{
+			name: "UseDomain",
+			config: Config{
+				Domain: "localhost",
+				DomainSettings: configgrpc.GRPCClientSettings{
+					TLSSetting: configtls.TLSClientSetting{
+						Insecure: false,
+					},
+				},
+			},
 		},
 	}
 
