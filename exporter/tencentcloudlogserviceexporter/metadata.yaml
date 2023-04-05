@@ -1,0 +1,8 @@
+name: tencentcloudlogsserviceexporter
+
+status:
+  type: exporter
+  stability: beta
+  pipelines: [logs]
+  distributions: [contrib]
+
