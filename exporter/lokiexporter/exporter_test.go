@@ -21,10 +21,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/grafana/loki/pkg/push"
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -300,4 +302,49 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestExporter_encode(t *testing.T) {
+	t.Run("with good proto", func(t *testing.T) {
+		labels := model.LabelSet{
+			model.LabelName("container_name"): model.LabelValue("mycontainer"),
+		}
+		entry := &push.Entry{
+			Timestamp: time.Now(),
+			Line:      "log message",
+		}
+		stream := push.Stream{
+			Labels:  labels.String(),
+			Entries: []push.Entry{*entry},
+		}
+		pr := &push.PushRequest{
+			Streams: []push.Stream{stream},
+		}
+
+		req, err := encode(pr)
+		require.NoError(t, err)
+		_, err = snappy.Decode(nil, req)
+		require.NoError(t, err)
+	})
+
+	t.Run("with bad proto", func(t *testing.T) {
+		p := &badProtoForCoverage{
+			Foo: "Bar",
+		}
+
+		req, err := encode(p)
+		require.Error(t, err)
+		require.Nil(t, req)
+	})
+}
+
+type badProtoForCoverage struct {
+	Foo string `protobuf:"bytes,1,opt,name=labels,proto3" json:"foo"`
+}
+
+func (p *badProtoForCoverage) Reset()         {}
+func (p *badProtoForCoverage) String() string { return "" }
+func (p *badProtoForCoverage) ProtoMessage()  {}
+func (p *badProtoForCoverage) Marshal() (dAtA []byte, err error) {
+	return nil, fmt.Errorf("this is a bad proto")
 }
