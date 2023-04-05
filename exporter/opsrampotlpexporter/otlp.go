@@ -153,6 +153,9 @@ func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (e
 }
 
 func (e *opsrampOTLPExporter) shutdown(context.Context) error {
+	if e.clientConn == nil {
+		return nil
+	}
 	return e.clientConn.Close()
 }
 
