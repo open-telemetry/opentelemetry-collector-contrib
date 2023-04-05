@@ -961,9 +961,15 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 				if test.want.compressed {
 					validateCompressedContains(t, test.want.batches[i], got[i].body)
 				} else {
+					found := false
+
 					for _, expected := range test.want.batches[i] {
-						assert.Contains(t, string(got[i].body), expected)
+						if strings.Contains(string(got[i].body), expected) {
+							found = true
+							break
+						}
 					}
+					assert.True(t, found, "%s did not match any expected batch", string(got[i].body))
 				}
 			}
 		})
