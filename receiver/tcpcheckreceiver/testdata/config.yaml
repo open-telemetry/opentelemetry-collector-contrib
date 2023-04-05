@@ -1,0 +1,18 @@
+receivers:
+  tcpcheck:
+    endpoint: notdefault:1313
+    transport: tcp
+    collection_interval: 1m
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+     receivers: [tcpcheck]
+     processors: [nop]
+     exporters: [nop]

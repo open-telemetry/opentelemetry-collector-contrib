@@ -27,6 +27,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.73.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.73.0
@@ -337,6 +338,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prome
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter => ../../exporter/sapmexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver => ../../receiver/syslogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver => ../../receiver/tcpcheckreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor => ../../processor/resourceprocessor
 

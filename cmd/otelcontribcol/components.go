@@ -163,6 +163,7 @@ import (
 	sshcheckreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 	statsdreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	syslogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
+	tcpcheckreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver"
 	tcplogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 	udplogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
 	vcenterreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
@@ -267,6 +268,7 @@ func components() (otelcol.Factories, error) {
 		sshcheckreceiver.NewFactory(),
 		statsdreceiver.NewFactory(),
 		syslogreceiver.NewFactory(),
+		tcpcheckreceiver.NewFactory(),
 		tcplogreceiver.NewFactory(),
 		udplogreceiver.NewFactory(),
 		vcenterreceiver.NewFactory(),

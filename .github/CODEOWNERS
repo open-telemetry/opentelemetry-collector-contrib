@@ -174,7 +174,7 @@ receiver/dockerstatsreceiver/                            @open-telemetry/collect
 receiver/elasticsearchreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @binaryfissiongames
 receiver/expvarreceiver/                                 @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/filelogreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski
-receiver/filereceiver/                               @open-telemetry/collector-contrib-approvers @pmcollins @djaglowski
+receiver/filereceiver/                                   @open-telemetry/collector-contrib-approvers @pmcollins @djaglowski
 receiver/flinkmetricsreceiver/                           @open-telemetry/collector-contrib-approvers @jonathanwamsley @djaglowski
 receiver/fluentforwardreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/googlecloudpubsubreceiver/                      @open-telemetry/collector-contrib-approvers @alexvanboxel
@@ -224,9 +224,10 @@ receiver/splunkhecreceiver/                              @open-telemetry/collect
 receiver/snowflakereceiver/                              @open-telemetry/collector-contrib-approvers @dmitryax @shalper2
 receiver/sqlqueryreceiver/                               @open-telemetry/collector-contrib-approvers @dmitryax @pmcollins
 receiver/sqlserverreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek
-receiver/sshcheckreceiver/                              @open-telemetry/collector-contrib-approvers @nslaughter @codeboten
+receiver/sshcheckreceiver/                               @open-telemetry/collector-contrib-approvers @nslaughter @codeboten
 receiver/statsdreceiver/                                 @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
 receiver/syslogreceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/tcpcheckreceiver/                               @open-telemetry/collector-contrib-approvers @heydbut @codeboten
 receiver/tcplogreceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/udplogreceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/vcenterreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski @schmikei

@@ -182,6 +182,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver v0.73.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.73.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.73.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver v0.73.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.73.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.73.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver v0.73.0 // indirect
@@ -1009,6 +1010,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlse
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver => ../../receiver/statsdreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver => ../../receiver/syslogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver => ../../receiver/tcpcheckreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver => ../../receiver/tcplogreceiver
 

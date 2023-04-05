@@ -149,6 +149,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.73.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.73.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver v0.73.0
@@ -995,6 +996,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/data
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ../../receiver/sshcheckreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../../receiver/datadogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver => ../../receiver/tcpcheckreceiver
 
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 
