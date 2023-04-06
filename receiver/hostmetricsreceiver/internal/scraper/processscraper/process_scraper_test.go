@@ -40,7 +40,7 @@ import (
 )
 
 func skipTestOnUnsupportedOS(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
 		t.Skipf("skipping test on %v", runtime.GOOS)
 	}
 }
@@ -91,6 +91,11 @@ func TestScrape(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+			if runtime.GOOS == "darwin" {
+				// disable darwin unsupported deafult metric
+				metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
+			}
+
 			if test.mutateMetricsSettings != nil {
 				test.mutateMetricsSettings(t, &metricsBuilderConfig.Metrics)
 			}
@@ -129,7 +134,9 @@ func TestScrape(t *testing.T) {
 				assertMetricMissing(t, md.ResourceMetrics(), "process.cpu.utilization")
 			}
 			assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-			assertDiskIoMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			if metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled {
+				assertDiskIoMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			}
 			if metricsBuilderConfig.Metrics.ProcessDiskOperations.Enabled {
 				assertDiskOperationsMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			} else {
@@ -695,41 +702,49 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		},
 		{
 			name:               "Memory Percent Error",
+			osFilter:           "darwin",
 			memoryPercentError: errors.New("err-mem-percent"),
 			expectedError:      `error reading memory utilization for process "test" (pid 1): err-mem-percent`,
 		},
 		{
 			name:            "IO Counters Error",
+			osFilter:        "darwin",
 			ioCountersError: errors.New("err7"),
 			expectedError:   `error reading disk usage for process "test" (pid 1): err7`,
 		},
 		{
 			name:           "Parent PID Error",
+			osFilter:       "darwin",
 			parentPidError: errors.New("err8"),
 			expectedError:  `error reading parent pid for process "test" (pid 1): err8`,
 		},
 		{
 			name:            "Page Faults Error",
+			osFilter:        "darwin",
 			pageFaultsError: errors.New("err-paging"),
 			expectedError:   `error reading memory paging info for process "test" (pid 1): err-paging`,
 		},
 		{
 			name:            "Thread count Error",
+			osFilter:        "darwin",
 			numThreadsError: errors.New("err8"),
 			expectedError:   `error reading thread info for process "test" (pid 1): err8`,
 		},
 		{
 			name:                "Context Switches Error",
+			osFilter:            "darwin",
 			numCtxSwitchesError: errors.New("err9"),
 			expectedError:       `error reading context switch counts for process "test" (pid 1): err9`,
 		},
 		{
 			name:          "File Descriptors Error",
+			osFilter:      "darwin",
 			numFDsError:   errors.New("err10"),
 			expectedError: `error reading open file descriptor count for process "test" (pid 1): err10`,
 		},
 		{
 			name:          "Signals Pending Error",
+			osFilter:      "darwin",
 			rlimitError:   errors.New("err-rlimit"),
 			expectedError: `error reading pending signals for process "test" (pid 1): err-rlimit`,
 		},
@@ -781,6 +796,9 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
 			if runtime.GOOS != "darwin" {
 				enableOptionalMetrics(&metricsBuilderConfig.Metrics)
+			} else {
+				// disable darwin unsupported deafult metric
+				metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
 			}
 
 			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsBuilderConfig})
@@ -968,6 +986,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			handleMock := &processHandleMock{}
 			handleMock.On("Name").Return("test", processNameError)
 			handleMock.On("Exe").Return("test", processNameError)
+			handleMock.On("Cmdline").Return("test", processNameError)
 
 			if config.MuteProcessIOError {
 				handleMock.On("IOCounters").Return("test", errors.New("permission denied"))
