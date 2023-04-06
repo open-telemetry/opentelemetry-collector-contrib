@@ -24,46 +24,40 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K], error) {
+func ConvertCase[K any](target ottl.StringGetter[K], toCase string) (ottl.ExprFunc[K], error) {
 	if toCase != "lower" && toCase != "upper" && toCase != "snake" && toCase != "camel" {
 		return nil, fmt.Errorf("invalid case: %s, allowed cases are: lower, upper, snake, camel", toCase)
 	}
 
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		val, err := target.Get(ctx, tCtx)
-
 		if err != nil {
 			return nil, err
 		}
 
-		if valStr, ok := val.(string); ok {
-
-			if valStr == "" {
-				return valStr, nil
-			}
-
-			switch toCase {
-			// Convert string to lowercase (SOME_NAME -> some_name)
-			case "lower":
-				return strings.ToLower(valStr), nil
-
-			// Convert string to uppercase (some_name -> SOME_NAME)
-			case "upper":
-				return strings.ToUpper(valStr), nil
-
-			// Convert string to snake case (someName -> some_name)
-			case "snake":
-				return strcase.ToSnake(valStr), nil
-
-			// Convert string to camel case (some_name -> SomeName)
-			case "camel":
-				return strcase.ToCamel(valStr), nil
-
-			default:
-				return nil, fmt.Errorf("error handling unexpected case: %s", toCase)
-			}
+		if val == "" {
+			return val, nil
 		}
 
-		return nil, nil
+		switch toCase {
+		// Convert string to lowercase (SOME_NAME -> some_name)
+		case "lower":
+			return strings.ToLower(val), nil
+
+		// Convert string to uppercase (some_name -> SOME_NAME)
+		case "upper":
+			return strings.ToUpper(val), nil
+
+		// Convert string to snake case (someName -> some_name)
+		case "snake":
+			return strcase.ToSnake(val), nil
+
+		// Convert string to camel case (some_name -> SomeName)
+		case "camel":
+			return strcase.ToCamel(val), nil
+
+		default:
+			return nil, fmt.Errorf("error handling unexpected case: %s", toCase)
+		}
 	}, nil
 }

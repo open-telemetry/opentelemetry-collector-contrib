@@ -98,6 +98,9 @@ func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 }
 
 func (e *exporter) shutdown(context.Context) error {
+	if e.clientConn == nil {
+		return nil
+	}
 	return e.clientConn.Close()
 }
 

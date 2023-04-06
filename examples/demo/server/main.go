@@ -172,8 +172,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/hello", otelhttp.NewHandler(handler, "/hello"))
 	server := &http.Server{
-		Addr:    ":7080",
-		Handler: mux,
+		Addr:              ":7080",
+		Handler:           mux,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		handleErr(err, "server failed to serve")

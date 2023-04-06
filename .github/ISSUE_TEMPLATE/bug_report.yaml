@@ -32,6 +32,7 @@ body:
       - exporter/awscloudwatchlogs
       - exporter/awsemf
       - exporter/awskinesis
+      - exporter/awss3
       - exporter/awsxray
       - exporter/azuredataexplorer
       - exporter/azuremonitor
@@ -182,6 +183,7 @@ body:
       - receiver/kafka
       - receiver/kafkametrics
       - receiver/kubeletstats
+      - receiver/loki
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas

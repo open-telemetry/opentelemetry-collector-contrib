@@ -7,14 +7,12 @@
 | Supported pipeline types | traces, logs                  |
 | Distributions            | [core], [contrib]             |
 
-Supported pipeline types: traces, logs
-
 The probabilistic sampler supports two types of sampling for traces:
 
 1. `sampling.priority` [semantic
 convention](https://github.com/opentracing/specification/blob/master/semantic_conventions.md#span-tags-table)
 as defined by OpenTracing
-2. Trace ID hashing
+1. Trace ID hashing
 
 The `sampling.priority` semantic convention takes priority over trace ID hashing. As the name
 implies, trace ID hashing samples based on hash values determined by trace IDs.  See [Hashing](#hashing) for more information.

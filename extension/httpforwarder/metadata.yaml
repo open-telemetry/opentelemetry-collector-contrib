@@ -1,0 +1,6 @@
+name: httpforwarder
+
+status:
+  type: extension
+  stability: beta
+  distributions: [contrib]

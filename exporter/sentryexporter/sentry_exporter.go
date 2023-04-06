@@ -81,7 +81,8 @@ var canonicalCodesGrpcMap = map[string]sentry.SpanStatus{
 
 // SentryExporter defines the Sentry Exporter.
 type SentryExporter struct {
-	transport transport
+	transport   transport
+	environment string
 }
 
 // pushTraceData takes an incoming OpenTelemetry trace, converts them into Sentry spans and transactions
@@ -121,7 +122,7 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) erro
 				// If the span is not a root span, we can either associate it with an existing
 				// transaction, or we can temporarily consider it an orphan span.
 				if spanIsTransaction(otelSpan) {
-					transactionMap[sentrySpan.SpanID] = transactionFromSpan(sentrySpan)
+					transactionMap[sentrySpan.SpanID] = transactionFromSpan(sentrySpan, s.environment)
 					idMap[sentrySpan.SpanID] = sentrySpan.SpanID
 				} else {
 					if rootSpanID, ok := idMap[sentrySpan.ParentSpanID]; ok {
@@ -143,7 +144,7 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) erro
 	// the spans with a transaction. As such, we must classify the remaining spans as orphans or not.
 	orphanSpans := classifyAsOrphanSpans(maybeOrphanSpans, len(maybeOrphanSpans)+1, idMap, transactionMap)
 
-	transactions := generateTransactions(transactionMap, orphanSpans)
+	transactions := generateTransactions(transactionMap, orphanSpans, s.environment)
 
 	transactions = append(transactions, exceptionEvents...)
 
@@ -153,7 +154,7 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) erro
 }
 
 // generateTransactions creates a set of Sentry transactions from a transaction map and orphan spans.
-func generateTransactions(transactionMap map[sentry.SpanID]*sentry.Event, orphanSpans []*sentry.Span) []*sentry.Event {
+func generateTransactions(transactionMap map[sentry.SpanID]*sentry.Event, orphanSpans []*sentry.Span, environment string) []*sentry.Event {
 	transactions := make([]*sentry.Event, 0, len(transactionMap)+len(orphanSpans))
 
 	for _, t := range transactionMap {
@@ -161,7 +162,7 @@ func generateTransactions(transactionMap map[sentry.SpanID]*sentry.Event, orphan
 	}
 
 	for _, orphanSpan := range orphanSpans {
-		t := transactionFromSpan(orphanSpan)
+		t := transactionFromSpan(orphanSpan, environment)
 		transactions = append(transactions, t)
 	}
 
@@ -434,7 +435,7 @@ func spanIsTransaction(s ptrace.Span) bool {
 }
 
 // transactionFromSpan converts a span to a transaction.
-func transactionFromSpan(span *sentry.Span) *sentry.Event {
+func transactionFromSpan(span *sentry.Span, environment string) *sentry.Event {
 	transaction := sentry.NewEvent()
 	transaction.EventID = generateEventID()
 
@@ -456,6 +457,9 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction.Tags = span.Tags
 	transaction.Timestamp = span.EndTime
 	transaction.Transaction = span.Description
+	if environment != "" {
+		transaction.Environment = environment
+	}
 
 	return transaction
 }
@@ -491,7 +495,8 @@ func CreateSentryExporter(config *Config, set exporter.CreateSettings) (exporter
 	transport.Configure(clientOptions)
 
 	s := &SentryExporter{
-		transport: transport,
+		transport:   transport,
+		environment: config.Environment,
 	}
 
 	return exporterhelper.NewTracesExporter(

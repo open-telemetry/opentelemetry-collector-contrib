@@ -10,7 +10,7 @@ BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
-COMP_REL_PATH=internal/components/components.go
+COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 GROUP ?= all
@@ -389,7 +389,6 @@ clean:
 	find . -type f -name 'coverage.html' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
-	find . -type f -name 'foresight-test-report.txt' -delete
 
 .PHONY: genconfigdocs
 genconfigdocs:

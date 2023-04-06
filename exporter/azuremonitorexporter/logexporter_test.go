@@ -129,6 +129,23 @@ func TestExporterLogDataCallback(t *testing.T) {
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 3)
 }
 
+func TestLogDataAttributesMapping(t *testing.T) {
+	logPacker := getLogPacker()
+	logRecord := getTestLogRecord(t, 2)
+	logRecord.Attributes().PutInt("attribute_1", 10)
+	logRecord.Attributes().PutStr("attribute_2", "value_2")
+	logRecord.Attributes().PutBool("attribute_3", true)
+	logRecord.Attributes().PutDouble("attribute_4", 1.2)
+
+	envelope := logPacker.LogRecordToEnvelope(logRecord, getResource(), getScope())
+
+	actualProperties := envelope.Data.(*contracts.Data).BaseData.(*contracts.MessageData).Properties
+	assert.Contains(t, actualProperties["attribute_1"], "10")
+	assert.Contains(t, actualProperties["attribute_2"], "value_2")
+	assert.Contains(t, actualProperties["attribute_3"], "true")
+	assert.Contains(t, actualProperties["attribute_4"], "1.2")
+}
+
 func TestLogRecordToEnvelopeResourceAttributes(t *testing.T) {
 	logRecord := getTestLogRecord(t, 1)
 	logPacker := getLogPacker()

@@ -62,8 +62,9 @@ func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.
 	}
 
 	s := &http.Server{
-		TLSConfig: tlsConfig,
-		Handler:   http.HandlerFunc(recv.handleRequest),
+		TLSConfig:         tlsConfig,
+		Handler:           http.HandlerFunc(recv.handleRequest),
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 
 	recv.server = s
