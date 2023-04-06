@@ -3,7 +3,6 @@
 package metadata
 
 import (
-	"runtime"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -49,53 +48,7 @@ type MetricsSettings struct {
 	ProcessThreads             MetricSettings `mapstructure:"process.threads"`
 }
 
-func DeafultDarwinMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		ProcessContextSwitches: MetricSettings{
-			Enabled: false,
-		},
-		ProcessCPUTime: MetricSettings{
-			Enabled: true,
-		},
-		ProcessCPUUtilization: MetricSettings{
-			Enabled: false,
-		},
-		ProcessDiskIo: MetricSettings{
-			Enabled: false,
-		},
-		ProcessDiskOperations: MetricSettings{
-			Enabled: false,
-		},
-		ProcessMemoryUsage: MetricSettings{
-			Enabled: true,
-		},
-		ProcessMemoryUtilization: MetricSettings{
-			Enabled: false,
-		},
-		ProcessMemoryVirtual: MetricSettings{
-			Enabled: true,
-		},
-		ProcessOpenFileDescriptors: MetricSettings{
-			Enabled: false,
-		},
-		ProcessPagingFaults: MetricSettings{
-			Enabled: false,
-		},
-		ProcessSignalsPending: MetricSettings{
-			Enabled: false,
-		},
-		ProcessThreads: MetricSettings{
-			Enabled: false,
-		},
-	}
-}
-
 func DefaultMetricsSettings() MetricsSettings {
-	// not all metrics are supported in darwin currently
-	if runtime.GOOS == "darwin" {
-		return DeafultDarwinMetricsSettings()
-	}
-
 	return MetricsSettings{
 		ProcessContextSwitches: MetricSettings{
 			Enabled: false,
