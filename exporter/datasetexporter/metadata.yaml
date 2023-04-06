@@ -1,0 +1,7 @@
+name: datasetexporter
+
+status:
+  type: exporter
+  stability: development
+  pipelines: [logs]
+  distributions: [contrib]

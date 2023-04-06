@@ -41,6 +41,7 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.75.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.75.0

@@ -98,7 +98,7 @@ type AuthenticationSettings struct {
 	// Password is used to configure HTTP Basic Authentication.
 	Password configopaque.String `mapstructure:"password"`
 
-	// APIKey is used to configure ApiKey based Authentication.
+	// APIKey is used to configure APIKey based Authentication.
 	//
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html
 	APIKey configopaque.String `mapstructure:"api_key"`
