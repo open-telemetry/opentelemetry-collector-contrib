@@ -17,6 +17,7 @@ package cassandraexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
