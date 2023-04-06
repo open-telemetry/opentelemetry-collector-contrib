@@ -171,15 +171,11 @@
         description: My span count by nested region.
         attributes:
           - key: env.nested.region
-            default_value: other
-            any_depth: true      
     spanevents:
       my.nested.attribute.count:
         description: My spanevent count by nested region.
         attributes:
           - key: env.nested.region
-            default_value: other
-            any_depth: true    
     metrics:
       my.metric.count:
         description: My metric count.
@@ -188,12 +184,9 @@
         description: My datapoint count by nested region.
         attributes:
           - key: env.nested.region
-            default_value: other
-            any_depth: true  
     logs:
       my.nested.attribute.count:
         description: My log record count by nested region.
         attributes:
           - key: env.nested.region
-            default_value: other
             any_depth: true            

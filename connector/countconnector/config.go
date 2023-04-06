@@ -74,6 +74,9 @@ func (c *Config) Validate() error {
 		if err := info.validateAttributes(); err != nil {
 			return fmt.Errorf("spans attributes: metric %q: %w", name, err)
 		}
+		if err := info.validateAnyDepth(); err != nil {
+			return fmt.Errorf("spans any_depth: metric %q: %w", name, err)
+		}
 	}
 	for name, info := range c.SpanEvents {
 		if name == "" {
@@ -88,6 +91,9 @@ func (c *Config) Validate() error {
 		}
 		if err := info.validateAttributes(); err != nil {
 			return fmt.Errorf("spanevents attributes: metric %q: %w", name, err)
+		}
+		if err := info.validateAnyDepth(); err != nil {
+			return fmt.Errorf("spanevents any_depth: metric %q: %w", name, err)
 		}
 	}
 	for name, info := range c.Metrics {
@@ -118,7 +124,10 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("datapoints condition: metric %q: %w", name, err)
 		}
 		if err := info.validateAttributes(); err != nil {
-			return fmt.Errorf("spans attributes: metric %q: %w", name, err)
+			return fmt.Errorf("datapoints attributes: metric %q: %w", name, err)
+		}
+		if err := info.validateAnyDepth(); err != nil {
+			return fmt.Errorf("datapoints any_depth: metric %q: %w", name, err)
 		}
 	}
 	for name, info := range c.Logs {
@@ -143,6 +152,15 @@ func (i *MetricInfo) validateAttributes() error {
 	for _, attr := range i.Attributes {
 		if attr.Key == "" {
 			return fmt.Errorf("attribute key missing")
+		}
+	}
+	return nil
+}
+
+func (i *MetricInfo) validateAnyDepth() error {
+	for _, attr := range i.Attributes {
+		if attr.AnyDepth {
+			return fmt.Errorf("any_depth cannot be used on this type of resource")
 		}
 	}
 	return nil

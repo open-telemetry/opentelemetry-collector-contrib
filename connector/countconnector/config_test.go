@@ -341,8 +341,6 @@ func TestLoadConfig(t *testing.T) {
 						Attributes: []AttributeConfig{
 							{
 								Key: "env.nested.region",
-								DefaultValue: "other",
-							  AnyDepth: true,
 						  },
 						},
 					},
@@ -353,8 +351,6 @@ func TestLoadConfig(t *testing.T) {
 						Attributes: []AttributeConfig{
 							{
 								Key: "env.nested.region",
-								DefaultValue: "other",
-							  AnyDepth: true,
 						  },
 						},
 					},
@@ -370,8 +366,6 @@ func TestLoadConfig(t *testing.T) {
 						Attributes: []AttributeConfig{
 							{
 								Key: "env.nested.region",
-								DefaultValue: "other",
-							  AnyDepth: true,
 						  },
 						},
 					},
@@ -382,7 +376,6 @@ func TestLoadConfig(t *testing.T) {
 						Attributes: []AttributeConfig{
 							{
 								Key: "env.nested.region",
-								DefaultValue: "other",
 							  AnyDepth: true,
 						  },
 						},
@@ -529,6 +522,121 @@ func TestConfigErrors(t *testing.T) {
 				},
 			},
 			expect: fmt.Sprintf("logs condition: metric %q: unable to parse OTTL statement", defaultMetricNameLogs),
+		},
+		{
+			name: "missing_attribute_key_spans",
+			input: &Config{
+				Spans: map[string]MetricInfo{
+					defaultMetricNameSpans: {
+						Description: defaultMetricDescSpans,
+						Attributes: []AttributeConfig{
+							{
+								Key: "",
+						  },
+						},
+					},
+				},
+			},
+			expect: "attribute key missing",
+		},
+		{
+			name: "missing_attribute_key_spanevents",
+			input: &Config{
+				SpanEvents: map[string]MetricInfo{
+					defaultMetricNameSpanEvents: {
+						Description: defaultMetricDescSpanEvents,
+						Attributes: []AttributeConfig{
+							{
+								Key: "",
+						  },
+						},
+					},
+				},
+			},
+			expect: "attribute key missing",
+		},
+		{
+			name: "missing_attribute_key_datapoints",
+			input: &Config{
+				DataPoints: map[string]MetricInfo{
+					defaultMetricNameDataPoints: {
+						Description: defaultMetricDescDataPoints,
+						Attributes: []AttributeConfig{
+							{
+								Key: "",
+						  },
+						},
+					},
+				},
+			},
+			expect: "attribute key missing",
+		},
+		{
+			name: "missing_attribute_key_logs",
+			input: &Config{
+				Logs: map[string]MetricInfo{
+					defaultMetricNameLogs: {
+						Description: defaultMetricDescLogs,
+						Attributes: []AttributeConfig{
+							{
+								Key: "",
+						  },
+						},
+					},
+				},
+			},
+			expect: "attribute key missing",
+		},
+		{
+			name: "any_depth_span",
+			input: &Config{
+				Spans: map[string]MetricInfo{
+					defaultMetricNameSpans: {
+						Description: defaultMetricDescSpans,
+						Attributes: []AttributeConfig{
+							{
+								Key: "default.attribute",
+								AnyDepth: true,
+						  },
+						},
+					},
+				},
+			},
+			expect: "any_depth cannot be used on this type of resource",
+		},
+		{
+			name: "any_depth_spanevents",
+			input: &Config{
+				SpanEvents: map[string]MetricInfo{
+					defaultMetricNameSpanEvents: {
+						Description: defaultMetricDescSpanEvents,
+						Attributes: []AttributeConfig{
+							{
+								Key: "default.attribute",
+								AnyDepth: true,
+						  },
+						},
+					},
+				},
+			},
+			expect: "any_depth cannot be used on this type of resource",
+		},
+		{
+			name: "any_depth_datapoints",
+			input: &Config{
+				DataPoints: map[string]MetricInfo{
+					defaultMetricNameDataPoints: {
+						Description: defaultMetricDescDataPoints,
+						Attributes: []AttributeConfig{
+							{
+								Key: "default.attribute",
+								AnyDepth: true,
+						  },
+						},
+					},
+				},
+			},
+			expect: "any_depth cannot be used on this type of resource",
 		},
 	}
 
