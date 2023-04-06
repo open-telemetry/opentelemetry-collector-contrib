@@ -52,6 +52,7 @@ func (c Config) Validate() error {
 type Query struct {
 	SQL     string      `mapstructure:"sql"`
 	Metrics []MetricCfg `mapstructure:"metrics"`
+	Logs    []LogsCfg   `mapstructure:"logs"`
 }
 
 func (q Query) Validate() error {
@@ -59,14 +60,27 @@ func (q Query) Validate() error {
 	if q.SQL == "" {
 		errs = multierr.Append(errs, errors.New("'query.sql' cannot be empty"))
 	}
-	if len(q.Metrics) == 0 {
-		errs = multierr.Append(errs, errors.New("'query.metrics' cannot be empty"))
+	if len(q.Logs) == 0 && len(q.Metrics) == 0 {
+		errs = multierr.Append(errs, errors.New("at least one of 'query.logs' and 'query.metrics' must not be empty"))
+	}
+	for _, logs := range q.Logs {
+		if err := logs.Validate(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 	for _, metric := range q.Metrics {
 		if err := metric.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
+	return errs
+}
+
+type LogsCfg struct {
+}
+
+func (config LogsCfg) Validate() error {
+	var errs error
 	return errs
 }
 

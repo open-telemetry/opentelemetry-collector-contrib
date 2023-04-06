@@ -21,12 +21,41 @@ The configuration supports the following top-level fields:
   a driver-specific string usually consisting of at least a database name and connection information. This is sometimes
   referred to as the "connection string" in driver documentation.
   e.g. _host=localhost port=5432 user=me password=s3cr3t sslmode=disable_
-- `queries`(required): A list of queries, where a query is a sql statement and one or more metrics (details below).
+- `queries`(required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
 
 ### Queries
 
-A _query_ consists of a sql statement and one or more _metrics_, where each metric consists of a
+A _query_ consists of a sql statement and one or more `logs` and/or `metrics` section.
+At least one `logs` or one `metrics` section is required.
+Note that technically you can put both `logs` and `metrics` sections in a single query section,
+but it's probably not a real world use case, as the requirements for logs and metrics queries
+are quite different.
+
+Example:
+
+```yaml
+receivers:
+  sqlquery:
+    driver: postgres
+    datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
+    queries:
+      - sql: "select * from my_logs"
+        logs:
+          - {}
+      - sql: "select count(*) as count, genre from movie group by genre"
+        metrics:
+          - metric_name: movie.genres
+            value_column: "count"
+```
+
+#### Logs Queries
+
+The `logs` section currently has no options. This section is in development.
+
+#### Metrics queries
+
+Each `metrics` section consists of a
 `metric_name`, a `value_column`, and additional optional fields.
 Each _metric_ in the configuration will produce one OTel metric per row returned from its sql query.
 
@@ -53,6 +82,8 @@ receivers:
     driver: postgres
     datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
     queries:
+      - sql: "select * from my_logs"
+        logs: {}
       - sql: "select count(*) as count, genre from movie group by genre"
         metrics:
           - metric_name: movie.genres

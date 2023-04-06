@@ -104,14 +104,33 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "'driver' cannot be empty",
 		},
 		{
-			fname:        "config-invalid-missing-metrics.yaml",
+			fname:        "config-invalid-missing-logs-metrics.yaml",
 			id:           component.NewIDWithName(typeStr, ""),
-			errorMessage: "'query.metrics' cannot be empty",
+			errorMessage: "at least one of 'query.logs' and 'query.metrics' must not be empty",
 		},
 		{
 			fname:        "config-invalid-missing-datasource.yaml",
 			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "'datasource' cannot be empty",
+		},
+		{
+			fname: "config-logs.yaml",
+			id:    component.NewIDWithName(typeStr, ""),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: 10 * time.Second,
+				},
+				Driver:     "mydriver",
+				DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
+				Queries: []Query{
+					{
+						SQL: "select * from test_logs",
+						Logs: []LogsCfg{
+							{},
+						},
+					},
+				},
+			},
 		},
 		{
 			fname:        "config-unnecessary-aggregation.yaml",
@@ -121,7 +140,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.id.String(), func(t *testing.T) {
+		t.Run(tt.fname, func(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.fname))
 			require.NoError(t, err)
 
