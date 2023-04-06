@@ -21,7 +21,7 @@ func attributesToMap(attributes map[string]any) map[string]string {
 	for k, v := range attributes {
 		jsonV, err := json.Marshal(v)
 		if err == nil {
-			newAttrMap[k] = string(jsonV[:])
+			newAttrMap[k] = string(jsonV)
 		}
 	}
 	return newAttrMap

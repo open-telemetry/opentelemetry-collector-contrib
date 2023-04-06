@@ -55,8 +55,14 @@ func initializeLogKernel(cfg *Config) error {
 		return err
 	}
 
-	session.Query(parseCreateDatabaseSql(cfg)).WithContext(ctx).Exec()
-	session.Query(parseCreateLogTableSql(cfg)).WithContext(ctx).Exec()
+	createDatabaseError := session.Query(parseCreateDatabaseSQL(cfg)).WithContext(ctx).Exec()
+	if createDatabaseError != nil {
+		return createDatabaseError
+	}
+	createLogTableError := session.Query(parseCreateLogTableSQL(cfg)).WithContext(ctx).Exec()
+	if createLogTableError != nil {
+		return createLogTableError
+	}
 
 	defer session.Close()
 
@@ -76,7 +82,7 @@ func (e *logsExporter) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func parseCreateLogTableSql(cfg *Config) string {
+func parseCreateLogTableSQL(cfg *Config) string {
 	return fmt.Sprintf(createLogTableSQL, cfg.Keyspace, cfg.LogsTable, cfg.Compression.Algorithm)
 }
 
@@ -98,7 +104,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				logAttr := attributesToMap(r.Attributes().AsRaw())
 				bodyByte, _ := json.Marshal(r.Body().AsRaw())
 
-				e.client.Query(fmt.Sprintf(insertLogTableSQL, e.cfg.Keyspace, e.cfg.LogsTable),
+				insertLogError := e.client.Query(fmt.Sprintf(insertLogTableSQL, e.cfg.Keyspace, e.cfg.LogsTable),
 					r.Timestamp().AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
@@ -110,6 +116,10 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					resAttr,
 					logAttr,
 				).WithContext(ctx).Exec()
+
+				if insertLogError != nil {
+					e.logger.Error("insert log error", zap.Error(insertLogError))
+				}
 			}
 		}
 	}

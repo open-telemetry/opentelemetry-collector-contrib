@@ -54,29 +54,41 @@ func initializeTraceKernel(cfg *Config) error {
 		return err
 	}
 
-	session.Query(parseCreateDatabaseSql(cfg)).WithContext(ctx).Exec()
-	session.Query(parseCreateLinksTypeSql(cfg)).WithContext(ctx).Exec()
-	session.Query(parseCreateEventsTypeSql(cfg)).WithContext(ctx).Exec()
-	session.Query(parseCreateSpanTableSql(cfg)).WithContext(ctx).Exec()
+	createDatabaseError := session.Query(parseCreateDatabaseSQL(cfg)).WithContext(ctx).Exec()
+	if createDatabaseError != nil {
+		return createDatabaseError
+	}
+	createLinksTypeError := session.Query(parseCreateLinksTypeSQL(cfg)).WithContext(ctx).Exec()
+	if createLinksTypeError != nil {
+		return createLinksTypeError
+	}
+	createEventsTypeError := session.Query(parseCreateEventsTypeSQL(cfg)).WithContext(ctx).Exec()
+	if createEventsTypeError != nil {
+		return createEventsTypeError
+	}
+	createSpanTableError := session.Query(parseCreateSpanTableSQL(cfg)).WithContext(ctx).Exec()
+	if createSpanTableError != nil {
+		return createSpanTableError
+	}
 
 	defer session.Close()
 
 	return nil
 }
 
-func parseCreateSpanTableSql(cfg *Config) string {
+func parseCreateSpanTableSQL(cfg *Config) string {
 	return fmt.Sprintf(createSpanTableSQL, cfg.Keyspace, cfg.TraceTable, cfg.Compression.Algorithm)
 }
 
-func parseCreateEventsTypeSql(cfg *Config) string {
-	return fmt.Sprintf(createEventTypeSql, cfg.Keyspace)
+func parseCreateEventsTypeSQL(cfg *Config) string {
+	return fmt.Sprintf(createEventTypeSQL, cfg.Keyspace)
 }
 
-func parseCreateLinksTypeSql(cfg *Config) string {
-	return fmt.Sprintf(createLinksTypeSql, cfg.Keyspace)
+func parseCreateLinksTypeSQL(cfg *Config) string {
+	return fmt.Sprintf(createLinksTypeSQL, cfg.Keyspace)
 }
 
-func parseCreateDatabaseSql(cfg *Config) string {
+func parseCreateDatabaseSQL(cfg *Config) string {
 	return fmt.Sprintf(createDatabaseSQL, cfg.Keyspace, cfg.Replication.Class, cfg.Replication.ReplicationFactor)
 }
 
@@ -111,7 +123,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 				spanAttr := attributesToMap(r.Attributes().AsRaw())
 				status := r.Status()
 
-				e.client.Query(fmt.Sprintf(insertSpanSQL, e.cfg.Keyspace, e.cfg.TraceTable), r.StartTimestamp().AsTime(),
+				insertSpanError := e.client.Query(fmt.Sprintf(insertSpanSQL, e.cfg.Keyspace, e.cfg.TraceTable), r.StartTimestamp().AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
 					traceutil.SpanIDToHexOrEmptyString(r.ParentSpanID()),
@@ -125,6 +137,10 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					traceutil.StatusCodeStr(status.Code()),
 					status.Message(),
 				).WithContext(ctx).Exec()
+
+				if insertSpanError != nil {
+					e.logger.Error("insert span error", zap.Error(insertSpanError))
+				}
 			}
 		}
 	}

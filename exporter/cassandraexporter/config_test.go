@@ -59,11 +59,3 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
-
-func withDefaultConfig(fns ...func(*Config)) *Config {
-	cfg := createDefaultConfig().(*Config)
-	for _, fn := range fns {
-		fn(cfg)
-	}
-	return cfg
-}

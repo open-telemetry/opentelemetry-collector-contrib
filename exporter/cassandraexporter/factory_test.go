@@ -27,16 +27,3 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
-
-//func TestFactory_CreateTracesExporter(t *testing.T) {
-//	factory := NewFactory()
-//	cfg := withDefaultConfig(func(cfg *Config) {
-//		cfg.DSN = defaultDSN
-//	})
-//	params := exportertest.NewNopCreateSettings()
-//	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
-//	require.NoError(t, err)
-//	require.NotNil(t, exporter)
-//
-//	require.NoError(t, exporter.Shutdown(context.TODO()))
-//}

@@ -29,5 +29,5 @@ type Replication struct {
 }
 
 type Compression struct {
-	Algorithm string `mapstructure:"algorithm"'`
+	Algorithm string `mapstructure:"algorithm"`
 }
