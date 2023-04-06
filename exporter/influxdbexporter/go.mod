@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0
-	github.com/influxdata/influxdb-observability/common v0.3.4
-	github.com/influxdata/influxdb-observability/otel2influx v0.3.4
+	github.com/influxdata/influxdb-observability/common v0.3.5
+	github.com/influxdata/influxdb-observability/otel2influx v0.3.5
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.75.0
@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.75.0
 	go.opentelemetry.io/collector/exporter v0.75.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc9
-	go.uber.org/multierr v1.10.0
+	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 )
 
