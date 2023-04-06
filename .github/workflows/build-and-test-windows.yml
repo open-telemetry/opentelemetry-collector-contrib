@@ -89,6 +89,9 @@ jobs:
             echo "One or more matrix jobs failed."
             false
           fi
+
+  integration_tests_excuted_successfully: false
+
   integration-tests:
     if: ${{ github.actor != 'dependatbot'[bot] && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
     runs-on: windows-latest
@@ -109,4 +112,9 @@ jobs:
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Run Integration Tests
         run: make integration-tests-with-cover
-      
+        #Set flag to true if integration tests were successful
+        if: ${{ success() }}
+        env:
+          integration_tests_excuted_successfully: true
+      - name: Print flag
+        run: echo "Integration tests executed successfully? ${{ env.integration_tests_excuted_successfully }}"
