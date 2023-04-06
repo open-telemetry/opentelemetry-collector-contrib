@@ -140,6 +140,7 @@ import (
 	kafkareceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 	kubeletstatsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	memcachedreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
+	mesosreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mesosreceiver"
 	mongodbatlasreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	mongodbreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	mysqlreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
@@ -248,6 +249,7 @@ func components() (otelcol.Factories, error) {
 		kafkareceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
 		memcachedreceiver.NewFactory(),
+		mesosreceiver.NewFactory(),
 		mongodbatlasreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
 		mysqlreceiver.NewFactory(),

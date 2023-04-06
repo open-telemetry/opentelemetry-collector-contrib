@@ -1,0 +1,63 @@
+default:
+all_set:
+  metrics:
+    mesos.cpu.utilization:
+      enabled: true
+    mesos.gpu.utilization:
+      enabled: true
+    mesos.mem.limit:
+      enabled: true
+    mesos.mem.utilization:
+      enabled: true
+    mesos.slaves.active.count:
+      enabled: true
+    mesos.slaves.connected.count:
+      enabled: true
+    mesos.slaves.disconnected.count:
+      enabled: true
+    mesos.slaves.inactive.count:
+      enabled: true
+    mesos.tasks.failed.count:
+      enabled: true
+    mesos.tasks.finished.count:
+      enabled: true
+    mesos.uptime:
+      enabled: true
+    system.load.15m:
+      enabled: true
+  resource_attributes:
+    mesos.server.name:
+      enabled: true
+    mesos.server.port:
+      enabled: true
+none_set:
+  metrics:
+    mesos.cpu.utilization:
+      enabled: false
+    mesos.gpu.utilization:
+      enabled: false
+    mesos.mem.limit:
+      enabled: false
+    mesos.mem.utilization:
+      enabled: false
+    mesos.slaves.active.count:
+      enabled: false
+    mesos.slaves.connected.count:
+      enabled: false
+    mesos.slaves.disconnected.count:
+      enabled: false
+    mesos.slaves.inactive.count:
+      enabled: false
+    mesos.tasks.failed.count:
+      enabled: false
+    mesos.tasks.finished.count:
+      enabled: false
+    mesos.uptime:
+      enabled: false
+    system.load.15m:
+      enabled: false
+  resource_attributes:
+    mesos.server.name:
+      enabled: false
+    mesos.server.port:
+      enabled: false

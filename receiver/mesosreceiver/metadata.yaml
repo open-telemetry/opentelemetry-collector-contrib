@@ -1,0 +1,111 @@
+name: mesosreceiver
+
+resource_attributes:
+  mesos.server.name:
+    description: The name of the Apache Mesos HTTP server.
+    type: string
+  mesos.server.port:
+    description: The port of the Apache Mesos Master server.
+    type: string
+
+metrics:
+  mesos.cpu.utilization:
+    enabled: true
+    description: Master percentage of allocated CPUs expressed as ratio [0-1].
+    unit: "1"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+  mesos.gpu.utilization:
+    enabled: true
+    description: Master percentage of allocated GPUs expressed as ratio [0-1].
+    unit: "1"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+  mesos.mem.utilization:
+    enabled: true
+    description: Master percentage of allocated memory expressed as ratio [0-1].
+    unit: "1"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+  mesos.mem.limit:
+    enabled: true
+    description: Master total memory in bytes.
+    unit: By
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+  mesos.uptime:
+    enabled: true
+    description: Time master has been up in seconds.
+    unit: s
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+  system.load.15m:
+    enabled: true
+    description: the average system load during the last 15 minutes expressed as ratio [0-1].
+    unit: "1"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+  mesos.slaves.active.count:
+    enabled: true
+    description: The number of active agents/slaves running for the master.
+    unit: "{Slave}"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+  mesos.slaves.connected.count:
+    enabled: true
+    description: The number of agents/slaves connected to the master.
+    unit: "{Slave}"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+  mesos.slaves.disconnected.count:
+    enabled: true
+    description: The number of agents/slaves disconnected from the master
+    unit: "{Slave}"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+  mesos.slaves.inactive.count:
+    enabled: true
+    description: The number of agents/slaves that are inactive.
+    unit: "{Slave}"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+  mesos.tasks.failed.count:
+    enabled: true
+    description: The number of tasks that were failed.
+    unit: "{Task}"
+    sum:
+      value_type: double
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: []
+  mesos.tasks.finished.count:
+    enabled: true
+    description: The number of tasks that were finished.
+    unit: "{Task}"
+    sum:
+      value_type: double
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: []

@@ -1,0 +1,32 @@
+exporters:
+  logging:
+    loglevel: debug
+  file:
+    path: ./output.json
+  file/2:
+    path: logs.json
+  loki:
+    endpoint: "http://localhost:3100/loki/api/v1/push"
+  prometheusremotewrite:
+    endpoint: "http://localhost:9090/api/v1/write"
+    resource_to_telemetry_conversion:
+      enabled: true
+  googlecloud:
+    retry_on_failure:
+      enabled: true
+receivers:
+  mesos:
+    collection_interval: 10s
+    endpoint: http://remote-docker-ageorgiades:5050/metrics/snapshot
+service:
+  telemetry:
+    logs:
+      level: debug
+  pipelines:
+    metrics:
+      exporters:
+        - file
+        - prometheusremotewrite
+        - googlecloud
+      receivers:
+        - mesos
