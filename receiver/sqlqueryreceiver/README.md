@@ -1,7 +1,7 @@
 # SQL Query Receiver (Alpha)
 
 | Status                   |           |
-|--------------------------|-----------|
+| ------------------------ | --------- |
 | Stability                | [alpha]   |
 | Supported pipeline types | metrics   |
 | Distributions            | [contrib] |
@@ -59,20 +59,20 @@ Each `metrics` section consists of a
 `metric_name`, a `value_column`, and additional optional fields.
 Each _metric_ in the configuration will produce one OTel metric per row returned from its sql query.
 
-* `metric_name`(required): the name assigned to the OTel metric.
-* `value_column`(required): the column name in the returned dataset used to set the value of the metric's datapoint.
+- `metric_name`(required): the name assigned to the OTel metric.
+- `value_column`(required): the column name in the returned dataset used to set the value of the metric's datapoint.
   This may be case-sensitive, depending on the driver (e.g. Oracle DB).
-* `attribute_columns`(optional): a list of column names in the returned dataset used to set attibutes on the datapoint.
+- `attribute_columns`(optional): a list of column names in the returned dataset used to set attibutes on the datapoint.
   These attributes may be case-sensitive, depending on the driver (e.g. Oracle DB).
-* `data_type` (optional): can be `gauge` or `sum`; defaults to `gauge`.
-* `value_type` (optional): can be `int` or `double`; defaults to `int`.
-* `monotonic` (optional): boolean; whether a cumulative sum's value is monotonically increasing (i.e. never rolls over
+- `data_type` (optional): can be `gauge` or `sum`; defaults to `gauge`.
+- `value_type` (optional): can be `int` or `double`; defaults to `int`.
+- `monotonic` (optional): boolean; whether a cumulative sum's value is monotonically increasing (i.e. never rolls over
   or resets); defaults to false.
-* `aggregation` (optional): only applicable for `data_type=sum`; can be `cumulative` or `delta`; defaults
+- `aggregation` (optional): only applicable for `data_type=sum`; can be `cumulative` or `delta`; defaults
   to `cumulative`.
-* `description` (optional): the description applied to the metric.
-* `unit` (optional): the units applied to the metric.
-* `static_attributes` (optional): static attributes applied to the metrics
+- `description` (optional): the description applied to the metric.
+- `unit` (optional): the units applied to the metric.
+- `static_attributes` (optional): static attributes applied to the metrics
 
 ### Example
 
@@ -88,7 +88,7 @@ receivers:
         metrics:
           - metric_name: movie.genres
             value_column: "count"
-            attribute_columns: [ "genre" ]
+            attribute_columns: ["genre"]
             static_attributes:
               dbinstance: mydbinstance
 ```
@@ -96,7 +96,7 @@ receivers:
 Given a `movie` table with three rows:
 
 | name      | genre  |
-|-----------|--------|
+| --------- | ------ |
 | E.T.      | sci-fi |
 | Star Wars | sci-fi |
 | Die Hard  | action |
@@ -104,7 +104,7 @@ Given a `movie` table with three rows:
 If there are two rows returned from the query `select count(*) as count, genre from movie group by genre`:
 
 | count | genre  |
-|-------|--------|
+| ----- | ------ |
 | 2     | sci-fi |
 | 1     | action |
 
@@ -118,7 +118,7 @@ Descriptor:
 NumberDataPoints #0
 Data point attributes:
      -> genre: STRING(sci-fi)
-     -> dbinstance: STRING(mydbinstance)     
+     -> dbinstance: STRING(mydbinstance)
 Value: 2
 
 Metric #1
@@ -146,6 +146,5 @@ The Oracle DB driver documentation can be found [here.](https://github.com/sijms
 Another usage example is the `go_ora`
 example [here.](https://blogs.oracle.com/developers/post/connecting-a-go-application-to-oracle-database)
 
-[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
-
-[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
