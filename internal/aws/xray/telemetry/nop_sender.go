@@ -21,9 +21,7 @@ func NewNopSender() Sender {
 	return nopSenderInstance
 }
 
-var nopSenderInstance = &nopSender{}
-
-var _ Sender = (*nopSender)(nil)
+var nopSenderInstance Sender = &nopSender{}
 
 type nopSender struct {
 }

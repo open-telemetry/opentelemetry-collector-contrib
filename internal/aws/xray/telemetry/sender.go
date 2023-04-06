@@ -79,54 +79,54 @@ type telemetrySender struct {
 }
 
 type Option interface {
-	apply(r *telemetrySender)
+	apply(ts *telemetrySender)
 }
 
-type pusherOptionFunc func(r *telemetrySender)
+type optionFunc func(ts *telemetrySender)
 
-func (o pusherOptionFunc) apply(r *telemetrySender) {
-	o(r)
+func (o optionFunc) apply(ts *telemetrySender) {
+	o(ts)
 }
 
 func WithResourceARN(resourceARN string) Option {
-	return pusherOptionFunc(func(r *telemetrySender) {
-		r.resourceARN = resourceARN
+	return optionFunc(func(ts *telemetrySender) {
+		ts.resourceARN = resourceARN
 	})
 }
 
 func WithInstanceID(instanceID string) Option {
-	return pusherOptionFunc(func(r *telemetrySender) {
-		r.instanceID = instanceID
+	return optionFunc(func(ts *telemetrySender) {
+		ts.instanceID = instanceID
 	})
 }
 
 func WithHostname(hostname string) Option {
-	return pusherOptionFunc(func(r *telemetrySender) {
-		r.hostname = hostname
+	return optionFunc(func(ts *telemetrySender) {
+		ts.hostname = hostname
 	})
 }
 
 func WithLogger(logger *zap.Logger) Option {
-	return pusherOptionFunc(func(r *telemetrySender) {
-		r.logger = logger
+	return optionFunc(func(ts *telemetrySender) {
+		ts.logger = logger
 	})
 }
 
 func WithInterval(interval time.Duration) Option {
-	return pusherOptionFunc(func(r *telemetrySender) {
-		r.interval = interval
+	return optionFunc(func(ts *telemetrySender) {
+		ts.interval = interval
 	})
 }
 
 func WithQueueSize(queueSize int) Option {
-	return pusherOptionFunc(func(r *telemetrySender) {
-		r.queueSize = queueSize
+	return optionFunc(func(ts *telemetrySender) {
+		ts.queueSize = queueSize
 	})
 }
 
 func WithBatchSize(batchSize int) Option {
-	return pusherOptionFunc(func(r *telemetrySender) {
-		r.batchSize = batchSize
+	return optionFunc(func(ts *telemetrySender) {
+		ts.batchSize = batchSize
 	})
 }
 
@@ -223,7 +223,7 @@ func (ts *telemetrySender) Start() {
 		ts.stopWait.Add(1)
 		go func() {
 			defer ts.stopWait.Done()
-			ts.start()
+			ts.run()
 		}()
 	})
 }
@@ -236,8 +236,8 @@ func (ts *telemetrySender) Stop() {
 	})
 }
 
-// start sends the queued records once a minute if telemetry data was updated.
-func (ts *telemetrySender) start() {
+// run sends the queued records once a minute if telemetry data was updated.
+func (ts *telemetrySender) run() {
 	ticker := time.NewTicker(ts.interval)
 	defer ticker.Stop()
 	for {
