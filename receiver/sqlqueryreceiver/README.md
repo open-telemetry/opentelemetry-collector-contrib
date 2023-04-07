@@ -1,10 +1,11 @@
 # SQL Query Receiver (Alpha)
 
-| Status                   |           |
-| ------------------------ | --------- |
-| Stability                | [alpha]   |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |                    |
+| ------------------------ | ------------------ |
+| Stability                | logs [development] |
+|                          | metrics [alpha]    |
+| Supported pipeline types | logs, metrics      |
+| Distributions            | [contrib]          |
 
 The SQL Query Receiver uses custom SQL queries to generate metrics from a database connection.
 
