@@ -57,6 +57,8 @@ func initializeLogKernel(cfg *Config) error {
 		return err
 	}
 
+	defer session.Close()
+
 	createDatabaseError := session.Query(parseCreateDatabaseSQL(cfg)).WithContext(ctx).Exec()
 	if createDatabaseError != nil {
 		return createDatabaseError
@@ -65,8 +67,6 @@ func initializeLogKernel(cfg *Config) error {
 	if createLogTableError != nil {
 		return createLogTableError
 	}
-
-	defer session.Close()
 
 	return nil
 }

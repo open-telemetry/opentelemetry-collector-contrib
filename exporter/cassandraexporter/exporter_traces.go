@@ -56,6 +56,8 @@ func initializeTraceKernel(cfg *Config) error {
 		return err
 	}
 
+	defer session.Close()
+
 	createDatabaseError := session.Query(parseCreateDatabaseSQL(cfg)).WithContext(ctx).Exec()
 	if createDatabaseError != nil {
 		return createDatabaseError
@@ -72,8 +74,6 @@ func initializeTraceKernel(cfg *Config) error {
 	if createSpanTableError != nil {
 		return createSpanTableError
 	}
-
-	defer session.Close()
 
 	return nil
 }
