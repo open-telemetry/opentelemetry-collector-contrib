@@ -75,10 +75,10 @@ func (trie *Trie) Put(key []byte, value interface{}) {
 // node was found for the given key. If the node or any of its ancestors
 // becomes childless as a result, it is removed from the trie.
 func (trie *Trie) Delete(key []byte) bool {
-	var path []nodeTrie // record ancestors to check later
+	var path []*Trie // record ancestors to check later
 	node := trie
 	for _, b := range key {
-		path = append(path, nodeTrie{b: b, node: node})
+		path = append(path, node)
 		node = node.children[b]
 		if node == nil {
 			// node does not exist
