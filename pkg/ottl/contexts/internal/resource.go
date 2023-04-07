@@ -34,7 +34,7 @@ func ResourcePathGetSetter[K ResourceContext](path []ottl.Field) (ottl.GetSetter
 	}
 	switch path[0].Name {
 	case "attributes":
-		mapKey := path[0].Keys
+		mapKeys := path[0].Keys
 		if mapKey == nil {
 			return accessResourceAttributes[K](), nil
 		}
