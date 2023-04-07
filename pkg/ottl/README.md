@@ -138,7 +138,7 @@ type of key supplied, OTTL will error. Supported values are:
 | Type             | Index Type |
 |------------------|------------|
 | `pcommon.Map`    | `String`   |
-| `map[stirng]any` | `String`   |
+| `map[string]any` | `String`   |
 | `pcommon.Slice`  | `Int`      |
 | `[]any`          | `Int`      |
 
