@@ -20,3 +20,18 @@ insert into movie (title, genre, imdb_rating)
 values ('Mission Impossible', 'Action', 7.1);
 
 grant select on movie to otel;
+
+create table simple_logs
+(
+    id integer primary key,
+    body text
+);
+grant select on simple_logs to otel;
+
+insert into simple_logs (id, body) values
+(1, '- - - [03/Jun/2022:21:59:26 +0000] "GET /api/health HTTP/1.1" 200 6197 4 "-" "-" 445af8e6c428303f -'),
+(2, '- - - [03/Jun/2022:21:59:26 +0000] "GET /api/health HTTP/1.1" 200 6205 5 "-" "-" 3285f43cd4baa202 -'),
+(3, '- - - [03/Jun/2022:21:59:29 +0000] "GET /api/health HTTP/1.1" 200 6233 4 "-" "-" 579e8362d3185b61 -'),
+(4, '- - - [03/Jun/2022:21:59:31 +0000] "GET /api/health HTTP/1.1" 200 6207 5 "-" "-" 8c6ac61ae66e509f -'),
+(5, '- - - [03/Jun/2022:21:59:31 +0000] "GET /api/health HTTP/1.1" 200 6200 4 "-" "-" c163495861e873d8 -');
+

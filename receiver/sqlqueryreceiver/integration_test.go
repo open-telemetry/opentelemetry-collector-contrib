@@ -136,6 +136,12 @@ func TestPostgresIntegration(t *testing.T) {
 				},
 			},
 		},
+		{
+			SQL: "select * from simple_logs",
+			Logs: []LogsCfg{
+				{},
+			},
+		},
 	}
 	consumer := &consumertest.MetricsSink{}
 	receiver, err := factory.CreateMetricsReceiver(
@@ -160,6 +166,27 @@ func TestPostgresIntegration(t *testing.T) {
 	rms := metrics.ResourceMetrics()
 	testMovieMetrics(t, rms.At(0), genreKey)
 	testPGTypeMetrics(t, rms.At(1))
+
+	logsConsumer := &consumertest.LogsSink{}
+	logsReceiver, err := factory.CreateLogsReceiver(
+		ctx,
+		receivertest.NewNopCreateSettings(),
+		config,
+		logsConsumer,
+	)
+	require.NoError(t, err)
+	err = logsReceiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.Eventuallyf(
+		t,
+		func() bool {
+			return logsConsumer.LogRecordCount() > 0
+		},
+		2*time.Minute,
+		1*time.Second,
+		"failed to receive more than 0 logs",
+	)
+	testSimpleLogs(t)
 }
 
 // This test ensures the collector can connect to an Oracle DB, and properly get metrics. It's not intended to
@@ -216,6 +243,12 @@ func TestOracleDBIntegration(t *testing.T) {
 				},
 			},
 		},
+		{
+			SQL: "select * from simple_logs",
+			Logs: []LogsCfg{
+				{},
+			},
+		},
 	}
 	consumer := &consumertest.MetricsSink{}
 	receiver, err := factory.CreateMetricsReceiver(
@@ -239,6 +272,27 @@ func TestOracleDBIntegration(t *testing.T) {
 	metrics := consumer.AllMetrics()[0]
 	rms := metrics.ResourceMetrics()
 	testMovieMetrics(t, rms.At(0), genreKey)
+
+	logsConsumer := &consumertest.LogsSink{}
+	logsReceiver, err := factory.CreateLogsReceiver(
+		ctx,
+		receivertest.NewNopCreateSettings(),
+		config,
+		logsConsumer,
+	)
+	require.NoError(t, err)
+	err = logsReceiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.Eventuallyf(
+		t,
+		func() bool {
+			return logsConsumer.LogRecordCount() > 0
+		},
+		5*time.Minute,
+		1*time.Second,
+		"failed to receive more than 0 logs",
+	)
+	testSimpleLogs(t)
 }
 
 func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey string) {
@@ -316,4 +370,8 @@ func assertIntGaugeEquals(t *testing.T, expected int, metric pmetric.Metric) {
 
 func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metric) {
 	assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.1)
+}
+
+func testSimpleLogs(t *testing.T) {
+
 }

@@ -30,6 +30,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createReceiverFunc(sql.Open, newDbClient), stability),
+		receiver.WithLogs(createLogsReceiverFunc(sql.Open, newDbClient), component.StabilityLevelDevelopment),
+		receiver.WithMetrics(createMetricsReceiverFunc(sql.Open, newDbClient), stability),
 	)
 }
