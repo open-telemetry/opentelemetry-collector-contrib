@@ -52,7 +52,6 @@ type eksDetectorUtils struct {
 type detector struct {
 	utils  detectorUtils
 	logger *zap.Logger
-	err    error
 }
 
 var _ internal.Detector = (*detector)(nil)
@@ -62,7 +61,7 @@ var _ detectorUtils = (*eksDetectorUtils)(nil)
 // NewDetector returns a resource detector that will detect AWS EKS resources.
 func NewDetector(set processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
 	utils, err := newK8sDetectorUtils()
-	return &detector{utils: utils, logger: set.Logger, err: err}, nil
+	return &detector{utils: utils, logger: set.Logger}, err
 }
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.

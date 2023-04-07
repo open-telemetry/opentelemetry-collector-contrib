@@ -34,9 +34,9 @@ func (detectorUtils *MockDetectorUtils) getConfigMap(_ context.Context, namespac
 	return args.Get(0).(map[string]string), args.Error(1)
 }
 
-func TestNewDetector(t *testing.T) {
+func TestNewDetectorMissingAwsEnv(t *testing.T) {
 	detector, err := NewDetector(processortest.NewNopCreateSettings(), nil)
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "failed to create config: unable to load in-cluster configuration, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
 	assert.NotNil(t, detector)
 }
 
@@ -48,7 +48,7 @@ func TestEKS(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
 	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{"cluster.name": "my-cluster"}, nil)
 	// Call EKS Resource detector to detect resources
-	eksResourceDetector := &detector{utils: detectorUtils, err: nil}
+	eksResourceDetector := &detector{utils: detectorUtils}
 	res, _, err := eksResourceDetector.Detect(ctx)
 	require.NoError(t, err)
 
