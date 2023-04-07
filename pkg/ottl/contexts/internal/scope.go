@@ -39,7 +39,7 @@ func ScopePathGetSetter[K InstrumentationScopeContext](path []ottl.Field) (ottl.
 	case "version":
 		return accessInstrumentationScopeVersion[K](), nil
 	case "attributes":
-		mapKey := path[0].Keys
+		mapKeys := path[0].Keys
 		if mapKey == nil {
 			return accessInstrumentationScopeAttributes[K](), nil
 		}
