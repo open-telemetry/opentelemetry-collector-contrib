@@ -294,6 +294,9 @@ func (m *Manager) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {
 	for i := len(m.knownFiles) - 1; i >= 0; i-- {
 		oldReader := m.knownFiles[i]
 		if fp.StartsWith(oldReader.Fingerprint) {
+			// Remove the old reader from the list of known files. We will
+			// add it back in saveCurrent if it is still alive.
+			m.knownFiles = append(m.knownFiles[:i], m.knownFiles[i+1:]...)
 			return oldReader, true
 		}
 	}
