@@ -93,7 +93,7 @@ func TestElasticsearchIntegration(t *testing.T) {
 
 		actualMetrics := consumer.AllMetrics()[0]
 
-		expectedFile := filepath.Join("testdata", "integration", "expected.7_0_0.json")
+		expectedFile := filepath.Join("testdata", "integration", "expected.7_0_0.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
@@ -133,7 +133,7 @@ func TestElasticsearchIntegration(t *testing.T) {
 
 		actualMetrics := consumer.AllMetrics()[0]
 
-		expectedFile := filepath.Join("testdata", "integration", "expected.7_9_3.json")
+		expectedFile := filepath.Join("testdata", "integration", "expected.7_9_3.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
@@ -174,7 +174,7 @@ func TestElasticsearchIntegration(t *testing.T) {
 
 		actualMetrics := consumer.AllMetrics()[0]
 
-		expectedFile := filepath.Join("testdata", "integration", "expected.7_16_3.json")
+		expectedFile := filepath.Join("testdata", "integration", "expected.7_16_3.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 

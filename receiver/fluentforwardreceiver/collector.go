@@ -66,9 +66,9 @@ func (c *Collector) processEvents(ctx context.Context) {
 			c.fillBufferUntilChanEmpty(logSlice)
 
 			stats.Record(context.Background(), observ.RecordsGenerated.M(int64(out.LogRecordCount())))
-			ctx = c.obsrecv.StartLogsOp(ctx)
-			err := c.nextConsumer.ConsumeLogs(ctx, out)
-			c.obsrecv.EndLogsOp(ctx, "fluent", out.LogRecordCount(), err)
+			obsCtx := c.obsrecv.StartLogsOp(ctx)
+			err := c.nextConsumer.ConsumeLogs(obsCtx, out)
+			c.obsrecv.EndLogsOp(obsCtx, "fluent", out.LogRecordCount(), err)
 		}
 	}
 }

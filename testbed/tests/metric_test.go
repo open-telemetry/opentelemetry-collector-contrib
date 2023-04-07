@@ -112,8 +112,7 @@ func TestMetricsFromFile(t *testing.T) {
 	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 	require.NoError(t, err)
 
-	// Use metrics previously recorded using "file" exporter and "k8scluster" receiver.
-	dataProvider, err := testbed.NewFileDataProvider("testdata/k8s-metrics.json", component.DataTypeMetrics)
+	dataProvider, err := testbed.NewFileDataProvider("testdata/k8s-metrics.yaml", component.DataTypeMetrics)
 	assert.NoError(t, err)
 
 	options := testbed.LoadOptions{
