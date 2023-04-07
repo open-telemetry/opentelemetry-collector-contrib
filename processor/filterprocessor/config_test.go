@@ -906,23 +906,23 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_span"),
-			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected <string> \"]\")",
+			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_spanevent"),
-			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected <string> \"]\")",
+			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_metric"),
-			errorMessage: "unable to parse OTTL statement: 1:34: unexpected token \"test\" (expected <string> \"]\")",
+			errorMessage: "unable to parse OTTL statement: 1:34: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_datapoint"),
-			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected <string> \"]\")",
+			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_log"),
-			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected <string> \"]\")",
+			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 	}
 

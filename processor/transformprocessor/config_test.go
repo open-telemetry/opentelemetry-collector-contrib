@@ -103,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_trace"),
-			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\" Key*)",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "unknown_function_trace"),
@@ -111,7 +111,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_metric"),
-			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\" Key*)",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "unknown_function_metric"),
@@ -119,7 +119,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_log"),
-			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\" Key*)",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "unknown_function_log"),
