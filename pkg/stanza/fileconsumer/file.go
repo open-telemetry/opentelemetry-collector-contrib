@@ -52,9 +52,8 @@ type Manager struct {
 
 	currentFps []*Fingerprint
 
-	readerChan   chan ReaderWrapper
-	pathHash     map[string]*Fingerprint
-	pathHashLock sync.RWMutex
+	readerChan chan ReaderWrapper
+	trieLock   sync.RWMutex
 
 	// readers[] store the readers of previous poll cycles and are used to keep track of lost files
 	readerLock sync.Mutex
@@ -191,23 +190,23 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 			continue
 		}
 		// add path and fingerprint as it's not consuming
-		m.pathHashLock.Lock()
+		m.trieLock.Lock()
 		m.trie.Put(fp.FirstBytes, true)
-		m.pathHashLock.Unlock()
+		m.trieLock.Unlock()
 		m.readerChan <- ReaderWrapper{reader: reader, fp: fp}
 	}
 }
 
 func (m *Manager) isCurrentlyConsuming(path string, fp *Fingerprint) bool {
-	m.pathHashLock.Lock()
-	defer m.pathHashLock.Unlock()
+	m.trieLock.Lock()
+	defer m.trieLock.Unlock()
 	return m.trie.Get(fp.FirstBytes) != nil
 }
 
 func (m *Manager) removePath(fp *Fingerprint) {
-	m.pathHashLock.Lock()
+	m.trieLock.Lock()
 	m.trie.Delete(fp.FirstBytes)
-	m.pathHashLock.Unlock()
+	m.trieLock.Unlock()
 }
 
 func (m *Manager) handleLostFiles(ctx context.Context) {

@@ -179,7 +179,6 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		deleteAfterRead: c.DeleteAfterRead,
 		knownFiles:      make([]*Reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
-		pathHash:        make(map[string]*Fingerprint),
 		readerChan:      make(chan ReaderWrapper, c.MaxConcurrentFiles/2),
 	}, nil
 }
