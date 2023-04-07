@@ -92,7 +92,7 @@ func (trie *Trie) Delete(key []byte) bool {
 		// iterate backwards over path
 		for i := len(path) - 1; i >= 0; i-- {
 			parent := path[i].node
-			b := path[i].b
+			b := key[i]
 			delete(parent.children, b)
 			if !parent.isLeaf() {
 				// parent has other children, stop
