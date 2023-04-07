@@ -86,7 +86,7 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 	case "end_time_unix_nano":
 		return accessEndTimeUnixNano[K](), nil
 	case "attributes":
-		mapKey := path[0].Keys
+		mapKeys := path[0].Keys
 		if mapKey == nil {
 			return accessAttributes[K](), nil
 		}
