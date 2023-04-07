@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+<<<<<<<< HEAD:pkg/ottl/internal/ottlcommon/map.go
 package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
+========
+package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlcommon"
+>>>>>>>> 24c165715d (Apply feedback):pkg/ottl/ottlcommon/map.go
 
 import (
 	"fmt"
@@ -48,8 +52,8 @@ func GetMapValue(m pcommon.Map, keys []ottl.Key) (interface{}, error) {
 			if keys[i].Int == nil {
 				return nil, fmt.Errorf("slice must be indexed by an int")
 			}
-			if int(*keys[i].Int) >= val.Slice().Len() {
-				return nil, fmt.Errorf("index out of bounds")
+			if int(*keys[i].Int) >= val.Slice().Len() || int(*keys[i].Int) < 0 {
+				return nil, fmt.Errorf("index %v out of bounds", *keys[i].Int)
 			}
 			val = val.Slice().At(int(*keys[i].Int))
 		default:
@@ -95,8 +99,8 @@ func SetMapValue(m pcommon.Map, keys []ottl.Key, val interface{}) error {
 			if keys[i].Int == nil {
 				return fmt.Errorf("slice must be indexed by an int")
 			}
-			if int(*keys[i].Int) > currentValue.Slice().Len() {
-				return fmt.Errorf("index out of bounds")
+			if int(*keys[i].Int) > currentValue.Slice().Len() || int(*keys[i].Int) < 0 {
+				return fmt.Errorf("index %v out of bounds", *keys[i].Int)
 			}
 			currentValue = currentValue.Slice().At(int(*keys[i].Int))
 		case pcommon.ValueTypeEmpty:

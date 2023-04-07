@@ -68,8 +68,6 @@ A Path Value is a reference to a telemetry field.  Paths are made up of lowercas
 When accessing a map's value, if the given key does not exist, `nil` will be returned.
 This can be used to check for the presence of a key within a map within a [Boolean Expression](#boolean-expressions).
 
-[There are OpenTelemetry-specific contexts provided for each signal here.](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts) 
-
 Example Paths
 - `name`
 - `value_double`
@@ -77,6 +75,15 @@ Example Paths
 - `resource.attributes["key"]`
 - `attributes["nested"]["values"]`
 - `cache["slice"][1]`
+
+##### Contexts
+
+The package that handles the interpretation of a path is normally called a Context.
+Contexts will have an implementation of `PathExpressionParser` that decides how an OTTL Path is interpreted.
+The context's implementation will need to make decisions like what a dot (`.`) represents or which paths allow indexing (`["key"]`) and how many indexes.
+
+[There are OpenTelemetry-specific contexts provided for each signal here.](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts)
+When using OTTL it is recommended to use these contexts unless you have a specific need.  Checkout each context to view the paths they support. 
 
 #### Lists
 

@@ -104,13 +104,13 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 		case k.Int != nil:
 			switch r := result.(type) {
 			case pcommon.Slice:
-				if int(*k.Int) >= r.Len() {
-					return nil, fmt.Errorf("index out of bounds")
+				if int(*k.Int) >= r.Len() || int(*k.Int) < 0 {
+					return nil, fmt.Errorf("index %v out of bounds", *k.Int)
 				}
 				result = GetValue(r.At(int(*k.Int)))
 			case []interface{}:
-				if int(*k.Int) >= len(r) {
-					return nil, fmt.Errorf("index out of bounds")
+				if int(*k.Int) >= len(r) || int(*k.Int) < 0 {
+					return nil, fmt.Errorf("index %v out of bounds", *k.Int)
 				}
 				result = r[*k.Int]
 			default:

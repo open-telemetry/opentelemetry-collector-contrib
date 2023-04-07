@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+<<<<<<<< HEAD:pkg/ottl/internal/ottlcommon/value.go
 package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
+========
+package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlcommon"
+>>>>>>>> 24c165715d (Apply feedback):pkg/ottl/ottlcommon/value.go
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
