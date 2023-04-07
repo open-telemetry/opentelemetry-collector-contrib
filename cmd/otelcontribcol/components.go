@@ -45,6 +45,7 @@ import (
 	jaegerexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	jaegerthrifthttpexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	kafkaexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	awss3exporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 	loadbalancingexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	logicmonitorexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
 	logzioexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
@@ -316,6 +317,7 @@ func components() (otelcol.Factories, error) {
 		jaegerexporter.NewFactory(),
 		jaegerthrifthttpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
+		awss3exporter.NewFactory(),
 		loadbalancingexporter.NewFactory(),
 		logicmonitorexporter.NewFactory(),
 		logzioexporter.NewFactory(),
