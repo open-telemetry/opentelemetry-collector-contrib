@@ -26,6 +26,10 @@ import (
 )
 
 const (
+	// The value of "type" key in configuration.
+	typeStr = "webhookevent"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelDevelopment
 	// Default endpoints to bind to.
 	defaultEndpoint = ":8080"
 )
@@ -56,6 +60,10 @@ func createLogsReceiver(
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	conf := cfg.(*Config)
+    rec, err := newLogsReceiver(params, conf, consumer)
+    if err != nil {
+        return nil, err
+    }
 
-	return newLogsReceiver(params, *conf, consumer)
+	return r, nil
 }
