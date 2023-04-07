@@ -20,7 +20,6 @@ type Config struct {
 	// The attribute (header name) to look for auth data. Optional, default value: "authorization".
 	Attribute string `mapstructure:"attribute"`
 
-	// The local path for the issuer CA's TLS server cert.
-	// Optional.
+	// The JWT secret to use for validation. Required.
 	JWTSecret string `mapstructure:"secret"`
 }
