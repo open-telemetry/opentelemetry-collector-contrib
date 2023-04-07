@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // TRIE data structure inspired by https://github.com/dghubble/trie
-// This defers from the original trie.
+// This differs from the original trie.
 
 package fileconsumer
 
