@@ -3,21 +3,21 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlque
 go 1.19
 
 require (
-	github.com/SAP/go-hdb v1.1.7
+	github.com/SAP/go-hdb v1.2.0
 	github.com/denisenkom/go-mssqldb v0.12.2
 	github.com/docker/go-connections v0.4.0
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/lib/pq v1.10.7
-	github.com/sijms/go-ora/v2 v2.6.10
+	github.com/sijms/go-ora/v2 v2.6.11
 	github.com/snowflakedb/gosnowflake v1.6.18
 	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.19.0
-	go.opentelemetry.io/collector/component v0.74.0
-	go.opentelemetry.io/collector/confmap v0.74.0
-	go.opentelemetry.io/collector/consumer v0.74.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc8
-	go.opentelemetry.io/collector/receiver v0.74.0
-	go.uber.org/multierr v1.10.0
+	go.opentelemetry.io/collector/component v0.75.0
+	go.opentelemetry.io/collector/confmap v0.75.0
+	go.opentelemetry.io/collector/consumer v0.75.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9
+	go.opentelemetry.io/collector/receiver v0.75.0
+	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 )
 
@@ -48,7 +48,7 @@ require (
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v23.0.1+incompatible // indirect
+	github.com/docker/docker v23.0.3+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
@@ -87,9 +87,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.74.0 // indirect
-	go.opentelemetry.io/collector/exporter v0.74.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.74.0 // indirect
+	go.opentelemetry.io/collector v0.75.0 // indirect
+	go.opentelemetry.io/collector/exporter v0.75.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.75.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect

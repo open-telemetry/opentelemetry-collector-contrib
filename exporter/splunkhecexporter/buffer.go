@@ -48,12 +48,14 @@ type bufferState struct {
 	bufFront             *index
 	resource             int
 	library              int
+	containsData         bool
 }
 
 func (b *bufferState) reset() {
 	b.buf.Reset()
 	b.compressionEnabled = false
 	b.writer = &cancellableBytesWriter{innerWriter: b.buf, maxCapacity: b.bufferMaxLen}
+	b.containsData = false
 }
 
 func (b *bufferState) Read(p []byte) (n int, err error) {
@@ -109,11 +111,13 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 			}
 
 		}
+		b.containsData = true
 		return true, nil
 	}
 	if overCapacity {
 		return false, nil
 	}
+	b.containsData = true
 	return true, err
 }
 
