@@ -4,10 +4,8 @@ go 1.19
 
 require (
 	github.com/antonmedv/expr v1.12.5
-	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.75.0
 	github.com/spf13/cast v1.5.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.75.0
@@ -45,7 +43,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.75.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
@@ -84,8 +81,6 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../../extension/observer
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
