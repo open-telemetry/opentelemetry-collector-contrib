@@ -1,4 +1,4 @@
-FROM mysql
+FROM mysql:8.0.32
 
 ENV MYSQL_USER=otel
 ENV MYSQL_PASSWORD=otel
