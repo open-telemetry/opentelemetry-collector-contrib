@@ -241,6 +241,128 @@ func TestOracleDBIntegration(t *testing.T) {
 	testMovieMetrics(t, rms.At(0), genreKey)
 }
 
+func TestMysqlIntegration(t *testing.T) {
+	externalPort := "13306"
+	internalPort := "3306"
+	waitStrategy := wait.ForListeningPort(nat.Port(internalPort)).WithStartupTimeout(2 * time.Minute)
+	req := testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    filepath.Join("testdata", "integration"),
+			Dockerfile: "Dockerfile.mysql",
+		},
+		ExposedPorts: []string{externalPort + ":" + internalPort},
+		WaitingFor:   waitStrategy,
+	}
+	ctx := context.Background()
+
+	_, err := testcontainers.GenericContainer(
+		ctx,
+		testcontainers.GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+		},
+	)
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	config.Driver = "mysql"
+	config.DataSource = fmt.Sprintf("otel:otel@tcp(localhost:%s)/otel", externalPort)
+	genreKey := "genre"
+	config.Queries = []Query{
+		{
+			SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
+			Metrics: []MetricCfg{
+				{
+					MetricName:       "genre.count",
+					ValueColumn:      "count(*)",
+					AttributeColumns: []string{genreKey},
+					ValueType:        MetricValueTypeInt,
+					DataType:         MetricTypeGauge,
+				},
+				{
+					MetricName:       "genre.imdb",
+					ValueColumn:      "avg(imdb_rating)",
+					AttributeColumns: []string{genreKey},
+					ValueType:        MetricValueTypeDouble,
+					DataType:         MetricTypeGauge,
+				},
+			},
+		},
+		{
+			SQL: "select " +
+				"cast(1 as signed) as a, " +
+				"cast(2 as unsigned) as b, " +
+				"cast(3.1 as decimal(10,1)) as c, " +
+				"cast(3.2 as real) as d, " +
+				"cast(3.3 as float) as e, " +
+				"cast(3.4 as double) as f, " +
+				"null as g",
+			Metrics: []MetricCfg{
+				{
+					MetricName:  "a",
+					ValueColumn: "a",
+					ValueType:   MetricValueTypeInt,
+					DataType:    MetricTypeGauge,
+				},
+				{
+					MetricName:  "b",
+					ValueColumn: "b",
+					ValueType:   MetricValueTypeInt,
+					DataType:    MetricTypeGauge,
+				},
+				{
+					MetricName:  "c",
+					ValueColumn: "c",
+					ValueType:   MetricValueTypeDouble,
+					DataType:    MetricTypeGauge,
+				},
+				{
+					MetricName:  "d",
+					ValueColumn: "d",
+					ValueType:   MetricValueTypeDouble,
+					DataType:    MetricTypeGauge,
+				},
+				{
+					MetricName:  "e",
+					ValueColumn: "e",
+					ValueType:   MetricValueTypeDouble,
+					DataType:    MetricTypeGauge,
+				},
+				{
+					MetricName:  "f",
+					ValueColumn: "f",
+					ValueType:   MetricValueTypeDouble,
+					DataType:    MetricTypeGauge,
+				},
+			},
+		},
+	}
+	consumer := &consumertest.MetricsSink{}
+	receiver, err := factory.CreateMetricsReceiver(
+		ctx,
+		receivertest.NewNopCreateSettings(),
+		config,
+		consumer,
+	)
+	require.NoError(t, err)
+	err = receiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.Eventuallyf(
+		t,
+		func() bool {
+			return consumer.DataPointCount() > 0
+		},
+		2*time.Minute,
+		1*time.Second,
+		"failed to receive more than 0 metrics",
+	)
+	metrics := consumer.AllMetrics()[0]
+	rms := metrics.ResourceMetrics()
+	testMovieMetrics(t, rms.At(0), genreKey)
+	testMysqlTypeMetrics(t, rms.At(1))
+}
+
 func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey string) {
 	sms := rm.ScopeMetrics()
 	assert.Equal(t, 1, sms.Len())
@@ -306,6 +428,30 @@ func testPGTypeMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
 			assertDoubleGaugeEquals(t, 4.3, metric)
 		case "g":
 			assertDoubleGaugeEquals(t, 4.4, metric)
+		}
+	}
+}
+
+func testMysqlTypeMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
+	sms := rm.ScopeMetrics()
+	assert.Equal(t, 1, sms.Len())
+	sm := sms.At(0)
+	ms := sm.Metrics()
+	for i := 0; i < ms.Len(); i++ {
+		metric := ms.At(0)
+		switch metric.Name() {
+		case "a":
+			assertIntGaugeEquals(t, 1, metric)
+		case "b":
+			assertIntGaugeEquals(t, 2, metric)
+		case "c":
+			assertDoubleGaugeEquals(t, 3.1, metric)
+		case "d":
+			assertDoubleGaugeEquals(t, 3.2, metric)
+		case "e":
+			assertDoubleGaugeEquals(t, 3.3, metric)
+		case "f":
+			assertDoubleGaugeEquals(t, 3.4, metric)
 		}
 	}
 }
