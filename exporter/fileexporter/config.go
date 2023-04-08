@@ -16,6 +16,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -45,8 +46,9 @@ type Config struct {
 	// Supported compression algorithms:`zstd`
 	Compression string `mapstructure:"compression"`
 
-	// FlushInterval number of seconds between flushes.
-	FlushInterval int `mapstructure:"flush_interval"`
+	// FlushInterval is the duration between flushes.
+	// See time.ParseDuration for valid values.
+	FlushInterval time.Duration `mapstructure:"flush_interval"`
 }
 
 // Rotation an option to rolling log files

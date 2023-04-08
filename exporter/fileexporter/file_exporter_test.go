@@ -22,6 +22,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
@@ -108,6 +109,24 @@ func TestFileTracesExporter(t *testing.T) {
 						MaxBackups:   defaultMaxBackups,
 						LocalTime:    false,
 					},
+				},
+				unmarshaler: &ptrace.ProtoUnmarshaler{},
+			},
+		},
+		{
+			name: "Proto: compression configuration--rotation--flush_interval",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
+					Rotation: &Rotation{
+						MaxMegabytes: 3,
+						MaxDays:      0,
+						MaxBackups:   defaultMaxBackups,
+						LocalTime:    false,
+					},
+					FlushInterval: time.Second,
 				},
 				unmarshaler: &ptrace.ProtoUnmarshaler{},
 			},

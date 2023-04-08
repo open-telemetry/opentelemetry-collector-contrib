@@ -17,6 +17,7 @@ package fileexporter
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -92,11 +93,27 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "format type is not supported",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "flush_interval_5"),
+			id: component.NewIDWithName(typeStr, "flush_interval_5"),
 			expected: &Config{
-				Path: "./flushed",
+				Path:          "./flushed",
 				FlushInterval: 5,
-				FormatType: formatTypeJSON,
+				FormatType:    formatTypeJSON,
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "flush_interval_5s"),
+			expected: &Config{
+				Path:          "./flushed",
+				FlushInterval: 5 * time.Second,
+				FormatType:    formatTypeJSON,
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "flush_interval_500ms"),
+			expected: &Config{
+				Path:          "./flushed",
+				FlushInterval: 500 * time.Millisecond,
+				FormatType:    formatTypeJSON,
 			},
 		},
 		{

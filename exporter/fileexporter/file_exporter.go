@@ -60,8 +60,9 @@ type fileExporter struct {
 	formatType string
 	exporter   exportFunc
 
-	flushInterval int
+	flushInterval time.Duration
 	flushTicker   *time.Ticker
+	stopTicker    chan struct{}
 }
 
 func (e *fileExporter) consumeTraces(_ context.Context, td ptrace.Traces) error {
@@ -120,53 +121,50 @@ func exportMessageAsBuffer(e *fileExporter, buf []byte) error {
 	return nil
 }
 
-func startFlusher(e *fileExporter) {
-	if e.flushTicker != nil {
-		// flusher is already running.
-		return
-	}
-
-	if e.flushInterval < 1 {
-		// Interval should be 1 or larger.
-		return
-	}
-
+// startFlusher starts the flusher.
+// It does not check the flushInterval
+func (e *fileExporter) startFlusher() {
 	ff, ok := e.file.(interface{ flush() error })
 	if !ok {
 		// Just in case.
 		return
 	}
 
-	// Start the ticker
-	e.flushTicker = time.NewTicker(time.Second * time.Duration(e.flushInterval))
+	// Create the stop channel.
+	e.stopTicker = make(chan struct{})
+	// Start the ticker.
+	e.flushTicker = time.NewTicker(e.flushInterval)
 	go func() {
-		for e.flushTicker != nil {
-			<-e.flushTicker.C
-			e.mutex.Lock()
-			ff.flush()
-			e.mutex.Unlock()
+		for {
+			select {
+			case <-e.flushTicker.C:
+				e.mutex.Lock()
+				ff.flush()
+				e.mutex.Unlock()
+			case <-e.stopTicker:
+				return
+			}
 		}
 	}()
 }
 
-func stopFlusher(e *fileExporter) {
-	if e.flushTicker == nil {
-		return
-	}
-	e.flushTicker.Stop()
-	e.flushTicker = nil
-}
-
-// Start starts the flush timer.
+// Start starts the flush timer if set.
 func (e *fileExporter) Start(context.Context, component.Host) error {
-	startFlusher(e)
+	if e.flushInterval > 0 {
+		e.startFlusher()
+	}
 	return nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
+// It stops the flush ticker if set.
 func (e *fileExporter) Shutdown(context.Context) error {
-	// Stop the flush timer.
-	stopFlusher(e)
+	// Stop the flush ticker.
+	if e.flushTicker != nil {
+		e.flushTicker.Stop()
+		// Stop the go routine.
+		close(e.stopTicker)
+	}
 	return e.file.Close()
 }
 

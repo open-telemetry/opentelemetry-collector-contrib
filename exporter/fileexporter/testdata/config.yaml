@@ -43,3 +43,13 @@ file/compression_error:
 file/flush_interval_5:
   path: ./flushed
   flush_interval: 5
+
+file/flush_interval_5s:
+  path: ./flushed
+  flush_interval: 5s
+
+file/flush_interval_500ms:
+  path: ./flushed
+  flush_interval: 500ms
+
+  
