@@ -92,7 +92,7 @@ func TestScrape(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
 			if runtime.GOOS == "darwin" {
-				// disable darwin unsupported deafult metric
+				// disable darwin unsupported default metric
 				metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
 			}
 
@@ -670,7 +670,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		},
 		{
 			name:     "Exe Error",
-      osFilter: "darwin",
+			osFilter: "darwin",
 			exeError: errors.New("err1"),
 			expectedError: func() string {
 				if runtime.GOOS == "windows" {
@@ -803,7 +803,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			if runtime.GOOS != "darwin" {
 				enableOptionalMetrics(&metricsBuilderConfig.Metrics)
 			} else {
-				// disable darwin unsupported deafult metric
+				// disable darwin unsupported default metric
 				metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
 			}
 
@@ -854,8 +854,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			}
 
 			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
-
-      assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
+			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
 			assert.EqualError(t, err, test.expectedError)
