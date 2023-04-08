@@ -221,7 +221,6 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		if accept {
 			continue
 		}
-		// fmt.Println(accept, len(b))
 
 		if state.containsData {
 			if err := c.postEvents(ctx, state, headers); err != nil {
@@ -242,7 +241,6 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 				fmt.Errorf("dropped log event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
 			continue
 		}
-		// fmt.Println(accept, len(b), state.rawLength)
 		if state.containsData {
 			// This means that the current record had overflown the buffer and was not sent
 			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
