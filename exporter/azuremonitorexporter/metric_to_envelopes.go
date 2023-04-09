@@ -143,7 +143,6 @@ func (m scalarMetric) getTimedDataPoints() []*timedMetricDataPoint {
 		}
 		dataPoint.Count = 1
 		dataPoint.Kind = contracts.Measurement
-		numberDataPoint.Attributes()
 		timedDataPoints[i] = &timedMetricDataPoint{
 			dataPoint:  dataPoint,
 			timestamp:  numberDataPoint.Timestamp(),
