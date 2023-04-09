@@ -107,10 +107,3 @@ func timestampFromLogRecord(lr plog.LogRecord) pcommon.Timestamp {
 
 	return pcommon.NewTimestampFromTime(timeNow())
 }
-
-func setAttributesAsProperties(attributeMap pcommon.Map, properties map[string]string) {
-	attributeMap.Range(func(k string, v pcommon.Value) bool {
-		properties[k] = v.AsString()
-		return true
-	})
-}
