@@ -33,10 +33,11 @@ const (
 	defaultContentLengthLogsLimit    = 2 * 1024 * 1024
 	defaultContentLengthMetricsLimit = 2 * 1024 * 1024
 	defaultContentLengthTracesLimit  = 2 * 1024 * 1024
+	defaultMaxEventSize              = 5 * 1024 * 1024
 	maxContentLengthLogsLimit        = 800 * 1024 * 1024
 	maxContentLengthMetricsLimit     = 800 * 1024 * 1024
 	maxContentLengthTracesLimit      = 800 * 1024 * 1024
-	defaultMaxEventSize              = 5 * 1024 * 1024
+	maxMaxEventSize                  = 800 * 1024 * 1024
 )
 
 // OtelToHecFields defines the mapping of attributes to HEC fields
@@ -158,6 +159,11 @@ func (cfg *Config) Validate() error {
 	if cfg.MaxContentLengthTraces > maxContentLengthTracesLimit {
 		return fmt.Errorf(`requires "max_content_length_traces" <= %d`, maxContentLengthTracesLimit)
 	}
+
+	if cfg.MaxEventSize > maxMaxEventSize {
+		return fmt.Errorf(`requires "max_event_size" <= %d`, maxMaxEventSize)
+	}
+
 	if err := cfg.QueueSettings.Validate(); err != nil {
 		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
 	}

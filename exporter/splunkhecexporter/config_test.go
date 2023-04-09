@@ -64,6 +64,7 @@ func TestLoadConfig(t *testing.T) {
 				LogDataEnabled:          true,
 				ProfilingDataEnabled:    true,
 				ExportRaw:               true,
+				MaxEventSize:            5 * 1024 * 1024,
 				MaxContentLengthLogs:    2 * 1024 * 1024,
 				MaxContentLengthMetrics: 2 * 1024 * 1024,
 				MaxContentLengthTraces:  2 * 1024 * 1024,
@@ -187,6 +188,17 @@ func TestConfig_Validate(t *testing.T) {
 				return cfg
 			}(),
 			wantErr: "requires \"max_content_length_traces\" <= 838860800",
+		},
+		{
+			name: "max default event-size",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.HTTPClientSettings.Endpoint = "http://foo_bar.com"
+				cfg.MaxEventSize = maxMaxEventSize + 1
+				cfg.Token = "foo"
+				return cfg
+			}(),
+			wantErr: "requires \"max_event_size\" <= 838860800",
 		},
 	}
 
