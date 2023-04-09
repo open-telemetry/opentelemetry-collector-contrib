@@ -147,7 +147,7 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 			scope := scopeLogs.At(j).Scope()
 			for k := 0; k < logRecords.Len(); k++ {
 				log := logRecords.At(k)
-				jsonLog := convertLogRecordToJSON(log, scope.Name(), resource, exporter.logger)
+				jsonLog := convertLogRecordToJSON(log, scope.Name(), resource)
 				logzioLog, err := json.Marshal(jsonLog)
 				if err != nil {
 					return err
