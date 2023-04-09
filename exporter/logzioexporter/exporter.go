@@ -81,9 +81,7 @@ func newLogzioTracesExporter(config *Config, set exporter.CreateSettings) (expor
 	if err != nil {
 		return nil, err
 	}
-	if err = config.Validate(); err != nil {
-		return nil, err
-	}
+
 	exporter.config.HTTPClientSettings.Endpoint, err = generateEndpoint(config)
 	if err != nil {
 		return nil, err
@@ -104,9 +102,6 @@ func newLogzioTracesExporter(config *Config, set exporter.CreateSettings) (expor
 func newLogzioLogsExporter(config *Config, set exporter.CreateSettings) (exporter.Logs, error) {
 	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
-		return nil, err
-	}
-	if err = config.Validate(); err != nil {
 		return nil, err
 	}
 	exporter.config.HTTPClientSettings.Endpoint, err = generateEndpoint(config)
