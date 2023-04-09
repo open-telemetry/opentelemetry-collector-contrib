@@ -25,8 +25,6 @@ import (
 
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
-	"github.com/hashicorp/go-hclog"
-
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -54,7 +52,6 @@ func GenerateLogWithScopeName() plog.LogRecord {
 }
 
 func TestConvertLogRecordToJSON(t *testing.T) {
-	logger := hclog.NewNullLogger()
 	type convertLogRecordToJSONTest struct {
 		log       plog.LogRecord
 		resource  pcommon.Resource
@@ -106,7 +103,7 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 		},
 	}
 	for _, test := range convertLogRecordToJSONTests {
-		output := convertLogRecordToJSON(test.log, test.scopeName, test.resource, logger)
+		output := convertLogRecordToJSON(test.log, test.scopeName, test.resource)
 		require.Equal(t, output, test.expected)
 	}
 
