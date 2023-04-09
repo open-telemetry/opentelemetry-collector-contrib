@@ -16,6 +16,7 @@ package logzioexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"encoding/hex"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
