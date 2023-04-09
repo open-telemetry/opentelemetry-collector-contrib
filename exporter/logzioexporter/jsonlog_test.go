@@ -23,11 +23,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/go-hclog"
+
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -44,11 +46,19 @@ func GenerateLogRecordWithMultiTypeValues() plog.LogRecord {
 	return lr
 }
 
+func GenerateLogWithScopeName() plog.LogRecord {
+	lr := plog.NewLogRecord()
+	fillLogScopeName(lr)
+	return lr
+}
+
 func TestConvertLogRecordToJSON(t *testing.T) {
+	logger := hclog.NewNullLogger()
 	type convertLogRecordToJSONTest struct {
-		log      plog.LogRecord
-		resource pcommon.Resource
-		expected map[string]interface{}
+		log       plog.LogRecord
+		resource  pcommon.Resource
+		expected  map[string]interface{}
+		scopeName string
 	}
 
 	var convertLogRecordToJSONTests = []convertLogRecordToJSONTest{
@@ -65,7 +75,7 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 				"nested":       map[string]interface{}{"number": float64(499), "string": "v1"},
 				"spanID":       "0102040800000000",
 				"traceID":      "08040201000000000000000000000000",
-			},
+			}, "",
 		},
 		{GenerateLogRecordWithMultiTypeValues(),
 			pcommon.NewResource(),
@@ -77,15 +87,30 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 				"@timestamp": TestLogTimeUnixMilli,
 				"message":    "something happened",
 				"number":     float64(64),
-			},
+			}, "",
+		},
+		{GenerateLogWithScopeName(),
+			pcommon.NewResource(),
+			map[string]interface{}{
+				"25":           float64(36),
+				"app":          "log4j2",
+				"instance_num": float64(1),
+				"level":        "Info",
+				"message":      "something happened in this scope",
+				"@timestamp":   TestLogTimeUnixMilli,
+				"spanID":       "0102040800000000",
+				"traceID":      "08040201000000000000000000000000",
+				"scopeName":    "test.class",
+			}, "test.class",
 		},
 	}
 	for _, test := range convertLogRecordToJSONTests {
-		output := convertLogRecordToJSON(test.log, test.resource)
+		output := convertLogRecordToJSON(test.log, test.scopeName, test.resource, logger)
 		require.Equal(t, output, test.expected)
 	}
 
 }
+
 func TestSetTimeStamp(t *testing.T) {
 	var recordedRequests []byte
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -94,15 +119,16 @@ func TestSetTimeStamp(t *testing.T) {
 	}))
 	ld := generateLogsOneEmptyTimestamp()
 	cfg := &Config{
-		Region: "us",
-		Token:  "token",
+		Region:           "us",
+		Token:            "token",
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:    server.URL,
 			Compression: configcompression.Gzip,
 		},
 	}
 	var err error
-	params := exportertest.NewNopCreateSettings()
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := createLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), componenttest.NewNopHost())

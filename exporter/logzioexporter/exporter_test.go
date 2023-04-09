@@ -30,9 +30,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -62,11 +62,9 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 	log.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
 	log.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
-
 	attrs := log.Attributes()
 	attrs.PutStr("app", "server")
 	attrs.PutDouble("instance_num", 1)
-
 	// nested body map
 	attMap := log.Body().SetEmptyMap()
 	attMap.PutDouble("23", 45)
@@ -75,6 +73,7 @@ func fillLogOne(log plog.LogRecord) {
 	attNestedMap := attMap.PutEmptyMap("nested")
 	attNestedMap.PutStr("string", "v1")
 	attNestedMap.PutDouble("number", 499)
+
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -103,6 +102,21 @@ func fillLogNoTimestamp(log plog.LogRecord) {
 	log.Body().SetStr("something happened")
 }
 
+func fillLogScopeName(log plog.LogRecord) {
+	log.SetTimestamp(TestLogTimestamp)
+	log.SetDroppedAttributesCount(2)
+	log.SetSeverityNumber(plog.SeverityNumberInfo)
+	log.SetSeverityText("Info")
+	log.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
+	log.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
+	attrs := log.Attributes()
+	attrs.PutStr("app", "log4j2")
+	attrs.PutDouble("instance_num", 1)
+	attrs.PutStr("scopeName", "test.class")
+	attrs.PutDouble("25", 36)
+	log.Body().SetStr("something happened in this scope")
+}
+
 func generateLogsOneEmptyTimestamp() plog.Logs {
 	ld := testdata.GenerateLogsOneEmptyLogRecord()
 	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
@@ -113,7 +127,7 @@ func generateLogsOneEmptyTimestamp() plog.Logs {
 
 func testLogsExporter(ld plog.Logs, t *testing.T, cfg *Config) error {
 	var err error
-	params := exportertest.NewNopCreateSettings()
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := createLogsExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
@@ -161,7 +175,7 @@ func newTestTraces() ptrace.Traces {
 }
 
 func testTracesExporter(td ptrace.Traces, t *testing.T, cfg *Config) error {
-	params := exportertest.NewNopCreateSettings()
+	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := createTracesExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
@@ -201,8 +215,9 @@ func TestExportErrors(tester *testing.T) {
 			rw.WriteHeader(test.status)
 		}))
 		cfg := &Config{
-			Region: "",
-			Token:  "token",
+			Region:           "",
+			Token:            "token",
+			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: server.URL,
 			},
@@ -221,15 +236,24 @@ func TestExportErrors(tester *testing.T) {
 }
 
 func TestNullTracesExporterConfig(tester *testing.T) {
-	params := exportertest.NewNopCreateSettings()
+	params := componenttest.NewNopExporterCreateSettings()
 	_, err := newLogzioTracesExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
 func TestNullExporterConfig(tester *testing.T) {
-	params := exportertest.NewNopCreateSettings()
+	params := componenttest.NewNopExporterCreateSettings()
 	_, err := newLogzioExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
+}
+
+func TestNullTokenConfig(tester *testing.T) {
+	cfg := Config{
+		Region: "eu",
+	}
+	params := componenttest.NewNopExporterCreateSettings()
+	_, err := createTracesExporter(context.Background(), params, &cfg)
+	assert.Error(tester, err, "Empty token should produce error")
 }
 
 func gUnzipData(data []byte) (resData []byte, err error) {
@@ -257,8 +281,9 @@ func TestPushTraceData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		Token:  "token",
-		Region: "",
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		Token:            "token",
+		Region:           "",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:    server.URL,
 			Compression: configcompression.Gzip,
@@ -290,8 +315,9 @@ func TestPushLogsData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		Token:  "token",
-		Region: "",
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		Token:            "token",
+		Region:           "",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:    server.URL,
 			Compression: configcompression.Gzip,

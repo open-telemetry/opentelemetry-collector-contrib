@@ -30,7 +30,6 @@ import (
 	"github.com/jaegertracing/jaeger/pkg/cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -55,7 +54,7 @@ type logzioExporter struct {
 	serviceCache cache.Cache
 }
 
-func newLogzioExporter(cfg *Config, params exporter.CreateSettings) (*logzioExporter, error) {
+func newLogzioExporter(cfg *Config, params component.ExporterCreateSettings) (*logzioExporter, error) {
 	logger := hclog2ZapLogger{
 		Zap:  params.Logger,
 		name: loggerName,
@@ -76,9 +75,12 @@ func newLogzioExporter(cfg *Config, params exporter.CreateSettings) (*logzioExpo
 	}, nil
 }
 
-func newLogzioTracesExporter(config *Config, set exporter.CreateSettings) (exporter.Traces, error) {
+func newLogzioTracesExporter(config *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
 	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
+		return nil, err
+	}
+	if err = config.Validate(); err != nil {
 		return nil, err
 	}
 	exporter.config.HTTPClientSettings.Endpoint, err = generateEndpoint(config)
@@ -98,9 +100,12 @@ func newLogzioTracesExporter(config *Config, set exporter.CreateSettings) (expor
 		exporterhelper.WithRetry(config.RetrySettings),
 	)
 }
-func newLogzioLogsExporter(config *Config, set exporter.CreateSettings) (exporter.Logs, error) {
+func newLogzioLogsExporter(config *Config, set component.ExporterCreateSettings) (component.LogsExporter, error) {
 	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
+		return nil, err
+	}
+	if err = config.Validate(); err != nil {
 		return nil, err
 	}
 	exporter.config.HTTPClientSettings.Endpoint, err = generateEndpoint(config)
@@ -138,9 +143,10 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 		scopeLogs := resourceLogs.At(i).ScopeLogs()
 		for j := 0; j < scopeLogs.Len(); j++ {
 			logRecords := scopeLogs.At(j).LogRecords()
+			scope := scopeLogs.At(j).Scope()
 			for k := 0; k < logRecords.Len(); k++ {
 				log := logRecords.At(k)
-				jsonLog := convertLogRecordToJSON(log, resource)
+				jsonLog := convertLogRecordToJSON(log, scope.Name(), resource, exporter.logger)
 				logzioLog, err := json.Marshal(jsonLog)
 				if err != nil {
 					return err
