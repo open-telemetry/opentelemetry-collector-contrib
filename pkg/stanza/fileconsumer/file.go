@@ -197,7 +197,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	}
 }
 
-func (m *Manager) isCurrentlyConsuming(path string, fp *Fingerprint) bool {
+func (m *Manager) isCurrentlyConsuming(fp *Fingerprint) bool {
 	m.trieLock.Lock()
 	defer m.trieLock.Unlock()
 	return m.trie.Get(fp.FirstBytes) != nil
@@ -264,7 +264,7 @@ func (m *Manager) makeReader(filePath string) (*Reader, *Fingerprint) {
 	}
 
 	// check if the current file is already being consumed
-	if m.isCurrentlyConsuming(filePath, fp) {
+	if m.isCurrentlyConsuming(fp) {
 		if err = file.Close(); err != nil {
 			m.Errorf("problem closing file", "file", file.Name())
 		}

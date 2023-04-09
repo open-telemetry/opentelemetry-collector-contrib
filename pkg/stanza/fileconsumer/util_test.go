@@ -76,15 +76,33 @@ type emitParams struct {
 	token []byte
 }
 
-func buildTestManager(t *testing.T, cfg *Config, initializeChannel bool) (*Manager, chan *emitParams) {
-	emitChan := make(chan *emitParams, 100)
-	return buildTestManagerWithEmit(t, cfg, emitChan, initializeChannel), emitChan
+type testManagerConfig struct {
+	emitChan          chan *emitParams
+	initializeChannel bool
 }
 
-func buildTestManagerWithEmit(t *testing.T, cfg *Config, emitChan chan *emitParams, initializeChannel bool) *Manager {
-	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(emitChan))
+type testManagerOption func(*testManagerConfig)
+
+func withEmitChan(emitChan chan *emitParams) testManagerOption {
+	return func(m *testManagerConfig) {
+		m.emitChan = emitChan
+	}
+}
+
+func withReaderChan() testManagerOption {
+	return func(m *testManagerConfig) {
+		m.initializeChannel = true
+	}
+}
+
+func buildTestManagerWithOptions(t *testing.T, cfg *Config, opts ...testManagerOption) (*Manager, chan *emitParams) {
+	tmc := &testManagerConfig{emitChan: make(chan *emitParams, 100)}
+	for _, opt := range opts {
+		opt(tmc)
+	}
+	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(tmc.emitChan))
 	require.NoError(t, err)
-	if initializeChannel {
+	if tmc.initializeChannel {
 		input.readerChan = make(chan ReaderWrapper, cfg.MaxConcurrentFiles/2)
 		ctx, cancel := context.WithCancel(context.Background())
 		input.cancel = cancel
@@ -94,7 +112,7 @@ func buildTestManagerWithEmit(t *testing.T, cfg *Config, emitChan chan *emitPara
 			go input.worker(input.ctx)
 		}
 	}
-	return input
+	return input, tmc.emitChan
 }
 
 func openFile(tb testing.TB, path string) *os.File {
