@@ -1,3 +1,4 @@
+// Deprecated: dotnetdiagnostics exporter is deprecated.
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver
 
 go 1.19
