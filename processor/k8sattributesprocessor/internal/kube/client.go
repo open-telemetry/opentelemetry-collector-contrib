@@ -382,15 +382,9 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if !needContainerAttributes(c.Rules) {
 		return containers
 	}
-	newContainer := func(name string) *Container {
-		if c.Rules.ContainerName {
-			return &Container{Name: name}
-		}
-		return &Container{}
-	}
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.ContainerName {
+	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
-			container := newContainer(spec.Name)
+			container := &Container{}
 			nameTagSep := strings.LastIndex(spec.Image, ":")
 			if c.Rules.ContainerImageName {
 				if nameTagSep > 0 {
@@ -408,8 +402,11 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	for _, apiStatus := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
 		container, ok := containers.ByName[apiStatus.Name]
 		if !ok {
-			container = newContainer(apiStatus.Name)
+			container = &Container{}
 			containers.ByName[apiStatus.Name] = container
+		}
+		if c.Rules.ContainerName {
+			container.Name = apiStatus.Name
 		}
 		containerID := apiStatus.ContainerID
 		// Remove container runtime prefix

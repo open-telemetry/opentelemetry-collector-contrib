@@ -171,17 +171,17 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		return
 	}
 	if containerSpec.Name != "" {
-		if _, ok := attrs.Get(conventions.AttributeK8SContainerName); !ok {
+		if _, found := attrs.Get(conventions.AttributeK8SContainerName); !found {
 			attrs.PutStr(conventions.AttributeK8SContainerName, containerSpec.Name)
 		}
 	}
 	if containerSpec.ImageName != "" {
-		if _, ok := attrs.Get(conventions.AttributeContainerImageName); !ok {
+		if _, found := attrs.Get(conventions.AttributeContainerImageName); !found {
 			attrs.PutStr(conventions.AttributeContainerImageName, containerSpec.ImageName)
 		}
 	}
 	if containerSpec.ImageTag != "" {
-		if _, ok := attrs.Get(conventions.AttributeContainerImageTag); !ok {
+		if _, found := attrs.Get(conventions.AttributeContainerImageTag); !found {
 			attrs.PutStr(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
 		}
 	}
