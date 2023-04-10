@@ -418,13 +418,16 @@ func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 
 func TestUpdateDurationMetrics(t *testing.T) {
 	p := serviceGraphProcessor{
-		reqTotal:                       make(map[string]int64),
-		reqFailedTotal:                 make(map[string]int64),
-		reqDurationSecondsSum:          make(map[string]float64),
-		reqDurationSecondsCount:        make(map[string]uint64),
-		reqDurationBounds:              defaultLatencyHistogramBucketsMs,
-		reqDurationSecondsBucketCounts: make(map[string][]uint64),
-		keyToMetric:                    make(map[string]metricSeries),
+		reqTotal:                             make(map[string]int64),
+		reqFailedTotal:                       make(map[string]int64),
+		reqServerDurationSecondsSum:          make(map[string]float64),
+		reqServerDurationSecondsCount:        make(map[string]uint64),
+		reqServerDurationSecondsBucketCounts: make(map[string][]uint64),
+		reqClientDurationSecondsSum:          make(map[string]float64),
+		reqClientDurationSecondsCount:        make(map[string]uint64),
+		reqClientDurationSecondsBucketCounts: make(map[string][]uint64),
+		reqDurationBounds:                    defaultLatencyHistogramBucketsMs,
+		keyToMetric:                          make(map[string]metricSeries),
 		config: &Config{
 			Dimensions: []string{},
 		},
@@ -451,7 +454,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.caseStr, func(t *testing.T) {
-			p.updateDurationMetrics(metricKey, tc.duration)
+			p.updateDurationMetrics(metricKey, tc.duration, tc.duration)
 		})
 	}
 }
