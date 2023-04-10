@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xr
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.236
+	github.com/aws/aws-sdk-go v1.44.240
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.75.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector/component v0.75.0
@@ -28,8 +28,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
