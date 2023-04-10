@@ -4,6 +4,81 @@
 
 <!-- next version -->
 
+## v0.75.0
+
+### 🛑 Breaking changes 🛑
+
+- `datadogexporter`: Graduate exporter.datadog.hostname.preview feature gate to Stable. (#20286)
+- `pkg/ottl`: Add typed getter for `pcommon.map` and update related functions to use it. (#19781)
+  Using the impacted functions, such as `keep_keys` or `replace_all_patterns`, without a `pcommon.map` will now result in an error. Only pass these function paths that result in a `pcommon.map` or set `ErrorMode` to `IgnoreError`.
+- `pkg/ottl`: Updates `ConvertCase`, `ParseJSON`, `Split`, and `Substring` to use `StringGetter` (#19137)
+  Affected components: `transformprocessor`, `filterprocessor`, `routingprocessor`.  It is HIGHLY recommended to use each component's `error_mode` configuration option to handle errors returned by these functions. 
+  
+- `pkg/ottl`: Adds new StringLikeGetter for converting values to string for use. (#19782)
+  Concat now converts more types to string instead of ignoring them.  IsMatch now converts []byte to string using `hex.EncodeToString(v)`.
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `metrics::histograms::send_count_sum_metrics` in favor of `metrics::histograms::send_aggregation_metrics`. (#20285)
+  Toggling `metrics::histograms::send_count_sum_metrics` will now send .min and .max metrics when available.
+  
+
+### 🚀 New components 🚀
+
+- `awss3exporter`: Add new AWS S3 exporter. (#9979)
+- `servicegraphconnector`: Add servicegraph connector to the build. (#20452)
+
+### 💡 Enhancements 💡
+
+- `clickhouseexporter`: Insert instrumentation scope name and version to SpanAttributes column in traces table (#17408)
+- `stanza`: Enhancement pkg/stanza/flatten to support resource and attributes (#20448)
+- `azuredataexplorerexporter`: Migrate stablity to beta. All the dependent libraries have moved to beta. (#19161)
+- `awsecscontainermetricsreceiver`: Add ServiceName from task metadata endpoint (#19728)
+- `mdatagen`: Warnings can now be specified in metadata.yaml to be included in the generated status table. (#20242)
+- `coralogixexporter`: Change coralogixexporter to default to gzip compression for logs and traces (#20337)
+- `datadogexporter`: Adds support for span links (span links are added as metadata to the converted span). (#20286)
+- `mdatagen`: Do not print "Supported pipeline types" in the generated status for extensions (#20236)
+- `filereceiver`: Update file receiver to be able to replay metrics in time. (#14638)
+- `googlecloudspannerreceiver`: adding table size statistics as metrics (#18689)
+- `processscraper`: Introduced `mute_process_exe_error` and `mute_process_io_error` flags to allow scraping of all processes on Linux machines. (#18923)
+- `attributesprocessor, resourceprocessor`: Add feature gate to support using SHA2-256 instead of SHA-1 for hashing (#4759, #5576)
+  enable switching to use SHA-2 256 with the feature gate `coreinternal.attraction.hash.sha256`
+- `translator/loki`: Normalize label names so they follow the Prometheus label names standard (#14113)
+  Loki doesn't support label names containing dots. |
+  Users had to convert dot-separated attributes into underscore-separated attributes before promoting them to Loki labels. |
+  From now on users can drop relabeling from their configuration. All dots in label names will be replaced with underscores automatically before sending request to Loki.
+  
+- `mongodbatlasreceiver`: Add support to collect organization events. (#19449, #20308)
+- `datadogexporter`: Send .min and .max metrics for delta OTLP Histograms and Exponential Histograms when `metrics::histograms::send_aggregation_metrics` is enabled. (#20285)
+- `receiver/purefareceiver`: Add missing code snippet that validate the config file (#14886)
+- `servicegraphprocessor`: Making cache and expire loop time configurable (#19639)
+  add new config items(cache_loop, store_expiration_loop)
+  
+- `servicegraphprocessor`: Making peer attributes of virtual node building configurable (#20428)
+  add new config items(virtual_node_peer_attributes: [db.name, rpc.service]) in Config:
+- `solacereceiver`: Updated solacereceiver to handle new features of Solace PubSub+ 10.4.x (#20349)
+- `sqlserverreceiver`: Adds support to collect metrics from a SQL Server that has a named instance. (#19140, #20247)
+- `logicmonitorexporter`: adds support for traces. (#19646)
+- `elasticsearchexporter`: Support Persistent queue for Elasticsearch exporter. (#19424)
+
+### 🧰 Bug fixes 🧰
+
+- `coralogixexporter`: Correctly declare mutation capability in factory for all signal exporter. (#20292)
+- `processor/metricstransform`: Preserve metric description while aggregating labels (#14577)
+- `extension/sigv4authextension`: Don't panic if no credentials provider is set up. (#19796)
+- `clickhouseexporter`: Fix clickhouse exporter default TTL settings. (#20302)
+- `receiver/elasticsearchreceiver`: Fix bug - no nodeStatsMetrics for es version before 7.9 (#19389)
+- `prometheusreceiver`: Update Prometheus dependency and disable newly-failing OpenMetrics compatibility tests (#20270)
+  Prometheus now accepts exemplar data on all metric types, which causes OpenMetrics compatibility tests to fail.
+  This change disables the negative tests relating to exemplar parsing.
+  
+- `processor/k8sattributes`: Fix image name parsing when repository name contains a port number. (#20239)
+- `mongodbatlasreceiver`: Fix issue where default collection interval of 1 minute was too short to collect several metrics. (#18032)
+  Default collection interval is now 3 minutes.
+- `pkg/ottl`: Fix bug where StringGetter was not allowed in a slice as a function param. (#19783)
+- `splunkhecexporter`: Make sure to not return an error if we are over capacity, just return that we cannot accept the event. (#20481)
+- `signalfxexporter`: Fixes undesired default reporting of per-core system.cpu.time for idle states. (#20354)
+
 ## v0.74.0
 
 ### 🛑 Breaking changes 🛑

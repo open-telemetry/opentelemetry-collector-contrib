@@ -1,0 +1,233 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: http_request.client_ip
+                value:
+                  stringValue: 89.163.253.200
+            body:
+              kvlistValue:
+                values:
+                  - key: ClientIP
+                    value:
+                      stringValue: 89.163.253.200
+                  - key: ClientRequestMethod
+                    value:
+                      stringValue: GET
+                  - key: EdgeStartTimestamp
+                    value:
+                      stringValue: "2023-03-03T05:29:05Z"
+                  - key: EdgeResponseStatus
+                    value:
+                      doubleValue: 200
+                  - key: RayID
+                    value:
+                      stringValue: 3a6050bcbe121a87
+                  - key: ClientRequestHost
+                    value:
+                      stringValue: www.theburritobot0.com
+                  - key: ClientRequestURI
+                    value:
+                      stringValue: /static/img/testimonial-hipster.png
+                  - key: EdgeEndTimestamp
+                    value:
+                      stringValue: "2023-03-03T05:30:05Z"
+                  - key: EdgeResponseBytes
+                    value:
+                      doubleValue: 69045
+            observedTimeUnixNano: "1678503547396296000"
+            severityNumber: 9
+            severityText: Info
+            spanId: ""
+            timeUnixNano: "1677821345000000000"
+            traceId: ""
+          - attributes:
+              - key: http_request.client_ip
+                value:
+                  stringValue: 89.163.253.201
+            body:
+              kvlistValue:
+                values:
+                  - key: EdgeResponseStatus
+                    value:
+                      doubleValue: 200
+                  - key: RayID
+                    value:
+                      stringValue: 3a6050bcbe121a87
+                  - key: EdgeEndTimestamp
+                    value:
+                      stringValue: "2023-03-03T05:30:05Z"
+                  - key: ClientRequestHost
+                    value:
+                      stringValue: www.theburritobot1.com
+                  - key: ClientRequestMethod
+                    value:
+                      stringValue: GET
+                  - key: ClientRequestURI
+                    value:
+                      stringValue: /static/img/testimonial-hipster.png
+                  - key: EdgeResponseBytes
+                    value:
+                      doubleValue: 69045
+                  - key: EdgeStartTimestamp
+                    value:
+                      stringValue: "2023-03-03T05:29:05Z"
+                  - key: ClientIP
+                    value:
+                      stringValue: 89.163.253.201
+            observedTimeUnixNano: "1678503547396296000"
+            severityNumber: 9
+            severityText: Info
+            spanId: ""
+            timeUnixNano: "1677821345000000000"
+            traceId: ""
+        scope:
+          name: otelcol/cloudflare
+  - resource:
+      attributes:
+        - key: cloudflare.zone
+          value:
+            stringValue: example.com
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: http_request.client_ip
+                value:
+                  stringValue: 89.163.253.202
+            body:
+              kvlistValue:
+                values:
+                  - key: ClientRequestHost
+                    value:
+                      stringValue: www.theburritobot2.com
+                  - key: ClientRequestMethod
+                    value:
+                      stringValue: GET
+                  - key: EdgeResponseBytes
+                    value:
+                      doubleValue: 69045
+                  - key: RayID
+                    value:
+                      stringValue: 3a6050bcbe121a87
+                  - key: ClientIP
+                    value:
+                      stringValue: 89.163.253.202
+                  - key: ClientRequestURI
+                    value:
+                      stringValue: /static/img/testimonial-hipster.png
+                  - key: EdgeEndTimestamp
+                    value:
+                      stringValue: "2023-03-03T05:30:05Z"
+                  - key: EdgeResponseStatus
+                    value:
+                      doubleValue: 200
+                  - key: EdgeStartTimestamp
+                    value:
+                      stringValue: "2023-03-03T05:29:05Z"
+                  - key: ZoneName
+                    value:
+                      stringValue: example.com
+            observedTimeUnixNano: "1678503547396296000"
+            severityNumber: 9
+            severityText: Info
+            spanId: ""
+            timeUnixNano: "1677821345000000000"
+            traceId: ""
+          - attributes:
+              - key: http_request.client_ip
+                value:
+                  stringValue: 89.163.253.204
+            body:
+              kvlistValue:
+                values:
+                  - key: EdgeEndTimestamp
+                    value:
+                      stringValue: "2023-03-03T05:30:05Z"
+                  - key: EdgeStartTimestamp
+                    value:
+                      stringValue: "2023-03-03T05:29:05Z"
+                  - key: RayID
+                    value:
+                      stringValue: 3a6050bcbe121a87
+                  - key: ZoneName
+                    value:
+                      stringValue: example.com
+                  - key: ClientRequestMethod
+                    value:
+                      stringValue: GET
+                  - key: ClientRequestURI
+                    value:
+                      stringValue: /static/img/testimonial-hipster.png
+                  - key: EdgeResponseBytes
+                    value:
+                      doubleValue: 69045
+                  - key: EdgeResponseStatus
+                    value:
+                      doubleValue: 200
+                  - key: ClientIP
+                    value:
+                      stringValue: 89.163.253.204
+                  - key: ClientRequestHost
+                    value:
+                      stringValue: www.theburritobot4.com
+            observedTimeUnixNano: "1678503547396296000"
+            severityNumber: 9
+            severityText: Info
+            spanId: ""
+            timeUnixNano: "1677821345000000000"
+            traceId: ""
+        scope:
+          name: otelcol/cloudflare
+  - resource:
+      attributes:
+        - key: cloudflare.zone
+          value:
+            stringValue: abc.com
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: http_request.client_ip
+                value:
+                  stringValue: 89.163.253.203
+            body:
+              kvlistValue:
+                values:
+                  - key: EdgeResponseBytes
+                    value:
+                      doubleValue: 69045
+                  - key: RayID
+                    value:
+                      stringValue: 3a6050bcbe121a87
+                  - key: ClientIP
+                    value:
+                      stringValue: 89.163.253.203
+                  - key: ClientRequestMethod
+                    value:
+                      stringValue: GET
+                  - key: EdgeEndTimestamp
+                    value:
+                      stringValue: "2023-03-03T05:30:05Z"
+                  - key: EdgeStartTimestamp
+                    value:
+                      stringValue: "2023-03-03T05:29:05Z"
+                  - key: ZoneName
+                    value:
+                      stringValue: abc.com
+                  - key: ClientRequestHost
+                    value:
+                      stringValue: www.theburritobot3.com
+                  - key: ClientRequestURI
+                    value:
+                      stringValue: /static/img/testimonial-hipster.png
+                  - key: EdgeResponseStatus
+                    value:
+                      doubleValue: 200
+            observedTimeUnixNano: "1678503547396296000"
+            severityNumber: 9
+            severityText: Info
+            spanId: ""
+            timeUnixNano: "1677821345000000000"
+            traceId: ""
+        scope:
+          name: otelcol/cloudflare
