@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxrayexporter
+package awsxray
 
 import (
 	"testing"
@@ -22,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
@@ -34,8 +35,9 @@ func TestUserAgent(t *testing.T) {
 		Version: "1.0",
 	}
 
-	session, _ := session.NewSession()
-	xray := newXRay(logger, &aws.Config{}, buildInfo, session)
+	newSession, err := session.NewSession()
+	require.NoError(t, err)
+	xray := NewXRayClient(logger, &aws.Config{}, buildInfo, newSession).(*xrayClient)
 	x := xray.xRay
 
 	req := request.New(aws.Config{}, metadata.ClientInfo{}, x.Handlers, nil, &request.Operation{
