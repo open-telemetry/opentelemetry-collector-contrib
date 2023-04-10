@@ -15,14 +15,18 @@ body:
       - cmd/configschema
       - cmd/mdatagen
       - cmd/otelcontribcol
+      - cmd/oteltestbedcol
       - cmd/telemetrygen
-      - cmd/tracegen
       - confmap/provider/s3provider
+      - connector/count
+      - connector/servicegraph
+      - connector/spanmetrics
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
       - exporter/awsemf
       - exporter/awskinesis
+      - exporter/awss3
       - exporter/awsxray
       - exporter/azuredataexplorer
       - exporter/azuremonitor
@@ -37,7 +41,6 @@ body:
       - exporter/googlecloud
       - exporter/googlecloudpubsub
       - exporter/googlemanagedprometheus
-      - exporter/humio
       - exporter/influxdb
       - exporter/instana
       - exporter/jaeger
@@ -68,6 +71,7 @@ body:
       - extension/bearertokenauth
       - extension/headerssetter
       - extension/healthcheck
+      - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
       - extension/observer
@@ -88,7 +92,6 @@ body:
       - internal/k8sconfig
       - internal/kubelet
       - internal/metadataproviders
-      - internal/scrapertest
       - internal/sharedcomponent
       - internal/splunk
       - internal/tools
@@ -96,6 +99,8 @@ body:
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
       - pkg/ottl
+      - pkg/pdatatest
+      - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/stanza
       - pkg/translator/jaeger
@@ -108,6 +113,7 @@ body:
       - pkg/winperfcounters
       - processor/attributes
       - processor/cumulativetodelta
+      - processor/datadog
       - processor/deltatorate
       - processor/filter
       - processor/groupbyattrs
@@ -121,6 +127,8 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
+      - processor/resourcedetection/internal/heroku
+      - processor/resourcedetection/internal/openshift
       - processor/routing
       - processor/schema
       - processor/servicegraph
@@ -141,17 +149,21 @@ body:
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
+      - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
       - receiver/couchdb
+      - receiver/datadog
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
+      - receiver/file
       - receiver/filelog
       - receiver/flinkmetrics
       - receiver/fluentforward
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
+      - receiver/haproxy
       - receiver/hostmetrics
       - receiver/httpcheck
       - receiver/iis
@@ -165,6 +177,7 @@ body:
       - receiver/kafka
       - receiver/kafkametrics
       - receiver/kubeletstats
+      - receiver/loki
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas
@@ -178,9 +191,9 @@ body:
       - receiver/postgresql
       - receiver/prometheus
       - receiver/prometheusexec
-      - receiver/promtail
       - receiver/pulsar
       - receiver/purefa
+      - receiver/purefb
       - receiver/rabbitmq
       - receiver/receivercreator
       - receiver/redis
@@ -196,18 +209,21 @@ body:
       - receiver/splunkhec
       - receiver/sqlquery
       - receiver/sqlserver
+      - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
       - receiver/tcplog
       - receiver/udplog
       - receiver/vcenter
       - receiver/wavefront
+      - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters
       - receiver/zipkin
       - receiver/zookeeper
       - testbed
       - testbed/mockdatareceivers/mockawsxrayreceiver
+      - testbed/mockdatasenders/mockdatadogagentexporter
       # End Collector components list
   - type: textarea
     attributes:

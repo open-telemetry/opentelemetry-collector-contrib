@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
@@ -53,21 +54,21 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Standard",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectNetworkMetrics: true,
 		},
 		{
 			name: "Standard with direction removed",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectNetworkMetrics: true,
 		},
 		{
 			name: "Validate Start Time",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			bootTimeFunc:         func() (uint64, error) { return 100, nil },
 			expectNetworkMetrics: true,
@@ -76,24 +77,24 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Include Filter that matches nothing",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
-				Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Include:              MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
 			expectNetworkMetrics: false,
 		},
 		{
 			name: "Invalid Include Filter",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
-				Include: MatchConfig{Interfaces: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Include:              MatchConfig{Interfaces: []string{"test"}},
 			},
 			newErrRegex: "^error creating network interface include filters:",
 		},
 		{
 			name: "Invalid Exclude Filter",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
-				Exclude: MatchConfig{Interfaces: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Exclude:              MatchConfig{Interfaces: []string{"test"}},
 			},
 			newErrRegex: "^error creating network interface exclude filters:",
 		},
@@ -117,7 +118,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Conntrack error ignored if metric disabled",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(), // conntrack metrics are disabled by default
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(), // conntrack metrics are disabled by default
 			},
 			conntrackFunc:        func() ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
 			expectNetworkMetrics: true,
@@ -126,7 +127,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newNetworkScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
+			scraper, err := newNetworkScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}

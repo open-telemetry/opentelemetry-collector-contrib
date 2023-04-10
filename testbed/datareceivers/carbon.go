@@ -18,10 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
@@ -31,7 +32,7 @@ import (
 // CarbonDataReceiver implements Carbon format receiver.
 type CarbonDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.MetricsReceiver
+	receiver receiver.Metrics
 }
 
 // Ensure CarbonDataReceiver implements MetricDataSender.
@@ -56,7 +57,7 @@ func (cr *CarbonDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ co
 		},
 	}
 	var err error
-	cr.receiver, err = carbonreceiver.New(componenttest.NewNopReceiverCreateSettings(), config, mc)
+	cr.receiver, err = carbonreceiver.New(receivertest.NewNopCreateSettings(), config, mc)
 	if err != nil {
 		return err
 	}

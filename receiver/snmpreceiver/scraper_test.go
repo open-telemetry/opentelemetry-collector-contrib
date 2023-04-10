@@ -25,11 +25,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 type MockClient struct {
@@ -102,7 +103,7 @@ func TestStart(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				scraper := &snmpScraper{
 					cfg:      &Config{},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 				}
 				err := scraper.start(context.Background(), componenttest.NewNopHost())
 				require.Error(t, err)
@@ -114,7 +115,7 @@ func TestStart(t *testing.T) {
 
 				scraper := &snmpScraper{
 					cfg:      createDefaultConfig().(*Config),
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 				}
 				err := scraper.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
@@ -141,7 +142,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("Close").Return(nil)
 				scraper := &snmpScraper{
 					cfg:      &Config{},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -176,7 +177,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -212,7 +213,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -250,13 +251,13 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "1_scalar_metrics_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics", "1_scalar_metrics_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -264,7 +265,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -297,13 +298,13 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "1_scalar_metrics_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics", "1_scalar_metrics_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -311,7 +312,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -346,13 +347,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "2_scalar_metrics_sum_cumulative_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"2_scalar_metrics_sum_cumulative_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -360,7 +362,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -395,13 +397,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "3_scalar_metrics_sum_delta_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"3_scalar_metrics_sum_delta_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -409,7 +412,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -459,13 +462,13 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "4_scalar_multiple_metrics_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics", "4_scalar_multiple_metrics_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -473,7 +476,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -525,13 +528,13 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "5_scalar_metric_w_attr_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics", "5_scalar_metric_w_attr_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -539,7 +542,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -597,13 +600,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "6_scalar_metric_w_multi_datapoint_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"6_scalar_metric_w_multi_datapoint_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -611,7 +615,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -640,7 +644,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -688,7 +692,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -743,13 +747,13 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "7_indexed_metrics_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics", "7_indexed_metrics_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -757,7 +761,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -807,13 +811,13 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "7_indexed_metrics_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics", "7_indexed_metrics_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -821,7 +825,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -873,13 +877,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "8_indexed_metrics_sum_cumulative_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"8_indexed_metrics_sum_cumulative_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -887,7 +892,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -939,13 +944,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "9_indexed_metrics_sum_delta_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"9_indexed_metrics_sum_delta_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -953,7 +959,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1021,13 +1027,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "10_indexed_scalar_metrics_same_resource_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"10_indexed_scalar_metrics_same_resource_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -1035,7 +1042,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1114,13 +1121,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "11_indexed_multiple_metrics_same_resource_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"11_indexed_multiple_metrics_same_resource_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -1128,7 +1136,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1205,13 +1213,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "12_indexed_metrics_w_all_attrs_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"12_indexed_metrics_w_all_attrs_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -1219,7 +1228,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1284,7 +1293,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1368,7 +1377,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1437,13 +1446,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "13_indexed_metrics_w_column_oid_attr_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"13_indexed_metrics_w_column_oid_attr_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -1451,7 +1461,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1514,13 +1524,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "13_indexed_metrics_w_column_oid_attr_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"13_indexed_metrics_w_column_oid_attr_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -1528,7 +1539,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1591,13 +1602,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "14_indexed_column_oid_float_attr_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"14_indexed_column_oid_float_attr_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -1605,7 +1617,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1668,13 +1680,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "15_indexed_column_oid_int_attr_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"15_indexed_column_oid_int_attr_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -1682,7 +1695,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1753,13 +1766,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "16_indexed_prefix_res_attr_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"16_indexed_prefix_res_attr_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -1767,7 +1781,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1828,7 +1842,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1908,7 +1922,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1998,13 +2012,13 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "17_indexed_oid_res_attr_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics", "17_indexed_oid_res_attr_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -2012,7 +2026,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -2096,13 +2110,13 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "17_indexed_oid_res_attr_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics", "17_indexed_oid_res_attr_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -2110,7 +2124,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -2172,13 +2186,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					goldenPath := filepath.Join("testdata", "expected_metrics", "18_indexed_oid_and_prefix_res_attr_golden.json")
+					goldenPath := filepath.Join("testdata", "expected_metrics",
+						"18_indexed_oid_and_prefix_res_attr_golden.yaml")
 					expectedMetrics, err := golden.ReadMetrics(goldenPath)
 					require.NoError(t, err)
 					return expectedMetrics
@@ -2186,7 +2201,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},

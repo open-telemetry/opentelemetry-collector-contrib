@@ -16,11 +16,12 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"encoding/hex"
+	"fmt"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -33,7 +34,7 @@ const (
 	traceIDFieldKey = "trace_id"
 )
 
-func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
+func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *Config) *splunk.Event {
 	host := unknownHostName
 	source := config.Source
 	sourcetype := config.SourceType
@@ -71,7 +72,7 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
-			fields[k] = convertAttributeValue(v, logger)
+			mergeValue(fields, k, v.AsRaw())
 		}
 		return true
 	})
@@ -88,52 +89,19 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
-			fields[k] = convertAttributeValue(v, logger)
+			mergeValue(fields, k, v.AsRaw())
 		}
 		return true
 	})
 
-	eventValue := convertAttributeValue(lr.Body(), logger)
 	return &splunk.Event{
 		Time:       nanoTimestampToEpochMilliseconds(lr.Timestamp()),
 		Host:       host,
 		Source:     source,
 		SourceType: sourcetype,
 		Index:      index,
-		Event:      eventValue,
+		Event:      lr.Body().AsRaw(),
 		Fields:     fields,
-	}
-}
-
-func convertAttributeValue(value pcommon.Value, logger *zap.Logger) interface{} {
-	switch value.Type() {
-	case pcommon.ValueTypeInt:
-		return value.Int()
-	case pcommon.ValueTypeBool:
-		return value.Bool()
-	case pcommon.ValueTypeDouble:
-		return value.Double()
-	case pcommon.ValueTypeStr:
-		return value.Str()
-	case pcommon.ValueTypeMap:
-		values := map[string]interface{}{}
-		value.Map().Range(func(k string, v pcommon.Value) bool {
-			values[k] = convertAttributeValue(v, logger)
-			return true
-		})
-		return values
-	case pcommon.ValueTypeSlice:
-		arrayVal := value.Slice()
-		values := make([]interface{}, arrayVal.Len())
-		for i := 0; i < arrayVal.Len(); i++ {
-			values[i] = convertAttributeValue(arrayVal.At(i), logger)
-		}
-		return values
-	case pcommon.ValueTypeEmpty:
-		return nil
-	default:
-		logger.Debug("Unhandled value type", zap.String("type", value.Type().String()))
-		return value
 	}
 }
 
@@ -150,4 +118,51 @@ func nanoTimestampToEpochMilliseconds(ts pcommon.Timestamp) *float64 {
 
 	val := duration.Round(time.Millisecond).Seconds()
 	return &val
+}
+
+func mergeValue(dst map[string]any, k string, v any) {
+	switch element := v.(type) {
+	case []any:
+		if isArrayFlat(element) {
+			dst[k] = v
+		} else {
+			jsonStr, _ := jsoniter.MarshalToString(element)
+			dst[k] = jsonStr
+		}
+	case map[string]any:
+		flattenAndMergeMap(element, dst, k)
+	default:
+		dst[k] = v
+	}
+
+}
+
+func isArrayFlat(array []any) bool {
+	for _, v := range array {
+		switch v.(type) {
+		case []any, map[string]any:
+			return false
+		}
+	}
+	return true
+}
+
+func flattenAndMergeMap(src, dst map[string]any, key string) {
+	for k, v := range src {
+		current := fmt.Sprintf("%s.%s", key, k)
+		switch element := v.(type) {
+		case map[string]any:
+			flattenAndMergeMap(element, dst, current)
+		case []any:
+			if isArrayFlat(element) {
+				dst[current] = element
+			} else {
+				jsonStr, _ := jsoniter.MarshalToString(element)
+				dst[current] = jsonStr
+			}
+
+		default:
+			dst[current] = element
+		}
+	}
 }

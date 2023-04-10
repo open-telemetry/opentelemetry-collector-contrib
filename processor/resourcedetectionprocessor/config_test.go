@@ -22,12 +22,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
@@ -43,10 +46,26 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "gce"),
+			id: component.NewIDWithName(typeStr, "openshift"),
 			expected: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
-				Detectors:          []string{"env", "gce"},
+				Detectors: []string{"openshift"},
+				DetectorConfig: DetectorConfig{
+					OpenShiftConfig: openshift.Config{
+						Address: "127.0.0.1:4444",
+						Token:   "some_token",
+						TLSSettings: configtls.TLSClientSetting{
+							Insecure: true,
+						},
+					},
+				},
+				HTTPClientSettings: cfg,
+				Override:           false,
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "gcp"),
+			expected: &Config{
+				Detectors:          []string{"env", "gcp"},
 				HTTPClientSettings: cfg,
 				Override:           false,
 			},
@@ -54,8 +73,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "ec2"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				Detectors:         []string{"env", "ec2"},
+				Detectors: []string{"env", "ec2"},
 				DetectorConfig: DetectorConfig{
 					EC2Config: ec2.Config{
 						Tags: []string{"^tag1$", "^tag2$"},
@@ -68,8 +86,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "system"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				Detectors:         []string{"env", "system"},
+				Detectors: []string{"env", "system"},
 				DetectorConfig: DetectorConfig{
 					SystemConfig: system.Config{
 						HostnameSources: []string{"os"},
@@ -78,6 +95,22 @@ func TestLoadConfig(t *testing.T) {
 				HTTPClientSettings: cfg,
 				Override:           false,
 				Attributes:         []string{"a", "b"},
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "heroku"),
+			expected: &Config{
+				Detectors:          []string{"env", "heroku"},
+				HTTPClientSettings: cfg,
+				Override:           false,
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "lambda"),
+			expected: &Config{
+				Detectors:          []string{"env", "lambda"},
+				HTTPClientSettings: cfg,
+				Override:           false,
 			},
 		},
 		{
@@ -147,6 +180,18 @@ func TestGetConfigFromType(t *testing.T) {
 			expectedConfig: system.Config{
 				HostnameSources: []string{"os"},
 			},
+		},
+		{
+			name:                "Get Heroku Config",
+			detectorType:        heroku.TypeStr,
+			inputDetectorConfig: DetectorConfig{},
+			expectedConfig:      nil,
+		},
+		{
+			name:                "Get AWS Lambda Config",
+			detectorType:        lambda.TypeStr,
+			inputDetectorConfig: DetectorConfig{},
+			expectedConfig:      nil,
 		},
 	}
 

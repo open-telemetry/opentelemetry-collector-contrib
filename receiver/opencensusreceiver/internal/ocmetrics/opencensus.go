@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
@@ -38,7 +39,7 @@ type Receiver struct {
 }
 
 // New creates a new ocmetrics.Receiver reference.
-func New(nextConsumer consumer.Metrics, set component.ReceiverCreateSettings) (*Receiver, error) {
+func New(nextConsumer consumer.Metrics, set receiver.CreateSettings) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}

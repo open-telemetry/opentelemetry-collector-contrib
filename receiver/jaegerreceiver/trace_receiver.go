@@ -44,6 +44,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
 
@@ -77,7 +78,7 @@ type jReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 
 	grpcObsrecv *obsreport.Receiver
 	httpObsrecv *obsreport.Receiver
@@ -106,7 +107,7 @@ func newJaegerReceiver(
 	id component.ID,
 	config *configuration,
 	nextConsumer consumer.Traces,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 ) (*jReceiver, error) {
 	grpcObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             id,

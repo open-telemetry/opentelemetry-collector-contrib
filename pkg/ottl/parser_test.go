@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -88,7 +89,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			name:      "complex invocation",
-			statement: `set("foo", getSomething(bear.honey))`,
+			statement: `set("foo", GetSomething(bear.honey))`,
 			expected: &parsedStatement{
 				Invocation: invocation{
 					Function: "set",
@@ -98,8 +99,8 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Literal: &mathExprLiteral{
-								Invocation: &invocation{
-									Function: "getSomething",
+								Converter: &converter{
+									Function: "GetSomething",
 									Arguments: []value{
 										{
 											Literal: &mathExprLiteral{
@@ -455,7 +456,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "Invocation with empty list",
+			name:      "Converter with empty list",
 			statement: `set(attributes["test"], [])`,
 			expected: &parsedStatement{
 				Invocation: invocation{
@@ -484,7 +485,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "Invocation with single-value list",
+			name:      "Converter with single-value list",
 			statement: `set(attributes["test"], ["value0"])`,
 			expected: &parsedStatement{
 				Invocation: invocation{
@@ -517,7 +518,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "Invocation with multi-value list",
+			name:      "Converter with multi-value list",
 			statement: `set(attributes["test"], ["value1", "value2"])`,
 			expected: &parsedStatement{
 				Invocation: invocation{
@@ -553,7 +554,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "Invocation with nested heterogeneous types",
+			name:      "Converter with nested heterogeneous types",
 			statement: `set(attributes["test"], [Concat(["a", "b"], "+"), ["1", 2, 3.0], nil, attributes["test"]])`,
 			expected: &parsedStatement{
 				Invocation: invocation{
@@ -576,7 +577,7 @@ func Test_parse(t *testing.T) {
 								Values: []value{
 									{
 										Literal: &mathExprLiteral{
-											Invocation: &invocation{
+											Converter: &converter{
 												Function: "Concat",
 												Arguments: []value{
 													{
@@ -641,8 +642,8 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "Invocation math mathExpression",
-			statement: `set(attributes["test"], 1000 - 600) where 1 + 1 * 2 == three / one()`,
+			name:      "Converter math mathExpression",
+			statement: `set(attributes["test"], 1000 - 600) where 1 + 1 * 2 == three / One()`,
 			expected: &parsedStatement{
 				Invocation: invocation{
 					Function: "set",
@@ -741,8 +742,8 @@ func Test_parse(t *testing.T) {
 													Operator: DIV,
 													Value: &mathValue{
 														Literal: &mathExprLiteral{
-															Invocation: &invocation{
-																Function: "one",
+															Converter: &converter{
+																Function: "One",
 															},
 														},
 													},
@@ -764,37 +765,6 @@ func Test_parse(t *testing.T) {
 			parsed, err := parseStatement(tt.statement)
 			assert.NoError(t, err)
 			assert.EqualValues(t, tt.expected, parsed)
-		})
-	}
-}
-
-func Test_parse_failure(t *testing.T) {
-	tests := []string{
-		`set(`,
-		`set("foo)`,
-		`set(name.)`,
-		`("foo")`,
-		`set("foo") where name =||= "fido"`,
-		`set(span_id, SpanIDWrapper{not a hex string})`,
-		`set(span_id, SpanIDWrapper{01})`,
-		`set(span_id, SpanIDWrapper{010203040506070809})`,
-		`set(trace_id, TraceIDWrapper{not a hex string})`,
-		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f})`,
-		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f1011})`,
-		`set("foo") where name = "fido"`,
-		`set("foo") where name or "fido"`,
-		`set("foo") where name and "fido"`,
-		`set("foo") where name and`,
-		`set("foo") where name or`,
-		`set("foo") where (`,
-		`set("foo") where )`,
-		`set("foo") where (name == "fido"))`,
-		`set("foo") where ((name == "fido")`,
-	}
-	for _, tt := range tests {
-		t.Run(tt, func(t *testing.T) {
-			_, err := parseStatement(tt)
-			assert.Error(t, err)
 		})
 	}
 }
@@ -1227,23 +1197,56 @@ func Test_parseStatement(t *testing.T) {
 		statement string
 		wantErr   bool
 	}{
+		{`set(`, true},
+		{`set("foo)`, true},
+		{`set(name.)`, true},
+		{`("foo")`, true},
+		{`set("foo") where name =||= "fido"`, true},
+		{`set(span_id, SpanIDWrapper{not a hex string})`, true},
+		{`set(span_id, SpanIDWrapper{01})`, true},
+		{`set(span_id, SpanIDWrapper{010203040506070809})`, true},
+		{`set(trace_id, TraceIDWrapper{not a hex string})`, true},
+		{`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f})`, true},
+		{`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f1011})`, true},
+		{`set("foo") where name = "fido"`, true},
+		{`set("foo") where name or "fido"`, true},
+		{`set("foo") where name and "fido"`, true},
+		{`set("foo") where name and`, true},
+		{`set("foo") where name or`, true},
+		{`set("foo") where (`, true},
+		{`set("foo") where )`, true},
+		{`set("foo") where (name == "fido"))`, true},
+		{`set("foo") where ((name == "fido")`, true},
+		{`Set()`, true},
+		{`set(int())`, true},
+		{`set(1 + int())`, true},
+		{`set(int() + 1)`, true},
+		{`set(1 * int())`, true},
+		{`set(1 * 1 + (2 * int()))`, true},
+		{`set() where int() == 1`, true},
+		{`set() where 1 == int()`, true},
+		{`set() where true and 1 == int() `, true},
+		{`set() where false or 1 == int() `, true},
 		{`set(foo.attributes["bar"].cat, "dog")`, false},
 		{`set(foo.attributes["animal"], "dog") where animal == "cat"`, false},
-		{`drop() where service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`, false},
-		{`drop() where service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`, false},
-		{`drop() where animal > "cat"`, false},
-		{`drop() where animal >= "cat"`, false},
-		{`drop() where animal <= "cat"`, false},
-		{`drop() where animal < "cat"`, false},
-		{`drop() where animal =< "dog"`, true},
-		{`drop() where animal => "dog"`, true},
-		{`drop() where animal <> "dog"`, true},
-		{`drop() where animal = "dog"`, true},
-		{`drop() where animal`, true},
-		{`drop() where animal ==`, true},
-		{`drop() where ==`, true},
-		{`drop() where == animal`, true},
-		{`drop() where attributes["path"] == "/healthcheck"`, false},
+		{`test() where service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`, false},
+		{`test() where service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`, false},
+		{`test() where animal > "cat"`, false},
+		{`test() where animal >= "cat"`, false},
+		{`test() where animal <= "cat"`, false},
+		{`test() where animal < "cat"`, false},
+		{`test() where animal =< "dog"`, true},
+		{`test() where animal => "dog"`, true},
+		{`test() where animal <> "dog"`, true},
+		{`test() where animal = "dog"`, true},
+		{`test() where animal`, true},
+		{`test() where animal ==`, true},
+		{`test() where ==`, true},
+		{`test() where == animal`, true},
+		{`test() where attributes["path"] == "/healthcheck"`, false},
+		{`test() where one() == 1`, true},
+		{`test(fail())`, true},
+		{`Test()`, true},
 	}
 	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
@@ -1305,6 +1308,196 @@ func Test_Execute(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func Test_Statements_Execute_Error(t *testing.T) {
+	tests := []struct {
+		name      string
+		condition boolExpressionEvaluator[interface{}]
+		function  ExprFunc[interface{}]
+		errorMode ErrorMode
+	}{
+		{
+			name: "IgnoreError error from condition",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, fmt.Errorf("test")
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, nil
+			},
+			errorMode: IgnoreError,
+		},
+		{
+			name: "PropagateError error from condition",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, fmt.Errorf("test")
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, nil
+			},
+			errorMode: PropagateError,
+		},
+		{
+			name: "IgnoreError error from function",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, nil
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, fmt.Errorf("test")
+			},
+			errorMode: IgnoreError,
+		},
+		{
+			name: "PropagateError error from function",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, nil
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, fmt.Errorf("test")
+			},
+			errorMode: PropagateError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statements := Statements[interface{}]{
+				statements: []*Statement[interface{}]{
+					{
+						condition: BoolExpr[any]{tt.condition},
+						function:  Expr[any]{exprFunc: tt.function},
+					},
+				},
+				errorMode:         tt.errorMode,
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+			}
+
+			err := statements.Execute(context.Background(), nil)
+			if tt.errorMode == PropagateError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func Test_Statements_Eval(t *testing.T) {
+	tests := []struct {
+		name           string
+		conditions     []boolExpressionEvaluator[interface{}]
+		function       ExprFunc[interface{}]
+		errorMode      ErrorMode
+		expectedResult bool
+	}{
+		{
+			name: "True",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				alwaysTrue[interface{}],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: true,
+		},
+		{
+			name: "At least one True",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				alwaysFalse[interface{}],
+				alwaysFalse[interface{}],
+				alwaysTrue[interface{}],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: true,
+		},
+		{
+			name: "False",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				alwaysFalse[interface{}],
+				alwaysFalse[interface{}],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: false,
+		},
+		{
+			name: "Error is false when using Ignore",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				alwaysFalse[interface{}],
+				func(context.Context, interface{}) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+				alwaysTrue[interface{}],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var rawStatements []*Statement[interface{}]
+			for _, condition := range tt.conditions {
+				rawStatements = append(rawStatements, &Statement[interface{}]{
+					condition: BoolExpr[any]{condition},
+					function: Expr[any]{
+						exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+							return nil, fmt.Errorf("function should not be called")
+						},
+					},
+				})
+			}
+
+			statements := Statements[interface{}]{
+				statements:        rawStatements,
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+				errorMode:         tt.errorMode,
+			}
+
+			result, err := statements.Eval(context.Background(), nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func Test_Statements_Eval_Error(t *testing.T) {
+	tests := []struct {
+		name       string
+		conditions []boolExpressionEvaluator[interface{}]
+		function   ExprFunc[interface{}]
+		errorMode  ErrorMode
+	}{
+		{
+			name: "Propagate Error from function",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				func(context.Context, interface{}) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+			},
+			errorMode: PropagateError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var rawStatements []*Statement[interface{}]
+			for _, condition := range tt.conditions {
+				rawStatements = append(rawStatements, &Statement[interface{}]{
+					condition: BoolExpr[any]{condition},
+					function: Expr[any]{
+						exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+							return nil, fmt.Errorf("function should not be called")
+						},
+					},
+				})
+			}
+
+			statements := Statements[interface{}]{
+				statements:        rawStatements,
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+				errorMode:         tt.errorMode,
+			}
+
+			result, err := statements.Eval(context.Background(), nil)
+			assert.Error(t, err)
+			assert.False(t, result)
 		})
 	}
 }

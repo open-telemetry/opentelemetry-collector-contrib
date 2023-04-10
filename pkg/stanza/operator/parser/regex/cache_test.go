@@ -16,11 +16,11 @@ package regex
 
 import (
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 )
 
 func TestNewMemoryCache(t *testing.T) {
@@ -224,9 +224,11 @@ func TestThrottledLimiter(t *testing.T) {
 	// Limiter with a count higher than the max, which will force
 	// it to be throttled by default. Also note that the init method
 	// has not been called yet, so the reset go routine is not running
+	count := &atomic.Uint64{}
+	count.Add(max + 1)
 	l := atomicLimiter{
 		max:      max,
-		count:    atomic.NewUint64(max + 1),
+		count:    count,
 		interval: 1,
 	}
 

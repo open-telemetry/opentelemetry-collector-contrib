@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -37,11 +38,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_enum"] = functionWithEnum
 	functions["testing_telemetry_settings_first"] = functionWithTelemetrySettingsFirst
 
-	p := NewParser(
+	p, _ := NewParser[any](
 		functions,
 		testParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	tests := []struct {
@@ -73,8 +74,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Arguments: []value{
 					{
 						Literal: &mathExprLiteral{
-							Invocation: &invocation{
-								Function: "unknownfunc",
+							Converter: &converter{
+								Function: "Unknownfunc",
 							},
 						},
 					},
@@ -269,11 +270,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	p := NewParser(
+	p, _ := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
-		testParseEnum,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	tests := []struct {
@@ -461,7 +462,7 @@ func Test_NewFunctionCall(t *testing.T) {
 								},
 								{
 									Literal: &mathExprLiteral{
-										Invocation: &invocation{
+										Converter: &converter{
 											Function: "testing_getter",
 											Arguments: []value{
 												{
@@ -485,6 +486,87 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 			want: 9,
+		},
+		{
+			name: "stringgetter slice arg",
+			inv: invocation{
+				Function: "testing_stringgetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									String: ottltest.Strp("also test"),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "pmapgetter slice arg",
+			inv: invocation{
+				Function: "testing_pmapgetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									Literal: &mathExprLiteral{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+								},
+								{
+									Literal: &mathExprLiteral{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "stringlikegetter slice arg",
+			inv: invocation{
+				Function: "testing_stringlikegetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									Literal: &mathExprLiteral{
+										Int: ottltest.Intp(1),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
 		},
 		{
 			name: "setter arg",
@@ -598,7 +680,7 @@ func Test_NewFunctionCall(t *testing.T) {
 								},
 								{
 									Literal: &mathExprLiteral{
-										Invocation: &invocation{
+										Converter: &converter{
 											Function: "testing_getter",
 											Arguments: []value{
 												{
@@ -614,6 +696,64 @@ func Test_NewFunctionCall(t *testing.T) {
 												},
 											},
 										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "stringgetter arg",
+			inv: invocation{
+				Function: "testing_stringgetter",
+				Arguments: []value{
+					{
+						String: ottltest.Strp("test"),
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "stringlikegetter arg",
+			inv: invocation{
+				Function: "testing_stringlikegetter",
+				Arguments: []value{
+					{
+						Bool: (*boolean)(ottltest.Boolp(false)),
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "intgetter arg",
+			inv: invocation{
+				Function: "testing_intgetter",
+				Arguments: []value{
+					{
+						Literal: &mathExprLiteral{
+							Int: ottltest.Intp(1),
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "pmapgetter arg",
+			inv: invocation{
+				Function: "testing_pmapgetter",
+				Arguments: []value{
+					{
+						Literal: &mathExprLiteral{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name: "name",
 									},
 								},
 							},
@@ -854,6 +994,24 @@ func functionWithGetterSlice(getters []Getter[interface{}]) (ExprFunc[interface{
 	}, nil
 }
 
+func functionWithStringGetterSlice(getters []Getter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
+func functionWithPMapGetterSlice(getters []PMapGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
+func functionWithStringLikeGetterSlice(getters []StringLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
 func functionWithSetter(Setter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
@@ -867,6 +1025,30 @@ func functionWithGetSetter(GetSetter[interface{}]) (ExprFunc[interface{}], error
 }
 
 func functionWithGetter(Getter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+func functionWithStringGetter(StringGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+func functionWithStringLikeGetter(StringLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+func functionWithIntGetter(IntGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+func functionWithPMapGetter(PMapGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
@@ -940,9 +1122,16 @@ func defaultFunctionsForTests() map[string]interface{} {
 	functions["testing_int_slice"] = functionWithIntSlice
 	functions["testing_byte_slice"] = functionWithByteSlice
 	functions["testing_getter_slice"] = functionWithGetterSlice
+	functions["testing_stringgetter_slice"] = functionWithStringGetterSlice
+	functions["testing_pmapgetter_slice"] = functionWithPMapGetterSlice
+	functions["testing_stringlikegetter_slice"] = functionWithStringLikeGetterSlice
 	functions["testing_setter"] = functionWithSetter
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter
+	functions["testing_stringgetter"] = functionWithStringGetter
+	functions["testing_stringlikegetter"] = functionWithStringLikeGetter
+	functions["testing_intgetter"] = functionWithIntGetter
+	functions["testing_pmapgetter"] = functionWithPMapGetter
 	functions["testing_string"] = functionWithString
 	functions["testing_float"] = functionWithFloat
 	functions["testing_int"] = functionWithInt

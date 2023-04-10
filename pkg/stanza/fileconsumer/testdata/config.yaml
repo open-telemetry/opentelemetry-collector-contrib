@@ -154,3 +154,12 @@ poll_interval_no_units:
 start_at_string:
   type: mock
   start_at: "beginning"
+max_batches_1:
+  type: mock
+  max_batches: 1
+header_config:
+  type: mock
+  header:
+    pattern: "^#"
+    metadata_operators:
+     - type: "regex_parser"

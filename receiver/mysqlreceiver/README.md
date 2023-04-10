@@ -39,7 +39,7 @@ receivers:
   mysql:
     endpoint: localhost:3306
     username: otel
-    password: $MYSQL_PASSWORD
+    password: ${env:MYSQL_PASSWORD}
     database: otel
     collection_interval: 10s
     perf_events_statements:

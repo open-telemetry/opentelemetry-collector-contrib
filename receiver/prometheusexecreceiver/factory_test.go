@@ -25,9 +25,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -35,8 +35,8 @@ import (
 
 func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	var (
-		traceReceiver  component.TracesReceiver
-		metricReceiver component.MetricsReceiver
+		traceReceiver  receiver.Traces
+		metricReceiver receiver.Metrics
 	)
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -52,7 +52,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	assert.NotNil(t, cfg)
 
 	// Test CreateTracesReceiver
-	traceReceiver, err = factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	traceReceiver, err = factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 
 	assert.Equal(t, nil, traceReceiver)
 	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
@@ -64,7 +64,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "test").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	set.ID = component.NewID(typeStr)
 	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
 	assert.Equal(t, nil, err)
@@ -74,7 +74,6 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 		config:   cfg.(*Config),
 		consumer: nil,
 		promReceiverConfig: &prometheusreceiver.Config{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			PrometheusConfig: &promconfig.Config{
 				ScrapeConfigs: []*promconfig.ScrapeConfig{
 					{

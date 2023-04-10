@@ -30,9 +30,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 const (
@@ -76,155 +77,109 @@ var (
 	}
 )
 
+type testCase struct {
+	name      string
+	container testcontainers.ContainerRequest
+	script    []string
+	cfgMod    func(defaultCfg *Config, endpoint string)
+}
+
 func TestMongodbIntegration(t *testing.T) {
-	t.Run("Running mongodb 4.0", func(t *testing.T) {
-		t.Parallel()
-		container, endpoint := getContainer(t, containerRequest4_0, setupScript)
-		defer func() {
-			require.NoError(t, container.Terminate(context.Background()))
-		}()
-
-		f := NewFactory()
-		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.Metrics.MongodbLockAcquireTime.Enabled = false
-		cfg.Hosts = []confignet.NetAddr{
-			{
-				Endpoint: endpoint,
+	testCases := []testCase{
+		{
+			name:      "4_0",
+			script:    setupScript,
+			container: containerRequest4_0,
+			cfgMod: func(cfg *Config, endpoint string) {
+				cfg.MetricsBuilderConfig.Metrics.MongodbLockAcquireTime.Enabled = false
+				cfg.Hosts = []confignet.NetAddr{
+					{
+						Endpoint: endpoint,
+					},
+				}
+				cfg.Insecure = true
 			},
-		}
-		cfg.Insecure = true
-
-		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
-		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-		require.NoError(t, err, "failed creating metrics receiver")
-
-		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-		require.Eventuallyf(t, func() bool {
-			return len(consumer.AllMetrics()) > 0
-		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-		require.NoError(t, rcvr.Shutdown(context.Background()))
-
-		actualMetrics := consumer.AllMetrics()[0]
-
-		expectedFile := filepath.Join("testdata", "integration", "expected.4_0.json")
-		expectedMetrics, err := golden.ReadMetrics(expectedFile)
-		require.NoError(t, err)
-
-		golden.WriteMetrics("actual_metrics.json", actualMetrics)
-
-		err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
-		require.NoError(t, err)
-	})
-	t.Run("Running mongodb 4.2", func(t *testing.T) {
-		t.Parallel()
-		container, endpoint := getContainer(t, containerRequest4_2, setupScript)
-		defer func() {
-			require.NoError(t, container.Terminate(context.Background()))
-		}()
-
-		f := NewFactory()
-		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.Hosts = []confignet.NetAddr{
-			{
-				Endpoint: endpoint,
+		},
+		{
+			name:      "4_2",
+			script:    setupScript,
+			container: containerRequest4_2,
+			cfgMod: func(cfg *Config, endpoint string) {
+				cfg.Hosts = []confignet.NetAddr{
+					{
+						Endpoint: endpoint,
+					},
+				}
+				cfg.Insecure = true
 			},
-		}
-		cfg.Insecure = true
-
-		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
-		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-		require.NoError(t, err, "failed creating metrics receiver")
-
-		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-		require.Eventuallyf(t, func() bool {
-			return len(consumer.AllMetrics()) > 0
-		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-		require.NoError(t, rcvr.Shutdown(context.Background()))
-
-		actualMetrics := consumer.AllMetrics()[0]
-
-		expectedFile := filepath.Join("testdata", "integration", "expected.4_2.json")
-		expectedMetrics, err := golden.ReadMetrics(expectedFile)
-		require.NoError(t, err)
-
-		err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
-		require.NoError(t, err)
-	})
-	t.Run("Running mongodb 4.4 as LPU", func(t *testing.T) {
-		t.Parallel()
-		container, endpoint := getContainer(t, containerRequest4_4LPU, LPUSetupScript)
-		defer func() {
-			require.NoError(t, container.Terminate(context.Background()))
-		}()
-
-		f := NewFactory()
-		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.Username = "otelu"
-		cfg.Password = "otelp"
-		cfg.Hosts = []confignet.NetAddr{
-			{
-				Endpoint: endpoint,
+		},
+		{
+			name:      "4_4.lpu",
+			script:    LPUSetupScript,
+			container: containerRequest4_4LPU,
+			cfgMod: func(cfg *Config, endpoint string) {
+				cfg.Username = "otelu"
+				cfg.Password = "otelp"
+				cfg.Hosts = []confignet.NetAddr{
+					{
+						Endpoint: endpoint,
+					},
+				}
+				cfg.Insecure = true
 			},
-		}
-		cfg.Insecure = true
-
-		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
-		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-		require.NoError(t, err, "failed creating metrics receiver")
-
-		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-		require.Eventuallyf(t, func() bool {
-			return len(consumer.AllMetrics()) > 0
-		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-		require.NoError(t, rcvr.Shutdown(context.Background()))
-
-		actualMetrics := consumer.AllMetrics()[0]
-
-		expectedFile := filepath.Join("testdata", "integration", "expected.4_4.lpu.json")
-		expectedMetrics, err := golden.ReadMetrics(expectedFile)
-		require.NoError(t, err)
-
-		err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
-		require.NoError(t, err)
-	})
-	t.Run("Running mongodb 5.0", func(t *testing.T) {
-		t.Parallel()
-		container, endpoint := getContainer(t, containerRequest5_0, setupScript)
-		defer func() {
-			require.NoError(t, container.Terminate(context.Background()))
-		}()
-
-		f := NewFactory()
-		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.Hosts = []confignet.NetAddr{
-			{
-				Endpoint: endpoint,
+		},
+		{
+			name:      "5_0",
+			script:    setupScript,
+			container: containerRequest5_0,
+			cfgMod: func(cfg *Config, endpoint string) {
+				cfg.Hosts = []confignet.NetAddr{
+					{
+						Endpoint: endpoint,
+					},
+				}
+				cfg.Insecure = true
 			},
-		}
-		cfg.Insecure = true
+		},
+	}
 
-		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
-		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-		require.NoError(t, err, "failed creating metrics receiver")
+	for _, tt := range testCases {
+		t.Run(tt.name, tt.run)
+	}
+}
 
-		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-		require.Eventuallyf(t, func() bool {
-			return len(consumer.AllMetrics()) > 0
-		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-		require.NoError(t, rcvr.Shutdown(context.Background()))
+func (tt testCase) run(t *testing.T) {
+	t.Parallel()
+	container, endpoint := getContainer(t, tt.container, tt.script)
+	defer func() {
+		require.NoError(t, container.Terminate(context.Background()))
+	}()
 
-		actualMetrics := consumer.AllMetrics()[0]
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.CollectionInterval = 10 * time.Second
+	tt.cfgMod(cfg, endpoint)
 
-		expectedFile := filepath.Join("testdata", "integration", "expected.5_0.json")
-		expectedMetrics, err := golden.ReadMetrics(expectedFile)
-		require.NoError(t, err)
+	consumer := new(consumertest.MetricsSink)
+	settings := receivertest.NewNopCreateSettings()
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+	require.NoError(t, err, "failed creating metrics receiver")
 
-		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
-	})
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Wait for multiple collections, in case the first represents partially started system
+	require.Eventuallyf(t, func() bool {
+		return len(consumer.AllMetrics()) > 1
+	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+	require.NoError(t, rcvr.Shutdown(context.Background()))
+	actualMetrics := consumer.AllMetrics()[1]
+
+	expectedFile := filepath.Join("testdata", "integration", fmt.Sprintf("expected.%s.yaml", tt.name))
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest, script []string) (testcontainers.Container, string) {

@@ -52,13 +52,13 @@ func TestMetricNormalize(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: normalizeMetric, useOpenMetrics: true},
 			},
-			normalizedName: true,
-			validateFunc:   verifyNormalizeMetric,
+			validateFunc: verifyNormalizeMetric,
 		},
 	}
 
 	registry := featuregate.NewRegistry()
-	require.NoError(t, registry.RegisterID("pkg.translator.prometheus.NormalizeName", featuregate.StageBeta))
+	_, err := registry.Register("pkg.translator.prometheus.NormalizeName", featuregate.StageBeta)
+	require.NoError(t, err)
 
 	testComponent(t, targets, false, "", registry)
 }
@@ -148,5 +148,5 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 				},
 			}),
 	}
-	doCompareNormalized(t, "scrape-metricNormalize-1", wantAttributes, m1, e1, true)
+	doCompare(t, "scrape-metricNormalize-1", wantAttributes, m1, e1)
 }

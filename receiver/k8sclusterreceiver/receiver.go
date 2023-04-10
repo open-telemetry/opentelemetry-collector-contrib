@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -30,13 +31,13 @@ const (
 	defaultInitialSyncTimeout = 10 * time.Minute
 )
 
-var _ component.MetricsReceiver = (*kubernetesReceiver)(nil)
+var _ receiver.Metrics = (*kubernetesReceiver)(nil)
 
 type kubernetesReceiver struct {
 	resourceWatcher *resourceWatcher
 
 	config   *Config
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	consumer consumer.Metrics
 	cancel   context.CancelFunc
 	obsrecv  *obsreport.Receiver
@@ -97,6 +98,9 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 }
 
 func (kr *kubernetesReceiver) Shutdown(context.Context) error {
+	if kr.cancel == nil {
+		return nil
+	}
 	kr.cancel()
 	return nil
 }
@@ -113,7 +117,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 }
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
-func newReceiver(_ context.Context, set component.ReceiverCreateSettings, cfg component.Config, consumer consumer.Metrics) (component.MetricsReceiver, error) {
+func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{

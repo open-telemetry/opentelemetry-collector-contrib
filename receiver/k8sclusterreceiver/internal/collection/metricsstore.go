@@ -18,15 +18,11 @@ import (
 	"sync"
 	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
@@ -36,18 +32,11 @@ import (
 // until the next Kubernetes event pertaining to an object.
 type metricsStore struct {
 	sync.RWMutex
-	metricsCache map[types.UID][]*agentmetricspb.ExportMetricsServiceRequest
-}
-
-// This probably wouldn't be required once the new OTLP ResourceMetrics
-// struct is made available.
-type resourceMetrics struct {
-	resource *resourcepb.Resource
-	metrics  []*metricspb.Metric
+	metricsCache map[types.UID]pmetric.Metrics
 }
 
 // updates metricsStore with latest metrics.
-func (ms *metricsStore) update(obj runtime.Object, rms []*resourceMetrics) error {
+func (ms *metricsStore) update(obj runtime.Object, md pmetric.Metrics) error {
 	ms.Lock()
 	defer ms.Unlock()
 
@@ -56,15 +45,7 @@ func (ms *metricsStore) update(obj runtime.Object, rms []*resourceMetrics) error
 		return err
 	}
 
-	origMds := make([]agentmetricspb.ExportMetricsServiceRequest, len(rms))
-	mds := make([]*agentmetricspb.ExportMetricsServiceRequest, len(rms))
-	for i, rm := range rms {
-		mds[i] = &origMds[i]
-		mds[i].Resource = rm.resource
-		mds[i].Metrics = rm.metrics
-	}
-
-	ms.metricsCache[key] = mds
+	ms.metricsCache[key] = md
 	return nil
 }
 
@@ -87,26 +68,44 @@ func (ms *metricsStore) getMetricData(currentTime time.Time) pmetric.Metrics {
 	ms.RLock()
 	defer ms.RUnlock()
 
+	currentTimestamp := pcommon.NewTimestampFromTime(currentTime)
 	out := pmetric.NewMetrics()
-	for _, mds := range ms.metricsCache {
-		for i := range mds {
-			// Set datapoint timestamp to be time of retrieval from cache.
-			applyCurrentTime(mds[i].Metrics, currentTime)
-			internaldata.OCToMetrics(mds[i].Node, mds[i].Resource, mds[i].Metrics).ResourceMetrics().MoveAndAppendTo(out.ResourceMetrics())
-		}
+	for _, md := range ms.metricsCache {
+		// Set datapoint timestamp to be time of retrieval from cache.
+		applyCurrentTime(md, currentTimestamp)
+		rms := pmetric.NewResourceMetricsSlice()
+		md.ResourceMetrics().CopyTo(rms)
+		rms.MoveAndAppendTo(out.ResourceMetrics())
 	}
 
 	return out
 }
 
-func applyCurrentTime(metrics []*metricspb.Metric, t time.Time) []*metricspb.Metric {
-	currentTime := timestamppb.New(t)
-	for _, metric := range metrics {
-		if metric != nil {
-			for i := range metric.Timeseries {
-				metric.Timeseries[i].Points[0].Timestamp = currentTime
+func applyCurrentTime(md pmetric.Metrics, t pcommon.Timestamp) {
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		sms := rms.At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				switch ms.At(k).Type() {
+				case pmetric.MetricTypeGauge:
+					applyCurrentTimeNumberDataPoint(ms.At(k).Gauge().DataPoints(), t)
+				case pmetric.MetricTypeSum:
+					applyCurrentTimeNumberDataPoint(ms.At(k).Sum().DataPoints(), t)
+				}
 			}
 		}
 	}
-	return metrics
+}
+
+func applyCurrentTimeNumberDataPoint(dps pmetric.NumberDataPointSlice, t pcommon.Timestamp) {
+	for i := 0; i < dps.Len(); i++ {
+		switch dps.At(i).ValueType() {
+		case pmetric.NumberDataPointValueTypeDouble:
+			dps.At(i).SetTimestamp(t)
+		case pmetric.NumberDataPointValueTypeInt:
+			dps.At(i).SetTimestamp(t)
+		}
+	}
 }

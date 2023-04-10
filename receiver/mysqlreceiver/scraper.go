@@ -17,14 +17,13 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -33,18 +32,7 @@ import (
 
 const (
 	picosecondsInNanoseconds int64 = 1000
-	RenameCommands                 = "receiver.mysqlreceiver.renameCommands"
-	deprecationVersion             = "v0.67.0"
-	renameVersion                  = "v0.68.0"
 )
-
-func init() {
-	featuregate.GetRegistry().MustRegisterID(
-		RenameCommands,
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("When enabled, the mysql.commands will be deprecated and additionally emitted as optional mysql.prepared_statements metric"),
-	)
-}
 
 type mySQLScraper struct {
 	sqlclient client
@@ -57,28 +45,13 @@ type mySQLScraper struct {
 }
 
 func newMySQLScraper(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config *Config,
 ) *mySQLScraper {
 	ms := &mySQLScraper{
-		logger:         settings.Logger,
-		config:         config,
-		mb:             metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
-		renameCommands: featuregate.GetRegistry().IsEnabled(RenameCommands),
-	}
-
-	if !ms.renameCommands {
-		settings.Logger.Warn(fmt.Sprintf("[WARNING] Metric `mysql.commands` is deprecated and duplicated as `mysql.prepared_statements`. Metric `mysql.commands` will be removed and `mysql.prepared_statements` will be a default metric in %s. Disable a feature gate `%s` to keep previous behavior", renameVersion, RenameCommands))
-		ms.config.Metrics.MysqlPreparedStatements.Enabled = false
-	} else {
-		if ms.config.Metrics.MysqlCommands.Enabled {
-			ms.mb.DeprecateMetrics()
-			settings.Logger.Warn(fmt.Sprintf("[WARNING] Metric `mysql.commands` is deprecated and will be removed in %s. Please use `mysql.prepared_statements` instead", renameVersion))
-		}
-
-		if !ms.config.Metrics.MysqlPreparedStatements.Enabled {
-			settings.Logger.Warn(fmt.Sprintf("[WARNING] Metric `mysql.prepared_statements` will be a default metric in %s", renameVersion))
-		}
+		logger: settings.Logger,
+		config: config,
+		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
 
 	return ms
@@ -138,6 +111,9 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	// collect global status metrics.
 	m.scrapeGlobalStats(now, errs)
+
+	// colect replicas status metrics.
+	m.scrapeReplicaStatusStats(now, errs)
 
 	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
 
@@ -225,43 +201,35 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Connections":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionCountDataPoint(now, v))
 
-		// commands
+		// prepared_statements_commands
 		case "Com_stmt_execute":
-			if m.renameCommands {
-				addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
-					metadata.AttributePreparedStatementsCommandExecute))
-			}
-			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributePreparedStatementsCommandExecute))
+			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
+				metadata.AttributePreparedStatementsCommandExecute))
 		case "Com_stmt_close":
-			if m.renameCommands {
-				addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
-					metadata.AttributePreparedStatementsCommandClose))
-			}
-			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributePreparedStatementsCommandClose))
+			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
+				metadata.AttributePreparedStatementsCommandClose))
 		case "Com_stmt_fetch":
-			if m.renameCommands {
-				addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
-					metadata.AttributePreparedStatementsCommandFetch))
-			}
-			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributePreparedStatementsCommandFetch))
+			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
+				metadata.AttributePreparedStatementsCommandFetch))
 		case "Com_stmt_prepare":
-			if m.renameCommands {
-				addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
-					metadata.AttributePreparedStatementsCommandPrepare))
-			}
-			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributePreparedStatementsCommandPrepare))
+			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
+				metadata.AttributePreparedStatementsCommandPrepare))
 		case "Com_stmt_reset":
-			if m.renameCommands {
-				addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
-					metadata.AttributePreparedStatementsCommandReset))
-			}
-			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributePreparedStatementsCommandReset))
+			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
+				metadata.AttributePreparedStatementsCommandReset))
 		case "Com_stmt_send_long_data":
-			if m.renameCommands {
-				addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
-					metadata.AttributePreparedStatementsCommandSendLongData))
-			}
-			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributePreparedStatementsCommandSendLongData))
+			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
+				metadata.AttributePreparedStatementsCommandSendLongData))
+
+		// commands
+		case "Com_delete":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandDelete))
+		case "Com_insert":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandInsert))
+		case "Com_select":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandSelect))
+		case "Com_update":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandUpdate))
 
 		// created tmps
 		case "Created_tmp_disk_tables":
@@ -568,6 +536,26 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteLowPriority/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeWriteLockTypeLowPriority)
 		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteNormal/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeWriteLockTypeNormal)
 		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteExternal/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeWriteLockTypeExternal)
+	}
+}
+
+func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	replicaStatusStats, err := m.sqlclient.getReplicaStatusStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch replica status stats", zap.Error(err))
+		errs.AddPartial(8, err)
+		return
+	}
+
+	for i := 0; i < len(replicaStatusStats); i++ {
+		s := replicaStatusStats[i]
+
+		val, _ := s.secondsBehindSource.Value()
+		if val != nil {
+			m.mb.RecordMysqlReplicaTimeBehindSourceDataPoint(now, val.(int64))
+		}
+
+		m.mb.RecordMysqlReplicaSQLDelayDataPoint(now, s.sqlDelay)
 	}
 }
 

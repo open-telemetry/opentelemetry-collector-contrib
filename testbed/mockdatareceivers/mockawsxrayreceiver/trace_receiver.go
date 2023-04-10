@@ -23,12 +23,14 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -48,7 +50,7 @@ type MockAwsXrayReceiver struct {
 // New creates a new awsxrayreceiver.MockAwsXrayReceiver reference.
 func New(
 	nextConsumer consumer.Traces,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	config *Config) (*MockAwsXrayReceiver, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
@@ -90,7 +92,7 @@ func (ar *MockAwsXrayReceiver) Start(_ context.Context, host component.Host) err
 	nr.HandleFunc("/TraceSegments", ar.HTTPHandlerFunc)
 
 	// create a server with the handler
-	ar.server = &http.Server{Handler: nr}
+	ar.server = &http.Server{Handler: nr, ReadHeaderTimeout: 20 * time.Second}
 
 	// run the server on a routine
 	go func() {

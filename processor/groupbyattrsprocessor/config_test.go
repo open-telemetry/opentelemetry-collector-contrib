@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -35,15 +34,13 @@ func TestLoadingConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "grouping"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				GroupByKeys:       []string{"key1", "key2"},
+				GroupByKeys: []string{"key1", "key2"},
 			},
 		},
 		{
 			id: component.NewIDWithName(typeStr, "compaction"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				GroupByKeys:       []string{},
+				GroupByKeys: []string{},
 			},
 		},
 	}

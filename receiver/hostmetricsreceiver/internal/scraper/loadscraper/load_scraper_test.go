@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -58,15 +59,15 @@ func TestScrape(t *testing.T) {
 			name:        testStandard,
 			saveMetrics: true,
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
 			name:        testAverage,
 			saveMetrics: true,
 			config: &Config{
-				Metrics:    metadata.DefaultMetricsSettings(),
-				CPUAverage: true,
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				CPUAverage:           true,
 			},
 			bootTimeFunc: func() (uint64, error) { return bootTime, nil },
 		},
@@ -74,7 +75,7 @@ func TestScrape(t *testing.T) {
 			name:     "Load Error",
 			loadFunc: func() (*load.AvgStat, error) { return nil, errors.New("err1") },
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedErr: "err1",
 		},
@@ -83,7 +84,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newLoadScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), test.config)
+			scraper := newLoadScraper(context.Background(), receivertest.NewNopCreateSettings(), test.config)
 			if test.loadFunc != nil {
 				scraper.load = test.loadFunc
 			}

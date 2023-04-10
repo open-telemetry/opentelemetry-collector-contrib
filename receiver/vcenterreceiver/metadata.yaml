@@ -3,21 +3,27 @@ name: vcenterreceiver
 resource_attributes:
   vcenter.cluster.name:
     description: The name of the vCenter Cluster.
+    enabled: true
     type: string
   vcenter.host.name:
     description: The hostname of the vCenter ESXi host.
+    enabled: true
     type: string
   vcenter.resource_pool.name:
     description: The name of the resource pool.
+    enabled: true
     type: string
   vcenter.datastore.name:
     description: The name of the vCenter datastore.
+    enabled: true
     type: string
   vcenter.vm.name:
     description: The name of the virtual machine.
+    enabled: true
     type: string
   vcenter.vm.id:
     description: The instance UUID of the virtual machine.
+    enabled: true
     type: string
 
 attributes:
@@ -44,13 +50,6 @@ attributes:
     enum:
       - read
       - write
-  latency_type:
-    name_override: type
-    description: The type of disk latency being reported.
-    type: string
-    enum:
-      - kernel
-      - device
   throughput_direction:
     name_override: direction
     description: The direction of network throughput.
@@ -155,7 +154,7 @@ metrics:
     attributes: []
   vcenter.host.cpu.usage:
     enabled: true
-    description: The amount of CPU in Hz used by the host.
+    description: The amount of CPU used by the host.
     unit: "MHz"
     sum:
       monotonic: false
@@ -281,7 +280,7 @@ metrics:
   vcenter.vm.memory.ballooned:
     enabled: true
     description: The amount of memory that is ballooned due to virtualization.
-    unit: By
+    unit: MiBy
     sum:
       monotonic: false
       value_type: int
@@ -291,6 +290,24 @@ metrics:
     enabled: true
     description: The amount of memory that is used by the virtual machine.
     unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: []
+  vcenter.vm.memory.swapped:
+    enabled: true
+    description: The portion of memory that is granted to this VM from the host's swap space.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: []
+  vcenter.vm.memory.swapped_ssd:
+    enabled: true
+    description: The amount of memory swapped to fast disk device such as SSD.
+    unit: KiBy
     sum:
       monotonic: false
       value_type: int

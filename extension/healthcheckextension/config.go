@@ -20,19 +20,31 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
+
+type ResponseBodySettings struct {
+	// Healthy represents the body of the response returned when the collector is healthy.
+	// The default value is ""
+	Healthy string `mapstructure:"healthy"`
+
+	// Unhealthy represents the body of the response returned when the collector is unhealthy.
+	// The default value is ""
+	Unhealthy string `mapstructure:"unhealthy"`
+}
 
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
-	config.ExtensionSettings      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	confighttp.HTTPServerSettings `mapstructure:",squash"`
 
 	// Path represents the path the health check service will serve.
 	// The default path is "/".
 	Path string `mapstructure:"path"`
+
+	// ResponseBody represents the body of the response returned by the health check service.
+	// This overrides the default response that it would return.
+	ResponseBody *ResponseBodySettings `mapstructure:"response_body"`
 
 	// CheckCollectorPipeline contains the list of settings of collector pipeline health check
 	CheckCollectorPipeline checkCollectorPipelineSettings `mapstructure:"check_collector_pipeline"`

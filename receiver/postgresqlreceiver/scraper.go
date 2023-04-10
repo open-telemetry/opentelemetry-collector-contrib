@@ -21,43 +21,36 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
-const (
-	emitMetricsWithResourceAttributesFeatureGateID  = "receiver.postgresql.emitMetricsWithResourceAttributes"
-	emitMetricsWithoutResourceAttributesDescription = "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
-		"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
-		"gate controls emitting the old metrics without resource attributes. For more details, see: " +
-		"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"
-	emitMetricsWithoutResourceAttributesFeatureGateID = "receiver.postgresql.emitMetricsWithoutResourceAttributes"
-	emitMetricsWithResourceAttributesDescription      = "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
-		"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
-		"gate controls emitting the new metrics with resource attributes. For more details, see: " +
-		"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"
-)
-
-func init() {
-	featuregate.GetRegistry().MustRegisterID(
-		emitMetricsWithoutResourceAttributesFeatureGateID,
+var (
+	emitMetricsWithoutResourceAttributesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		"receiver.postgresql.emitMetricsWithoutResourceAttributes",
 		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription(emitMetricsWithoutResourceAttributesDescription),
+		featuregate.WithRegisterDescription("Postgresql metrics are transitioning from being reported with identifying metric attributes "+
+			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature "+
+			"gate controls emitting the old metrics without resource attributes. For more details, see: "+
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12960"),
 	)
-	featuregate.GetRegistry().MustRegisterID(
-		emitMetricsWithResourceAttributesFeatureGateID,
+	emitMetricsWithResourceAttributesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		"receiver.postgresql.emitMetricsWithResourceAttributes",
 		featuregate.StageBeta,
-		featuregate.WithRegisterDescription(emitMetricsWithResourceAttributesDescription),
+		featuregate.WithRegisterDescription("Postgresql metrics are transitioning from being reported with identifying metric attributes "+
+			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature "+
+			"gate controls emitting the new metrics with resource attributes. For more details, see: "+
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12960"),
 	)
-}
+)
 
 type postgreSQLScraper struct {
 	logger                               *zap.Logger
@@ -85,7 +78,7 @@ func (d *defaultClientFactory) getClient(c *Config, database string) (client, er
 }
 
 func newPostgreSQLScraper(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config *Config,
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {
@@ -93,9 +86,9 @@ func newPostgreSQLScraper(
 		logger:                               settings.Logger,
 		config:                               config,
 		clientFactory:                        clientFactory,
-		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
-		emitMetricsWithResourceAttributes:    featuregate.GetRegistry().IsEnabled(emitMetricsWithResourceAttributesFeatureGateID),
-		emitMetricsWithoutResourceAttributes: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutResourceAttributesFeatureGateID),
+		mb:                                   metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		emitMetricsWithResourceAttributes:    emitMetricsWithResourceAttributesFeatureGate.IsEnabled(),
+		emitMetricsWithoutResourceAttributes: emitMetricsWithoutResourceAttributesFeatureGate.IsEnabled(),
 	}
 }
 

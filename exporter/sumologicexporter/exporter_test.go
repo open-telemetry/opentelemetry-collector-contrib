@@ -54,20 +54,6 @@ func TestInitExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestInitExporterInvalidConfig(t *testing.T) {
-	_, err := initExporter(&Config{
-		LogFormat:    "json",
-		MetricFormat: "test_format",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout:  defaultTimeout,
-			Endpoint: "test_endpoint",
-		},
-		CompressEncoding: "gzip",
-	}, componenttest.NewNopTelemetrySettings())
-
-	assert.EqualError(t, err, "unexpected metric format: test_format")
-}
-
 func TestAllSuccess(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
@@ -126,7 +112,7 @@ func TestAllFailed(t *testing.T) {
 
 	var partial consumererror.Logs
 	require.True(t, errors.As(err, &partial))
-	assert.Equal(t, logs, partial.GetLogs())
+	assert.Equal(t, logs, partial.Data())
 }
 
 func TestPartiallyFailed(t *testing.T) {
@@ -159,7 +145,7 @@ func TestPartiallyFailed(t *testing.T) {
 
 	var partial consumererror.Logs
 	require.True(t, errors.As(err, &partial))
-	assert.Equal(t, expected, partial.GetLogs())
+	assert.Equal(t, expected, partial.Data())
 }
 
 func TestInvalidSourceFormats(t *testing.T) {
@@ -300,7 +286,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 
 	var partial consumererror.Metrics
 	require.True(t, errors.As(err, &partial))
-	assert.Equal(t, metrics, partial.GetMetrics())
+	assert.Equal(t, metrics, partial.Data())
 }
 
 func TestMetricsPartiallyFailed(t *testing.T) {
@@ -337,7 +323,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 
 	var partial consumererror.Metrics
 	require.True(t, errors.As(err, &partial))
-	assert.Equal(t, expected, partial.GetMetrics())
+	assert.Equal(t, expected, partial.Data())
 }
 
 func TestPushMetricsInvalidCompressor(t *testing.T) {
@@ -403,7 +389,7 @@ gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://anoth
 
 	var partial consumererror.Metrics
 	require.True(t, errors.As(err, &partial))
-	assert.Equal(t, expected, partial.GetMetrics())
+	assert.Equal(t, expected, partial.Data())
 }
 
 func TestPushMetricsFailedBatch(t *testing.T) {

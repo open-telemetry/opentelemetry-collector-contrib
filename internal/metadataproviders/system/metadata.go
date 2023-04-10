@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/Showmax/go-fqdn"
+	"github.com/panta/machineid"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/internal"
 )
@@ -61,6 +62,9 @@ type Provider interface {
 
 	// ReverseLookupHost does a reverse DNS query on the current host's IP address
 	ReverseLookupHost() (string, error)
+
+	// HostID returns Host Unique Identifier
+	HostID() (string, error)
 }
 
 type systemMetadataProvider struct {
@@ -122,4 +126,8 @@ func (p systemMetadataProvider) reverseLookup(ipAddresses []string) (string, err
 		return strings.TrimRight(names[0], "."), nil
 	}
 	return "", fmt.Errorf("reverseLookup failed to convert IP addresses to name: %w", err)
+}
+
+func (p systemMetadataProvider) HostID() (string, error) {
+	return machineid.ID()
 }

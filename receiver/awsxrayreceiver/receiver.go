@@ -21,11 +21,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
@@ -36,19 +38,20 @@ const (
 	maxPollerCount = 2
 )
 
-// xrayReceiver implements the component.TracesReceiver interface for converting
+// xrayReceiver implements the receiver.Traces interface for converting
 // AWS X-Ray segment document into the OT internal trace format.
 type xrayReceiver struct {
 	poller   udppoller.Poller
 	server   proxy.Server
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	consumer consumer.Traces
 	obsrecv  *obsreport.Receiver
+	registry telemetry.Registry
 }
 
 func newReceiver(config *Config,
 	consumer consumer.Traces,
-	set component.ReceiverCreateSettings) (component.TracesReceiver, error) {
+	set receiver.CreateSettings) (receiver.Traces, error) {
 
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer
@@ -88,10 +91,11 @@ func newReceiver(config *Config,
 		settings: set,
 		consumer: consumer,
 		obsrecv:  obsrecv,
+		registry: telemetry.GlobalRegistry(),
 	}, nil
 }
 
-func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
+func (x *xrayReceiver) Start(ctx context.Context, _ component.Host) error {
 	// TODO: Might want to pass `host` into read() below to report a fatal error
 	x.poller.Start(ctx)
 	go x.start()
@@ -118,7 +122,7 @@ func (x *xrayReceiver) start() {
 	incomingSegments := x.poller.SegmentsChan()
 	for seg := range incomingSegments {
 		ctx := x.obsrecv.StartTracesOp(seg.Ctx)
-		traces, totalSpanCount, err := translator.ToTraces(seg.Payload)
+		traces, totalSpanCount, err := translator.ToTraces(seg.Payload, x.registry.LoadOrNop(x.settings.ID))
 		if err != nil {
 			x.settings.Logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
 			x.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, totalSpanCount, err)

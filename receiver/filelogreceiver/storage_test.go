@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 )
@@ -52,7 +52,7 @@ func TestStorage(t *testing.T) {
 	ext := storagetest.NewFileBackedStorageExtension("test", storageDir)
 	host := storagetest.NewStorageHost().WithExtension(ext.ID, ext)
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(ctx, componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(ctx, receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
 
@@ -83,7 +83,7 @@ func TestStorage(t *testing.T) {
 	// Start the components again
 	ext = storagetest.NewFileBackedStorageExtension("test", storageDir)
 	host = storagetest.NewStorageHost().WithExtension(ext.ID, ext)
-	rcvr, err = f.CreateLogsReceiver(ctx, componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	rcvr, err = f.CreateLogsReceiver(ctx, receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
 	sink.Reset()
@@ -128,7 +128,7 @@ func TestStorage(t *testing.T) {
 	// Start the components again
 	ext = storagetest.NewFileBackedStorageExtension("test", storageDir)
 	host = storagetest.NewStorageHost().WithExtension(ext.ID, ext)
-	rcvr, err = f.CreateLogsReceiver(ctx, componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	rcvr, err = f.CreateLogsReceiver(ctx, receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
 	sink.Reset()
@@ -182,8 +182,6 @@ func (l *recallLogger) close() error {
 	return l.logFile.Close()
 }
 
-// TODO use stateless Convert() from #3125 to generate exact plog.Logs
-// for now, just validate body
 func expectLogs(sink *consumertest.LogsSink, expected []string) func() bool {
 	return func() bool {
 

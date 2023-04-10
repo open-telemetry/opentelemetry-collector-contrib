@@ -15,12 +15,10 @@
 package influxdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver"
 
 import (
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 // Config defines configuration for the InfluxDB receiver.
 type Config struct {
-	config.ReceiverSettings       `mapstructure:"-"`
 	confighttp.HTTPServerSettings `mapstructure:",squash"`
 }

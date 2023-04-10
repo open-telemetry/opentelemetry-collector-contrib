@@ -117,7 +117,7 @@ func TestLoadConfig(t *testing.T) {
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Endpoint = "http://localhost:5984"
 	expected.Username = "otelu"
-	expected.Password = "$COUCHDB_PASSWORD"
+	expected.Password = "${env:COUCHDB_PASSWORD}"
 	expected.CollectionInterval = time.Minute
 
 	require.Equal(t, expected, cfg)

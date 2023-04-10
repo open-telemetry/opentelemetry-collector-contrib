@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -42,7 +41,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		cfg,
 		&Config{
-			ProcessorSettings:       config.NewProcessorSettings(component.NewID(typeStr)),
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
@@ -99,7 +97,7 @@ func TestLoadConfig(t *testing.T) {
 					sharedPolicyCfg: sharedPolicyCfg{
 						Name:         "test-policy-8",
 						Type:         SpanCount,
-						SpanCountCfg: SpanCountCfg{MinSpans: 2},
+						SpanCountCfg: SpanCountCfg{MinSpans: 2, MaxSpans: 20},
 					},
 				},
 				{
@@ -107,6 +105,13 @@ func TestLoadConfig(t *testing.T) {
 						Name:          "test-policy-9",
 						Type:          TraceState,
 						TraceStateCfg: TraceStateCfg{Key: "key3", Values: []string{"value1", "value2"}},
+					},
+				},
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:                "test-policy-10",
+						Type:                BooleanAttribute,
+						BooleanAttributeCfg: BooleanAttributeCfg{Key: "key4", Value: true},
 					},
 				},
 				{

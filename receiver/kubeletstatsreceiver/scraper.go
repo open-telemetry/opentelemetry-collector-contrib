@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -51,9 +51,9 @@ type kubletScraper struct {
 
 func newKubletScraper(
 	restClient kubelet.RestClient,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	rOptions *scraperOptions,
-	metricsConfig metadata.MetricsSettings,
+	metricsConfig metadata.MetricsBuilderConfig,
 ) (scraperhelper.Scraper, error) {
 	ks := &kubletScraper{
 		statsProvider:         kubelet.NewStatsProvider(restClient),
@@ -64,10 +64,10 @@ func newKubletScraper(
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeLabels:    make(map[string][]metadata.ResourceMetricsOption),
 		mbs: &metadata.MetricsBuilders{
-			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
-			PodMetricsBuilder:       metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
-			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
-			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
+			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metricsConfig, set),
+			PodMetricsBuilder:       metadata.NewMetricsBuilder(metricsConfig, set),
+			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set),
+			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set),
 		},
 	}
 	return scraperhelper.NewScraper(typeStr, ks.scrape)

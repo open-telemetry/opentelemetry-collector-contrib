@@ -29,9 +29,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestMySqlIntegration(t *testing.T) {
@@ -51,7 +52,7 @@ func TestMySqlIntegration(t *testing.T) {
 		cfg.Password = "otel"
 
 		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
+		settings := receivertest.NewNopCreateSettings()
 		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 		require.NoError(t, err, "failed creating metrics receiver")
 		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
@@ -62,58 +63,17 @@ func TestMySqlIntegration(t *testing.T) {
 
 		actualMetrics := consumer.AllMetrics()[0]
 
-		expectedFile := filepath.Join("testdata", "integration", "expected.8_0.json")
+		expectedFile := filepath.Join("testdata", "integration", "expected.8_0.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
-	})
-
-	t.Run("Running mysql version 5.7", func(t *testing.T) {
-		t.Parallel()
-		container := getContainer(t, containerRequest5_7)
-		defer func() {
-			require.NoError(t, container.Terminate(context.Background()))
-		}()
-		hostname, err := container.Host(context.Background())
-		require.NoError(t, err)
-
-		f := NewFactory()
-		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.Endpoint = net.JoinHostPort(hostname, "3307")
-		cfg.Username = "otel"
-		cfg.Password = "otel"
-
-		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
-		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-		require.NoError(t, err, "failed creating metrics receiver")
-		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-		require.Eventuallyf(t, func() bool {
-			return len(consumer.AllMetrics()) > 0
-		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-		require.NoError(t, rcvr.Shutdown(context.Background()))
-
-		actualMetrics := consumer.AllMetrics()[0]
-
-		expectedFile := filepath.Join("testdata", "integration", "expected.5_7.json")
-		expectedMetrics, err := golden.ReadMetrics(expectedFile)
-		require.NoError(t, err)
-
-		scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreMetricValues(), pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	})
 }
 
 var (
-	containerRequest5_7 = testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    filepath.Join("testdata", "integration"),
-			Dockerfile: "Dockerfile.mysql.5_7",
-		},
-		ExposedPorts: []string{"3307:3306"},
-		WaitingFor: wait.ForListeningPort("3306").
-			WithStartupTimeout(2 * time.Minute),
-	}
 	containerRequest8_0 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),

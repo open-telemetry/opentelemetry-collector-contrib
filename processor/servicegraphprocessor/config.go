@@ -16,13 +16,10 @@ package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"time"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines the configuration options for servicegraphprocessor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// MetricsExporter is the name of the metrics exporter to use to ship metrics.
 	MetricsExporter string `mapstructure:"metrics_exporter"`
@@ -42,6 +39,12 @@ type Config struct {
 
 	// Store contains the config for the in-memory store used to find requests between services by pairing spans.
 	Store StoreConfig `mapstructure:"store"`
+	// CacheLoop is the time to cleans the cache periodically.
+	CacheLoop time.Duration `mapstructure:"cache_loop"`
+	// CacheLoop is the time to expire old entries from the store periodically.
+	StoreExpirationLoop time.Duration `mapstructure:"store_expiration_loop"`
+	// VirtualNodePeerAttributes the list of attributes need to match, the higher the front, the higher the priority.
+	VirtualNodePeerAttributes []string `mapstructure:"virtual_node_peer_attributes"`
 }
 
 type StoreConfig struct {

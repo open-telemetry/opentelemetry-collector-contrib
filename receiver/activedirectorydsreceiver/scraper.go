@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 
@@ -36,9 +37,9 @@ type activeDirectoryDSScraper struct {
 	w  *watchers
 }
 
-func newActiveDirectoryDSScraper(ms metadata.MetricsSettings, params component.ReceiverCreateSettings) *activeDirectoryDSScraper {
+func newActiveDirectoryDSScraper(mbc metadata.MetricsBuilderConfig, params receiver.CreateSettings) *activeDirectoryDSScraper {
 	return &activeDirectoryDSScraper{
-		mb: metadata.NewMetricsBuilder(ms, params.BuildInfo),
+		mb: metadata.NewMetricsBuilder(mbc, params),
 	}
 }
 

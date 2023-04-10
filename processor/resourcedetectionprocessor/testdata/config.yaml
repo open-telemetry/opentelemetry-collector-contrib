@@ -1,6 +1,16 @@
 resourcedetection:
-resourcedetection/gce:
-  detectors: [env, gce]
+resourcedetection/openshift:
+  detectors: [openshift]
+  timeout: 2s
+  override: false
+  openshift:
+    address: "127.0.0.1:4444"
+    token: "some_token"
+    tls:
+      insecure: true
+
+resourcedetection/gcp:
+  detectors: [env, gcp]
   timeout: 2s
   override: false
 
@@ -15,6 +25,11 @@ resourcedetection/ec2:
 
 resourcedetection/ecs:
   detectors: [env, ecs]
+  timeout: 2s
+  override: false
+
+resourcedetection/lambda:
+  detectors: [env, lambda]
   timeout: 2s
   override: false
 
@@ -33,6 +48,11 @@ resourcedetection/docker:
 
 resourcedetection/azure:
   detectors: [env, azure]
+  timeout: 2s
+  override: false
+
+resourcedetection/heroku:
+  detectors: [env, heroku]
   timeout: 2s
   override: false
 

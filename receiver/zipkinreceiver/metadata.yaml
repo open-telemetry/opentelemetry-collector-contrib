@@ -1,0 +1,7 @@
+name: zipkinreceiver
+
+status:
+  type: receiver
+  stability: beta
+  pipelines: [traces]
+  distributions: [core, contrib]

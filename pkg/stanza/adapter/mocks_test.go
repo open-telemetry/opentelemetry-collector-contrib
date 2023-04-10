@@ -19,7 +19,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -94,8 +93,7 @@ func (f TestReceiverType) Type() component.Type {
 func (f TestReceiverType) CreateDefaultConfig() component.Config {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(testType)),
-			Operators:        []operator.Config{},
+			Operators: []operator.Config{},
 		},
 		Input: operator.NewConfig(noop.NewConfig()),
 	}

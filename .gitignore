@@ -16,6 +16,7 @@ local/
 *.dylib
 bin/
 dist/
+.tools/
 
 # Emacs
 *~

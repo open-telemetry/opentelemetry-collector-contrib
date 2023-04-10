@@ -19,36 +19,41 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
-var _ component.MetricsProcessor = (*metricsProcessor)(nil)
+var _ processor.Metrics = (*metricsProcessor)(nil)
 
 type metricsProcessor struct {
 	logger *zap.Logger
 	config *Config
 
 	extractor extractor
-	router    router[component.MetricsExporter, ottldatapoint.TransformContext]
+	router    router[exporter.Metrics, ottldatapoint.TransformContext]
 }
 
 func newMetricProcessor(settings component.TelemetrySettings, config component.Config) *metricsProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
+	dataPointParser, _ := ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), settings)
+
 	return &metricsProcessor{
 		logger: settings.Logger,
 		config: cfg,
-		router: newRouter[component.MetricsExporter](
+		router: newRouter[exporter.Metrics](
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), settings),
+			dataPointParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
@@ -78,7 +83,7 @@ func (p *metricsProcessor) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 }
 
 type metricsGroup struct {
-	exporters []component.MetricsExporter
+	exporters []exporter.Metrics
 	metrics   pmetric.Metrics
 }
 
@@ -104,7 +109,11 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 		for key, route := range p.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, mtx)
 			if err != nil {
-				return err
+				if p.config.ErrorMode == ottl.PropagateError {
+					return err
+				}
+				p.group("", groups, p.router.defaultExporters, rmetrics)
+				continue
 			}
 			if !isMatch {
 				matchCount--
@@ -130,7 +139,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 func (p *metricsProcessor) group(
 	key string,
 	groups map[string]metricsGroup,
-	exporters []component.MetricsExporter,
+	exporters []exporter.Metrics,
 	metrics pmetric.ResourceMetrics,
 ) {
 	group, ok := groups[key]

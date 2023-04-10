@@ -24,13 +24,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
-var _ component.MetricsReceiver = (*vcenterMetricScraper)(nil)
+var _ receiver.Metrics = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
 	client *vcenterClient
@@ -42,14 +43,14 @@ type vcenterMetricScraper struct {
 func newVmwareVcenterScraper(
 	logger *zap.Logger,
 	config *Config,
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
 	return &vcenterMetricScraper{
 		client: client,
 		config: config,
 		logger: logger,
-		mb:     metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
 }
 

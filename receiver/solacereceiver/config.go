@@ -19,7 +19,6 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -39,7 +38,6 @@ var (
 
 // Config defines configuration for Solace receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	// The list of solace brokers (default localhost:5671)
 	Broker []string `mapstructure:"broker"`
 

@@ -229,8 +229,9 @@ func TestSetExtraLabels(t *testing.T) {
 			ro, err := tt.metadata.getExtraResources(stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), tt.args[2])
 
 			r := pmetric.NewResourceMetrics()
+			ras := metadata.DefaultResourceAttributesSettings()
 			for _, op := range ro {
-				op(r)
+				op(ras, r)
 			}
 
 			if tt.wantError == "" {
@@ -374,6 +375,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			volName := "volume0"
+			ras := metadata.DefaultResourceAttributesSettings()
 			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
 					{
@@ -397,7 +399,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 
 			rm := pmetric.NewResourceMetrics()
 			for _, op := range ro {
-				op(rm)
+				op(ras, rm)
 			}
 
 			assert.Equal(t, tt.want, rm.Resource().Attributes().AsRaw())

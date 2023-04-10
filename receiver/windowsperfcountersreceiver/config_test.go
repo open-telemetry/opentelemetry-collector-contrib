@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -71,7 +70,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "customname"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 30 * time.Second,
 				},
 				PerfCounters: []ObjectConfig{
@@ -110,7 +108,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "nometrics"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 60 * time.Second,
 				},
 				PerfCounters: []ObjectConfig{
@@ -125,7 +122,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "nometricspecified"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 60 * time.Second,
 				},
 				PerfCounters: []ObjectConfig{
@@ -147,7 +143,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "summetric"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 60 * time.Second,
 				},
 				PerfCounters: []ObjectConfig{
@@ -172,7 +167,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "unspecifiedmetrictype"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 60 * time.Second,
 				},
 				PerfCounters: []ObjectConfig{

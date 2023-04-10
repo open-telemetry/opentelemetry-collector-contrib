@@ -20,9 +20,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -37,18 +37,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				OTTLConfig: OTTLConfig{
-					Traces: SignalConfig{
-						Statements: []string{},
-					},
-					Metrics: SignalConfig{
-						Statements: []string{},
-					},
-					Logs: SignalConfig{
-						Statements: []string{},
-					},
-				},
+				ErrorMode: ottl.PropagateError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Context: "span",
@@ -97,41 +86,24 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "deprecated_format"),
+			id: component.NewIDWithName(typeStr, "ignore_errors"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewIDWithName(typeStr, "")),
-				OTTLConfig: OTTLConfig{
-					Traces: SignalConfig{
+				ErrorMode: ottl.IgnoreError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Context: "resource",
 						Statements: []string{
-							`set(name, "bear") where attributes["http.path"] == "/animal"`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
-						},
-					},
-					Metrics: SignalConfig{
-						Statements: []string{
-							`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
-						},
-					},
-					Logs: SignalConfig{
-						Statements: []string{
-							`set(body, "bear") where attributes["http.path"] == "/animal"`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
+							`set(attributes["name"], "bear")`,
 						},
 					},
 				},
-				TraceStatements:  []common.ContextStatements{},
 				MetricStatements: []common.ContextStatements{},
 				LogStatements:    []common.ContextStatements{},
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "using_both_formats"),
-			errorMessage: "cannot use Traces, Metrics and/or Logs with TraceStatements, MetricStatements and/or LogStatements",
-		},
-		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_trace"),
-			errorMessage: "1:18: unexpected token \"where\" (expected \")\")",
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "unknown_function_trace"),
@@ -139,7 +111,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_metric"),
-			errorMessage: "1:18: unexpected token \"where\" (expected \")\")",
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "unknown_function_metric"),
@@ -147,7 +119,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_log"),
-			errorMessage: "1:18: unexpected token \"where\" (expected \")\")",
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "unknown_function_log"),
@@ -178,6 +150,20 @@ func TestLoadConfig(t *testing.T) {
 
 func Test_UnknownContextID(t *testing.T) {
 	id := component.NewIDWithName(typeStr, "unknown_context")
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(id.String())
+	assert.NoError(t, err)
+	assert.Error(t, component.UnmarshalConfig(sub, cfg))
+}
+
+func Test_UnknownErrorMode(t *testing.T) {
+	id := component.NewIDWithName(typeStr, "unknown_error_mode")
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	assert.NoError(t, err)

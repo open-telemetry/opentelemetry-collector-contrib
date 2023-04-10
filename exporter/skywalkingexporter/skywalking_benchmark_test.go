@@ -21,18 +21,17 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/atomic"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"google.golang.org/grpc"
 	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
@@ -41,7 +40,7 @@ import (
 )
 
 var (
-	consumerNum = atomic.NewInt32(0)
+	consumerNum = &atomic.Int32{}
 	sumNum      = 10000
 )
 
@@ -132,8 +131,7 @@ func test(nGoroutine int, nStream int, t *testing.T) {
 func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHandler2) {
 	server, addr, m := initializeGRPC(grpc.MaxConcurrentStreams(100))
 	tt := &Config{
-		NumStreams:       numStream,
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+		NumStreams: numStream,
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      true,
 			NumConsumers: 1,
@@ -150,7 +148,7 @@ func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHan
 	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
 	got, err := exporterhelper.NewLogsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		tt,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -202,7 +200,7 @@ func (h *mockLogHandler2) Collect(stream logpb.LogReportService_CollectServer) e
 			return stream.SendAndClose(&v3.Commands{})
 		}
 		if err == nil {
-			consumerNum.Inc()
+			consumerNum.Add(1)
 			if consumerNum.Load() >= int32(sumNum) {
 				end := time.Now().UnixMilli()
 				h.stopChan <- end

@@ -1,6 +1,16 @@
 # OTTL Functions
 
-The following functions are intended to be used in implementations of the OpenTelemetry Transformation Language that interact with otel data via the collector's internal data model, [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata). These functions may make assumptions about the types of the data returned by Paths.
+The following functions are intended to be used in implementations of the OpenTelemetry Transformation Language that
+interact with OTel data via the Collector's internal data model, [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata).
+Functions generally expect specific types to be returned by `Paths`.
+For these functions, if that type is not returned or if `nil` is returned, the function will error.
+Some functions are able to handle different types and will generally convert those types to their desired type.
+In these situations the function will error if it does not know how to do the conversion.
+Use `ErrorMode` to determine how the `Statement` handles these errors.
+See the component-specific guides for how each uses error mode:
+- [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#ottl)
+- [routingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/routingprocessor#tech-preview-opentelemetry-transformation-language-statements-as-routing-conditions)
+- [transformprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#config)
 
 ## Functions
 
@@ -24,24 +34,25 @@ List of available Functions:
 - [set](#set)
 - [truncate_all](#truncate_all)
 
-## Factory Functions
+## Converters
 
-Factory Functions are functions that help translate between the OTTL grammar and the underlying pdata structure.
+Converters are functions that help translate between the OTTL grammar and the underlying pdata structure.
 They manipulate the OTTL grammar value into a form that will make working with the telemetry easier or more efficient.
 
-Factory Functions:
+Converters:
 - Are pure functions.  They should never change the underlying telemetry and the same inputs should always result in the same output.
-- Always return something.  
+- Always return something.
 
-List of available Factory Functions:
+List of available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [Int](#int)
 - [IsMatch](#ismatch)
-- [ParseJSON](#ParseJSON)
+- [ParseJSON](#parsejson)
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
+- [Substring](#substring)
 
 ### Concat
 
@@ -71,7 +82,7 @@ The `ConvertCase` factory function converts the `target` string into the desired
 
 `target` is a string. `toCase` is a string.
 
-If the `target` is not a string or does not exist, the `ConvertCase` factory function will return `nil`.
+If the `target` is not a string or does not exist, the `ConvertCase` factory function will return an error.
 
 `toCase` can be:
 
@@ -118,10 +129,17 @@ Examples:
 The `IsMatch` factory function returns true if the `target` matches the regex `pattern`.
 
 `target` is either a path expression to a telemetry field to retrieve or a literal string. `pattern` is a regexp pattern.
+The matching semantics are identical to `regexp.MatchString`.
 
 The function matches the target against the pattern, returning true if the match is successful and false otherwise.
-If target is a boolean, int, or float it will be converted to a string.
-If target is nil or not a string, boolean, int, or float false is always returned.
+If target is not a string, it will be converted to one:
+
+- booleans, ints and floats will be converted using `strconv`
+- byte slices will be encoded using base64
+- OTLP Maps and Slices will be JSON encoded
+- other OTLP Values will use their canonical string representation via `AsString`
+
+If target is nil, false is always returned.
 
 Examples:
 
@@ -137,6 +155,7 @@ Examples:
 The `ParseJSON` factory function returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
 
 `target` is a Getter that returns a string. This string should be in json format.
+If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
 
 Unmarshalling is done using [jsoniter](https://github.com/json-iterator/go).
 Each JSON type is converted into a `pdata.Value` using the following map:
@@ -180,7 +199,7 @@ The `Split` factory function separates a string by the delimiter, and returns an
 
 `target` is a string. `delimiter` is a string.
 
-If the `target` is not a string or does not exist, the `Split` factory function will return `nil`.
+If the `target` is not a string or does not exist, the `Split` factory function will return an error.
 
 Examples:
 
@@ -197,6 +216,21 @@ The `TraceID` factory function returns a `pdata.TraceID` struct from the given b
 Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
+
+### Substring
+
+`Substring(target, start, length)`
+
+The `Substring` Converter returns a substring from the given start index to the specified length.
+
+`target` is a string. `start` and `length` are `int64`.
+
+If `target` is not a string or is nil, an error is returned.
+If the start/length exceed the length of the `target` string, an error is returned.
+
+Examples:
+
+- `Substring("123456789", 0, 3)`
 
 ### delete_key
 
@@ -323,10 +357,17 @@ The `replace_all_patterns` function replaces any segments in a string value or k
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
 Examples:
 
 - `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
+- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
+
+Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
+environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
+If using OTTL outside of collector configuration, `$` should not be escaped and a literal `$` can be entered using `$$`.
 
 ### replace_pattern
 
@@ -338,10 +379,16 @@ The `replace_pattern` function allows replacing all string sections that match a
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
 Examples:
 
 - `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
+- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
 
+Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
+environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
+If using OTTL outside of collector configuration, `$` should not be escaped and a literal `$` can be entered using `$$`.
 
 ### replace_match
 

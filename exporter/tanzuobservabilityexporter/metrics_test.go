@@ -1671,16 +1671,10 @@ func copyGranularity(
 }
 
 func assertBuckets(t *testing.T, expected, actual []cumulativeBucket) {
-	msgString := "Expected: %+v; Actual: %+v"
-	if len(expected) != len(actual) {
-		assert.Fail(t, "", msgString, expected, actual)
-		return
-	}
+	assert.Equal(t, len(expected), len(actual), "len")
 	for i := range expected {
-		if expected[i].Count != actual[i].Count || !tagsEqual(expected[i].Tag, actual[i].Tag) {
-			assert.Fail(t, "", msgString, expected, actual)
-			return
-		}
+		assert.Equal(t, expected[i].Count, actual[i].Count, "count")
+		assert.True(t, tagsEqual(expected[i].Tag, actual[i].Tag), "tag")
 	}
 }
 
@@ -1697,15 +1691,9 @@ func tagsEqual(expected, actual string) bool {
 }
 
 func assertCentroids(t *testing.T, expected, actual []histogram.Centroid) {
-	msgString := "Expected: %+v; Actual: %+v"
-	if len(expected) != len(actual) {
-		assert.Fail(t, "", msgString, expected, actual)
-		return
-	}
+	assert.Equal(t, len(expected), len(actual), "len")
 	for i := range expected {
-		if expected[i].Count != actual[i].Count || math.Abs(expected[i].Value-actual[i].Value) > 0.0001 {
-			assert.Fail(t, "", msgString, expected, actual)
-			return
-		}
+		assert.Equal(t, expected[i].Count, actual[i].Count, "count")
+		assert.InDelta(t, expected[i].Value, actual[i].Value, 0.0001, "value")
 	}
 }

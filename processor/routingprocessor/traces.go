@@ -19,36 +19,41 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
-var _ component.TracesProcessor = (*tracesProcessor)(nil)
+var _ processor.Traces = (*tracesProcessor)(nil)
 
 type tracesProcessor struct {
 	logger *zap.Logger
 	config *Config
 
 	extractor extractor
-	router    router[component.TracesExporter, ottlspan.TransformContext]
+	router    router[exporter.Traces, ottlspan.TransformContext]
 }
 
 func newTracesProcessor(settings component.TelemetrySettings, config component.Config) *tracesProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
+	spanParser, _ := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings)
+
 	return &tracesProcessor{
 		logger: settings.Logger,
 		config: cfg,
-		router: newRouter[component.TracesExporter, ottlspan.TransformContext](
+		router: newRouter[exporter.Traces, ottlspan.TransformContext](
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings),
+			spanParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
@@ -79,7 +84,7 @@ func (p *tracesProcessor) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 }
 
 type spanGroup struct {
-	exporters []component.TracesExporter
+	exporters []exporter.Traces
 	traces    ptrace.Traces
 }
 
@@ -102,7 +107,11 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 		for key, route := range p.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, stx)
 			if err != nil {
-				return err
+				if p.config.ErrorMode == ottl.PropagateError {
+					return err
+				}
+				p.group("", groups, p.router.defaultExporters, rspans)
+				continue
 			}
 			if !isMatch {
 				matchCount--
@@ -125,7 +134,7 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	return errs
 }
 
-func (p *tracesProcessor) group(key string, groups map[string]spanGroup, exporters []component.TracesExporter, spans ptrace.ResourceSpans) {
+func (p *tracesProcessor) group(key string, groups map[string]spanGroup, exporters []exporter.Traces, spans ptrace.ResourceSpans) {
 	group, ok := groups[key]
 	if !ok {
 		group.traces = ptrace.NewTraces()

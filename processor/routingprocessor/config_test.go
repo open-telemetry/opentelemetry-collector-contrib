@@ -21,8 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,10 +36,10 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config_traces.yaml",
 			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"otlp"},
-				AttributeSource:   "context",
-				FromAttribute:     "X-Tenant",
+				DefaultExporters: []string{"otlp"},
+				AttributeSource:  "context",
+				FromAttribute:    "X-Tenant",
+				ErrorMode:        ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -55,10 +56,10 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config_metrics.yaml",
 			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"logging/default"},
-				AttributeSource:   "context",
-				FromAttribute:     "X-Custom-Metrics-Header",
+				DefaultExporters: []string{"logging/default"},
+				AttributeSource:  "context",
+				FromAttribute:    "X-Custom-Metrics-Header",
+				ErrorMode:        ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -75,10 +76,10 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config_logs.yaml",
 			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"logging/default"},
-				AttributeSource:   "context",
-				FromAttribute:     "X-Custom-Logs-Header",
+				DefaultExporters: []string{"logging/default"},
+				AttributeSource:  "context",
+				FromAttribute:    "X-Custom-Logs-Header",
+				ErrorMode:        ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -95,10 +96,10 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config.yaml",
 			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"jaeger"},
-				AttributeSource:   resourceAttributeSource,
-				FromAttribute:     "X-Tenant",
+				DefaultExporters: []string{"jaeger"},
+				AttributeSource:  resourceAttributeSource,
+				FromAttribute:    "X-Tenant",
+				ErrorMode:        ottl.IgnoreError,
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -111,8 +112,8 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config.yaml",
 			id:         component.NewIDWithName(typeStr, "ottl"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"jaeger"},
+				DefaultExporters: []string{"jaeger"},
+				ErrorMode:        ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
 						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"acme\"",

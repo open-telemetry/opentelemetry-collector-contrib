@@ -13,7 +13,6 @@
 // limitations under the License.
 
 //go:build integration
-// +build integration
 
 package sqlqueryreceiver
 
@@ -32,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestPostgresIntegration(t *testing.T) {
@@ -84,7 +84,7 @@ func TestPostgresIntegration(t *testing.T) {
 		},
 		{
 			SQL: "select 1::smallint as a, 2::integer as b, 3::bigint as c, 4.1::decimal as d," +
-				" 4.2::numeric as e, 4.3::real as f, 4.4::double precision as g",
+				" 4.2::numeric as e, 4.3::real as f, 4.4::double precision as g, null as h",
 			Metrics: []MetricCfg{
 				{
 					MetricName:  "a",
@@ -128,13 +128,19 @@ func TestPostgresIntegration(t *testing.T) {
 					ValueType:   MetricValueTypeDouble,
 					DataType:    MetricTypeGauge,
 				},
+				{
+					MetricName:  "h",
+					ValueColumn: "h",
+					ValueType:   MetricValueTypeDouble,
+					DataType:    MetricTypeGauge,
+				},
 			},
 		},
 	}
 	consumer := &consumertest.MetricsSink{}
 	receiver, err := factory.CreateMetricsReceiver(
 		ctx,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		config,
 		consumer,
 	)
@@ -154,11 +160,6 @@ func TestPostgresIntegration(t *testing.T) {
 	rms := metrics.ResourceMetrics()
 	testMovieMetrics(t, rms.At(0), genreKey)
 	testPGTypeMetrics(t, rms.At(1))
-}
-
-// workaround to avoid "unused" lint errors which test is skipped
-var skip = func(t *testing.T, why string) {
-	t.Skip(why)
 }
 
 // This test ensures the collector can connect to an Oracle DB, and properly get metrics. It's not intended to
@@ -219,7 +220,7 @@ func TestOracleDBIntegration(t *testing.T) {
 	consumer := &consumertest.MetricsSink{}
 	receiver, err := factory.CreateMetricsReceiver(
 		ctx,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		config,
 		consumer,
 	)
@@ -309,10 +310,10 @@ func testPGTypeMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
 	}
 }
 
-func assertIntGaugeEquals(t *testing.T, expected int, metric pmetric.Metric) bool {
-	return assert.EqualValues(t, expected, metric.Gauge().DataPoints().At(0).IntValue())
+func assertIntGaugeEquals(t *testing.T, expected int, metric pmetric.Metric) {
+	assert.EqualValues(t, expected, metric.Gauge().DataPoints().At(0).IntValue())
 }
 
-func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metric) bool {
-	return assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.1)
+func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metric) {
+	assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.1)
 }

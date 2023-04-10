@@ -21,13 +21,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestNewLogsProcessor(t *testing.T) {
@@ -40,7 +38,6 @@ func TestNewLogsProcessor(t *testing.T) {
 		{
 			name: "nil_nextConsumer",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 15.5,
 			},
 			wantErr: true,
@@ -49,7 +46,6 @@ func TestNewLogsProcessor(t *testing.T) {
 			name:         "happy_path",
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 15.5,
 			},
 		},
@@ -57,7 +53,6 @@ func TestNewLogsProcessor(t *testing.T) {
 			name:         "happy_path_hash_seed",
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 13.33,
 				HashSeed:           4321,
 			},
@@ -65,7 +60,7 @@ func TestNewLogsProcessor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.nextConsumer, tt.cfg)
+			got, err := newLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.nextConsumer, tt.cfg)
 			if tt.wantErr {
 				assert.Nil(t, got)
 				assert.Error(t, err)
@@ -86,7 +81,6 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "happy_path",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 100,
 			},
 			received: 100,
@@ -94,7 +88,6 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "nothing",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0,
 			},
 			received: 0,
@@ -102,16 +95,14 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "roughly half",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 50,
 				AttributeSource:    traceIDAttributeSource,
 			},
-			received: 52,
+			received: 45,
 		},
 		{
 			name: "sampling_source no sampling",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
@@ -121,7 +112,6 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "sampling_source all sampling",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 100,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
@@ -131,17 +121,15 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "sampling_source sampling",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 50,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
 			},
-			received: 79,
+			received: 23,
 		},
 		{
 			name: "sampling_priority",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0,
 				SamplingPriority:   "priority",
 			},
@@ -150,7 +138,6 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "sampling_priority with sampling field",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
@@ -162,7 +149,7 @@ func TestLogsSampling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			processor, err := newLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), sink, tt.cfg)
+			processor, err := newLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), sink, tt.cfg)
 			require.NoError(t, err)
 			logs := plog.NewLogs()
 			lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()

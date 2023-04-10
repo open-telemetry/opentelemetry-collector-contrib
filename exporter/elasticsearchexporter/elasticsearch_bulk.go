@@ -20,26 +20,25 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	elasticsearch "github.com/elastic/go-elasticsearch/v8"
-	esutil "github.com/elastic/go-elasticsearch/v8/esutil"
+	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
+	esutil7 "github.com/elastic/go-elasticsearch/v7/esutil"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
-type esClientCurrent = elasticsearch.Client
-type esConfigCurrent = elasticsearch.Config
-type esBulkIndexerCurrent = esutil.BulkIndexer
-type esBulkIndexerItem = esutil.BulkIndexerItem
-type esBulkIndexerResponseItem = esutil.BulkIndexerResponseItem
+type esClientCurrent = elasticsearch7.Client
+type esConfigCurrent = elasticsearch7.Config
+type esBulkIndexerCurrent = esutil7.BulkIndexer
+
+type esBulkIndexerItem = esutil7.BulkIndexerItem
+type esBulkIndexerResponseItem = esutil7.BulkIndexerResponseItem
 
 // clientLogger implements the estransport.Logger interface
 // that is required by the Elasticsearch client for logging.
@@ -95,32 +94,32 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 
 	// maxRetries configures the maximum number of event publishing attempts,
 	// including the first send and additional retries.
+
 	maxRetries := config.Retry.MaxRequests - 1
 	retryDisabled := !config.Retry.Enabled || maxRetries <= 0
-	retryOnError := newRetryOnErrorFunc(retryDisabled)
 
 	if retryDisabled {
 		maxRetries = 0
-		retryOnError = nil
 	}
 
-	return elasticsearch.NewClient(esConfigCurrent{
+	return elasticsearch7.NewClient(esConfigCurrent{
 		Transport: transport,
 
 		// configure connection setup
 		Addresses: config.Endpoints,
 		CloudID:   config.CloudID,
 		Username:  config.Authentication.User,
-		Password:  config.Authentication.Password,
-		APIKey:    config.Authentication.APIKey,
+		Password:  string(config.Authentication.Password),
+		APIKey:    string(config.Authentication.APIKey),
 		Header:    headers,
 
 		// configure retry behavior
-		RetryOnStatus: retryOnStatus,
-		DisableRetry:  retryDisabled,
-		RetryOnError:  retryOnError,
-		MaxRetries:    maxRetries,
-		RetryBackoff:  createElasticsearchBackoffFunc(&config.Retry),
+		RetryOnStatus:        retryOnStatus,
+		DisableRetry:         retryDisabled,
+		EnableRetryOnTimeout: config.Retry.Enabled,
+		//RetryOnError:  retryOnError, // should be used from esclient version 8 onwards
+		MaxRetries:   maxRetries,
+		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 
 		// configure sniffing
 		DiscoverNodesOnStart:  config.Discovery.OnStart,
@@ -131,27 +130,6 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		EnableDebugLogger: false, // TODO
 		Logger:            (*clientLogger)(logger),
 	})
-}
-func newRetryOnErrorFunc(retryDisabled bool) func(_ *http.Request, err error) bool {
-	if retryDisabled {
-		return func(_ *http.Request, err error) bool {
-			return false
-		}
-	}
-
-	return func(_ *http.Request, err error) bool {
-		var netError net.Error
-		shouldRetry := false
-
-		if isNetError := errors.As(err, &netError); isNetError && netError != nil {
-			// on Timeout (Proposal: predefined configuratble rules)
-			if !netError.Timeout() {
-				shouldRetry = true
-			}
-		}
-
-		return shouldRetry
-	}
 }
 
 func newTransport(config *Config, tlsCfg *tls.Config) *http.Transport {
@@ -169,9 +147,9 @@ func newTransport(config *Config, tlsCfg *tls.Config) *http.Transport {
 	return transport
 }
 
-func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (esBulkIndexerCurrent, error) {
+func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *Config) (esBulkIndexerCurrent, error) {
 	// TODO: add debug logger
-	return esutil.NewBulkIndexer(esutil.BulkIndexerConfig{
+	return esutil7.NewBulkIndexer(esutil7.BulkIndexerConfig{
 		NumWorkers:    config.NumWorkers,
 		FlushBytes:    config.Flush.Bytes,
 		FlushInterval: config.Flush.Interval,

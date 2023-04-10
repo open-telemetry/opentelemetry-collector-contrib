@@ -21,12 +21,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -44,11 +44,10 @@ const (
 )
 
 type emfExporter struct {
-	// Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
-	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
-	svcStructuredLog       *cwlogs.Client
-	config                 component.Config
-	logger                 *zap.Logger
+	pusherMap        map[cwlogs.PusherKey]cwlogs.Pusher
+	svcStructuredLog *cwlogs.Client
+	config           component.Config
+	logger           *zap.Logger
 
 	metricTranslator metricTranslator
 
@@ -60,8 +59,8 @@ type emfExporter struct {
 // newEmfPusher func creates an EMF Exporter instance with data push callback func
 func newEmfPusher(
 	config component.Config,
-	params component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
+	params exporter.CreateSettings,
+) (*emfExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
@@ -88,7 +87,7 @@ func newEmfPusher(
 		logger:           logger,
 		collectorID:      collectorIdentifier.String(),
 	}
-	emfExporter.groupStreamToPusherMap = map[string]map[string]cwlogs.Pusher{}
+	emfExporter.pusherMap = map[cwlogs.PusherKey]cwlogs.Pusher{}
 
 	return emfExporter, nil
 }
@@ -96,9 +95,9 @@ func newEmfPusher(
 // newEmfExporter creates a new exporter using exporterhelper
 func newEmfExporter(
 	config component.Config,
-	set component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
-	exp, err := newEmfPusher(config, set)
+	set exporter.CreateSettings,
+) (exporter.Metrics, error) {
+	emfPusher, err := newEmfPusher(config, set)
 	if err != nil {
 		return nil, err
 	}
@@ -107,8 +106,9 @@ func newEmfExporter(
 		context.TODO(),
 		set,
 		config,
-		exp.(*emfExporter).pushMetricsData,
-		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),
+		emfPusher.pushMetricsData,
+		exporterhelper.WithShutdown(emfPusher.shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 	if err != nil {
 		return nil, err
@@ -156,7 +156,10 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 				logStream = defaultLogStream
 			}
 
-			emfPusher := emf.getPusher(logGroup, logStream)
+			emfPusher := emf.getPusher(cwlogs.PusherKey{
+				LogGroupName:  logGroup,
+				LogStreamName: logStream,
+			})
 			if emfPusher != nil {
 				returnError := emfPusher.AddLogEntry(putLogEvent)
 				if returnError != nil {
@@ -185,23 +188,13 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	return nil
 }
 
-func (emf *emfExporter) getPusher(logGroup, logStream string) cwlogs.Pusher {
-	emf.pusherMapLock.Lock()
-	defer emf.pusherMapLock.Unlock()
+func (emf *emfExporter) getPusher(key cwlogs.PusherKey) cwlogs.Pusher {
 
 	var ok bool
-	var streamToPusherMap map[string]cwlogs.Pusher
-	if streamToPusherMap, ok = emf.groupStreamToPusherMap[logGroup]; !ok {
-		streamToPusherMap = map[string]cwlogs.Pusher{}
-		emf.groupStreamToPusherMap[logGroup] = streamToPusherMap
+	if _, ok = emf.pusherMap[key]; !ok {
+		emf.pusherMap[key] = cwlogs.NewPusher(key, emf.retryCnt, *emf.svcStructuredLog, emf.logger)
 	}
-
-	var emfPusher cwlogs.Pusher
-	if emfPusher, ok = streamToPusherMap[logStream]; !ok {
-		emfPusher = cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), emf.retryCnt, *emf.svcStructuredLog, emf.logger)
-		streamToPusherMap[logStream] = emfPusher
-	}
-	return emfPusher
+	return emf.pusherMap[key]
 }
 
 func (emf *emfExporter) listPushers() []cwlogs.Pusher {
@@ -209,20 +202,14 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 	defer emf.pusherMapLock.Unlock()
 
 	var pushers []cwlogs.Pusher
-	for _, pusherMap := range emf.groupStreamToPusherMap {
-		for _, pusher := range pusherMap {
-			pushers = append(pushers, pusher)
-		}
+	for _, pusher := range emf.pusherMap {
+		pushers = append(pushers, pusher)
 	}
 	return pushers
 }
 
-func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return emf.pushMetricsData(ctx, md)
-}
-
-// Shutdown stops the exporter and is invoked during shutdown.
-func (emf *emfExporter) Shutdown(ctx context.Context) error {
+// shutdown stops the exporter and is invoked during shutdown.
+func (emf *emfExporter) shutdown(ctx context.Context) error {
 	for _, emfPusher := range emf.listPushers() {
 		returnError := emfPusher.ForceFlush()
 		if returnError != nil {
@@ -233,15 +220,6 @@ func (emf *emfExporter) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	return nil
-}
-
-func (emf *emfExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-// Start
-func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 

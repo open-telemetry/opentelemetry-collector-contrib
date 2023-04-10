@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -37,7 +38,7 @@ func TestCreateProcessor(t *testing.T) {
 	kubeClientProvider = newFakeClient
 
 	cfg := factory.CreateDefaultConfig()
-	params := componenttest.NewNopProcessorCreateSettings()
+	params := processortest.NewNopCreateSettings()
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
@@ -64,26 +65,6 @@ func TestCreateProcessor(t *testing.T) {
 
 	lp, err = factory.CreateLogsProcessor(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, lp)
-	assert.NoError(t, err)
-
-	// Switch it back so other tests run afterwards will not fail on unexpected state
-	kubeClientProvider = realClient
-}
-
-func TestCreateProcessorWithDeprecatedSettings(t *testing.T) {
-	factory := NewFactory()
-
-	cfg := factory.CreateDefaultConfig()
-	oCfg := cfg.(*Config)
-	oCfg.Extract.Metadata = []string{"k8s.cluster.name"}
-
-	params := componenttest.NewNopProcessorCreateSettings()
-
-	realClient := kubeClientProvider
-	kubeClientProvider = newFakeClient
-
-	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
-	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
 	// Switch it back so other tests run afterwards will not fail on unexpected state

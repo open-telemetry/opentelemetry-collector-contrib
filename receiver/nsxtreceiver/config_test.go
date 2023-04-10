@@ -103,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Endpoint = "https://nsx-manager-endpoint"
 	expected.Username = "admin"
-	expected.Password = "$NSXT_PASSWORD"
+	expected.Password = "${env:NSXT_PASSWORD}"
 	expected.TLSSetting.Insecure = true
 	expected.CollectionInterval = time.Minute
 

@@ -16,13 +16,14 @@ package tracking
 
 import (
 	"context"
-	"reflect"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -46,22 +47,19 @@ func TestMetricTracker_Convert(t *testing.T) {
 		name    string
 		value   ValuePoint
 		wantOut DeltaValue
+		noOut   bool
 	}{
 		{
-			name: "Initial Value recorded",
+			name: "Initial Value Omitted",
 			value: ValuePoint{
 				ObservedTimestamp: 10,
 				FloatValue:        100.0,
 				IntValue:          100,
 			},
-			wantOut: DeltaValue{
-				StartTimestamp: 10,
-				FloatValue:     100.0,
-				IntValue:       100,
-			},
+			noOut: true,
 		},
 		{
-			name: "Higher Value Recorded",
+			name: "Higher Value Converted",
 			value: ValuePoint{
 				ObservedTimestamp: 50,
 				FloatValue:        225.0,
@@ -74,20 +72,16 @@ func TestMetricTracker_Convert(t *testing.T) {
 			},
 		},
 		{
-			name: "Lower Value Recorded - No Previous Offset",
+			name: "Lower Value not Converted - Restart",
 			value: ValuePoint{
 				ObservedTimestamp: 100,
 				FloatValue:        75.0,
 				IntValue:          75,
 			},
-			wantOut: DeltaValue{
-				StartTimestamp: 50,
-				FloatValue:     75.0,
-				IntValue:       75,
-			},
+			noOut: true,
 		},
 		{
-			name: "Record delta above first recorded value",
+			name: "Convert delta above previous not Converted Value",
 			value: ValuePoint{
 				ObservedTimestamp: 150,
 				FloatValue:        300.0,
@@ -100,11 +94,11 @@ func TestMetricTracker_Convert(t *testing.T) {
 			},
 		},
 		{
-			name: "Lower Value Recorded - Previous Offset Recorded",
+			name: "Higher Value Converted - Previous Offset Recorded",
 			value: ValuePoint{
 				ObservedTimestamp: 200,
-				FloatValue:        25.0,
-				IntValue:          25,
+				FloatValue:        325.0,
+				IntValue:          325,
 			},
 			wantOut: DeltaValue{
 				StartTimestamp: 150,
@@ -124,12 +118,18 @@ func TestMetricTracker_Convert(t *testing.T) {
 				Value:    tt.value,
 			}
 
-			if gotOut, valid := m.Convert(floatPoint); !valid || !reflect.DeepEqual(gotOut.StartTimestamp, tt.wantOut.StartTimestamp) || !reflect.DeepEqual(gotOut.FloatValue, tt.wantOut.FloatValue) {
-				t.Errorf("MetricTracker.Convert(MetricTypeSum) = %v, want %v", gotOut, tt.wantOut)
+			gotOut, valid := m.Convert(floatPoint)
+			if !tt.noOut {
+				require.True(t, valid)
+				assert.Equal(t, tt.wantOut.StartTimestamp, gotOut.StartTimestamp)
+				assert.Equal(t, tt.wantOut.FloatValue, gotOut.FloatValue)
 			}
 
-			if gotOut, valid := m.Convert(intPoint); !valid || !reflect.DeepEqual(gotOut.StartTimestamp, tt.wantOut.StartTimestamp) || !reflect.DeepEqual(gotOut.IntValue, tt.wantOut.IntValue) {
-				t.Errorf("MetricTracker.Convert(MetricTypeIntSum) = %v, want %v", gotOut, tt.wantOut)
+			gotOut, valid = m.Convert(intPoint)
+			if !tt.noOut {
+				require.True(t, valid)
+				assert.Equal(t, tt.wantOut.StartTimestamp, gotOut.StartTimestamp)
+				assert.Equal(t, tt.wantOut.IntValue, gotOut.IntValue)
 			}
 		})
 	}
@@ -205,10 +205,7 @@ func Test_metricTracker_removeStale(t *testing.T) {
 				gotOut[key.(string)] = value.(*State)
 				return true
 			})
-
-			if !reflect.DeepEqual(gotOut, tt.wantOut) {
-				t.Errorf("MetricTracker.removeStale() = %v, want %v", gotOut, tt.wantOut)
-			}
+			assert.Equal(t, tt.wantOut, gotOut)
 		})
 	}
 }
@@ -216,7 +213,7 @@ func Test_metricTracker_removeStale(t *testing.T) {
 func Test_metricTracker_sweeper(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	sweepEvent := make(chan pcommon.Timestamp)
-	closed := atomic.NewBool(false)
+	closed := &atomic.Bool{}
 
 	onSweep := func(staleBefore pcommon.Timestamp) {
 		sweepEvent <- staleBefore
@@ -237,18 +234,9 @@ func Test_metricTracker_sweeper(t *testing.T) {
 	for i := 1; i <= 2; i++ {
 		staleBefore := <-sweepEvent
 		tickTime := time.Since(start) + tr.maxStaleness*time.Duration(i)
-		if closed.Load() {
-			t.Fatalf("Sweeper returned prematurely.")
-		}
-
-		if tickTime < tr.maxStaleness {
-			t.Errorf("Sweeper tick time is too fast. (%v, want %v)", tickTime, tr.maxStaleness)
-		}
-
-		staleTime := staleBefore.AsTime()
-		if time.Since(staleTime) < tr.maxStaleness {
-			t.Errorf("Sweeper called with invalid staleBefore value = %v", staleTime)
-		}
+		require.False(t, closed.Load())
+		assert.LessOrEqual(t, tr.maxStaleness, tickTime)
+		assert.LessOrEqual(t, tr.maxStaleness, time.Since(staleBefore.AsTime()))
 	}
 	cancel()
 	for range sweepEvent {

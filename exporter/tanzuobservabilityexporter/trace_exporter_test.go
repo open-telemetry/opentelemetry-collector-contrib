@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -234,7 +234,7 @@ func TestExportTraceDataRespectsContext(t *testing.T) {
 	}
 	mockOTelTracesExporter, err := exporterhelper.NewTracesExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg,
 		exp.pushTraceData,
 		exporterhelper.WithShutdown(exp.shutdown),
@@ -285,7 +285,7 @@ func consumeTraces(ptrace ptrace.Traces) ([]*span, error) {
 	}
 	mockOTelTracesExporter, err := exporterhelper.NewTracesExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg,
 		exp.pushTraceData,
 		exporterhelper.WithShutdown(exp.shutdown),

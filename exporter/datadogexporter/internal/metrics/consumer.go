@@ -17,58 +17,63 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
-	"github.com/DataDog/datadog-agent/pkg/quantile"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/quantile"
 	"go.opentelemetry.io/collector/component"
-	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 )
 
-var _ translator.Consumer = (*ZorkianConsumer)(nil)
-var _ translator.HostConsumer = (*ZorkianConsumer)(nil)
-var _ translator.TagsConsumer = (*ZorkianConsumer)(nil)
+var _ metrics.Consumer = (*Consumer)(nil)
+var _ metrics.HostConsumer = (*Consumer)(nil)
+var _ metrics.TagsConsumer = (*Consumer)(nil)
+var _ metrics.APMStatsConsumer = (*Consumer)(nil)
 
-// ZorkianConsumer is the metrics Consumer using Zorkian APIs.
-type ZorkianConsumer struct {
-	ms        []zorkian.Metric
+// Consumer implements metrics.Consumer. It records consumed metrics, sketches and
+// APM stats payloads. It provides them to the caller using the All method.
+type Consumer struct {
+	ms        []datadogV2.MetricSeries
 	sl        sketches.SketchSeriesList
+	as        []pb.ClientStatsPayload
 	seenHosts map[string]struct{}
 	seenTags  map[string]struct{}
 }
 
-// NewZorkianConsumer creates a new Zorkian Datadog consumer.
-func NewZorkianConsumer() *ZorkianConsumer {
-	return &ZorkianConsumer{
+// NewConsumer creates a new Datadog consumer. It implements metrics.Consumer.
+func NewConsumer() *Consumer {
+	return &Consumer{
 		seenHosts: make(map[string]struct{}),
 		seenTags:  make(map[string]struct{}),
 	}
 }
 
-// toDataType maps translator datatypes to Zorkian's datatypes.
-func (c *ZorkianConsumer) toDataType(dt translator.MetricDataType) (out MetricType) {
-	out = MetricType("unknown")
+// toDataType maps translator datatypes to DatadogV2's datatypes.
+func (c *Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeType) {
+	out = datadogV2.METRICINTAKETYPE_UNSPECIFIED
 
 	switch dt {
-	case translator.Count:
-		out = Count
-	case translator.Gauge:
-		out = Gauge
+	case metrics.Count:
+		out = datadogV2.METRICINTAKETYPE_COUNT
+	case metrics.Gauge:
+		out = datadogV2.METRICINTAKETYPE_GAUGE
 	}
 
 	return
 }
 
 // runningMetrics gets the running metrics for the exporter.
-func (c *ZorkianConsumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo) (series []zorkian.Metric) {
+func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo) (series []datadogV2.MetricSeries) {
 	for host := range c.seenHosts {
 		// Report the host as running
-		runningMetric := DefaultZorkianMetrics("metrics", host, timestamp, buildInfo)
+		runningMetric := DefaultMetrics("metrics", host, timestamp, buildInfo)
 		series = append(series, runningMetric...)
 	}
 
 	for tag := range c.seenTags {
-		runningMetrics := DefaultZorkianMetrics("metrics", "", timestamp, buildInfo)
+		runningMetrics := DefaultMetrics("metrics", "", timestamp, buildInfo)
 		for i := range runningMetrics {
 			runningMetrics[i].Tags = append(runningMetrics[i].Tags, tag)
 		}
@@ -79,39 +84,52 @@ func (c *ZorkianConsumer) runningMetrics(timestamp uint64, buildInfo component.B
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *ZorkianConsumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]zorkian.Metric, sketches.SketchSeriesList) {
+func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]datadogV2.MetricSeries, sketches.SketchSeriesList, []pb.ClientStatsPayload) {
 	series := c.ms
 	series = append(series, c.runningMetrics(timestamp, buildInfo)...)
 	if len(tags) == 0 {
-		return series, c.sl
+		return series, c.sl, c.as
 	}
-	for i := 0; i < len(series); i++ {
+	for i := range series {
 		series[i].Tags = append(series[i].Tags, tags...)
 	}
-	for i := 0; i < len(c.sl); i++ {
+	for i := range c.sl {
 		c.sl[i].Tags = append(c.sl[i].Tags, tags...)
 	}
-	return series, c.sl
+	for i := range c.as {
+		c.as[i].Tags = append(c.as[i].Tags, tags...)
+	}
+	return series, c.sl, c.as
 }
 
-// ConsumeTimeSeries implements the translator.Consumer interface.
-func (c *ZorkianConsumer) ConsumeTimeSeries(
+// ConsumeAPMStats implements metrics.APMStatsConsumer.
+func (c *Consumer) ConsumeAPMStats(s pb.ClientStatsPayload) {
+	c.as = append(c.as, s)
+}
+
+// ConsumeTimeSeries implements the metrics.Consumer interface.
+func (c *Consumer) ConsumeTimeSeries(
 	_ context.Context,
-	dims *translator.Dimensions,
-	typ translator.MetricDataType,
+	dims *metrics.Dimensions,
+	typ metrics.DataType,
 	timestamp uint64,
 	value float64,
 ) {
 	dt := c.toDataType(typ)
-	met := NewZorkianMetric(dims.Name(), dt, timestamp, value, dims.Tags())
-	met.SetHost(dims.Host())
+	met := NewMetric(dims.Name(), dt, timestamp, value, dims.Tags())
+	met.SetResources([]datadogV2.MetricResource{
+		{
+			Name: datadog.PtrString(dims.Host()),
+			Type: datadog.PtrString("host"),
+		},
+	})
 	c.ms = append(c.ms, met)
 }
 
-// ConsumeSketch implements the translator.Consumer interface.
-func (c *ZorkianConsumer) ConsumeSketch(
+// ConsumeSketch implements the metrics.Consumer interface.
+func (c *Consumer) ConsumeSketch(
 	_ context.Context,
-	dims *translator.Dimensions,
+	dims *metrics.Dimensions,
 	timestamp uint64,
 	sketch *quantile.Sketch,
 ) {
@@ -127,12 +145,12 @@ func (c *ZorkianConsumer) ConsumeSketch(
 	})
 }
 
-// ConsumeHost implements the translator.HostConsumer interface.
-func (c *ZorkianConsumer) ConsumeHost(host string) {
+// ConsumeHost implements the metrics.HostConsumer interface.
+func (c *Consumer) ConsumeHost(host string) {
 	c.seenHosts[host] = struct{}{}
 }
 
-// ConsumeTag implements the translator.TagsConsumer interface.
-func (c *ZorkianConsumer) ConsumeTag(tag string) {
+// ConsumeTag implements the metrics.TagsConsumer interface.
+func (c *Consumer) ConsumeTag(tag string) {
 	c.seenTags[tag] = struct{}{}
 }

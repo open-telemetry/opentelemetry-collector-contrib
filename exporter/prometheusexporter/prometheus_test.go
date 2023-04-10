@@ -25,11 +25,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -46,14 +45,13 @@ func TestPrometheusExporter(t *testing.T) {
 	}{
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Namespace:        "test",
+				Namespace: "test",
 				ConstLabels: map[string]string{
 					"foo0":  "bar0",
 					"code0": "one0",
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: ":8999",
+					Endpoint: "localhost:8999",
 				},
 				SendTimestamps:   false,
 				MetricExpiration: 60 * time.Second,
@@ -61,23 +59,20 @@ func TestPrometheusExporter(t *testing.T) {
 		},
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: ":88999",
+					Endpoint: "localhost:88999",
 				},
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
 		{
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-			},
+			config:  &Config{},
 			wantErr: "expecting a non-blank address to run the Prometheus metrics handler",
 		},
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
@@ -108,14 +103,13 @@ func TestPrometheusExporter(t *testing.T) {
 
 func TestPrometheusExporter_WithTLS(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
 					CertFile: "./testdata/certs/server.crt",
@@ -131,7 +125,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 	}
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 
@@ -178,10 +172,10 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	_ = rsp.Body.Close()
 
 	want := []string{
-		`# HELP test_counter_int`,
-		`# TYPE test_counter_int counter`,
-		`test_counter_int{code2="one2",foo2="bar2",label_1="label-value-1",resource_attr="resource-attr-val-1"} 123 1581452773000`,
-		`test_counter_int{code2="one2",foo2="bar2",label_2="label-value-2",resource_attr="resource-attr-val-1"} 456 1581452773000`,
+		`# HELP test_counter_int_total`,
+		`# TYPE test_counter_int_total counter`,
+		`test_counter_int_total{code2="one2",foo2="bar2",label_1="label-value-1",resource_attr="resource-attr-val-1"} 123 1581452773000`,
+		`test_counter_int_total{code2="one2",foo2="bar2",label_2="label-value-2",resource_attr="resource-attr-val-1"} 456 1581452773000`,
 	}
 
 	for _, w := range want {
@@ -194,20 +188,19 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 // See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4986
 func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo1":  "bar1",
 			"code1": "one1",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -239,18 +232,18 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
-			`# HELP test_metric_1_this_one_there_where Extra ones`,
-			`# TYPE test_metric_1_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+128),
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+128),
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="windows"} %v`, 99+128),
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="linux"} %v`, 100+128),
-			`# HELP test_metric_2_this_one_there_where Extra ones`,
-			`# TYPE test_metric_2_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+delta),
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+delta),
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="windows"} %v`, 99+delta),
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="linux"} %v`, 100+delta),
+			`# HELP test_metric_1_this_one_there_where_total Extra ones`,
+			`# TYPE test_metric_1_this_one_there_where_total counter`,
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+128),
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+128),
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="windows"} %v`, 99+128),
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="linux"} %v`, 100+128),
+			`# HELP test_metric_2_this_one_there_where_total Extra ones`,
+			`# TYPE test_metric_2_this_one_there_where_total counter`,
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+delta),
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+delta),
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="windows"} %v`, 99+delta),
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="linux"} %v`, 100+delta),
 		}
 
 		for _, w := range want {
@@ -277,20 +270,19 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 
 func TestPrometheusExporter_endToEnd(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo1":  "bar1",
 			"code1": "one1",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -320,14 +312,14 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
-			`# HELP test_metric_1_this_one_there_where Extra ones`,
-			`# TYPE test_metric_1_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+128),
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+128),
-			`# HELP test_metric_2_this_one_there_where Extra ones`,
-			`# TYPE test_metric_2_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+delta),
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+delta),
+			`# HELP test_metric_1_this_one_there_where_total Extra ones`,
+			`# TYPE test_metric_1_this_one_there_where_total counter`,
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+128),
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+128),
+			`# HELP test_metric_2_this_one_there_where_total Extra ones`,
+			`# TYPE test_metric_2_this_one_there_where_total counter`,
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+delta),
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+delta),
 		}
 
 		for _, w := range want {
@@ -354,21 +346,20 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -398,14 +389,14 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
-			`# HELP test_metric_1_this_one_there_where Extra ones`,
-			`# TYPE test_metric_1_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="windows"} %v %v`, 99+128, 1543160298100+128000),
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="linux"} %v %v`, 100+128, 1543160298100),
-			`# HELP test_metric_2_this_one_there_where Extra ones`,
-			`# TYPE test_metric_2_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="windows"} %v %v`, 99+delta, 1543160298100+delta*1000),
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="linux"} %v %v`, 100+delta, 1543160298100),
+			`# HELP test_metric_1_this_one_there_where_total Extra ones`,
+			`# TYPE test_metric_1_this_one_there_where_total counter`,
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="windows"} %v %v`, 99+128, 1543160298100+128000),
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="linux"} %v %v`, 100+128, 1543160298100),
+			`# HELP test_metric_2_this_one_there_where_total Extra ones`,
+			`# TYPE test_metric_2_this_one_there_where_total counter`,
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="windows"} %v %v`, 99+delta, 1543160298100+delta*1000),
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="linux"} %v %v`, 100+delta, 1543160298100),
 		}
 
 		for _, w := range want {
@@ -432,14 +423,13 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
@@ -449,7 +439,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -479,10 +469,10 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	_ = rsp.Body.Close()
 
 	want := []string{
-		`# HELP test_counter_int`,
-		`# TYPE test_counter_int counter`,
-		`test_counter_int{code2="one2",foo2="bar2",label_1="label-value-1",resource_attr="resource-attr-val-1"} 123 1581452773000`,
-		`test_counter_int{code2="one2",foo2="bar2",label_2="label-value-2",resource_attr="resource-attr-val-1"} 456 1581452773000`,
+		`# HELP test_counter_int_total`,
+		`# TYPE test_counter_int_total counter`,
+		`test_counter_int_total{code2="one2",foo2="bar2",label_1="label-value-1",resource_attr="resource-attr-val-1"} 123 1581452773000`,
+		`test_counter_int_total{code2="one2",foo2="bar2",label_2="label-value-2",resource_attr="resource-attr-val-1"} 456 1581452773000`,
 	}
 
 	for _, w := range want {

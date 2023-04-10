@@ -32,7 +32,6 @@ We first introduce the `config.go` module, which defines the configuration optio
 // Config for the Sigv4 Authenticator
 
 type Config struct {
-    config.ExtensionSettings `mapstructure:",squash"`
     Region string `mapstructure:"region,omitempty"`
     Service string `mapstructure:"service,omitempty"`
     AssumeRole AssumeRole `mapstructure:"assume_role"`
@@ -41,7 +40,6 @@ type Config struct {
 ```
 
 
-* [config.ExtensionSettings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/extension.go) is a struct needed to needed to satisfy the [component.Config](https://github.com/open-telemetry/opentelemetry-collector/blob/main/component/config.go) interface
 * `Region` is the AWS region for AWS Sigv4. This is an optional field.
     * Note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
 * `Service` is the AWS service for AWS Sigv4. This is an optional field.
@@ -232,7 +230,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
         return nil, err
     }
 
-    content, err := ioutil.ReadAll(reqBody)
+    content, err := io.ReadAll(reqBody)
     reqBody.Close()
     if err != nil {
         return nil, err
@@ -285,7 +283,7 @@ We take a closer look at the performance of `RoundTrip()`, since it will be heav
     .
     .
     .
-    content, err := ioutil.ReadAll(reqBody)
+    content, err := io.ReadAll(reqBody)
     reqBody.Close()
     .
     .
@@ -369,9 +367,7 @@ func NewFactory() extension.Factory {
 
 ```go
 func createDefaultConfig() component.Config {
-    return &Config{
-        ExtensionSettings: config.NewExtensionSettings(component.NewID("sigv4auth")),
-    }
+    return &Config{}
 }
 ```
 

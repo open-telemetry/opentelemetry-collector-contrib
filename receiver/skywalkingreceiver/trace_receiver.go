@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
 	cds "skywalking.apache.org/repo/goapi/collect/agent/configuration/v3"
@@ -60,7 +61,7 @@ type swReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 
 	grpcObsrecv          *obsreport.Receiver
 	httpObsrecv          *obsreport.Receiver
@@ -78,7 +79,7 @@ const (
 func newSkywalkingReceiver(
 	config *configuration,
 	nextConsumer consumer.Traces,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 ) (*swReceiver, error) {
 
 	grpcObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{

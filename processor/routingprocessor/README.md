@@ -60,8 +60,9 @@ To configure the routing processor with [OTTL] routing conditions use the follow
 - `table (required)`: the routing table for this processor.
 - `table.statement (required)`: the routing condition provided as the [OTTL] statement.
 - `table.exporters (required)`: the list of exporters to use when the routing condition is met.
-- `default_exporters (optional)`: contains the list of exporters to use when a record
-does not meet any of specified conditions.
+- `default_exporters (optional)`: contains the list of exporters to use when a record does not meet any of specified conditions.
+- `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `ignore` and `propagate`. If `ignored` is used and a statement's condition has an error then the payload will be routed to the default exporter.  If not supplied, `propagate` is used.
+
 
 ```yaml
 
@@ -69,6 +70,7 @@ processors:
   routing:
     default_exporters:
     - jaeger
+    error_mode: ignore
     table:
       - statement: route() where resource.attributes["X-Tenant"] == "acme"
         exporters: [jaeger/acme]

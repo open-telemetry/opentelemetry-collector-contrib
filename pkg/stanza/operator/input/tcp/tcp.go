@@ -73,12 +73,14 @@ type Config struct {
 
 // BaseConfig is the detailed configuration of a tcp input operator.
 type BaseConfig struct {
-	MaxLogSize    helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
-	ListenAddress string                      `mapstructure:"listen_address,omitempty"`
-	TLS           *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
-	AddAttributes bool                        `mapstructure:"add_attributes,omitempty"`
-	Encoding      helper.EncodingConfig       `mapstructure:",squash,omitempty"`
-	Multiline     helper.MultilineConfig      `mapstructure:"multiline,omitempty"`
+	MaxLogSize                  helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
+	ListenAddress               string                      `mapstructure:"listen_address,omitempty"`
+	TLS                         *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
+	AddAttributes               bool                        `mapstructure:"add_attributes,omitempty"`
+	Encoding                    helper.EncodingConfig       `mapstructure:",squash,omitempty"`
+	Multiline                   helper.MultilineConfig      `mapstructure:"multiline,omitempty"`
+	PreserveLeadingWhitespaces  bool                        `mapstructure:"preserve_leading_whitespaces,omitempty"`
+	PreserveTrailingWhitespaces bool                        `mapstructure:"preserve_trailing_whitespaces,omitempty"`
 }
 
 // Build will build a tcp input operator.
@@ -112,7 +114,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, nil, int(c.MaxLogSize))
+	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
 	}
@@ -294,6 +296,9 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 
 // Stop will stop listening for log entries over TCP.
 func (t *Input) Stop() error {
+	if t.cancel == nil {
+		return nil
+	}
 	t.cancel()
 
 	if t.listener != nil {

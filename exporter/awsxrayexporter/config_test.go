@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -44,11 +43,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "customname"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
-					RequestTimeoutSeconds: 30,
+					RequestTimeoutSeconds: 120,
 					MaxRetries:            2,
 					NoVerifySSL:           false,
 					ProxyAddress:          "",
@@ -59,6 +57,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				IndexedAttributes:  []string{"indexed_attr_0", "indexed_attr_1"},
 				IndexAllAttributes: false,
+				LogGroupNames:      []string{"group1", "group2"},
 			},
 		},
 	}

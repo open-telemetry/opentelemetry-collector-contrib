@@ -19,11 +19,9 @@ import (
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
 	// Configure the service URL for the Pulsar service.
 	Endpoint string `mapstructure:"endpoint"`
 	// The topic of pulsar to consume logs,metrics,traces. (default = "otlp_traces" for traces,

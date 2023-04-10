@@ -53,6 +53,12 @@ output:
 
 # all available settings of specific linters
 linters-settings:
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
+
   govet:
     # report about shadowed variables
     check-shadowing: true
@@ -102,8 +108,7 @@ linters-settings:
     list-type: denylist
     include-go-root: true
     packages-with-error-message:
-      # See https://github.com/open-telemetry/opentelemetry-collector/issues/5200 for rationale
-      - sync/atomic: "Use go.uber.org/atomic instead of sync/atomic"
+      - go.uber.org/atomic: "Use 'sync/atomic' instead of go.uber.org/atomic"
       - github.com/pkg/errors: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
       - github.com/hashicorp/go-multierror: "Use go.uber.org/multierr instead of github.com/hashicorp/go-multierror"
     # Add a different guard rule so that we can ignore tests.
@@ -122,6 +127,7 @@ linters:
     - errcheck
     - errorlint
     - exportloopref
+    - gci
     - gocritic
     - gofmt
     - goimports
@@ -133,6 +139,7 @@ linters:
     - tenv
     - unconvert
     - unparam
+    - unused
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
@@ -142,9 +149,5 @@ issues:
       linters:
         - gosec
     - text: "G402:"
-      linters:
-        - gosec
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12566
-    - text: "G112:"
       linters:
         - gosec

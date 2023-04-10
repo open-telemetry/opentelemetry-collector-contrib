@@ -18,7 +18,6 @@ import (
 	"context"
 	"math"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -26,34 +25,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
-const enableHistogramSupportGateID = "processor.cumulativetodeltaprocessor.EnableHistogramSupport"
-
-func init() {
-	featuregate.GetRegistry().MustRegisterID(
-		enableHistogramSupportGateID,
-		featuregate.StageStable,
-		featuregate.WithRegisterDescription("Enables histogram conversion support"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/15658"),
-		featuregate.WithRegisterRemovalVersion("v0.68.0"),
-	)
-}
-
 type cumulativeToDeltaProcessor struct {
-	includeFS               filterset.FilterSet
-	excludeFS               filterset.FilterSet
-	logger                  *zap.Logger
-	deltaCalculator         *tracking.MetricTracker
-	cancelFunc              context.CancelFunc
-	histogramSupportEnabled bool
+	includeFS       filterset.FilterSet
+	excludeFS       filterset.FilterSet
+	logger          *zap.Logger
+	deltaCalculator *tracking.MetricTracker
+	cancelFunc      context.CancelFunc
 }
 
 func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulativeToDeltaProcessor {
 	ctx, cancel := context.WithCancel(context.Background())
 	p := &cumulativeToDeltaProcessor{
-		logger:                  logger,
-		deltaCalculator:         tracking.NewMetricTracker(ctx, logger, config.MaxStaleness),
-		cancelFunc:              cancel,
-		histogramSupportEnabled: featuregate.GetRegistry().IsEnabled(enableHistogramSupportGateID),
+		logger:          logger,
+		deltaCalculator: tracking.NewMetricTracker(ctx, logger, config.MaxStaleness),
+		cancelFunc:      cancel,
 	}
 	if len(config.Include.Metrics) > 0 {
 		p.includeFS, _ = filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)
@@ -96,10 +81,6 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 					ms.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
 				case pmetric.MetricTypeHistogram:
-					if !ctdp.histogramSupportEnabled {
-						return false
-					}
-
 					ms := m.Histogram()
 					if ms.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 						return false
@@ -145,7 +126,6 @@ func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) b
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
-
 	if dps, ok := in.(pmetric.NumberDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
 			id := baseIdentity
@@ -154,6 +134,11 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 			id.MetricValueType = dp.ValueType()
 			point := tracking.ValuePoint{
 				ObservedTimestamp: dp.Timestamp(),
+			}
+
+			if dp.Flags().NoRecordedValue() {
+				// drop points with no value
+				return true
 			}
 			if id.IsFloatVal() {
 				// Do not attempt to transform NaN values
@@ -169,10 +154,6 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 				Value:    point,
 			}
 			delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
-
-			// When converting non-monotonic cumulative counters,
-			// the first data point is omitted since the initial
-			// reference is not assumed to be zero
 			if !valid {
 				return true
 			}
@@ -188,12 +169,16 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
-
 	if dps, ok := in.(pmetric.HistogramDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
 			id := baseIdentity
 			id.StartTimestamp = dp.StartTimestamp()
 			id.Attributes = dp.Attributes()
+
+			if dp.Flags().NoRecordedValue() {
+				// drop points with no value
+				return true
+			}
 
 			point := tracking.ValuePoint{
 				ObservedTimestamp: dp.Timestamp(),

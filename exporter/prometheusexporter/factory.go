@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -33,16 +33,15 @@ const (
 )
 
 // NewFactory creates a new Prometheus exporter factory.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter, stability))
+		exporter.WithMetrics(createMetricsExporter, stability))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings:  config.NewExporterSettings(component.NewID(typeStr)),
 		ConstLabels:       map[string]string{},
 		SendTimestamps:    false,
 		MetricExpiration:  time.Minute * 5,
@@ -52,9 +51,9 @@ func createDefaultConfig() component.Config {
 
 func createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.MetricsExporter, error) {
+) (exporter.Metrics, error) {
 	pcfg := cfg.(*Config)
 
 	prometheus, err := newPrometheusExporter(pcfg, set)
@@ -75,12 +74,12 @@ func createMetricsExporter(
 	}
 
 	return &wrapMetricsExporter{
-		MetricsExporter: resourcetotelemetry.WrapMetricsExporter(pcfg.ResourceToTelemetrySettings, exporter),
-		exporter:        prometheus,
+		Metrics:  resourcetotelemetry.WrapMetricsExporter(pcfg.ResourceToTelemetrySettings, exporter),
+		exporter: prometheus,
 	}, nil
 }
 
 type wrapMetricsExporter struct {
-	component.MetricsExporter
+	exporter.Metrics
 	exporter *prometheusExporter
 }

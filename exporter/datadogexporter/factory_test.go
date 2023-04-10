@@ -24,13 +24,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
@@ -40,10 +40,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings: defaulttimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -55,8 +54,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 			},
 			DeltaTTL: 3600,
 			HistConfig: HistogramConfig{
-				Mode:         "distributions",
-				SendCountSum: false,
+				Mode:             "distributions",
+				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
@@ -101,10 +100,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "default"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				TimeoutSettings:  defaulttimeoutSettings(),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				TimeoutSettings: defaulttimeoutSettings(),
+				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				API: APIConfig{
 					Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 					Site:             "datadoghq.com",
@@ -117,8 +115,8 @@ func TestLoadConfig(t *testing.T) {
 					},
 					DeltaTTL: 3600,
 					HistConfig: HistogramConfig{
-						Mode:         "distributions",
-						SendCountSum: false,
+						Mode:             "distributions",
+						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
 						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
@@ -149,10 +147,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "api"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				TimeoutSettings:  defaulttimeoutSettings(),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				TimeoutSettings: defaulttimeoutSettings(),
+				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -167,8 +164,8 @@ func TestLoadConfig(t *testing.T) {
 					},
 					DeltaTTL: 3600,
 					HistConfig: HistogramConfig{
-						Mode:         "distributions",
-						SendCountSum: false,
+						Mode:             "distributions",
+						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
 						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
@@ -203,10 +200,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "api2"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				TimeoutSettings:  defaulttimeoutSettings(),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				TimeoutSettings: defaulttimeoutSettings(),
+				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -221,8 +217,8 @@ func TestLoadConfig(t *testing.T) {
 					},
 					DeltaTTL: 3600,
 					HistConfig: HistogramConfig{
-						Mode:         "distributions",
-						SendCountSum: false,
+						Mode:             "distributions",
+						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
 						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
@@ -385,7 +381,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg,
 	)
 
@@ -393,9 +389,14 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	assert.NotNil(t, exp)
 }
 
-func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
+func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
+
+	if isMetricExportV2Enabled() {
+		require.NoError(t, enableZorkianMetricExport())
+		defer require.NoError(t, enableNativeMetricExport())
+	}
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -417,7 +418,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		// metrics exporter
 		mexp, err := factory.CreateMetricsExporter(
 			ctx,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -425,7 +426,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		texp, err := factory.CreateTracesExporter(
 			ctx,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -433,7 +434,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		lexp, err := factory.CreateLogsExporter(
 			ctx,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -444,7 +445,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		ctx := context.Background()
 		exp, err := factory.CreateMetricsExporter(
 			ctx,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
 		assert.Nil(t, err)
@@ -452,7 +453,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		texp, err := factory.CreateTracesExporter(
 			ctx,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
 		assert.Nil(t, err)
@@ -460,7 +461,87 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		lexp, err := factory.CreateLogsExporter(
 			ctx,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
+			cfg,
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, lexp)
+	})
+}
+
+func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
+	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
+	defer server.Close()
+
+	if !isMetricExportV2Enabled() {
+		require.NoError(t, enableNativeMetricExport())
+		defer require.NoError(t, enableZorkianMetricExport())
+	}
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "api").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	// Use the mock server for API key validation
+	c := cfg.(*Config)
+	c.Metrics.TCPAddr.Endpoint = server.URL
+	c.HostMetadata.Enabled = false
+
+	t.Run("true", func(t *testing.T) {
+		c.API.FailOnInvalidKey = true
+		ctx := context.Background()
+		// metrics exporter
+		mexp, err := factory.CreateMetricsExporter(
+			ctx,
+			exportertest.NewNopCreateSettings(),
+			cfg,
+		)
+		assert.EqualError(t, err, "API Key validation failed")
+		assert.Nil(t, mexp)
+
+		texp, err := factory.CreateTracesExporter(
+			ctx,
+			exportertest.NewNopCreateSettings(),
+			cfg,
+		)
+		assert.EqualError(t, err, "API Key validation failed")
+		assert.Nil(t, texp)
+
+		lexp, err := factory.CreateLogsExporter(
+			ctx,
+			exportertest.NewNopCreateSettings(),
+			cfg,
+		)
+		assert.EqualError(t, err, "API Key validation failed")
+		assert.Nil(t, lexp)
+	})
+	t.Run("false", func(t *testing.T) {
+		c.API.FailOnInvalidKey = false
+		ctx := context.Background()
+		exp, err := factory.CreateMetricsExporter(
+			ctx,
+			exportertest.NewNopCreateSettings(),
+			cfg,
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, exp)
+
+		texp, err := factory.CreateTracesExporter(
+			ctx,
+			exportertest.NewNopCreateSettings(),
+			cfg,
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, texp)
+
+		lexp, err := factory.CreateLogsExporter(
+			ctx,
+			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
 		assert.Nil(t, err)
@@ -488,7 +569,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateLogsExporter(
 		ctx,
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg,
 	)
 
@@ -500,18 +581,12 @@ func TestOnlyMetadata(t *testing.T) {
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-
 	ctx := context.Background()
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings: defaulttimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 
 		API:          APIConfig{Key: "notnull"},
 		Metrics:      MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
@@ -526,7 +601,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expTraces, err := factory.CreateTracesExporter(
 		ctx,
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)
@@ -534,7 +609,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expMetrics, err := factory.CreateMetricsExporter(
 		ctx,
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)
@@ -552,7 +627,7 @@ func TestOnlyMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	body := <-server.MetadataChan
-	var recvMetadata metadata.HostMetadata
+	var recvMetadata hostmetadata.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")

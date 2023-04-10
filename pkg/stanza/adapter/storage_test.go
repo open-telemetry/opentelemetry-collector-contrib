@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	rcvr "go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 )
@@ -115,7 +116,7 @@ func TestFailOnNonStorageExtension(t *testing.T) {
 }
 
 func createReceiver(t *testing.T, storageID component.ID) *receiver {
-	params := component.ReceiverCreateSettings{
+	params := rcvr.CreateSettings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
 

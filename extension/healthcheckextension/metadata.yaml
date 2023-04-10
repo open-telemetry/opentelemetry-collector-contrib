@@ -1,0 +1,6 @@
+name: healthcheck
+
+status:
+  type: extension
+  stability: beta
+  distributions: [core, contrib]

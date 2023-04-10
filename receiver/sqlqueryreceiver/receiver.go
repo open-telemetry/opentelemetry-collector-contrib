@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 )
@@ -29,15 +30,15 @@ type sqlOpenerFunc func(driverName, dataSourceName string) (*sql.DB, error)
 
 type dbProviderFunc func() (*sql.DB, error)
 
-type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
+type clientProviderFunc func(db, string, *zap.Logger) dbClient
 
-func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) component.CreateMetricsReceiverFunc {
+func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
 	return func(
 		ctx context.Context,
-		settings component.ReceiverCreateSettings,
+		settings receiver.CreateSettings,
 		cfg component.Config,
 		consumer consumer.Metrics,
-	) (component.MetricsReceiver, error) {
+	) (receiver.Metrics, error) {
 		sqlCfg := cfg.(*Config)
 		var opts []scraperhelper.ScraperControllerOption
 		for i, query := range sqlCfg.Queries {

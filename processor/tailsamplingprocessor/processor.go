@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opencensus.io/stats"
@@ -27,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/atomic"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -68,7 +69,7 @@ const (
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform tail sampling according to the given
 // configuration.
-func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (component.TracesProcessor, error) {
+func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -107,7 +108,7 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 		decisionBatcher: inBatcher,
 		policies:        policies,
 		tickerFrequency: time.Second,
-		numTracesOnMap:  atomic.NewUint64(0),
+		numTracesOnMap:  &atomic.Uint64{},
 	}
 
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
@@ -151,10 +152,13 @@ func getSharedPolicyEvaluator(logger *zap.Logger, cfg *sharedPolicyCfg) (samplin
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
 	case SpanCount:
 		spCfg := cfg.SpanCountCfg
-		return sampling.NewSpanCount(logger, spCfg.MinSpans), nil
+		return sampling.NewSpanCount(logger, spCfg.MinSpans, spCfg.MaxSpans), nil
 	case TraceState:
 		tsfCfg := cfg.TraceStateCfg
 		return sampling.NewTraceStateFilter(logger, tsfCfg.Key, tsfCfg.Values), nil
+	case BooleanAttribute:
+		bafCfg := cfg.BooleanAttributeCfg
+		return sampling.NewBooleanAttributeFilter(logger, bafCfg.Key, bafCfg.Value), nil
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
@@ -184,9 +188,9 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 		// Sampled or not, remove the batches
 		trace.Lock()
-		allSpans := ptrace.NewTraces()
+		allSpans := trace.ReceivedBatches
 		trace.FinalDecision = decision
-		trace.ReceivedBatches.MoveTo(allSpans)
+		trace.ReceivedBatches = ptrace.NewTraces()
 		trace.Unlock()
 
 		if decision == sampling.Sampled {
@@ -293,7 +297,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	return finalDecision, matchingPolicy
 }
 
-// ConsumeTraces is required by the component.TracesProcessor interface.
+// ConsumeTraces is required by the processor.Traces interface.
 func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -330,10 +334,12 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		}
 		d, loaded := tsp.idToTrace.Load(id)
 		if !loaded {
+			spanCount := &atomic.Int64{}
+			spanCount.Store(lenSpans)
 			d, loaded = tsp.idToTrace.LoadOrStore(id, &sampling.TraceData{
 				Decisions:       initialDecisions,
 				ArrivalTime:     time.Now(),
-				SpanCount:       atomic.NewInt64(lenSpans),
+				SpanCount:       spanCount,
 				ReceivedBatches: ptrace.NewTraces(),
 			})
 		}

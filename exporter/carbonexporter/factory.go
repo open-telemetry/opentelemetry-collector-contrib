@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 )
 
 const (
@@ -29,26 +29,25 @@ const (
 )
 
 // NewFactory creates a factory for Carbon exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter, stability))
+		exporter.WithMetrics(createMetricsExporter, stability))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Endpoint:         DefaultEndpoint,
-		Timeout:          DefaultSendTimeout,
+		Endpoint: DefaultEndpoint,
+		Timeout:  DefaultSendTimeout,
 	}
 }
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	params exporter.CreateSettings,
 	config component.Config,
-) (component.MetricsExporter, error) {
+) (exporter.Metrics, error) {
 	exp, err := newCarbonExporter(config.(*Config), params)
 
 	if err != nil {

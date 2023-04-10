@@ -168,12 +168,11 @@ func TestMetricResourceProcessor(t *testing.T) {
 			m := tc.MockBackend.ReceivedMetrics[0]
 			rm := m.ResourceMetrics()
 			require.Equal(t, 1, rm.Len())
-			rm.At(0).Resource().Attributes().Sort()
 
 			expectidMD := test.expectedMetrics
 			require.Equal(t,
-				expectidMD.ResourceMetrics().At(0).Resource().Attributes(),
-				rm.At(0).Resource().Attributes(),
+				expectidMD.ResourceMetrics().At(0).Resource().Attributes().AsRaw(),
+				rm.At(0).Resource().Attributes().AsRaw(),
 			)
 		})
 	}

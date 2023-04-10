@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func TruncateAll[K any](target ottl.GetSetter[K], limit int64) (ottl.ExprFunc[K], error) {
+func TruncateAll[K any](target ottl.PMapGetter[K], limit int64) (ottl.ExprFunc[K], error) {
 	if limit < 0 {
 		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
 	}
@@ -36,28 +36,13 @@ func TruncateAll[K any](target ottl.GetSetter[K], limit int64) (ottl.ExprFunc[K]
 		if err != nil {
 			return nil, err
 		}
-		if val == nil {
-			return nil, nil
-		}
-
-		attrs, ok := val.(pcommon.Map)
-		if !ok {
-			return nil, nil
-		}
-
-		updated := pcommon.NewMap()
-		attrs.CopyTo(updated)
-		updated.Range(func(key string, value pcommon.Value) bool {
+		val.Range(func(key string, value pcommon.Value) bool {
 			stringVal := value.Str()
 			if int64(len(stringVal)) > limit {
 				value.SetStr(stringVal[:limit])
 			}
 			return true
 		})
-		err = target.Set(ctx, tCtx, updated)
-		if err != nil {
-			return nil, err
-		}
 		// TODO: Write log when truncation is performed
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
 		return nil, nil

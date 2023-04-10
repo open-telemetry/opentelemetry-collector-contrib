@@ -15,15 +15,17 @@
 package lokiexporter
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -42,9 +44,8 @@ func TestLoadConfigNewExporter(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "allsettings"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"X-Custom-Header": "loki_rocks",
 					},
 					Endpoint: "https://loki:3100/loki/api/v1/push",
@@ -61,10 +62,12 @@ func TestLoadConfigNewExporter(t *testing.T) {
 					Timeout:         time.Second * 10,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 10 * time.Second,
-					MaxInterval:     1 * time.Minute,
-					MaxElapsedTime:  10 * time.Minute,
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
@@ -90,78 +93,42 @@ func TestLoadConfigNewExporter(t *testing.T) {
 	}
 }
 
-func TestIsLegacy(t *testing.T) {
+func TestConfigValidate(t *testing.T) {
 	testCases := []struct {
-		desc    string
-		cfg     *Config
-		outcome bool
+		desc string
+		cfg  *Config
+		err  error
 	}{
 		{
-			// the default mode for an empty config is the new logic
-			desc: "not legacy",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-			},
-			outcome: false,
+			desc: "QueueSettings are invalid",
+			cfg:  &Config{QueueSettings: exporterhelper.QueueSettings{QueueSize: -1, Enabled: true}},
+			err:  fmt.Errorf("queue settings has invalid configuration"),
 		},
 		{
-			desc: "format is set to body",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-				Format: stringp("body"),
-			},
-			outcome: true,
+			desc: "Endpoint is invalid",
+			cfg:  &Config{},
+			err:  fmt.Errorf("\"endpoint\" must be a valid URL"),
 		},
 		{
-			desc: "a label is specified",
+			desc: "Config is valid",
 			cfg: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "https://loki.example.com",
 				},
-				Labels: &LabelsConfig{
-					Attributes: map[string]string{"some_attribute": "some_value"},
-				},
 			},
-			outcome: true,
-		},
-		{
-			desc: "a tenant is specified",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-				Tenant: &Tenant{
-					Source: "static",
-					Value:  "acme",
-				},
-			},
-			outcome: true,
-		},
-		{
-			desc: "a tenant ID is specified",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-				TenantID: stringp("acme"),
-			},
-			outcome: true,
+			err: nil,
 		},
 	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			assert.Equal(t, tC.outcome, tC.cfg.isLegacy())
 
-			// all configs from this table test are valid:
-			assert.NoError(t, tC.cfg.Validate())
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			err := tc.cfg.Validate()
+			if tc.err != nil {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.err.Error())
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
-}
-
-func stringp(str string) *string {
-	return &str
 }

@@ -29,6 +29,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestLoggingIntegration(t *testing.T) {
@@ -48,7 +52,7 @@ func TestLoggingIntegration(t *testing.T) {
 	}
 	recv, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		sink,
 	)
@@ -70,9 +74,9 @@ func TestLoggingIntegration(t *testing.T) {
 
 	logs := sink.AllLogs()[0]
 
-	expectedLogs, err := readLogs(filepath.Join("testdata", "golden", "autodiscovered.json"))
+	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "golden", "autodiscovered.yaml"))
 	require.NoError(t, err)
-	require.NoError(t, compareLogs(expectedLogs, logs))
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
 }
 
 var (

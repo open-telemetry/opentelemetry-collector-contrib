@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -34,18 +34,20 @@ const (
 )
 
 // NewFactory creates a factory for Elastic exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter, stability),
-		component.WithTracesExporter(createTracesExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability),
+		exporter.WithTraces(createTracesExporter, stability),
 	)
 }
 
 func createDefaultConfig() component.Config {
+	qs := exporterhelper.NewDefaultQueueSettings()
+	qs.Enabled = false
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+		QueueSettings: qs,
 		HTTPClientSettings: HTTPClientSettings{
 			Timeout: 90 * time.Second,
 		},
@@ -71,14 +73,15 @@ func createDefaultConfig() component.Config {
 // Logs are directly indexed into Elasticsearch.
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.LogsExporter, error) {
-	if cfg.(*Config).Index != "" {
+) (exporter.Logs, error) {
+	cf := cfg.(*Config)
+	if cf.Index != "" {
 		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
 	}
 
-	exporter, err := newLogsExporter(set.Logger, cfg.(*Config))
+	exporter, err := newLogsExporter(set.Logger, cf)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch logs exporter: %w", err)
 	}
@@ -89,17 +92,24 @@ func createLogsExporter(
 		cfg,
 		exporter.pushLogsData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithQueue(cf.QueueSettings),
 	)
 }
 
 func createTracesExporter(ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg component.Config) (component.TracesExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config) (exporter.Traces, error) {
 
-	exporter, err := newTracesExporter(set.Logger, cfg.(*Config))
+	cf := cfg.(*Config)
+	exporter, err := newTracesExporter(set.Logger, cf)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch traces exporter: %w", err)
 	}
-	return exporterhelper.NewTracesExporter(ctx, set, cfg, exporter.pushTraceData,
-		exporterhelper.WithShutdown(exporter.Shutdown))
+	return exporterhelper.NewTracesExporter(
+		ctx,
+		set,
+		cfg,
+		exporter.pushTraceData,
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithQueue(cf.QueueSettings))
 }

@@ -272,22 +272,22 @@
 	},
 	"opcountersRepl": {
 		"command": {
-			"$numberInt": "0"
+			"$numberInt": "27"
 		},
 		"delete": {
-			"$numberInt": "0"
+			"$numberInt": "1"
 		},
 		"getmore": {
-			"$numberInt": "0"
+			"$numberInt": "2"
 		},
 		"insert": {
-			"$numberInt": "0"
+			"$numberInt": "3"
 		},
 		"query": {
-			"$numberInt": "0"
+			"$numberInt": "4"
 		},
 		"update": {
-			"$numberInt": "0"
+			"$numberInt": "5"
 		}
 	},
 	"pid": {

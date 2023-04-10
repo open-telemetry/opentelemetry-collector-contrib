@@ -26,7 +26,7 @@ import (
 
 func TestReporterObservability(t *testing.T) {
 	receiverID := component.NewIDWithName(typeStr, "fake_receiver")
-	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -39,12 +39,12 @@ func TestReporterObservability(t *testing.T) {
 
 	reporter.OnMetricsProcessed(ctx, 17, nil)
 
-	require.NoError(t, obsreporttest.CheckReceiverMetrics(tt, receiverID, "tcp", 17, 0))
+	require.NoError(t, tt.CheckReceiverMetrics("tcp", 17, 0))
 
 	// Below just exercise the error paths.
 	err = errors.New("fake error for tests")
 	reporter.OnTranslationError(ctx, err)
 	reporter.OnMetricsProcessed(ctx, 10, err)
 
-	require.NoError(t, obsreporttest.CheckReceiverMetrics(tt, receiverID, "tcp", 17, 10))
+	require.NoError(t, tt.CheckReceiverMetrics("tcp", 17, 10))
 }

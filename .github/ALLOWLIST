@@ -21,8 +21,6 @@
 internal/common
 
 ## DEPRECATED components
-extension/fluentbitextension
 
-## UNMANTAINED components
-extension/httpforwarder
+## UNMAINTAINED components
 receiver/dotnetdiagnosticsreceiver

@@ -31,10 +31,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
@@ -117,7 +118,7 @@ func TestNewReceiver(t *testing.T) {
 		Endpoint:         "unix:///run/some.sock",
 		DockerAPIVersion: defaultDockerAPIVersion,
 	}
-	mr := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+	mr := newReceiver(receivertest.NewNopCreateSettings(), cfg)
 	assert.NotNil(t, mr)
 }
 
@@ -130,7 +131,7 @@ func TestErrorsInStart(t *testing.T) {
 		Endpoint:         unreachable,
 		DockerAPIVersion: defaultDockerAPIVersion,
 	}
-	recv := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+	recv := newReceiver(receivertest.NewNopCreateSettings(), cfg)
 	assert.NotNil(t, recv)
 
 	cfg.Endpoint = "..not/a/valid/endpoint"
@@ -175,12 +176,12 @@ func TestScrapeV2(t *testing.T) {
 	}{
 		{
 			desc:                "scrapeV2_single_container",
-			expectedMetricsFile: filepath.Join(mockFolder, "single_container", "expected_metrics.json"),
+			expectedMetricsFile: filepath.Join(mockFolder, "single_container", "expected_metrics.yaml"),
 			mockDockerEngine:    singleContainerEngineMock,
 		},
 		{
 			desc:                "scrapeV2_two_containers",
-			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.json"),
+			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.yaml"),
 			mockDockerEngine:    twoContainerEngineMock,
 		},
 	}
@@ -191,10 +192,9 @@ func TestScrapeV2(t *testing.T) {
 			cfg.Endpoint = tc.mockDockerEngine.URL
 			cfg.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
 			cfg.ContainerLabelsToMetricLabels = map[string]string{"container.label": "container-metric-label"}
-			cfg.ProvidePerCoreCPUMetrics = true
-			cfg.MetricsConfig = allMetricsEnabled
+			cfg.MetricsBuilderConfig.Metrics = allMetricsEnabled
 
-			receiver := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+			receiver := newReceiver(receivertest.NewNopCreateSettings(), cfg)
 			err := receiver.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
@@ -204,7 +204,8 @@ func TestScrapeV2(t *testing.T) {
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricsFile)
 
 			assert.NoError(t, err)
-			assert.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
 }

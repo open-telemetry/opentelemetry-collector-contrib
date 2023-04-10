@@ -15,8 +15,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -38,7 +40,7 @@ type MetricData interface {
 type Aggregated struct {
 	// Aggregation describes if the aggregator reports delta changes
 	// since last report time, or cumulative changes since a fixed start time.
-	Aggregation pmetric.AggregationTemporality `validate:"required"`
+	Aggregation pmetric.AggregationTemporality
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
@@ -68,7 +70,18 @@ type Mono struct {
 // MetricInputType defines the metric input value type
 type MetricInputType struct {
 	// InputType is the type the metric needs to be parsed from, options are "string"
-	InputType string `mapstructure:"input_type" validate:"omitempty,oneof=string"`
+	InputType string `mapstructure:"input_type"`
+}
+
+func (mit MetricInputType) Validate() error {
+	if mit.InputType != "" && mit.InputType != "string" {
+		return fmt.Errorf("invalid `input_type` value \"%v\", must be \"\" or \"string\"", mit.InputType)
+	}
+	return nil
+}
+
+func (mit MetricInputType) HasMetricInputType() bool {
+	return mit.InputType != ""
 }
 
 // Type returns name of the datapoint type.
@@ -79,7 +92,14 @@ func (mit MetricInputType) String() string {
 // MetricValueType defines the metric number type.
 type MetricValueType struct {
 	// ValueType is type of the metric number, options are "double", "int".
-	ValueType pmetric.NumberDataPointValueType `validate:"required"`
+	ValueType pmetric.NumberDataPointValueType
+}
+
+func (mvt *MetricValueType) Unmarshal(parser *confmap.Conf) error {
+	if !parser.IsSet("value_type") {
+		return errors.New("missing required field: `value_type`")
+	}
+	return nil
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
@@ -117,6 +137,14 @@ type gauge struct {
 	MetricInputType `mapstructure:",squash"`
 }
 
+// Unmarshal is a custom unmarshaler for gauge. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
+func (d *gauge) Unmarshal(parser *confmap.Conf) error {
+	if err := d.MetricValueType.Unmarshal(parser); err != nil {
+		return err
+	}
+	return parser.Unmarshal(d, confmap.WithErrorUnused())
+}
+
 func (d gauge) Type() string {
 	return "Gauge"
 }
@@ -129,15 +157,19 @@ func (d gauge) HasAggregated() bool {
 	return false
 }
 
-func (d gauge) HasMetricInputType() bool {
-	return d.InputType != ""
-}
-
 type sum struct {
 	Aggregated      `mapstructure:"aggregation"`
 	Mono            `mapstructure:",squash"`
 	MetricValueType `mapstructure:"value_type"`
 	MetricInputType `mapstructure:",squash"`
+}
+
+// Unmarshal is a custom unmarshaler for sum. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
+func (d *sum) Unmarshal(parser *confmap.Conf) error {
+	if err := d.MetricValueType.Unmarshal(parser); err != nil {
+		return err
+	}
+	return parser.Unmarshal(d, confmap.WithErrorUnused())
 }
 
 func (d sum) Type() string {
@@ -150,8 +182,4 @@ func (d sum) HasMonotonic() bool {
 
 func (d sum) HasAggregated() bool {
 	return true
-}
-
-func (d sum) HasMetricInputType() bool {
-	return d.InputType != ""
 }

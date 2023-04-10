@@ -28,10 +28,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -57,7 +57,7 @@ func TestEndToEnd(t *testing.T) {
 // endToEndScrapeTest creates a receiver that invokes `go run test_prometheus_exporter.go` and waits until it has scraped the /metrics endpoint twice - the application will crash between each scrape
 func endToEndScrapeTest(t *testing.T, receiverConfig component.Config, testName string) { //nolint
 	sink := new(consumertest.MetricsSink)
-	wrapper := newPromExecReceiver(componenttest.NewNopReceiverCreateSettings(), receiverConfig.(*Config), sink)
+	wrapper := newPromExecReceiver(receivertest.NewNopCreateSettings(), receiverConfig.(*Config), sink)
 
 	ctx := context.Background()
 	err := wrapper.Start(ctx, componenttest.NewNopHost())
@@ -124,17 +124,15 @@ func TestConfigBuilderFunctions(t *testing.T) {
 			name: "no command",
 			id:   component.NewID(typeStr),
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				ScrapeInterval:   60 * time.Second,
-				ScrapeTimeout:    10 * time.Second,
-				Port:             9104,
+				ScrapeInterval: 60 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "",
 					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{
@@ -167,10 +165,9 @@ func TestConfigBuilderFunctions(t *testing.T) {
 			name: "normal config",
 			id:   component.NewIDWithName(typeStr, "mysqld"),
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, "mysqld")),
-				ScrapeInterval:   90 * time.Second,
-				ScrapeTimeout:    10 * time.Second,
-				Port:             9104,
+				ScrapeInterval: 90 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "mysqld_exporter",
 					Env: []subprocessmanager.EnvConfig{
@@ -182,7 +179,6 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, "mysqld")),
 				PrometheusConfig: &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{
@@ -221,9 +217,8 @@ func TestConfigBuilderFunctions(t *testing.T) {
 			name: "lots of defaults",
 			id:   component.NewIDWithName(typeStr, "postgres/test"),
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, "postgres/test")),
-				ScrapeInterval:   60 * time.Second,
-				ScrapeTimeout:    10 * time.Second,
+				ScrapeInterval: 60 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "postgres_exporter",
 					Env: []subprocessmanager.EnvConfig{
@@ -235,7 +230,6 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, "postgres/test")),
 				PrometheusConfig: &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{

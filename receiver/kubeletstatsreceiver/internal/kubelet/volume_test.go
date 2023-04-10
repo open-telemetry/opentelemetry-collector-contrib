@@ -170,6 +170,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 					Namespace: tt.pod.namespace,
 				},
 			}
+			ras := metadata.DefaultResourceAttributesSettings()
 			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
 					{
@@ -196,7 +197,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 
 			volumeResourceMetrics := pmetric.NewResourceMetrics()
 			for _, op := range ro {
-				op(volumeResourceMetrics)
+				op(ras, volumeResourceMetrics)
 			}
 
 			require.Equal(t, tt.want, volumeResourceMetrics.Resource().Attributes().AsRaw())

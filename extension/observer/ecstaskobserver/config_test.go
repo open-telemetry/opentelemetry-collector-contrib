@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -42,7 +41,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "with-endpoint"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://a.valid.url:1234/path",
 				},
@@ -53,9 +51,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "with-port-labels"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-				PortLabels:        []string{"A_PORT_LABEL", "ANOTHER_PORT_LABEL"},
-				RefreshInterval:   30 * time.Second,
+				PortLabels:      []string{"A_PORT_LABEL", "ANOTHER_PORT_LABEL"},
+				RefreshInterval: 30 * time.Second,
 			},
 		},
 		{

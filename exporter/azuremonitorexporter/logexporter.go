@@ -17,7 +17,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -35,11 +35,13 @@ func (exporter *logExporter) onLogData(context context.Context, logData plog.Log
 
 	for i := 0; i < resourceLogs.Len(); i++ {
 		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		resource := resourceLogs.At(i).Resource()
 		for j := 0; j < scopeLogs.Len(); j++ {
 			logs := scopeLogs.At(j).LogRecords()
+			scope := scopeLogs.At(j).Scope()
 			for k := 0; k < logs.Len(); k++ {
-				envelope := logPacker.LogRecordToEnvelope(logs.At(k))
-				envelope.IKey = exporter.config.InstrumentationKey
+				envelope := logPacker.LogRecordToEnvelope(logs.At(k), resource, scope)
+				envelope.IKey = string(exporter.config.InstrumentationKey)
 				exporter.transportChannel.Send(envelope)
 			}
 		}
@@ -49,7 +51,7 @@ func (exporter *logExporter) onLogData(context context.Context, logData plog.Log
 }
 
 // Returns a new instance of the log exporter
-func newLogsExporter(config *Config, transportChannel transportChannel, set component.ExporterCreateSettings) (component.LogsExporter, error) {
+func newLogsExporter(config *Config, transportChannel transportChannel, set exporter.CreateSettings) (exporter.Logs, error) {
 	exporter := &logExporter{
 		config:           config,
 		transportChannel: transportChannel,

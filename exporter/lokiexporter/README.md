@@ -14,75 +14,63 @@ The following settings are required:
 
 - `endpoint` (no default): The target URL to send Loki log streams to (e.g.: `http://loki:3100/loki/api/v1/push`).
 
-The following options are now deprecated:
-
-- `labels.{attributes/resource}`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
-- `labels.record`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
-- `tenant`: Deprecated and will be removed by v0.59.0. See the [Labels](#tenant-information) section for more information.
-- `format` Deprecated without replacement. If you rely on this, let us know by opening an issue before v0.59.0 and we'll assist you in finding a solution.
-
 Example:
 ```yaml
-receivers:
-  otlp:
-
 exporters:
   loki:
     endpoint: https://loki.example.com:3100/loki/api/v1/push
+```
 
+## Configuration via attribute hints
+
+### Labels
+The Loki exporter can convert OTLP resource and log attributes into Loki labels, which are indexed. For that, you need to configure
+hints, specifying which attributes should be placed as labels. The hints are themselves attributes and will be ignored when
+exporting to Loki. The following example uses the `attributes` processor to hint the Loki exporter to set the `event.domain`
+attribute as label and the `resource` processor to give a hint to the Loki exporter to set the `service.name` as label.
+
+```yaml
 processors:
   attributes:
     actions:
-    - action: insert
-      key: loki.attribute.labels
-      value: http.status_code
+      - action: insert
+        key: loki.attribute.labels
+        value: event.domain
 
   resource:
     attributes:
-    - action: insert
-      key: loki.attribute.labels
-      value: http.status
-    - action: insert
-      key: loki.resource.labels
-      value: host.name, pod.name
-
-extensions:
-
-service:
-  extensions:
-  pipelines:
-    logs:
-      receivers: [otlp]
-      processors: [resource, attributes]
-      exporters: [loki]
+      - action: insert
+        key: loki.resource.labels
+        value: service.name
 ```
+
+Currently, Loki does not support label names with dots. 
+That's why lokiexporter normalizes label names to follow Prometheus label names standard before sending requests to Loki.
+More information on label normalization could be found [here](../../pkg/translator/prometheus/README.md#Labels)
+
+Default labels:
+- `job=service.namespace/service.name`
+- `instance=service.instance.id`
+- `exporter=OTLP`
+
+`exporter=OTLP` is always set.
+
+If `service.name` and `service.namespace` are present then `job=service.namespace/service.name` is set
+
+If `service.name` is present and `service.namespace` is not present then `job=service.name` is set
+
+If `service.name` is not present and `service.namespace` is present then `job` label is not set
+
+If `service.instance.id` is present then `instance=service.instance.id` is set
+
+If `service.instance.id` is not present then `instance` label is not set
 
 The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample
 configurations [here](./testdata/config.yaml).
 
-## Labels
+More information on how to send logs to Grafana Loki using the OpenTelemetry Collector could be found [here](https://grafana.com/docs/opentelemetry/collector/send-logs-to-loki/)
 
-The Loki exporter can convert OTLP resource and log attributes into Loki labels, which are indexed. For that, you need to configure
-hints, specifying which attributes should be placed as labels. The hints are themselves attributes and will be ignored when
-exporting to Loki. The following example uses the `attributes` processor to hint the Loki exporter to set the `http.status_code` 
-attribute as label and the `resource` processor to give a hint to the Loki exporter to set the `pod.name` as label.
-
-```yaml
-processors:
-  attributes:
-    actions:
-    - action: insert
-      key: loki.attribute.labels
-      value: http.status_code
-
-  resource:
-    attributes:
-    - action: insert
-      key: loki.resource.labels
-      value: pod.name
-```
-
-## Tenant information
+### Tenant information
 
 It is recommended to use the [`header_setter`](../../extension/headerssetterextension/README.md) extension to configure the tenant information to send to Loki. In case a static tenant
 should be used, you can make use of the `headers` option for regular HTTP client settings, like the following:
@@ -112,6 +100,24 @@ by tenant and send requests with the `X-Scope-OrgID` header set to relevant tena
 
 If the `loki.tenant` hint attribute is present in both resource or log attributes,
 then the look-up for a tenant value from resource attributes takes precedence.
+
+### Format
+To choose the format used for writing log lines by the exporter use the `loki.format` hint. For example:
+
+```yaml
+processors:
+  resource:
+    attributes:
+    - action: insert
+      key: loki.format
+      value: logfmt
+```
+
+The following formats are supported:
+
+- `logfmt`: Write logs as [logfmt](https://brandur.org/logfmt) lines.
+- `json`: Write logs as JSON objects. It is the default format if no hint is present.
+- `raw`: Write the body of the log message as string representation.
 
 ## Severity
 

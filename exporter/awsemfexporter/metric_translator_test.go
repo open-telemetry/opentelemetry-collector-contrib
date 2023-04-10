@@ -357,7 +357,7 @@ func assertDimsEqual(t *testing.T, expected, actual [][]string) {
 	assert.Equal(t, len(expected), len(actual))
 	expectedDimensions := normalizeDimensionality(expected)
 	actualDimensions := normalizeDimensionality(actual)
-	assert.True(t, reflect.DeepEqual(expectedDimensions, actualDimensions))
+	assert.Equal(t, expectedDimensions, actualDimensions)
 }
 
 // cWMeasurementEqual returns true if CW Measurements are equal.

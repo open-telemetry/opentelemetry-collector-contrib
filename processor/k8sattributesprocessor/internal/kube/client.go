@@ -122,18 +122,24 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() {
-	c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
 	})
+	if err != nil {
+		c.logger.Error("error adding event handler to pod informer", zap.Error(err))
+	}
 	go c.informer.Run(c.stopCh)
 
-	c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
 		UpdateFunc: c.handleNamespaceUpdate,
 		DeleteFunc: c.handleNamespaceDelete,
 	})
+	if err != nil {
+		c.logger.Error("error adding event handler to namespace informer", zap.Error(err))
+	}
 	go c.namespaceInformer.Run(c.stopCh)
 }
 
@@ -282,6 +288,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		tags[conventions.AttributeK8SPodName] = pod.Name
 	}
 
+	if c.Rules.PodHostName {
+		tags[tagHostName] = pod.Spec.Hostname
+	}
+
 	if c.Rules.Namespace {
 		tags[conventions.AttributeK8SNamespaceName] = pod.GetNamespace()
 	}
@@ -370,12 +380,16 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) map[string
 	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
-			imageParts := strings.Split(spec.Image, ":")
+			nameTagSep := strings.LastIndex(spec.Image, ":")
 			if c.Rules.ContainerImageName {
-				container.ImageName = imageParts[0]
+				if nameTagSep > 0 {
+					container.ImageName = spec.Image[:nameTagSep]
+				} else {
+					container.ImageName = spec.Image
+				}
 			}
-			if c.Rules.ContainerImageTag && len(imageParts) > 1 {
-				container.ImageTag = imageParts[1]
+			if c.Rules.ContainerImageTag && nameTagSep > 0 {
+				container.ImageTag = spec.Image[nameTagSep+1:]
 			}
 			containers[spec.Name] = container
 		}

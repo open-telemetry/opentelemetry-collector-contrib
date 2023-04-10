@@ -43,9 +43,9 @@ func NewRetrier(logger *zap.Logger, settings exporterhelper.RetrySettings, scrub
 
 // DoWithRetries does a function with retries. This is a condensed version of the code on
 // the exporterhelper, which we reuse here since we want custom retry logic.
-func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) error) error {
+func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) error) (int64, error) {
 	if !r.cfg.Enabled {
-		return fn(ctx)
+		return 0, fn(ctx)
 	}
 
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
@@ -64,33 +64,34 @@ func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) er
 	for {
 		err := fn(ctx)
 		if err == nil {
-			return nil
+			return retryNum, nil
 		}
 
 		err = r.scrubber.Scrub(err)
 
 		if consumererror.IsPermanent(err) {
-			return err
+			return retryNum, err
 		}
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
 			err = fmt.Errorf("max elapsed time expired %w", err)
-			return err
+			return retryNum, err
 		}
 
 		backoffDelayStr := backoffDelay.String()
 		r.logger.Info(
-			"Request failed. Will retry the request after interval.",
+			"Request failed with retriable errors. Will retry the request after interval.",
 			zap.Error(err),
 			zap.String("interval", backoffDelayStr),
+			zap.Int64("retry attempts", retryNum),
 		)
 		retryNum++
 
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("request is cancelled or timed out %w", err)
+			return retryNum, fmt.Errorf("request is cancelled or timed out %w", err)
 		case <-time.After(backoffDelay):
 		}
 	}

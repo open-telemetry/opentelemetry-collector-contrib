@@ -104,7 +104,7 @@ The utilization of the datastore.
 
 ### vcenter.host.cpu.usage
 
-The amount of CPU in Hz used by the host.
+The amount of CPU used by the host.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -323,7 +323,23 @@ The amount of memory that is ballooned due to virtualization.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.memory.swapped
+
+The portion of memory that is granted to this VM from the host's swap space.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.memory.swapped_ssd
+
+The amount of memory swapped to fast disk device such as SSD.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| KiBy | Sum | Int | Cumulative | false |
 
 ### vcenter.vm.memory.usage
 
@@ -375,11 +391,11 @@ As measured over the most recent 20s interval.
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcenter.cluster.name | The name of the vCenter Cluster. | Any Str |
-| vcenter.datastore.name | The name of the vCenter datastore. | Any Str |
-| vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str |
-| vcenter.resource_pool.name | The name of the resource pool. | Any Str |
-| vcenter.vm.id | The instance UUID of the virtual machine. | Any Str |
-| vcenter.vm.name | The name of the virtual machine. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| vcenter.cluster.name | The name of the vCenter Cluster. | Any Str | true |
+| vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
+| vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
+| vcenter.resource_pool.name | The name of the resource pool. | Any Str | true |
+| vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
+| vcenter.vm.name | The name of the virtual machine. | Any Str | true |

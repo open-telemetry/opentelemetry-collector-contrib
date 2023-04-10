@@ -3,9 +3,11 @@ resource_attributes:
   saphana.host:
     type: string
     description: The SAP HANA host.
+    enabled: true
   db.system:
     type: string
     description: The type of database system.
+    enabled: true
 
 attributes:
   database:

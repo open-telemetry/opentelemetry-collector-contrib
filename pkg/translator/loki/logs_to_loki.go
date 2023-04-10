@@ -18,13 +18,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/grafana/loki/pkg/logproto"
+	"github.com/grafana/loki/pkg/push"
+	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type PushRequest struct {
-	*logproto.PushRequest
+	*push.PushRequest
 	Report *PushReport
 }
 
@@ -62,43 +65,24 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).ScopeLogs()
+		resource := rls.At(i).Resource()
 
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).LogRecords()
+			scope := ills.At(j).Scope()
 			for k := 0; k < logs.Len(); k++ {
-
-				// similarly, we may remove attributes, so change only our version
-				log := plog.NewLogRecord()
-				logs.At(k).CopyTo(log)
-
-				// we may remove attributes, so we make a copy and change our version
-				resource := pcommon.NewResource()
-				rls.At(i).Resource().CopyTo(resource)
-
-				// adds level attribute from log.severityNumber
-				addLogLevelAttributeAndHint(log)
-
-				// resolve tenant and get/create a push request group
-				tenant := getTenantFromTenantHint(log.Attributes(), resource.Attributes())
+				log := logs.At(k)
+				tenant := GetTenantFromTenantHint(log.Attributes(), resource.Attributes())
 				group, ok := groups[tenant]
 				if !ok {
 					group = pushRequestGroup{
 						report:  &PushReport{},
-						streams: make(map[string]*logproto.Stream),
+						streams: make(map[string]*push.Stream),
 					}
 					groups[tenant] = group
 				}
 
-				format := getFormatFromFormatHint(log.Attributes(), resource.Attributes())
-
-				mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
-				// remove the attributes that were promoted to labels
-				removeAttributes(log.Attributes(), mergedLabels)
-				removeAttributes(resource.Attributes(), mergedLabels)
-
-				// create the stream name based on the labels
-				labels := mergedLabels.String()
-				entry, err := convertLogToLokiEntry(log, resource, format)
+				entry, err := LogToLokiEntry(log, resource, scope)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					group.report.Errors = append(group.report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
@@ -108,14 +92,24 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 				group.report.NumSubmitted++
 
+				processed := model.LabelSet{}
+				for label := range entry.Labels {
+					// Loki doesn't support dots in label names
+					// labelName is normalized label name to follow Prometheus label names standard
+					labelName := prometheustranslator.NormalizeLabel(string(label))
+					processed[model.LabelName(labelName)] = entry.Labels[label]
+				}
+
+				// create the stream name based on the labels
+				labels := processed.String()
 				if stream, ok := group.streams[labels]; ok {
-					stream.Entries = append(stream.Entries, *entry)
+					stream.Entries = append(stream.Entries, *entry.Entry)
 					continue
 				}
 
-				group.streams[labels] = &logproto.Stream{
+				group.streams[labels] = &push.Stream{
 					Labels:  labels,
-					Entries: []logproto.Entry{*entry},
+					Entries: []push.Entry{*entry.Entry},
 				}
 			}
 		}
@@ -123,8 +117,8 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 	requests := make(map[string]PushRequest)
 	for tenant, g := range groups {
-		pr := &logproto.PushRequest{
-			Streams: make([]logproto.Stream, len(g.streams)),
+		pr := &push.PushRequest{
+			Streams: make([]push.Stream, len(g.streams)),
 		}
 
 		i := 0
@@ -140,6 +134,43 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 	return requests
 }
 
+// PushEntry is Loki log entry enriched with labels
+type PushEntry struct {
+	Entry  *push.Entry
+	Labels model.LabelSet
+}
+
+// LogToLokiEntry converts LogRecord into Loki log entry enriched with labels and tenant
+func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.InstrumentationScope) (*PushEntry, error) {
+	// we may remove attributes, so change only our version
+	log := plog.NewLogRecord()
+	lr.CopyTo(log)
+
+	// similarly, we may remove attributes, so we make a copy and change our version
+	resource := pcommon.NewResource()
+	rl.CopyTo(resource)
+
+	// adds level attribute from log.severityNumber
+	addLogLevelAttributeAndHint(log)
+
+	format := getFormatFromFormatHint(log.Attributes(), resource.Attributes())
+
+	mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
+	// remove the attributes that were promoted to labels
+	removeAttributes(log.Attributes(), mergedLabels)
+	removeAttributes(resource.Attributes(), mergedLabels)
+
+	entry, err := convertLogToLokiEntry(log, resource, format, scope)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PushEntry{
+		Entry:  entry,
+		Labels: mergedLabels,
+	}, nil
+}
+
 func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
 	format := formatJSON
 	formatVal, found := resourceAttr.Get(hintFormat)
@@ -153,10 +184,10 @@ func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) stri
 	return format
 }
 
-// getTenantFromTenantHint extract an attribute based on the tenant hint.
+// GetTenantFromTenantHint extract an attribute based on the tenant hint.
 // it looks up for the attribute first in resource attributes and fallbacks to
 // record attributes if it is not found.
-func getTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
+func GetTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
 	var tenant string
 	hintAttr, found := resourceAttr.Get(hintTenant)
 	if !found {
@@ -176,7 +207,7 @@ func getTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) stri
 }
 
 type pushRequestGroup struct {
-	streams map[string]*logproto.Stream
+	streams map[string]*push.Stream
 	report  *PushReport
 }
 
@@ -195,15 +226,16 @@ type pushRequestGroup struct {
 // to make this decision, as it includes all of the errors that were encountered,
 // as well as the number of items dropped and submitted.
 // Deprecated: [v0.62.0] will be removed after v0.63.0. Use LogsToLokiRequests instead.
-func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
+func LogsToLoki(ld plog.Logs) (*push.PushRequest, *PushReport) {
 	report := &PushReport{}
 
-	streams := make(map[string]*logproto.Stream)
+	streams := make(map[string]*push.Stream)
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).ScopeLogs()
 
 		for j := 0; j < ills.Len(); j++ {
+			scope := ills.At(j).Scope()
 			logs := ills.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 
@@ -228,7 +260,7 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 				// create the stream name based on the labels
 				labels := mergedLabels.String()
 
-				entry, err := convertLogToLokiEntry(log, resource, format)
+				entry, err := convertLogToLokiEntry(log, resource, format, scope)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					report.Errors = append(report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
@@ -243,16 +275,16 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 					continue
 				}
 
-				streams[labels] = &logproto.Stream{
+				streams[labels] = &push.Stream{
 					Labels:  labels,
-					Entries: []logproto.Entry{*entry},
+					Entries: []push.Entry{*entry},
 				}
 			}
 		}
 	}
 
-	pr := &logproto.PushRequest{
-		Streams: make([]logproto.Stream, len(streams)),
+	pr := &push.PushRequest{
+		Streams: make([]push.Stream, len(streams)),
 	}
 
 	i := 0

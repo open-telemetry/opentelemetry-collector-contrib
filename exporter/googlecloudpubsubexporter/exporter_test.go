@@ -19,15 +19,15 @@ import (
 	"testing"
 	"time"
 
+	pb "cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"cloud.google.com/go/pubsub/pstest"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/api/option"
-	pb "google.golang.org/genproto/googleapis/pubsub/v1"
 )
 
 func TestName(t *testing.T) {
@@ -50,7 +50,7 @@ func TestGenerateClientOptions(t *testing.T) {
 	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
 		Timeout: 12 * time.Second,
 	}
-	exporter := ensureExporter(componenttest.NewNopExporterCreateSettings(), exporterConfig)
+	exporter := ensureExporter(exportertest.NewNopCreateSettings(), exporterConfig)
 
 	options := exporter.generateClientOptions()
 	assert.Equal(t, option.WithUserAgent("test-user-agent"), options[0])
@@ -81,7 +81,7 @@ func TestExporterDefaultSettings(t *testing.T) {
 	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
 		Timeout: 12 * time.Second,
 	}
-	exporter := ensureExporter(componenttest.NewNopExporterCreateSettings(), exporterConfig)
+	exporter := ensureExporter(exportertest.NewNopCreateSettings(), exporterConfig)
 	assert.NoError(t, exporter.start(ctx, nil))
 	assert.NoError(t, exporter.consumeTraces(ctx, ptrace.NewTraces()))
 	assert.NoError(t, exporter.consumeMetrics(ctx, pmetric.NewMetrics()))
@@ -111,7 +111,7 @@ func TestExporterCompression(t *testing.T) {
 		Timeout: 12 * time.Second,
 	}
 	exporterConfig.Compression = "gzip"
-	exporter := ensureExporter(componenttest.NewNopExporterCreateSettings(), exporterConfig)
+	exporter := ensureExporter(exportertest.NewNopCreateSettings(), exporterConfig)
 	assert.NoError(t, exporter.start(ctx, nil))
 	assert.NoError(t, exporter.consumeTraces(ctx, ptrace.NewTraces()))
 	assert.NoError(t, exporter.consumeMetrics(ctx, pmetric.NewMetrics()))

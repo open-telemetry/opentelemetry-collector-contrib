@@ -12,15 +12,18 @@ The OTTL grammar includes Invocations, Values and Boolean Expressions.
 
 ### Invocations
 
-Invocations represent a function call. Invocations are made up of 2 parts:
+Invocations represent a function call that transform the underlying telemetry payload. Invocations are made up of 2 parts:
 
-- a string identifier. The string identifier must start with a letter or an underscore (`_`).
+- a string identifier. The string identifier must start with a lowercase letter.
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
 
-**The OTTL does not define any function implementations.** Users must supply a map between string identifiers and the actual function implementation.  The OTTL will use this map and reflection to generate Invocations, that can then be invoked by the user.
+**The OTTL does not define any function implementations.**
+Users must supply a map between string identifiers and the actual function implementation.
+The OTTL will use this map and reflection to generate Invocations, that can then be invoked by the user.
+See [ottlfuncs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs) for pre-made, usable functions.
 
 Example Invocations
-- `drop()`
+- `route()`
 - `set(field, 1)`
 
 #### Invocation parameters
@@ -47,14 +50,12 @@ For slice parameters, the following types are supported:
 ### Values
 
 Values are passed as input to an Invocation or are used in a Boolean Expression. Values can take the form of:
-- [Paths](#paths).
-- [Lists](#lists).
-- [Literals](#literals).
-- [Enums](#enums).
-- [Invocations](#invocations).
+- [Paths](#paths)
+- [Lists](#lists)
+- [Literals](#literals)
+- [Enums](#enums)
+- [Converters](#converters)
 - [Math Expressions](#math_expressions)
-
-Invocations as Values allows calling functions as parameters to other functions. See [Invocations](#invocations) for details on Invocation syntax.
 
 #### Paths
 
@@ -62,7 +63,10 @@ A Path Value is a reference to a telemetry field.  Paths are made up of lowercas
 
 - Identifiers are used to map to a telemetry field.
 - Dots (`.`) are used to separate nested fields.
-- Square brackets and keys (`["key"]`) are used to access maps or slices.
+- Square brackets and keys (`["key"]`) are used to access values within maps.
+
+When accessing a map's value, if the given key does not exist, `nil` will be returned.
+This can be used to check for the presence of a key within a map within a [Boolean Expression](#boolean_expressions).
 
 Example Paths
 - `name`
@@ -73,6 +77,8 @@ Example Paths
 #### Lists
 
 A List Value comprises a sequence of Values.
+Currently, list can only be created by the grammar to be used in functions or conditions;
+the grammar does not provide an accessor to individual list entries.
 
 Example List Values:
 - `[]`
@@ -106,6 +112,24 @@ Enums are uppercase identifiers that get interpreted during parsing and converte
 Within the grammar Enums are always used as `int64`.  As a result, the Enum's symbol can be used as if it is an Int value.
 
 When defining a function that will be used as an Invocation by the OTTL, if the function needs to take an Enum then the function must use the `Enum` type for that argument, not an `int64`.
+
+#### Converters
+
+Converters are special functions that convert data to a new format before being passed to an Invocation or Boolean Expression.
+Like Invocations, Converters are made up of 2 parts:
+
+- a string identifier. The string identifier must start with an uppercase letter.
+- zero or more Values (comma separated) surrounded by parentheses (`()`).
+
+**The OTTL does not define any converter implementations.**
+Users must include converters in the same map that invocations are supplied.
+The OTTL will use this map and reflection to generate Converters that can then be invoked by the user.
+See [ottlfuncs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#converters) for pre-made, usable Converters.
+
+Example Converters
+- `Int()`
+- `IsMatch(field, ".*")`
+
 
 #### Math Expressions
 
@@ -160,7 +184,7 @@ The valid operators are:
 Booleans can be negated with the `not` keyword such as
 - `not true`
 - `not name == "foo"`   
-  `not (IsMatch(name, "http_.*") == true and kind > 0)`
+- `not (IsMatch(name, "http_.*") == true and kind > 0)`
 
 ### Comparison Rules
 
@@ -176,13 +200,19 @@ A `not equal` notation in the table below means that the "!=" operator returns t
 
 
 | base type | bool        | int64               | float64             | string                          | Bytes                    | nil                    |
-| --------- | ----------- | ------------------- | ------------------- | ------------------------------- | ------------------------ | ---------------------- |
+|-----------|-------------|---------------------|---------------------|---------------------------------|--------------------------|------------------------|
 | bool      | normal, T>F | not equal           | not equal           | not equal                       | not equal                | not equal              |
 | int64     | not equal   | compared as largest | compared as float64 | not equal                       | not equal                | not equal              |
 | float64   | not equal   | compared as float64 | compared as largest | not equal                       | not equal                | not equal              |
 | string    | not equal   | not equal           | not equal           | normal (compared as Go strings) | not equal                | not equal              |
 | Bytes     | not equal   | not equal           | not equal           | not equal                       | byte-for-byte comparison | []byte(nil) == nil     |
 | nil       | not equal   | not equal           | not equal           | not equal                       | []byte(nil) == nil       | true for equality only |
+
+Examples:
+- `name == "a name"`
+- `1 < 2`
+- `attributes["custom-attr"] != nil`
+- `IsMatch(resource.attributes["host.name"], "pod-*") == true`
 
 ## Accessing signal telemetry
 
@@ -260,13 +290,6 @@ logs:
   delete(resource.attributes["process.command_line"])
 ```
 
-### Drop specific telemetry
-
-```
-metrics:
-  drop() where attributes["http.target"] == "/health"
-```
-
 ### Attach information from resource into telemetry
 
 ```
@@ -282,14 +305,6 @@ traces:
   set(attributes["whose_fault"], "ours") where attributes["http.status"] == 500
 ```
 
-### Group spans by trace ID
-
-```
-traces:
-  group_by(trace_id, 2m)
-```
-
-
 ### Update a spans ID
 
 ```
@@ -299,16 +314,16 @@ traces:
   set(span_id, SpanID(0x0000000000000000))
 ```
 
-### Create utilization metric from base metrics.
-
-```
-metrics:
-  create_gauge("pod.cpu.utilized", read_gauge("pod.cpu.usage") / read_gauge("node.cpu.limit")
-```
-
 ### Convert metric name to snake case
 
 ```
 metrics:
   set(metric.name, ConvertCase(metric.name, "snake"))
+```
+
+### Check if an attribute exists
+
+```
+traces:
+  set(attributes["test-passed"], true) where attributes["target-attribute"] != nil
 ```

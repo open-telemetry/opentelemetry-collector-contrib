@@ -21,15 +21,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type logNameTest struct {
@@ -584,7 +584,6 @@ func TestFilterLogProcessor(t *testing.T) {
 			// next stores the results of the filter log processor
 			next := new(consumertest.LogsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: test.inc,
 					Exclude: test.exc,
@@ -593,7 +592,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			factory := NewFactory()
 			flp, err := factory.CreateLogsProcessor(
 				context.Background(),
-				componenttest.NewNopProcessorCreateSettings(),
+				processortest.NewNopCreateSettings(),
 				cfg,
 				next,
 			)
@@ -689,7 +688,7 @@ func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 	ctx := context.Background()
 	proc, _ := factory.CreateLogsProcessor(
 		ctx,
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -715,6 +714,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 		conditions       []string
 		filterEverything bool
 		want             func(ld plog.Logs)
+		errorMode        ottl.ErrorMode
 	}{
 		{
 			name: "drop logs",
@@ -729,6 +729,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 					return log.Body().AsString() == "operationA"
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop everything by dropping all logs",
@@ -736,6 +737,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 				`IsMatch(body, "operation.*") == true`,
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "multiple conditions",
@@ -744,6 +746,15 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 				`IsMatch(body, "operation.*") == true`,
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
+			name: "with error conditions",
+			conditions: []string{
+				`Substring("", 0, 100) == "test"`,
+			},
+			want:      func(ld plog.Logs) {},
+			errorMode: ottl.IgnoreError,
 		},
 	}
 	for _, tt := range tests {

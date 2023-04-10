@@ -15,7 +15,6 @@
 package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
 
 import (
-	"go.opentelemetry.io/collector/config"
 	k8s "k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -23,8 +22,7 @@ import (
 
 // Config defines configuration for kubernetes events receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	k8sconfig.APIConfig     `mapstructure:",squash"`
+	k8sconfig.APIConfig `mapstructure:",squash"`
 
 	// List of ‘namespaces’ to collect events from.
 	Namespaces []string `mapstructure:"namespaces"`

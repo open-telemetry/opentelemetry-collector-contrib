@@ -947,6 +947,28 @@ Size of the transaction log for an index.
 | ---- | ----------- | ------ |
 | aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
 
+### elasticsearch.node.cache.size
+
+Total amount of memory used for the query cache across all shards assigned to the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### elasticsearch.node.operations.current
+
+Number of query operations currently running.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operations} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` |
+
 ### elasticsearch.node.operations.get.completed
 
 The number of hits and misses resulting from GET operations.
@@ -989,6 +1011,30 @@ Size of memory for segment object of a node.
 | ---- | ----------- | ------ |
 | object | Type of object in segment | Str: ``term``, ``doc_value``, ``index_writer``, ``fixed_bit_set`` |
 
+### elasticsearch.process.cpu.time
+
+CPU time used by the process on which the Java virtual machine is running.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ms | Sum | Int | Cumulative | true |
+
+### elasticsearch.process.cpu.usage
+
+CPU usage in percent.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### elasticsearch.process.memory.virtual
+
+Size of virtual memory that is guaranteed to be available to the running process.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
 ### jvm.memory.heap.utilization
 
 Fraction of heap memory usage
@@ -999,8 +1045,9 @@ Fraction of heap memory usage
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| elasticsearch.cluster.name | The name of the elasticsearch cluster. | Any Str |
-| elasticsearch.index.name | The name of the elasticsearch index. | Any Str |
-| elasticsearch.node.name | The name of the elasticsearch node. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| elasticsearch.cluster.name | The name of the elasticsearch cluster. | Any Str | true |
+| elasticsearch.index.name | The name of the elasticsearch index. | Any Str | true |
+| elasticsearch.node.name | The name of the elasticsearch node. | Any Str | true |
+| elasticsearch.node.version | The version of the elasticsearch node. | Any Str | true |

@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestNumMetricTypes(t *testing.T) {
@@ -280,7 +282,7 @@ func TestToMetrics(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, tt.wantMetrics, md)
+			assert.NoError(t, pmetrictest.CompareMetrics(tt.wantMetrics, md))
 		})
 	}
 }
@@ -307,7 +309,6 @@ func buildDefaultMetrics(typ pmetric.MetricType, value interface{}, now time.Tim
 	dp.Attributes().PutStr("k0", "v0")
 	dp.Attributes().PutStr("k1", "v1")
 	dp.Attributes().PutStr("k2", "v2")
-	dp.Attributes().Sort()
 
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 

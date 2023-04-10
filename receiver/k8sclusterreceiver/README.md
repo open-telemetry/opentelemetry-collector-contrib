@@ -99,17 +99,17 @@ type MetadataDelta struct {
 
 See [here](internal/collection/metadata.go) for details about the above types.
 
+
 ## Example
 
 Here is an example deployment of the collector that sets up this receiver along with
-the [SignalFx Exporter](../../exporter/signalfxexporter/README.md).
+the logging exporter.
 
 Follow the below sections to setup various Kubernetes resources required for the deployment.
 
 ### Configuration
 
-Create a ConfigMap with the config for `otelcontribcol`. Replace `SIGNALFX_TOKEN` and `SIGNALFX_REALM`
-with valid values.
+Create a ConfigMap with the config for `otelcontribcol`:
 
 ```bash
 cat <<EOF | kubectl apply -f -
@@ -125,15 +125,12 @@ data:
       k8s_cluster:
         collection_interval: 10s
     exporters:
-      signalfx:
-        access_token: <SIGNALFX_TOKEN>
-        realm: <SIGNALFX_REALM>
-
+      logging:
     service:
       pipelines:
         metrics:
           receivers: [k8s_cluster]
-          exporters: [signalfx]
+          exporters: [logging]
 EOF
 ```
 

@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -42,7 +41,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "customname"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "0.0.0.0:9090",
@@ -55,7 +53,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "keepalive"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "0.0.0.0:55678",
@@ -81,7 +78,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "msg-size-conc-connect-max-idle"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "0.0.0.0:55678",
@@ -102,7 +98,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "tlscredentials"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "0.0.0.0:55678",
@@ -121,7 +116,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "cors"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "0.0.0.0:55678",
@@ -135,7 +129,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "uds"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "/tmp/opencensus.sock",

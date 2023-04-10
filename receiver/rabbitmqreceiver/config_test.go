@@ -126,7 +126,7 @@ func TestLoadConfig(t *testing.T) {
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Endpoint = "http://localhost:15672"
 	expected.Username = "otelu"
-	expected.Password = "$RABBITMQ_PASSWORD"
+	expected.Password = "${env:RABBITMQ_PASSWORD}"
 	expected.CollectionInterval = 10 * time.Second
 
 	require.Equal(t, expected, cfg)

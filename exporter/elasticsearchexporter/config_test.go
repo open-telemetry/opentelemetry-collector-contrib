@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
@@ -37,13 +37,17 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, cfg, &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Endpoints:        []string{"http://localhost:9200"},
-		CloudID:          "TRNMxjXlNJEt",
-		Index:            "my_log_index",
-		LogsIndex:        "logs-generic-default",
-		TracesIndex:      "traces-generic-default",
-		Pipeline:         "mypipeline",
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      false,
+			NumConsumers: 10,
+			QueueSize:    5000,
+		},
+		Endpoints:   []string{"http://localhost:9200"},
+		CloudID:     "TRNMxjXlNJEt",
+		Index:       "my_log_index",
+		LogsIndex:   "logs-generic-default",
+		TracesIndex: "traces-generic-default",
+		Pipeline:    "mypipeline",
 		HTTPClientSettings: HTTPClientSettings{
 			Authentication: AuthenticationSettings{
 				User:     "elastic",
@@ -78,30 +82,34 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
 
 	tests := []struct {
-		id       component.ID
-		expected component.Config
+		configFile string
+		id         component.ID
+		expected   component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
-			expected: defaultCfg,
+			id:         component.NewIDWithName(typeStr, ""),
+			configFile: "config.yaml",
+			expected:   defaultCfg,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "trace"),
+			id:         component.NewIDWithName(typeStr, "trace"),
+			configFile: "config.yaml",
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Endpoints:        []string{"https://elastic.example.com:9200"},
-				CloudID:          "TRNMxjXlNJEt",
-				Index:            "",
-				LogsIndex:        "logs-generic-default",
-				TracesIndex:      "trace_index",
-				Pipeline:         "mypipeline",
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      false,
+					NumConsumers: 10,
+					QueueSize:    5000,
+				},
+				Endpoints:   []string{"https://elastic.example.com:9200"},
+				CloudID:     "TRNMxjXlNJEt",
+				Index:       "",
+				LogsIndex:   "logs-generic-default",
+				TracesIndex: "trace_index",
+				Pipeline:    "mypipeline",
 				HTTPClientSettings: HTTPClientSettings{
 					Authentication: AuthenticationSettings{
 						User:     "elastic",
@@ -133,15 +141,20 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "log"),
+			id:         component.NewIDWithName(typeStr, "log"),
+			configFile: "config.yaml",
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Endpoints:        []string{"http://localhost:9200"},
-				CloudID:          "TRNMxjXlNJEt",
-				Index:            "",
-				LogsIndex:        "my_log_index",
-				TracesIndex:      "traces-generic-default",
-				Pipeline:         "mypipeline",
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 10,
+					QueueSize:    5000,
+				},
+				Endpoints:   []string{"http://localhost:9200"},
+				CloudID:     "TRNMxjXlNJEt",
+				Index:       "",
+				LogsIndex:   "my_log_index",
+				TracesIndex: "traces-generic-default",
+				Pipeline:    "mypipeline",
 				HTTPClientSettings: HTTPClientSettings{
 					Authentication: AuthenticationSettings{
 						User:     "elastic",
@@ -178,6 +191,9 @@ func TestLoadConfig(t *testing.T) {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
+
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.configFile))
+			require.NoError(t, err)
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)

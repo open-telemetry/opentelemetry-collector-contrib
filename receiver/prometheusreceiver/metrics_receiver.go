@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
@@ -56,14 +57,14 @@ type pReceiver struct {
 	configLoaded        chan struct{}
 	loadConfigOnce      sync.Once
 
-	settings         component.ReceiverCreateSettings
+	settings         receiver.CreateSettings
 	registry         *featuregate.Registry
 	scrapeManager    *scrape.Manager
 	discoveryManager *discovery.Manager
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(set component.ReceiverCreateSettings, cfg *Config, next consumer.Metrics, registry *featuregate.Registry) *pReceiver {
+func newPrometheusReceiver(set receiver.CreateSettings, cfg *Config, next consumer.Metrics, registry *featuregate.Registry) *pReceiver {
 	pr := &pReceiver{
 		cfg:                 cfg,
 		consumer:            next,
@@ -273,6 +274,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 		gcInterval(r.cfg.PrometheusConfig),
 		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
+		useCreatedMetricGate.IsEnabled(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.registry,
 	)

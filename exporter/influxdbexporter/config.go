@@ -16,8 +16,8 @@ package influxdbexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -37,12 +37,11 @@ type V1Compatibility struct {
 	// Username is used to optionally specify the basic auth username
 	Username string `mapstructure:"username"`
 	// Password is used to optionally specify the basic auth password
-	Password string `mapstructure:"password"`
+	Password configopaque.String `mapstructure:"password"`
 }
 
 // Config defines configuration for the InfluxDB exporter.
 type Config struct {
-	config.ExporterSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
@@ -52,7 +51,7 @@ type Config struct {
 	// Bucket is the InfluxDB bucket name that telemetry will be written to.
 	Bucket string `mapstructure:"bucket"`
 	// Token is used to identify InfluxDB permissions within the organization.
-	Token string `mapstructure:"token"`
+	Token configopaque.String `mapstructure:"token"`
 	// V1Compatibility is used to specify if the exporter should use the v1.X InfluxDB API schema.
 	V1Compatibility V1Compatibility `mapstructure:"v1_compatibility"`
 

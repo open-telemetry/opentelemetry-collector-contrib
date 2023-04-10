@@ -21,16 +21,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 // All the data we need to test the Span filter
@@ -134,7 +134,6 @@ func TestFilterTraceProcessor(t *testing.T) {
 			ctx := context.Background()
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Spans: filterconfig.MatchConfig{
 					Include: test.inc,
 					Exclude: test.exc,
@@ -143,7 +142,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 			factory := NewFactory()
 			fmp, err := factory.CreateTracesProcessor(
 				ctx,
-				componenttest.NewNopProcessorCreateSettings(),
+				processortest.NewNopCreateSettings(),
 				cfg,
 				next,
 			)
@@ -206,6 +205,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 		conditions       TraceFilters
 		filterEverything bool
 		want             func(td ptrace.Traces)
+		errorMode        ottl.ErrorMode
 	}{
 		{
 			name: "drop spans",
@@ -222,6 +222,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 					return span.Name() == "operationA"
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop everything by dropping all spans",
@@ -231,6 +232,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 				},
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "drop span events",
@@ -247,6 +249,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 					return event.Name() == "spanEventA"
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "multiple conditions",
@@ -257,11 +260,22 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 				},
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
+			name: "with error conditions",
+			conditions: TraceFilters{
+				SpanConditions: []string{
+					`Substring("", 0, 100) == "test"`,
+				},
+			},
+			want:      func(td ptrace.Traces) {},
+			errorMode: ottl.IgnoreError,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterSpansProcessor(componenttest.NewNopTelemetrySettings(), &Config{Traces: tt.conditions})
+			processor, err := newFilterSpansProcessor(componenttest.NewNopTelemetrySettings(), &Config{Traces: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
 			got, err := processor.processTraces(context.Background(), constructTraces())

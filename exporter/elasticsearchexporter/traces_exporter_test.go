@@ -22,12 +22,12 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -187,13 +187,13 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		handlers := map[string]func(attempts *atomic.Int64) bulkHandler{
 			"fail http request": func(attempts *atomic.Int64) bulkHandler {
 				return func([]itemRequest) ([]itemResponse, error) {
-					attempts.Inc()
+					attempts.Add(1)
 					return nil, &httpTestError{message: "oops"}
 				}
 			},
 			"fail item": func(attempts *atomic.Int64) bulkHandler {
 				return func(docs []itemRequest) ([]itemResponse, error) {
-					attempts.Inc()
+					attempts.Add(1)
 					return itemsReportStatus(docs, http.StatusTooManyRequests)
 				}
 			},
@@ -205,7 +205,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 				for name, configurer := range configurations {
 					t.Run(name, func(t *testing.T) {
 						t.Parallel()
-						attempts := atomic.NewInt64(0)
+						attempts := &atomic.Int64{}
 						server := newESTestServer(t, handler(attempts))
 
 						testConfig := configurer(server.URL)
@@ -221,9 +221,9 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 	})
 
 	t.Run("do not retry invalid request", func(t *testing.T) {
-		attempts := atomic.NewInt64(0)
+		attempts := &atomic.Int64{}
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			attempts.Inc()
+			attempts.Add(1)
 			return nil, &httpTestError{message: "oops", status: http.StatusBadRequest}
 		})
 
@@ -255,9 +255,9 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 	})
 
 	t.Run("do not retry bad item", func(t *testing.T) {
-		attempts := atomic.NewInt64(0)
+		attempts := &atomic.Int64{}
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			attempts.Inc()
+			attempts.Add(1)
 			return itemsReportStatus(docs, http.StatusBadRequest)
 		})
 

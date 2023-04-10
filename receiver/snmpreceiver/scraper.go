@@ -20,9 +20,12 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 )
@@ -42,16 +45,17 @@ var (
 
 // snmpScraper handles scraping of SNMP metrics
 type snmpScraper struct {
-	client   client
-	logger   *zap.Logger
-	cfg      *Config
-	settings component.ReceiverCreateSettings
+	client    client
+	logger    *zap.Logger
+	cfg       *Config
+	settings  receiver.CreateSettings
+	startTime pcommon.Timestamp
 }
 
 type indexedAttributeValues map[string]string
 
 // newScraper creates an initialized snmpScraper
-func newScraper(logger *zap.Logger, cfg *Config, settings component.ReceiverCreateSettings) *snmpScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *snmpScraper {
 	return &snmpScraper{
 		logger:   logger,
 		cfg:      cfg,
@@ -62,7 +66,7 @@ func newScraper(logger *zap.Logger, cfg *Config, settings component.ReceiverCrea
 // start gets the client ready
 func (s *snmpScraper) start(_ context.Context, host component.Host) (err error) {
 	s.client, err = newClient(s.cfg, s.logger)
-
+	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 	return err
 }
 
@@ -74,7 +78,7 @@ func (s *snmpScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	defer s.client.Close()
 
 	// Create the metrics helper which will help manage a lot of the otel metric and resource functionality
-	metricHelper := newOTELMetricHelper(s.settings)
+	metricHelper := newOTELMetricHelper(s.settings, s.startTime)
 
 	configHelper := newConfigHelper(s.cfg)
 

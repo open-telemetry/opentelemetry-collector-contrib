@@ -141,7 +141,7 @@ func TestLoadConfig(t *testing.T) {
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Username = "otelu"
-	expected.Password = "$BIGIP_PASSWORD"
+	expected.Password = "${env:BIGIP_PASSWORD}"
 	expected.TLSSetting.InsecureSkipVerify = true
 
 	require.Equal(t, expected, cfg)

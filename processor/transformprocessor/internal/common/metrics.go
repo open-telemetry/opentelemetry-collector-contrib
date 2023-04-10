@@ -31,7 +31,9 @@ import (
 
 var _ consumer.Metrics = &metricStatements{}
 
-type metricStatements []*ottl.Statement[ottlmetric.TransformContext]
+type metricStatements struct {
+	ottl.Statements[ottlmetric.TransformContext]
+}
 
 func (m metricStatements) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
@@ -47,11 +49,9 @@ func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 			metrics := smetrics.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				tCtx := ottlmetric.NewTransformContext(metrics.At(k), smetrics.Scope(), rmetrics.Resource())
-				for _, statement := range m {
-					_, _, err := statement.Execute(ctx, tCtx)
-					if err != nil {
-						return err
-					}
+				err := m.Execute(ctx, tCtx)
+				if err != nil {
+					return err
 				}
 			}
 		}
@@ -61,7 +61,9 @@ func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 
 var _ consumer.Metrics = &dataPointStatements{}
 
-type dataPointStatements []*ottl.Statement[ottldatapoint.TransformContext]
+type dataPointStatements struct {
+	ottl.Statements[ottldatapoint.TransformContext]
+}
 
 func (d dataPointStatements) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
@@ -102,7 +104,7 @@ func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metr
 func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
-		err := d.callFunctions(ctx, tCtx)
+		err := d.Execute(ctx, tCtx)
 		if err != nil {
 			return err
 		}
@@ -113,7 +115,7 @@ func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, dps pme
 func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
-		err := d.callFunctions(ctx, tCtx)
+		err := d.Execute(ctx, tCtx)
 		if err != nil {
 			return err
 		}
@@ -124,7 +126,7 @@ func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps 
 func (d dataPointStatements) handleExponetialHistogramDataPoints(ctx context.Context, dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
-		err := d.callFunctions(ctx, tCtx)
+		err := d.Execute(ctx, tCtx)
 		if err != nil {
 			return err
 		}
@@ -135,17 +137,7 @@ func (d dataPointStatements) handleExponetialHistogramDataPoints(ctx context.Con
 func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
-		err := d.callFunctions(ctx, tCtx)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (d dataPointStatements) callFunctions(ctx context.Context, tCtx ottldatapoint.TransformContext) error {
-	for _, statement := range d {
-		_, _, err := statement.Execute(ctx, tCtx)
+		err := d.Execute(ctx, tCtx)
 		if err != nil {
 			return err
 		}
@@ -163,24 +155,47 @@ type MetricParserCollectionOption func(*MetricParserCollection) error
 
 func WithMetricParser(functions map[string]interface{}) MetricParserCollectionOption {
 	return func(mp *MetricParserCollection) error {
-		mp.metricParser = ottlmetric.NewParser(functions, mp.settings)
+		metricParser, err := ottlmetric.NewParser(functions, mp.settings)
+		if err != nil {
+			return err
+		}
+		mp.metricParser = metricParser
 		return nil
 	}
 }
 
 func WithDataPointParser(functions map[string]interface{}) MetricParserCollectionOption {
 	return func(mp *MetricParserCollection) error {
-		mp.dataPointParser = ottldatapoint.NewParser(functions, mp.settings)
+		dataPointParser, err := ottldatapoint.NewParser(functions, mp.settings)
+		if err != nil {
+			return err
+		}
+		mp.dataPointParser = dataPointParser
+		return nil
+	}
+}
+
+func WithMetricErrorMode(errorMode ottl.ErrorMode) MetricParserCollectionOption {
+	return func(mp *MetricParserCollection) error {
+		mp.errorMode = errorMode
 		return nil
 	}
 }
 
 func NewMetricParserCollection(settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {
+	rp, err := ottlresource.NewParser(ResourceFunctions(), settings)
+	if err != nil {
+		return nil, err
+	}
+	sp, err := ottlscope.NewParser(ScopeFunctions(), settings)
+	if err != nil {
+		return nil, err
+	}
 	mpc := &MetricParserCollection{
 		parserCollection: parserCollection{
 			settings:       settings,
-			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
-			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
+			resourceParser: rp,
+			scopeParser:    sp,
 		},
 	}
 
@@ -197,17 +212,19 @@ func NewMetricParserCollection(settings component.TelemetrySettings, options ...
 func (pc MetricParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Metrics, error) {
 	switch contextStatements.Context {
 	case Metric:
-		mStatements, err := pc.metricParser.ParseStatements(contextStatements.Statements)
+		parseStatements, err := pc.metricParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		return metricStatements(mStatements), nil
+		mStatements := ottlmetric.NewStatements(parseStatements, pc.settings, ottlmetric.WithErrorMode(pc.errorMode))
+		return metricStatements{mStatements}, nil
 	case DataPoint:
-		dpStatements, err := pc.dataPointParser.ParseStatements(contextStatements.Statements)
+		parsedStatements, err := pc.dataPointParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		return dataPointStatements(dpStatements), nil
+		dpStatements := ottldatapoint.NewStatements(parsedStatements, pc.settings, ottldatapoint.WithErrorMode(pc.errorMode))
+		return dataPointStatements{dpStatements}, nil
 	default:
 		statements, err := pc.parseCommonContextStatements(contextStatements)
 		if err != nil {

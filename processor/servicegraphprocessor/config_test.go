@@ -22,27 +22,26 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadConfig(t *testing.T) {
 	// Prepare
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
 	factories.Processors[typeStr] = NewFactory()
+	factories.Connectors[typeStr] = NewConnectorFactory()
 
 	// Test
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-config.yaml"), factories)
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-config.yaml"), factories)
 
 	// Verify
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	assert.Equal(t,
 		&Config{
-			ProcessorSettings:       config.NewProcessorSettings(component.NewID(typeStr)),
 			MetricsExporter:         "metrics",
 			LatencyHistogramBuckets: []time.Duration{1, 2, 3, 4, 5},
 			Dimensions:              []string{"dimension-1", "dimension-2"},
@@ -50,7 +49,36 @@ func TestLoadConfig(t *testing.T) {
 				TTL:      time.Second,
 				MaxItems: 10,
 			},
+			CacheLoop:                 2 * time.Minute,
+			StoreExpirationLoop:       10 * time.Second,
+			VirtualNodePeerAttributes: []string{"db.name", "rpc.service"},
 		},
 		cfg.Processors[component.NewID(typeStr)],
 	)
+
+	// Need to set this gate to load connector configs
+	require.NoError(t, featuregate.GlobalRegistry().Set("service.connectors", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("service.connectors", false))
+	}()
+
+	cfg, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-connector-config.yaml"), factories)
+
+	// Verify
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	assert.Equal(t,
+		&Config{
+			LatencyHistogramBuckets: []time.Duration{1, 2, 3, 4, 5},
+			Dimensions:              []string{"dimension-1", "dimension-2"},
+			Store: StoreConfig{
+				TTL:      time.Second,
+				MaxItems: 10,
+			},
+			CacheLoop:           time.Minute,
+			StoreExpirationLoop: 2 * time.Second,
+		},
+		cfg.Connectors[component.NewID(typeStr)],
+	)
+
 }

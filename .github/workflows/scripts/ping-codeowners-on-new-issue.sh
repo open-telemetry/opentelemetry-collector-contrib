@@ -65,7 +65,7 @@ for COMPONENT in ${BODY_COMPONENTS}; do
     fi
 
     PING_LINES+="- ${COMPONENT}: ${CODEOWNERS}\n"
-    PINGED_COMPONENTS["${TITLE_COMPONENT}"]=1
+    PINGED_COMPONENTS["${COMPONENT}"]=1
 
     if (( "${#COMPONENT}" > 50 )); then
       echo "'${COMPONENT}' exceeds GitHub's 50-character limit on labels, skipping adding a label"
@@ -79,13 +79,22 @@ for COMPONENT in ${BODY_COMPONENTS}; do
   fi
 done
 
+if [[ -v PINGED_COMPONENTS[@] ]]; then
+  echo "The issue was associated with components:" "${!PINGED_COMPONENTS[@]}"
+else
+  echo "No related components were given"
+fi
+
 if [[ -n "${LABELS}" ]]; then
   # Notes on this call:
   # 1. Labels will be deduplicated by the GitHub CLI.
   # 2. The call to edit the issue will fail if any of the
   #    labels doesn't exist. We can be reasonably sure that
   #    all labels will exist since they come from a known set.
-  echo gh issue edit "${ISSUE}" --add-label "${LABELS}" || true
+  echo "Adding the following labels: ${LABELS//,/ /}"
+  gh issue edit "${ISSUE}" --add-label "${LABELS}" || true
+else
+  echo "No labels were found to add"
 fi
 
 if [[ -n "${PING_LINES}" ]]; then
@@ -98,6 +107,9 @@ if [[ -n "${PING_LINES}" ]]; then
   # 3. The PING_LINES variable must be directly put into the printf string
   #    to get the newlines to render correctly, using string formatting
   #    causes the newlines to be interpreted literally.
+  printf "Pinging code owners:\n${PING_LINES}"
   printf "Pinging code owners:\n${PING_LINES}\n%s" "${LABELS_COMMENT}"  \
   | gh issue comment "${ISSUE}" -F -
+else
+  echo "No code owners were found to ping"
 fi

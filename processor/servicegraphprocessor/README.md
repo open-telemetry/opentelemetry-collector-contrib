@@ -60,7 +60,9 @@ Duration is measured both from the client and the server sides.
 
 Possible values for `connection_type`: unset, `messaging_system`, or `database`.
 
-Additional labels can be included using the `dimensions` configuration option.
+Additional labels can be included using the `dimensions` configuration option. Those labels will have a prefix to mark where they originate (client or server span kinds).
+The `client_` prefix relates to the dimensions coming from spans with `SPAN_KIND_CLIENT`, and the `server_` prefix relates to the
+dimensions coming from spans with `SPAN_KIND_SERVER`.
 
 Since the service graph processor has to process both sides of an edge,
 it needs to process all spans of a trace to function properly.
@@ -95,6 +97,27 @@ datasources:
     version: 1
 ```
 
+## Configuration
+
+The following settings are required:
+
+- `metrics_exporter`: the name of the exporter that this processor will write metrics to. This exporter **must** be present in a pipeline.
+- `latency_histogram_buckets`: the list of durations defining the latency histogram buckets.
+    - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
+- `dimensions`: the list of dimensions to add together with the default dimensions defined above.
+
+The following settings can be optionally configured:
+
+- `store` defines the config for the in-memory store used to find requests between services by pairing spans.
+    - `ttl` - TTL is the time to live for items in the store.
+      - Default: `2ms`
+    - `max_items` - MaxItems is the maximum number of items to keep in the store.
+      - Default: `1000` 
+- `cache_loop` - the time to cleans the cache periodically
+- `store_expiration_loop`  the time to expire old entries from the store periodically.
+- `virtual_node_peer_attributes` the list of attributes need to match for building virtual server node, the higher the front, the higher the priority.
+  - Default: `[db.name, net.sock.peer.addr, net.peer.name, rpc.service, net.sock.peer.name, net.peer.name, http.url, http.target]`
+
 ## Example configuration
 
 ```yaml
@@ -115,7 +138,11 @@ processors:
     store: # Configuration for the in-memory store
       ttl: 2s # Value to wait for an edge to be completed
       max_items: 200 # Amount of edges that will be stored in the storeMap      
-
+    cache_loop: 2m # the time to cleans the cache periodically
+    store_expiration_loop: 10s # the time to expire old entries from the store periodically.
+    virtual_node_peer_attributes:
+      - db.name
+      - rpc.service
 exporters:
   prometheus/servicegraph:
     endpoint: localhost:9090
@@ -134,6 +161,10 @@ service:
       processors: []
       exporters: [prometheus/servicegraph]
 ```
+
+## Features and Feature-Gates
+
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

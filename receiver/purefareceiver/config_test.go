@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -39,10 +38,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(typeStr),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Settings: &Settings{
 					ReloadIntervals: &ReloadIntervals{
-						Array: 15 * time.Second,
+						Array:       15 * time.Second,
+						Hosts:       15 * time.Second,
+						Directories: 15 * time.Second,
+						Pods:        15 * time.Second,
+						Volumes:     15 * time.Second,
 					},
 				},
 			},
@@ -60,6 +62,10 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
+
+			expected := factory.CreateDefaultConfig().(*Config)
+
+			require.Equal(t, expected, cfg)
 		})
 	}
 }

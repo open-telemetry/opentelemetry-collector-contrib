@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
 )
 
@@ -59,7 +60,7 @@ type loadBalancerImp struct {
 }
 
 // Create new load balancer
-func newLoadBalancer(params component.ExporterCreateSettings, cfg component.Config, factory componentFactory) (*loadBalancerImp, error) {
+func newLoadBalancer(params exporter.CreateSettings, cfg component.Config, factory componentFactory) (*loadBalancerImp, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Resolver.DNS != nil && oCfg.Resolver.Static != nil {

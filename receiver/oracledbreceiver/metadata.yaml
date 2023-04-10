@@ -1,8 +1,15 @@
 name: oracledbreceiver
 
+status:
+  type: receiver
+  stability: alpha
+  pipelines: [metrics]
+  distributions: [contrib]
+
 resource_attributes:
   oracledb.instance.name:
     description: The name of the instance that data is coming from.
+    enabled: true
     type: string
 
 attributes:
@@ -33,6 +40,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
+      input_type: string
     unit: "{deadlocks}"
   oracledb.exchange_deadlocks:
     description: Number of times that a process detected a potential deadlock when
@@ -43,6 +51,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
+      input_type: string
     unit: "{deadlocks}"
   oracledb.executions:
     description: Total number of calls (user and recursive) that executed SQL statements
@@ -51,6 +60,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
+      input_type: string
     unit: "{executions}"
   oracledb.logical_reads:
     description: Number of logical reads
@@ -59,6 +69,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
+      input_type: string
     unit: "{reads}"
   oracledb.hard_parses:
     description: Number of hard parses
@@ -67,6 +78,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
+      input_type: string
     unit: "{parses}"
   oracledb.parse_calls:
     description: Total number of parse calls.
@@ -75,6 +87,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
+      input_type: string
     unit: "{parses}"
   oracledb.pga_memory:
     description: Session PGA (Program Global Area) memory
@@ -83,6 +96,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
+      input_type: string
     unit: By
   oracledb.physical_reads:
     description: Number of physical reads
@@ -91,6 +105,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
+      input_type: string
     unit: "{reads}"
   oracledb.user_commits:
     description: Number of user commits. When a user commits a transaction, the redo
@@ -101,6 +116,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
+      input_type: string
     unit: "{commits}"
   oracledb.user_rollbacks:
     description: Number of times users manually issue the ROLLBACK statement or an
@@ -110,6 +126,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
+      input_type: string
     unit: 1
   oracledb.sessions.usage:
     attributes:
@@ -119,77 +136,89 @@ metrics:
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: "{sessions}"
   oracledb.processes.usage:
     description: Current count of active processes.
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: "{processes}"
   oracledb.processes.limit:
-    description: Maximum limit of active processes.
+    description: Maximum limit of active processes, -1 if unlimited.
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: "{processes}"
   oracledb.sessions.limit:
-    description: Maximum limit of active sessions.
+    description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: "{sessions}"
   oracledb.enqueue_locks.usage:
     description: Current count of active enqueue locks.
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: "{locks}"
   oracledb.enqueue_locks.limit:
-    description: Maximum limit of active enqueue locks.
+    description: Maximum limit of active enqueue locks, -1 if unlimited.
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: "{locks}"
   oracledb.dml_locks.usage:
     description: Current count of active DML (Data Manipulation Language) locks.
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: "{locks}"
   oracledb.dml_locks.limit:
-    description: Maximum limit of active DML (Data Manipulation Language) locks.
+    description: Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: "{locks}"
   oracledb.enqueue_resources.usage:
     description: Current count of active enqueue resources.
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: "{resources}"
   oracledb.enqueue_resources.limit:
-    description: Maximum limit of active enqueue resources.
+    description: Maximum limit of active enqueue resources, -1 if unlimited.
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: "{resources}"
   oracledb.transactions.usage:
     description: Current count of active transactions.
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: "{transactions}"
   oracledb.transactions.limit:
-    description: Maximum limit of active transactions.
+    description: Maximum limit of active transactions, -1 if unlimited.
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: "{transactions}"
   oracledb.tablespace_size.limit:
     attributes:
       - tablespace_name
-    description: Maximum size of tablespace in bytes.
+    description: Maximum size of tablespace in bytes, -1 if unlimited.
     enabled: true
     gauge:
       value_type: int
@@ -201,4 +230,5 @@ metrics:
     enabled: true
     gauge:
       value_type: int
+      input_type: string
     unit: By

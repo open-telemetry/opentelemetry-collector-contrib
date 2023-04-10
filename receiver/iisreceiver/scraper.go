@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -53,12 +54,12 @@ type watcherRecorder struct {
 }
 
 // newIisReceiver returns an iisReceiver
-func newIisReceiver(settings component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) *iisReceiver {
+func newIisReceiver(settings receiver.CreateSettings, cfg *Config, consumer consumer.Metrics) *iisReceiver {
 	return &iisReceiver{
 		params:        settings.TelemetrySettings,
 		config:        cfg,
 		consumer:      consumer,
-		metricBuilder: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		metricBuilder: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		newWatcher:    winperfcounters.NewWatcher,
 	}
 }

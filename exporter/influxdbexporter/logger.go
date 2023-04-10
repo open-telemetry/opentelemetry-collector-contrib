@@ -24,8 +24,10 @@ type zapInfluxLogger struct {
 }
 
 func newZapInfluxLogger(logger *zap.Logger) common.Logger {
-	return &zapInfluxLogger{
-		logger.Sugar(),
+	return &common.ErrorLogger{
+		Logger: &zapInfluxLogger{
+			logger.Sugar(),
+		},
 	}
 }
 
