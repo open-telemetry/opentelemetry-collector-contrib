@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 
 import (
 	"context"
@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
 type ResourceContext interface {
@@ -76,10 +77,10 @@ func accessResourceAttributes[K ResourceContext]() ottl.StandardGetSetter[K] {
 func accessResourceAttributesKey[K ResourceContext](mapKey *string) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
-			return GetMapValue(tCtx.GetResource().Attributes(), *mapKey), nil
+			return ottlcommon.GetMapValue(tCtx.GetResource().Attributes(), *mapKey), nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
-			SetMapValue(tCtx.GetResource().Attributes(), *mapKey, val)
+			ottlcommon.SetMapValue(tCtx.GetResource().Attributes(), *mapKey, val)
 			return nil
 		},
 	}
