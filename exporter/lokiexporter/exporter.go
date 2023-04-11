@@ -23,6 +23,8 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/gogo/protobuf/proto"
+	"github.com/golang/snappy"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -32,23 +34,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 )
 
-type nextLokiExporter struct {
+const (
+	maxErrMsgLen = 1024
+)
+
+type lokiExporter struct {
 	config   *Config
 	settings component.TelemetrySettings
 	client   *http.Client
 	wg       sync.WaitGroup
 }
 
-func newNextExporter(config *Config, settings component.TelemetrySettings) *nextLokiExporter {
+func newExporter(config *Config, settings component.TelemetrySettings) *lokiExporter {
 	settings.Logger.Info("using the new Loki exporter")
 
-	return &nextLokiExporter{
+	return &lokiExporter{
 		config:   config,
 		settings: settings,
 	}
 }
 
-func (l *nextLokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
+func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	requests := loki.LogsToLokiRequests(ld)
 
 	var errs error
@@ -60,7 +66,7 @@ func (l *nextLokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error 
 	return errs
 }
 
-func (l *nextLokiExporter) sendPushRequest(ctx context.Context, tenant string, request loki.PushRequest, ld plog.Logs) error {
+func (l *lokiExporter) sendPushRequest(ctx context.Context, tenant string, request loki.PushRequest, ld plog.Logs) error {
 	pushReq := request.PushRequest
 	report := request.Report
 	if len(pushReq.Streams) == 0 {
@@ -123,7 +129,16 @@ func (l *nextLokiExporter) sendPushRequest(ctx context.Context, tenant string, r
 	return nil
 }
 
-func (l *nextLokiExporter) start(_ context.Context, host component.Host) (err error) {
+func encode(pb proto.Message) ([]byte, error) {
+	buf, err := proto.Marshal(pb)
+	if err != nil {
+		return nil, err
+	}
+	buf = snappy.Encode(nil, buf)
+	return buf, nil
+}
+
+func (l *lokiExporter) start(_ context.Context, host component.Host) (err error) {
 	client, err := l.config.HTTPClientSettings.ToClient(host, l.settings)
 	if err != nil {
 		return err
@@ -134,7 +149,7 @@ func (l *nextLokiExporter) start(_ context.Context, host component.Host) (err er
 	return nil
 }
 
-func (l *nextLokiExporter) stop(context.Context) (err error) {
+func (l *lokiExporter) stop(context.Context) (err error) {
 	l.wg.Wait()
 	return nil
 }
