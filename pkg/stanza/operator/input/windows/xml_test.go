@@ -88,17 +88,15 @@ func TestParseBody(t *testing.T) {
 		TimeCreated: TimeCreated{
 			SystemTime: "2020-07-30T01:01:01.123456789Z",
 		},
-		Computer: "computer",
-		Channel:  "application",
-		RecordID: 1,
-		Level:    "Information",
-		Message:  "message",
-		Task:     "task",
-		Opcode:   "opcode",
-		Keywords: []string{"keyword"},
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"},
-		},
+		Computer:         "computer",
+		Channel:          "application",
+		RecordID:         1,
+		Level:            "Information",
+		Message:          "message",
+		Task:             "task",
+		Opcode:           "opcode",
+		Keywords:         []string{"keyword"},
+		EventData:        []string{"this", "is", "some", "sample", "data"},
 		RenderedLevel:    "rendered_level",
 		RenderedTask:     "rendered_task",
 		RenderedOpcode:   "rendered_opcode",
@@ -124,7 +122,7 @@ func TestParseBody(t *testing.T) {
 		"task":        "rendered_task",
 		"opcode":      "rendered_opcode",
 		"keywords":    []string{"RenderedKeywords"},
-		"event_data":  map[string]string{"name": "value", "another_name": "another_value"},
+		"event_data":  []string{"this", "is", "some", "sample", "data"},
 	}
 
 	require.Equal(t, expected, xml.parseBody())
@@ -144,17 +142,15 @@ func TestParseNoRendered(t *testing.T) {
 		TimeCreated: TimeCreated{
 			SystemTime: "2020-07-30T01:01:01.123456789Z",
 		},
-		Computer: "computer",
-		Channel:  "application",
-		RecordID: 1,
-		Level:    "Information",
-		Message:  "message",
-		Task:     "task",
-		Opcode:   "opcode",
-		Keywords: []string{"keyword"},
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"},
-		},
+		Computer:  "computer",
+		Channel:   "application",
+		RecordID:  1,
+		Level:     "Information",
+		Message:   "message",
+		Task:      "task",
+		Opcode:    "opcode",
+		Keywords:  []string{"keyword"},
+		EventData: []string{"this", "is", "some", "sample", "data"},
 	}
 
 	expected := map[string]interface{}{
@@ -176,7 +172,7 @@ func TestParseNoRendered(t *testing.T) {
 		"task":        "task",
 		"opcode":      "opcode",
 		"keywords":    []string{"keyword"},
-		"event_data":  map[string]string{"name": "value", "another_name": "another_value"},
+		"event_data":  []string{"this", "is", "some", "sample", "data"},
 	}
 
 	require.Equal(t, expected, xml.parseBody())
@@ -196,17 +192,15 @@ func TestParseBodySecurity(t *testing.T) {
 		TimeCreated: TimeCreated{
 			SystemTime: "2020-07-30T01:01:01.123456789Z",
 		},
-		Computer: "computer",
-		Channel:  "Security",
-		RecordID: 1,
-		Level:    "Information",
-		Message:  "message",
-		Task:     "task",
-		Opcode:   "opcode",
-		Keywords: []string{"keyword"},
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"},
-		},
+		Computer:         "computer",
+		Channel:          "Security",
+		RecordID:         1,
+		Level:            "Information",
+		Message:          "message",
+		Task:             "task",
+		Opcode:           "opcode",
+		Keywords:         []string{"keyword"},
+		EventData:        []string{"this", "is", "some", "sample", "data"},
 		RenderedLevel:    "rendered_level",
 		RenderedTask:     "rendered_task",
 		RenderedOpcode:   "rendered_opcode",
@@ -232,33 +226,10 @@ func TestParseBodySecurity(t *testing.T) {
 		"task":        "rendered_task",
 		"opcode":      "rendered_opcode",
 		"keywords":    []string{"RenderedKeywords"},
-		"event_data":  map[string]string{"name": "value", "another_name": "another_value"},
+		"event_data":  []string{"this", "is", "some", "sample", "data"},
 	}
 
 	require.Equal(t, expected, xml.parseBody())
-}
-
-func TestParseEventData(t *testing.T) {
-	xmlMap := EventXML{
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"},
-		},
-	}
-
-	parsed := xmlMap.parseBody()
-	expectedMap := map[string]string{"name": "value"}
-	require.Equal(t, expectedMap, parsed["event_data"])
-
-	xmlMixed := EventXML{
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"},
-			{Value: "noname"},
-		},
-	}
-
-	parsed = xmlMixed.parseBody()
-	expectedSlice := map[string]string{"name": "value"}
-	require.Equal(t, expectedSlice, parsed["event_data"])
 }
 
 func TestInvalidUnmarshal(t *testing.T) {
@@ -286,18 +257,15 @@ func TestUnmarshal(t *testing.T) {
 		TimeCreated: TimeCreated{
 			SystemTime: "2022-04-22T10:20:52.3778625Z",
 		},
-		Computer: "computer",
-		Channel:  "Application",
-		RecordID: 23401,
-		Level:    "4",
-		Message:  "",
-		Task:     "0",
-		Opcode:   "0",
-		EventData: []EventDataEntry{
-			{Name: "Time", Value: "2022-04-28T19:48:52Z"},
-			{Name: "Source", Value: "RulesEngine"},
-		},
-		Keywords: []string{"0x80000000000000"},
+		Computer:  "computer",
+		Channel:   "Application",
+		RecordID:  23401,
+		Level:     "4",
+		Message:   "",
+		Task:      "0",
+		Opcode:    "0",
+		EventData: []string{"2022-04-28T19:48:52Z", "RulesEngine"},
+		Keywords:  []string{"0x80000000000000"},
 	}
 
 	require.Equal(t, xml, event)
