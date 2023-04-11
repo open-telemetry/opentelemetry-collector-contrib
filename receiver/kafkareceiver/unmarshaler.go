@@ -50,6 +50,13 @@ type LogsUnmarshaler interface {
 	Encoding() string
 }
 
+type LogsUnmarshalerWithEnc interface {
+	LogsUnmarshaler
+
+	// WithEnc sets the character encoding (UTF-8, GBK, etc.) of the unmarshaler.
+	WithEnc(string) (LogsUnmarshalerWithEnc, error)
+}
+
 // defaultTracesUnmarshalers returns map of supported encodings with TracesUnmarshaler.
 func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
 	otlpPb := newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding)
@@ -78,8 +85,10 @@ func defaultMetricsUnmarshalers() map[string]MetricsUnmarshaler {
 func defaultLogsUnmarshalers() map[string]LogsUnmarshaler {
 	otlpPb := newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding)
 	raw := newRawLogsUnmarshaler()
+	text := newTextLogsUnmarshaler()
 	return map[string]LogsUnmarshaler{
 		otlpPb.Encoding(): otlpPb,
 		raw.Encoding():    raw,
+		text.Encoding():   text,
 	}
 }
