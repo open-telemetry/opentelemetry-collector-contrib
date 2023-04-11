@@ -47,7 +47,6 @@ exporters:
 
 Since v0.76.0 you can specify Coralogix domain in the configuration file instead of specifying different endpoints for traces, metrics and logs. For example, the configuration below, can be replaced with domain field:
 
-
 Old configuration:
 ```yaml
 exporters:
@@ -69,7 +68,7 @@ exporters:
 
 ### Coralogix's Domain 
 
-Depending on your region, you might need to use a different endpoint. Here are the available Endpoints:
+Depending on your region, you might need to use a different domains. Here are the available domains:
 
 | Region  | Domain                        |
 |---------|---------------------------------|

@@ -62,10 +62,10 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) (err erro
 			return err
 		}
 	case !isEmpty(e.config.Domain):
+
 		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
 			return err
 		}
-
 	}
 
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)

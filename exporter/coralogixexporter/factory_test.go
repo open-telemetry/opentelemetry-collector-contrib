@@ -228,3 +228,27 @@ func TestCreateTracesExporter(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateLogsExporterWithDomainAndEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Domain = "	bad domain"
+
+	cfg.Logs.Endpoint = testutil.GetAvailableLocalAddress(t)
+
+	set := exportertest.NewNopCreateSettings()
+	consumer, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	require.Nil(t, err)
+	require.NotNil(t, consumer)
+
+	err = consumer.Start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+
+	err = consumer.Shutdown(context.Background())
+	if err != nil {
+		// Since the endpoint of OTLP exporter doesn't actually exist,
+		// exporter may already stop because it cannot connect.
+		assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
+	}
+
+}
