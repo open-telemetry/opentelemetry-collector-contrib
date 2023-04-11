@@ -152,9 +152,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Run `govulncheck`
-        run: |
-          make govulncheck
-          git diff --exit-code || (echo 'Some vulnerable dependencies are in use, this most likely means you need to updated stuff in go.mod/go.sum and/or bump the Go compiler version itself.' && exit 1)
+        run: make govulncheck
   checks:
     runs-on: ubuntu-latest
     needs: [setup-environment]
