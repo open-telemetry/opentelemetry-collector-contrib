@@ -106,5 +106,10 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if !componentParser.IsSet(rotationFieldName) {
 		cfg.Rotation = nil
 	}
+
+	// set flush interval to 1 second if not set.
+	if cfg.FlushInterval == 0 {
+		cfg.FlushInterval = time.Second
+	}
 	return nil
 }

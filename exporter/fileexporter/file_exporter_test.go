@@ -15,6 +15,7 @@ package fileexporter
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -490,7 +491,6 @@ func TestExportMessageAsBuffer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Error(t, exportMessageAsBuffer(fe, buf))
 	assert.NoError(t, fe.Shutdown(context.Background()))
-
 }
 
 // tempFileName provides a temporary file name for testing.
@@ -609,4 +609,49 @@ func TestConcurrentlyCompress(t *testing.T) {
 	gotLd, err := logsUnmarshaler.UnmarshalLogs(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, ld, gotLd)
+}
+
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (n *nopWriteCloser) Close() error {
+	return nil
+}
+
+func TestFlushing(t *testing.T) {
+	cfg := &Config{
+		Path:          "",
+		FlushInterval: time.Second,
+	}
+
+	// Create a buffer to capture the output.
+	bbuf := bytes.Buffer{}
+	buf := &nopWriteCloser{
+		Writer: &bbuf,
+	}
+	// Wrap the buffer with the buffered writer closer that implements flush() method.
+	bwc := newBufferedWriteCloser(buf)
+	// Create a file exporter with flushing enabled.
+	fe := newFileExporter(cfg, bwc)
+
+	// Start the flusher.
+	ctx := context.Background()
+	fe.Start(ctx, nil)
+	defer fe.Shutdown(ctx)
+
+	// Write 10 bytes.
+	b := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	fe.file.Write(b)
+
+	// Assert buf contains 0 bytes before flush is called.
+	assert.EqualValues(t, 0, bbuf.Len(), "before flush")
+
+	// Wait 1.5 sec
+	time.Sleep(1500 * time.Millisecond)
+
+	// Assert buf contains 10 bytes after flush is called.
+	assert.EqualValues(t, 10, bbuf.Len(), "after flush")
+	// Compare the content.
+	assert.EqualValues(t, b, bbuf.Bytes())
 }
