@@ -611,11 +611,11 @@ func TestConcurrentlyCompress(t *testing.T) {
 	assert.EqualValues(t, ld, gotLd)
 }
 
-type nopWriteCloser struct {
+type writeNopCloser struct {
 	io.Writer
 }
 
-func (n *nopWriteCloser) Close() error {
+func (n *writeNopCloser) Close() error {
 	return nil
 }
 
@@ -627,7 +627,7 @@ func TestFlushing(t *testing.T) {
 
 	// Create a buffer to capture the output.
 	bbuf := bytes.Buffer{}
-	buf := &nopWriteCloser{
+	buf := &writeNopCloser{
 		Writer: &bbuf,
 	}
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
