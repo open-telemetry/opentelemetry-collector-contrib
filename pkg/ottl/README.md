@@ -59,7 +59,7 @@ Values are passed as input to an Invocation or are used in a Boolean Expression.
 
 #### Paths
 
-A Path Value is a reference to a telemetry field.  Paths are made up of lowercase identifiers, dots (`.`), and square brackets combined with a string key (`["key"]`) or int key (`[0]`).  **The interpretation of a Path is NOT implemented by the OTTL.**  Instead, the user must provide a `PathExpressionParser` that the OTTL can use to interpret paths.  As a result, how the Path parts are used is up to the user.  However, it is recommended, that the parts be used like so:
+A Path Value is a reference to a telemetry field.  Paths are made up of lowercase identifiers, dots (`.`), and square brackets combined with a string key (`["key"]`) or int key (`[0]`).  **The interpretation of a Path is NOT implemented by the OTTL.**  Instead, the user must provide a `PathExpressionParser` that the OTTL can use to interpret paths.  As a result, how the Path parts are used is up to the user.  However, it is recommended that the parts be used like so:
 
 - Identifiers are used to map to a telemetry field.
 - Dots (`.`) are used to separate nested fields.
@@ -83,7 +83,7 @@ Contexts will have an implementation of `PathExpressionParser` that decides how 
 The context's implementation will need to make decisions like what a dot (`.`) represents or which paths allow indexing (`["key"]`) and how many indexes.
 
 [There are OpenTelemetry-specific contexts provided for each signal here.](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts)
-When using OTTL it is recommended to use these contexts unless you have a specific need.  Checkout each context to view the paths they support. 
+When using OTTL it is recommended to use these contexts unless you have a specific need.  Check out each context to view the paths it supports. 
 
 #### Lists
 
@@ -127,7 +127,7 @@ When defining a function that will be used as an Invocation by the OTTL, if the 
 #### Converters
 
 Converters are special functions that convert data to a new format before being passed to an Invocation or Boolean Expression.
-Like Invocations, Converters are made up of 3 parts:
+Converters are made up of 3 parts:
 
 - a string identifier. The string identifier must start with an uppercase letter.
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
@@ -139,7 +139,7 @@ The OTTL will use this map and reflection to generate Converters that can then b
 See [ottlfuncs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#converters) for pre-made, usable Converters.
 
 When keys are supplied the value returned by the Converter will be indexed by the keys in order.
-If keys are supplied to a converted and the return value cannot be indexed, or if the return value doesn't support the
+If keys are supplied to a Converter and the return value cannot be indexed, or if the return value doesn't support the
 type of key supplied, OTTL will error. Supported values are:
 
 | Type             | Index Type |
