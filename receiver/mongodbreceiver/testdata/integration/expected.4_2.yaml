@@ -1,5 +1,6 @@
 resourceMetrics:
-  - resource: {}
+  - resource:
+      attributes: []
     scopeMetrics:
       - metrics:
           - description: The number of cache operations of the instance.
@@ -12,15 +13,15 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: miss
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
-                - asInt: "350"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
+                - asInt: "304"
                   attributes:
                     - key: type
                       value:
                         stringValue: hit
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
               isMonotonic: true
             unit: '{operations}'
           - description: The number of open cursors maintained for clients.
@@ -29,8 +30,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{cursors}'
           - description: The number of cursors that have timed out.
             name: mongodb.cursor.timeout.count
@@ -38,8 +39,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{cursors}'
           - description: The number of existing databases.
             name: mongodb.database.count
@@ -47,17 +48,17 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4"
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{databases}'
           - description: The time the global lock has been held.
             name: mongodb.global_lock.time
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "61182"
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                - asInt: "20987"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
               isMonotonic: true
             unit: ms
           - description: The number of bytes received.
@@ -65,75 +66,75 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2764"
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                - asInt: "4525"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The number of by transmitted.
             name: mongodb.network.io.transmit
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "9424"
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                - asInt: "205330"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The number of requests received by the server.
             name: mongodb.network.request.count
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "28"
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                - asInt: "38"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{requests}'
           - description: The number of operations executed.
             name: mongodb.operation.count
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "31"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: command
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: insert
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
-                - asInt: "1"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: query
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: update
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: getmore
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
+                - asInt: "41"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: command
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: insert
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
+                - asInt: "1"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: query
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: update
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
               isMonotonic: true
             unit: '{operations}'
           - description: The total number of active sessions.
@@ -142,13 +143,14 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "18"
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{sessions}'
         scope:
           name: otelcol/mongodbreceiver
           version: latest
-  - resource: {}
+  - resource:
+      attributes: []
     scopeMetrics:
       - metrics:
           - description: The total time spent performing operations.
@@ -160,44 +162,44 @@ resourceMetrics:
                   attributes:
                     - key: operation
                       value:
-                        stringValue: insert
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
-                - asInt: "503"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: query
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: update
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
                         stringValue: delete
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: getmore
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
-                - asInt: "43070"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
+                - asInt: "43931"
                   attributes:
                     - key: operation
                       value:
                         stringValue: command
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: insert
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
+                - asInt: "56"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: query
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: update
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
               isMonotonic: true
             unit: ms
         scope:
@@ -220,8 +222,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: admin
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{collections}'
           - description: The number of connections.
             name: mongodb.connection.count
@@ -236,8 +238,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "838857"
                   attributes:
                     - key: database
@@ -246,8 +248,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: available
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "3"
                   attributes:
                     - key: database
@@ -256,8 +258,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: current
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{connections}'
           - description: The size of the collection. Data compression does not affect this value.
             name: mongodb.data.size
@@ -269,8 +271,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: admin
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The number of document operations executed.
             name: mongodb.document.operation.count
@@ -285,8 +287,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: insert
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "0"
                   attributes:
                     - key: database
@@ -295,8 +297,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: update
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "0"
                   attributes:
                     - key: database
@@ -305,8 +307,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{documents}'
           - description: The number of extents.
             name: mongodb.extent.count
@@ -318,8 +320,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: admin
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{extents}'
           - description: The number of indexes.
             name: mongodb.index.count
@@ -331,28 +333,28 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: admin
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{indexes}'
           - description: Sum of the space allocated to all indexes in the database, including free index space.
             name: mongodb.index.size
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "20480"
+                - asInt: "4096"
                   attributes:
                     - key: database
                       value:
                         stringValue: admin
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The amount of memory used.
             name: mongodb.memory.usage
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "109051904"
+                - asInt: "111149056"
                   attributes:
                     - key: database
                       value:
@@ -360,8 +362,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: resident
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "1621098496"
                   attributes:
                     - key: database
@@ -370,8 +372,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: virtual
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The number of objects.
             name: mongodb.object.count
@@ -383,27 +385,28 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: admin
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{objects}'
           - description: The total amount of storage allocated to this collection.
             name: mongodb.storage.size
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "20480"
+                - asInt: "4096"
                   attributes:
                     - key: database
                       value:
                         stringValue: admin
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
               isMonotonic: true
             unit: By
         scope:
           name: otelcol/mongodbreceiver
           version: latest
-  - resource: {}
+  - resource:
+      attributes: []
     scopeMetrics:
       - metrics:
           - description: The number of times an index has been accessed.
@@ -419,8 +422,8 @@ resourceMetrics:
                     - key: collection
                       value:
                         stringValue: system.version
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{accesses}'
         scope:
           name: otelcol/mongodbreceiver
@@ -442,8 +445,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: config
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{collections}'
           - description: The number of connections.
             name: mongodb.connection.count
@@ -458,8 +461,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "838857"
                   attributes:
                     - key: database
@@ -468,8 +471,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: available
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "3"
                   attributes:
                     - key: database
@@ -478,8 +481,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: current
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{connections}'
           - description: The size of the collection. Data compression does not affect this value.
             name: mongodb.data.size
@@ -491,8 +494,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: config
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The number of document operations executed.
             name: mongodb.document.operation.count
@@ -507,8 +510,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: insert
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "0"
                   attributes:
                     - key: database
@@ -517,8 +520,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: update
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "0"
                   attributes:
                     - key: database
@@ -527,8 +530,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{documents}'
           - description: The number of extents.
             name: mongodb.extent.count
@@ -540,8 +543,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: config
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{extents}'
           - description: The number of indexes.
             name: mongodb.index.count
@@ -553,28 +556,28 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: config
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{indexes}'
           - description: Sum of the space allocated to all indexes in the database, including free index space.
             name: mongodb.index.size
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "16384"
+                - asInt: "12288"
                   attributes:
                     - key: database
                       value:
                         stringValue: config
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The amount of memory used.
             name: mongodb.memory.usage
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "109051904"
+                - asInt: "111149056"
                   attributes:
                     - key: database
                       value:
@@ -582,8 +585,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: resident
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "1621098496"
                   attributes:
                     - key: database
@@ -592,8 +595,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: virtual
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The number of objects.
             name: mongodb.object.count
@@ -605,8 +608,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: config
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{objects}'
           - description: The total amount of storage allocated to this collection.
             name: mongodb.storage.size
@@ -618,14 +621,15 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: config
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
               isMonotonic: true
             unit: By
         scope:
           name: otelcol/mongodbreceiver
           version: latest
-  - resource: {}
+  - resource:
+      attributes: []
     scopeMetrics:
       - metrics:
           - description: The number of times an index has been accessed.
@@ -641,8 +645,8 @@ resourceMetrics:
                     - key: collection
                       value:
                         stringValue: system.sessions
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{accesses}'
         scope:
           name: otelcol/mongodbreceiver
@@ -664,24 +668,14 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: local
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{collections}'
           - description: The number of connections.
             name: mongodb.connection.count
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "3"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: local
-                    - key: type
-                      value:
-                        stringValue: current
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
                 - asInt: "1"
                   attributes:
                     - key: database
@@ -690,8 +684,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "838857"
                   attributes:
                     - key: database
@@ -700,8 +694,18 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: available
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
+                - asInt: "3"
+                  attributes:
+                    - key: database
+                      value:
+                        stringValue: local
+                    - key: type
+                      value:
+                        stringValue: current
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{connections}'
           - description: The size of the collection. Data compression does not affect this value.
             name: mongodb.data.size
@@ -713,8 +717,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: local
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The number of document operations executed.
             name: mongodb.document.operation.count
@@ -729,8 +733,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: insert
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "0"
                   attributes:
                     - key: database
@@ -739,8 +743,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: update
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "0"
                   attributes:
                     - key: database
@@ -749,8 +753,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{documents}'
           - description: The number of extents.
             name: mongodb.extent.count
@@ -762,8 +766,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: local
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{extents}'
           - description: The number of indexes.
             name: mongodb.index.count
@@ -775,27 +779,37 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: local
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{indexes}'
           - description: Sum of the space allocated to all indexes in the database, including free index space.
             name: mongodb.index.size
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "20480"
+                - asInt: "4096"
                   attributes:
                     - key: database
                       value:
                         stringValue: local
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The amount of memory used.
             name: mongodb.memory.usage
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "111149056"
+                  attributes:
+                    - key: database
+                      value:
+                        stringValue: local
+                    - key: type
+                      value:
+                        stringValue: resident
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "1621098496"
                   attributes:
                     - key: database
@@ -804,18 +818,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: virtual
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
-                - asInt: "109051904"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: local
-                    - key: type
-                      value:
-                        stringValue: resident
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The number of objects.
             name: mongodb.object.count
@@ -827,27 +831,28 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: local
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{objects}'
           - description: The total amount of storage allocated to this collection.
             name: mongodb.storage.size
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "20480"
+                - asInt: "4096"
                   attributes:
                     - key: database
                       value:
                         stringValue: local
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
               isMonotonic: true
             unit: By
         scope:
           name: otelcol/mongodbreceiver
           version: latest
-  - resource: {}
+  - resource:
+      attributes: []
     scopeMetrics:
       - metrics:
           - description: The number of times an index has been accessed.
@@ -863,8 +868,8 @@ resourceMetrics:
                     - key: collection
                       value:
                         stringValue: startup_log
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{accesses}'
         scope:
           name: otelcol/mongodbreceiver
@@ -886,24 +891,14 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: testdb
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{collections}'
           - description: The number of connections.
             name: mongodb.connection.count
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "3"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
-                    - key: type
-                      value:
-                        stringValue: current
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
                 - asInt: "1"
                   attributes:
                     - key: database
@@ -912,8 +907,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "838857"
                   attributes:
                     - key: database
@@ -922,8 +917,18 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: available
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
+                - asInt: "3"
+                  attributes:
+                    - key: database
+                      value:
+                        stringValue: testdb
+                    - key: type
+                      value:
+                        stringValue: current
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{connections}'
           - description: The size of the collection. Data compression does not affect this value.
             name: mongodb.data.size
@@ -935,8 +940,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: testdb
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The number of document operations executed.
             name: mongodb.document.operation.count
@@ -951,8 +956,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: insert
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "0"
                   attributes:
                     - key: database
@@ -961,8 +966,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: update
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "0"
                   attributes:
                     - key: database
@@ -971,8 +976,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{documents}'
           - description: The number of extents.
             name: mongodb.extent.count
@@ -984,8 +989,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: testdb
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{extents}'
           - description: The number of indexes.
             name: mongodb.index.count
@@ -997,8 +1002,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: testdb
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{indexes}'
           - description: Sum of the space allocated to all indexes in the database, including free index space.
             name: mongodb.index.size
@@ -1010,15 +1015,15 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: testdb
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The amount of memory used.
             name: mongodb.memory.usage
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "109051904"
+                - asInt: "111149056"
                   attributes:
                     - key: database
                       value:
@@ -1026,8 +1031,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: resident
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
                 - asInt: "1621098496"
                   attributes:
                     - key: database
@@ -1036,8 +1041,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: virtual
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: By
           - description: The number of objects.
             name: mongodb.object.count
@@ -1049,8 +1054,8 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: testdb
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{objects}'
           - description: The total amount of storage allocated to this collection.
             name: mongodb.storage.size
@@ -1062,14 +1067,15 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: testdb
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
               isMonotonic: true
             unit: By
         scope:
           name: otelcol/mongodbreceiver
           version: latest
-  - resource: {}
+  - resource:
+      attributes: []
     scopeMetrics:
       - metrics:
           - description: The number of times an index has been accessed.
@@ -1085,8 +1091,8 @@ resourceMetrics:
                     - key: collection
                       value:
                         stringValue: orders
-                  startTimeUnixNano: "1667525226127298000"
-                  timeUnixNano: "1667525286132276000"
+                  startTimeUnixNano: "1680549215728629000"
+                  timeUnixNano: "1680549235731826000"
             unit: '{accesses}'
         scope:
           name: otelcol/mongodbreceiver

@@ -123,7 +123,7 @@ func TestStoreExpire(t *testing.T) {
 
 	onComplete := func(e *Edge) {
 		onCompletedCount++
-		assert.Contains(t, keys, e.key)
+		assert.Contains(t, keys, e.Key)
 	}
 	// New edges are immediately expired
 	s := NewStore(-time.Second, testSize, onComplete, countingCallback(&onExpireCount))

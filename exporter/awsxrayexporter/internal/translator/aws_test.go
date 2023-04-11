@@ -305,7 +305,8 @@ func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
 func TestAwsWithDynamoDbSemConvAttributes(t *testing.T) {
 	tableName := "MyTable"
 	attributes := make(map[string]pcommon.Value)
-	attributes[conventions.AttributeAWSDynamoDBTableNames] = pcommon.NewValueStr(tableName)
+	attributes[conventions.AttributeAWSDynamoDBTableNames] = pcommon.NewValueSlice()
+	attributes[conventions.AttributeAWSDynamoDBTableNames].Slice().AppendEmpty().SetStr(tableName)
 
 	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 
