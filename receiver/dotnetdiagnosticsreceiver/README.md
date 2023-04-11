@@ -2,7 +2,7 @@
 
 | Status                   |                |
 | ------------------------ |----------------|
-| Stability                | [unmaintained] |
+| Stability                | [deprecated] |
 | Supported pipeline types | metrics        |
 | Distributions            | [contrib]      |
 
@@ -112,5 +112,5 @@ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-
 
 https://github.com/Microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeFormat.md
 
-[unmaintained]: https://github.com/open-telemetry/opentelemetry-collector#unmaintained
+[deprecated]: https://github.com/open-telemetry/opentelemetry-collector#deprecated
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

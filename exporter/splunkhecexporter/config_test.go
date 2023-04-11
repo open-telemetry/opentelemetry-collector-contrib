@@ -43,6 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.HTTPClientSettings.Endpoint = "https://splunk:8088/services/collector"
 
 	hundred := 100
+	idleConnTimeout := 10 * time.Second
 
 	tests := []struct {
 		id       component.ID
@@ -80,6 +81,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					MaxIdleConns:        &hundred,
 					MaxIdleConnsPerHost: &hundred,
+					IdleConnTimeout:     &idleConnTimeout,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:             true,

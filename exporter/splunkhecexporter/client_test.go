@@ -961,9 +961,15 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 				if test.want.compressed {
 					validateCompressedContains(t, test.want.batches[i], got[i].body)
 				} else {
+					found := false
+
 					for _, expected := range test.want.batches[i] {
-						assert.Contains(t, string(got[i].body), expected)
+						if strings.Contains(string(got[i].body), expected) {
+							found = true
+							break
+						}
 					}
+					assert.True(t, found, "%s did not match any expected batch", string(got[i].body))
 				}
 			}
 		})
@@ -1248,8 +1254,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
-	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
-	// require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
+	require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
 	require.Contains(t, err.Error(), "HTTP/0.0 400")
 	// The returned error should contain the response body responseBody.
 	assert.Contains(t, err.Error(), responseBody)
@@ -1259,8 +1264,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
-	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
-	// require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
+	require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
 	require.Contains(t, err.Error(), "HTTP 500")
 	// The returned error should not contain the response body responseBody.
 	assert.NotContains(t, err.Error(), responseBody)
