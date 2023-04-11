@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
@@ -105,7 +106,8 @@ func TestLoadConfig(t *testing.T) {
 func testdataConfigYaml() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			Operators: []operator.Config{},
+			Operators:      []operator.Config{},
+			RetryOnFailure: consumerretry.NewDefaultConfig(),
 		},
 		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
