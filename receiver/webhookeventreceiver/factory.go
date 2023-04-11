@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -31,7 +30,11 @@ const (
 	// The stability level of the receiver.
 	stability = component.StabilityLevelDevelopment
 	// Default endpoints to bind to.
-	defaultEndpoint = ":8080"
+    // defaultEndpoint = "localhost:8080"
+    // might add this later, for now I wish to require a valid 
+    // endpoint to be declared by the user.
+    defaultPath = "/events"
+    defaultHealthPath = "/health_check"
 )
 
 // NewFactory creates a factory for Generic Webhook Receiver.
@@ -46,9 +49,8 @@ func NewFactory() component.Factory {
 // Default configuration for the generic webhook receiver
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultEndpoint,
-		},
+        Path: defaultPath,
+        HealthPath: defaultHealthPath,
 	}
 }
 
@@ -60,10 +62,10 @@ func createLogsReceiver(
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	conf := cfg.(*Config)
-    rec, err := newLogsReceiver(params, conf, consumer)
+    rec, err := newLogsReceiver(params, *conf, consumer)
     if err != nil {
         return nil, err
     }
 
-	return r, nil
+	return rec, nil
 }

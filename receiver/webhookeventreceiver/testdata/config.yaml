@@ -1,0 +1,8 @@
+webhookevent:
+# each webhook will require its own webhook event receiver
+webhookevent/test:
+  endpoint: "0.0.0.0:8080"
+  read_timeout: "500"
+  write_timeout: "500"
+  path: "some/path"
+  health_path: "health/path"
