@@ -15,6 +15,7 @@ The `journald_input` operator will use the `__REALTIME_TIMESTAMP` field of the j
 | `directory`       |                  | A directory containing journal files to read entries from. |
 | `files`           |                  | A list of journal files to read entries from. |
 | `units`           |                  | A list of units to read entries from. |
+| `matches`         |                  | A list of matches to read entries from. See [Matches](#matches) example. |
 | `priority`        | `info`           | Filter output by message priorities or priority ranges. |
 | `start_at`        | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`. |
 | `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes. |
@@ -33,7 +34,23 @@ The `journald_input` operator will use the `__REALTIME_TIMESTAMP` field of the j
 - type: journald_input
   priority: emerg..err
 ```
-#### Simple journald input
+
+#### Matches
+
+The following configuration:
+
+```yaml
+- type: journald_input
+  matches:
+    - _SYSTEMD_UNIT: ssh
+    - _SYSTEMD_UNIT: kubelet
+      _UID: "1000"
+  priority: info
+```
+
+will be passed to `journald` as the following arguments: `journald ... _SYSTEMD_UNIT=dbus.service + _SYSTEMD_UNIT=user@1000.service _UID=1000`
+
+### Simple journald input
 
 Configuration:
 ```yaml
