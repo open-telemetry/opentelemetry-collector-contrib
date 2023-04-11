@@ -86,10 +86,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("`domain` or `traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration")
 	}
 	if c.PrivateKey == "" {
-		return fmt.Errorf("`privateKey` not specified, please fix the configuration file")
+		return fmt.Errorf("`privateKey` not specified, please fix the configuration")
 	}
 	if c.AppName == "" {
-		return fmt.Errorf("`appName` not specified, please fix the configuration file")
+		return fmt.Errorf("`appName` not specified, please fix the configuration")
 	}
 
 	// check if headers exists
