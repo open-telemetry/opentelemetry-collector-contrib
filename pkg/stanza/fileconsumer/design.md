@@ -117,12 +117,9 @@ Each poll cycle runs through a series of steps which are presented below.
         - During the creation of a `Reader`, the file's fingerprint is cross referenced with previously known fingerprints.
         - If a file's fingerprint matches one that has recently been seen, then metadata is copied over from the previous iteration of the Reader. Most importantly, the offset is accurately maintained in this way.
         - If a file's fingerprint does not match any recently seen files, then its offset is initialized according to the `start_at` setting.
-8. Detection of Lost Files
-    1. Fingerprints are used to cross reference the matched files from this poll cycle against the matched file from the previous poll cycle. Files that were matched in the previous cycle but were not matched in this cycle are referred to as "lost files".
-    2. File become "lost" for several reasons:
-        - The file may have been deleted, typically due to rotation limits or ttl-based pruning.
-        - The file may have been rotated to another location.
-            - If the file was moved, the open file handle from the previous poll cycle may be useful.
+8. Reading file one last time
+    1. We hold on to the file handles as long as possible, once we detect that it's fingerprint isn't matching with the previous handles, we close it after reading till the end.
+
 9. Consumption
     1. Lost files are consumed. In some cases, such as deletion, this operation will fail. However, if a file was moved, we may be able to consume the remainder of its content. 
         - We do not expect to match this file again, so the best we can do is finish consuming their current contents.

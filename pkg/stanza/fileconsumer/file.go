@@ -205,8 +205,8 @@ func (m *Manager) isCurrentlyConsuming(fp *Fingerprint) bool {
 
 func (m *Manager) removePath(fp *Fingerprint) {
 	m.trieLock.Lock()
+	defer m.trieLock.Unlock()
 	m.trie.Delete(fp.FirstBytes)
-	m.trieLock.Unlock()
 }
 
 func (m *Manager) handleLostFiles(ctx context.Context) {
