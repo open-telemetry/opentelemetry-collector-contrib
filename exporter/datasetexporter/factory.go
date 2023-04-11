@@ -27,6 +27,7 @@ import (
 
 const CfgTypeStr = "dataset"
 
+// NewFactory created new factory with DataSet exporters.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		CfgTypeStr,
