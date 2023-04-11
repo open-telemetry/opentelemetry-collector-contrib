@@ -268,7 +268,7 @@ func TestConnectorConsume(t *testing.T) {
 }
 
 func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
-	assert.Equal(t, 2, md.MetricCount())
+	assert.Equal(t, 3, md.MetricCount())
 
 	rms := md.ResourceMetrics()
 	assert.Equal(t, 1, rms.Len())
@@ -277,13 +277,18 @@ func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
 	assert.Equal(t, 1, sms.Len())
 
 	ms := sms.At(0).Metrics()
-	assert.Equal(t, 2, ms.Len())
+	assert.Equal(t, 3, ms.Len())
 
 	mCount := ms.At(0)
 	verifyCount(t, mCount)
 
-	mDuration := ms.At(1)
-	verifyDuration(t, mDuration)
+	mServerDuration := ms.At(1)
+	assert.Equal(t, "traces_service_graph_request_server_seconds", mServerDuration.Name())
+	verifyDuration(t, mServerDuration)
+
+	mClientDuration := ms.At(2)
+	assert.Equal(t, "traces_service_graph_request_client_seconds", mClientDuration.Name())
+	verifyDuration(t, mClientDuration)
 }
 
 func verifyCount(t *testing.T, m pmetric.Metric) {
@@ -307,8 +312,6 @@ func verifyCount(t *testing.T, m pmetric.Metric) {
 }
 
 func verifyDuration(t *testing.T, m pmetric.Metric) {
-	assert.Equal(t, "traces_service_graph_request_duration_seconds", m.Name())
-
 	assert.Equal(t, pmetric.MetricTypeHistogram, m.Type())
 	dps := m.Histogram().DataPoints()
 	assert.Equal(t, 1, dps.Len())
