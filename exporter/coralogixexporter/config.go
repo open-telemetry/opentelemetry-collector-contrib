@@ -83,7 +83,7 @@ func (c *Config) Validate() error {
 		isEmpty(c.Traces.Endpoint) &&
 		isEmpty(c.Metrics.Endpoint) &&
 		isEmpty(c.Logs.Endpoint) {
-		return fmt.Errorf("`domain` or `traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration file")
+		return fmt.Errorf("`domain` or `traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration")
 	}
 	if c.PrivateKey == "" {
 		return fmt.Errorf("`privateKey` not specified, please fix the configuration file")
