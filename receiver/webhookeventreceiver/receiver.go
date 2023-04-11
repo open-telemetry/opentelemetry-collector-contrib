@@ -146,7 +146,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, ps ht
 
 	encoding := r.Header.Get("Content-Encoding")
 	// only support gzip if encoding header is set.
-	if encoding != "" && (encoding != "gzip" || encoding != "x-gzip") {
+	if encoding != "" && encoding != "gzip" {
 		er.failBadReq(ctx, w, http.StatusUnsupportedMediaType, errInvalidEncodingType)
 		return
 	}
