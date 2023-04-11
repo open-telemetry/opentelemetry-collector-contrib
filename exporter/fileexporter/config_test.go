@@ -47,6 +47,7 @@ func TestLoadConfig(t *testing.T) {
 					LocalTime:    true,
 				},
 				FormatType: formatTypeJSON,
+				FlushInterval: time.Second,
 			},
 		},
 		{
@@ -61,6 +62,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				FormatType:  formatTypeProto,
 				Compression: compressionZSTD,
+				FlushInterval: time.Second,
 			},
 		},
 		{
@@ -71,6 +73,7 @@ func TestLoadConfig(t *testing.T) {
 				Rotation: &Rotation{
 					MaxBackups: defaultMaxBackups,
 				},
+				FlushInterval: time.Second,
 			},
 		},
 		{
@@ -82,6 +85,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxBackups:   defaultMaxBackups,
 				},
 				FormatType: formatTypeJSON,
+				FlushInterval: time.Second,
 			},
 		},
 		{
