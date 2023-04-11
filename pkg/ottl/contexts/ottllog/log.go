@@ -211,10 +211,10 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 func accessCacheKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return ottlcommon.GetMapValue(tCtx.getCache(), keys)
+			return internal.GetMapValue(tCtx.getCache(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-			return ottlcommon.SetMapValue(tCtx.getCache(), keys, val)
+			return internal.SetMapValue(tCtx.getCache(), keys, val)
 		},
 	}
 }
@@ -278,10 +278,10 @@ func accessSeverityText() ottl.StandardGetSetter[TransformContext] {
 func accessBody() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return ottl.GetValue(tCtx.GetLogRecord().Body()), nil
+			return ottlcommon.GetValue(tCtx.GetLogRecord().Body()), nil
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-			return ottlcommon.SetValue(tCtx.GetLogRecord().Body(), val)
+			return internal.SetValue(tCtx.GetLogRecord().Body(), val)
 		},
 	}
 }
@@ -303,10 +303,10 @@ func accessAttributes() ottl.StandardGetSetter[TransformContext] {
 func accessAttributesKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return ottlcommon.GetMapValue(tCtx.GetLogRecord().Attributes(), keys)
+			return internal.GetMapValue(tCtx.GetLogRecord().Attributes(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-			return ottlcommon.SetMapValue(tCtx.GetLogRecord().Attributes(), keys, val)
+			return internal.SetMapValue(tCtx.GetLogRecord().Attributes(), keys, val)
 		},
 	}
 }

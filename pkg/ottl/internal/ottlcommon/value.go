@@ -12,69 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-<<<<<<<< HEAD:pkg/ottl/internal/ottlcommon/value.go
 package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
-========
-package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlcommon"
->>>>>>>> 24c165715d (Apply feedback):pkg/ottl/ottlcommon/value.go
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func SetValue(value pcommon.Value, val interface{}) error {
-	var err error
-	switch v := val.(type) {
-	case string:
-		value.SetStr(v)
-	case bool:
-		value.SetBool(v)
-	case int64:
-		value.SetInt(v)
-	case float64:
-		value.SetDouble(v)
-	case []byte:
-		value.SetEmptyBytes().FromRaw(v)
-	case []string:
-		value.SetEmptySlice().EnsureCapacity(len(v))
-		for _, str := range v {
-			value.Slice().AppendEmpty().SetStr(str)
-		}
-	case []bool:
-		value.SetEmptySlice().EnsureCapacity(len(v))
-		for _, b := range v {
-			value.Slice().AppendEmpty().SetBool(b)
-		}
-	case []int64:
-		value.SetEmptySlice().EnsureCapacity(len(v))
-		for _, i := range v {
-			value.Slice().AppendEmpty().SetInt(i)
-		}
-	case []float64:
-		value.SetEmptySlice().EnsureCapacity(len(v))
-		for _, f := range v {
-			value.Slice().AppendEmpty().SetDouble(f)
-		}
-	case [][]byte:
-		value.SetEmptySlice().EnsureCapacity(len(v))
-		for _, b := range v {
-			value.Slice().AppendEmpty().SetEmptyBytes().FromRaw(b)
-		}
-	case []any:
-		value.SetEmptySlice().EnsureCapacity(len(v))
-		for _, a := range v {
-			pval := value.Slice().AppendEmpty()
-			err = SetValue(pval, a)
-		}
-	case pcommon.Map:
-		v.CopyTo(value.SetEmptyMap())
-	case map[string]interface{}:
-		value.SetEmptyMap()
-		for mk, mv := range v {
-			err = SetMapValue(value.Map(), []ottl.Key{{String: &mk}}, mv)
-		}
+func GetValue(val pcommon.Value) interface{} {
+	switch val.Type() {
+	case pcommon.ValueTypeStr:
+		return val.Str()
+	case pcommon.ValueTypeBool:
+		return val.Bool()
+	case pcommon.ValueTypeInt:
+		return val.Int()
+	case pcommon.ValueTypeDouble:
+		return val.Double()
+	case pcommon.ValueTypeMap:
+		return val.Map()
+	case pcommon.ValueTypeSlice:
+		return val.Slice()
+	case pcommon.ValueTypeBytes:
+		return val.Bytes().AsRaw()
 	}
-	return err
+	return nil
 }

@@ -12,11 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-<<<<<<<< HEAD:pkg/ottl/internal/ottlcommon/map.go
-package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
-========
-package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlcommon"
->>>>>>>> 24c165715d (Apply feedback):pkg/ottl/ottlcommon/map.go
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 
 import (
 	"fmt"
@@ -24,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
 func GetMapValue(m pcommon.Map, keys []ottl.Key) (interface{}, error) {
@@ -60,7 +57,7 @@ func GetMapValue(m pcommon.Map, keys []ottl.Key) (interface{}, error) {
 			return nil, fmt.Errorf("type %v does not support string indexing", val.Type())
 		}
 	}
-	return ottl.GetValue(val), nil
+	return ottlcommon.GetValue(val), nil
 }
 
 func SetMapValue(m pcommon.Map, keys []ottl.Key, val interface{}) error {

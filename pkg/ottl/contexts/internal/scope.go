@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
 type InstrumentationScopeContext interface {
@@ -40,10 +39,10 @@ func ScopePathGetSetter[K InstrumentationScopeContext](path []ottl.Field) (ottl.
 		return accessInstrumentationScopeVersion[K](), nil
 	case "attributes":
 		mapKeys := path[0].Keys
-		if mapKey == nil {
+		if mapKeys == nil {
 			return accessInstrumentationScopeAttributes[K](), nil
 		}
-		return accessInstrumentationScopeAttributesKey[K](mapKey), nil
+		return accessInstrumentationScopeAttributesKey[K](mapKeys), nil
 	case "dropped_attributes_count":
 		return accessInstrumentationScopeDroppedAttributesCount[K](), nil
 	}
@@ -82,11 +81,10 @@ func accessInstrumentationScopeAttributes[K InstrumentationScopeContext]() ottl.
 func accessInstrumentationScopeAttributesKey[K InstrumentationScopeContext](keys []ottl.Key) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
-			return ottlcommon.GetMapValue(tCtx.GetInstrumentationScope().Attributes(), *mapKey), nil
+			return GetMapValue(tCtx.GetInstrumentationScope().Attributes(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
-			ottlcommon.SetMapValue(tCtx.GetInstrumentationScope().Attributes(), *mapKey, val)
-			return nil
+			return SetMapValue(tCtx.GetInstrumentationScope().Attributes(), keys, val)
 		},
 	}
 }

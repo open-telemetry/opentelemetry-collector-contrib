@@ -21,6 +21,8 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
 type ExprFunc[K any] func(ctx context.Context, tCtx K) (interface{}, error)
@@ -91,7 +93,7 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 				if !ok {
 					return nil, fmt.Errorf("key not found in map")
 				}
-				result = GetValue(val)
+				result = ottlcommon.GetValue(val)
 			case map[string]interface{}:
 				val, ok := r[*k.String]
 				if !ok {
@@ -107,7 +109,7 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 				if int(*k.Int) >= r.Len() || int(*k.Int) < 0 {
 					return nil, fmt.Errorf("index %v out of bounds", *k.Int)
 				}
-				result = GetValue(r.At(int(*k.Int)))
+				result = ottlcommon.GetValue(r.At(int(*k.Int)))
 			case []interface{}:
 				if int(*k.Int) >= len(r) || int(*k.Int) < 0 {
 					return nil, fmt.Errorf("index %v out of bounds", *k.Int)

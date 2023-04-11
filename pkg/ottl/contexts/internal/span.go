@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
 type SpanContext interface {
@@ -87,10 +86,10 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 		return accessEndTimeUnixNano[K](), nil
 	case "attributes":
 		mapKeys := path[0].Keys
-		if mapKey == nil {
+		if mapKeys == nil {
 			return accessAttributes[K](), nil
 		}
-		return accessAttributesKey[K](mapKey), nil
+		return accessAttributesKey[K](mapKeys), nil
 	case "dropped_attributes_count":
 		return accessSpanDroppedAttributesCount[K](), nil
 	case "events":
@@ -346,11 +345,10 @@ func accessAttributes[K SpanContext]() ottl.StandardGetSetter[K] {
 func accessAttributesKey[K SpanContext](keys []ottl.Key) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
-			return ottlcommon.GetMapValue(tCtx.GetSpan().Attributes(), *mapKey), nil
+			return GetMapValue(tCtx.GetSpan().Attributes(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
-			ottlcommon.SetMapValue(tCtx.GetSpan().Attributes(), *mapKey, val)
-			return nil
+			return SetMapValue(tCtx.GetSpan().Attributes(), keys, val)
 		},
 	}
 }
