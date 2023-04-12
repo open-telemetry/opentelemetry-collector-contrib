@@ -68,7 +68,7 @@ exporters:
 
 ### Coralogix's Domain 
 
-Depending on your region, you might need to use a different domains. Here are the available domains:
+Depending on your region, you might need to use a different domain. Here are the available domains:
 
 | Region  | Domain                        |
 |---------|---------------------------------|
