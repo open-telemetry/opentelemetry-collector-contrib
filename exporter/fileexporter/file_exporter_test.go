@@ -651,12 +651,13 @@ func TestFlushing(t *testing.T) {
 
 	// Start the flusher.
 	ctx := context.Background()
-	fe.Start(ctx, nil)
-	defer fe.Shutdown(ctx)
+	assert.NoError(t, fe.Start(ctx, nil))
 
 	// Write 10 bytes.
 	b := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	fe.file.Write(b)
+	i, err := fe.file.Write(b)
+	assert.NoError(t, err)
+	assert.EqualValues(t, len(b), i, "bytes written")
 
 	// Assert buf contains 0 bytes before flush is called.
 	assert.EqualValues(t, 0, bbuf.Len(), "before flush")
@@ -668,4 +669,5 @@ func TestFlushing(t *testing.T) {
 	assert.EqualValues(t, 10, bbuf.Len(), "after flush")
 	// Compare the content.
 	assert.EqualValues(t, b, bbuf.Bytes())
+	assert.NoError(t, fe.Shutdown(ctx))
 }
