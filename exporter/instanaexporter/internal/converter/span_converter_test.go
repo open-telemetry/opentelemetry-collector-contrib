@@ -233,10 +233,9 @@ func TestSpanCorrelation(t *testing.T) {
 	require.NoError(t, err)
 
 	sp4 := spanSlice.AppendEmpty()
-	err = setupSpan(sp4, SpanOptions{
+	require.NoError(t, setupSpan(sp4, SpanOptions{
 		ParentID: sp1.SpanID(),
-	})
-	require.NoError(t, err)
+	}))
 
 	attrs := generateAttrs()
 	conv := SpanConverter{}
@@ -260,10 +259,9 @@ func TestSpanWithError(t *testing.T) {
 	spanSlice := ptrace.NewSpanSlice()
 
 	sp1 := spanSlice.AppendEmpty()
-	err := setupSpan(sp1, SpanOptions{
+	require.NoError(t, setupSpan(sp1, SpanOptions{
 		Error: "some error",
-	})
-	require.NoError(t, err)
+	}))
 
 	attrs := generateAttrs()
 	conv := SpanConverter{}
