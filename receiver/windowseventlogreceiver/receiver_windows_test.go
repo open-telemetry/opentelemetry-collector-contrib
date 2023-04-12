@@ -78,6 +78,8 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 }
 
 func TestReadWindowsEventLogger(t *testing.T) {
+	logMessage := "Test log"
+
 	ctx := context.Background()
 	factory := NewFactory()
 	createSettings := receivertest.NewNopCreateSettings()
@@ -100,7 +102,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	require.NoError(t, err)
 	defer logger.Close()
 
-	err = logger.Info(10, "Test log")
+	err = logger.Info(10, logMessage)
 	require.NoError(t, err)
 
 	logsReceived := func() bool {
@@ -118,7 +120,12 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	record := records.At(0)
 	body := record.Body().Map().AsRaw()
 
-	require.Equal(t, "Test log", body["message"])
+	require.Equal(t, logMessage, body["message"])
+
+	eventData := body["event_data"]
+	eventDataMap, ok := eventData.(map[string]interface{})
+	require.True(t, ok)
+	require.Equal(t, map[string]interface{}{}, eventDataMap)
 
 	eventID := body["event_id"]
 	require.NotNil(t, eventID)
