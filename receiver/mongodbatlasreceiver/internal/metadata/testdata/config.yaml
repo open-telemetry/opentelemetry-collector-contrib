@@ -146,6 +146,8 @@ all_set:
       enabled: true
     mongodb_atlas.project.name:
       enabled: true
+    mongodb_atlas.user.alias:
+      enabled: true
 none_set:
   metrics:
     mongodbatlas.db.counts:
@@ -292,4 +294,6 @@ none_set:
     mongodb_atlas.project.id:
       enabled: false
     mongodb_atlas.project.name:
+      enabled: false
+    mongodb_atlas.user.alias:
       enabled: false

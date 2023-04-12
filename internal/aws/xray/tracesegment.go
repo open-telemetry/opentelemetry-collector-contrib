@@ -111,13 +111,14 @@ type AWSData struct {
 	XRay      *XRayMetaData      `json:"xray,omitempty"`
 
 	// For both segment and subsegments
-	AccountID    *string `json:"account_id,omitempty"`
-	Operation    *string `json:"operation,omitempty"`
-	RemoteRegion *string `json:"region,omitempty"`
-	RequestID    *string `json:"request_id,omitempty"`
-	QueueURL     *string `json:"queue_url,omitempty"`
-	TableName    *string `json:"table_name,omitempty"`
-	Retries      *int64  `json:"retries,omitempty"`
+	AccountID    *string  `json:"account_id,omitempty"`
+	Operation    *string  `json:"operation,omitempty"`
+	RemoteRegion *string  `json:"region,omitempty"`
+	RequestID    *string  `json:"request_id,omitempty"`
+	QueueURL     *string  `json:"queue_url,omitempty"`
+	TableName    *string  `json:"table_name,omitempty"`
+	TableNames   []string `json:"table_names,omitempty"`
+	Retries      *int64   `json:"retries,omitempty"`
 }
 
 // EC2Metadata represents the EC2 metadata field

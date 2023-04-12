@@ -32,6 +32,7 @@ body:
       - exporter/awscloudwatchlogs
       - exporter/awsemf
       - exporter/awskinesis
+      - exporter/awss3
       - exporter/awsxray
       - exporter/azuredataexplorer
       - exporter/azuremonitor
@@ -165,6 +166,7 @@ body:
       - receiver/expvar
       - receiver/file
       - receiver/filelog
+      - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
       - receiver/googlecloudpubsub
