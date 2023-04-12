@@ -611,6 +611,30 @@ func TestConcurrentlyCompress(t *testing.T) {
 	assert.EqualValues(t, ld, gotLd)
 }
 
+// tsBuffer is a thread safe buffer to prevent race conditions in the CI/CD.
+type tsBuffer struct {
+	b *bytes.Buffer
+	m sync.Mutex
+}
+
+func (b *tsBuffer) Write(d []byte) (int, error) {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.Write(d)
+}
+
+func (b *tsBuffer) Len() int {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.Len()
+}
+
+func (b *tsBuffer) Bytes() []byte {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.Bytes()
+}
+
 func TestFlushing(t *testing.T) {
 	cfg := &Config{
 		Path:          "",
@@ -618,8 +642,8 @@ func TestFlushing(t *testing.T) {
 	}
 
 	// Create a buffer to capture the output.
-	bbuf := bytes.Buffer{}
-	buf := &NopWriteCloser{&bbuf}
+	bbuf := &tsBuffer{b: &bytes.Buffer{}}
+	buf := &NopWriteCloser{bbuf}
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
 	bwc := newBufferedWriteCloser(buf)
 	// Create a file exporter with flushing enabled.
