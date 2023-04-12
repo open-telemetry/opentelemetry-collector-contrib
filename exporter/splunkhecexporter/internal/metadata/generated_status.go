@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Name      = "splunkhecexporter"
+	Type      = "splunkhecexporter"
 	Stability = component.StabilityLevelBeta
 )

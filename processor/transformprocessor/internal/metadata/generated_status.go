@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Name      = "transform"
+	Type      = "transform"
 	Stability = component.StabilityLevelAlpha
 )

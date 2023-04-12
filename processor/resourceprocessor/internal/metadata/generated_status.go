@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Name      = "resourceprocessor"
+	Type      = "resourceprocessor"
 	Stability = component.StabilityLevelBeta
 )

@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Name      = "splunkhecreceiver"
+	Type      = "splunkhecreceiver"
 	Stability = component.StabilityLevelBeta
 )

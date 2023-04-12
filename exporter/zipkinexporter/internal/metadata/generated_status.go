@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Name      = "zipkinexporter"
+	Type      = "zipkinexporter"
 	Stability = component.StabilityLevelBeta
 )

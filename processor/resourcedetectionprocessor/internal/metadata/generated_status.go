@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Name      = "resourcedetectionprocessor"
+	Type      = "resourcedetectionprocessor"
 	Stability = component.StabilityLevelBeta
 )

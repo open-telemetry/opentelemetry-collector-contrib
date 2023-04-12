@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Name      = "basicauthextension"
+	Type      = "basicauthextension"
 	Stability = component.StabilityLevelBeta
 )

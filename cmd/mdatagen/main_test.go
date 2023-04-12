@@ -136,11 +136,11 @@ func Test_run(t *testing.T) {
 
 func Test_inlineReplace(t *testing.T) {
 	tests := []struct {
-		name          string
-		markdown      string
-		outputFile    string
-		componentType string
-		warnings      []string
+		name           string
+		markdown       string
+		outputFile     string
+		componentClass string
+		warnings       []string
 	}{
 		{
 			name: "readme with empty status",
@@ -151,8 +151,8 @@ func Test_inlineReplace(t *testing.T) {
 
 Some info about a component
 `,
-			outputFile:    "readme_with_status.md",
-			componentType: "receiver",
+			outputFile:     "readme_with_status.md",
+			componentClass: "receiver",
 		},
 		{
 			name: "readme with status for extension",
@@ -163,8 +163,8 @@ Some info about a component
 
 Some info about a component
 `,
-			outputFile:    "readme_with_status_extension.md",
-			componentType: "extension",
+			outputFile:     "readme_with_status_extension.md",
+			componentClass: "extension",
 		},
 		{
 			name: "readme with status table",
@@ -177,8 +177,8 @@ Some info about a component
 
 Some info about a component
 `,
-			outputFile:    "readme_with_status.md",
-			componentType: "receiver",
+			outputFile:     "readme_with_status.md",
+			componentClass: "receiver",
 		},
 		{
 			name: "readme with no status",
@@ -210,7 +210,7 @@ Some warning there.
 					Stability:     "beta",
 					Pipelines:     []string{"metrics"},
 					Distributions: []string{"contrib"},
-					Class:         tt.componentType,
+					Class:         tt.componentClass,
 					Warnings:      tt.warnings,
 				},
 			}
@@ -261,7 +261,7 @@ import (
 )
 
 const (
-	Name      = "foo"
+	Type      = "foo"
 	Stability = component.StabilityLevelBeta
 )
 `,
@@ -286,7 +286,7 @@ import (
 )
 
 const (
-	Name      = "foo"
+	Type      = "foo"
 	Stability = component.StabilityLevelAlpha
 )
 `,
