@@ -37,7 +37,6 @@ func (u *brokerTraceEgressUnmarshallerV1) unmarshal(message *inboundMessage) (pt
 	if err != nil {
 		return ptrace.Traces{}, err
 	}
-	u.logger.Error(spanData.String())
 	traces := ptrace.NewTraces()
 	u.populateTraces(spanData, traces)
 	return traces, nil
