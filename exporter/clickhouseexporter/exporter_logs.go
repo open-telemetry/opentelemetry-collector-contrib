@@ -87,6 +87,12 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		}
 
 		var serviceName string
+		var podName string
+		var containerName string
+		var region string
+		var cloudProvider string
+		var cell string
+
 		resAttr := make(map[string]string)
 
 		resourceLogs := ld.ResourceLogs()
@@ -97,9 +103,27 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			attrs := res.Attributes()
 			attributesToMap(attrs, resAttr)
 
-			if v, ok := attrs.Get(conventions.AttributeServiceName); ok {
-				serviceName = v.Str()
-			}
+			attrs.Range(func(key string, value pcommon.Value) bool {
+				switch key {
+				case conventions.AttributeServiceName:
+					serviceName = value.Str()
+				case conventions.AttributeK8SPodName:
+					podName = value.Str()
+				case conventions.AttributeK8SContainerName:
+					containerName = value.Str()
+				// TODO use AttributeCloudRegion 'cloud.region'
+				// https://github.com/ClickHouse/data-plane-application/issues/4155
+				case "region":
+					fallthrough
+				case conventions.AttributeCloudRegion:
+					region = value.Str()
+				case conventions.AttributeCloudProvider:
+					cloudProvider = value.Str()
+				case "cell":
+					cell = value.Str()
+				}
+				return true
+			})
 			for j := 0; j < logs.ScopeLogs().Len(); j++ {
 				rs := logs.ScopeLogs().At(j).LogRecords()
 				for k := 0; k < rs.Len(); k++ {
@@ -117,6 +141,11 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 						int32(r.SeverityNumber()),
 						serviceName,
 						r.Body().AsString(),
+						podName,
+						containerName,
+						region,
+						cloudProvider,
+						cell,
 						resAttr,
 						logAttr,
 					)
@@ -159,7 +188,12 @@ CREATE TABLE IF NOT EXISTS %s (
      SeverityText LowCardinality(String) CODEC(ZSTD(1)),
      SeverityNumber Int32 CODEC(ZSTD(1)),
      ServiceName LowCardinality(String) CODEC(ZSTD(1)),
-     Body String CODEC(ZSTD(1)),
+     Body LowCardinality(String) CODEC(ZSTD(1)),
+     PodName LowCardinality(String),
+     ContainerName LowCardinality(String),
+     Region LowCardinality(String),
+     CloudProvider LowCardinality(String),
+     Cell LowCardinality(String),
      ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
      LogAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
@@ -170,8 +204,8 @@ CREATE TABLE IF NOT EXISTS %s (
      INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 1
 ) ENGINE MergeTree()
 %s
-PARTITION BY toDate(Timestamp)
-ORDER BY (ServiceName, SeverityText, toUnixTimestamp(Timestamp), TraceId)
+PARTITION BY toYYYYMM(Timestamp)
+ORDER BY (PodName, ContainerName, SeverityText, Timestamp)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 
@@ -185,6 +219,11 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         SeverityNumber,
                         ServiceName,
                         Body,
+                        PodName,
+						ContainerName,
+						Region,
+						CloudProvider,
+						Cell,
                         ResourceAttributes,
                         LogAttributes
                         )`
@@ -197,19 +236,14 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         SeverityNumber,
                         ServiceName,
                         Body,
+                        PodName,
+						ContainerName,
+						Region,
+						CloudProvider,
+						Cell,
                         ResourceAttributes,
                         LogAttributes
-                        ) VALUES (
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?,
-                                 ?)`
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 var driverName = "clickhouse" // for testing
