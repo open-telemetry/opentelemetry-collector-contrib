@@ -161,6 +161,8 @@ func (e *fileExporter) Start(context.Context, component.Host) error {
 // Shutdown stops the exporter and is invoked during shutdown.
 // It stops the flush ticker if set.
 func (e *fileExporter) Shutdown(context.Context) error {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 	// Stop the flush ticker.
 	if e.flushTicker != nil {
 		e.flushTicker.Stop()
@@ -180,3 +182,4 @@ func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
 	}
 	return exportMessageAsLine
 }
+

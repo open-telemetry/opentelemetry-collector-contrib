@@ -635,6 +635,12 @@ func (b *tsBuffer) Bytes() []byte {
 	return b.b.Bytes()
 }
 
+func safeFileExporterWrite(e *fileExporter, d []byte) (int, error) {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	return e.file.Write(d)
+}
+
 func TestFlushing(t *testing.T) {
 	cfg := &Config{
 		Path:          "",
@@ -655,7 +661,7 @@ func TestFlushing(t *testing.T) {
 
 	// Write 10 bytes.
 	b := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	i, err := fe.file.Write(b)
+	i, err := safeFileExporterWrite(fe, b)
 	assert.NoError(t, err)
 	assert.EqualValues(t, len(b), i, "bytes written")
 
