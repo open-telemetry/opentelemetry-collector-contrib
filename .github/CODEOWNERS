@@ -176,6 +176,7 @@ receiver/elasticsearchreceiver/                          @open-telemetry/collect
 receiver/expvarreceiver/                                 @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/filelogreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/filereceiver/                               @open-telemetry/collector-contrib-approvers @pmcollins @djaglowski
+receiver/filestatsreceiver/                              @open-telemetry/collector-contrib-approvers @atoulme
 receiver/flinkmetricsreceiver/                           @open-telemetry/collector-contrib-approvers @jonathanwamsley @djaglowski
 receiver/fluentforwardreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/googlecloudpubsubreceiver/                      @open-telemetry/collector-contrib-approvers @alexvanboxel
