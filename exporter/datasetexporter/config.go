@@ -18,9 +18,13 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/scalyr/dataset-go/pkg/buffer"
+	datasetConfig "github.com/scalyr/dataset-go/pkg/config"
 )
 
 const MaxDelayMs = "15000"
@@ -88,4 +92,27 @@ func (c *Config) String() string {
 	s += fmt.Sprintf("%s: %+v", "TimeoutSettings", c.TimeoutSettings)
 
 	return s
+}
+
+func (c *Config) Convert() (*datasetConfig.DataSetConfig, error) {
+	err := c.Validate()
+	if err != nil {
+		return nil, fmt.Errorf("config is not valid: %w", err)
+	}
+
+	maxDelayMs, err := strconv.Atoi(c.MaxDelayMs)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"maxDelayMs must be integer, it is %s; %w", c.MaxDelayMs, err,
+		)
+	}
+
+	return &datasetConfig.DataSetConfig{
+		Endpoint:       c.DatasetURL,
+		Tokens:         datasetConfig.DataSetTokens{WriteLog: c.APIKey},
+		MaxBufferDelay: time.Duration(maxDelayMs) * time.Millisecond,
+		MaxPayloadB:    buffer.LimitBufferSize,
+		GroupBy:        c.GroupBy,
+		RetryBase:      5 * time.Second,
+	}, nil
 }
