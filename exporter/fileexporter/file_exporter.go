@@ -124,6 +124,8 @@ func exportMessageAsBuffer(e *fileExporter, buf []byte) error {
 // startFlusher starts the flusher.
 // It does not check the flushInterval
 func (e *fileExporter) startFlusher() {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 	ff, ok := e.file.(interface{ flush() error })
 	if !ok {
 		// Just in case.
