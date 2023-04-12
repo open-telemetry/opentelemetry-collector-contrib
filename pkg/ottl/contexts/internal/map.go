@@ -64,6 +64,9 @@ func SetMapValue(m pcommon.Map, keys []ottl.Key, val interface{}) error {
 	if len(keys) == 0 {
 		return fmt.Errorf("cannot set map value without key")
 	}
+	if keys[0].String == nil {
+		return fmt.Errorf("non-string indexing is not supported")
+	}
 
 	var newValue pcommon.Value
 	switch val.(type) {
@@ -96,7 +99,7 @@ func SetMapValue(m pcommon.Map, keys []ottl.Key, val interface{}) error {
 			if keys[i].Int == nil {
 				return fmt.Errorf("slice must be indexed by an int")
 			}
-			if int(*keys[i].Int) > currentValue.Slice().Len() || int(*keys[i].Int) < 0 {
+			if int(*keys[i].Int) >= currentValue.Slice().Len() || int(*keys[i].Int) < 0 {
 				return fmt.Errorf("index %v out of bounds", *keys[i].Int)
 			}
 			currentValue = currentValue.Slice().At(int(*keys[i].Int))
