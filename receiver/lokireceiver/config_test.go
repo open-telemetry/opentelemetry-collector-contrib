@@ -111,7 +111,7 @@ func TestInvalidConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			err = component.ValidateConfig(cfg)
-			assert.Contains(t, err.Error(), tt.err)
+			assert.Error(t, err, tt.err)
 		})
 	}
 }

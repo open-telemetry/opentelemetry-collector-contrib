@@ -127,6 +127,20 @@ func validateInstanaSpanBasics(sp model.Span, t *testing.T) {
 	if sp.Duration <= 0 {
 		t.Errorf("expected duration to be provided but received %v", sp.Duration)
 	}
+
+	if sp.Data.ServiceName != "myservice" {
+		t.Errorf("expected span name to be 'myservice' but received '%v'", sp.Data.ServiceName)
+	}
+
+	if len(sp.Data.Resource) == 0 {
+		t.Error("expected resource block not to be empty")
+	}
+
+	if sp.Data.Resource[conventions.AttributeServiceName] != sp.Data.ServiceName {
+		t.Errorf("expected resource block to contain same name (%v) as span.Name (%v)",
+			sp.Data.Resource[conventions.AttributeServiceName], sp.Data.ServiceName)
+	}
+
 }
 
 func validateBundle(jsonData []byte, t *testing.T, fn func(model.Span, *testing.T)) {

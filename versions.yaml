@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.74.0
+    version: v0.75.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -30,6 +30,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
@@ -168,6 +169,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
