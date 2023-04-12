@@ -2,7 +2,7 @@
 
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
 
-go 1.18
+go 1.19
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.77.0
@@ -93,7 +93,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.77.0
@@ -836,8 +835,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sev
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => ../../receiver/k8sclusterreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ../../processor/transformprocessor
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor => ../../processor/websocketprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor => ../../processor/filterprocessor
 

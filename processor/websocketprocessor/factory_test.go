@@ -16,20 +16,13 @@ package websocketprocessor
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestChannelset(t *testing.T) {
-	cs := newChannelSet()
-	ch := make(chan []byte)
-	key := cs.add(ch)
-	go func() {
-		cs.writeBytes([]byte("hello"))
-	}()
-	assert.Eventually(t, func() bool {
-		return assert.Equal(t, []byte("hello"), <-ch)
-	}, time.Second, time.Millisecond*10)
-	cs.closeAndRemove(key)
+func TestNewFactory(t *testing.T) {
+	factory := NewFactory()
+	assert.EqualValues(t, "websocket", factory.Type())
+	config := factory.CreateDefaultConfig()
+	assert.NotNil(t, config)
 }

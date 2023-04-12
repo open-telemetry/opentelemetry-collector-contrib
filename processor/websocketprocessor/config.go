@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package websocketprocessor
+package websocketprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor"
 
 import (
 	"go.opentelemetry.io/collector/component"
@@ -26,7 +26,7 @@ type Config struct {
 	// Defaults to 12001.
 	Port int `mapstructure:"port"`
 	// Limit is a float that indicates the maximum number of messages repeated
-	// through the websocket by this processor in messages per second.
+	// through the websocket by this processor in messages per second. Defaults to 1.
 	Limit rate.Limit `mapstructure:"limit"`
 }
 

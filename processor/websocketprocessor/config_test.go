@@ -12,21 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package websocketprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor"
+package websocketprocessor
 
 import (
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/processor"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-const (
-	typeStr   = "websocket"
-	stability = component.StabilityLevelDevelopment
-)
-
-func NewFactory() processor.Factory {
-	return processor.NewFactory(
-		typeStr,
-		createDefaultConfig,
-	)
+func TestCreateDefaultConfig(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	assert.Equal(t, 12001, cfg.Port)
+	assert.EqualValues(t, 1, cfg.Limit)
 }

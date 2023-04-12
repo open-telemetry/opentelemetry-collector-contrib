@@ -100,7 +100,6 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.77.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.77.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.77.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor v0.71.0
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.77.0
@@ -279,7 +278,6 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver => ../../receiver/k8seventsreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => ../../receiver/k8sclusterreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ../../processor/transformprocessor
-  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor => ../../processor/websocketprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor => ../../processor/filterprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver => ../../extension/observer/hostobserver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver => ../../receiver/kafkareceiver

@@ -155,6 +155,7 @@ processor/spanmetricsprocessor/                          @open-telemetry/collect
 processor/spanprocessor/                                 @open-telemetry/collector-contrib-approvers @boostchicken
 processor/tailsamplingprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/transformprocessor/                            @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
+processor/websocketprocessor/                            @open-telemetry/collector-contrib-approvers @pmcollins
 
 receiver/azureeventhubreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @djaglowski
 receiver/activedirectorydsreceiver/                      @open-telemetry/collector-contrib-approvers @djaglowski @binaryfissiongames

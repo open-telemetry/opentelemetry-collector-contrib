@@ -81,7 +81,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.77.0
@@ -877,8 +876,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/span
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor => ./processor/tailsamplingprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ./processor/transformprocessor
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor => ./processor/websocketprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver => ./receiver/activedirectorydsreceiver
 
