@@ -64,3 +64,11 @@ func applyInstrumentationScopeValueToDataProperties(dataProperties map[string]st
 		dataProperties[instrumentationLibraryVersion] = instrumentationScope.Version()
 	}
 }
+
+// Applies attributes as Application Insights properties
+func setAttributesAsProperties(attributeMap pcommon.Map, properties map[string]string) {
+	attributeMap.Range(func(k string, v pcommon.Value) bool {
+		properties[k] = v.AsString()
+		return true
+	})
+}
