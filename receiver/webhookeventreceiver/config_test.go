@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package webhookeventreceiver 
+package webhookeventreceiver
 
 import (
 	"path/filepath"
@@ -25,7 +25,7 @@ import (
 )
 
 // only one validate check so far
-func testValidateConfig(t *testing.T) {
+func TestValidateConfig(t *testing.T) {
     t.Parallel()
 
     // in case we need to add more tests this can just be extended with more cases
@@ -54,18 +54,18 @@ func testValidateConfig(t *testing.T) {
     }
 }
 
-func testLoadConfig(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
     t.Parallel()
 
     cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	// LoadConf includes the TypeStr which NewFactory does not set
-	id := component.NewIDWithName(typeStr, "")
+	id := component.NewIDWithName(typeStr, "valid_config")
 	cmNoStr, err := cm.Sub(id.String())
 	require.NoError(t, err)
 
     expect := &Config{
-        HTTPServerSettings: confighttp.HTTPServerSettings{
+        HTTPServerSettings: confighttp.HTTPServerSettings {
             Endpoint: "0.0.0.0:8080",
         },
         ReadTimeout:  "500",
