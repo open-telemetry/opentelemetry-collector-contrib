@@ -45,7 +45,7 @@ type Config struct {
 	Queue string `mapstructure:"queue"`
 
 	// The maximum number of unacknowledged messages the Solace broker can transmit, to configure AMQP Link
-	MaxUnacked uint32 `mapstructure:"max_unacknowledged"`
+	MaxUnacked int32 `mapstructure:"max_unacknowledged"`
 
 	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
