@@ -70,7 +70,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/websocketviewerextension v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.77.0
@@ -903,8 +902,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsco
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ../../processor/metricstransformprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension => ../../extension/sigv4authextension
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/websocketviewerextension => ../../extension/websocketviewerextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
 
