@@ -59,12 +59,12 @@ var (
 
 type azureResource struct {
 	metricsByGrains           map[string]*azureResourceMetrics
-	metricsDefinitionsUpdated int64
+	metricsDefinitionsUpdated time.Time
 }
 
 type azureResourceMetrics struct {
 	metrics              []string
-	metricsValuesUpdated int64
+	metricsValuesUpdated time.Time
 }
 
 type void struct{}
@@ -91,7 +91,7 @@ type azureScraper struct {
 	cfg                             *Config
 	settings                        component.TelemetrySettings
 	resources                       map[string]*azureResource
-	resourcesUpdated                int64
+	resourcesUpdated                time.Time
 	mb                              *metadata.MetricsBuilder
 	azIDCredentialsFunc             func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
 	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
@@ -174,7 +174,7 @@ func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *azureScraper) getResources(ctx context.Context) {
-	if time.Now().UTC().Unix() < (s.resourcesUpdated + s.cfg.CacheResources) {
+	if time.Since(s.resourcesUpdated).Seconds() < s.cfg.CacheResources {
 		return
 	}
 	existingResources := map[string]void{}
@@ -209,7 +209,7 @@ func (s *azureScraper) getResources(ctx context.Context) {
 		}
 	}
 
-	s.resourcesUpdated = time.Now().UTC().Unix()
+	s.resourcesUpdated = time.Now()
 }
 
 func (s *azureScraper) getResourcesFilter() string {
@@ -232,7 +232,7 @@ func (s *azureScraper) getResourcesFilter() string {
 
 func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resourceID string) {
 
-	if time.Now().UTC().Unix() < (s.resources[resourceID].metricsDefinitionsUpdated + s.cfg.CacheResourcesDefinitions) {
+	if time.Since(s.resources[resourceID].metricsDefinitionsUpdated).Seconds() < s.cfg.CacheResourcesDefinitions {
 		return
 	}
 
@@ -258,7 +258,7 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 			}
 		}
 	}
-	res.metricsDefinitionsUpdated = time.Now().UTC().Unix()
+	res.metricsDefinitionsUpdated = time.Now()
 }
 
 func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID string, mutex *sync.RWMutex) {
@@ -266,10 +266,10 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 
 	for timeGrain, metricsByGrain := range res.metricsByGrains {
 
-		if time.Now().UTC().Unix() < (metricsByGrain.metricsValuesUpdated + timeGrains[timeGrain]) {
+		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[timeGrain]) {
 			continue
 		}
-		metricsByGrain.metricsValuesUpdated = time.Now().UTC().Unix()
+		metricsByGrain.metricsValuesUpdated = time.Now()
 
 		start, max := 0, s.cfg.MaximumNumberOfMetricsInACall
 

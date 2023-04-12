@@ -23,8 +23,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
-// Predefined error responses for configuration validation failures
 var (
+	// Predefined error responses for configuration validation failures
 	errMissingTenantID       = errors.New(`TenantID" is not specified in config`)
 	errMissingSubscriptionID = errors.New(`SubscriptionID" is not specified in config`)
 	errMissingClientID       = errors.New(`ClientID" is not specified in config`)
@@ -240,8 +240,8 @@ type Config struct {
 	ClientSecret                            string                        `mapstructure:"client_secret"`
 	ResourceGroups                          []string                      `mapstructure:"resource_groups"`
 	Services                                []string                      `mapstructure:"services"`
-	CacheResources                          int64                         `mapstructure:"cache_resources"`
-	CacheResourcesDefinitions               int64                         `mapstructure:"cache_resources_definitions"`
+	CacheResources                          float64                       `mapstructure:"cache_resources"`
+	CacheResourcesDefinitions               float64                       `mapstructure:"cache_resources_definitions"`
 	MaximumNumberOfMetricsInACall           int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
 }
 
