@@ -1042,12 +1042,12 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 		assert.NoError(t, r.Shutdown(context.Background()))
 	}()
 	w := httptest.NewRecorder()
-	r.handleHealthReq(w, httptest.NewRequest("POST", "http://localhost/services/collector/health", nil))
+	r.handleHealthReq(w, httptest.NewRequest("GET", "http://localhost/services/collector/health", nil))
 
 	resp := w.Result()
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
-	assert.Len(t, respBytes, 0)
+	assert.Equal(t, string(respBytes), responseHecHealthy)
 	assert.Equal(t, 200, resp.StatusCode)
 }
 
