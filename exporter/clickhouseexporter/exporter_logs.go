@@ -109,8 +109,6 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					serviceName = value.Str()
 				case conventions.AttributeK8SPodName:
 					podName = value.Str()
-				case "k8s.container.name":
-					fallthrough
 				case conventions.AttributeK8SContainerName:
 					containerName = value.Str()
 				// TODO use AttributeCloudRegion 'cloud.region'
