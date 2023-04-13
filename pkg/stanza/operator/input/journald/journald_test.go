@@ -165,6 +165,18 @@ func TestBuildConfig(t *testing.T) {
 			},
 			ExpectedError: "'-SYSTEMD_UNIT' is not a valid Systemd field name",
 		},
+		{
+			Name: "units and matches",
+			Config: func(cfg *Config) {
+				cfg.Units = []string{"ssh"}
+				cfg.Matches = []MatchConfig{
+					{
+						"-SYSTEMD_UNIT": "dbus.service",
+					},
+				}
+			},
+			ExpectedError: "cannot use both 'matches' and 'units' configurations together",
+		},
 	}
 
 	for _, tt := range testCases {

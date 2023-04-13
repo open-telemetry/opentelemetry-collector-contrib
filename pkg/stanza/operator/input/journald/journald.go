@@ -98,6 +98,11 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 }
 
 func (c Config) buildArgs() ([]string, error) {
+	// validate arguments
+	if len(c.Units) > 0 && len(c.Matches) > 0 {
+		return nil, fmt.Errorf("cannot use both 'matches' and 'units' configurations together")
+	}
+
 	args := make([]string, 0, 10)
 
 	// Export logs in UTC time
@@ -133,11 +138,11 @@ func (c Config) buildArgs() ([]string, error) {
 	}
 
 	if len(c.Matches) > 0 {
-		ms, err := c.buildMatchesConfig()
+		matches, err := c.buildMatchesConfig()
 		if err != nil {
 			return nil, err
 		}
-		args = append(args, ms...)
+		args = append(args, matches...)
 	}
 
 	return args, nil
@@ -171,12 +176,12 @@ func (c Config) buildMatchesConfig() ([]string, error) {
 		if i > 0 {
 			matches = append(matches, "+")
 		}
-		ms, err := buildMatchConfig(mc)
+		mcs, err := buildMatchConfig(mc)
 		if err != nil {
 			return []string{}, err
 		}
 
-		matches = append(matches, ms...)
+		matches = append(matches, mcs...)
 	}
 
 	return matches, nil
