@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestDefaultTracesUnMarshaler(t *testing.T) {
@@ -51,8 +52,9 @@ func TestDefaultLogsUnMarshaler(t *testing.T) {
 		"raw",
 		"text",
 		"json",
+		"azureresourcelogs",
 	}
-	marshalers := defaultLogsUnmarshalers()
+	marshalers := defaultLogsUnmarshalers("Test Version", zap.NewNop())
 	assert.Equal(t, len(expectedEncodings), len(marshalers))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {

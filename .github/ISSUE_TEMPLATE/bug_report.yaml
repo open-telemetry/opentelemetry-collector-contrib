@@ -120,6 +120,7 @@ body:
       - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/stanza
+      - pkg/translator/azure
       - pkg/translator/jaeger
       - pkg/translator/loki
       - pkg/translator/opencensus

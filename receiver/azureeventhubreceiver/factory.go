@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	errUnexpectedConfigurationType = errors.New("Failed to cast configuration to Azure Event Hub Config")
+	errUnexpectedConfigurationType = errors.New("failed to cast configuration to azure event hub config")
 )
 
 type eventhubReceiverFactory struct {
