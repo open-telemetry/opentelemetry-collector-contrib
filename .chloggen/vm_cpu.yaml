@@ -8,7 +8,7 @@ component: vcenterreceiver
 note: Adds VM CPU usage and utilisation metrics
 
 # One or more tracking issues related to the change
-issues: [19733]
+issues: [20895]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
