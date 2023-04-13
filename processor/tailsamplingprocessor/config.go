@@ -49,6 +49,9 @@ const (
 	// BooleanAttribute sample traces having an attribute, of type bool, that matches
 	// the specified boolean value [true|false].
 	BooleanAttribute PolicyType = "boolean_attribute"
+	// OTTLQuery sample traces which meet user provided OpenTelemetry transformation language
+	// query.
+	OTTLQuery PolicyType = "ottl_query"
 )
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
@@ -76,6 +79,8 @@ type sharedPolicyCfg struct {
 	TraceStateCfg TraceStateCfg `mapstructure:"trace_state"`
 	// Configs for boolean attribute filter sampling policy evaluator.
 	BooleanAttributeCfg BooleanAttributeCfg `mapstructure:"boolean_attribute"`
+	// Configs for OTTL query filter sampling policy evaluator
+	OTTLQueryCfg OTTLQueryCfg `mapstructure:"ottl_query"`
 }
 
 // CompositeSubPolicyCfg holds the common configuration to all policies under composite policy.
@@ -190,8 +195,8 @@ type RateLimitingCfg struct {
 	SpansPerSecond int64 `mapstructure:"spans_per_second"`
 }
 
-// SpanCountCfg holds the configurable settings to create a Span Count filter sampling policy
-// sampling policy evaluator
+// SpanCountCfg holds the configurable settings to create a Span Count filter sampling
+// policy evaluator
 type SpanCountCfg struct {
 	// Minimum number of spans in a Trace
 	MinSpans int32 `mapstructure:"min_spans"`
@@ -206,6 +211,12 @@ type BooleanAttributeCfg struct {
 	// Value indicate the bool value, either true or false to use when matching against attribute values.
 	// BooleanAttribute Policy will apply exact value match on Value
 	Value bool `mapstructure:"value"`
+}
+
+// OTTLQueryCfg holds the configurable setting to create a OTTL query filter
+// sampling policy evaluator.
+type OTTLQueryCfg struct {
+	Queries []string `mapstructure:"queries"`
 }
 
 // Config holds the configuration for tail-based sampling.
