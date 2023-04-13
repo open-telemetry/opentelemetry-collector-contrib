@@ -19,22 +19,22 @@ import (
 	"go.uber.org/zap"
 )
 
-type ottlQueryFilter struct {
+type ottlStatementFilter struct {
 	Queries []string
 	logger  *zap.Logger
 }
 
-var _ PolicyEvaluator = (*ottlQueryFilter)(nil)
+var _ PolicyEvaluator = (*ottlStatementFilter)(nil)
 
-// NewOTTLQueryFilter looks at the trace data and returns a corresponding SamplingDecision.
-func NewOTTLQueryFilter(logger *zap.Logger, queries []string) PolicyEvaluator {
-	return &ottlQueryFilter{
+// NewOTTLStatementFilter looks at the trace data and returns a corresponding SamplingDecision.
+func NewOTTLStatementFilter(logger *zap.Logger, queries []string) PolicyEvaluator {
+	return &ottlStatementFilter{
 		Queries: queries,
 		logger:  logger,
 	}
 }
 
-func (oqf *ottlQueryFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
-	oqf.logger.Debug("Evaluating spans with OTTL query filter")
+func (osf *ottlStatementFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
+	osf.logger.Debug("Evaluating spans with OTTL query filter")
 	return Sampled, nil
 }
