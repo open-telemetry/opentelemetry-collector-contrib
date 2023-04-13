@@ -1,0 +1,583 @@
+default:
+all_set:
+  metrics:
+    databricks.jobs.active.total:
+      enabled: true
+    databricks.jobs.run.duration:
+      enabled: true
+    databricks.jobs.schedule.status:
+      enabled: true
+    databricks.jobs.total:
+      enabled: true
+    databricks.spark.block_manager.memory.disk_space.used:
+      enabled: true
+    databricks.spark.block_manager.memory.max:
+      enabled: true
+    databricks.spark.block_manager.memory.off_heap.max:
+      enabled: true
+    databricks.spark.block_manager.memory.off_heap.used:
+      enabled: true
+    databricks.spark.block_manager.memory.on_heap.max:
+      enabled: true
+    databricks.spark.block_manager.memory.on_heap.used:
+      enabled: true
+    databricks.spark.block_manager.memory.remaining:
+      enabled: true
+    databricks.spark.block_manager.memory.remaining.off_heap:
+      enabled: true
+    databricks.spark.block_manager.memory.remaining.on_heap:
+      enabled: true
+    databricks.spark.block_manager.memory.used:
+      enabled: true
+    databricks.spark.code_generator.compilation.time:
+      enabled: true
+    databricks.spark.code_generator.generated_class_size:
+      enabled: true
+    databricks.spark.code_generator.generated_method_size:
+      enabled: true
+    databricks.spark.code_generator.sourcecode_size:
+      enabled: true
+    databricks.spark.dag_scheduler.jobs.active:
+      enabled: true
+    databricks.spark.dag_scheduler.jobs.all:
+      enabled: true
+    databricks.spark.dag_scheduler.stages.failed:
+      enabled: true
+    databricks.spark.dag_scheduler.stages.running:
+      enabled: true
+    databricks.spark.dag_scheduler.stages.waiting:
+      enabled: true
+    databricks.spark.databricks.directory_commit.auto_vacuum.count:
+      enabled: true
+    databricks.spark.databricks.directory_commit.deleted_files_filtered:
+      enabled: true
+    databricks.spark.databricks.directory_commit.filter_listing.count:
+      enabled: true
+    databricks.spark.databricks.directory_commit.job_commit_completed:
+      enabled: true
+    databricks.spark.databricks.directory_commit.marker_read.errors:
+      enabled: true
+    databricks.spark.databricks.directory_commit.marker_refresh.count:
+      enabled: true
+    databricks.spark.databricks.directory_commit.marker_refresh.errors:
+      enabled: true
+    databricks.spark.databricks.directory_commit.markers.read:
+      enabled: true
+    databricks.spark.databricks.directory_commit.repeated_list.count:
+      enabled: true
+    databricks.spark.databricks.directory_commit.uncommitted_files.filtered:
+      enabled: true
+    databricks.spark.databricks.directory_commit.untracked_files.found:
+      enabled: true
+    databricks.spark.databricks.directory_commit.vacuum.count:
+      enabled: true
+    databricks.spark.databricks.directory_commit.vacuum.errors:
+      enabled: true
+    databricks.spark.databricks.preemption.checks.count:
+      enabled: true
+    databricks.spark.databricks.preemption.pools_autoexpired.count:
+      enabled: true
+    databricks.spark.databricks.preemption.poolstarvation.time:
+      enabled: true
+    databricks.spark.databricks.preemption.scheduler_overhead.time:
+      enabled: true
+    databricks.spark.databricks.preemption.task_wasted.time:
+      enabled: true
+    databricks.spark.databricks.preemption.tasks_preempted.count:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.active_pools:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.bypass_lane_active_pools:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.fast_lane_active_pools:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.finished_queries_total_task.time:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.lane_cleanup.marked_pools:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.lane_cleanup.two_phase_pools_cleaned:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.lane_cleanup.zombie_pools_cleaned:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.preemption.slot_transfer_successful_preemption_iterations.count:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.preemption.slot_transfer_tasks_preempted.count:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.preemption.slot_transfer_wasted_task.time:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.slot_reservation.gradual_decrease.count:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.slot_reservation.quick_drop.count:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.slot_reservation.quick_jump.count:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.slot_reservation.slots_reserved:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.slow_lane_active_pools:
+      enabled: true
+    databricks.spark.databricks.task_scheduling_lanes.totalquerygroupsfinished:
+      enabled: true
+    databricks.spark.executor.disk_used:
+      enabled: true
+    databricks.spark.executor.max_memory:
+      enabled: true
+    databricks.spark.executor.memory_used:
+      enabled: true
+    databricks.spark.executor.total_input_bytes:
+      enabled: true
+    databricks.spark.executor.total_shuffle_read:
+      enabled: true
+    databricks.spark.executor.total_shuffle_write:
+      enabled: true
+    databricks.spark.executor_metrics.direct_pool.memory:
+      enabled: true
+    databricks.spark.executor_metrics.jvm.heap.memory:
+      enabled: true
+    databricks.spark.executor_metrics.jvm.off_heap.memory:
+      enabled: true
+    databricks.spark.executor_metrics.major_gc.count:
+      enabled: true
+    databricks.spark.executor_metrics.major_gc.time:
+      enabled: true
+    databricks.spark.executor_metrics.mapped_pool.memory:
+      enabled: true
+    databricks.spark.executor_metrics.minor_gc.count:
+      enabled: true
+    databricks.spark.executor_metrics.minor_gc.time:
+      enabled: true
+    databricks.spark.executor_metrics.off_heap.execution.memory:
+      enabled: true
+    databricks.spark.executor_metrics.off_heap.storage.memory:
+      enabled: true
+    databricks.spark.executor_metrics.off_heap.unified.memory:
+      enabled: true
+    databricks.spark.executor_metrics.on_heap.execution.memory:
+      enabled: true
+    databricks.spark.executor_metrics.on_heap.storage.memory:
+      enabled: true
+    databricks.spark.executor_metrics.on_heap.unified.memory:
+      enabled: true
+    databricks.spark.executor_metrics.process_tree.jvm_rss.memory:
+      enabled: true
+    databricks.spark.executor_metrics.process_tree.jvm_v.memory:
+      enabled: true
+    databricks.spark.executor_metrics.process_tree.other_rss.memory:
+      enabled: true
+    databricks.spark.executor_metrics.process_tree.other_v.memory:
+      enabled: true
+    databricks.spark.executor_metrics.process_tree.python_rss.memory:
+      enabled: true
+    databricks.spark.executor_metrics.process_tree.python_v.memory:
+      enabled: true
+    databricks.spark.hive_external_catalog.file_cache.hits:
+      enabled: true
+    databricks.spark.hive_external_catalog.files_discovered:
+      enabled: true
+    databricks.spark.hive_external_catalog.hive_client_calls:
+      enabled: true
+    databricks.spark.hive_external_catalog.parallel_listing_jobs.count:
+      enabled: true
+    databricks.spark.hive_external_catalog.partitions_fetched:
+      enabled: true
+    databricks.spark.job.num_active_stages:
+      enabled: true
+    databricks.spark.job.num_active_tasks:
+      enabled: true
+    databricks.spark.job.num_completed_stages:
+      enabled: true
+    databricks.spark.job.num_completed_tasks:
+      enabled: true
+    databricks.spark.job.num_failed_stages:
+      enabled: true
+    databricks.spark.job.num_failed_tasks:
+      enabled: true
+    databricks.spark.job.num_skipped_stages:
+      enabled: true
+    databricks.spark.job.num_skipped_tasks:
+      enabled: true
+    databricks.spark.job.num_tasks:
+      enabled: true
+    databricks.spark.jvm.cpu.time:
+      enabled: true
+    databricks.spark.live_listener_bus.events_posted.count:
+      enabled: true
+    databricks.spark.live_listener_bus.queue.app_status.dropped_events.count:
+      enabled: true
+    databricks.spark.live_listener_bus.queue.appstatus.size:
+      enabled: true
+    databricks.spark.live_listener_bus.queue.executor_management.dropped_events.count:
+      enabled: true
+    databricks.spark.live_listener_bus.queue.executormanagement.size:
+      enabled: true
+    databricks.spark.live_listener_bus.queue.shared.dropped_events.count:
+      enabled: true
+    databricks.spark.live_listener_bus.queue.shared.size:
+      enabled: true
+    databricks.spark.live_listener_bus.queue.streams.dropped_events.count:
+      enabled: true
+    databricks.spark.live_listener_bus.queue.streams.size:
+      enabled: true
+    databricks.spark.spark_sql_operation_manager.hive_operations.count:
+      enabled: true
+    databricks.spark.stage.disk_bytes_spilled:
+      enabled: true
+    databricks.spark.stage.executor_run_time:
+      enabled: true
+    databricks.spark.stage.input_bytes:
+      enabled: true
+    databricks.spark.stage.input_records:
+      enabled: true
+    databricks.spark.stage.memory_bytes_spilled:
+      enabled: true
+    databricks.spark.stage.output_bytes:
+      enabled: true
+    databricks.spark.stage.output_records:
+      enabled: true
+    databricks.spark.timer.dag_scheduler.message_processing.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.sql.execution.streaming.query_listener_bus.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.sql.execution.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.sql.execution.ui.sql_app_status_listener.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.sql.hive.thriftserver.ui.hive_thrift_server2listener.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.sql.spark_session.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.sql.util.execution_listener_bus.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.status.app_status_listener.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.util.profiler_env.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.backend.daemon.driver.data_plane_event_listener.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.backend.daemon.driver.dbc_event_logging_listener.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.photon.photon_cleanup_listener.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.spark.util.executor_time_logging_listener.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.spark.util.usage_logging_listener.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.sql.advice.advisor_listener.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.sql.debugger.query_watchdog_listener.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.sql.execution.ui.io_cache_listener.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.sql.io.caching.repeated_reads_estimator.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.queue.app_status.listener_processing.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.queue.executor_management.listener_processing.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.queue.shared.listener_processing.time:
+      enabled: true
+    databricks.spark.timer.live_listener_bus.queue.streams.listener_processing.time:
+      enabled: true
+    databricks.tasks.run.duration:
+      enabled: true
+    databricks.tasks.schedule.status:
+      enabled: true
+  resource_attributes:
+    databricks.cluster.id:
+      enabled: true
+    databricks.instance.name:
+      enabled: true
+    spark.app.id:
+      enabled: true
+    spark.cluster.name:
+      enabled: true
+none_set:
+  metrics:
+    databricks.jobs.active.total:
+      enabled: false
+    databricks.jobs.run.duration:
+      enabled: false
+    databricks.jobs.schedule.status:
+      enabled: false
+    databricks.jobs.total:
+      enabled: false
+    databricks.spark.block_manager.memory.disk_space.used:
+      enabled: false
+    databricks.spark.block_manager.memory.max:
+      enabled: false
+    databricks.spark.block_manager.memory.off_heap.max:
+      enabled: false
+    databricks.spark.block_manager.memory.off_heap.used:
+      enabled: false
+    databricks.spark.block_manager.memory.on_heap.max:
+      enabled: false
+    databricks.spark.block_manager.memory.on_heap.used:
+      enabled: false
+    databricks.spark.block_manager.memory.remaining:
+      enabled: false
+    databricks.spark.block_manager.memory.remaining.off_heap:
+      enabled: false
+    databricks.spark.block_manager.memory.remaining.on_heap:
+      enabled: false
+    databricks.spark.block_manager.memory.used:
+      enabled: false
+    databricks.spark.code_generator.compilation.time:
+      enabled: false
+    databricks.spark.code_generator.generated_class_size:
+      enabled: false
+    databricks.spark.code_generator.generated_method_size:
+      enabled: false
+    databricks.spark.code_generator.sourcecode_size:
+      enabled: false
+    databricks.spark.dag_scheduler.jobs.active:
+      enabled: false
+    databricks.spark.dag_scheduler.jobs.all:
+      enabled: false
+    databricks.spark.dag_scheduler.stages.failed:
+      enabled: false
+    databricks.spark.dag_scheduler.stages.running:
+      enabled: false
+    databricks.spark.dag_scheduler.stages.waiting:
+      enabled: false
+    databricks.spark.databricks.directory_commit.auto_vacuum.count:
+      enabled: false
+    databricks.spark.databricks.directory_commit.deleted_files_filtered:
+      enabled: false
+    databricks.spark.databricks.directory_commit.filter_listing.count:
+      enabled: false
+    databricks.spark.databricks.directory_commit.job_commit_completed:
+      enabled: false
+    databricks.spark.databricks.directory_commit.marker_read.errors:
+      enabled: false
+    databricks.spark.databricks.directory_commit.marker_refresh.count:
+      enabled: false
+    databricks.spark.databricks.directory_commit.marker_refresh.errors:
+      enabled: false
+    databricks.spark.databricks.directory_commit.markers.read:
+      enabled: false
+    databricks.spark.databricks.directory_commit.repeated_list.count:
+      enabled: false
+    databricks.spark.databricks.directory_commit.uncommitted_files.filtered:
+      enabled: false
+    databricks.spark.databricks.directory_commit.untracked_files.found:
+      enabled: false
+    databricks.spark.databricks.directory_commit.vacuum.count:
+      enabled: false
+    databricks.spark.databricks.directory_commit.vacuum.errors:
+      enabled: false
+    databricks.spark.databricks.preemption.checks.count:
+      enabled: false
+    databricks.spark.databricks.preemption.pools_autoexpired.count:
+      enabled: false
+    databricks.spark.databricks.preemption.poolstarvation.time:
+      enabled: false
+    databricks.spark.databricks.preemption.scheduler_overhead.time:
+      enabled: false
+    databricks.spark.databricks.preemption.task_wasted.time:
+      enabled: false
+    databricks.spark.databricks.preemption.tasks_preempted.count:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.active_pools:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.bypass_lane_active_pools:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.fast_lane_active_pools:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.finished_queries_total_task.time:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.lane_cleanup.marked_pools:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.lane_cleanup.two_phase_pools_cleaned:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.lane_cleanup.zombie_pools_cleaned:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.preemption.slot_transfer_successful_preemption_iterations.count:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.preemption.slot_transfer_tasks_preempted.count:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.preemption.slot_transfer_wasted_task.time:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.slot_reservation.gradual_decrease.count:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.slot_reservation.quick_drop.count:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.slot_reservation.quick_jump.count:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.slot_reservation.slots_reserved:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.slow_lane_active_pools:
+      enabled: false
+    databricks.spark.databricks.task_scheduling_lanes.totalquerygroupsfinished:
+      enabled: false
+    databricks.spark.executor.disk_used:
+      enabled: false
+    databricks.spark.executor.max_memory:
+      enabled: false
+    databricks.spark.executor.memory_used:
+      enabled: false
+    databricks.spark.executor.total_input_bytes:
+      enabled: false
+    databricks.spark.executor.total_shuffle_read:
+      enabled: false
+    databricks.spark.executor.total_shuffle_write:
+      enabled: false
+    databricks.spark.executor_metrics.direct_pool.memory:
+      enabled: false
+    databricks.spark.executor_metrics.jvm.heap.memory:
+      enabled: false
+    databricks.spark.executor_metrics.jvm.off_heap.memory:
+      enabled: false
+    databricks.spark.executor_metrics.major_gc.count:
+      enabled: false
+    databricks.spark.executor_metrics.major_gc.time:
+      enabled: false
+    databricks.spark.executor_metrics.mapped_pool.memory:
+      enabled: false
+    databricks.spark.executor_metrics.minor_gc.count:
+      enabled: false
+    databricks.spark.executor_metrics.minor_gc.time:
+      enabled: false
+    databricks.spark.executor_metrics.off_heap.execution.memory:
+      enabled: false
+    databricks.spark.executor_metrics.off_heap.storage.memory:
+      enabled: false
+    databricks.spark.executor_metrics.off_heap.unified.memory:
+      enabled: false
+    databricks.spark.executor_metrics.on_heap.execution.memory:
+      enabled: false
+    databricks.spark.executor_metrics.on_heap.storage.memory:
+      enabled: false
+    databricks.spark.executor_metrics.on_heap.unified.memory:
+      enabled: false
+    databricks.spark.executor_metrics.process_tree.jvm_rss.memory:
+      enabled: false
+    databricks.spark.executor_metrics.process_tree.jvm_v.memory:
+      enabled: false
+    databricks.spark.executor_metrics.process_tree.other_rss.memory:
+      enabled: false
+    databricks.spark.executor_metrics.process_tree.other_v.memory:
+      enabled: false
+    databricks.spark.executor_metrics.process_tree.python_rss.memory:
+      enabled: false
+    databricks.spark.executor_metrics.process_tree.python_v.memory:
+      enabled: false
+    databricks.spark.hive_external_catalog.file_cache.hits:
+      enabled: false
+    databricks.spark.hive_external_catalog.files_discovered:
+      enabled: false
+    databricks.spark.hive_external_catalog.hive_client_calls:
+      enabled: false
+    databricks.spark.hive_external_catalog.parallel_listing_jobs.count:
+      enabled: false
+    databricks.spark.hive_external_catalog.partitions_fetched:
+      enabled: false
+    databricks.spark.job.num_active_stages:
+      enabled: false
+    databricks.spark.job.num_active_tasks:
+      enabled: false
+    databricks.spark.job.num_completed_stages:
+      enabled: false
+    databricks.spark.job.num_completed_tasks:
+      enabled: false
+    databricks.spark.job.num_failed_stages:
+      enabled: false
+    databricks.spark.job.num_failed_tasks:
+      enabled: false
+    databricks.spark.job.num_skipped_stages:
+      enabled: false
+    databricks.spark.job.num_skipped_tasks:
+      enabled: false
+    databricks.spark.job.num_tasks:
+      enabled: false
+    databricks.spark.jvm.cpu.time:
+      enabled: false
+    databricks.spark.live_listener_bus.events_posted.count:
+      enabled: false
+    databricks.spark.live_listener_bus.queue.app_status.dropped_events.count:
+      enabled: false
+    databricks.spark.live_listener_bus.queue.appstatus.size:
+      enabled: false
+    databricks.spark.live_listener_bus.queue.executor_management.dropped_events.count:
+      enabled: false
+    databricks.spark.live_listener_bus.queue.executormanagement.size:
+      enabled: false
+    databricks.spark.live_listener_bus.queue.shared.dropped_events.count:
+      enabled: false
+    databricks.spark.live_listener_bus.queue.shared.size:
+      enabled: false
+    databricks.spark.live_listener_bus.queue.streams.dropped_events.count:
+      enabled: false
+    databricks.spark.live_listener_bus.queue.streams.size:
+      enabled: false
+    databricks.spark.spark_sql_operation_manager.hive_operations.count:
+      enabled: false
+    databricks.spark.stage.disk_bytes_spilled:
+      enabled: false
+    databricks.spark.stage.executor_run_time:
+      enabled: false
+    databricks.spark.stage.input_bytes:
+      enabled: false
+    databricks.spark.stage.input_records:
+      enabled: false
+    databricks.spark.stage.memory_bytes_spilled:
+      enabled: false
+    databricks.spark.stage.output_bytes:
+      enabled: false
+    databricks.spark.stage.output_records:
+      enabled: false
+    databricks.spark.timer.dag_scheduler.message_processing.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.sql.execution.streaming.query_listener_bus.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.sql.execution.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.sql.execution.ui.sql_app_status_listener.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.sql.hive.thriftserver.ui.hive_thrift_server2listener.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.sql.spark_session.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.sql.util.execution_listener_bus.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.status.app_status_listener.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.apache.spark.util.profiler_env.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.backend.daemon.driver.data_plane_event_listener.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.backend.daemon.driver.dbc_event_logging_listener.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.photon.photon_cleanup_listener.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.spark.util.executor_time_logging_listener.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.spark.util.usage_logging_listener.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.sql.advice.advisor_listener.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.sql.debugger.query_watchdog_listener.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.sql.execution.ui.io_cache_listener.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.listener_processing.databricks.sql.io.caching.repeated_reads_estimator.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.queue.app_status.listener_processing.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.queue.executor_management.listener_processing.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.queue.shared.listener_processing.time:
+      enabled: false
+    databricks.spark.timer.live_listener_bus.queue.streams.listener_processing.time:
+      enabled: false
+    databricks.tasks.run.duration:
+      enabled: false
+    databricks.tasks.schedule.status:
+      enabled: false
+  resource_attributes:
+    databricks.cluster.id:
+      enabled: false
+    databricks.instance.name:
+      enabled: false
+    spark.app.id:
+      enabled: false
+    spark.cluster.name:
+      enabled: false

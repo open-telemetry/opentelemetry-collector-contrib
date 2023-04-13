@@ -197,6 +197,7 @@ receiver/cloudfoundryreceiver/                           @open-telemetry/collect
 receiver/collectdreceiver/                               @open-telemetry/collector-contrib-approvers @atoulme
 receiver/couchdbreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/datadogreceiver/                                @open-telemetry/collector-contrib-approvers @boostchicken @gouthamve @jpkrohling @MovieStoreGuy
+receiver/databricksreceiver/                             @open-telemetry/collector-contrib-approvers @pmcollins
 receiver/dockerstatsreceiver/                            @open-telemetry/collector-contrib-approvers @rmfitzpatrick @jamesmoessis
 receiver/elasticsearchreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @BinaryFissionGames
 receiver/expvarreceiver/                                 @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
