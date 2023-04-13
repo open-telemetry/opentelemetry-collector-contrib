@@ -11,6 +11,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -183,6 +184,57 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 	data, err = client2.Get(ctx, "key")
 	require.NoError(t, err)
 	require.Equal(t, myBytes2, data)
+}
+
+func TestSanitize(t *testing.T) {
+	testCases := []struct {
+		name          string
+		componentName string
+		sanitizedName string
+	}{
+		{
+			name:          "safe characters",
+			componentName: `.UPPERCASE-lowercase_1234567890~`,
+			sanitizedName: `.UPPERCASE-lowercase_1234567890~`,
+		},
+		{
+			name:          "unsafe characters",
+			componentName: `slash/backslash\colon:asterisk*questionmark?quote'doublequote"angle<>pipe|exclamationmark!percent%space `,
+			sanitizedName: `slash~backslash~colon~asterisk~questionmark~quote~doublequote~angle~~pipe~exclamationmark~percent~space~`,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			assert.Equal(t, testCase.sanitizedName, sanitize(testCase.componentName))
+		})
+	}
+}
+
+func TestComponentNameWithUnsafeCharacters(t *testing.T) {
+	ctx := context.Background()
+
+	tempDir := t.TempDir()
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = tempDir
+
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	require.NoError(t, err)
+
+	se, ok := extension.(storage.Extension)
+	require.True(t, ok)
+
+	client, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my/slashed/omponent*"),
+		"",
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, client)
 }
 
 func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {

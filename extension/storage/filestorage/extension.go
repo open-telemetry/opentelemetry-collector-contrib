@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"regexp"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -49,7 +50,7 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 	} else {
 		rawName = fmt.Sprintf("%s_%s_%s_%s", kindString(kind), ent.Type(), ent.Name(), name)
 	}
-	// TODO sanitize rawName
+	rawName = sanitize(rawName)
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
 	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction)
 
@@ -83,4 +84,19 @@ func kindString(k component.Kind) string {
 	default:
 		return "other" // not expected
 	}
+}
+
+// sanitize replaces characters in name that are not safe in a file path
+func sanitize(name string) string {
+	// Specify unsafe characters by a negation of allowed characters:
+	// - uppercase and lowercase letters A-Z, a-z
+	// - digits 0-9
+	// - dot `.`
+	// - hyphen `-`
+	// - underscore `_`
+	// - tilde `~`
+	unsafeCharactersRegex := regexp.MustCompile(`[^A-Za-z0-9.\-_~]`)
+
+	// Replace all characters other than the above with the tilde `~`
+	return unsafeCharactersRegex.ReplaceAllString(name, "~")
 }
