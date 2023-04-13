@@ -110,9 +110,10 @@ func (m *explicitHistogramMetrics) BuildMetrics(
 		dp.BucketCounts().FromRaw(h.bucketCounts)
 		dp.SetCount(h.count)
 		dp.SetSum(h.sum)
-		for i := 0; i < dp.Exemplars().Len(); i++ {
-			dp.Exemplars().At(i).SetTimestamp(timestamp)
+		for i := 0; i < h.exemplars.Len(); i++ {
+			h.exemplars.At(i).SetTimestamp(timestamp)
 		}
+		h.exemplars.CopyTo(dp.Exemplars())
 		h.attributes.CopyTo(dp.Attributes())
 	}
 }
@@ -162,9 +163,10 @@ func (m *exponentialHistogramMetrics) BuildMetrics(
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(timestamp)
 		expoHistToExponentialDataPoint(m.histogram, dp)
-		for i := 0; i < dp.Exemplars().Len(); i++ {
-			dp.Exemplars().At(i).SetTimestamp(timestamp)
+		for i := 0; i < m.exemplars.Len(); i++ {
+			m.exemplars.At(i).SetTimestamp(timestamp)
 		}
+		m.exemplars.CopyTo(dp.Exemplars())
 		m.attributes.CopyTo(dp.Attributes())
 	}
 }

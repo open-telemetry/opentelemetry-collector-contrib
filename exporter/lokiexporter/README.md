@@ -123,14 +123,6 @@ The following formats are supported:
 
 OpenTelemetry uses `record.severity` to track log levels where loki uses `record.attributes.level` for the same. The exporter automatically maps the two, except if a "level" attribute already exists.
 
-## Deprecated configuration
-The following options are now deprecated:
-
-- `labels.{attributes/resource}`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
-- `labels.record`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
-- `tenant`: Deprecated and will be removed by v0.59.0. See the [Tenant information](#tenant-information) section for more information.
-- `format` Deprecated without replacement. See the [Format](#format) section for more information.
-
 ## Advanced Configuration
 
 Several helper files are leveraged to provide additional capabilities automatically:

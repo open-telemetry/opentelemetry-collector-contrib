@@ -310,7 +310,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryState(1))
 
-			metrics := mb.Emit(WithMongodbAtlasDbName("attr-val"), WithMongodbAtlasDiskPartition("attr-val"), WithMongodbAtlasHostName("attr-val"), WithMongodbAtlasOrgName("attr-val"), WithMongodbAtlasProcessID("attr-val"), WithMongodbAtlasProcessPort("attr-val"), WithMongodbAtlasProcessTypeName("attr-val"), WithMongodbAtlasProjectID("attr-val"), WithMongodbAtlasProjectName("attr-val"))
+			metrics := mb.Emit(WithMongodbAtlasDbName("attr-val"), WithMongodbAtlasDiskPartition("attr-val"), WithMongodbAtlasHostName("attr-val"), WithMongodbAtlasOrgName("attr-val"), WithMongodbAtlasProcessID("attr-val"), WithMongodbAtlasProcessPort("attr-val"), WithMongodbAtlasProcessTypeName("attr-val"), WithMongodbAtlasProjectID("attr-val"), WithMongodbAtlasProjectName("attr-val"), WithMongodbAtlasUserAlias("attr-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -384,8 +384,15 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
+			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.user.alias")
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasUserAlias.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasUserAlias.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 9)
+			assert.Equal(t, attrCount, 10)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
