@@ -462,7 +462,7 @@ func (r *splunkReceiver) failRequest(
 func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Add("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
-	writer.Write([]byte(responseHecHealthy))
+	_, _ = writer.Write([]byte(responseHecHealthy))
 }
 
 func initJSONResponse(s string) []byte {
