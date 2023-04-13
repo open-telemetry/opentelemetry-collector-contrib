@@ -40,7 +40,7 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clie
 		consumer consumer.Logs,
 	) (receiver.Logs, error) {
 		sqlQueryConfig := config.(*Config)
-		return newLogsReceiver(sqlQueryConfig, settings, sqlOpenerFunc, clientProviderFunc)
+		return newLogsReceiver(sqlQueryConfig, settings, sqlOpenerFunc, clientProviderFunc, consumer)
 	}
 }
 

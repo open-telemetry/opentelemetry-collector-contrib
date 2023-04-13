@@ -62,7 +62,7 @@ func (s *scraper) Start(context.Context, component.Host) error {
 
 func (s *scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	out := pmetric.NewMetrics()
-	rows, err := s.client.metricRows(ctx)
+	rows, err := s.client.queryRows(ctx)
 	if err != nil {
 		if errors.Is(err, errNullValueWarning) {
 			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))

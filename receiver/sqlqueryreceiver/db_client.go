@@ -31,7 +31,7 @@ import (
 type stringMap map[string]string
 
 type dbClient interface {
-	metricRows(ctx context.Context) ([]stringMap, error)
+	queryRows(ctx context.Context) ([]stringMap, error)
 }
 
 type dbSQLClient struct {
@@ -48,7 +48,7 @@ func newDbClient(db db, sql string, logger *zap.Logger) dbClient {
 	}
 }
 
-func (cl dbSQLClient) metricRows(ctx context.Context) ([]stringMap, error) {
+func (cl dbSQLClient) queryRows(ctx context.Context) ([]stringMap, error) {
 	sqlRows, err := cl.db.QueryContext(ctx, cl.sql)
 	if err != nil {
 		return nil, err

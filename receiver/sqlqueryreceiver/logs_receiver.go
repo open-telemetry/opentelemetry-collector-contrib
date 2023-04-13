@@ -18,8 +18,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 )
@@ -30,6 +32,7 @@ type logsReceiver struct {
 	createConnection dbProviderFunc
 	createClient     clientProviderFunc
 	queryReceivers   []logsQueryReceiver
+	nextConsumer     consumer.Logs
 }
 
 func newLogsReceiver(
@@ -37,6 +40,7 @@ func newLogsReceiver(
 	settings receiver.CreateSettings,
 	sqlOpenerFunc sqlOpenerFunc,
 	createClient clientProviderFunc,
+	nextConsumer consumer.Logs,
 ) (*logsReceiver, error) {
 	receiver := &logsReceiver{
 		config:   config,
@@ -45,6 +49,7 @@ func newLogsReceiver(
 			return sqlOpenerFunc(config.Driver, config.DataSource)
 		},
 		createClient: createClient,
+		nextConsumer: nextConsumer,
 	}
 
 	receiver.createQueryReceivers()
@@ -59,8 +64,11 @@ func (receiver *logsReceiver) createQueryReceivers() {
 		}
 		id := component.NewIDWithName("sqlqueryreceiver", fmt.Sprintf("query-%d: %s", i, query.SQL))
 		queryReceiver := logsQueryReceiver{
-			id:    id,
-			query: query,
+			id:                 id,
+			query:              query,
+			nextConsumer:       receiver.nextConsumer,
+			clientProviderFunc: receiver.createClient,
+			dbProviderFunc:     receiver.createConnection,
 		}
 		receiver.queryReceivers = append(receiver.queryReceivers, queryReceiver)
 	}
@@ -78,15 +86,37 @@ func (receiver *logsReceiver) Shutdown(ctx context.Context) error {
 }
 
 type logsQueryReceiver struct {
-	id    component.ID
-	query Query
+	id                 component.ID
+	query              Query
+	nextConsumer       consumer.Logs
+	clientProviderFunc clientProviderFunc
+	dbProviderFunc     dbProviderFunc
+	client             dbClient
 }
 
 func (queryReceiver *logsQueryReceiver) start() {
-
+	db, err := queryReceiver.dbProviderFunc()
+	if err != nil {
+		//TODO: zalogować jakiś piękny błąd
+		panic(err)
+	}
+	queryReceiver.client = queryReceiver.clientProviderFunc(dbWrapper{db}, queryReceiver.query.SQL, nil)
+	queryReceiver.scrape(context.Background())
 }
 
 func (queryReceiver *logsQueryReceiver) scrape(ctx context.Context) (plog.Logs, error) {
+	out := plog.NewLogs()
+	rows, err := queryReceiver.client.queryRows(ctx)
+	if err != nil {
+		return out, fmt.Errorf("scraper: %w", err)
+	}
+	for i, row := range rows {
+		fmt.Println(i, row)
+	}
+	aaa := out.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	kiloStr := strings.Repeat("x", 10*1024)
+	aaa.SetSeverityText(kiloStr)
+	queryReceiver.nextConsumer.ConsumeLogs(ctx, out)
 	return plog.NewLogs(), nil
 }
 
