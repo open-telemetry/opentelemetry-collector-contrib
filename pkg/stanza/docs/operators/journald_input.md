@@ -45,10 +45,13 @@ The following configuration:
     - _SYSTEMD_UNIT: ssh
     - _SYSTEMD_UNIT: kubelet
       _UID: "1000"
-  priority: info
 ```
 
-will be passed to `journald` as the following arguments: `journald ... _SYSTEMD_UNIT=dbus.service + _SYSTEMD_UNIT=user@1000.service _UID=1000`
+will be passed to `journald` as the following arguments: `journald ... _SYSTEMD_UNIT=ssh + _SYSTEMD_UNIT=kubelet _UID=1000`,
+which is going to retrieve all entries which matches at least one of the following rules:
+
+- `_SYSTEMD_UNIT` is `ssh`
+- `_SYSTEMD_UNIT` is `kubelet` and `_UID` is `1000`
 
 ### Simple journald input
 
