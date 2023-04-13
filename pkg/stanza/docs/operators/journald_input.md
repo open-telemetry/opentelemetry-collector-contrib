@@ -49,7 +49,7 @@ The following configuration:
 ```
 
 will be passed to `journald` as the following arguments: `journald ... _SYSTEMD_UNIT=ssh + _SYSTEMD_UNIT=kubelet _UID=1000`,
-which is going to retrieve all entries which matche at least one of the following rules:
+which is going to retrieve all entries which match at least one of the following rules:
 
 - `_SYSTEMD_UNIT` is `ssh`
 - `_SYSTEMD_UNIT` is `kubelet` and `_UID` is `1000`
