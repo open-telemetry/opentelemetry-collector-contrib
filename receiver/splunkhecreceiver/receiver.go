@@ -203,7 +203,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	mx := mux.NewRouter()
-	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq).Methods("GET")
+	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
 	mx.NewRoute().Path(r.config.HealthPath + "/1.0").HandlerFunc(r.handleHealthReq).Methods("GET")
 	if r.logsConsumer != nil {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
@@ -462,10 +462,7 @@ func (r *splunkReceiver) failRequest(
 func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Add("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
-	_, err := writer.Write([]byte(responseHecHealthy))
-	if err != nil {
-		return
-	}
+	writer.Write([]byte(responseHecHealthy))
 }
 
 func initJSONResponse(s string) []byte {

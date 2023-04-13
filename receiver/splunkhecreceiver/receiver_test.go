@@ -1301,17 +1301,6 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 			},
 		},
 		{
-			name: "incorrect_healthcheck_methods",
-			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost:0/services/collector/health", nil)
-				return req
-			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseNoData, body)
-			},
-		},
-		{
 			name: "incorrect_healthcheck_methods_v1",
 			req: func() *http.Request {
 				req := httptest.NewRequest("POST", "http://localhost:0/services/collector/health/1.0", nil)
