@@ -182,4 +182,3 @@ func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
 	}
 	return exportMessageAsLine
 }
-
