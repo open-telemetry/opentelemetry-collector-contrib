@@ -108,12 +108,12 @@ func (osf *ottlStatementFilter) Evaluate(ctx context.Context, _ pcommon.TraceID,
 			scope := ss.Scope()
 			for k := 0; k < ss.Spans().Len(); k++ {
 				span := ss.Spans().At(k)
-				sample, err := osf.sampleSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
+				ok, err := osf.sampleSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
 				if err != nil {
 					osf.logger.Error("failed processing traces", zap.Error(err))
 					return NotSampled, err
 				}
-				if sample {
+				if ok {
 					return Sampled, nil
 				}
 			}
