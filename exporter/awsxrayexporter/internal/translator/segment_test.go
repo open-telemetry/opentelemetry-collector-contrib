@@ -830,6 +830,38 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 	}, segment.Metadata["default"]["map_value"])
 }
 
+func TestSpanWithSingleDynamoDBTableHasTableName(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeAWSDynamoDBTableNames] = []string{"table1"}
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "table1", *segment.AWS.TableName)
+	assert.Nil(t, segment.AWS.TableNames)
+	assert.Equal(t, []interface{}{"table1"}, segment.Metadata["default"][conventions.AttributeAWSDynamoDBTableNames])
+}
+
+func TestSpanWithMultipleDynamoDBTablesHasTableNames(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeAWSDynamoDBTableNames] = []string{"table1", "table2"}
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+
+	assert.NotNil(t, segment)
+	assert.Nil(t, segment.AWS.TableName)
+	assert.Equal(t, []string{"table1", "table2"}, segment.AWS.TableNames)
+	assert.Equal(t, []interface{}{"table1", "table2"}, segment.Metadata["default"][conventions.AttributeAWSDynamoDBTableNames])
+}
+
 func TestSegmentWithLogGroupsFromConfig(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()

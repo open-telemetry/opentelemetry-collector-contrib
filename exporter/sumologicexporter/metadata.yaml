@@ -1,0 +1,7 @@
+name: sumologic
+
+status:
+  type: exporter
+  stability: beta
+  pipelines: [logs, metrics]
+  distributions: [contrib]

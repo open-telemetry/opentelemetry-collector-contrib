@@ -32,10 +32,11 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr              = "splunk_hec"
-	defaultMaxIdleCons   = 100
-	defaultHTTPTimeout   = 10 * time.Second
-	defaultSplunkAppName = "OpenTelemetry Collector Contrib"
+	typeStr                = "splunk_hec"
+	defaultMaxIdleCons     = 100
+	defaultHTTPTimeout     = 10 * time.Second
+	defaultIdleConnTimeout = 10 * time.Second
+	defaultSplunkAppName   = "OpenTelemetry Collector Contrib"
 )
 
 // TODO: Find a place for this to be shared.
@@ -62,11 +63,13 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	defaultMaxConns := defaultMaxIdleCons
+	defaultIdleConnTimeout := defaultIdleConnTimeout
 	return &Config{
 		LogDataEnabled:       true,
 		ProfilingDataEnabled: true,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout:             defaultHTTPTimeout,
+			IdleConnTimeout:     &defaultIdleConnTimeout,
 			MaxIdleConnsPerHost: &defaultMaxConns,
 			MaxIdleConns:        &defaultMaxConns,
 		},

@@ -176,17 +176,17 @@ func (r *Transformer) flushLoop() {
 			timeNow := time.Now()
 			for source, batch := range r.batchMap {
 				entries := batch.entries
-				lastEntryTs := entries[len(entries)-1].ObservedTimestamp
-				timeSinceLastEntry := timeNow.Sub(lastEntryTs)
-				if timeSinceLastEntry < r.forceFlushTimeout {
+				firstEntryTs := entries[0].ObservedTimestamp
+				timeSinceFirstEntry := timeNow.Sub(firstEntryTs)
+				if timeSinceFirstEntry < r.forceFlushTimeout {
 					continue
 				}
 				if err := r.flushSource(source); err != nil {
 					r.Errorf("there was error flushing combined logs %s", err)
 				}
 			}
-
-			r.ticker.Reset(r.forceFlushTimeout)
+			// check every 1/5 forceFlushTimeout
+			r.ticker.Reset(r.forceFlushTimeout / 5)
 			r.Unlock()
 		case <-r.chClose:
 			r.ticker.Stop()
