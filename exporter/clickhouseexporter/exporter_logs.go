@@ -108,19 +108,19 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				case conventions.AttributeServiceName:
 					serviceName = value.Str()
 				case conventions.AttributeK8SPodName:
-					podName = value.Str()
+					podName = value.AsString()
 				case conventions.AttributeK8SContainerName:
-					containerName = value.Str()
+					containerName = value.AsString()
 				// TODO use AttributeCloudRegion 'cloud.region'
 				// https://github.com/ClickHouse/data-plane-application/issues/4155
 				case "region":
 					fallthrough
 				case conventions.AttributeCloudRegion:
-					region = value.Str()
+					region = value.AsString()
 				case conventions.AttributeCloudProvider:
-					cloudProvider = value.Str()
+					cloudProvider = value.AsString()
 				case "cell":
-					cell = value.Str()
+					cell = value.AsString()
 				}
 				return true
 			})
