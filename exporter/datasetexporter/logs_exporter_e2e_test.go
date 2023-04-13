@@ -29,6 +29,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -93,14 +94,14 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsShouldSucceed(assert, require *td.
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}
 
-	attempt := 0
-	wasSuccessful := false
+	attempt := atomic.Uint64{}
+	wasSuccessful := atomic.Bool{}
 	addRequest := add_events.AddEventsRequest{}
 	httpmock.RegisterResponder(
 		"POST",
 		"https://example.com/api/addEvents",
 		func(req *http.Request) (*http.Response, error) {
-			attempt += 1
+			attempt.Add(1)
 			cer, err := extract(req)
 			addRequest = cer
 
@@ -110,7 +111,7 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsShouldSucceed(assert, require *td.
 				assert.Cmp("a", cer.SessionInfo.ServerId)
 			}
 
-			wasSuccessful = true
+			wasSuccessful.Store(true)
 			return httpmock.NewJsonResponse(200, map[string]interface{}{
 				"status":       "success",
 				"bytesCharged": 42,
@@ -133,14 +134,7 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsShouldSucceed(assert, require *td.
 		assert.Nil(err)
 	}
 
-	for i := 0; i < 3; i++ {
-		if !wasSuccessful {
-			time.Sleep(RetryBase)
-		} else {
-			break
-		}
-	}
-	assert.True(wasSuccessful)
+	assert.True(wasSuccessful.Load())
 	info := httpmock.GetCallCountInfo()
 	assert.CmpDeeply(info, map[string]int{"POST https://example.com/api/addEvents": 1})
 	assert.Cmp(
@@ -151,9 +145,9 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsShouldSucceed(assert, require *td.
 			},
 			AddEventsRequestParams: add_events.AddEventsRequestParams{
 				Session: assert.Anchor(td.HasSuffix("d41d8cd98f00b204e9800998ecf8427e"), "").(string),
-				Events:  []*add_events.Event{testEventReq},
-				Threads: []*add_events.Thread{testThread},
-				Logs:    []*add_events.Log{testLog},
+				Events:  []*add_events.Event{testLEventReq},
+				Threads: []*add_events.Thread{testLThread},
+				Logs:    []*add_events.Log{testLLog},
 			},
 		})
 

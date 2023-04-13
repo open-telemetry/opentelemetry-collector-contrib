@@ -7,7 +7,7 @@ require (
 	github.com/jarcoal/httpmock v1.3.0
 	github.com/maxatome/go-testdeep v1.13.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
-	github.com/scalyr/dataset-go v0.0.1
+	github.com/scalyr/dataset-go v0.0.2
 	go.opentelemetry.io/collector/component v0.75.0
 	go.opentelemetry.io/collector/confmap v0.75.0
 	go.opentelemetry.io/collector/exporter v0.75.0

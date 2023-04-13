@@ -170,7 +170,7 @@ func (s *SuiteLogsExporter) TestBuildBodyMap(assert, require *td.T) {
 	}
 }
 
-var testEventRaw = &add_events.Event{
+var testLEventRaw = &add_events.Event{
 	Thread: "TL",
 	Log:    "LL",
 	Sev:    9,
@@ -195,11 +195,11 @@ var testEventRaw = &add_events.Event{
 	},
 }
 
-var testEventReq = &add_events.Event{
-	Thread: testEventRaw.Thread,
-	Log:    testEventRaw.Log,
-	Sev:    testEventRaw.Sev,
-	Ts:     testEventRaw.Ts,
+var testLEventReq = &add_events.Event{
+	Thread: testLEventRaw.Thread,
+	Log:    testLEventRaw.Log,
+	Sev:    testLEventRaw.Sev,
+	Ts:     testLEventRaw.Ts,
 	Attrs: map[string]interface{}{
 		"OTEL_TYPE":                         "log",
 		"attributes.app":                    "server",
@@ -221,12 +221,12 @@ var testEventReq = &add_events.Event{
 	},
 }
 
-var testThread = &add_events.Thread{
+var testLThread = &add_events.Thread{
 	Id:   "TL",
 	Name: "logs",
 }
 
-var testLog = &add_events.Log{
+var testLLog = &add_events.Log{
 	Id:    "LL",
 	Attrs: map[string]interface{}{},
 }
@@ -236,9 +236,9 @@ func (s *SuiteLogsExporter) TestBuildEventFromLog(assert, require *td.T) {
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
 	expected := &add_events.EventBundle{
-		Event:  testEventRaw,
-		Thread: testThread,
-		Log:    testLog,
+		Event:  testLEventRaw,
+		Thread: testLThread,
+		Log:    testLLog,
 	}
 	was := buildEventFromLog(
 		ld,

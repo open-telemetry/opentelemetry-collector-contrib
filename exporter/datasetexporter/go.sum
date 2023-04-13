@@ -259,8 +259,8 @@ github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/f
 github.com/ryanuber/columnize v0.0.0-20160712163229-9b3edd62028f/go.mod h1:sm1tb6uqfes/u+d4ooFouqFdy9/2g9QGwK3SQygK0Ts=
 github.com/ryanuber/columnize v2.1.0+incompatible/go.mod h1:sm1tb6uqfes/u+d4ooFouqFdy9/2g9QGwK3SQygK0Ts=
 github.com/ryanuber/go-glob v1.0.0/go.mod h1:807d1WSdnB0XRJzKNil9Om6lcp/3a0v4qIHxIXzX/Yc=
-github.com/scalyr/dataset-go v0.0.1 h1:Oz8M0AglGFspsQax2MUQIy2AOo4CW7JQ/72PPQ5+dL4=
-github.com/scalyr/dataset-go v0.0.1/go.mod h1:J8ioLMhd4bUoaPdXJOHQiQI/XVs0kG/kAuVsN8buLBQ=
+github.com/scalyr/dataset-go v0.0.2 h1:MM+ei7XJEL7SqwcUnVSs4/XKlkFt3DUZbqS22asaJKo=
+github.com/scalyr/dataset-go v0.0.2/go.mod h1:J8ioLMhd4bUoaPdXJOHQiQI/XVs0kG/kAuVsN8buLBQ=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
