@@ -15,6 +15,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -39,7 +40,7 @@ func NewRateLimiting(logger *zap.Logger, spansPerSecond int64) PolicyEvaluator {
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (r *rateLimiting) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (r *rateLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	r.logger.Debug("Evaluating spans in rate-limiting filter")
 	currSecond := time.Now().Unix()
 	if r.currentSecond != currSecond {

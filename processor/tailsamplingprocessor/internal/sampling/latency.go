@@ -15,6 +15,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -36,7 +37,7 @@ func NewLatency(logger *zap.Logger, thresholdMs int64) PolicyEvaluator {
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (l *latency) Evaluate(_ pcommon.TraceID, traceData *TraceData) (Decision, error) {
+func (l *latency) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *TraceData) (Decision, error) {
 	l.logger.Debug("Evaluating spans in latency filter")
 
 	traceData.Lock()

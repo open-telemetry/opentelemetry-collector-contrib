@@ -15,6 +15,7 @@
 package sampling
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,7 +43,7 @@ func TestAndEvaluatorNotSampled(t *testing.T) {
 	trace := &TraceData{
 		ReceivedBatches: traces,
 	}
-	decision, err := and.Evaluate(traceID, trace)
+	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 	assert.Equal(t, decision, NotSampled)
 
@@ -68,7 +69,7 @@ func TestAndEvaluatorSampled(t *testing.T) {
 	trace := &TraceData{
 		ReceivedBatches: traces,
 	}
-	decision, err := and.Evaluate(traceID, trace)
+	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 	assert.Equal(t, decision, Sampled)
 
@@ -94,7 +95,7 @@ func TestAndEvaluatorStringInvertSampled(t *testing.T) {
 	trace := &TraceData{
 		ReceivedBatches: traces,
 	}
-	decision, err := and.Evaluate(traceID, trace)
+	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 	assert.Equal(t, decision, Sampled)
 
@@ -120,7 +121,7 @@ func TestAndEvaluatorStringInvertNotSampled(t *testing.T) {
 	trace := &TraceData{
 		ReceivedBatches: traces,
 	}
-	decision, err := and.Evaluate(traceID, trace)
+	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 	assert.Equal(t, decision, NotSampled)
 

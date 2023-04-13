@@ -15,6 +15,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -40,7 +41,7 @@ func NewNumericAttributeFilter(logger *zap.Logger, key string, minValue, maxValu
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (naf *numericAttributeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (naf *numericAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()

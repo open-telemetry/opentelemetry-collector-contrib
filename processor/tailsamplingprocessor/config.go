@@ -50,8 +50,8 @@ const (
 	// the specified boolean value [true|false].
 	BooleanAttribute PolicyType = "boolean_attribute"
 	// OTTLStatement sample traces which meet user provided OpenTelemetry transformation language
-	// query.
-	OTTLStatement PolicyType = "ottl_query"
+	// statements.
+	OTTLStatement PolicyType = "ottl_statement"
 )
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
@@ -79,8 +79,8 @@ type sharedPolicyCfg struct {
 	TraceStateCfg TraceStateCfg `mapstructure:"trace_state"`
 	// Configs for boolean attribute filter sampling policy evaluator.
 	BooleanAttributeCfg BooleanAttributeCfg `mapstructure:"boolean_attribute"`
-	// Configs for OTTL query filter sampling policy evaluator
-	OTTLStatementCfg OTTLStatementCfg `mapstructure:"ottl_query"`
+	// Configs for OTTL statement filter sampling policy evaluator
+	OTTLStatementCfg OTTLStatementCfg `mapstructure:"ottl_statement"`
 }
 
 // CompositeSubPolicyCfg holds the common configuration to all policies under composite policy.
@@ -213,7 +213,7 @@ type BooleanAttributeCfg struct {
 	Value bool `mapstructure:"value"`
 }
 
-// OTTLStatementCfg holds the configurable setting to create a OTTL query filter
+// OTTLStatementCfg holds the configurable setting to create a OTTL statement filter
 // sampling policy evaluator.
 type OTTLStatementCfg struct {
 	Statements []string `mapstructure:"statements"`

@@ -15,6 +15,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -59,7 +60,7 @@ func NewStatusCodeFilter(logger *zap.Logger, statusCodeString []string) (PolicyE
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (r *statusCodeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (r *statusCodeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	r.logger.Debug("Evaluating spans in status code filter")
 
 	trace.Lock()

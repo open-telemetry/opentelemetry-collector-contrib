@@ -15,6 +15,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
@@ -85,7 +86,7 @@ func NewComposite(
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (c *Composite) Evaluate(traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
 	// Rate limiting works by counting spans that are sampled during each 1 second
 	// time period. Until the total number of spans during a particular second
 	// exceeds the allocated number of spans-per-second the traces are sampled,
@@ -104,7 +105,7 @@ func (c *Composite) Evaluate(traceID pcommon.TraceID, trace *TraceData) (Decisio
 	}
 
 	for _, sub := range c.subpolicies {
-		decision, err := sub.evaluator.Evaluate(traceID, trace)
+		decision, err := sub.evaluator.Evaluate(ctx, traceID, trace)
 		if err != nil {
 			return Unspecified, err
 		}

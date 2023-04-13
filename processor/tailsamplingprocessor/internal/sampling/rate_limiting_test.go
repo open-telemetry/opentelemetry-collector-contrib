@@ -15,6 +15,7 @@
 package sampling
 
 import (
+	"context"
 	"sync/atomic"
 	"testing"
 
@@ -32,7 +33,7 @@ func TestRateLimiter(t *testing.T) {
 	traceSpanCount := &atomic.Int64{}
 	traceSpanCount.Store(10)
 	trace.SpanCount = traceSpanCount
-	decision, err := rateLimiter.Evaluate(traceID, trace)
+	decision, err := rateLimiter.Evaluate(context.Background(), traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, NotSampled)
 
@@ -40,7 +41,7 @@ func TestRateLimiter(t *testing.T) {
 	traceSpanCount = &atomic.Int64{}
 	traceSpanCount.Store(3)
 	trace.SpanCount = traceSpanCount
-	decision, err = rateLimiter.Evaluate(traceID, trace)
+	decision, err = rateLimiter.Evaluate(context.Background(), traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, NotSampled)
 
@@ -48,14 +49,14 @@ func TestRateLimiter(t *testing.T) {
 	traceSpanCount = &atomic.Int64{}
 	traceSpanCount.Store(2)
 	trace.SpanCount = traceSpanCount
-	decision, err = rateLimiter.Evaluate(traceID, trace)
+	decision, err = rateLimiter.Evaluate(context.Background(), traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
 
 	// Trace span count less than spans per second
 	traceSpanCount = &atomic.Int64{}
 	trace.SpanCount = traceSpanCount
-	decision, err = rateLimiter.Evaluate(traceID, trace)
+	decision, err = rateLimiter.Evaluate(context.Background(), traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
 }

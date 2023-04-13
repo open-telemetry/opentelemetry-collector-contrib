@@ -15,6 +15,7 @@
 package sampling
 
 import (
+	"context"
 	"encoding/binary"
 	"math/rand"
 	"testing"
@@ -84,7 +85,7 @@ func TestProbabilisticSampling(t *testing.T) {
 			for _, traceID := range genRandomTraceIDs(traceCount) {
 				trace := newTraceStringAttrs(nil, "example", "value")
 
-				decision, err := probabilisticSampler.Evaluate(traceID, trace)
+				decision, err := probabilisticSampler.Evaluate(context.Background(), traceID, trace)
 				assert.NoError(t, err)
 
 				if decision == Sampled {

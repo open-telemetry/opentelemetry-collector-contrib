@@ -15,6 +15,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	tracesdk "go.opentelemetry.io/otel/trace"
@@ -51,7 +52,7 @@ func NewTraceStateFilter(logger *zap.Logger, key string, values []string) Policy
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (tsf *traceStateFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (tsf *traceStateFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()

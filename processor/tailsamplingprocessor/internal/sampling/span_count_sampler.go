@@ -15,6 +15,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
@@ -37,7 +38,7 @@ func NewSpanCount(logger *zap.Logger, minSpans, maxSpans int32) PolicyEvaluator 
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (c *spanCount) Evaluate(_ pcommon.TraceID, traceData *TraceData) (Decision, error) {
+func (c *spanCount) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *TraceData) (Decision, error) {
 	c.logger.Debug("Evaluating spans counts in filter")
 
 	spanCount := int(traceData.SpanCount.Load())

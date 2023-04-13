@@ -15,6 +15,7 @@
 package sampling
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -73,7 +74,7 @@ func TestEvaluate_Latency(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(traceID, newTraceWithSpans(c.Spans))
+			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithSpans(c.Spans))
 
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)

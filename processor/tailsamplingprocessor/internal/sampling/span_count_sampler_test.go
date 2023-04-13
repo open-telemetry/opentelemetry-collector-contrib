@@ -15,6 +15,7 @@
 package sampling
 
 import (
+	"context"
 	"sync/atomic"
 	"testing"
 
@@ -80,7 +81,7 @@ func TestEvaluate_OnlyMinSpans(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(traceID, newTraceWithMultipleSpans(c.NumberSpans))
+			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithMultipleSpans(c.NumberSpans))
 
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
@@ -144,7 +145,7 @@ func TestEvaluate_OnlyMaxSpans(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(traceID, newTraceWithMultipleSpans(c.NumberSpans))
+			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithMultipleSpans(c.NumberSpans))
 
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
@@ -236,7 +237,7 @@ func TestEvaluate_RangeOfSpans(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(traceID, newTraceWithMultipleSpans(c.NumberSpans))
+			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithMultipleSpans(c.NumberSpans))
 
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)

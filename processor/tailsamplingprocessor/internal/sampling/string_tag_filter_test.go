@@ -15,6 +15,7 @@
 package sampling
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -213,7 +214,7 @@ func TestStringTagFilter(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			filter := NewStringAttributeFilter(zap.NewNop(), c.filterCfg.Key, c.filterCfg.Values, c.filterCfg.EnabledRegexMatching, c.filterCfg.CacheMaxSize, c.filterCfg.InvertMatch)
-			decision, err := filter.Evaluate(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)
+			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})
@@ -225,7 +226,7 @@ func BenchmarkStringTagFilterEvaluatePlainText(b *testing.B) {
 	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"value"}, false, 0, false)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := filter.Evaluate(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
+		_, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
 		assert.NoError(b, err)
 	}
 }
@@ -235,7 +236,7 @@ func BenchmarkStringTagFilterEvaluateRegex(b *testing.B) {
 	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"v[0-9]+.HealthCheck$"}, true, 0, false)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := filter.Evaluate(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
+		_, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
 		assert.NoError(b, err)
 	}
 }

@@ -14,6 +14,7 @@
 package sampling
 
 import (
+	"context"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -74,7 +75,7 @@ func TestCompositeEvaluatorNotSampled(t *testing.T) {
 
 	trace := createTrace()
 
-	decision, err := c.Evaluate(traceID, trace)
+	decision, err := c.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// None of the numeric filters should match since input trace data does not contain
@@ -92,7 +93,7 @@ func TestCompositeEvaluatorSampled(t *testing.T) {
 
 	trace := createTrace()
 
-	decision, err := c.Evaluate(traceID, trace)
+	decision, err := c.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The second policy is AlwaysSample, so the decision should be Sampled.
@@ -111,7 +112,7 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 
 	trace := newTraceWithKV(traceID, "tag", int64(10))
 
-	decision, err := c.Evaluate(traceID, trace)
+	decision, err := c.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The first policy is NewNumericAttributeFilter and trace tag matches criteria, so the decision should be Sampled.
@@ -120,7 +121,7 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 
 	trace = newTraceWithKV(traceID, "tag", int64(11))
 
-	decision, err = c.Evaluate(traceID, trace)
+	decision, err = c.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The first policy is NewNumericAttributeFilter and trace tag matches criteria, so the decision should be Sampled.
@@ -128,7 +129,7 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 	assert.Equal(t, decision, expected)
 
 	trace = newTraceWithKV(traceID, "tag", int64(1001))
-	decision, err = c.Evaluate(traceID, trace)
+	decision, err = c.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 	// The first policy fails as the tag value is higher than the range set where as the second policy is AlwaysSample, so the decision should be Sampled.
@@ -146,7 +147,7 @@ func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 	for i := 1; i <= 10; i++ {
 		trace := createTrace()
 
-		decision, err := c.Evaluate(traceID, trace)
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		// The second policy is AlwaysSample, so the decision should be Sampled.
@@ -165,7 +166,7 @@ func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
 	for i := 1; i <= 10; i++ {
 		trace := createTrace()
 
-		decision, err := c.Evaluate(traceID, trace)
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		// The second policy is AlwaysSample, so the decision should be Sampled.
@@ -186,7 +187,7 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 
 	// First totalSPS traces should be 100% Sampled
 	for i := 0; i < totalSPS; i++ {
-		decision, err := c.Evaluate(traceID, trace)
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
@@ -195,7 +196,7 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 
 	// Now we hit the rate limit, so subsequent evaluations should result in 100% NotSampled
 	for i := 0; i < totalSPS; i++ {
-		decision, err := c.Evaluate(traceID, trace)
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := NotSampled
@@ -207,7 +208,7 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 
 	// Subsequent sampling should be Sampled again because it is a new second.
 	for i := 0; i < totalSPS; i++ {
-		decision, err := c.Evaluate(traceID, trace)
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
@@ -229,7 +230,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 
 	// First totalSPS/2 should be Sampled until we hit the rate limit
 	for i := 0; i < totalSPS/2; i++ {
-		decision, err := c.Evaluate(traceID, trace)
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
@@ -240,7 +241,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 
 	// Now we hit the rate limit for second subpolicy, so subsequent evaluations should result in NotSampled
 	for i := 0; i < totalSPS/2; i++ {
-		decision, err := c.Evaluate(traceID, trace)
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := NotSampled
@@ -254,7 +255,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 
 	// It is a new second, so we should start sampling again.
 	for i := 0; i < totalSPS/2; i++ {
-		decision, err := c.Evaluate(traceID, trace)
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
@@ -263,7 +264,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 
 	// Now let's hit the hard limit and exceed the total by a factor of 2
 	for i := 0; i < 2*totalSPS; i++ {
-		decision, err := c.Evaluate(traceID, trace)
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := NotSampled
@@ -275,7 +276,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 
 	// It is a new second, so we should start sampling again.
 	for i := 0; i < totalSPS/2; i++ {
-		decision, err := c.Evaluate(traceID, trace)
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled

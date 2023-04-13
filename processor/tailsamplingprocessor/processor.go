@@ -69,7 +69,7 @@ const (
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform tail sampling according to the given
 // configuration.
-func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
+func newTracesProcessor(ctx context.Context, logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -80,7 +80,6 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 		return nil, err
 	}
 
-	ctx := context.Background()
 	var policies []*policy
 	for i := range cfg.PolicyCfgs {
 		policyCfg := &cfg.PolicyCfgs[i]
@@ -231,7 +230,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	// Check all policies before making a final decision
 	for i, p := range tsp.policies {
 		policyEvaluateStartTime := time.Now()
-		decision, err := p.evaluator.Evaluate(id, trace)
+		decision, err := p.evaluator.Evaluate(p.ctx, id, trace)
 		stats.Record(
 			p.ctx,
 			statDecisionLatencyMicroSec.M(int64(time.Since(policyEvaluateStartTime)/time.Microsecond)))

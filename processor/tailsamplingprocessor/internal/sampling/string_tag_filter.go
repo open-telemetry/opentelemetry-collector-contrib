@@ -15,6 +15,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/golang/groupcache/lru"
@@ -100,7 +101,7 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, r
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 // The SamplingDecision is made by comparing the attribute values with the matching values,
 // which might be static strings or regular expressions.
-func (saf *stringAttributeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	saf.logger.Debug("Evaluting spans in string-tag filter")
 	trace.Lock()
 	batches := trace.ReceivedBatches
