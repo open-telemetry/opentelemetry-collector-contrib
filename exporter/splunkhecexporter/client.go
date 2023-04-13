@@ -44,14 +44,16 @@ func (s iterState) empty() bool {
 
 // client sends the data to the splunk backend.
 type client struct {
-	config            *Config
-	logger            *zap.Logger
-	wg                sync.WaitGroup
-	telemetrySettings component.TelemetrySettings
-	hecWorker         hecWorker
-	buildInfo         component.BuildInfo
-	heartbeater       *heartbeater
-	bufferPool        bufferPool
+	config             *Config
+	logger             *zap.Logger
+	wg                 sync.WaitGroup
+	telemetrySettings  component.TelemetrySettings
+	hecWorker          hecWorker
+	buildInfo          component.BuildInfo
+	heartbeater        *heartbeater
+	bufferPool         bufferPool
+	failoverEnabled    bool
+	failoverBufferPool bufferPool
 }
 
 var jsonStreamPool = sync.Pool{
@@ -61,12 +63,17 @@ var jsonStreamPool = sync.Pool{
 }
 
 func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) *client {
+	var failoverBufferPool bufferPool
+	if cfg.getFailoverURL() != nil {
+		failoverBufferPool = newBufferPool(maxContentLength, !cfg.DisableCompression)
+	}
 	return &client{
-		config:            cfg,
-		logger:            set.Logger,
-		telemetrySettings: set.TelemetrySettings,
-		buildInfo:         set.BuildInfo,
-		bufferPool:        newBufferPool(maxContentLength, !cfg.DisableCompression),
+		config:             cfg,
+		logger:             set.Logger,
+		telemetrySettings:  set.TelemetrySettings,
+		buildInfo:          set.BuildInfo,
+		bufferPool:         newBufferPool(maxContentLength, !cfg.DisableCompression),
+		failoverBufferPool: failoverBufferPool,
 	}
 }
 
@@ -169,15 +176,30 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 	buf := c.bufferPool.get()
 	defer c.bufferPool.put(buf)
 	is := iterState{}
-	var permanentErrors []error
 
+	var failoverBuf buffer
+	if c.failoverEnabled {
+		failoverBuf = c.failoverBufferPool.get()
+		defer c.bufferPool.put(failoverBuf)
+	}
+
+	var permanentErrors []error
 	for !is.done {
 		buf.Reset()
-		latestIterState, batchPermanentErrors := c.fillLogsBuffer(ld, buf, is)
+		if failoverBuf != nil {
+			failoverBuf.Reset()
+		}
+		latestIterState, batchPermanentErrors := c.fillLogsBuffer(ld, buf, failoverBuf, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
-			if err := c.postEvents(ctx, buf, headers); err != nil {
-				return consumererror.NewLogs(err, subLogs(ld, is))
+			if err := c.postEvents(ctx, buf, headers, false); err != nil {
+				if failoverBuf != nil && !failoverBuf.Empty() {
+					err = c.postEvents(ctx, failoverBuf, headers, true)
+				}
+
+				if err != nil {
+					return consumererror.NewLogs(err, subLogs(ld, is))
+				}
 			}
 		}
 		is = latestIterState
@@ -187,7 +209,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 }
 
 // fillLogsBuffer fills the buffer with Splunk events until the buffer is full or all logs are processed.
-func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterState, []error) {
+func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, failoverBuf buffer, is iterState) (iterState, []error) {
 	var b []byte
 	var permanentErrors []error
 	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
@@ -221,6 +243,12 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 				// Continue adding events to buffer up to capacity.
 				_, err := buf.Write(b)
 				if err == nil {
+					if failoverBuf != nil {
+						_, failoverErr := failoverBuf.Write(b)
+						if failoverErr != nil {
+							c.logger.Info("Error writing failover data", zap.Error(failoverErr))
+						}
+					}
 					continue
 				}
 				if errors.Is(err, errOverCapacity) {
@@ -241,7 +269,7 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 	return iterState{done: true}, permanentErrors
 }
 
-func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterState) (iterState, []error) {
+func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, failoverBuf buffer, is iterState) (iterState, []error) {
 	var permanentErrors []error
 	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
 	defer jsonStreamPool.Put(jsonStream)
@@ -272,6 +300,12 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 				b := tempBuf.Bytes()
 				_, err := buf.Write(b)
 				if err == nil {
+					if failoverBuf != nil {
+						_, failoverErr := failoverBuf.Write(b)
+						if failoverErr != nil {
+							c.logger.Info("Error writing failover data", zap.Error(failoverErr))
+						}
+					}
 					continue
 				}
 				if errors.Is(err, errOverCapacity) {
@@ -292,7 +326,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 	return iterState{done: true}, permanentErrors
 }
 
-func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffer, is iterState) (iterState, []error) {
+func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffer, failoverBuf buffer, is iterState) (iterState, []error) {
 	var permanentErrors []error
 	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
 	defer jsonStreamPool.Put(jsonStream)
@@ -306,6 +340,15 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffe
 			continue
 		}
 		_, err := buf.Write(b)
+		if err == nil {
+			if failoverBuf != nil {
+				_, failoverErr := failoverBuf.Write(b)
+				if failoverErr != nil {
+					c.logger.Info("Error writing failover data", zap.Error(failoverErr))
+				}
+			}
+			continue
+		}
 		if errors.Is(err, errOverCapacity) {
 			if !buf.Empty() {
 				return iterState{
@@ -313,6 +356,7 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffe
 					done:   false,
 				}, permanentErrors
 			}
+
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
 					" content length %d bytes", len(b), c.config.MaxContentLengthMetrics)))
@@ -320,16 +364,15 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffe
 				record: i + 1,
 				done:   i+1 != len(events),
 			}, permanentErrors
-		} else if err != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
-				"error writing the event: %w", err)))
 		}
+		permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
+			"error writing the event: %w", err)))
 	}
 
 	return iterState{done: true}, permanentErrors
 }
 
-func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState) (iterState, []error) {
+func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, failoverBuf buffer, is iterState) (iterState, []error) {
 	var permanentErrors []error
 	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
 	defer jsonStreamPool.Put(jsonStream)
@@ -356,6 +399,13 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState
 				// Continue adding events to buffer up to capacity.
 				_, err = buf.Write(b)
 				if err == nil {
+					// Copy event to failoverBuffer for retry
+					if failoverBuf != nil {
+						_, failoverErr := failoverBuf.Write(b)
+						if failoverErr != nil {
+							c.logger.Info("Error writing failover data", zap.Error(failoverErr))
+						}
+					}
 					continue
 				}
 				if errors.Is(err, errOverCapacity) {
@@ -384,6 +434,12 @@ func (c *client) pushMultiMetricsDataInBatches(ctx context.Context, md pmetric.M
 	defer c.bufferPool.put(buf)
 	is := iterState{}
 
+	var failoverBuf buffer
+	if c.failoverEnabled {
+		failoverBuf = c.failoverBufferPool.get()
+		defer c.bufferPool.put(failoverBuf)
+	}
+
 	var permanentErrors []error
 	var events []*splunk.Event
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
@@ -406,12 +462,20 @@ func (c *client) pushMultiMetricsDataInBatches(ctx context.Context, md pmetric.M
 
 	for !is.done {
 		buf.Reset()
-
-		latestIterState, batchPermanentErrors := c.fillMetricsBufferMultiMetrics(merged, buf, is)
+		if failoverBuf != nil {
+			failoverBuf.Reset()
+		}
+		latestIterState, batchPermanentErrors := c.fillMetricsBufferMultiMetrics(merged, buf, failoverBuf, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
-			if err := c.postEvents(ctx, buf, headers); err != nil {
-				return consumererror.NewMetrics(err, md)
+			if err := c.postEvents(ctx, buf, headers, false); err != nil {
+				if failoverBuf != nil && !failoverBuf.Empty() {
+					err = c.postEvents(ctx, failoverBuf, headers, true)
+				}
+
+				if err != nil {
+					return consumererror.NewMetrics(err, md)
+				}
 			}
 		}
 
@@ -428,15 +492,31 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 	buf := c.bufferPool.get()
 	defer c.bufferPool.put(buf)
 	is := iterState{}
+
+	var failoverBuf buffer
+	if c.failoverEnabled {
+		failoverBuf = c.failoverBufferPool.get()
+		defer c.bufferPool.put(failoverBuf)
+	}
+
 	var permanentErrors []error
 
 	for !is.done {
 		buf.Reset()
-		latestIterState, batchPermanentErrors := c.fillMetricsBuffer(md, buf, is)
+		if failoverBuf != nil {
+			failoverBuf.Reset()
+		}
+		latestIterState, batchPermanentErrors := c.fillMetricsBuffer(md, buf, failoverBuf, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
-			if err := c.postEvents(ctx, buf, headers); err != nil {
-				return consumererror.NewMetrics(err, subMetrics(md, is))
+			if err := c.postEvents(ctx, buf, headers, false); err != nil {
+				if failoverBuf != nil && !failoverBuf.Empty() {
+					err = c.postEvents(ctx, failoverBuf, headers, true)
+				}
+
+				if err != nil {
+					return consumererror.NewMetrics(err, subMetrics(md, is))
+				}
 			}
 		}
 
@@ -450,18 +530,35 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 // The batch content length is restricted to MaxContentLengthMetrics.
 // td traces are parsed to Splunk events.
 func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, headers map[string]string) error {
+	// TODO: Determine if a failover buffer needs to be allocated
 	buf := c.bufferPool.get()
 	defer c.bufferPool.put(buf)
 	is := iterState{}
+
+	var failoverBuf buffer
+	if c.failoverEnabled {
+		failoverBuf = c.failoverBufferPool.get()
+		defer c.bufferPool.put(failoverBuf)
+	}
+
 	var permanentErrors []error
 
 	for !is.done {
 		buf.Reset()
-		latestIterState, batchPermanentErrors := c.fillTracesBuffer(td, buf, is)
+		if failoverBuf != nil {
+			failoverBuf.Reset()
+		}
+		latestIterState, batchPermanentErrors := c.fillTracesBuffer(td, buf, failoverBuf, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
-			if err := c.postEvents(ctx, buf, headers); err != nil {
-				return consumererror.NewTraces(err, subTraces(td, is))
+			if err := c.postEvents(ctx, buf, headers, false); err != nil {
+				if failoverBuf != nil && !failoverBuf.Empty() {
+					err = c.postEvents(ctx, failoverBuf, headers, true)
+				}
+
+				if err != nil {
+					return consumererror.NewTraces(err, subTraces(td, is))
+				}
 			}
 		}
 		is = latestIterState
@@ -470,11 +567,11 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 	return multierr.Combine(permanentErrors...)
 }
 
-func (c *client) postEvents(ctx context.Context, buf buffer, headers map[string]string) error {
+func (c *client) postEvents(ctx context.Context, buf buffer, headers map[string]string, failover bool) error {
 	if err := buf.Close(); err != nil {
 		return err
 	}
-	return c.hecWorker.send(ctx, buf, headers)
+	return c.hecWorker.send(ctx, buf, headers, failover)
 }
 
 // subLogs returns a subset of logs starting from the state.
@@ -626,9 +723,19 @@ func (c *client) start(_ context.Context, host component.Host) (err error) {
 		if err := checkHecHealth(httpClient, healthCheckURL); err != nil {
 			return fmt.Errorf("health check failed: %w", err)
 		}
+
+		failoverHealthCheckURL := c.config.getFailoverURL()
+		failoverHealthCheckURL.Path = c.config.HealthPath
+		if err := checkHecHealth(httpClient, failoverHealthCheckURL); err != nil {
+			c.logger.Warn("failover health check failed:", zap.Error(err))
+			// DO NOT Return an Error if the Failover is now working
+		}
 	}
+
 	url, _ := c.config.getURL()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo)}
+	failoverURL := c.config.getFailoverURL()
+	c.failoverEnabled = failoverURL != nil
+	c.hecWorker = NewDefaultHecWorker(url, failoverURL, c.config.BreakerSettings, httpClient, buildHTTPHeaders(c.config, c.buildInfo), c.logger)
 	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c))
 	return nil
 }

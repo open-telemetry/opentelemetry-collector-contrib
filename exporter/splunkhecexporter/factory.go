@@ -63,6 +63,7 @@ func createDefaultConfig() component.Config {
 		SplunkAppName:           defaultSplunkAppName,
 		RetrySettings:           exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:           exporterhelper.NewDefaultQueueSettings(),
+		BreakerSettings:         NewDefaultBreakerSettings(),
 		DisableCompression:      false,
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,

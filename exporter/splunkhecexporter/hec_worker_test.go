@@ -14,7 +14,7 @@ type mockHecWorker struct {
 	failSend bool
 }
 
-func (m *mockHecWorker) send(_ context.Context, _ buffer, _ map[string]string) error {
+func (m *mockHecWorker) send(_ context.Context, _ buffer, _ map[string]string, _ bool) error {
 	if m.failSend {
 		return errHecSendFailed
 	}

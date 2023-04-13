@@ -87,6 +87,12 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
+				BreakerSettings: BreakerSettings{
+					Enabled:           true,
+					FailureThreshold:  5,
+					ThresholdDuration: 30 * time.Second,
+					Timeout:           5 * time.Second,
+				},
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "mysource",
 					SourceType: "mysourcetype",
