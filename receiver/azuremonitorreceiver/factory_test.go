@@ -50,6 +50,7 @@ func TestNewFactory(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 					},
 					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
+					Services:                      monitorServices,
 					CacheResources:                24 * 60 * 60,
 					CacheResourcesDefinitions:     24 * 60 * 60,
 					MaximumNumberOfMetricsInACall: 20,

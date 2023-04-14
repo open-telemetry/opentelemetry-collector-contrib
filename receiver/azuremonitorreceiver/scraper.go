@@ -78,6 +78,7 @@ func newScraper(conf *Config, settings receiver.CreateSettings) *azureScraper {
 		armClientFunc:                   armresources.NewClient,
 		armMonitorDefinitionsClientFunc: armmonitor.NewMetricDefinitionsClient,
 		armMonitorMetricsClientFunc:     armmonitor.NewMetricsClient,
+		mutex:                           &sync.Mutex{},
 	}
 }
 
@@ -97,6 +98,7 @@ type azureScraper struct {
 	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
 	armMonitorDefinitionsClientFunc func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
 	armMonitorMetricsClientFunc     func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
+	mutex                           *sync.Mutex
 }
 
 type ArmClient interface {
@@ -146,8 +148,6 @@ func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.getResources(ctx)
 	resourcesIdsWithDefinitions := make(chan string)
 
-	mutex := &sync.RWMutex{}
-
 	go func() {
 		defer close(resourcesIdsWithDefinitions)
 		for resourceID := range s.resources {
@@ -156,16 +156,15 @@ func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}()
 
-	var resourceMetricsProgress sync.WaitGroup
-
+	var wg sync.WaitGroup
 	for resourceID := range resourcesIdsWithDefinitions {
-		resourceMetricsProgress.Add(1)
+		wg.Add(1)
 		go func(resourceID string) {
-			defer resourceMetricsProgress.Done()
-			s.getResourceMetricsValues(ctx, resourceID, mutex)
+			defer wg.Done()
+			s.getResourceMetricsValues(ctx, resourceID)
 		}(resourceID)
 	}
-	resourceMetricsProgress.Wait()
+	wg.Wait()
 
 	return s.mb.Emit(
 		metadata.WithAzureMonitorSubscriptionID(s.cfg.SubscriptionID),
@@ -214,12 +213,7 @@ func (s *azureScraper) getResources(ctx context.Context) {
 
 func (s *azureScraper) getResourcesFilter() string {
 	// TODO: switch to parsing services from https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported
-	var resourcesTypeFilter string
-	if len(s.cfg.Services) > 0 {
-		resourcesTypeFilter = strings.Join(s.cfg.Services, "' or resourceType eq '")
-	} else {
-		resourcesTypeFilter = strings.Join(monitorServices, "' or resourceType eq '")
-	}
+	resourcesTypeFilter := strings.Join(s.cfg.Services, "' or resourceType eq '")
 
 	resourcesGroupFilterString := ""
 	if len(s.cfg.ResourceGroups) > 0 {
@@ -261,7 +255,7 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 	res.metricsDefinitionsUpdated = time.Now()
 }
 
-func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID string, mutex *sync.RWMutex) {
+func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID string) {
 	res := *s.resources[resourceID]
 
 	for timeGrain, metricsByGrain := range res.metricsByGrains {
@@ -271,16 +265,16 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 		}
 		metricsByGrain.metricsValuesUpdated = time.Now()
 
-		start, max := 0, s.cfg.MaximumNumberOfMetricsInACall
+		start := 0
 
 		for start < len(metricsByGrain.metrics) {
 
-			end := start + max
+			end := start + s.cfg.MaximumNumberOfMetricsInACall
 			if end > len(metricsByGrain.metrics) {
 				end = len(metricsByGrain.metrics)
 			}
 
-			opts := s.getResourceMetricsValuesRequestOptions(metricsByGrain.metrics, timeGrain, start, end)
+			opts := getResourceMetricsValuesRequestOptions(metricsByGrain.metrics, timeGrain, start, end)
 			start = end
 
 			result, err := s.clientMetricsValues.List(
@@ -298,9 +292,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 				for _, timeserie := range metric.Timeseries {
 					if timeserie.Data != nil {
 						for _, timeserieData := range timeserie.Data {
-							mutex.Lock()
 							s.processTimeserieData(resourceID, metric, timeserieData)
-							mutex.Unlock()
 						}
 					}
 				}
@@ -309,7 +301,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 	}
 }
 
-func (s *azureScraper) getResourceMetricsValuesRequestOptions(metrics []string, timeGrain string, start int, end int) armmonitor.MetricsClientListOptions {
+func getResourceMetricsValuesRequestOptions(metrics []string, timeGrain string, start int, end int) armmonitor.MetricsClientListOptions {
 	resType := strings.Join(metrics[start:end], ",")
 	return armmonitor.MetricsClientListOptions{
 		Metricnames: &resType,
@@ -320,20 +312,24 @@ func (s *azureScraper) getResourceMetricsValuesRequestOptions(metrics []string, 
 }
 
 func (s *azureScraper) processTimeserieData(resourceID string, metric *armmonitor.Metric, timeserieData *armmonitor.MetricValue) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
 	ts := pcommon.NewTimestampFromTime(time.Now())
-	if timeserieData.Average != nil {
-		s.mb.AddDataPoint(resourceID, *metric.Name.Value, "Average", string(*metric.Unit), ts, *timeserieData.Average)
+
+	aggregationsData := []struct {
+		name  string
+		value *float64
+	}{
+		{"Average", timeserieData.Average},
+		{"Count", timeserieData.Count},
+		{"Maximum", timeserieData.Maximum},
+		{"Minimum", timeserieData.Minimum},
+		{"Total", timeserieData.Total},
 	}
-	if timeserieData.Count != nil {
-		s.mb.AddDataPoint(resourceID, *metric.Name.Value, "Count", string(*metric.Unit), ts, *timeserieData.Count)
-	}
-	if timeserieData.Maximum != nil {
-		s.mb.AddDataPoint(resourceID, *metric.Name.Value, "Maximum", string(*metric.Unit), ts, *timeserieData.Maximum)
-	}
-	if timeserieData.Minimum != nil {
-		s.mb.AddDataPoint(resourceID, *metric.Name.Value, "Minimum", string(*metric.Unit), ts, *timeserieData.Minimum)
-	}
-	if timeserieData.Total != nil {
-		s.mb.AddDataPoint(resourceID, *metric.Name.Value, "Total", string(*metric.Unit), ts, *timeserieData.Total)
+	for _, aggregation := range aggregationsData {
+		if aggregation.value != nil {
+			s.mb.AddDataPoint(resourceID, *metric.Name.Value, aggregation.name, string(*metric.Unit), ts, *aggregation.value)
+		}
 	}
 }
