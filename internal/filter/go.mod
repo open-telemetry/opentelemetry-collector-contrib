@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.78.2
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
 	go.opentelemetry.io/collector/semconv v0.78.2
+	go.uber.org/zap v1.24.0
 )
 
 require (
@@ -39,7 +40,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.15.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect

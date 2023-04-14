@@ -14,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermatcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
@@ -22,22 +23,7 @@ import (
 // The logic determining if a span should be processed is based on include and exclude settings.
 // Include properties are checked before exclude settings are checked.
 func NewSkipExpr(mp *filterconfig.MatchConfig) (expr.BoolExpr[ottlspan.TransformContext], error) {
-	var matchers []expr.BoolExpr[ottlspan.TransformContext]
-	inclExpr, err := newExpr(mp.Include)
-	if err != nil {
-		return nil, err
-	}
-	if inclExpr != nil {
-		matchers = append(matchers, expr.Not(inclExpr))
-	}
-	exclExpr, err := newExpr(mp.Exclude)
-	if err != nil {
-		return nil, err
-	}
-	if exclExpr != nil {
-		matchers = append(matchers, exclExpr)
-	}
-	return expr.Or(matchers...), nil
+	return filterottl.NewSpanSkipExprBridge(mp)
 }
 
 // propertiesMatcher allows matching a span against various span properties.
