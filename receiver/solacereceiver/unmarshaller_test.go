@@ -316,7 +316,8 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				})
 				instrumentation := resource.ScopeSpans().AppendEmpty()
 				// first send span
-				for _, span := range validEgressSpans {
+				for _, spanRef := range validEgressSpans {
+					span := spanRef
 					newSpan := instrumentation.Spans().AppendEmpty()
 					span.CopyTo(newSpan)
 				}
