@@ -180,8 +180,8 @@ func (m *opencensusMetrics) recordReceivedSpanMessages() {
 }
 
 // recordReportedSpans increments the metric that records the number of spans reported to the next consumer
-func (m *opencensusMetrics) recordReportedSpans() {
-	stats.Record(context.Background(), m.stats.reportedSpans.M(1))
+func (m *opencensusMetrics) recordReportedSpans(amount int64) {
+	stats.Record(context.Background(), m.stats.reportedSpans.M(amount))
 }
 
 // recordReceiverStatus sets the metric that records the current state of the receiver to the given state

@@ -40,7 +40,9 @@ func TestRecordMetrics(t *testing.T) {
 		{metrics.recordFatalUnmarshallingError, metrics.views.fatalUnmarshallingErrors, metrics.stats.fatalUnmarshallingErrors, 3, 3},
 		{metrics.recordDroppedSpanMessages, metrics.views.droppedSpanMessages, metrics.stats.droppedSpanMessages, 3, 3},
 		{metrics.recordReceivedSpanMessages, metrics.views.receivedSpanMessages, metrics.stats.receivedSpanMessages, 3, 3},
-		{metrics.recordReportedSpans, metrics.views.reportedSpans, metrics.stats.reportedSpans, 3, 3},
+		{func() {
+			metrics.recordReportedSpans(2)
+		}, metrics.views.reportedSpans, metrics.stats.reportedSpans, 3, 6},
 		{func() {
 			metrics.recordReceiverStatus(receiverStateTerminated)
 		}, metrics.views.receiverStatus, metrics.stats.receiverStatus, 3, int(receiverStateTerminated)},
