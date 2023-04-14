@@ -1,4 +1,4 @@
-FROM elasticsearch:7.0.0
+FROM elasticsearch:7.17.9
 
 ENV discovery.type=single-node
 
