@@ -51,3 +51,7 @@ file/flush_interval_5s:
 file/flush_interval_500ms:
   path: ./flushed
   flush_interval: 500ms
+
+file/flush_interval_negative_value:
+  path: ./flushed
+  flush_interval: "-1s"

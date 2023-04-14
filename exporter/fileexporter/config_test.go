@@ -121,6 +121,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id:           component.NewIDWithName(typeStr, "flush_interval_negative_value"),
+			errorMessage: "flush_interval must be larger than zero",
+		},
+		{
 			id:           component.NewIDWithName(typeStr, ""),
 			errorMessage: "path must be non-empty",
 		},

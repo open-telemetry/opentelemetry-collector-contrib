@@ -87,6 +87,9 @@ func (cfg *Config) Validate() error {
 	if cfg.Compression != "" && cfg.Compression != compressionZSTD {
 		return errors.New("compression is not supported")
 	}
+	if cfg.FlushInterval < 0 {
+		return errors.New("flush_interval must be larger than zero")
+	}
 	return nil
 }
 
