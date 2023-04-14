@@ -28,6 +28,7 @@ import (
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/obsreport"
@@ -52,6 +53,7 @@ type transaction struct {
 	externalLabels labels.Labels
 	nodeResource   pcommon.Resource
 	logger         *zap.Logger
+	buildInfo      component.BuildInfo
 	metricAdjuster MetricsAdjuster
 	obsrecv        *obsreport.Receiver
 	// Used as buffer to calculate series ref hash.
@@ -75,6 +77,7 @@ func newTransaction(
 		metricAdjuster: metricAdjuster,
 		externalLabels: externalLabels,
 		logger:         settings.Logger,
+		buildInfo:      settings.BuildInfo,
 		obsrecv:        obsrecv,
 		bufBytes:       make([]byte, 0, 1024),
 		normalizer:     prometheustranslator.NewNormalizer(registry),
@@ -207,7 +210,10 @@ func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, er
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics().AppendEmpty()
 	resource.CopyTo(rms.Resource())
-	metrics := rms.ScopeMetrics().AppendEmpty().Metrics()
+	ils := rms.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName("otelcol/prometheusreceiver")
+	ils.Scope().SetVersion(t.buildInfo.Version)
+	metrics := ils.Metrics()
 
 	for _, mf := range t.families {
 		mf.appendMetric(metrics, t.normalizer)
