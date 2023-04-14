@@ -171,11 +171,11 @@ func TestBuildConfig(t *testing.T) {
 				cfg.Units = []string{"ssh"}
 				cfg.Matches = []MatchConfig{
 					{
-						"-SYSTEMD_UNIT": "dbus.service",
+						"_SYSTEMD_UNIT": "dbus.service",
 					},
 				}
 			},
-			ExpectedError: "cannot use both 'matches' and 'units' configurations together",
+			Expected: []string{"--utc", "--output=json", "--follow", "--unit", "ssh", "--priority", "info", "_SYSTEMD_UNIT=dbus.service"},
 		},
 	}
 

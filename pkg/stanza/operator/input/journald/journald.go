@@ -98,11 +98,6 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 }
 
 func (c Config) buildArgs() ([]string, error) {
-	// validate arguments
-	if len(c.Units) > 0 && len(c.Matches) > 0 {
-		return nil, fmt.Errorf("cannot use both 'matches' and 'units' configurations together")
-	}
-
 	args := make([]string, 0, 10)
 
 	// Export logs in UTC time
