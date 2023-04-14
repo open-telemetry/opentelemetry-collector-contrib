@@ -42,6 +42,7 @@ import (
 
 const (
 	targetMetricName = "target_info"
+	receiverName     = "otelcol/prometheusreceiver"
 )
 
 type transaction struct {
@@ -211,7 +212,7 @@ func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, er
 	rms := md.ResourceMetrics().AppendEmpty()
 	resource.CopyTo(rms.Resource())
 	ils := rms.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/prometheusreceiver")
+	ils.Scope().SetName(receiverName)
 	ils.Scope().SetVersion(t.buildInfo.Version)
 	metrics := ils.Metrics()
 
