@@ -23,7 +23,6 @@ import (
 	"github.com/gocql/gocql"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -91,14 +90,11 @@ func parseCreateLogTableSQL(cfg *Config) string {
 func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
 
-	var serviceName string
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		logs := ld.ResourceLogs().At(i)
 		res := logs.Resource()
 		resAttr := attributesToMap(res.Attributes().AsRaw())
-		if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
-			serviceName = v.Str()
-		}
+
 		for j := 0; j < logs.ScopeLogs().Len(); j++ {
 			rs := logs.ScopeLogs().At(j).LogRecords()
 			for k := 0; k < rs.Len(); k++ {
@@ -113,7 +109,6 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					uint32(r.Flags()),
 					r.SeverityText(),
 					int32(r.SeverityNumber()),
-					serviceName,
 					string(bodyByte),
 					resAttr,
 					logAttr,

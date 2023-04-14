@@ -22,7 +22,6 @@ import (
 	"github.com/gocql/gocql"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -114,10 +113,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		spans := td.ResourceSpans().At(i)
 		res := spans.Resource()
 		resAttr := attributesToMap(res.Attributes().AsRaw())
-		var serviceName string
-		if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
-			serviceName = v.Str()
-		}
+
 		for j := 0; j < spans.ScopeSpans().Len(); j++ {
 			rs := spans.ScopeSpans().At(j).Spans()
 			for k := 0; k < rs.Len(); k++ {
@@ -132,7 +128,6 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					r.TraceState().AsRaw(),
 					r.Name(),
 					traceutil.SpanKindStr(r.Kind()),
-					serviceName,
 					resAttr,
 					spanAttr,
 					r.EndTimestamp().AsTime().Sub(r.StartTimestamp().AsTime()).Nanoseconds(),
