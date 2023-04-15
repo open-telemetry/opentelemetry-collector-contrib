@@ -21,22 +21,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
-type S3Exporter struct {
+type s3Exporter struct {
 	config     *Config
-	dataWriter DataWriter
+	dataWriter dataWriter
 	logger     *zap.Logger
-	marshaler  Marshaler
+	marshaler  marshaler
 }
 
-func NewS3Exporter(config *Config,
-	params exporter.CreateSettings) (*S3Exporter, error) {
+func newS3Exporter(config *Config,
+	params exporter.CreateSettings) (*s3Exporter, error) {
 
 	if config == nil {
 		return nil, errors.New("s3 exporter config is nil")
@@ -44,75 +43,57 @@ func NewS3Exporter(config *Config,
 
 	logger := params.Logger
 
-	marshaler, err := NewMarshaler(config.MarshalerName, logger)
+	m, err := NewMarshaler(config.MarshalerName, logger)
 	if err != nil {
 		return nil, errors.New("unknown marshaler")
 	}
 
-	s3Exporter := &S3Exporter{
+	s3Exporter := &s3Exporter{
 		config:     config,
-		dataWriter: &S3Writer{},
+		dataWriter: &s3Writer{},
 		logger:     logger,
-		marshaler:  marshaler,
+		marshaler:  m,
 	}
 	return s3Exporter, nil
 }
 
-func (e *S3Exporter) Capabilities() consumer.Capabilities {
+func (e *s3Exporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (e *S3Exporter) Start(ctx context.Context, host component.Host) error {
+func (e *s3Exporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *S3Exporter) dumpLabels(md pmetric.Metrics) {
-	rms := md.ResourceMetrics()
-	labels := map[string]string{}
-
-	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-		am := rm.Resource().Attributes()
-		if am.Len() > 0 {
-			am.Range(func(k string, v pcommon.Value) bool {
-				labels[k] = v.AsString()
-				return true
-			})
-		}
-	}
-
-	e.logger.Info("Processing resource metrics", zap.Any("labels", labels))
-}
-
-func (e *S3Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (e *s3Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	buf, err := e.marshaler.MarshalMetrics(md)
 
 	if err != nil {
 		return err
 	}
 
-	return e.dataWriter.WriteBuffer(ctx, buf, e.config, "metrics", e.marshaler.Format())
+	return e.dataWriter.writeBuffer(ctx, buf, e.config, "metrics", e.marshaler.format())
 }
 
-func (e *S3Exporter) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
+func (e *s3Exporter) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
 	buf, err := e.marshaler.MarshalLogs(logs)
 
 	if err != nil {
 		return err
 	}
 
-	return e.dataWriter.WriteBuffer(ctx, buf, e.config, "logs", e.marshaler.Format())
+	return e.dataWriter.writeBuffer(ctx, buf, e.config, "logs", e.marshaler.format())
 }
 
-func (e *S3Exporter) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
+func (e *s3Exporter) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	buf, err := e.marshaler.MarshalTraces(traces)
 	if err != nil {
 		return err
 	}
 
-	return e.dataWriter.WriteBuffer(ctx, buf, e.config, "traces", e.marshaler.Format())
+	return e.dataWriter.writeBuffer(ctx, buf, e.config, "traces", e.marshaler.format())
 }
 
-func (e *S3Exporter) Shutdown(context.Context) error {
+func (e *s3Exporter) Shutdown(context.Context) error {
 	return nil
 }

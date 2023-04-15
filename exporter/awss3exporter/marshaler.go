@@ -23,30 +23,30 @@ import (
 	"go.uber.org/zap"
 )
 
-type Marshaler interface {
+type marshaler interface {
 	MarshalTraces(td ptrace.Traces) ([]byte, error)
 	MarshalLogs(ld plog.Logs) ([]byte, error)
 	MarshalMetrics(md pmetric.Metrics) ([]byte, error)
-	Format() string
+	format() string
 }
 
 var (
 	ErrUnknownMarshaler = errors.New("unknown marshaler")
 )
 
-func NewMarshaler(name string, logger *zap.Logger) (Marshaler, error) {
-	marshaler := &S3Marshaler{logger: logger}
+func NewMarshaler(name string, logger *zap.Logger) (marshaler, error) {
+	marshaler := &s3Marshaler{logger: logger}
 	switch name {
 	case "otlp", "otlp_proto":
 		marshaler.logsMarshaler = &plog.ProtoMarshaler{}
 		marshaler.tracesMarshaler = &ptrace.ProtoMarshaler{}
 		marshaler.metricsMarshaler = &pmetric.ProtoMarshaler{}
-		marshaler.format = "proto"
+		marshaler.fileFormat = "proto"
 	case "otlp_json":
 		marshaler.logsMarshaler = &plog.JSONMarshaler{}
 		marshaler.tracesMarshaler = &ptrace.JSONMarshaler{}
 		marshaler.metricsMarshaler = &pmetric.JSONMarshaler{}
-		marshaler.format = "json"
+		marshaler.fileFormat = "json"
 	default:
 		return nil, ErrUnknownMarshaler
 	}

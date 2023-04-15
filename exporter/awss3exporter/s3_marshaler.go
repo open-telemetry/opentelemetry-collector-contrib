@@ -21,26 +21,26 @@ import (
 	"go.uber.org/zap"
 )
 
-type S3Marshaler struct {
+type s3Marshaler struct {
 	logsMarshaler    plog.Marshaler
 	tracesMarshaler  ptrace.Marshaler
 	metricsMarshaler pmetric.Marshaler
 	logger           *zap.Logger
-	format           string
+	fileFormat       string
 }
 
-func (marshaler *S3Marshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
+func (marshaler *s3Marshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 	return marshaler.tracesMarshaler.MarshalTraces(td)
 }
 
-func (marshaler *S3Marshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
+func (marshaler *s3Marshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	return marshaler.logsMarshaler.MarshalLogs(ld)
 }
 
-func (marshaler *S3Marshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error) {
+func (marshaler *s3Marshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error) {
 	return marshaler.metricsMarshaler.MarshalMetrics(md)
 }
 
-func (marshaler *S3Marshaler) Format() string {
-	return marshaler.format
+func (marshaler *s3Marshaler) format() string {
+	return marshaler.fileFormat
 }

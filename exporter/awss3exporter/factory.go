@@ -16,11 +16,12 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
 )
 
 // NewFactory creates a factory for S3 exporter.
@@ -48,7 +49,7 @@ func createLogsExporter(ctx context.Context,
 	params exporter.CreateSettings,
 	config component.Config) (exporter.Logs, error) {
 
-	s3Exporter, err := NewS3Exporter(config.(*Config), params)
+	s3Exporter, err := newS3Exporter(config.(*Config), params)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func createMetricsExporter(ctx context.Context,
 	params exporter.CreateSettings,
 	config component.Config) (exporter.Metrics, error) {
 
-	s3Exporter, err := NewS3Exporter(config.(*Config), params)
+	s3Exporter, err := newS3Exporter(config.(*Config), params)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +77,7 @@ func createTracesExporter(ctx context.Context,
 	params exporter.CreateSettings,
 	config component.Config) (exporter.Traces, error) {
 
-	s3Exporter, err := NewS3Exporter(config.(*Config), params)
+	s3Exporter, err := newS3Exporter(config.(*Config), params)
 	if err != nil {
 		return nil, err
 	}

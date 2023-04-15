@@ -29,7 +29,7 @@ type TestWriter struct {
 	t *testing.T
 }
 
-func (testWriter *TestWriter) WriteBuffer(ctx context.Context, buf []byte, config *Config, metadata string, format string) error {
+func (testWriter *TestWriter) writeBuffer(ctx context.Context, buf []byte, config *Config, metadata string, format string) error {
 	assert.Equal(testWriter.t, testLogs, buf)
 	return nil
 }
@@ -41,9 +41,9 @@ func getTestLogs(tb testing.TB) plog.Logs {
 	return logs
 }
 
-func getLogExporter(t *testing.T) *S3Exporter {
+func getLogExporter(t *testing.T) *s3Exporter {
 	marshaler, _ := NewMarshaler("otlp_json", zap.NewNop())
-	exporter := &S3Exporter{
+	exporter := &s3Exporter{
 		config:     createDefaultConfig().(*Config),
 		dataWriter: &TestWriter{t},
 		logger:     zap.NewNop(),
