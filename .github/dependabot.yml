@@ -2,16 +2,6 @@
 
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
@@ -1099,6 +1089,21 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/windowseventlogreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/windowsperfcountersreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/zipkinreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/zookeeperreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"
