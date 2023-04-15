@@ -1,7 +1,7 @@
-type: filestatsreceiver
+name: filestatsreceiver
 
 status:
-  class: receiver
+  type: receiver
   stability: development
   pipelines: [metrics]
   distributions: [contrib]

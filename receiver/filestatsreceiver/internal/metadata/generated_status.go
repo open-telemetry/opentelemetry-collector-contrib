@@ -6,7 +6,4 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-const (
-	Type      = "filestatsreceiver"
-	Stability = component.StabilityLevelDevelopment
-)
+const Stability = component.StabilityLevelDevelopment
