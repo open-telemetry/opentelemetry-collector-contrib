@@ -59,7 +59,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 		s.metricsBuilder.RecordFileSizeDataPoint(now, fileinfo.Size())
 		s.metricsBuilder.RecordFileMtimeDataPoint(now, fileinfo.ModTime().Unix())
-		collectStats(now, fileinfo, s.metricsBuilder)
+		collectStats(now, fileinfo, s.metricsBuilder, s.logger)
 		s.metricsBuilder.EmitForResource(metadata.WithFileName(fileinfo.Name()), metadata.WithFilePath(path))
 	}
 

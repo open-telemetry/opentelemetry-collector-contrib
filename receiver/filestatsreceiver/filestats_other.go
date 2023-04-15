@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
-// +build windows
+//go:build !darwin && !freebsd && !dragonfly && !netbsd && !openbsd && !linux && !solaris && !windows
+// +build !darwin,!freebsd,!dragonfly,!netbsd,!openbsd,!linux,!solaris,!windows
 
 package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 
 import (
 	"os"
-	"syscall"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
@@ -28,9 +27,5 @@ import (
 )
 
 func collectStats(now pcommon.Timestamp, fileinfo os.FileInfo, metricsBuilder *metadata.MetricsBuilder, logger *zap.Logger) {
-	stat := fileinfo.Sys().(*syscall.Win32FileAttributeData)
-	atime := stat.LastAccessTime.Seconds()
-	ctime := stat.LastWriteTime.Seconds()
-	metricsBuilder.RecordFileAtimeDataPoint(now, atime)
-	metricsBuilder.RecordFileCtimeDataPoint(now, ctime, fileinfo.Mode().Perm().String())
+	logger.Warn("Cannot collect access and creation time for this arch")
 }

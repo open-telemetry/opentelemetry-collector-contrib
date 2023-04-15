@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
-// +build !windows
+//go:build darwin || freebsd || dragonfly || netbsd || openbsd
+// +build darwin freebsd dragonfly netbsd openbsd
 
 package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 
@@ -22,11 +22,12 @@ import (
 	"syscall"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )
 
-func collectStats(now pcommon.Timestamp, fileinfo os.FileInfo, metricsBuilder *metadata.MetricsBuilder) {
+func collectStats(now pcommon.Timestamp, fileinfo os.FileInfo, metricsBuilder *metadata.MetricsBuilder, logger *zap.Logger) {
 	stat := fileinfo.Sys().(*syscall.Stat_t)
 	atime := stat.Atimespec.Sec
 	ctime := stat.Ctimespec.Sec

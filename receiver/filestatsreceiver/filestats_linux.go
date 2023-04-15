@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
-// +build windows
+//go:build linux || solaris
+// +build linux solaris
 
 package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 
@@ -28,9 +28,9 @@ import (
 )
 
 func collectStats(now pcommon.Timestamp, fileinfo os.FileInfo, metricsBuilder *metadata.MetricsBuilder, logger *zap.Logger) {
-	stat := fileinfo.Sys().(*syscall.Win32FileAttributeData)
-	atime := stat.LastAccessTime.Seconds()
-	ctime := stat.LastWriteTime.Seconds()
+	stat := fileinfo.Sys().(*syscall.Stat_t)
+	atime := stat.Atim.Sec
+	ctime := stat.Ctim.Sec
 	metricsBuilder.RecordFileAtimeDataPoint(now, atime)
 	metricsBuilder.RecordFileCtimeDataPoint(now, ctime, fileinfo.Mode().Perm().String())
 }
