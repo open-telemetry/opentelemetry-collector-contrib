@@ -1,4 +1,4 @@
-// Copyright 2022 OpenTelemetry Authors
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,10 +30,4 @@ type Config struct {
 	MarshalerName string           `mapstructure:"marshaler_name"`
 
 	FileFormat string `mapstructure:"file_format"`
-	BatchCount int64  `mapstructure:"batch_count"`
-
-	// ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes.
-	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
-	// If enabled, all the resource attributes will be converted to metric labels by default.
-	// exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
 }

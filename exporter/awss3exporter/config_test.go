@@ -1,4 +1,4 @@
-// Copyright 2021 OpenTelemetry Authors
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,7 +44,6 @@ func TestLoadConfig(t *testing.T) {
 				S3Partition: "minute",
 			},
 			MarshalerName: "otlp_json",
-			BatchCount:    1000,
 		},
 	)
 }
@@ -72,7 +71,6 @@ func TestConfig(t *testing.T) {
 				S3Partition: "minute",
 			},
 			MarshalerName: "otlp_json",
-			BatchCount:    1000,
 		},
 	)
 }

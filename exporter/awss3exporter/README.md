@@ -24,7 +24,6 @@ The following exporter configuration parameters are supported.
 | `s3_bucket`            | S3 bucket                                                                          |         |
 | `s3_prefix`            | prefix for the S3 key (root directory inside bucket).                              |         |
 | `s3_partition`         | time granularity of S3 key: hour or minute                                         |"minute" |
-| `batch_count`          | max backoff seconds before next retry                                              |  1000   |
 | `file_prefix`          | file prefix defined by user                                                        |         |
 | `marshaler_name`       | marshaler used to produce output data otlp_json or otlp_proto                      |         |
 
