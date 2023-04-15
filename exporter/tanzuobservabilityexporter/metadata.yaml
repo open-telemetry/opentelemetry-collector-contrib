@@ -1,7 +1,7 @@
-name: tanzuobservability
+type: tanzuobservability
 
 status:
-  type: exporter
+  class: exporter
   stability: beta
   pipelines: [traces, metrics]
   distributions: [contrib]
