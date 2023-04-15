@@ -35,7 +35,7 @@ func (testWriter *TestWriter) WriteBuffer(ctx context.Context, buf []byte, confi
 }
 
 func getTestLogs(tb testing.TB) plog.Logs {
-	logsMarshaler := plog.NewJSONUnmarshaler()
+	logsMarshaler := plog.JSONUnmarshaler{}
 	logs, err := logsMarshaler.UnmarshalLogs(testLogs)
 	assert.NoError(tb, err, "Can't unmarshal testing logs data -> %s", err)
 	return logs
@@ -44,7 +44,7 @@ func getTestLogs(tb testing.TB) plog.Logs {
 func getLogExporter(t *testing.T) *S3Exporter {
 	marshaler, _ := NewMarshaler("otlp_json", zap.NewNop())
 	exporter := &S3Exporter{
-		config:     createDefaultConfig(),
+		config:     createDefaultConfig().(*Config),
 		dataWriter: &TestWriter{t},
 		logger:     zap.NewNop(),
 		marshaler:  marshaler,

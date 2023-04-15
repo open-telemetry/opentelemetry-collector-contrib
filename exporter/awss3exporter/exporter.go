@@ -35,10 +35,6 @@ type S3Exporter struct {
 	marshaler  Marshaler
 }
 
-var logsMarshaler = &plog.JSONMarshaler{}
-var traceMarshaler = &ptrace.JSONMarshaler{}
-var metricMarshaler = &pmetric.JSONMarshaler{}
-
 func NewS3Exporter(config *Config,
 	params exporter.CreateSettings) (*S3Exporter, error) {
 
