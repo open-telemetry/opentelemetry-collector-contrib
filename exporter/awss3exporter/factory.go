@@ -27,7 +27,7 @@ import (
 // NewFactory creates a factory for S3 exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		metadata.Type,
+		"awss3",
 		createDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.Stability),
 		exporter.WithLogs(createLogsExporter, metadata.Stability),

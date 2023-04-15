@@ -22,8 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -31,13 +29,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[metadata.Type] = factory
+	factories.Exporters["awss3"] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "default.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID(metadata.Type)].(*Config)
+	e := cfg.Exporters[component.NewID("awss3")].(*Config)
 	assert.Equal(t, e,
 		&Config{
 			S3Uploader: S3UploaderConfig{
@@ -61,7 +59,7 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID(metadata.Type)].(*Config)
+	e := cfg.Exporters[component.NewID("awss3")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{

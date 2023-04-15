@@ -6,7 +6,4 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-const (
-	Type      = "awss3"
-	Stability = component.StabilityLevelAlpha
-)
+const Stability = component.StabilityLevelAlpha
