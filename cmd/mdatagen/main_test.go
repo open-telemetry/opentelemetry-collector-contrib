@@ -55,9 +55,9 @@ metrics:
 		{
 			name: "no metrics but status present",
 			yml: `
-name: metricreceiver
+type: metricreceiver
 status:
-  type: exporter
+  class: exporter
   stability: beta
   pipelines: [metrics, logs, traces]
   distributions: [contrib]
