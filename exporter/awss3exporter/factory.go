@@ -16,27 +16,21 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "awss3"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
-)
-
 // NewFactory creates a factory for S3 exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability),
-		exporter.WithLogs(createLogsExporter, stability),
-		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithTraces(createTracesExporter, metadata.Stability),
+		exporter.WithLogs(createLogsExporter, metadata.Stability),
+		exporter.WithMetrics(createMetricsExporter, metadata.Stability),
 	)
 }
 
