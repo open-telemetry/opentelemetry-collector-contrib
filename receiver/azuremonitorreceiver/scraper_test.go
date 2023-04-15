@@ -16,6 +16,7 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -31,6 +32,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
@@ -210,7 +213,19 @@ func TestAzureScraperScrape(t *testing.T) {
 				t.Errorf("azureScraper.scrape() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			require.EqualValues(t, 31, metrics.MetricCount(), "Scraper should have return expected number of metrics")
+
+			expectedFile := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
+
+			expectedMetrics, err := golden.ReadMetrics(expectedFile)
+			require.NoError(t, err)
+
+			require.NoError(t, pmetrictest.CompareMetrics(
+				expectedMetrics,
+				metrics,
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreMetricsOrder(),
+			))
 		})
 	}
 }
@@ -244,7 +259,8 @@ func getResourcesMockData() []armresources.ClientListResponse {
 }
 
 func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.MetricDefinitionsClientListResponse) {
-	name1, name2, name3, timeGrain1, timeGrain2 := "metric1", "metric2", "metric3", "PT1M", "PT1H"
+	name1, name2, name3, name4, name5, name6, name7, timeGrain1, timeGrain2 := "metric1", "metric2",
+		"metric3", "metric4", "metric5", "metric6", "metric7", "PT1M", "PT1H"
 
 	counters := map[string]int{
 		"resourceId1": 0,
@@ -297,7 +313,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 					Value: []*armmonitor.MetricDefinition{
 						{
 							Name: &armmonitor.LocalizableString{
-								Value: &name1,
+								Value: &name4,
 							},
 							MetricAvailabilities: []*armmonitor.MetricAvailability{
 								{
@@ -307,7 +323,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 						},
 						{
 							Name: &armmonitor.LocalizableString{
-								Value: &name2,
+								Value: &name5,
 							},
 							MetricAvailabilities: []*armmonitor.MetricAvailability{
 								{
@@ -317,7 +333,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 						},
 						{
 							Name: &armmonitor.LocalizableString{
-								Value: &name3,
+								Value: &name6,
 							},
 							MetricAvailabilities: []*armmonitor.MetricAvailability{
 								{
@@ -335,7 +351,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 					Value: []*armmonitor.MetricDefinition{
 						{
 							Name: &armmonitor.LocalizableString{
-								Value: &name2,
+								Value: &name7,
 							},
 							MetricAvailabilities: []*armmonitor.MetricAvailability{
 								{
@@ -352,7 +368,8 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 }
 
 func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
-	name1, name2, name3 := "metric1", "metric2", "metric3"
+	name1, name2, name3, name4, name5, name6, name7 := "metric1", "metric2", "metric3",
+		"metric4", "metric5", "metric6", "metric7"
 	var unit1 armmonitor.MetricUnit = "unit1"
 	var value1 float64 = 1
 
@@ -429,12 +446,12 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 			},
 		},
 		"resourceId2": {
-			name1: {
+			name4: {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
 						{
 							Name: &armmonitor.LocalizableString{
-								Value: &name1,
+								Value: &name4,
 							},
 							Unit: &unit1,
 							Timeseries: []*armmonitor.TimeSeriesElement{
@@ -454,12 +471,12 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 					},
 				},
 			},
-			strings.Join([]string{name2, name3}, ","): {
+			strings.Join([]string{name5, name6}, ","): {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
 						{
 							Name: &armmonitor.LocalizableString{
-								Value: &name2,
+								Value: &name5,
 							},
 							Unit: &unit1,
 							Timeseries: []*armmonitor.TimeSeriesElement{
@@ -478,7 +495,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 						},
 						{
 							Name: &armmonitor.LocalizableString{
-								Value: &name3,
+								Value: &name6,
 							},
 							Unit: &unit1,
 							Timeseries: []*armmonitor.TimeSeriesElement{
@@ -500,12 +517,12 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 			},
 		},
 		"resourceId3": {
-			name2: {
+			name7: {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
 						{
 							Name: &armmonitor.LocalizableString{
-								Value: &name2,
+								Value: &name7,
 							},
 							Unit: &unit1,
 							Timeseries: []*armmonitor.TimeSeriesElement{

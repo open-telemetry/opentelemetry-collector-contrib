@@ -1,0 +1,355 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: azuremonitor.subscription_id
+          value:
+            stringValue: ""
+        - key: azuremonitor.tenant_id
+          value:
+            stringValue: ""
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300112850"
+            name: azure_metric6_total
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300096510"
+            name: azure_metric4_average
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300096510"
+            name: azure_metric4_minimum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300254210"
+            name: azure_metric2_average
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300254210"
+            name: azure_metric2_count
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300254210"
+            name: azure_metric2_minimum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300106384"
+            name: azure_metric5_average
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300106384"
+            name: azure_metric5_maximum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300106384"
+            name: azure_metric5_total
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300112850"
+            name: azure_metric6_maximum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300254210"
+            name: azure_metric2_total
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300260156"
+            name: azure_metric3_total
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300096510"
+            name: azure_metric4_total
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300112850"
+            name: azure_metric6_average
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300225721"
+            name: azure_metric1_average
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300225721"
+            name: azure_metric1_minimum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300225721"
+            name: azure_metric1_total
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300260156"
+            name: azure_metric3_average
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300260156"
+            name: azure_metric3_minimum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300112850"
+            name: azure_metric6_count
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId3
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300129664"
+            name: azure_metric7_count
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300254210"
+            name: azure_metric2_maximum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300260156"
+            name: azure_metric3_maximum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300096510"
+            name: azure_metric4_count
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300106384"
+            name: azure_metric5_minimum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300260156"
+            name: azure_metric3_count
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300096510"
+            name: azure_metric4_maximum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300106384"
+            name: azure_metric5_count
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId2
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300112850"
+            name: azure_metric6_minimum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300225721"
+            name: azure_metric1_count
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: resourceId1
+                  startTimeUnixNano: "1681543178299934413"
+                  timeUnixNano: "1681543178300225721"
+            name: azure_metric1_maximum
+            unit: unit1
+        scope:
+          name: otelcol/azuremonitorreceiver
+          version: latest
