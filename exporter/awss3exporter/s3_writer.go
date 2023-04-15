@@ -58,8 +58,8 @@ func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix str
 }
 
 func (s3writer *s3Writer) writeBuffer(ctx context.Context, buf []byte, config *Config, metadata string, format string) error {
-	time := time.Now()
-	key := getS3Key(time,
+	now := time.Now()
+	key := getS3Key(now,
 		config.S3Uploader.S3Prefix, config.S3Uploader.S3Partition,
 		config.S3Uploader.FilePrefix, metadata, format)
 

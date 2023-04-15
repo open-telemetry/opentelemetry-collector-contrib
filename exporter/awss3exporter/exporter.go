@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -61,10 +60,6 @@ func (e *s3Exporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (e *s3Exporter) Start(ctx context.Context, host component.Host) error {
-	return nil
-}
-
 func (e *s3Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	buf, err := e.marshaler.MarshalMetrics(md)
 
@@ -92,8 +87,4 @@ func (e *s3Exporter) ConsumeTraces(ctx context.Context, traces ptrace.Traces) er
 	}
 
 	return e.dataWriter.writeBuffer(ctx, buf, e.config, "traces", e.marshaler.format())
-}
-
-func (e *s3Exporter) Shutdown(context.Context) error {
-	return nil
 }
