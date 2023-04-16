@@ -72,6 +72,7 @@ func Test_Scrape_All(t *testing.T) {
 	s := newScraper(metricsBuilder, cfg, zap.NewNop())
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
+	require.Equal(t, 0, metrics.ResourceMetrics().Len())
 	logFile := filepath.Join(tmpDir, "my.log")
 	err = os.WriteFile(logFile, []byte("something"), 0600)
 	t.Cleanup(func() {
