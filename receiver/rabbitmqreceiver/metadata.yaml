@@ -1,4 +1,4 @@
-name: rabbitmqreceiver
+type: rabbitmqreceiver
 
 resource_attributes:
   rabbitmq.queue.name:

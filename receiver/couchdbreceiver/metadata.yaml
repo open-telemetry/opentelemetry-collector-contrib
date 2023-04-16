@@ -1,4 +1,4 @@
-name: couchdbreceiver
+type: couchdbreceiver
 
 resource_attributes:
   couchdb.node.name:

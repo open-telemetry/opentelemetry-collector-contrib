@@ -1,5 +1,5 @@
-# Required: name of the receiver.
-name:
+# Required: type of the receiver.
+type:
 
 # Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
 # This attribute should be set for metrics compliant with OTel Semantic Conventions.
