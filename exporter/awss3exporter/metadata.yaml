@@ -1,7 +1,7 @@
-name: awss3
+type: awss3
 
 status:
-  type: exporter
+  class: exporter
   stability: alpha
   pipelines: [logs, metrics, traces]
   distributions: [contrib]
