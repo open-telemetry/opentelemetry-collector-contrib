@@ -15,12 +15,23 @@
 package batch_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 )
+
+func TestBatchRecordsCapacity(t *testing.T) {
+	t.Parallel()
+
+	b := batch.New()
+	assert.NotNil(t, b, "Must not be nil")
+
+	recordsCap := reflect.ValueOf(b).Elem().FieldByName("records").Cap()
+	assert.Equal(t, batch.MaxBatchedRecords, recordsCap, "Must have the expected capacity")
+}
 
 func TestBatchingMessages(t *testing.T) {
 	t.Parallel()
