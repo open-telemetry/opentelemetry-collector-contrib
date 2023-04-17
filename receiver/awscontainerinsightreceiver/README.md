@@ -12,7 +12,7 @@ AWS Container Insights Receiver (`awscontainerinsightreceiver`) is an AWS specif
 and summarize metrics and logs from your containerized applications and microservices. Data are collected as as performance log events 
 using [embedded metric format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format.html). From the EMF data, Amazon CloudWatch can create the aggregated CloudWatch metrics at the cluster, node, pod, task, and service level.
 
-CloudWatch Container Insights has been supported by [ECS Agent](https://github.com/aws/amazon-ecs-agent) and [CloudWatch Agent](https://github.com/aws/amazon-cloudwatch-agent) to collect infrastructure metrics for many resources such as such as CPU, memory, disk, and network. To migrate existing customers to use OpenTelemetry, AWS Container Insights Receiver (together with CloudWatch EMF Exporter) aims to support the same CloudWatch Container Insights experience for the following platforms:  
+CloudWatch Container Insights has been supported by [ECS Agent](https://github.com/aws/amazon-ecs-agent) and [CloudWatch Agent](https://github.com/aws/amazon-cloudwatch-agent) to collect infrastructure metrics for many resources such as CPU, memory, disk, and network. To migrate existing customers to use OpenTelemetry, AWS Container Insights Receiver (together with CloudWatch EMF Exporter) aims to support the same CloudWatch Container Insights experience for the following platforms:  
   * Amazon ECS 
   * Amazon EKS
   * Kubernetes platforms on Amazon EC2
@@ -54,6 +54,10 @@ The "PodName" attribute is set based on the name of the relevant controllers lik
 **add_full_pod_name_metric_label (optional)**
 
 The "FullPodName" attribute is the pod name including suffix. If false FullPodName label is not added. The default value is false
+
+**cluster_name (optional)**
+
+"ClusterName" can be used to explicitly provide the cluster's name for EKS/ECS NOT on EC2 since it's not possible to auto-detect it using EC2 tags.
 
 ## Sample configuration for Container Insights 
 This is a sample configuration for AWS Container Insights using the `awscontainerinsightreceiver` and `awsemfexporter` for an EKS cluster:

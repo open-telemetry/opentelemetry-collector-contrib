@@ -45,6 +45,9 @@ const (
 
 	// Don't tag pod full name by default
 	defaultAddFullPodNameMetricLabel = false
+
+	// Rely on EC2 tags to auto-detect cluster name by default
+	defaultClusterName = ""
 )
 
 // NewFactory creates a factory for AWS container insight receiver
@@ -63,6 +66,7 @@ func createDefaultConfig() component.Config {
 		TagService:                defaultTagService,
 		PrefFullPodName:           defaultPrefFullPodName,
 		AddFullPodNameMetricLabel: defaultAddFullPodNameMetricLabel,
+		ClusterName:               defaultClusterName,
 	}
 }
 

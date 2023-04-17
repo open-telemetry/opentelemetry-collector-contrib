@@ -33,6 +33,7 @@ type Info struct {
 	awsSession            *session.Session
 	refreshInterval       time.Duration
 	containerOrchestrator string
+	clusterName           string
 	instanceIDReadyC      chan bool // close of this channel indicates instance ID is ready
 	instanceIPReadyC      chan bool // close of this channel indicates instance Ip is ready
 
@@ -51,10 +52,16 @@ type Info struct {
 	ec2TagsCreator      func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
 }
 
-type machineInfoOption func(*Info)
+type Option func(*Info)
+
+func WithClusterName(name string) Option {
+	return func(info *Info) {
+		info.clusterName = name
+	}
+}
 
 // NewInfo creates a new Info struct
-func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, options ...machineInfoOption) (*Info, error) {
+func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, options ...Option) (*Info, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	mInfo := &Info{
 		cancel:           cancel,
@@ -156,6 +163,9 @@ func (m *Info) GetEBSVolumeID(devName string) string {
 
 // GetClusterName returns the cluster name associated with the host
 func (m *Info) GetClusterName() string {
+	if m.clusterName != "" {
+		return m.clusterName
+	}
 	if m.ec2Tags != nil {
 		return m.ec2Tags.getClusterName()
 	}

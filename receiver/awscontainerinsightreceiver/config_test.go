@@ -48,6 +48,16 @@ func TestLoadConfig(t *testing.T) {
 				PrefFullPodName:       false,
 			},
 		},
+		{
+			id: component.NewIDWithName(typeStr, "cluster_name"),
+			expected: &Config{
+				CollectionInterval:    60 * time.Second,
+				ContainerOrchestrator: "eks",
+				TagService:            true,
+				PrefFullPodName:       false,
+				ClusterName:           "override_cluster",
+			},
+		},
 	}
 
 	for _, tt := range tests {
