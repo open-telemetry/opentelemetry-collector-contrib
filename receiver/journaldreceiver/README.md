@@ -91,3 +91,4 @@ which is going to effectively retrieve all entries which matches the following s
   - `_SYSTEMD_UNIT` is `kubelet` and `_UID` is `1000`
 
 Note, that if you use some fields which aren't associated with an entry, the entry will always be filtered out.
+Also be careful about using unit name in `matches` configuration, as for the above example, none of the entry for `ssh` and `systemd` is going to be retrieved.
