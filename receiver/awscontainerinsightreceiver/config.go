@@ -39,4 +39,9 @@ type Config struct {
 	// If false FullPodName label is not added
 	// The default value is false
 	AddFullPodNameMetricLabel bool `mapstructure:"add_full_pod_name_metric_label"`
+
+	// The "LeaderLockName" is an optional attribute to override the name of the locking resource (e.g. config map) used during the leader
+	// election process for EKS Container Insights. The elected leader is responsible for scraping cluster level metrics.
+	// The default value is "otel-container-insight-clusterleader".
+	LeaderLockName string `mapstructure:"leader_lock_name"`
 }

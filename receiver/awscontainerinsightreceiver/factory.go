@@ -45,6 +45,9 @@ const (
 
 	// Don't tag pod full name by default
 	defaultAddFullPodNameMetricLabel = false
+
+	// Default locking resource name during EKS leader election
+	defaultLeaderLockName = "otel-container-insight-clusterleader"
 )
 
 // NewFactory creates a factory for AWS container insight receiver
@@ -63,6 +66,7 @@ func createDefaultConfig() component.Config {
 		TagService:                defaultTagService,
 		PrefFullPodName:           defaultPrefFullPodName,
 		AddFullPodNameMetricLabel: defaultAddFullPodNameMetricLabel,
+		LeaderLockName:            defaultLeaderLockName,
 	}
 }
 
