@@ -41,6 +41,12 @@ func createDefaultConfig() component.Config {
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		DomainSettings: configgrpc.GRPCClientSettings{
+			Compression: configcompression.Gzip,
+		},
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint: "https://",
+		},
 		// Traces GRPC client
 		Traces: configgrpc.GRPCClientSettings{
 			Endpoint:    "https://",
