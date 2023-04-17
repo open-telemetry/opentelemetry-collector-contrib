@@ -7,7 +7,7 @@ require (
 	github.com/denisenkom/go-mssqldb v0.12.2
 	github.com/docker/go-connections v0.4.0
 	github.com/go-sql-driver/mysql v1.7.0
-	github.com/lib/pq v1.10.7
+	github.com/lib/pq v1.10.8
 	github.com/sijms/go-ora/v2 v2.6.15
 	github.com/snowflakedb/gosnowflake v1.6.18
 	github.com/stretchr/testify v1.8.2
