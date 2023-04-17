@@ -135,7 +135,7 @@ func (er *eventReceiver) Shutdown(ctx context.Context) error {
 }
 
 // handle incoming request from webhook. On success returns a 200 response code to the webhook
-func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
 	ctx = er.obsrecv.StartLogsOp(ctx)
 
