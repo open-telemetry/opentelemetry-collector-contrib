@@ -29,8 +29,8 @@ import (
 
 func collectStats(now pcommon.Timestamp, fileinfo os.FileInfo, metricsBuilder *metadata.MetricsBuilder, logger *zap.Logger) {
 	stat := fileinfo.Sys().(*syscall.Win32FileAttributeData)
-	atime := stat.LastAccessTime.Seconds()
-	ctime := stat.LastWriteTime.Seconds()
+	atime := stat.LastAccessTime.Nanoseconds() / int64(time.Second)
+	ctime := stat.LastWriteTime.Nanoseconds() / int64(time.Second)
 	metricsBuilder.RecordFileAtimeDataPoint(now, atime)
 	metricsBuilder.RecordFileCtimeDataPoint(now, ctime, fileinfo.Mode().Perm().String())
 }
