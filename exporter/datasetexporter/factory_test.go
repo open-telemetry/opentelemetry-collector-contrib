@@ -151,7 +151,7 @@ func createExporterTests() []CreateTest {
 	return []CreateTest{
 		{
 			name: "valid",
-			config: Config{
+			config: &Config{
 				DatasetURL:      "https://app.eu.scalyr.com",
 				APIKey:          "key-lib",
 				MaxDelayMs:      "12345",

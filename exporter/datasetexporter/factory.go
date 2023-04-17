@@ -48,7 +48,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
-	cfg := config.(Config)
+	cfg := config.(*Config)
 	e, err := getDatasetExporter("logs", cfg, set.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)
@@ -66,7 +66,7 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 }
 
 func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
-	cfg := config.(Config)
+	cfg := config.(*Config)
 	e, err := getDatasetExporter("metrics", cfg, set.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)
@@ -84,7 +84,7 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 }
 
 func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
-	cfg := config.(Config)
+	cfg := config.(*Config)
 	e, err := getDatasetExporter("traces", cfg, set.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)

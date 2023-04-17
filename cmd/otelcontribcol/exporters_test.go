@@ -21,6 +21,7 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -322,6 +323,15 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["datadog"].CreateDefaultConfig().(*datadogexporter.Config)
 				cfg.API.Key = "cutedogsgotoheaven"
+				return cfg
+			},
+		},
+		{
+			exporter: "dataset",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["dataset"].CreateDefaultConfig().(*datasetexporter.Config)
+				cfg.DatasetURL = "https://" + endpoint
+				cfg.APIKey = "secret-key"
 				return cfg
 			},
 		},
