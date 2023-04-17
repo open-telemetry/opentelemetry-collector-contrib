@@ -80,9 +80,9 @@ func createExporterCreateSettings() exporter.CreateSettings {
 
 func TestInitExporter(t *testing.T) {
 	_, err := initExporter(&Config{Endpoint: "test.com",
-		Protocol: "tcp",
+		Network:  "tcp",
 		Port:     514,
-		Format:   "rfc5424"}, createExporterCreateSettings())
+		Protocol: "rfc5424"}, createExporterCreateSettings())
 	assert.NoError(t, err)
 }
 
@@ -144,7 +144,7 @@ func prepareExporterTest(t *testing.T, cfg *Config, invalidExporter bool) *expor
 
 func createTestConfig() *Config {
 	config := createDefaultConfig().(*Config)
-	config.Protocol = "tcp"
+	config.Network = "tcp"
 	config.TLSSetting.Insecure = true
 	return config
 }

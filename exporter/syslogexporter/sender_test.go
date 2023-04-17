@@ -26,7 +26,7 @@ import (
 
 func TestFormatRFC5424(t *testing.T) {
 
-	s := sender{format: formatRFC5424Str}
+	s := sender{protocol: protocolRFC5424Str}
 
 	msg := map[string]any{
 		"timestamp":     "2003-08-24T05:14:15.000003-07:00",

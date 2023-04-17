@@ -5,14 +5,14 @@ extensions:
 
 exporters:
   syslog:
-    protocol: tcp
+    network: tcp
     port: 514
     endpoint: 127.0.0.1
     tls:
       ca_file: certs/servercert.pem
       cert_file: certs/cert.pem
       key_file: certs/key.pem
-    format: rfc5424
+    protocol: rfc5424
 
     # for below described queueing and retry related configuration please refer to:
     # https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#configuration

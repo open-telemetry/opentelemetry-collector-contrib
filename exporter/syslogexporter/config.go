@@ -26,8 +26,8 @@ import (
 var (
 	errUnsupportedPort     = errors.New("unsupported port: port is required, must be in the range 1-65535")
 	errInvalidEndpoint     = errors.New("invalid endpoint: endpoint is required but it is not configured")
-	errUnsupportedProtocol = errors.New("unsupported protocol: protocol is required, only tcp/udp supported")
-	errUnsupportedFormat   = errors.New("unsupported format: Only rfc5424 and rfc3164 supported")
+	errUnsupportedNetwork  = errors.New("unsupported network: network is required, only tcp/udp supported")
+	errUnsupportedProtocol = errors.New("unsupported protocol: Only rfc5424 and rfc3164 supported")
 )
 
 // Config defines configuration for Syslog exporter.
@@ -36,11 +36,12 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// Syslog server port
 	Port int `mapstructure:"port"`
-	// Protocol for syslog communication
+	// Network for syslog communication
 	// options: tcp, udp
+	Network string `mapstructure:"network"`
+	// Protocol of syslog messages
+	// options: rfc5424, rfc3164
 	Protocol string `mapstructure:"protocol"`
-	// Format of syslog messages
-	Format string `mapstructure:"format"`
 
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
@@ -61,15 +62,15 @@ func (cfg *Config) Validate() error {
 		invalidFields = append(invalidFields, errInvalidEndpoint)
 	}
 
-	if strings.ToLower(cfg.Protocol) != "tcp" && strings.ToLower(cfg.Protocol) != "udp" {
-		invalidFields = append(invalidFields, errUnsupportedProtocol)
+	if strings.ToLower(cfg.Network) != "tcp" && strings.ToLower(cfg.Network) != "udp" {
+		invalidFields = append(invalidFields, errUnsupportedNetwork)
 	}
 
-	switch cfg.Format {
-	case formatRFC3164Str:
-	case formatRFC5424Str:
+	switch cfg.Protocol {
+	case protocolRFC3164Str:
+	case protocolRFC5424Str:
 	default:
-		invalidFields = append(invalidFields, errUnsupportedFormat)
+		invalidFields = append(invalidFields, errUnsupportedProtocol)
 	}
 
 	if len(invalidFields) > 0 {
@@ -80,10 +81,10 @@ func (cfg *Config) Validate() error {
 }
 
 const (
-	// Syslog Protocol
-	DefaultProtocol = "tcp"
+	// Syslog Network
+	DefaultNetwork = "tcp"
 	// Syslog Port
 	DefaultPort = 514
-	// Syslog format
-	DefaultFormat = "rfc5424"
+	// Syslog Protocol
+	DefaultProtocol = "rfc5424"
 )

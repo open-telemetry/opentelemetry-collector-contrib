@@ -32,41 +32,41 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Port:     515444,
 				Endpoint: "host.domain.com",
-				Format:   "rfc542",
-				Protocol: "udp",
+				Protocol: "rfc542",
+				Network:  "udp",
 			},
 			err: "unsupported port: port is required, must be in the range 1-65535; " +
-				"unsupported format: Only rfc5424 and rfc3164 supported",
+				"unsupported protocol: Only rfc5424 and rfc3164 supported",
 		},
 		{
 			name: "invalid Endpoint",
 			cfg: &Config{
 				Port:     514,
 				Endpoint: "",
-				Format:   "rfc5424",
-				Protocol: "udp",
+				Protocol: "rfc5424",
+				Network:  "udp",
 			},
 			err: "invalid endpoint: endpoint is required but it is not configured",
 		},
 		{
-			name: "unsupported Protocol",
+			name: "unsupported Network",
 			cfg: &Config{
 				Port:     514,
 				Endpoint: "host.domain.com",
-				Format:   "rfc5424",
-				Protocol: "ftp",
+				Protocol: "rfc5424",
+				Network:  "ftp",
 			},
-			err: "unsupported protocol: protocol is required, only tcp/udp supported",
+			err: "unsupported network: network is required, only tcp/udp supported",
 		},
 		{
-			name: "Unsupported Format",
+			name: "Unsupported Protocol",
 			cfg: &Config{
 				Port:     514,
 				Endpoint: "host.domain.com",
-				Protocol: "udp",
-				Format:   "rfc",
+				Network:  "udp",
+				Protocol: "rfc",
 			},
-			err: "unsupported format: Only rfc5424 and rfc3164 supported",
+			err: "unsupported protocol: Only rfc5424 and rfc3164 supported",
 		},
 	}
 	for _, testInstance := range tests {

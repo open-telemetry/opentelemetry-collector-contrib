@@ -29,8 +29,8 @@ const defaultPriority = 165
 const defaultFacility = 1
 const versionRFC5424 = 1
 
-const formatRFC5424Str = "rfc5424"
-const formatRFC3164Str = "rfc3164"
+const protocolRFC5424Str = "rfc5424"
+const protocolRFC3164Str = "rfc3164"
 
 const priority = "priority"
 const facility = "facility"
@@ -47,7 +47,7 @@ const emptyValue = "-"
 type sender struct {
 	network   string
 	addr      string
-	format    string
+	protocol  string
 	tlsConfig *tls.Config
 	logger    *zap.Logger
 	mu        sync.Mutex
@@ -57,9 +57,9 @@ type sender struct {
 func connect(logger *zap.Logger, cfg *Config, tlsConfig *tls.Config) (*sender, error) {
 	s := &sender{
 		logger:    logger,
-		network:   cfg.Protocol,
+		network:   cfg.Network,
 		addr:      fmt.Sprintf("%s:%d", cfg.Endpoint, cfg.Port),
-		format:    cfg.Format,
+		protocol:  cfg.Protocol,
 		tlsConfig: tlsConfig,
 	}
 
@@ -127,18 +127,18 @@ func (s *sender) write(msg string) error {
 }
 
 func (s *sender) formatMsg(msg map[string]any, timestamp time.Time) string {
-	switch s.format {
-	case formatRFC3164Str:
+	switch s.protocol {
+	case protocolRFC3164Str:
 		return s.formatRFC3164(msg, timestamp)
-	case formatRFC5424Str:
+	case protocolRFC5424Str:
 		return s.formatRFC5424(msg, timestamp)
 	default:
-		panic(fmt.Sprintf("unsupported syslog format, format: %s", s.format))
+		panic(fmt.Sprintf("unsupported syslog protocol, protocol: %s", s.protocol))
 	}
 }
 
 func (s *sender) addStructuredData(msg map[string]any) {
-	if s.format != formatRFC5424Str {
+	if s.protocol != protocolRFC5424Str {
 		return
 	}
 

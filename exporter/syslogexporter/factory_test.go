@@ -35,8 +35,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, cfg, &Config{
 		Port:     514,
-		Protocol: "tcp",
-		Format:   "rfc5424",
+		Network:  "tcp",
+		Protocol: "rfc5424",
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      false,
 			NumConsumers: 10,

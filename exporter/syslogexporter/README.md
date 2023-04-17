@@ -18,9 +18,9 @@ The syslog exporter supports sending messages to a remote syslog server.
 **The following configuration options are available**:
 
 - `endpoint` - (required) syslog endpoint
-- `protocol` - (default = `tcp`) tcp/udp
+- `network` - (default = `tcp`) tcp/udp
 - `port` - (default = `514`) A syslog port
-- `format` - (default = `rfc5424`) rfc5424/rfc3164
+- `protocol` - (default = `rfc5424`) rfc5424/rfc3164
   - `rfc5424` - Expects the syslog messages to be rfc5424 compliant
   - `rfc3164` - Expects the syslog messages to be rfc3164 compliant
 - `tls` - configuration for TLS/mTLS

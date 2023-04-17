@@ -44,7 +44,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		Port:            DefaultPort,
-		Format:          DefaultFormat,
+		Network:         DefaultNetwork,
 		Protocol:        DefaultProtocol,
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   qs,

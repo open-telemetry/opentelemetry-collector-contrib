@@ -42,7 +42,7 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sysloge
 		return nil, err
 	}
 
-	cfg.Protocol = strings.ToLower(cfg.Protocol)
+	cfg.Network = strings.ToLower(cfg.Network)
 
 	s := &syslogexporter{
 		config:    cfg,
@@ -52,7 +52,7 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sysloge
 
 	s.logger.Info("Syslog Exporter configured",
 		zap.String("endpoint", cfg.Endpoint),
-		zap.String("protocol", cfg.Protocol),
+		zap.String("Protocol", cfg.Protocol),
 		zap.Int("port", cfg.Port),
 	)
 
