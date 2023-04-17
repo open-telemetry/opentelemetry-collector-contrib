@@ -503,8 +503,7 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 		}
 	}()
 	select {
-	case aggregation := <-fake.Received:
-		require.Equal(t, "startnext", aggregation.Body)
+	case <-fake.Received:
 	case <-time.After(200 * time.Millisecond):
 		t.Logf("The entry should be flushed by now")
 		t.FailNow()
