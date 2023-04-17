@@ -41,10 +41,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 )
 
-const (
-	lockName = "otel-container-insight-clusterleader"
-)
-
 // eventBroadcaster is adpated from record.EventBroadcaster
 type eventBroadcaster interface {
 	// StartRecordingToSink starts sending events received from this EventBroadcaster to the given
@@ -74,8 +70,9 @@ type K8sAPIServer struct {
 	clusterNameProvider clusterNameProvider
 	cancel              context.CancelFunc
 
-	mu      sync.Mutex
-	leading bool
+	mu             sync.Mutex
+	leading        bool
+	leaderLockName string
 
 	k8sClient  K8sClient // *k8sclient.K8sClient
 	epClient   k8sclient.EpClient
@@ -92,10 +89,16 @@ type clusterNameProvider interface {
 	GetClusterName() string
 }
 
-type k8sAPIServerOption func(*K8sAPIServer)
+type Option func(*K8sAPIServer)
+
+func WithLeaderLockName(name string) Option {
+	return func(server *K8sAPIServer) {
+		server.leaderLockName = name
+	}
+}
 
 // New creates a k8sApiServer which can generate cluster-level metrics
-func New(clusterNameProvider clusterNameProvider, logger *zap.Logger, options ...k8sAPIServerOption) (*K8sAPIServer, error) {
+func New(clusterNameProvider clusterNameProvider, logger *zap.Logger, options ...Option) (*K8sAPIServer, error) {
 	k := &K8sAPIServer{
 		logger:              logger,
 		clusterNameProvider: clusterNameProvider,
@@ -217,13 +220,13 @@ func (k *K8sAPIServer) init() error {
 
 	clientSet := k.k8sClient.GetClientSet()
 	configMapInterface := clientSet.CoreV1().ConfigMaps(lockNamespace)
-	if configMap, err := configMapInterface.Get(ctx, lockName, metav1.GetOptions{}); configMap == nil || err != nil {
+	if configMap, err := configMapInterface.Get(ctx, k.leaderLockName, metav1.GetOptions{}); configMap == nil || err != nil {
 		k.logger.Info(fmt.Sprintf("Cannot get the leader config map: %v, try to create the config map...", err))
 		configMap, err = configMapInterface.Create(ctx,
 			&v1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: lockNamespace,
-					Name:      lockName,
+					Name:      k.leaderLockName,
 				},
 			}, metav1.CreateOptions{})
 		k.logger.Info(fmt.Sprintf("configMap: %v, err: %v", configMap, err))
@@ -231,12 +234,12 @@ func (k *K8sAPIServer) init() error {
 
 	lock, err := resourcelock.New(
 		resourcelock.ConfigMapsLeasesResourceLock,
-		lockNamespace, lockName,
+		lockNamespace, k.leaderLockName,
 		clientSet.CoreV1(),
 		clientSet.CoordinationV1(),
 		resourcelock.ResourceLockConfig{
 			Identity:      k.nodeName,
-			EventRecorder: k.createRecorder(lockName, lockNamespace),
+			EventRecorder: k.createRecorder(k.leaderLockName, lockNamespace),
 		})
 	if err != nil {
 		k.logger.Warn("Failed to create resource lock", zap.Error(err))
