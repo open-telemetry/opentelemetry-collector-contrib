@@ -8,7 +8,7 @@ component: datadogexporter
 note: Re-add support for span links (span links are added as metadata to the converted span), which were erroneously removed from previous release.
 
 # One or more tracking issues related to the change
-issues: []
+issues: [20923]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
