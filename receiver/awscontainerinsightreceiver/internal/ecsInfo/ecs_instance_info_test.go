@@ -61,7 +61,7 @@ func TestECSInstanceInfo(t *testing.T) {
 	}
 
 	// normal case
-	ecsinstanceinfo := newECSInstanceInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, instanceReadyC)
+	ecsinstanceinfo := newECSInstanceInfo(ctx, "", hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, instanceReadyC)
 
 	assert.NotNil(t, ecsinstanceinfo)
 
@@ -86,11 +86,10 @@ func TestECSInstanceInfo(t *testing.T) {
 		response: httpResponse,
 		err:      err,
 	}
-	ecsinstanceinfo = newECSInstanceInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, instanceReadyC)
+	ecsinstanceinfo = newECSInstanceInfo(ctx, "override-cluster", hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, instanceReadyC)
 
 	assert.NotNil(t, ecsinstanceinfo)
 
-	assert.Equal(t, "", ecsinstanceinfo.GetClusterName())
+	assert.Equal(t, "override-cluster", ecsinstanceinfo.GetClusterName())
 	assert.Equal(t, "", ecsinstanceinfo.GetContainerInstanceID())
-
 }

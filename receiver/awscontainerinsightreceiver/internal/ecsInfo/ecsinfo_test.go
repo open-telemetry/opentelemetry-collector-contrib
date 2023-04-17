@@ -88,7 +88,7 @@ func TestNewECSInfo(t *testing.T) {
 	// test the case when containerInstanceInfor fails to initialize
 	containerInstanceInfoCreatorOpt := func(ei *EcsInfo) {
 
-		ei.containerInstanceInfoCreator = func(context.Context, hostIPProvider, time.Duration, *zap.Logger, doer, chan bool) containerInstanceInfoProvider {
+		ei.containerInstanceInfoCreator = func(context.Context, string, hostIPProvider, time.Duration, *zap.Logger, doer, chan bool) containerInstanceInfoProvider {
 			return &MockInstanceInfo{
 				clusterName: "Cluster-name",
 				instanceID:  "instance-id",

@@ -33,6 +33,7 @@ type hostIPProvider interface {
 type EcsInfo struct {
 	logger                *zap.Logger
 	refreshInterval       time.Duration
+	clusterName           string
 	cancel                context.CancelFunc
 	hostIPProvider        hostIPProvider
 	isTaskInfoReadyC      chan bool
@@ -47,7 +48,7 @@ type EcsInfo struct {
 	ecsTaskInfo           ecsTaskInfoProvider
 	cgroup                cgroupScannerProvider
 
-	containerInstanceInfoCreator func(context.Context, hostIPProvider, time.Duration, *zap.Logger, doer, chan bool) containerInstanceInfoProvider
+	containerInstanceInfoCreator func(context.Context, string, hostIPProvider, time.Duration, *zap.Logger, doer, chan bool) containerInstanceInfoProvider
 	ecsTaskInfoCreator           func(context.Context, hostIPProvider, time.Duration, *zap.Logger, doer, chan bool) ecsTaskInfoProvider
 	cgroupScannerCreator         func(context.Context, *zap.Logger, ecsTaskInfoProvider, containerInstanceInfoProvider, time.Duration) cgroupScannerProvider
 }
@@ -81,16 +82,25 @@ func (e *EcsInfo) GetContainerInstanceID() string {
 }
 
 func (e *EcsInfo) GetClusterName() string {
+	if e.clusterName != "" {
+		return e.clusterName
+	}
 	if e.containerInstanceInfo != nil {
 		return e.containerInstanceInfo.GetClusterName()
 	}
 	return ""
 }
 
-type ecsInfoOption func(*EcsInfo)
+func WithClusterName(name string) Option {
+	return func(info *EcsInfo) {
+		info.clusterName = name
+	}
+}
+
+type Option func(*EcsInfo)
 
 // New creates a k8sApiServer which can generate cluster-level metrics
-func NewECSInfo(refreshInterval time.Duration, hostIPProvider hostIPProvider, host component.Host, settings component.TelemetrySettings, options ...ecsInfoOption) (*EcsInfo, error) {
+func NewECSInfo(refreshInterval time.Duration, hostIPProvider hostIPProvider, host component.Host, settings component.TelemetrySettings, options ...Option) (*EcsInfo, error) {
 	setting := confighttp.HTTPClientSettings{
 		Timeout: defaultTimeout,
 	}
@@ -139,7 +149,7 @@ func (e *EcsInfo) initContainerInfo(ctx context.Context) {
 
 	e.logger.Info("instance ip is ready and begin initializing ecs container info")
 
-	e.containerInstanceInfo = e.containerInstanceInfoCreator(ctx, e.hostIPProvider, e.refreshInterval, e.logger, e.httpClient, e.isContainerInfoReadyC)
+	e.containerInstanceInfo = e.containerInstanceInfoCreator(ctx, e.clusterName, e.hostIPProvider, e.refreshInterval, e.logger, e.httpClient, e.isContainerInfoReadyC)
 	close(e.containerInfoTestReadyC)
 }
 

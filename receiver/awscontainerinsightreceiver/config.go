@@ -39,4 +39,8 @@ type Config struct {
 	// If false FullPodName label is not added
 	// The default value is false
 	AddFullPodNameMetricLabel bool `mapstructure:"add_full_pod_name_metric_label"`
+
+	// ClusterName can be used to explicitly provide the Cluster's Name for scenarios where it's not
+	// possible to auto-detect it using EC2 tags.
+	ClusterName string `mapstructure:"cluster_name"`
 }
