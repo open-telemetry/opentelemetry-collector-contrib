@@ -170,7 +170,7 @@ func (p *Parser[K]) newBooleanValueEvaluator(value *booleanValue) (BoolExpr[K], 
 				boolExpr = BoolExpr[K]{alwaysFalse[K]}
 			}
 		case value.ConstExpr.Converter != nil:
-			boolExpr, err = p.newConverterEvaluator(value)
+			boolExpr, err = p.newConverterEvaluator(*value.ConstExpr.Converter)
 			if err != nil {
 				return BoolExpr[K]{}, err
 			}
@@ -192,12 +192,8 @@ func (p *Parser[K]) newBooleanValueEvaluator(value *booleanValue) (BoolExpr[K], 
 	return boolExpr, nil
 }
 
-func (p *Parser[K]) newConverterEvaluator(val *booleanValue) (BoolExpr[K], error) {
-	getter, err := p.newGetter(value{
-		Literal: &mathExprLiteral{
-			Converter: val.ConstExpr.Converter,
-		},
-	})
+func (p *Parser[K]) newConverterEvaluator(c converter) (BoolExpr[K], error) {
+	getter, err := p.newGetterFromConverter(c)
 	if err != nil {
 		return BoolExpr[K]{}, err
 	}
