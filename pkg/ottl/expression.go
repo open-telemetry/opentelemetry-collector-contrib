@@ -233,10 +233,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 }
 
 func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
-	call, err := p.newFunctionCall(invocation{
-		Function:  c.Function,
-		Arguments: c.Arguments,
-	})
+	call, err := p.newFunctionCall(invocation(c))
 	if err != nil {
 		return nil, err
 	}
