@@ -18,10 +18,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
+	"strconv"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 )
@@ -101,23 +103,37 @@ func (queryReceiver *logsQueryReceiver) start() {
 		panic(err)
 	}
 	queryReceiver.client = queryReceiver.clientProviderFunc(dbWrapper{db}, queryReceiver.query.SQL, nil)
+	//TODO: napisać scrappowanie co jakiś ustalony czas
 	queryReceiver.scrape(context.Background())
 }
 
 func (queryReceiver *logsQueryReceiver) scrape(ctx context.Context) (plog.Logs, error) {
 	out := plog.NewLogs()
+	//TODO: dla testu Oraclowego to queryRows nie działa i nie wypisuje danych - Andrzej obiecał sprawdzić co sie dzieje
 	rows, err := queryReceiver.client.queryRows(ctx)
 	if err != nil {
 		return out, fmt.Errorf("scraper: %w", err)
 	}
-	for i, row := range rows {
-		fmt.Println(i, row)
+	for _, row := range rows {
+		logRecord := out.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		newRecord := plog.NewLogRecord()
+
+		//TODO: wczytywać dane na podstawie configa, ale na razie nie wiem jak ten config miałby wyglądać
+		if bodyValue, ok := row["body"]; ok {
+			newRecord.Body().SetStr(bodyValue)
+		}
+		if idValue, ok := row["id"]; ok {
+			timeValue, err := strconv.ParseInt(idValue, 10, 64)
+			if err != nil {
+				panic(err)
+			}
+			newRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(timeValue, 0)))
+		}
+		newRecord.CopyTo(logRecord)
 	}
-	aaa := out.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	kiloStr := strings.Repeat("x", 10*1024)
-	aaa.SetSeverityText(kiloStr)
+	//TODO: to powinniśmy wysyłać po jednym logu? batch? całość?
 	queryReceiver.nextConsumer.ConsumeLogs(ctx, out)
-	return plog.NewLogs(), nil
+	return out, nil
 }
 
 func (queryReceiver *logsQueryReceiver) shutdown(ctx context.Context) error {
