@@ -16,6 +16,7 @@ package ottl
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -68,9 +69,6 @@ func basicSlice[K any]() (ExprFunc[K], error) {
 }
 
 func Test_newGetter(t *testing.T) {
-	m := pcommon.NewMap()
-	m.PutEmptyMap("foo").PutStr("bar", "pass")
-
 	tests := []struct {
 		name string
 		val  value
@@ -453,7 +451,8 @@ func Test_newGetter(t *testing.T) {
 				tCtx = tt.ctx
 			}
 
-			val, _ := reader.Get(context.Background(), tCtx)
+			val, err := reader.Get(context.Background(), tCtx)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.want, val)
 		})
 	}
@@ -462,6 +461,134 @@ func Test_newGetter(t *testing.T) {
 		_, err := p.newGetter(value{})
 		assert.Error(t, err)
 	})
+}
+func Test_exprGetter_Get_Invalid(t *testing.T) {
+	tests := []struct {
+		name string
+		val  value
+		err  error
+	}{
+		{
+			name: "key not in pcommon map",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PMap",
+						Keys: []Key{
+							{
+								String: ottltest.Strp("unknown key"),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("key not found in map"),
+		},
+		{
+			name: "key not in map",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Map",
+						Keys: []Key{
+							{
+								String: ottltest.Strp("unknown key"),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("key not found in map"),
+		},
+		{
+			name: "index too large for pcommon slice",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PSlice",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(100),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("index 100 out of bounds"),
+		},
+		{
+			name: "negative for pcommon slice",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PSlice",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(-1),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("index -1 out of bounds"),
+		},
+		{
+			name: "index too large for pcommon slice",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Slice",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(100),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("index 100 out of bounds"),
+		},
+		{
+			name: "negative for pcommon slice",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Slice",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(-1),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("index -1 out of bounds"),
+		},
+	}
+
+	functions := map[string]interface{}{
+		"Hello":  hello[interface{}],
+		"PMap":   pmap[interface{}],
+		"Map":    basicMap[interface{}],
+		"PSlice": pslice[interface{}],
+		"Slice":  basicSlice[interface{}],
+	}
+
+	p, _ := NewParser[any](
+		functions,
+		testParsePath,
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reader, err := p.newGetter(tt.val)
+			assert.NoError(t, err)
+			_, err = reader.Get(context.Background(), nil)
+			assert.Equal(t, tt.err, err)
+		})
+	}
 }
 
 func Test_StandardTypeGetter(t *testing.T) {

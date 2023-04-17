@@ -43,7 +43,7 @@ func GetMapValue(m pcommon.Map, keys []ottl.Key) (interface{}, error) {
 			}
 			val, ok = val.Map().Get(*keys[i].String)
 			if !ok {
-				return nil, fmt.Errorf("key not found in map")
+				return nil, nil
 			}
 		case pcommon.ValueTypeSlice:
 			if keys[i].Int == nil {
