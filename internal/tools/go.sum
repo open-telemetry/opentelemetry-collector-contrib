@@ -411,8 +411,8 @@ github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHW
 github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfCI6z80xFu9LTZmf1ZRjMHUOPmWr69U=
 github.com/joho/godotenv v1.3.0 h1:Zjp+RcGpHhGlrMbJzXTrZZPrWj+1vfm90La1wgB6Bhc=
 github.com/joho/godotenv v1.3.0/go.mod h1:7hK45KPybAkOC6peb+G5yklZfMxEjkZhHbwpqxOKXbg=
-github.com/joshdk/go-junit v0.0.0-20210226021600-6145f504ca0d h1:lcSbmPJf3b19MTZtGDLI6Y2Jnk3VBDT8UG/8IVCEMxA=
-github.com/joshdk/go-junit v0.0.0-20210226021600-6145f504ca0d/go.mod h1:TiiV0PqkaNfFXjEiyjWM3XXrhVyCa1K4Zfga6W52ung=
+github.com/joshdk/go-junit v1.0.0 h1:S86cUKIdwBHWwA6xCmFlf3RTLfVXYQfvanM5Uh+K6GE=
+github.com/joshdk/go-junit v1.0.0/go.mod h1:TiiV0PqkaNfFXjEiyjWM3XXrhVyCa1K4Zfga6W52ung=
 github.com/jpillora/backoff v1.0.0/go.mod h1:J/6gKK9jxlEcS3zixgDgUAsiuZ7yrSoa/FX5e0EB2j4=
 github.com/json-iterator/go v1.1.6/go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCVDaaPEHmU=
 github.com/json-iterator/go v1.1.10/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
@@ -745,8 +745,8 @@ go.opentelemetry.io/build-tools/chloggen v0.6.0 h1:WRhqfG09YYcGBzPp4Hj5Po33e8ZvQ
 go.opentelemetry.io/build-tools/chloggen v0.6.0/go.mod h1:nS40rEru7lYAwWjuOJptVK7xVjYxaY8+P8YiNFA77cQ=
 go.opentelemetry.io/build-tools/crosslink v0.6.0 h1:cY2BAAwCawRlupEVqcDTXdOr1tDE1J9WGQPgCV/cT4U=
 go.opentelemetry.io/build-tools/crosslink v0.6.0/go.mod h1:kqGm9zUqfSnILBnOApA3P1GZTxa+pOMgfrgIBBTRESY=
-go.opentelemetry.io/build-tools/issuegenerator v0.6.0 h1:kGy22F5KURHuOxdBRHD6lH5uBMYs/+EL35jh3tacamE=
-go.opentelemetry.io/build-tools/issuegenerator v0.6.0/go.mod h1:6qnBO+FCPBjiVlE8k1yOIVXegTIv1U2uY9oQFEm0zvI=
+go.opentelemetry.io/build-tools/issuegenerator v0.7.0 h1:p4V6PhTQmp5kWBRqYf+bd6knp91vLfGfpyMzJUyYCHo=
+go.opentelemetry.io/build-tools/issuegenerator v0.7.0/go.mod h1:dBqO2CqMnVm35etsxOYZqNtA+4ds5wGoELSAsau7itY=
 go.opentelemetry.io/build-tools/multimod v0.6.0 h1:XAmXNQNsfs4Tq9BtWKTY32OvTBgTBzKVn2Bawskjgac=
 go.opentelemetry.io/build-tools/multimod v0.6.0/go.mod h1:YgIvurIda661iJ0yJbQWlE62VHLgP4HQJeqCa3uWsBI=
 go.opentelemetry.io/collector/cmd/builder v0.75.0 h1:oAMeqGm4IfNeFKNXspmVCp9qK6CvBe1Ag+0hx4cAIZA=

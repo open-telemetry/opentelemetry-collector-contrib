@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/build-tools/checkdoc v0.6.0
 	go.opentelemetry.io/build-tools/chloggen v0.6.0
 	go.opentelemetry.io/build-tools/crosslink v0.6.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.6.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.7.0
 	go.opentelemetry.io/build-tools/multimod v0.6.0
 	go.opentelemetry.io/collector/cmd/builder v0.75.0
 	golang.org/x/tools v0.8.0
@@ -103,7 +103,7 @@ require (
 	github.com/jgautheron/goconst v1.5.1 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
 	github.com/jirfag/go-printf-func-name v0.0.0-20200119135958-7558a9eaa5af // indirect
-	github.com/joshdk/go-junit v0.0.0-20210226021600-6145f504ca0d // indirect
+	github.com/joshdk/go-junit v1.0.0 // indirect
 	github.com/julz/importas v0.1.0 // indirect
 	github.com/junk1tm/musttag v0.4.4 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
