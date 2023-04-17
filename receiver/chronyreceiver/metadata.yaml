@@ -1,5 +1,5 @@
 ---
-name: chrony receiver
+type: chrony receiver
 
 attributes:
   leap.status:

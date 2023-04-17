@@ -1,6 +1,6 @@
-name: jaegerremotesampling
+type: jaegerremotesampling
 
 status:
-  type: extension
+  class: extension
   stability: alpha
   distributions: [contrib]

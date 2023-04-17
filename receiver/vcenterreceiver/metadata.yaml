@@ -1,4 +1,4 @@
-name: vcenterreceiver
+type: vcenterreceiver
 
 resource_attributes:
   vcenter.cluster.name:

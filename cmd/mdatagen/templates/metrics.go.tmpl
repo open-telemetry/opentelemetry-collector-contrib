@@ -38,7 +38,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsSettings provides settings for {{ .Name }} metrics.
+// MetricsSettings provides settings for {{ .Type }} metrics.
 type MetricsSettings struct {
 	{{- range $name, $metric := .Metrics }}
 	{{ $name.Render }} MetricSettings `mapstructure:"{{ $name }}"`
@@ -61,7 +61,7 @@ type ResourceAttributeSettings struct {
 }
 
 
-// ResourceAttributesSettings provides settings for {{ .Name }} metrics.
+// ResourceAttributesSettings provides settings for {{ .Type }} metrics.
 type ResourceAttributesSettings struct {
 	{{- range $name, $attr := .ResourceAttributes }}
 	{{ $name.Render }} ResourceAttributeSettings `mapstructure:"{{ $name }}"`
@@ -326,7 +326,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	{{- end }}
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/{{ .Name }}")
+	ils.Scope().SetName("otelcol/{{ .Type }}")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	{{- range $name, $metric := .Metrics }}
