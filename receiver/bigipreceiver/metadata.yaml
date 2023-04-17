@@ -1,4 +1,4 @@
-name: bigipreceiver
+type: bigipreceiver
 
 resource_attributes:
   bigip.virtual_server.name:

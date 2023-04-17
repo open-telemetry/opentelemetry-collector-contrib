@@ -114,6 +114,29 @@ jobs:
             echo "One or more matrix jobs failed."
             false
           fi
+  govulncheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ~1.19.8
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Run `govulncheck`
+        run: make govulncheck
   checks:
     runs-on: ubuntu-latest
     needs: [setup-environment]

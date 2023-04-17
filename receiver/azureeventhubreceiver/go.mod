@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuree
 go 1.19
 
 require (
-	github.com/Azure/azure-amqp-common-go/v4 v4.0.0
-	github.com/Azure/azure-event-hubs-go/v3 v3.4.0
+	github.com/Azure/azure-amqp-common-go/v4 v4.1.0
+	github.com/Azure/azure-event-hubs-go/v3 v3.5.0
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.75.0
@@ -22,8 +22,8 @@ require (
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
-	github.com/Azure/azure-sdk-for-go v67.1.0+incompatible // indirect
-	github.com/Azure/go-amqp v0.18.1 // indirect
+	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
+	github.com/Azure/go-amqp v0.19.1 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.28 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.21 // indirect

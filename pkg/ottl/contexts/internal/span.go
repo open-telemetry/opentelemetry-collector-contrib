@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
 type SpanContext interface {
@@ -336,10 +337,10 @@ func accessAttributes[K SpanContext]() ottl.StandardGetSetter[K] {
 func accessAttributesKey[K SpanContext](mapKey *string) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
-			return GetMapValue(tCtx.GetSpan().Attributes(), *mapKey), nil
+			return ottlcommon.GetMapValue(tCtx.GetSpan().Attributes(), *mapKey), nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
-			SetMapValue(tCtx.GetSpan().Attributes(), *mapKey, val)
+			ottlcommon.SetMapValue(tCtx.GetSpan().Attributes(), *mapKey, val)
 			return nil
 		},
 	}

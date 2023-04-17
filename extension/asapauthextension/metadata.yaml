@@ -1,6 +1,6 @@
-name: asapauthextension
+type: asapauthextension
 
 status:
-  type: extension
+  class: extension
   stability: beta
   distributions: [contrib]

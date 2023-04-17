@@ -1,6 +1,6 @@
-name: oidcauthextension
+type: oidcauthextension
 
 status:
-  type: extension
+  class: extension
   stability: beta
   distributions: [contrib]

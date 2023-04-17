@@ -80,6 +80,7 @@ func createDefaultConfig() component.Config {
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
 		MaxContentLengthTraces:  defaultContentLengthTracesLimit,
+		MaxEventSize:            defaultMaxEventSize,
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
