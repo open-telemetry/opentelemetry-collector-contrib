@@ -29,7 +29,7 @@ import (
 )
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
-	cfg := config.(Config)
+	cfg := castConfig(config)
 	e, err := getDatasetExporter("logs", cfg, set.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)

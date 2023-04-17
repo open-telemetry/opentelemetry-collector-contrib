@@ -84,7 +84,7 @@ func extract(req *http.Request) (add_events.AddEventsRequest, error) {
 
 func (s *SuiteLogsE2EExporter) TestConsumeLogsShouldSucceed(assert, require *td.T) {
 	createSettings := exportertest.NewNopCreateSettings()
-	config := Config{
+	config := &Config{
 		DatasetURL:      "https://example.com",
 		APIKey:          "key-lib",
 		MaxDelayMs:      "1",

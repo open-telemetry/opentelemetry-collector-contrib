@@ -42,3 +42,12 @@ func createDefaultConfig() component.Config {
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}
 }
+
+// castConfig casts it to the Dataset Config struct.
+func castConfig(c component.Config) *Config {
+	cfg, ok := c.(*Config)
+	if !ok {
+		panic("config structure is not of type *datasetexporter.Config")
+	}
+	return cfg
+}

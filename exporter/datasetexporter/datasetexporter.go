@@ -61,7 +61,7 @@ func newDatasetExporter(config *config.DataSetConfig, logger *zap.Logger) (*data
 
 var lock = &sync.Mutex{}
 
-func getDatasetExporter(entity string, config Config, logger *zap.Logger) (*datasetExporter, error) {
+func getDatasetExporter(entity string, config *Config, logger *zap.Logger) (*datasetExporter, error) {
 	logger.Info(
 		"Get logger for: ",
 		zap.String("entity", entity),
