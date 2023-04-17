@@ -18,9 +18,8 @@ Exporter supports the following features：
 Please note that there is no guarantee that exact field names will remain stable.
 This intended for primarily for debugging Collector without setting up backends.
 
-The official [opentelemetry-collector-contrib container](https://hub.docker.com/r/otel/opentelemetry-collector-contrib/tags#!) does not have a writable filesystem by default since it's built using the special `from scratch` layer.
-As such, you will need to create a writable directory for the path, potentially by creating writable volumes or creating a custom image.
-
+The official [opentelemetry-collector-contrib container](https://hub.docker.com/r/otel/opentelemetry-collector-contrib/tags#!) does not have a writable filesystem by default since it's built on the `scratch` layer.
+As such, you will need to create a writable directory for the path, potentially by mounting writable volumes or creating a custom image.
 ## Configuration options:
 
 The following settings are required:
@@ -96,7 +95,8 @@ exporters:
 
 ## Get Started in an existing cluster
 We will follow the [documentation](https://opentelemetry.io/docs/k8s-operator/) to first install the operator in an existing cluster
-and then create an OpenTelemetry Collector (otelcol) instance, like:
+and then create an OpenTelemetry Collector (otelcol) instance, 
+mounting an additional volume under `/data` under which the file exporter will write `metrics.json`:
 ``` shell
 kubectl apply -f - <<EOF
 apiVersion: opentelemetry.io/v1alpha1
