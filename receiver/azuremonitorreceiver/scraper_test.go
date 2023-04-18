@@ -215,7 +215,6 @@ func TestAzureScraperScrape(t *testing.T) {
 			}
 
 			expectedFile := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
-
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 
@@ -259,8 +258,8 @@ func getResourcesMockData() []armresources.ClientListResponse {
 }
 
 func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.MetricDefinitionsClientListResponse) {
-	name1, name2, name3, name4, name5, name6, name7, timeGrain1, timeGrain2 := "metric1", "metric2",
-		"metric3", "metric4", "metric5", "metric6", "metric7", "PT1M", "PT1H"
+	name1, name2, name3, name4, name5, name6, name7, timeGrain1, timeGrain2, dimension := "metric1",
+		"metric2", "metric3", "metric4", "metric5", "metric6", "metric7", "PT1M", "PT1H", "dimension"
 
 	counters := map[string]int{
 		"resourceId1": 0,
@@ -330,6 +329,11 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 									TimeGrain: &timeGrain2,
 								},
 							},
+							Dimensions: []*armmonitor.LocalizableString{
+								{
+									Value: &dimension,
+								},
+							},
 						},
 						{
 							Name: &armmonitor.LocalizableString{
@@ -338,6 +342,11 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 							MetricAvailabilities: []*armmonitor.MetricAvailability{
 								{
 									TimeGrain: &timeGrain2,
+								},
+							},
+							Dimensions: []*armmonitor.LocalizableString{
+								{
+									Value: &dimension,
 								},
 							},
 						},
@@ -358,6 +367,11 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 									TimeGrain: &timeGrain1,
 								},
 							},
+							Dimensions: []*armmonitor.LocalizableString{
+								{
+									Value: &dimension,
+								},
+							},
 						},
 					},
 				},
@@ -368,8 +382,8 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 }
 
 func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
-	name1, name2, name3, name4, name5, name6, name7 := "metric1", "metric2", "metric3",
-		"metric4", "metric5", "metric6", "metric7"
+	name1, name2, name3, name4, name5, name6, name7, dimension, dimensionValue := "metric1", "metric2",
+		"metric3", "metric4", "metric5", "metric6", "metric7", "dimension", "dimension value"
 	var unit1 armmonitor.MetricUnit = "unit1"
 	var value1 float64 = 1
 
@@ -490,6 +504,14 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 											Total:   &value1,
 										},
 									},
+									Metadatavalues: []*armmonitor.MetadataValue{
+										{
+											Name: &armmonitor.LocalizableString{
+												Value: &dimension,
+											},
+											Value: &dimensionValue,
+										},
+									},
 								},
 							},
 						},
@@ -507,6 +529,14 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 											Maximum: &value1,
 											Minimum: &value1,
 											Total:   &value1,
+										},
+									},
+									Metadatavalues: []*armmonitor.MetadataValue{
+										{
+											Name: &armmonitor.LocalizableString{
+												Value: &dimension,
+											},
+											Value: &dimensionValue,
 										},
 									},
 								},
@@ -530,6 +560,14 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									Data: []*armmonitor.MetricValue{
 										{
 											Count: &value1,
+										},
+									},
+									Metadatavalues: []*armmonitor.MetadataValue{
+										{
+											Name: &armmonitor.LocalizableString{
+												Value: &dimension,
+											},
+											Value: &dimensionValue,
 										},
 									},
 								},

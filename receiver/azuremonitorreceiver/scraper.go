@@ -58,8 +58,13 @@ var (
 )
 
 type azureResource struct {
-	metricsByGrains           map[string]*azureResourceMetrics
+	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
 	metricsDefinitionsUpdated time.Time
+}
+
+type metricsCompositeKey struct {
+	dimension string
+	timeGrain string
 }
 
 type azureResourceMetrics struct {
@@ -120,7 +125,9 @@ func (s *azureScraper) getMetricsDefinitionsClient() MetricsDefinitionsClientInt
 }
 
 type MetricsValuesClient interface {
-	List(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (armmonitor.MetricsClientListResponse, error)
+	List(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (
+		armmonitor.MetricsClientListResponse, error,
+	)
 }
 
 func (s *azureScraper) GetMetricsValuesClient() MetricsValuesClient {
@@ -212,7 +219,8 @@ func (s *azureScraper) getResources(ctx context.Context) {
 }
 
 func (s *azureScraper) getResourcesFilter() string {
-	// TODO: switch to parsing services from https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported
+	// TODO: switch to parsing services from
+	// https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported
 	resourcesTypeFilter := strings.Join(s.cfg.Services, "' or resourceType eq '")
 
 	resourcesGroupFilterString := ""
@@ -230,8 +238,7 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 		return
 	}
 
-	res := s.resources[resourceID]
-	res.metricsByGrains = map[string]*azureResourceMetrics{}
+	s.resources[resourceID].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
 
 	pager := s.clientMetricsDefinitions.NewListPager(resourceID, nil)
 	for pager.More() {
@@ -240,27 +247,42 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 			s.settings.Logger.Error("failed to get Azure Metrics definitions data", zap.Error(err))
 			return
 		}
+
 		for _, v := range nextResult.Value {
 
 			timeGrain := *v.MetricAvailabilities[0].TimeGrain
 			name := *v.Name.Value
+			compositeKey := metricsCompositeKey{timeGrain: timeGrain}
 
-			if _, ok := res.metricsByGrains[timeGrain]; ok {
-				res.metricsByGrains[timeGrain].metrics = append(res.metricsByGrains[timeGrain].metrics, name)
+			if len(v.Dimensions) > 0 {
+				for _, dimension := range v.Dimensions {
+					compositeKey.dimension = *dimension.Value
+					s.storeMetricsDefinition(resourceID, name, compositeKey)
+				}
 			} else {
-				res.metricsByGrains[timeGrain] = &azureResourceMetrics{metrics: []string{name}}
+				s.storeMetricsDefinition(resourceID, name, compositeKey)
 			}
 		}
 	}
-	res.metricsDefinitionsUpdated = time.Now()
+	s.resources[resourceID].metricsDefinitionsUpdated = time.Now()
+}
+
+func (s *azureScraper) storeMetricsDefinition(resourceID, name string, compositeKey metricsCompositeKey) {
+	if _, ok := s.resources[resourceID].metricsByCompositeKey[compositeKey]; ok {
+		s.resources[resourceID].metricsByCompositeKey[compositeKey].metrics = append(
+			s.resources[resourceID].metricsByCompositeKey[compositeKey].metrics, name,
+		)
+	} else {
+		s.resources[resourceID].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{metrics: []string{name}}
+	}
 }
 
 func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID string) {
 	res := *s.resources[resourceID]
 
-	for timeGrain, metricsByGrain := range res.metricsByGrains {
+	for compositeKey, metricsByGrain := range res.metricsByCompositeKey {
 
-		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[timeGrain]) {
+		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
 			continue
 		}
 		metricsByGrain.metricsValuesUpdated = time.Now()
@@ -274,7 +296,13 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 				end = len(metricsByGrain.metrics)
 			}
 
-			opts := getResourceMetricsValuesRequestOptions(metricsByGrain.metrics, timeGrain, start, end)
+			opts := getResourceMetricsValuesRequestOptions(
+				metricsByGrain.metrics,
+				compositeKey.dimension,
+				compositeKey.timeGrain,
+				start,
+				end,
+			)
 			start = end
 
 			result, err := s.clientMetricsValues.List(
@@ -292,7 +320,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 				for _, timeserie := range metric.Timeseries {
 					if timeserie.Data != nil {
 						for _, timeserieData := range timeserie.Data {
-							s.processTimeserieData(resourceID, metric, timeserieData)
+							s.processTimeserieData(resourceID, metric, timeserieData, timeserie.Metadatavalues)
 						}
 					}
 				}
@@ -301,17 +329,35 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 	}
 }
 
-func getResourceMetricsValuesRequestOptions(metrics []string, timeGrain string, start int, end int) armmonitor.MetricsClientListOptions {
+func getResourceMetricsValuesRequestOptions(
+	metrics []string,
+	dimension string,
+	timeGrain string,
+	start int,
+	end int,
+) armmonitor.MetricsClientListOptions {
 	resType := strings.Join(metrics[start:end], ",")
-	return armmonitor.MetricsClientListOptions{
+	filter := armmonitor.MetricsClientListOptions{
 		Metricnames: &resType,
 		Interval:    to.Ptr(timeGrain),
 		Timespan:    to.Ptr(timeGrain),
 		Aggregation: to.Ptr(strings.Join(aggregations, ",")),
 	}
+
+	if len(dimension) > 0 {
+		dimensionFilter := fmt.Sprintf("%s eq '*'", dimension)
+		filter.Filter = &dimensionFilter
+	}
+
+	return filter
 }
 
-func (s *azureScraper) processTimeserieData(resourceID string, metric *armmonitor.Metric, timeserieData *armmonitor.MetricValue) {
+func (s *azureScraper) processTimeserieData(
+	resourceID string,
+	metric *armmonitor.Metric,
+	timeserieData *armmonitor.MetricValue,
+	metadataValues []*armmonitor.MetadataValue,
+) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -329,7 +375,15 @@ func (s *azureScraper) processTimeserieData(resourceID string, metric *armmonito
 	}
 	for _, aggregation := range aggregationsData {
 		if aggregation.value != nil {
-			s.mb.AddDataPoint(resourceID, *metric.Name.Value, aggregation.name, string(*metric.Unit), ts, *aggregation.value)
+			s.mb.AddDataPoint(
+				resourceID,
+				*metric.Name.Value,
+				aggregation.name,
+				string(*metric.Unit),
+				metadataValues,
+				ts,
+				*aggregation.value,
+			)
 		}
 	}
 }
