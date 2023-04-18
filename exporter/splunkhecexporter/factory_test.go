@@ -39,7 +39,6 @@ func TestCreateMetricsExporter(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 	_, err := createMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
-	assert.NoError(t, err)
 }
 
 func TestCreateTracesExporter(t *testing.T) {

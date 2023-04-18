@@ -109,10 +109,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 				HealthPath:            "/services/collector/health",
 				HecHealthCheckEnabled: false,
-				HecHeartbeat: HecHeartbeat{
+				Heartbeat: HecHeartbeat{
 					Interval: 30 * time.Second,
 				},
-				HecTelemetry: HecTelemetry{
+				Telemetry: HecTelemetry{
 					Enabled: true,
 					OverrideMetricsNames: map[string]string{
 						"otelcol_exporter_splunkhec_heartbeat_sent":   "app_heartbeats_success_total",

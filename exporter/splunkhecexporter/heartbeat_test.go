@@ -34,10 +34,10 @@ const (
 
 func createTestConfig(metricsOverrides map[string]string, enableMetrics bool) *Config {
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	config.HecHeartbeat = HecHeartbeat{
+	config.Heartbeat = HecHeartbeat{
 		Interval: 10 * time.Millisecond,
 	}
-	config.HecTelemetry = HecTelemetry{
+	config.Telemetry = HecTelemetry{
 		Enabled:              enableMetrics,
 		OverrideMetricsNames: metricsOverrides,
 		ExtraAttributes: map[string]string{
@@ -93,7 +93,7 @@ func resetMetrics(metricsNames ...string) {
 
 func Test_newHeartbeater_disabled(t *testing.T) {
 	config := createTestConfig(map[string]string{}, false)
-	config.HecHeartbeat.Interval = 0
+	config.Heartbeat.Interval = 0
 	hb := newHeartbeater(config, func(ctx context.Context, ld plog.Logs) error {
 		return nil
 	})

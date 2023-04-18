@@ -139,11 +139,11 @@ type Config struct {
 	// UseMultiMetricFormat combines metric events to save space during ingestion.
 	UseMultiMetricFormat bool `mapstructure:"use_multi_metric_format"`
 
-	// HecHeartbeat is the configuration to enable heartbeat
-	HecHeartbeat HecHeartbeat `mapstructure:"hec_heartbeat"`
+	// Heartbeat is the configuration to enable heartbeat
+	Heartbeat HecHeartbeat `mapstructure:"heartbeat"`
 
-	// HecTelemetry is the configuration for splunk hec exporter telemetry
-	HecTelemetry HecTelemetry `mapstructure:"telemetry"`
+	// Telemetry is the configuration for splunk hec exporter telemetry
+	Telemetry HecTelemetry `mapstructure:"telemetry"`
 }
 
 func (cfg *Config) getURL() (out *url.URL, err error) {

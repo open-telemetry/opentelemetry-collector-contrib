@@ -57,7 +57,7 @@ The following configuration options can also be configured:
 - `otel_to_hec_fields/severity_text` (default = `otel.log.severity.text`): Specifies the name of the field to map the severity text field of log events.
 - `otel_to_hec_fields/severity_number` (default = `otel.log.severity.number`): Specifies the name of the field to map the severity number field of log events.
 - `otel_to_hec_fields/name` (default = `"otel.log.name`): Specifies the name of the field to map the name field of log events.
-- `hec_heartbeat/interval` (no default): Specifies the interval of sending hec heartbeat to the destination. If not specified, heartbeat is not enabled.
+- `heartbeat/interval` (no default): Specifies the interval of sending hec heartbeat to the destination. If not specified, heartbeat is not enabled.
 - `telemetry/enabled` (default: false): Specifies whether to enable telemetry inside splunk hec exporter.
 - `telemetry/override_metrics_names` (default: empty map): Specifies the metrics name to overrides in splunk hec exporter.
 - `telemetry/extra_attributes` (default: empty map): Specifies the extra metrics attributes in splunk hec exporter.
@@ -119,7 +119,7 @@ exporters:
     splunk_app_name: "OpenTelemetry-Collector Splunk Exporter"
     # Application version is used to track telemetry information for Splunk App's using HEC by App version.
     splunk_app_version: "v0.0.1"
-    hec_heartbeat:
+    heartbeat:
       interval: 30s
     telemetry:
       enabled: true

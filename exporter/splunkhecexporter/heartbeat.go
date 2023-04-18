@@ -30,9 +30,9 @@ import (
 )
 
 const (
-	metricsPrefix              = "otelcol_exporter_splunkhec_heartbeat"
-	defaultHBSentMetricsName   = metricsPrefix + "_sent"
-	defaultHBFailedMetricsName = metricsPrefix + "_failed"
+	metricsPrefix              = "otelcol_exporter_splunkhec_"
+	defaultHBSentMetricsName   = metricsPrefix + "heartbeat_sent"
+	defaultHBFailedMetricsName = metricsPrefix + "heartbeat_failed"
 )
 
 type heartbeater struct {
@@ -55,16 +55,16 @@ func getMetricsName(overrides map[string]string, metricName string) string {
 }
 
 func newHeartbeater(config *Config, pushLogFn func(ctx context.Context, ld plog.Logs) error) *heartbeater {
-	interval := config.HecHeartbeat.Interval
+	interval := config.Heartbeat.Interval
 	if interval == 0 {
 		return nil
 	}
 
-	var heartbeatSentTotal, heartbeatFailedTotal *stats.Int64Measure
+	var heartbeatSent, heartbeatFailed *stats.Int64Measure
 	var tagMutators []tag.Mutator
-	if config.HecTelemetry.Enabled {
-		overrides := config.HecTelemetry.OverrideMetricsNames
-		extraAttributes := config.HecTelemetry.ExtraAttributes
+	if config.Telemetry.Enabled {
+		overrides := config.Telemetry.OverrideMetricsNames
+		extraAttributes := config.Telemetry.ExtraAttributes
 		var tags []tag.Key
 		tagMutators = []tag.Mutator{}
 		for key, val := range extraAttributes {
@@ -73,33 +73,33 @@ func newHeartbeater(config *Config, pushLogFn func(ctx context.Context, ld plog.
 			tagMutators = append(tagMutators, tag.Insert(newTag, val))
 		}
 
-		heartbeatSentTotal = stats.Int64(
+		heartbeatSent = stats.Int64(
 			getMetricsName(overrides, defaultHBSentMetricsName),
-			"number of heartbeats made to the destination",
+			"number of heartbeats sent",
 			stats.UnitDimensionless)
 
-		heartbeatSuccessTotalView := &view.View{
-			Name:        heartbeatSentTotal.Name(),
-			Description: heartbeatSentTotal.Description(),
+		heartbeatSentView := &view.View{
+			Name:        heartbeatSent.Name(),
+			Description: heartbeatSent.Description(),
 			TagKeys:     tags,
-			Measure:     heartbeatSentTotal,
+			Measure:     heartbeatSent,
 			Aggregation: view.Sum(),
 		}
 
-		heartbeatFailedTotal = stats.Int64(
+		heartbeatFailed = stats.Int64(
 			getMetricsName(overrides, defaultHBFailedMetricsName),
-			"number of heartbeats made to destination that failed",
+			"number of heartbeats failed",
 			stats.UnitDimensionless)
 
-		heartbeatErrorTotalView := &view.View{
-			Name:        heartbeatFailedTotal.Name(),
-			Description: heartbeatFailedTotal.Description(),
+		heartbeatFailedView := &view.View{
+			Name:        heartbeatFailed.Name(),
+			Description: heartbeatFailed.Description(),
 			TagKeys:     tags,
-			Measure:     heartbeatFailedTotal,
+			Measure:     heartbeatFailed,
 			Aggregation: view.Sum(),
 		}
 
-		if err := view.Register(heartbeatSuccessTotalView, heartbeatErrorTotalView); err != nil {
+		if err := view.Register(heartbeatSentView, heartbeatFailedView); err != nil {
 			return nil
 		}
 	}
@@ -108,8 +108,8 @@ func newHeartbeater(config *Config, pushLogFn func(ctx context.Context, ld plog.
 		config:                config,
 		pushLogFn:             pushLogFn,
 		hbDoneChan:            make(chan struct{}),
-		heartbeatSuccessTotal: heartbeatSentTotal,
-		heartbeatErrorTotal:   heartbeatFailedTotal,
+		heartbeatSuccessTotal: heartbeatSent,
+		heartbeatErrorTotal:   heartbeatFailed,
 		tagMutators:           tagMutators,
 	}
 }
@@ -119,7 +119,7 @@ func (h *heartbeater) shutdown() {
 }
 
 func (h *heartbeater) initHeartbeat(buildInfo component.BuildInfo) {
-	interval := h.config.HecHeartbeat.Interval
+	interval := h.config.Heartbeat.Interval
 	if interval == 0 {
 		return
 	}
@@ -143,7 +143,7 @@ func (h *heartbeater) initHeartbeat(buildInfo component.BuildInfo) {
 
 // there is only use case for open census metrics recording for now. Extend to use open telemetry in the future.
 func (h *heartbeater) observe(err error) {
-	if !h.config.HecTelemetry.Enabled {
+	if !h.config.Telemetry.Enabled {
 		return
 	}
 

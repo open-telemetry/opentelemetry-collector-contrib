@@ -94,7 +94,7 @@ func createDefaultConfig() component.Config {
 		HealthPath:            splunk.DefaultHealthPath,
 		HecHealthCheckEnabled: false,
 		ExportRaw:             false,
-		HecTelemetry: HecTelemetry{
+		Telemetry: HecTelemetry{
 			Enabled:              false,
 			OverrideMetricsNames: map[string]string{},
 			ExtraAttributes:      map[string]string{},

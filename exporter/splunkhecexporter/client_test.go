@@ -1515,7 +1515,7 @@ func TestAllowedLogDataTypes(t *testing.T) {
 
 func Test_heartbeat_success(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	config.HecHeartbeat = HecHeartbeat{
+	config.Heartbeat = HecHeartbeat{
 		Interval: 10 * time.Millisecond,
 	}
 
