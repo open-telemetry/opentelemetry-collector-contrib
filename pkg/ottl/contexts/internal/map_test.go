@@ -134,8 +134,8 @@ func Test_GetMapValue_MissingKey(t *testing.T) {
 		},
 	}
 	result, err := GetMapValue(m, keys)
-	assert.Nil(t, result)
 	assert.Nil(t, err)
+	assert.Nil(t, result)
 }
 
 func Test_SetMapValue_Invalid(t *testing.T) {
@@ -233,4 +233,51 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			assert.Equal(t, tt.err, err)
 		})
 	}
+}
+
+func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
+	m := pcommon.NewMap()
+	m.PutEmptyMap("map1").PutStr("test", "test")
+	keys := []ottl.Key{
+		{
+			String: ottltest.Strp("map1"),
+		},
+		{
+			String: ottltest.Strp("map2"),
+		},
+		{
+			String: ottltest.Strp("foo"),
+		},
+	}
+	err := SetMapValue(m, keys, "bar")
+	assert.Nil(t, err)
+
+	expected := pcommon.NewMap()
+	sub := expected.PutEmptyMap("map1")
+	sub.PutStr("test", "test")
+	sub.PutEmptyMap("map2").PutStr("foo", "bar")
+
+	assert.Equal(t, expected, m)
+}
+
+func Test_SetMapValue_EmptyMap(t *testing.T) {
+	m := pcommon.NewMap()
+	keys := []ottl.Key{
+		{
+			String: ottltest.Strp("map1"),
+		},
+		{
+			String: ottltest.Strp("map2"),
+		},
+		{
+			String: ottltest.Strp("foo"),
+		},
+	}
+	err := SetMapValue(m, keys, "bar")
+	assert.Nil(t, err)
+
+	expected := pcommon.NewMap()
+	expected.PutEmptyMap("map1").PutEmptyMap("map2").PutStr("foo", "bar")
+
+	assert.Equal(t, expected, m)
 }

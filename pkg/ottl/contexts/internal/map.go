@@ -91,9 +91,11 @@ func SetMapValue(m pcommon.Map, keys []ottl.Key, val interface{}) error {
 			if keys[i].String == nil {
 				return fmt.Errorf("map must be indexed by a string")
 			}
-			currentValue, ok = currentValue.Map().Get(*keys[i].String)
+			potentialValue, ok := currentValue.Map().Get(*keys[i].String)
 			if !ok {
 				currentValue = currentValue.Map().PutEmpty(*keys[i].String)
+			} else {
+				currentValue = potentialValue
 			}
 		case pcommon.ValueTypeSlice:
 			if keys[i].Int == nil {

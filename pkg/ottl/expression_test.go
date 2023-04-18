@@ -564,6 +564,38 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 			},
 			err: fmt.Errorf("index -1 out of bounds"),
 		},
+		{
+			name: "invalid int indexing type",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Hello",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(-1),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("type, string, does not support int indexing"),
+		},
+		{
+			name: "invalid string indexing type",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Hello",
+						Keys: []Key{
+							{
+								String: ottltest.Strp("test"),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("type, string, does not support string indexing"),
+		},
 	}
 
 	functions := map[string]interface{}{
