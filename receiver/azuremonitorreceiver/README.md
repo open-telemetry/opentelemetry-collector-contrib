@@ -22,11 +22,11 @@ The following settings are required:
 - `client_secret`
 
 The following settings are optional:
-- `resource_groups` (default = none): What resourses groups need to get metrics for, by default it scrapes metrics for all resources in the subscription.
-- `services` (default = none): What services need to get data for, by default it scrapes metrics for all services those integrated with Azure Monitor.
-- `cache_resources` (default = 86400): List of resources will be cached for the provided amount of time.
-- `cache_resources_definitions` (default = 86400): List of metrics definitions will be cached for the provided amount of time.
-- `maximum_number_of_metrics_in_a_call` (default = 20): Maximum number of metrics in one API call, current limit in Azure is 20 (as of 03/27/2023).
+- `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
+- `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
+- `cache_resources` (default = 86400): List of resources will be cached for the provided amount of time in seconds.
+- `cache_resources_definitions` (default = 86400): List of metrics definitions will be cached for the provided amount of time in seconds.
+- `maximum_number_of_metrics_in_a_call` (default = 20): Maximum number of metrics to fetch in per API call, current limit in Azure is 20 (as of 03/27/2023).
 
 ### Example Configuration
 
@@ -48,7 +48,7 @@ receivers:
 
 ## Metrics
 
-Details about the metrics scraped by this receiver can be found in [Supported metrics with Azure Monitor](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported). This receiver adds prefix "azure_" to all scraped metrics.
+Details about the metrics scraped by this receiver can be found in [Supported metrics with Azure Monitor](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported). This receiver adds the prefix "azure_" to all scraped metrics.
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
