@@ -15,6 +15,7 @@
 package deltatorateprocessor
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor/internal/metadata"
 	"path/filepath"
 	"testing"
 
@@ -33,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				Metrics: []string{
 					"metric1",
@@ -42,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "missing_name"),
+			id:           component.NewIDWithName(metadata.Type, "missing_name"),
 			errorMessage: "metric names are missing",
 		},
 	}
