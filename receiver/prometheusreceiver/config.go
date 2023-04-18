@@ -111,7 +111,8 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 func checkSDFile(filename string) error {
 	content, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
-		return err
+		fmt.Errorf("SD file %q does not exist", filename)
+		return nil
 	}
 
 	var targetGroups []*targetgroup.Group
