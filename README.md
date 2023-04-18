@@ -77,6 +77,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 - [Andrzej Stencel](https://github.com/astencel-sumo), Sumo Logic
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
+- [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:

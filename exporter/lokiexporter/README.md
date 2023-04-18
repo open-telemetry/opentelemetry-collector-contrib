@@ -98,7 +98,7 @@ processors:
 In this case the value of the `host.name` resource attribute is used to group logs
 by tenant and send requests with the `X-Scope-OrgID` header set to relevant tenants.
 
-If the `loki.tenant` hint attribute is present in both resource or log attributes,
+If the `loki.tenant` hint attribute is present in both resource and log attributes,
 then the look-up for a tenant value from resource attributes takes precedence.
 
 ### Format

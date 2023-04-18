@@ -278,7 +278,8 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 
 	for m := range ch {
 		require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
-		require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+		require.Contains(t, m.Desc().String(), "label_1")
+		require.Contains(t, m.Desc().String(), "label_2")
 
 		pbMetric := io_prometheus_client.Metric{}
 		require.NoError(t, m.Write(&pbMetric))
@@ -458,7 +459,7 @@ func TestCollectMetrics(t *testing.T) {
 						continue
 					}
 
-					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2 job instance]")
+					require.Regexp(t, `variableLabels: \[.*label_1.+label_2.+job.+instance.*\]`, m.Desc().String())
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
@@ -558,7 +559,8 @@ func TestAccumulateHistograms(t *testing.T) {
 				for m := range ch {
 					n++
 					require.Contains(t, m.Desc().String(), "fqName: \"test_metric\"")
-					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+					require.Contains(t, m.Desc().String(), "label_1")
+					require.Contains(t, m.Desc().String(), "label_2")
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
@@ -660,7 +662,8 @@ func TestAccumulateSummary(t *testing.T) {
 				for m := range ch {
 					n++
 					require.Contains(t, m.Desc().String(), "fqName: \"test_metric\"")
-					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+					require.Contains(t, m.Desc().String(), "label_1")
+					require.Contains(t, m.Desc().String(), "label_2")
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
