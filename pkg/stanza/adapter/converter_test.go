@@ -836,6 +836,8 @@ func BenchmarkConverter(b *testing.B) {
 				converter := NewConverter(zap.NewNop())
 				converter.Start()
 				defer converter.Stop()
+
+				b.ReportAllocs()
 				b.ResetTimer()
 
 				go func() {
@@ -868,15 +870,8 @@ func BenchmarkConverter(b *testing.B) {
 						}
 
 						rLogs := pLogs.ResourceLogs()
-						require.Equal(b, 1, rLogs.Len())
-
-						rLog := rLogs.At(0)
-						ills := rLog.ScopeLogs()
-						require.Equal(b, 1, ills.Len())
-
-						sl := ills.At(0)
-
-						n += sl.LogRecords().Len()
+						require.Equal(b, hostsCount, rLogs.Len())
+						n += pLogs.LogRecordCount()
 
 					case <-timeoutTimer.C:
 						break forLoop
