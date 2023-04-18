@@ -641,8 +641,8 @@ func TestLogsToMetrics(t *testing.T) {
 						Description: "Log count by attribute",
 						Attributes: []AttributeConfig{
 							{
-								Key: "nested.attribute.foo",
-								AnyDepth: true,
+								Key:      "nested.attribute.foo",
+								MaxDepth: 3,
 							},
 						},
 					},

@@ -340,8 +340,9 @@ func TestLoadConfig(t *testing.T) {
 						Description: "My span count by nested region.",
 						Attributes: []AttributeConfig{
 							{
-								Key: "env.nested.region",
-						  },
+								Key:      "env.nested.region",
+								MaxDepth: 3,
+							},
 						},
 					},
 				},
@@ -350,8 +351,9 @@ func TestLoadConfig(t *testing.T) {
 						Description: "My spanevent count by nested region.",
 						Attributes: []AttributeConfig{
 							{
-								Key: "env.nested.region",
-						  },
+								Key:      "env.nested.region",
+								MaxDepth: 3,
+							},
 						},
 					},
 				},
@@ -365,8 +367,9 @@ func TestLoadConfig(t *testing.T) {
 						Description: "My datapoint count by nested region.",
 						Attributes: []AttributeConfig{
 							{
-								Key: "env.nested.region",
-						  },
+								Key:      "env.nested.region",
+								MaxDepth: 3,
+							},
 						},
 					},
 				},
@@ -375,9 +378,9 @@ func TestLoadConfig(t *testing.T) {
 						Description: "My log record count by nested region.",
 						Attributes: []AttributeConfig{
 							{
-								Key: "env.nested.region",
-							  AnyDepth: true,
-						  },
+								Key:      "env.nested.region",
+								MaxDepth: 3,
+							},
 						},
 					},
 				},
@@ -532,7 +535,7 @@ func TestConfigErrors(t *testing.T) {
 						Attributes: []AttributeConfig{
 							{
 								Key: "",
-						  },
+							},
 						},
 					},
 				},
@@ -548,7 +551,7 @@ func TestConfigErrors(t *testing.T) {
 						Attributes: []AttributeConfig{
 							{
 								Key: "",
-						  },
+							},
 						},
 					},
 				},
@@ -564,7 +567,7 @@ func TestConfigErrors(t *testing.T) {
 						Attributes: []AttributeConfig{
 							{
 								Key: "",
-						  },
+							},
 						},
 					},
 				},
@@ -580,63 +583,12 @@ func TestConfigErrors(t *testing.T) {
 						Attributes: []AttributeConfig{
 							{
 								Key: "",
-						  },
+							},
 						},
 					},
 				},
 			},
 			expect: "attribute key missing",
-		},
-		{
-			name: "any_depth_span",
-			input: &Config{
-				Spans: map[string]MetricInfo{
-					defaultMetricNameSpans: {
-						Description: defaultMetricDescSpans,
-						Attributes: []AttributeConfig{
-							{
-								Key: "default.attribute",
-								AnyDepth: true,
-						  },
-						},
-					},
-				},
-			},
-			expect: "any_depth cannot be used on this type of resource",
-		},
-		{
-			name: "any_depth_spanevents",
-			input: &Config{
-				SpanEvents: map[string]MetricInfo{
-					defaultMetricNameSpanEvents: {
-						Description: defaultMetricDescSpanEvents,
-						Attributes: []AttributeConfig{
-							{
-								Key: "default.attribute",
-								AnyDepth: true,
-						  },
-						},
-					},
-				},
-			},
-			expect: "any_depth cannot be used on this type of resource",
-		},
-		{
-			name: "any_depth_datapoints",
-			input: &Config{
-				DataPoints: map[string]MetricInfo{
-					defaultMetricNameDataPoints: {
-						Description: defaultMetricDescDataPoints,
-						Attributes: []AttributeConfig{
-							{
-								Key: "default.attribute",
-								AnyDepth: true,
-						  },
-						},
-					},
-				},
-			},
-			expect: "any_depth cannot be used on this type of resource",
 		},
 	}
 

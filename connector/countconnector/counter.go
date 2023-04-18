@@ -50,13 +50,14 @@ type attrCounter struct {
 
 func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) error {
 	var errors error
+
 	for name, md := range c.metricDefs {
 		countAttrs := pcommon.NewMap()
 		for _, attr := range md.attrs {
 			attrVal, ok := attrs.Get(attr.Key)
-			if !ok && attr.AnyDepth {
+			if !ok && attr.MaxDepth > 1 {
 				// couldn't find the attribute so check if it is nested when any_depth is true
-				attrVal, ok = getNestedAttribute(attr.Key, attrs) // shadows the OK from above on purpose
+				attrVal, ok = getNestedAttribute(attr.Key, attr.MaxDepth, attrs) // shadows the OK from above on purpose
 			}
 			if ok {
 				countAttrs.PutStr(attr.Key, attrVal.Str())
@@ -125,14 +126,14 @@ func (c *counter[K]) appendMetricsTo(metricSlice pmetric.MetricSlice) {
 	}
 }
 
-func getNestedAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
+func getNestedAttribute(attr string, depth int, attributes pcommon.Map) (pcommon.Value, bool) {
 	logger := zap.NewExample()
 	defer logger.Sync()
 	left, right, _ := strings.Cut(attr, ".")
 	av, ok := attributes.Get(left)
-	if ok {
+	if ok && depth > 0 {
 		if av.Type().String() == "Slice" {
-			logger.Warn("[connector/count] cannot use Type Slice as an attribute source", zap.String("atrribute", attr))
+			logger.Warn("[connector/count] cannot use Type Slice as an attribute source", zap.String("attribute", attr))
 			return pcommon.Value{}, false
 		} else if len(right) == 0 {
 			return av, ok
@@ -143,5 +144,5 @@ func getNestedAttribute(attr string, attributes pcommon.Map) (pcommon.Value, boo
 		return pcommon.Value{}, false
 	}
 
-	return getNestedAttribute(right, av.Map())
+	return getNestedAttribute(right, depth-1, av.Map())
 }
