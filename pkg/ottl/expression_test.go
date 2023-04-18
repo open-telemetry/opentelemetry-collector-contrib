@@ -533,7 +533,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 			err: fmt.Errorf("index -1 out of bounds"),
 		},
 		{
-			name: "index too large for pcommon slice",
+			name: "index too large for Go slice",
 			val: value{
 				Literal: &mathExprLiteral{
 					Converter: &converter{
@@ -549,7 +549,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 			err: fmt.Errorf("index 100 out of bounds"),
 		},
 		{
-			name: "negative for pcommon slice",
+			name: "negative for Go slice",
 			val: value{
 				Literal: &mathExprLiteral{
 					Converter: &converter{
