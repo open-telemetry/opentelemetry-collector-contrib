@@ -181,20 +181,19 @@ Metric transform processor specific functionality
 
 ## Include/Exclude Filtering
 
-The [attribute processor](README.md) exposes
-an option to provide a set of properties of a span, log, or metric record to match against to determine
-if the input data should be included or excluded from the processor. To configure
-this option, under `include` and/or `exclude` at least `match_type` and one of the following
-is required:
-- For spans, one of `services`, `span_names`, `span_kinds`, `attributes`, `resources`, or `libraries` must be specified
-with a non-empty value for a valid configuration. The `log_bodies`, `log_severity_texts`, `log_severity_number`, 
-`resource_attributes` and `metric_names` fields are invalid.
-- For logs, one of `log_bodies`, `log_severity_texts`, `log_severity_number`, `attributes`, `resources`, or `libraries` 
-must be specified with a non-empty value for a valid configuration. The `span_names`, `span_kinds`, `metric_names`, 
-`resource_attributes`, and `services` fields are invalid.
-- For metrics, one of `metric_names`, `resources` must be specified
-with a valid non-empty value for a valid configuration. The `span_names`, `span_kinds`, `log_bodies`, `log_severity_texts`,
-`log_severity_number` and `services` fields are invalid.
+The [attribute processor](README.md) exposes an option to provide a set of properties of a span, log 
+or metric record to match against to determine if the input data should be included or excluded from
+the processor. To configure this option, under `include` and/or `exclude` at least `match_type` and 
+one of the following is required:
+- For spans, one of `services`, `span_names`, `span_kinds`, `attributes`, `resources` or `libraries` 
+must be specified with a non-empty value for a valid configuration. The `log_bodies`, `log_severity_texts`, 
+`log_severity_number` and `metric_names` fields are invalid.
+- For logs, one of `log_bodies`, `log_severity_texts`, `log_severity_number`, `attributes`, `resources`
+or `libraries` must be specified with a non-empty value for a valid configuration. The `span_names`, 
+`span_kinds`, `metric_names` and `services` fields are invalid.
+- For metrics, one of `metric_names` or `resources` must be specified with a valid non-empty value for
+a valid configuration. The `span_names`, `span_kinds`, `log_bodies`, `log_severity_texts`, 
+`log_severity_number`, `services`, `attributes` and `libraries` fields are invalid.
 
 
 Note: If both `include` and `exclude` are specified, the `include` properties
