@@ -1,0 +1,7 @@
+type: datadog
+
+status:
+  class: processor
+  stability: beta
+  pipelines: [traces]
+  distributions: [contrib]
