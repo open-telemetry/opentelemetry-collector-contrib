@@ -1,6 +1,6 @@
 # A debian9 image with systemd enabled.  Must be run with:
 # `-d --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro` flags
-FROM debian:9
+FROM debian:11
 
 RUN apt-get update &&\
     apt-get install -yq ca-certificates procps systemd
