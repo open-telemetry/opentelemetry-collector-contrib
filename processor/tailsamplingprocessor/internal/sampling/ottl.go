@@ -87,7 +87,8 @@ func (osf *ottlStatementFilter) Evaluate(ctx context.Context, _ pcommon.TraceID,
 				for l := range evalFuncChain {
 					decision, err := evalFuncChain[l](ctx, osf, ss.Spans().At(k), scope, resource)
 					if err != nil {
-						return NotSampled, err
+						osf.logger.Error("failed processing traces", zap.Error(err))
+						return Error, err
 					}
 					if decision == Sampled {
 						return Sampled, nil
@@ -103,8 +104,7 @@ func (osf *ottlStatementFilter) Evaluate(ctx context.Context, _ pcommon.TraceID,
 func evalSpan(ctx context.Context, osf *ottlStatementFilter, span ptrace.Span, scope pcommon.InstrumentationScope, resource pcommon.Resource) (Decision, error) {
 	ok, err := osf.sampleSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
 	if err != nil {
-		osf.logger.Error("failed processing traces", zap.Error(err))
-		return NotSampled, err
+		return Error, err
 	}
 	if ok {
 		return Sampled, nil
@@ -118,8 +118,7 @@ func evalSpanEvent(ctx context.Context, osf *ottlStatementFilter, span ptrace.Sp
 	for l := 0; l < spanEvents.Len(); l++ {
 		ok, err := osf.sampleSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvents.At(l), span, scope, resource))
 		if err != nil {
-			osf.logger.Error("failed processing traces", zap.Error(err))
-			return NotSampled, err
+			return Error, err
 		}
 		if ok {
 			return Sampled, nil
