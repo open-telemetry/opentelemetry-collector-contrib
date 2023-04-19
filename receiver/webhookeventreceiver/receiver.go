@@ -93,10 +93,10 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 
 	// set up router.
 	router := httprouter.New()
-    
+
 	router.POST(er.cfg.Path, er.handleReq)
 
-    // webhook server standup and configuration
+	// webhook server standup and configuration
 	er.server, err = er.cfg.HTTPServerSettings.ToServer(host, er.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
@@ -158,7 +158,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 	}
 
 	bodyReader := r.Body
-    // gzip encoded case
+	// gzip encoded case
 	if encoding == "gzip" || encoding == "x-gzip" {
 		reader := er.gzipPool.Get().(*gzip.Reader)
 		err := reader.Reset(bodyReader)
@@ -173,7 +173,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 		defer er.gzipPool.Put(reader)
 	}
 
-    // finish reading the body into a log 
+	// finish reading the body into a log
 	sc := bufio.NewScanner(bodyReader)
 	ld, numLogs := reqToLog(sc, r.URL.Query(), er.cfg)
 	consumerErr := er.logConsumer.ConsumeLogs(ctx, ld)
@@ -218,4 +218,3 @@ func (er *eventReceiver) failBadReq(ctx context.Context,
 
 	return nil
 }
-

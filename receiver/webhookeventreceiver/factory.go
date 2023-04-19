@@ -18,14 +18,14 @@ const (
 	typeStr = "webhookevent"
 	// The stability level of the receiver.
 	stability = component.StabilityLevelDevelopment
-    // might add this later, for now I wish to require a valid 
-    // endpoint to be declared by the user.
+	// might add this later, for now I wish to require a valid
+	// endpoint to be declared by the user.
 	// Default endpoints to bind to.
-    // defaultEndpoint = "localhost:8080"
-    defaultReadTimeout = "500"
-    defaultWriteTimeout = "500"
-    defaultPath = "/events"
-    defaultHealthPath = "/health_check"
+	// defaultEndpoint = "localhost:8080"
+	defaultReadTimeout  = "500"
+	defaultWriteTimeout = "500"
+	defaultPath         = "/events"
+	defaultHealthPath   = "/health_check"
 )
 
 // NewFactory creates a factory for Generic Webhook Receiver.
@@ -40,10 +40,10 @@ func NewFactory() component.Factory {
 // Default configuration for the generic webhook receiver
 func createDefaultConfig() component.Config {
 	return &Config{
-        Path: defaultPath,
-        HealthPath:   defaultHealthPath,
-        ReadTimeout:  defaultReadTimeout,
-        WriteTimeout: defaultWriteTimeout,
+		Path:         defaultPath,
+		HealthPath:   defaultHealthPath,
+		ReadTimeout:  defaultReadTimeout,
+		WriteTimeout: defaultWriteTimeout,
 	}
 }
 
@@ -55,10 +55,10 @@ func createLogsReceiver(
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	conf := cfg.(*Config)
-    rec, err := newLogsReceiver(params, *conf, consumer)
-    if err != nil {
-        return nil, err
-    }
+	rec, err := newLogsReceiver(params, *conf, consumer)
+	if err != nil {
+		return nil, err
+	}
 
 	return rec, nil
 }
