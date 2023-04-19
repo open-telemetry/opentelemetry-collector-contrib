@@ -24,16 +24,15 @@ import (
 func reqToLog(sc *bufio.Scanner,
 	query url.Values,
 	config *Config) (plog.Logs, int) {
-    log := plog.NewLogs()
-    resourceLog := log.ResourceLogs().AppendEmpty()
-    scopeLog := resourceLog.ScopeLogs().AppendEmpty()
-    
-    for sc.Scan() {
-        logRecord := scopeLog.LogRecords().AppendEmpty()
-        line := sc.Text()
-        logRecord.Body().SetStr(line)
-    }
-    
+	log := plog.NewLogs()
+	resourceLog := log.ResourceLogs().AppendEmpty()
+	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
 
-	return log, scopeLog.LogRecords().Len() 
+	for sc.Scan() {
+		logRecord := scopeLog.LogRecords().AppendEmpty()
+		line := sc.Text()
+		logRecord.Body().SetStr(line)
+	}
+
+	return log, scopeLog.LogRecords().Len()
 }
