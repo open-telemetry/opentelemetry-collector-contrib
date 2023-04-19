@@ -46,6 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				ContainerOrchestrator: "eks",
 				TagService:            true,
 				PrefFullPodName:       false,
+				LeaderLockName:        "otel-container-insight-clusterleader",
 			},
 		},
 		{
@@ -56,6 +57,17 @@ func TestLoadConfig(t *testing.T) {
 				TagService:            true,
 				PrefFullPodName:       false,
 				ClusterName:           "override_cluster",
+				LeaderLockName:        "otel-container-insight-clusterleader",
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "leader_lock_name"),
+			expected: &Config{
+				CollectionInterval:    60 * time.Second,
+				ContainerOrchestrator: "eks",
+				TagService:            true,
+				PrefFullPodName:       false,
+				LeaderLockName:        "override-container-insight-clusterleader",
 			},
 		},
 	}

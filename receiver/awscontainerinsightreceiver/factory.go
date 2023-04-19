@@ -48,6 +48,9 @@ const (
 
 	// Rely on EC2 tags to auto-detect cluster name by default
 	defaultClusterName = ""
+
+	// Default locking resource name during EKS leader election
+	defaultLeaderLockName = "otel-container-insight-clusterleader"
 )
 
 // NewFactory creates a factory for AWS container insight receiver
@@ -67,6 +70,7 @@ func createDefaultConfig() component.Config {
 		PrefFullPodName:           defaultPrefFullPodName,
 		AddFullPodNameMetricLabel: defaultAddFullPodNameMetricLabel,
 		ClusterName:               defaultClusterName,
+		LeaderLockName:            defaultLeaderLockName,
 	}
 }
 

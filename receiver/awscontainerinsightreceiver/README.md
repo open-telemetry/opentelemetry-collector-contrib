@@ -59,6 +59,10 @@ The "FullPodName" attribute is the pod name including suffix. If false FullPodNa
 
 "ClusterName" can be used to explicitly provide the cluster's name for EKS/ECS NOT on EC2 since it's not possible to auto-detect it using EC2 tags.
 
+**leader_lock_name (optional)**
+
+"LeaderLockName" can be used to optionally override the lock resource name to be used during leader election for EKS Container Insights. The elected leader is responsible for scraping cluster level metrics. The default value is "otel-container-insight-clusterleader".
+
 ## Sample configuration for Container Insights 
 This is a sample configuration for AWS Container Insights using the `awscontainerinsightreceiver` and `awsemfexporter` for an EKS cluster:
 ```

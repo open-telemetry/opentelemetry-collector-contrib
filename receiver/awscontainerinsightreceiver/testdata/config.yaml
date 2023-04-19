@@ -4,3 +4,5 @@ awscontainerinsightreceiver/collection_interval_settings:
   collection_interval: 60s
 awscontainerinsightreceiver/cluster_name:
   cluster_name: override_cluster
+awscontainerinsightreceiver/leader_lock_name:
+  leader_lock_name: override-container-insight-clusterleader
