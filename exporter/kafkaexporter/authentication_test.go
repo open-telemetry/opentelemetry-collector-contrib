@@ -123,6 +123,11 @@ func TestAuthentication(t *testing.T) {
 			saramaConfig: saramaSASLSCRAM512Config,
 			err:          "password have to be provided",
 		},
+		{
+			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "", Mechanism: "SCRAM-SHA-512", Version: 2}},
+			saramaConfig: saramaSASLSCRAM512Config,
+			err:          "invalid SASL Protocol Version",
+		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
