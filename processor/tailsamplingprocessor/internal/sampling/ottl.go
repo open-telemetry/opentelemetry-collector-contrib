@@ -39,7 +39,7 @@ var _ PolicyEvaluator = (*ottlStatementFilter)(nil)
 // evalFuncChain contains eval functions for:
 // 1. span expression
 // 2. span event expression
-var evalFuncChain = []func(ctx context.Context, sf *ottlStatementFilter, span ptrace.Span, scope pcommon.InstrumentationScope, resource pcommon.Resource) (Decision, error){
+var evalFuncChain = []func(ctx context.Context, osf *ottlStatementFilter, span ptrace.Span, scope pcommon.InstrumentationScope, resource pcommon.Resource) (Decision, error){
 	evalSpan,
 	evalSpanEvent,
 }
