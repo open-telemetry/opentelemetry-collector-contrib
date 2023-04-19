@@ -68,6 +68,7 @@ func (c *Commander) Start(ctx context.Context) error {
 	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
 
 	// Capture standard output and standard error.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21072
 	c.cmd.Stdout = logFile
 	c.cmd.Stderr = logFile
 

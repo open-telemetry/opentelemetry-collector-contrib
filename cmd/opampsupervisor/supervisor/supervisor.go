@@ -71,6 +71,7 @@ type Supervisor struct {
 	// A config section to be added to the Collector's config to fetch its own metrics.
 	// TODO: store this persistently so that when starting we can compose the effective
 	// config correctly.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21078
 	agentConfigOwnMetricsSection atomic.Value
 
 	// agentHealthCheckEndpoint is the endpoint the Collector's health check extension
@@ -158,6 +159,7 @@ func (s *Supervisor) loadConfig(configFile string) error {
 	return nil
 }
 
+// TODO: Implement bootstrapping https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21071
 func (s *Supervisor) getBootstrapInfo() (err error) {
 	s.agentVersion = "1.0.0"
 
@@ -180,10 +182,30 @@ func (s *Supervisor) startOpAMP() error {
 			OnErrorFunc: func(err *protobufs.ServerErrorResponse) {
 				s.logger.Error("Server returned an error response", zap.String("message", err.ErrorMessage))
 			},
+			OnMessageFunc: s.onMessage,
+			OnOpampConnectionSettingsFunc: func(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
+				s.logger.Debug("Received ConnectionSettings request")
+				return nil
+			},
+			OnOpampConnectionSettingsAcceptedFunc: func(settings *protobufs.OpAMPConnectionSettings) {
+				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
+				s.logger.Debug("ConnectionSettings accepted")
+			},
+			OnCommandFunc: func(command *protobufs.ServerToAgentCommand) error {
+				cmdType := command.GetType()
+				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
+					// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21077
+					s.logger.Debug("Received restart command")
+				}
+				return nil
+			},
+			SaveRemoteConfigStatusFunc: func(ctx context.Context, status *protobufs.RemoteConfigStatus) {
+				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
+			},
 			GetEffectiveConfigFunc: func(ctx context.Context) (*protobufs.EffectiveConfig, error) {
 				return s.createEffectiveConfigMsg(), nil
 			},
-			OnMessageFunc: s.onMessage,
 		},
 		// TODO: Make capabilities configurable
 		Capabilities: protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
@@ -215,11 +237,10 @@ func (s *Supervisor) startOpAMP() error {
 }
 
 func (s *Supervisor) createInstanceID() {
-	// Generate instance id.
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(0)), 0)
 	s.instanceID = ulid.MustNew(ulid.Timestamp(time.Now()), entropy)
 
-	// TODO: Persist instance ID.
+	// TODO: Persist instance ID. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21073
 }
 
 func keyVal(key, val string) *protobufs.KeyValue {
@@ -234,11 +255,11 @@ func keyVal(key, val string) *protobufs.KeyValue {
 func (s *Supervisor) createAgentDescription() *protobufs.AgentDescription {
 	hostname, _ := os.Hostname()
 
-	// Create Agent description.
 	return &protobufs.AgentDescription{
 		IdentifyingAttributes: []*protobufs.KeyValue{
 			keyVal("service.name", agentType),
 			keyVal("service.version", s.agentVersion),
+			keyVal("service.instance.id", s.instanceID.String()),
 		},
 		NonIdentifyingAttributes: []*protobufs.KeyValue{
 			keyVal("os.family", runtime.GOOS),
@@ -546,6 +567,7 @@ func (s *Supervisor) runAgentProcess() {
 			}
 
 			// TODO: decide why the agent stopped. If it was due to bad config, report it to server.
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
 
 			// Wait 5 seconds before starting again.
 			restartTimer.Stop()
