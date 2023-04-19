@@ -23,33 +23,50 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
-
-type ContextID string
 
 type ottlStatementFilter struct {
 	sampleSpanExpr      expr.BoolExpr[ottlspan.TransformContext]
 	sampleSpanEventExpr expr.BoolExpr[ottlspanevent.TransformContext]
+	ErrorMode           ottl.ErrorMode
 	logger              *zap.Logger
 }
 
 var _ PolicyEvaluator = (*ottlStatementFilter)(nil)
 
-// NewOTTLStatementFilter looks at the trace data and returns a corresponding SamplingDecision.
-func NewOTTLStatementFilter(logger *zap.Logger, spanStatements, spanEventStatements []string) PolicyEvaluator {
-	sampleSpanExpr, _ := filterottl.NewBoolExprForSpan(spanStatements, filterottl.StandardSpanFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-	sampleSpanEventExpr, _ := filterottl.NewBoolExprForSpanEvent(spanEventStatements, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+// evalFuncChain contains eval functions for:
+// 1. span expression
+// 2. span event expression
+var evalFuncChain = []func(ctx context.Context, sf *ottlStatementFilter, span ptrace.Span, scope pcommon.InstrumentationScope, resource pcommon.Resource) (Decision, error){
+	evalSpan,
+	evalSpanEvent,
+}
 
-	return &ottlStatementFilter{
-		sampleSpanExpr:      sampleSpanExpr,
-		sampleSpanEventExpr: sampleSpanEventExpr,
-		logger:              logger,
+// NewOTTLStatementFilter looks at the trace data and returns a corresponding SamplingDecision.
+func NewOTTLStatementFilter(logger *zap.Logger, spanStatements, spanEventStatements []string, errMode ottl.ErrorMode) (PolicyEvaluator, error) {
+	filter := &ottlStatementFilter{
+		ErrorMode: errMode,
+		logger:    logger,
 	}
+	var err error
+	if filter.sampleSpanExpr, err = filterottl.NewBoolExprForSpan(spanStatements, filterottl.StandardSpanFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+		return nil, err
+	}
+	if filter.sampleSpanEventExpr, err = filterottl.NewBoolExprForSpanEvent(spanEventStatements, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+		return nil, err
+	}
+
+	return filter, nil
 }
 
 func (osf *ottlStatementFilter) Evaluate(ctx context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	osf.logger.Debug("Evaluating spans with OTTL statement filter")
+
+	if osf.sampleSpanExpr == nil && osf.sampleSpanEventExpr == nil {
+		return NotSampled, nil
+	}
 
 	trace.Lock()
 	batches := trace.ReceivedBatches
@@ -62,28 +79,50 @@ func (osf *ottlStatementFilter) Evaluate(ctx context.Context, _ pcommon.TraceID,
 			ss := rs.ScopeSpans().At(j)
 			scope := ss.Scope()
 			for k := 0; k < ss.Spans().Len(); k++ {
-				span := ss.Spans().At(k)
-				ok, err := osf.sampleSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
-				if err != nil {
-					osf.logger.Error("failed processing traces", zap.Error(err))
-					return NotSampled, err
-				}
-				if ok {
-					return Sampled, nil
-				}
-
-				spanEvents := span.Events()
-				for l := 0; l < spanEvents.Len(); l++ {
-					ok, err = osf.sampleSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvents.At(l), span, scope, resource))
+				// Now we reach span level and execute each eval function.
+				// The execution of function chain will break when:
+				// 1. error happened.
+				// 2. "Sampled" decision made.
+				// Otherwise, it will keep executing and finally exit with "NotSampled" decision.
+				for l := range evalFuncChain {
+					decision, err := evalFuncChain[l](ctx, osf, ss.Spans().At(k), scope, resource)
 					if err != nil {
-						osf.logger.Error("failed processing traces", zap.Error(err))
 						return NotSampled, err
 					}
-					if ok {
+					if decision == Sampled {
 						return Sampled, nil
 					}
 				}
 			}
+		}
+	}
+	return NotSampled, nil
+}
+
+// evalSpan wrap expr.BoolExpr[ottlspan.TransformContext].Eval() and transform bool result into a sampling decision.
+func evalSpan(ctx context.Context, osf *ottlStatementFilter, span ptrace.Span, scope pcommon.InstrumentationScope, resource pcommon.Resource) (Decision, error) {
+	ok, err := osf.sampleSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
+	if err != nil {
+		osf.logger.Error("failed processing traces", zap.Error(err))
+		return NotSampled, err
+	}
+	if ok {
+		return Sampled, nil
+	}
+	return NotSampled, nil
+}
+
+// evalSpan wrap expr.BoolExpr[ottlspanevent.TransformContext].Eval() and transform bool result into a sampling decision.
+func evalSpanEvent(ctx context.Context, osf *ottlStatementFilter, span ptrace.Span, scope pcommon.InstrumentationScope, resource pcommon.Resource) (Decision, error) {
+	spanEvents := span.Events()
+	for l := 0; l < spanEvents.Len(); l++ {
+		ok, err := osf.sampleSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvents.At(l), span, scope, resource))
+		if err != nil {
+			osf.logger.Error("failed processing traces", zap.Error(err))
+			return NotSampled, err
+		}
+		if ok {
+			return Sampled, nil
 		}
 	}
 	return NotSampled, nil

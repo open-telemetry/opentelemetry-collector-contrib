@@ -2,6 +2,7 @@ package sampling
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -20,17 +21,38 @@ func TestEvaluate_OTTL(t *testing.T) {
 		Decision           Decision
 	}{
 		{
-			"OTTL statement match specific span attributes",
+			"OTTL statement not set",
+			[]string{},
+			[]string{},
+			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
+			NotSampled,
+		},
+		{
+			"OTTL statement match specific span attributes 1",
 			[]string{"attributes[\"attr_k_1\"] == \"attr_v_1\""},
 			[]string{},
 			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
 			Sampled,
 		},
 		{
+			"OTTL statement match specific span attributes 2",
+			[]string{"attributes[\"attr_k_1\"] != \"attr_v_1\""},
+			[]string{},
+			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
+			NotSampled,
+		},
+		{
 			"OTTL statement match specific span event attributes",
 			[]string{},
 			[]string{"attributes[\"event_attr_k_1\"] == \"event_attr_v_1\""},
 			[]spanWithAttributes{{SpanEventAttributes: map[string]string{"event_attr_k_1": "event_attr_v_1"}}},
+			Sampled,
+		},
+		{
+			"OTTL statement match specific span event name",
+			[]string{},
+			[]string{"name != \"incorrect event name\""},
+			[]spanWithAttributes{{SpanEventAttributes: nil}},
 			Sampled,
 		},
 		{
@@ -44,7 +66,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			filter := NewOTTLStatementFilter(zap.NewNop(), c.SpanStatement, c.SpanEventStatement)
+			filter, _ := NewOTTLStatementFilter(zap.NewNop(), c.SpanStatement, c.SpanEventStatement, ottl.IgnoreError)
 			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithSpansAttributes(c.Spans))
 
 			assert.NoError(t, err)

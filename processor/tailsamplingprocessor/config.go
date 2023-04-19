@@ -15,6 +15,7 @@
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"time"
 )
 
@@ -216,8 +217,9 @@ type BooleanAttributeCfg struct {
 // OTTLStatementCfg holds the configurable setting to create a OTTL statement filter
 // sampling policy evaluator.
 type OTTLStatementCfg struct {
-	SpanStatements      []string `mapstructure:"span"`
-	SpanEventStatements []string `mapstructure:"spanevent"`
+	SpanStatements      []string       `mapstructure:"span"`
+	SpanEventStatements []string       `mapstructure:"spanevent"`
+	ErrorMode           ottl.ErrorMode `mapstructure:"error_mode"`
 }
 
 // Config holds the configuration for tail-based sampling.
