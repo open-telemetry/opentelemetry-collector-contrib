@@ -281,7 +281,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 	if err != nil {
 		return err
 	}
-	r.scrapeManager = scrape.NewManager(&scrape.Options{PassMetadataInContext: true}, logger, store)
+	r.scrapeManager = scrape.NewManager(&scrape.Options{PassMetadataInContext: true, ExtraMetrics: r.cfg.ReportExtraMetrics}, logger, store)
 
 	go func() {
 		// The scrape manager needs to wait for the configuration to be loaded before beginning
