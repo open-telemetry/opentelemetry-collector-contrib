@@ -196,6 +196,3 @@ The following internal metrics are recorded by this processor:
 | `num_grouped_metrics`     | number of metrics that had attributes grouped            |
 | `num_non_grouped_metrics` | number of metrics that did not have attributes grouped   |
 | `metric_groups`           | distribution of groups extracted for metrics             |
-
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
