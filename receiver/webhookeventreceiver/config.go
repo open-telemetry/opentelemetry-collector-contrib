@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	errMissingEndpointFromConfig = errors.New("Missing receiver server endpoint from config.")
+	errMissingEndpointFromConfig = errors.New("missing receiver server endpoint from config")
 )
 
 // Config defines configuration for the Generic Webhook receiver.

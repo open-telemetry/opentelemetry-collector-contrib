@@ -92,20 +92,20 @@ func TestHandleReq(t *testing.T) {
 			req: func() *http.Request {
 				// create gzip encoded message
 				msgStruct := struct {
-					field1 string
-					field2 int
-					field3 string
+					Field1 string
+					Field2 int
+					Field3 string
 				}{
-					field1: "hello",
-					field2: 42,
-					field3: "world",
+					Field1: "hello",
+					Field2: 42,
+					Field3: "world",
 				}
-				msgJson, err := json.Marshal(msgStruct)
+				msgJSON, err := json.Marshal(msgStruct)
 				require.NoError(t, err, "failed to marshall message into valid json")
 
 				var msg bytes.Buffer
 				gzipWriter := gzip.NewWriter(&msg)
-				_, err = gzipWriter.Write(msgJson)
+				_, err = gzipWriter.Write(msgJSON)
 				require.NoError(t, err, "Gzip writer failed")
 
 				req := httptest.NewRequest("POST", "http://0.0.0.0/events", &msg)

@@ -24,12 +24,12 @@ import (
 )
 
 var (
-	errNilLogsConsumer      = errors.New("Missing a logs consumer")
-	errMissingEndpoint      = errors.New("Missing a receiver endpoint")
-	errInvalidRequestMethod = errors.New("Invalid method. Valid method is POST")
-	errInvalidEncodingType  = errors.New("Invalid encoding type")
-	errEmptyResponseBody    = errors.New("Request body content length is zero")
-	errCosnumerError        = errors.New("Error with log consumer")
+	errNilLogsConsumer      = errors.New("missing a logs consumer")
+	errMissingEndpoint      = errors.New("missing a receiver endpoint")
+	errInvalidRequestMethod = errors.New("invalid method. Valid method is POST")
+	errInvalidEncodingType  = errors.New("invalid encoding type")
+	errEmptyResponseBody    = errors.New("request body content length is zero")
+	// errConsumerError        = errors.New("error with log consumer")
 )
 
 type eventReceiver struct {
@@ -191,22 +191,22 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 // write response on a failed/bad request. Generates a small json body based on the thrown by
 // the handle func and the appropriate http status code. many webhooks will either log these responses or
 // notify webhook users should a none 2xx code be detected.
-func (er *eventReceiver) failBadReq(ctx context.Context,
+func (er *eventReceiver) failBadReq(_ctx context.Context,
 	w http.ResponseWriter,
 	httpStatusCode int,
-	err error) error {
-	jsonResp, err := jsoniter.Marshal(err.Error())
-	if err != nil {
-		return err
+	err error) {
+	jsonResp, error := jsoniter.Marshal(err.Error())
+	if error != nil {
+		er.settings.Logger.Warn("failed to marshall error to json")
 	}
 
 	// write response to webhook
 	w.WriteHeader(httpStatusCode)
 	if len(jsonResp) > 0 {
 		w.Header().Add("Content-Type", "application/json")
-		_, err := w.Write(jsonResp)
-		if err != nil {
-			er.settings.Logger.Warn("Failed to write json response", zap.Error(err))
+		_, error := w.Write(jsonResp)
+		if error != nil {
+			er.settings.Logger.Warn("failed to write json response", zap.Error(err))
 		}
 	}
 
@@ -215,6 +215,4 @@ func (er *eventReceiver) failBadReq(ctx context.Context,
 		msg := string(jsonResp)
 		er.settings.Logger.Debug(msg, zap.Int("http_status_code", httpStatusCode), zap.Error(err))
 	}
-
-	return nil
 }
