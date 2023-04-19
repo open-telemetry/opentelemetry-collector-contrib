@@ -18,10 +18,12 @@ const (
 	typeStr = "webhookevent"
 	// The stability level of the receiver.
 	stability = component.StabilityLevelDevelopment
-	// Default endpoints to bind to.
-    // defaultEndpoint = "localhost:8080"
     // might add this later, for now I wish to require a valid 
     // endpoint to be declared by the user.
+	// Default endpoints to bind to.
+    // defaultEndpoint = "localhost:8080"
+    defaultReadTimeout = "500"
+    defaultWriteTimeout = "500"
     defaultPath = "/events"
     defaultHealthPath = "/health_check"
 )
@@ -39,7 +41,9 @@ func NewFactory() component.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
         Path: defaultPath,
-        HealthPath: defaultHealthPath,
+        HealthPath:   defaultHealthPath,
+        ReadTimeout:  defaultReadTimeout,
+        WriteTimeout: defaultWriteTimeout,
 	}
 }
 

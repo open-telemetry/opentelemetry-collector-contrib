@@ -93,7 +93,8 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 
 	// set up router.
 	router := httprouter.New()
-	router.POST(er.cfg.Endpoint, er.handleReq)
+    
+	router.POST(er.cfg.Path, er.handleReq)
 
     // webhook server standup and configuration
 	er.server, err = er.cfg.HTTPServerSettings.ToServer(host, er.settings.TelemetrySettings, router)
