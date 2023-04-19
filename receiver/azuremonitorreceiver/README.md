@@ -50,5 +50,3 @@ receivers:
 
 Details about the metrics scraped by this receiver can be found in [Supported metrics with Azure Monitor](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported). This receiver adds the prefix "azure_" to all scraped metrics.
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
