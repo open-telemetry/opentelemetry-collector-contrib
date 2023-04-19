@@ -3,5 +3,5 @@ type: datasetexporter
 status:
   class: exporter
   stability: development
-  pipelines: [logs]
+  pipelines: [logs, traces]
   distributions: [contrib]

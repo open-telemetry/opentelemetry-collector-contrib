@@ -33,7 +33,6 @@ func NewFactory() exporter.Factory {
 		CfgTypeStr,
 		createDefaultConfig,
 		exporter.WithLogs(createLogsExporter, metadata.Stability),
-		exporter.WithMetrics(createMetricsExporter, metadata.Stability),
 		exporter.WithTraces(createTracesExporter, metadata.Stability),
 	)
 }
@@ -59,24 +58,6 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 		set,
 		config,
 		e.consumeLogs,
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithTimeout(cfg.TimeoutSettings),
-	)
-}
-
-func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
-	cfg := config.(*Config)
-	e, err := getDatasetExporter("metrics", cfg, set.Logger)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)
-	}
-
-	return exporterhelper.NewMetricsExporter(
-		ctx,
-		set,
-		config,
-		e.consumeMetrics,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),

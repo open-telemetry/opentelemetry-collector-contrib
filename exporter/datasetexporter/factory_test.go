@@ -185,26 +185,6 @@ func (s *SuiteFactory) TestCreateLogsExporter(assert, require *td.T) {
 	}
 }
 
-func (s *SuiteFactory) TestCreateMetricsExporter(assert, require *td.T) {
-	ctx := context.Background()
-	createSettings := exportertest.NewNopCreateSettings()
-	tests := createExporterTests()
-
-	for _, tt := range tests {
-		require.Run(tt.name, func(*td.T) {
-			exporterInstance = nil
-			logs, err := createMetricsExporter(ctx, createSettings, tt.config)
-
-			if err == nil {
-				assert.Nil(tt.expectedError)
-			} else {
-				assert.Cmp(err.Error(), tt.expectedError.Error())
-				assert.Nil(logs)
-			}
-		})
-	}
-}
-
 func (s *SuiteFactory) TestCreateTracesExporter(assert, require *td.T) {
 	ctx := context.Background()
 	createSettings := exportertest.NewNopCreateSettings()
