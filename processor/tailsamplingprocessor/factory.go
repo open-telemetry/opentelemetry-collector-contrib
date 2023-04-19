@@ -62,5 +62,5 @@ func createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
 	tCfg := cfg.(*Config)
-	return newTracesProcessor(params.Logger, nextConsumer, *tCfg)
+	return newTracesProcessor(ctx, params.Logger, nextConsumer, *tCfg)
 }

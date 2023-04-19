@@ -17,10 +17,10 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
@@ -29,68 +29,23 @@ import (
 type ContextID string
 
 type ottlStatementFilter struct {
-	sampleSpanExpr expr.BoolExpr[ottlspan.TransformContext]
-	logger         *zap.Logger
+	sampleSpanExpr      expr.BoolExpr[ottlspan.TransformContext]
+	sampleSpanEventExpr expr.BoolExpr[ottlspanevent.TransformContext]
+	logger              *zap.Logger
 }
 
 var _ PolicyEvaluator = (*ottlStatementFilter)(nil)
 
-// NewBoolExprForSpan creates a BoolExpr[ottlspan.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
-// The passed in functions should use the ottlspan.TransformContext.
-// If a function named `drop` is not present in the function map it will be added automatically so that parsing works as expected
-func NewBoolExprForSpan(conditions []string, functions map[string]interface{}, errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottlspan.TransformContext], error) {
-	if _, ok := functions["sample"]; !ok {
-		functions["sample"] = sample[ottllog.TransformContext]
-	}
-
-	statmentsStr := conditionsToStatements(conditions)
-	parser, err := ottlspan.NewParser(functions, set)
-	if err != nil {
-		return nil, err
-	}
-	statements, err := parser.ParseStatements(statmentsStr)
-	if err != nil {
-		return nil, err
-	}
-	s := ottlspan.NewStatements(statements, set, ottlspan.WithErrorMode(errorMode))
-	return &s, nil
-}
-
-func conditionsToStatements(conditions []string) []string {
-	statements := make([]string, len(conditions))
-	for i, condition := range conditions {
-		statements[i] = "sample() where " + condition
-	}
-	return statements
-}
-
 // NewOTTLStatementFilter looks at the trace data and returns a corresponding SamplingDecision.
-func NewOTTLStatementFilter(logger *zap.Logger, statements []string) PolicyEvaluator {
-	sampleSpanExpr, _ := NewBoolExprForSpan(statements, standardFuncs[ottlspan.TransformContext](), ottl.IgnoreError, component.TelemetrySettings{Logger: zap.NewNop()})
+func NewOTTLStatementFilter(logger *zap.Logger, spanStatements, spanEventStatements []string) PolicyEvaluator {
+	sampleSpanExpr, _ := filterottl.NewBoolExprForSpan(spanStatements, filterottl.StandardSpanFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+	sampleSpanEventExpr, _ := filterottl.NewBoolExprForSpanEvent(spanEventStatements, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+
 	return &ottlStatementFilter{
-		sampleSpanExpr: sampleSpanExpr,
-		logger:         logger,
+		sampleSpanExpr:      sampleSpanExpr,
+		sampleSpanEventExpr: sampleSpanEventExpr,
+		logger:              logger,
 	}
-}
-
-func standardFuncs[K any]() map[string]interface{} {
-	return map[string]interface{}{
-		"TraceID":     ottlfuncs.TraceID[K],
-		"SpanID":      ottlfuncs.SpanID[K],
-		"IsMatch":     ottlfuncs.IsMatch[K],
-		"Concat":      ottlfuncs.Concat[K],
-		"Split":       ottlfuncs.Split[K],
-		"Int":         ottlfuncs.Int[K],
-		"ConvertCase": ottlfuncs.ConvertCase[K],
-		"Substring":   ottlfuncs.Substring[K],
-		"sample":      sample[K],
-	}
-}
-
-func sample[K any]() (ottl.ExprFunc[K], error) {
-	return func(context.Context, K) (interface{}, error) {
-		return true, nil
-	}, nil
 }
 
 func (osf *ottlStatementFilter) Evaluate(ctx context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
@@ -115,6 +70,18 @@ func (osf *ottlStatementFilter) Evaluate(ctx context.Context, _ pcommon.TraceID,
 				}
 				if ok {
 					return Sampled, nil
+				}
+
+				spanEvents := span.Events()
+				for l := 0; l < spanEvents.Len(); l++ {
+					ok, err = osf.sampleSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvents.At(l), span, scope, resource))
+					if err != nil {
+						osf.logger.Error("failed processing traces", zap.Error(err))
+						return NotSampled, err
+					}
+					if ok {
+						return Sampled, nil
+					}
 				}
 			}
 		}
