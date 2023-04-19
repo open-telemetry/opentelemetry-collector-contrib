@@ -13,13 +13,12 @@ import (
 	"sync"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
+	"github.com/julienschmidt/httprouter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
-
-	jsoniter "github.com/json-iterator/go"
-	"github.com/julienschmidt/httprouter"
 	"go.uber.org/zap"
 )
 
