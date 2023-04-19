@@ -15,6 +15,7 @@
 package tailsamplingprocessor
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"path/filepath"
 	"testing"
 	"time"
@@ -112,6 +113,17 @@ func TestLoadConfig(t *testing.T) {
 						Name:                "test-policy-10",
 						Type:                BooleanAttribute,
 						BooleanAttributeCfg: BooleanAttributeCfg{Key: "key4", Value: true},
+					},
+				},
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "test-policy-11",
+						Type: OTTLStatement,
+						OTTLStatementCfg: OTTLStatementCfg{
+							ErrorMode:           ottl.IgnoreError,
+							SpanStatements:      []string{"attributes[\"test_attr_key_1\"] == \"test_attr_val_1\"", "attributes[\"test_attr_key_2\"] != \"test_attr_val_1\""},
+							SpanEventStatements: []string{"name != \"test_span_event_name\"", "attributes[\"test_event_attr_key_2\"] != \"test_event_attr_val_1\""},
+						},
 					},
 				},
 				{

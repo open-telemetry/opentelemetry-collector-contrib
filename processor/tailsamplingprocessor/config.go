@@ -217,9 +217,9 @@ type BooleanAttributeCfg struct {
 // OTTLStatementCfg holds the configurable setting to create a OTTL statement filter
 // sampling policy evaluator.
 type OTTLStatementCfg struct {
+	ErrorMode           ottl.ErrorMode `mapstructure:"error_mode"`
 	SpanStatements      []string       `mapstructure:"span"`
 	SpanEventStatements []string       `mapstructure:"spanevent"`
-	ErrorMode           ottl.ErrorMode `mapstructure:"error_mode"`
 }
 
 // Config holds the configuration for tail-based sampling.

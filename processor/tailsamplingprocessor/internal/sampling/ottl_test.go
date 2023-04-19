@@ -21,6 +21,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 		Decision           Decision
 	}{
 		{
+			// policy
 			"OTTL statement not set",
 			[]string{},
 			[]string{},
