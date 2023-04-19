@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"sync"
 	"time"
 
 	"go.opencensus.io/stats"
@@ -27,6 +26,8 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
@@ -36,15 +37,7 @@ const (
 )
 
 type heartbeater struct {
-	config     *Config
-	pushLogFn  func(ctx context.Context, ld plog.Logs) error
-	hbRunOnce  sync.Once
 	hbDoneChan chan struct{}
-
-	// Observability
-	heartbeatSuccessTotal *stats.Int64Measure
-	heartbeatErrorTotal   *stats.Int64Measure
-	tagMutators           []tag.Mutator
 }
 
 func getMetricsName(overrides map[string]string, metricName string) string {
@@ -105,14 +98,23 @@ func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn fun
 	}
 
 	hbter := &heartbeater{
-		config:                config,
-		pushLogFn:             pushLogFn,
-		hbDoneChan:            make(chan struct{}),
-		heartbeatSuccessTotal: heartbeatsSent,
-		heartbeatErrorTotal:   heartbeatsFailed,
-		tagMutators:           tagMutators,
+		hbDoneChan: make(chan struct{}),
 	}
-	hbter.initHeartbeat(buildInfo)
+
+	go func() {
+		ticker := time.NewTicker(interval)
+		for {
+			select {
+			case <-hbter.hbDoneChan:
+				return
+			case <-ticker.C:
+				err := pushLogFn(context.Background(), generateHeartbeatLog(config.HecToOtelAttrs, buildInfo))
+				if config.Telemetry.Enabled {
+					observe(heartbeatsSent, heartbeatsFailed, tagMutators, err)
+				}
+			}
+		}
+	}()
 	return hbter
 }
 
@@ -120,45 +122,18 @@ func (h *heartbeater) shutdown() {
 	close(h.hbDoneChan)
 }
 
-func (h *heartbeater) initHeartbeat(buildInfo component.BuildInfo) {
-	interval := h.config.Heartbeat.Interval
-	if interval == 0 {
-		return
-	}
-
-	h.hbRunOnce.Do(func() {
-		heartbeatLog := h.generateHeartbeatLog(buildInfo)
-		go func() {
-			ticker := time.NewTicker(interval)
-			for {
-				select {
-				case <-h.hbDoneChan:
-					return
-				case <-ticker.C:
-					err := h.pushLogFn(context.Background(), heartbeatLog)
-					h.observe(err)
-				}
-			}
-		}()
-	})
-}
-
 // there is only use case for open census metrics recording for now. Extend to use open telemetry in the future.
-func (h *heartbeater) observe(err error) {
-	if !h.config.Telemetry.Enabled {
-		return
-	}
-
+func observe(heartbeatsSent *stats.Int64Measure, heartbeatsFailed *stats.Int64Measure, tagMutators []tag.Mutator, err error) {
 	var counter *stats.Int64Measure
 	if err == nil {
-		counter = h.heartbeatSuccessTotal
+		counter = heartbeatsSent
 	} else {
-		counter = h.heartbeatErrorTotal
+		counter = heartbeatsFailed
 	}
-	_ = stats.RecordWithTags(context.Background(), h.tagMutators, counter.M(1))
+	_ = stats.RecordWithTags(context.Background(), tagMutators, counter.M(1))
 }
 
-func (h *heartbeater) generateHeartbeatLog(buildInfo component.BuildInfo) plog.Logs {
+func generateHeartbeatLog(hecToOtelAttrs splunk.HecToOtelAttrs, buildInfo component.BuildInfo) plog.Logs {
 	host, err := os.Hostname()
 	if err != nil {
 		host = "unknownhost"
@@ -168,10 +143,10 @@ func (h *heartbeater) generateHeartbeatLog(buildInfo component.BuildInfo) plog.L
 	resourceLogs := ret.ResourceLogs().AppendEmpty()
 
 	resourceAttrs := resourceLogs.Resource().Attributes()
-	resourceAttrs.PutStr(h.config.HecToOtelAttrs.Index, "_internal")
-	resourceAttrs.PutStr(h.config.HecToOtelAttrs.Source, "otelcol")
-	resourceAttrs.PutStr(h.config.HecToOtelAttrs.SourceType, "heartbeat")
-	resourceAttrs.PutStr(h.config.HecToOtelAttrs.Host, host)
+	resourceAttrs.PutStr(hecToOtelAttrs.Index, "_internal")
+	resourceAttrs.PutStr(hecToOtelAttrs.Source, "otelcol")
+	resourceAttrs.PutStr(hecToOtelAttrs.SourceType, "heartbeat")
+	resourceAttrs.PutStr(hecToOtelAttrs.Host, host)
 
 	logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	logRecord.Body().SetStr(fmt.Sprintf(
