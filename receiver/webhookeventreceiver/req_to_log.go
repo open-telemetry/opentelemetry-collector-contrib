@@ -22,8 +22,8 @@ import (
 )
 
 func reqToLog(sc *bufio.Scanner,
-	query url.Values,
-	config *Config) (plog.Logs, int) {
+	_query url.Values,
+	_config *Config) (plog.Logs, int) {
 	log := plog.NewLogs()
 	resourceLog := log.ResourceLogs().AppendEmpty()
 	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
