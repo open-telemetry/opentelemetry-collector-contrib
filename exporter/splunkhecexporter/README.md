@@ -124,8 +124,8 @@ exporters:
     telemetry:
       enabled: true
       override_metrics_names:
-        otelcol_exporter_splunkhec_heartbeat_sent: app_heartbeats_success_total
-        otelcol_exporter_splunkhec_heartbeat_failed: app_heartbeats_failed_total
+        otelcol_exporter_splunkhec_heartbeats_sent: app_heartbeats_success_total
+        otelcol_exporter_splunkhec_heartbeats_failed: app_heartbeats_failed_total
       extra_attributes:
         dataset_name: SplunkCloudBeaverStack
         custom_key: custom_value

@@ -115,8 +115,8 @@ func TestLoadConfig(t *testing.T) {
 				Telemetry: HecTelemetry{
 					Enabled: true,
 					OverrideMetricsNames: map[string]string{
-						"otelcol_exporter_splunkhec_heartbeat_sent":   "app_heartbeats_success_total",
-						"otelcol_exporter_splunkhec_heartbeat_failed": "app_heartbeats_failed_total",
+						"otelcol_exporter_splunkhec_heartbeats_sent":   "app_heartbeats_success_total",
+						"otelcol_exporter_splunkhec_heartbeats_failed": "app_heartbeats_failed_total",
 					},
 					ExtraAttributes: map[string]string{
 						"customKey": "customVal",

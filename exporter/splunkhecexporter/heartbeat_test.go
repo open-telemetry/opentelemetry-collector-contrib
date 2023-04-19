@@ -49,8 +49,7 @@ func createTestConfig(metricsOverrides map[string]string, enableMetrics bool) *C
 
 func initHeartbeater(t *testing.T, metricsOverrides map[string]string, enableMetrics bool, consumeFn func(ctx context.Context, ld plog.Logs) error) {
 	config := createTestConfig(metricsOverrides, enableMetrics)
-	hbter := newHeartbeater(config, consumeFn)
-	hbter.initHeartbeat(component.NewDefaultBuildInfo())
+	hbter := newHeartbeater(config, component.NewDefaultBuildInfo(), consumeFn)
 	t.Cleanup(func() {
 		hbter.shutdown()
 	})
@@ -94,7 +93,7 @@ func resetMetrics(metricsNames ...string) {
 func Test_newHeartbeater_disabled(t *testing.T) {
 	config := createTestConfig(map[string]string{}, false)
 	config.Heartbeat.Interval = 0
-	hb := newHeartbeater(config, func(ctx context.Context, ld plog.Logs) error {
+	hb := newHeartbeater(config, component.NewDefaultBuildInfo(), func(ctx context.Context, ld plog.Logs) error {
 		return nil
 	})
 	assert.Nil(t, hb)

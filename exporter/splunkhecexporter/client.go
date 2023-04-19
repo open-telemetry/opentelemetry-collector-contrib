@@ -659,10 +659,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 	}
 	url, _ := c.config.getURL()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo)}
-	c.heartbeater = newHeartbeater(c.config, getPushLogFn(c))
-	if c.heartbeater != nil {
-		c.heartbeater.initHeartbeat(c.buildInfo)
-	}
+	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c))
 	return nil
 }
 

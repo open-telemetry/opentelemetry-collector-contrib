@@ -31,8 +31,8 @@ import (
 
 const (
 	metricsPrefix              = "otelcol_exporter_splunkhec_"
-	defaultHBSentMetricsName   = metricsPrefix + "heartbeat_sent"
-	defaultHBFailedMetricsName = metricsPrefix + "heartbeat_failed"
+	defaultHBSentMetricsName   = metricsPrefix + "heartbeats_sent"
+	defaultHBFailedMetricsName = metricsPrefix + "heartbeats_failed"
 )
 
 type heartbeater struct {
@@ -54,13 +54,13 @@ func getMetricsName(overrides map[string]string, metricName string) string {
 	return metricName
 }
 
-func newHeartbeater(config *Config, pushLogFn func(ctx context.Context, ld plog.Logs) error) *heartbeater {
+func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error) *heartbeater {
 	interval := config.Heartbeat.Interval
 	if interval == 0 {
 		return nil
 	}
 
-	var heartbeatSent, heartbeatFailed *stats.Int64Measure
+	var heartbeatsSent, heartbeatsFailed *stats.Int64Measure
 	var tagMutators []tag.Mutator
 	if config.Telemetry.Enabled {
 		overrides := config.Telemetry.OverrideMetricsNames
@@ -73,45 +73,47 @@ func newHeartbeater(config *Config, pushLogFn func(ctx context.Context, ld plog.
 			tagMutators = append(tagMutators, tag.Insert(newTag, val))
 		}
 
-		heartbeatSent = stats.Int64(
+		heartbeatsSent = stats.Int64(
 			getMetricsName(overrides, defaultHBSentMetricsName),
 			"number of heartbeats sent",
 			stats.UnitDimensionless)
 
-		heartbeatSentView := &view.View{
-			Name:        heartbeatSent.Name(),
-			Description: heartbeatSent.Description(),
+		heartbeatsSentView := &view.View{
+			Name:        heartbeatsSent.Name(),
+			Description: heartbeatsSent.Description(),
 			TagKeys:     tags,
-			Measure:     heartbeatSent,
+			Measure:     heartbeatsSent,
 			Aggregation: view.Sum(),
 		}
 
-		heartbeatFailed = stats.Int64(
+		heartbeatsFailed = stats.Int64(
 			getMetricsName(overrides, defaultHBFailedMetricsName),
 			"number of heartbeats failed",
 			stats.UnitDimensionless)
 
-		heartbeatFailedView := &view.View{
-			Name:        heartbeatFailed.Name(),
-			Description: heartbeatFailed.Description(),
+		heartbeatsFailedView := &view.View{
+			Name:        heartbeatsFailed.Name(),
+			Description: heartbeatsFailed.Description(),
 			TagKeys:     tags,
-			Measure:     heartbeatFailed,
+			Measure:     heartbeatsFailed,
 			Aggregation: view.Sum(),
 		}
 
-		if err := view.Register(heartbeatSentView, heartbeatFailedView); err != nil {
+		if err := view.Register(heartbeatsSentView, heartbeatsFailedView); err != nil {
 			return nil
 		}
 	}
 
-	return &heartbeater{
+	hbter := &heartbeater{
 		config:                config,
 		pushLogFn:             pushLogFn,
 		hbDoneChan:            make(chan struct{}),
-		heartbeatSuccessTotal: heartbeatSent,
-		heartbeatErrorTotal:   heartbeatFailed,
+		heartbeatSuccessTotal: heartbeatsSent,
+		heartbeatErrorTotal:   heartbeatsFailed,
 		tagMutators:           tagMutators,
 	}
+	hbter.initHeartbeat(buildInfo)
+	return hbter
 }
 
 func (h *heartbeater) shutdown() {

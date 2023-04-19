@@ -1513,44 +1513,6 @@ func TestAllowedLogDataTypes(t *testing.T) {
 	}
 }
 
-func Test_heartbeat_success(t *testing.T) {
-	config := NewFactory().CreateDefaultConfig().(*Config)
-	config.Heartbeat = HecHeartbeat{
-		Interval: 10 * time.Millisecond,
-	}
-
-	consumeLogsChan := make(chan plog.Logs, 10)
-	fnBefore := getPushLogFn
-	t.Cleanup(func() {
-		getPushLogFn = fnBefore
-	})
-	getPushLogFn = func(c *client) func(ctx context.Context, ld plog.Logs) error {
-		return func(ctx context.Context, ld plog.Logs) error {
-			consumeLogsChan <- ld
-			return nil
-		}
-	}
-
-	c := client{
-		config:    config,
-		logger:    zaptest.NewLogger(t),
-		hecWorker: &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())},
-	}
-
-	err := c.start(context.Background(), componenttest.NewNopHost())
-	t.Cleanup(func() {
-		_ = c.stop(context.Background())
-	})
-	assert.NoError(t, err)
-
-	assert.Eventually(t, func() bool {
-		return len(consumeLogsChan) != 0
-	}, time.Second, 10*time.Millisecond)
-
-	logs := <-consumeLogsChan
-	assertHeartbeatInfoLog(t, logs)
-}
-
 func TestSubLogs(t *testing.T) {
 	// Creating 12 logs (2 resources x 2 libraries x 3 records)
 	logs := createLogData(2, 2, 3)
