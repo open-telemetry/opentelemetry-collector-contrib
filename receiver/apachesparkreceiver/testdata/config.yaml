@@ -1,0 +1,10 @@
+receivers:
+  apachespark:
+    collection_interval: 15s
+exporters:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [apachespark]
+      exporters: []
