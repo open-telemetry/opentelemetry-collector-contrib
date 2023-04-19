@@ -62,7 +62,7 @@ func NewOTTLStatementFilter(logger *zap.Logger, spanStatements, spanEventStateme
 }
 
 func (osf *ottlStatementFilter) Evaluate(ctx context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
-	osf.logger.Debug("Evaluating spans with OTTL statement filter")
+	osf.logger.Debug("Evaluating with OTTL statement filter")
 
 	if osf.sampleSpanExpr == nil && osf.sampleSpanEventExpr == nil {
 		return NotSampled, nil
@@ -102,6 +102,8 @@ func (osf *ottlStatementFilter) Evaluate(ctx context.Context, _ pcommon.TraceID,
 
 // evalSpan wrap expr.BoolExpr[ottlspan.TransformContext].Eval() and transform bool result into a sampling decision.
 func evalSpan(ctx context.Context, osf *ottlStatementFilter, span ptrace.Span, scope pcommon.InstrumentationScope, resource pcommon.Resource) (Decision, error) {
+	osf.logger.Debug("Evaluating spans with OTTL statement filter")
+
 	ok, err := osf.sampleSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
 	if err != nil {
 		return Error, err
@@ -114,6 +116,8 @@ func evalSpan(ctx context.Context, osf *ottlStatementFilter, span ptrace.Span, s
 
 // evalSpan wrap expr.BoolExpr[ottlspanevent.TransformContext].Eval() and transform bool result into a sampling decision.
 func evalSpanEvent(ctx context.Context, osf *ottlStatementFilter, span ptrace.Span, scope pcommon.InstrumentationScope, resource pcommon.Resource) (Decision, error) {
+	osf.logger.Debug("Evaluating span events with OTTL statement filter")
+
 	spanEvents := span.Events()
 	for l := 0; l < spanEvents.Len(); l++ {
 		ok, err := osf.sampleSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvents.At(l), span, scope, resource))
