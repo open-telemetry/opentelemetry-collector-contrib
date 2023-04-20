@@ -115,6 +115,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.75.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.75.0 // indirect
@@ -873,6 +874,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activ
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver => ../../receiver/aerospikereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => ../../receiver/apachereceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver => ../../receiver/apachesparkreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver => ../../receiver/awscloudwatchreceiver
 
