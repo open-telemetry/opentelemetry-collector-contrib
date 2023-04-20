@@ -111,7 +111,6 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 func checkSDFile(filename string) error {
 	content, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
-		fmt.Errorf("SD file %q does not exist", filename)
 		return nil
 	}
 
@@ -225,9 +224,7 @@ func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
 								return fmt.Errorf("checking SD file %q: %w", file, err)
 							}
 						}
-						continue
 					}
-					return fmt.Errorf("file %q for file_sd in scrape job %q does not exist", file, sc.JobName)
 				}
 			}
 		}
