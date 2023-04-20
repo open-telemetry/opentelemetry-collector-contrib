@@ -158,9 +158,9 @@ func getSharedPolicyEvaluator(logger *zap.Logger, cfg *sharedPolicyCfg) (samplin
 	case BooleanAttribute:
 		bafCfg := cfg.BooleanAttributeCfg
 		return sampling.NewBooleanAttributeFilter(logger, bafCfg.Key, bafCfg.Value), nil
-	case OTTLStatement:
-		ottlfCfg := cfg.OTTLStatementCfg
-		return sampling.NewOTTLStatementFilter(logger, ottlfCfg.SpanStatements, ottlfCfg.SpanEventStatements, ottlfCfg.ErrorMode)
+	case OTTLCondition:
+		ottlfCfg := cfg.OTTLConditionCfg
+		return sampling.NewOTTLConditionFilter(logger, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
 
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)

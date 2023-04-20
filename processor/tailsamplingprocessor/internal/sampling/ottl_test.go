@@ -14,50 +14,50 @@ func TestEvaluate_OTTL(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	cases := []struct {
-		Desc               string
-		SpanStatement      []string
-		SpanEventStatement []string
-		Spans              []spanWithAttributes
-		Decision           Decision
+		Desc                string
+		SpanConditions      []string
+		SpanEventConditions []string
+		Spans               []spanWithAttributes
+		Decision            Decision
 	}{
 		{
 			// policy
-			"OTTL statement not set",
+			"OTTL conditions not set",
 			[]string{},
 			[]string{},
 			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
 			NotSampled,
 		},
 		{
-			"OTTL statement match specific span attributes 1",
+			"OTTL conditions match specific span attributes 1",
 			[]string{"attributes[\"attr_k_1\"] == \"attr_v_1\""},
 			[]string{},
 			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
 			Sampled,
 		},
 		{
-			"OTTL statement match specific span attributes 2",
+			"OTTL conditions match specific span attributes 2",
 			[]string{"attributes[\"attr_k_1\"] != \"attr_v_1\""},
 			[]string{},
 			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
 			NotSampled,
 		},
 		{
-			"OTTL statement match specific span event attributes",
+			"OTTL conditions match specific span event attributes",
 			[]string{},
 			[]string{"attributes[\"event_attr_k_1\"] == \"event_attr_v_1\""},
 			[]spanWithAttributes{{SpanEventAttributes: map[string]string{"event_attr_k_1": "event_attr_v_1"}}},
 			Sampled,
 		},
 		{
-			"OTTL statement match specific span event name",
+			"OTTL conditions match specific span event name",
 			[]string{},
 			[]string{"name != \"incorrect event name\""},
 			[]spanWithAttributes{{SpanEventAttributes: nil}},
 			Sampled,
 		},
 		{
-			"OTTL statement not matched",
+			"OTTL conditions not matched",
 			[]string{"attributes[\"attr_k_1\"] == \"attr_v_1\""},
 			[]string{"attributes[\"event_attr_k_1\"] == \"event_attr_v_1\""},
 			[]spanWithAttributes{},
@@ -67,7 +67,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			filter, _ := NewOTTLStatementFilter(zap.NewNop(), c.SpanStatement, c.SpanEventStatement, ottl.IgnoreError)
+			filter, _ := NewOTTLConditionFilter(zap.NewNop(), c.SpanConditions, c.SpanEventConditions, ottl.IgnoreError)
 			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithSpansAttributes(c.Spans))
 
 			assert.NoError(t, err)

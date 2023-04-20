@@ -53,8 +53,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
+replace (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
+)
 
 retract v0.65.0

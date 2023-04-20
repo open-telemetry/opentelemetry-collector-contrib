@@ -118,11 +118,11 @@ func TestLoadConfig(t *testing.T) {
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
 						Name: "test-policy-11",
-						Type: OTTLStatement,
-						OTTLStatementCfg: OTTLStatementCfg{
+						Type: OTTLCondition,
+						OTTLConditionCfg: OTTLConditionCfg{
 							ErrorMode:           ottl.IgnoreError,
-							SpanStatements:      []string{"attributes[\"test_attr_key_1\"] == \"test_attr_val_1\"", "attributes[\"test_attr_key_2\"] != \"test_attr_val_1\""},
-							SpanEventStatements: []string{"name != \"test_span_event_name\"", "attributes[\"test_event_attr_key_2\"] != \"test_event_attr_val_1\""},
+							SpanConditions:      []string{"attributes[\"test_attr_key_1\"] == \"test_attr_val_1\"", "attributes[\"test_attr_key_2\"] != \"test_attr_val_1\""},
+							SpanEventConditions: []string{"name != \"test_span_event_name\"", "attributes[\"test_event_attr_key_2\"] != \"test_event_attr_val_1\""},
 						},
 					},
 				},

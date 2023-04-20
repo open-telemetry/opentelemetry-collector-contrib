@@ -50,9 +50,9 @@ const (
 	// BooleanAttribute sample traces having an attribute, of type bool, that matches
 	// the specified boolean value [true|false].
 	BooleanAttribute PolicyType = "boolean_attribute"
-	// OTTLStatement sample traces which meet user provided OpenTelemetry transformation language
-	// statements.
-	OTTLStatement PolicyType = "ottl_statement"
+	// OTTLCondition sample traces which match user provided OpenTelemetry Transformation Language
+	// conditions.
+	OTTLCondition PolicyType = "ottl_condition"
 )
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
@@ -80,8 +80,8 @@ type sharedPolicyCfg struct {
 	TraceStateCfg TraceStateCfg `mapstructure:"trace_state"`
 	// Configs for boolean attribute filter sampling policy evaluator.
 	BooleanAttributeCfg BooleanAttributeCfg `mapstructure:"boolean_attribute"`
-	// Configs for OTTL statement filter sampling policy evaluator
-	OTTLStatementCfg OTTLStatementCfg `mapstructure:"ottl_statement"`
+	// Configs for OTTL condition filter sampling policy evaluator
+	OTTLConditionCfg OTTLConditionCfg `mapstructure:"ottl_condition"`
 }
 
 // CompositeSubPolicyCfg holds the common configuration to all policies under composite policy.
@@ -214,12 +214,12 @@ type BooleanAttributeCfg struct {
 	Value bool `mapstructure:"value"`
 }
 
-// OTTLStatementCfg holds the configurable setting to create a OTTL statement filter
+// OTTLConditionCfg holds the configurable setting to create a OTTL condition filter
 // sampling policy evaluator.
-type OTTLStatementCfg struct {
+type OTTLConditionCfg struct {
 	ErrorMode           ottl.ErrorMode `mapstructure:"error_mode"`
-	SpanStatements      []string       `mapstructure:"span"`
-	SpanEventStatements []string       `mapstructure:"spanevent"`
+	SpanConditions      []string       `mapstructure:"span"`
+	SpanEventConditions []string       `mapstructure:"spanevent"`
 }
 
 // Config holds the configuration for tail-based sampling.
