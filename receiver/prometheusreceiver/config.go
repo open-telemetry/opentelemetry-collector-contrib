@@ -111,7 +111,7 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 func checkSDFile(filename string) error {
 	content, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	var targetGroups []*targetgroup.Group
