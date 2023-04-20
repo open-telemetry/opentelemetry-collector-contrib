@@ -1,0 +1,7 @@
+type: lokireceiver
+
+status:
+  class: receiver
+  stability: alpha
+  pipelines: [logs]
+  distributions: [contrib]
