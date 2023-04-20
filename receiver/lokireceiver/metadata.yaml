@@ -1,4 +1,4 @@
-type: lokireceiver
+type: loki
 
 status:
   class: receiver

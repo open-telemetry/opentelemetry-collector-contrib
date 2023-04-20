@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "lokireceiver"
+	Type      = "loki"
 	Stability = component.StabilityLevelAlpha
 )
