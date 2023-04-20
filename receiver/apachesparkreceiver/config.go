@@ -24,7 +24,7 @@ import (
 
 const (
 	defaultCollectionInterval = 15 * time.Second
-	defaultEndpoint           = "http://localhost:4040"
+	// defaultEndpoint           = "http://localhost:4040"
 )
 
 type Config struct {

@@ -17,7 +17,6 @@ package apachesparkreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"errors"
-	"time"
 
 	// "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
@@ -45,7 +44,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 15 * time.Second,
+			CollectionInterval: defaultCollectionInterval,
 		},
 		// HttpClientSettings: confighttp.HTTPClientSettings{
 		// 	Endpoint: defaultEndpoint,
