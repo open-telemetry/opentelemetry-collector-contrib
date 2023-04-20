@@ -2,6 +2,8 @@ package batchmemlimitprocessor
 
 import (
 	"context"
+	"encoding/json"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/multierr"
 	"runtime"
 	"sync"
@@ -12,6 +14,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"go.uber.org/zap"
+)
+
+const (
+	MAXLOGSIZE = 512000
+	MessageKey = "message"
 )
 
 type batchMemoryLimitProcessor struct {
@@ -180,8 +187,8 @@ func (bl *batchLogs) sendAndClear() error {
 	var err error
 	for bl.logCount >= bl.limits.count || bl.logSize >= bl.limits.size {
 		sendLogs := bl.splitLogs()
-		if sendLogs.ResourceLogs().Len() == 0 {
-			break
+		if sendLogs.LogRecordCount() <= 0 {
+			continue
 		}
 		err = multierr.Append(err, bl.nextConsumer.ConsumeLogs(context.Background(), sendLogs))
 	}
@@ -196,105 +203,232 @@ func (bl *batchLogs) sendAndClear() error {
 //	ResourceLogs > 1   										- split is directly done on ResourceLogs
 //	ResourceLogs == 1 && ScopeLogs > 1 						- split will happen on ScopeLogs
 //	ResourceLogs == 1 && ScopeLogs == 1 && LogRecords > 1 	- split will happen on LogRecords
+//	ResourceLogs == 1 && ScopeLogs == 1 && LogRecords == 1  - will be split into 512 KB chunks
 //	If none of the above conditions satisfy then split will not take place
 func (bl *batchLogs) splitLogs() plog.Logs {
+	dest := plog.NewLogs()
+
 	if bl.logCount < bl.limits.count && bl.logSize < bl.limits.size {
-		dest := bl.logData
+		dest = bl.logData
 		bl.resetLogs()
 		return dest
 	}
 
-	var totalCopiedCount, totalCopiedSize int
-	dest := plog.NewLogs()
-
 	if bl.logData.ResourceLogs().Len() > 1 {
-
-		bl.logData.ResourceLogs().RemoveIf(func(resLogs plog.ResourceLogs) bool {
-			count := 0
-			for i := 0; i < resLogs.ScopeLogs().Len(); i++ {
-				count += resLogs.ScopeLogs().At(i).LogRecords().Len()
-			}
-			l := plog.NewLogs()
-			resLogs.MoveTo(l.ResourceLogs().AppendEmpty())
-			size := bl.sizer.LogsSize(l)
-
-			if totalCopiedCount+count >= bl.limits.count || totalCopiedSize+size >= bl.limits.size {
-				return false
-			}
-
-			totalCopiedCount += count
-			totalCopiedSize += size
-			l.ResourceLogs().MoveAndAppendTo(dest.ResourceLogs())
-
-			return true
-		})
-
+		dest = bl.splitResourceLogs()
 	} else if bl.logData.ResourceLogs().Len() == 1 {
+		existingResourceLog := bl.logData.ResourceLogs().At(0)
+		if existingResourceLog.ScopeLogs().Len() > 1 {
+			dest = bl.splitScopeLogs()
+		} else if existingResourceLog.ScopeLogs().Len() == 1 {
+			existingScopeLog := existingResourceLog.ScopeLogs().At(0)
+			if existingScopeLog.LogRecords().Len() > 1 {
+				dest = bl.splitLogRecords()
+			} else if existingScopeLog.LogRecords().Len() == 1 {
+				dest = bl.splitSingleLogRecord()
+			}
+		}
+	}
 
-		resLogs := bl.logData.ResourceLogs().At(0)
-		scopeLogs := resLogs.ScopeLogs()
+	return dest
+}
 
-		l := plog.NewResourceLogsSlice()
-		newResLog := l.AppendEmpty()
-		resLogs.Resource().CopyTo(newResLog.Resource()) // copy all the attributes from ResourceLog
+// splitSingleLogRecord - splits the single log record into 512 KB chunks
+func (bl *batchLogs) splitSingleLogRecord() plog.Logs {
 
-		if scopeLogs.Len() > 1 {
+	removedLogs := plog.NewLogs()
 
-			scopeLogs.RemoveIf(func(scoLogs plog.ScopeLogs) bool {
-				count := scoLogs.LogRecords().Len()
-				tmp := plog.NewLogs()
-				scoLogs.CopyTo(tmp.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty())
-				size := bl.sizer.LogsSize(tmp)
+	if bl.logData.ResourceLogs().Len() != 1 {
+		return removedLogs
+	}
 
-				if totalCopiedCount+count >= bl.limits.count || totalCopiedSize+size >= bl.limits.size {
-					return false
-				}
+	existingResourceLogs := bl.logData.ResourceLogs().At(0)
 
-				totalCopiedCount += count
-				totalCopiedSize += size
-				scoLogs.MoveTo(newResLog.ScopeLogs().AppendEmpty())
+	if existingResourceLogs.ScopeLogs().Len() != 1 || existingResourceLogs.ScopeLogs().At(0).LogRecords().Len() != 1 {
+		return removedLogs
+	}
 
-				return true
-			})
+	existingLogRecord := existingResourceLogs.ScopeLogs().At(0).LogRecords().At(0)
 
-		} else if scopeLogs.Len() == 1 {
+	existingLogRecordBody := map[string]interface{}{}
+	var bodyHasJsonStr bool
+	if existingLogRecord.Body().Type() == pcommon.ValueTypeMap {
+		for k, v := range existingLogRecord.Body().Map().AsRaw() {
+			existingLogRecordBody[k] = v
+		}
+	} else {
+		err := json.Unmarshal([]byte(existingLogRecord.Body().AsString()), &existingLogRecordBody)
+		if err != nil {
+			existingLogRecordBody = map[string]interface{}{
+				MessageKey: existingLogRecord.Body().AsString(),
+			}
+		} else {
+			bodyHasJsonStr = true
+		}
+	}
 
-			newScoLogs := newResLog.ScopeLogs().AppendEmpty()
+	existingMessage, ok := existingLogRecordBody[MessageKey]
+	if !ok {
+		existingMessage = existingLogRecord.Body().AsString()
+	}
 
-			logRec := scopeLogs.At(0).LogRecords()
+	// Split the msg based on chunk size
+	existingMessageStr, _ := existingMessage.(string)
+	if len(existingMessageStr) <= MAXLOGSIZE {
+		return removedLogs
+	}
+	newMessage := existingMessageStr[:MAXLOGSIZE]
+	existingMessageStr = existingMessageStr[MAXLOGSIZE:]
 
-			logRec.RemoveIf(func(record plog.LogRecord) bool {
-				count := 1
-				tmp := plog.NewLogs()
-				record.CopyTo(tmp.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
-				size := bl.sizer.LogsSize(tmp)
+	// creating a new plog
+	remResLog := removedLogs.ResourceLogs().AppendEmpty()
+	existingResourceLogs.CopyTo(remResLog)
+	remLogRec := remResLog.ScopeLogs().At(0).LogRecords().At(0)
 
-				if totalCopiedCount+count >= bl.limits.count || totalCopiedSize+size >= bl.limits.size {
-					return false
-				}
+	// update the old msg && populating new msg
+	if existingLogRecord.Body().Type() == pcommon.ValueTypeMap {
+		existingLogRecord.Body().Map().PutStr(MessageKey, existingMessageStr)
+		remLogRec.Body().Map().PutStr(MessageKey, newMessage)
+	} else {
+		if bodyHasJsonStr {
+			existingLogRecordBody[MessageKey] = existingMessageStr
+			jsonBytes, _ := json.Marshal(existingLogRecordBody)
+			existingLogRecord.Body().SetStr(string(jsonBytes))
 
-				totalCopiedCount += count
-				totalCopiedSize += size
-				record.MoveTo(newScoLogs.LogRecords().AppendEmpty())
+			existingLogRecordBody[MessageKey] = newMessage
+			jsonBytes, _ = json.Marshal(existingLogRecordBody)
+			remLogRec.Body().SetStr(string(jsonBytes))
+		} else {
+			existingLogRecord.Body().SetStr(existingMessageStr)
+			remLogRec.Body().SetStr(newMessage)
+		}
+	}
 
-				return true
-			})
+	bl.logSize -= MAXLOGSIZE
+	return removedLogs
+}
 
+// splitLogRecords - removes the log records in scope log which don't meet the limit criteria and returns them
+// CAUTION: The logs returned will be empty if no split is required
+func (bl *batchLogs) splitLogRecords() plog.Logs {
+	var totalCopiedCount, totalCopiedSize int
+	removedLogs := plog.NewLogs()
+
+	if bl.logData.ResourceLogs().Len() != 1 {
+		return plog.Logs{}
+	}
+
+	existingResourceLogs := bl.logData.ResourceLogs().At(0)
+
+	if existingResourceLogs.ScopeLogs().Len() != 1 {
+		return plog.Logs{}
+	}
+
+	l := plog.NewResourceLogsSlice()
+	newResourceLog := l.AppendEmpty()
+	existingResourceLogs.Resource().CopyTo(newResourceLog.Resource()) // copy all the attributes from ResourceLog
+
+	newScopeLog := newResourceLog.ScopeLogs().AppendEmpty()
+
+	existingLogRecords := existingResourceLogs.ScopeLogs().At(0).LogRecords()
+
+	existingLogRecords.RemoveIf(func(existingRecord plog.LogRecord) bool {
+		count := 1
+		tmp := plog.NewLogs()
+		existingRecord.CopyTo(tmp.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
+		size := bl.sizer.LogsSize(tmp)
+
+		if totalCopiedCount+count >= bl.limits.count || totalCopiedSize+size >= bl.limits.size {
+			return false
 		}
 
-		if newResLog.ScopeLogs().Len() > 0 {
-			newResLog.MoveTo(dest.ResourceLogs().AppendEmpty())
+		totalCopiedCount += count
+		totalCopiedSize += size
+		existingRecord.MoveTo(newScopeLog.LogRecords().AppendEmpty())
+
+		return true
+	})
+
+	bl.logCount -= totalCopiedCount
+	bl.logSize -= totalCopiedSize
+	return removedLogs
+}
+
+// splitScopeLogs - removes the scope logs in resource log which don't meet the limit criteria and returns them
+// CAUTION: The logs returned will be empty if no split is required
+func (bl *batchLogs) splitScopeLogs() plog.Logs {
+	var totalCopiedCount, totalCopiedSize int
+	removedLogs := plog.NewLogs()
+
+	if bl.logData.ResourceLogs().Len() != 1 {
+		return plog.Logs{}
+	}
+
+	existingResourceLog := bl.logData.ResourceLogs().At(0)
+
+	l := plog.NewResourceLogsSlice()
+	newResourceLog := l.AppendEmpty()
+	existingResourceLog.Resource().CopyTo(newResourceLog.Resource()) // copy all the attributes from ResourceLog
+
+	existingResourceLog.ScopeLogs().RemoveIf(func(scoLogs plog.ScopeLogs) bool {
+		count := scoLogs.LogRecords().Len()
+		tmp := plog.NewLogs()
+		scoLogs.CopyTo(tmp.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty())
+		size := bl.sizer.LogsSize(tmp)
+
+		if totalCopiedCount+count >= bl.limits.count || totalCopiedSize+size >= bl.limits.size {
+			return false
 		}
 
+		totalCopiedCount += count
+		totalCopiedSize += size
+		scoLogs.MoveTo(newResourceLog.ScopeLogs().AppendEmpty())
+
+		return true
+	})
+
+	if newResourceLog.ScopeLogs().Len() > 0 {
+		newResourceLog.MoveTo(removedLogs.ResourceLogs().AppendEmpty())
 	}
 
 	bl.logCount -= totalCopiedCount
 	bl.logSize -= totalCopiedSize
-	return dest
+	return removedLogs
+}
+
+// splitResourceLogs - removes the resource logs which don't meet the limit criteria and returns them
+// CAUTION: The logs returned will be empty if no split is required
+func (bl *batchLogs) splitResourceLogs() plog.Logs {
+	var totalCopiedCount, totalCopiedSize int
+	removedLogs := plog.NewLogs()
+
+	bl.logData.ResourceLogs().RemoveIf(func(resLogs plog.ResourceLogs) bool {
+		count := 0
+		for i := 0; i < resLogs.ScopeLogs().Len(); i++ {
+			count += resLogs.ScopeLogs().At(i).LogRecords().Len()
+		}
+		l := plog.NewLogs()
+		resLogs.CopyTo(l.ResourceLogs().AppendEmpty())
+		size := bl.sizer.LogsSize(l)
+
+		if totalCopiedCount+count >= bl.limits.count || totalCopiedSize+size >= bl.limits.size {
+			return false
+		}
+
+		totalCopiedCount += count
+		totalCopiedSize += size
+		l.ResourceLogs().MoveAndAppendTo(removedLogs.ResourceLogs())
+
+		return true
+	})
+
+	bl.logCount -= totalCopiedCount
+	bl.logSize -= totalCopiedSize
+	return removedLogs
 }
 
 func (bl *batchLogs) export() error {
-	if bl.logData.ResourceLogs().Len() == 0 {
+	if bl.logData.LogRecordCount() <= 0 {
 		return nil
 	}
 

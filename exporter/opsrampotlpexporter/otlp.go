@@ -186,6 +186,10 @@ func (e *opsrampOTLPExporter) pushMetrics(ctx context.Context, md pmetric.Metric
 }
 
 func (e *opsrampOTLPExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+	if ld.LogRecordCount() <= 0 {
+		return nil
+	}
+
 	if e.config.Masking != nil {
 		e.applyMasking(ld)
 	}
