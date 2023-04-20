@@ -20,6 +20,7 @@ import (
 
 	// "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -27,7 +28,7 @@ import (
 
 const (
 	typeStr   = "apachespark"
-	stability = component.StabilityLevelAlpha
+	stability = component.StabilityLevelDevelopment
 )
 
 var errConfigNotSpark = errors.New("config was not a Spark receiver config")
@@ -46,9 +47,9 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: defaultCollectionInterval,
 		},
-		// HttpClientSettings: confighttp.HTTPClientSettings{
-		// 	Endpoint: defaultEndpoint,
-		// },
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: defaultEndpoint,
+		},
 		// MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(), TODO: add back when metadata file exists
 	}
 }
@@ -65,7 +66,7 @@ func createMetricsReceiver(
 		return nil, errConfigNotSpark
 	}
 
-	sparkScraper := newScraper(params.Logger, sparkConfig, params)
+	sparkScraper := newSparkScraper(params.Logger, sparkConfig, params)
 	scraper, err := scraperhelper.NewScraper(typeStr, sparkScraper.scrape,
 		scraperhelper.WithStart(sparkScraper.start))
 	if err != nil {

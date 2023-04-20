@@ -16,6 +16,7 @@ package apachesparkreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -25,21 +26,27 @@ import (
 
 type sparkScraper struct {
 	logger   *zap.Logger
-	cfg      *Config
+	config   *Config
 	settings component.TelemetrySettings
+	client   client
 	// TODO: add when metadata is created
 	// mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 }
 
-func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *sparkScraper {
+func newSparkScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *sparkScraper {
 	return &sparkScraper{
 		logger:   logger,
-		cfg:      cfg,
+		config:   cfg,
 		settings: settings.TelemetrySettings,
 	}
 }
 
-func (s *sparkScraper) start(_ context.Context, _ component.Host) (err error) {
+func (s *sparkScraper) start(_ context.Context, host component.Host) (err error) {
+	httpClient, err := newApacheSparkClient(s.config, host, s.settings)
+	if err != nil {
+		return fmt.Errorf("failed to start: %w", err)
+	}
+	s.client = httpClient
 	return nil
 }
 
