@@ -39,7 +39,7 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSetting
 	}
 }
 
-func (s *sparkScraper) start(_ context.Context) (err error) {
+func (s *sparkScraper) start(_ context.Context, _ component.Host) (err error) {
 	return nil
 }
 
