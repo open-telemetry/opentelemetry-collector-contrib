@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "lokiexporter"
+	Type      = "loki"
 	Stability = component.StabilityLevelBeta
 )

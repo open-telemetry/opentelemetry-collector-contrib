@@ -1,4 +1,4 @@
-type: lokiexporter
+type: loki
 
 status:
   class: exporter
