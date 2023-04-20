@@ -36,25 +36,21 @@ type ottlConditionFilter struct {
 var _ PolicyEvaluator = (*ottlConditionFilter)(nil)
 
 // NewOTTLConditionFilter looks at the trace data and returns a corresponding SamplingDecision.
-func NewOTTLConditionFilter(logger *zap.Logger, spanConditions, spanEventConditions []string, errMode ottl.ErrorMode) (PolicyEvaluator, error) {
+func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions, spanEventConditions []string, errMode ottl.ErrorMode) (PolicyEvaluator, error) {
 	filter := &ottlConditionFilter{
 		ErrorMode: errMode,
-		logger:    logger,
-	}
-
-	set := component.TelemetrySettings{
-		Logger: logger,
+		logger:    settings.Logger,
 	}
 
 	var err error
 	if len(spanConditions) > 0 {
-		if filter.sampleSpanExpr, err = filterottl.NewBoolExprForSpan(spanConditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, set); err != nil {
+		if filter.sampleSpanExpr, err = filterottl.NewBoolExprForSpan(spanConditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, settings); err != nil {
 			return nil, err
 		}
 	}
 
 	if len(spanEventConditions) > 0 {
-		if filter.sampleSpanEventExpr, err = filterottl.NewBoolExprForSpanEvent(spanEventConditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, set); err != nil {
+		if filter.sampleSpanEventExpr, err = filterottl.NewBoolExprForSpanEvent(spanEventConditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, settings); err != nil {
 			return nil, err
 		}
 	}
@@ -81,7 +77,6 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, _ pcommon.TraceID,
 			scope := ss.Scope()
 			for k := 0; k < ss.Spans().Len(); k++ {
 				span := ss.Spans().At(k)
-				spanEvents := span.Events()
 
 				var (
 					ok  bool
@@ -109,6 +104,7 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, _ pcommon.TraceID,
 				// Span event evaluation
 				if ocf.sampleSpanEventExpr != nil {
 					ocf.logger.Debug("Evaluating span events with OTTL conditions filter")
+					spanEvents := span.Events()
 					for l := 0; l < spanEvents.Len(); l++ {
 						ok, err = ocf.sampleSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvents.At(l), span, scope, resource))
 						if err != nil {

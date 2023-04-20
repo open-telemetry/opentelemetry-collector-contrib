@@ -15,6 +15,7 @@
 package tailsamplingprocessor
 
 import (
+	"go.opentelemetry.io/collector/component/componenttest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +27,7 @@ import (
 
 func TestCompositeHelper(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
-		actual, err := getNewCompositePolicy(zap.NewNop(), &CompositeCfg{
+		actual, err := getNewCompositePolicy(componenttest.NewNopTelemetrySettings(), &CompositeCfg{
 			MaxTotalSpansPerSecond: 1000,
 			PolicyOrder:            []string{"test-composite-policy-1"},
 			SubPolicyCfg: []CompositeSubPolicyCfg{
@@ -72,7 +73,7 @@ func TestCompositeHelper(t *testing.T) {
 	})
 
 	t.Run("unsupported sampling policy type", func(t *testing.T) {
-		_, err := getNewCompositePolicy(zap.NewNop(), &CompositeCfg{
+		_, err := getNewCompositePolicy(componenttest.NewNopTelemetrySettings(), &CompositeCfg{
 			SubPolicyCfg: []CompositeSubPolicyCfg{
 				{
 					sharedPolicyCfg: sharedPolicyCfg{

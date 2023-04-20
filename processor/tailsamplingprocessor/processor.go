@@ -69,7 +69,7 @@ const (
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform tail sampling according to the given
 // configuration.
-func newTracesProcessor(ctx context.Context, logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
+func newTracesProcessor(ctx context.Context, settings component.TelemetrySettings, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -87,7 +87,7 @@ func newTracesProcessor(ctx context.Context, logger *zap.Logger, nextConsumer co
 		if err != nil {
 			return nil, err
 		}
-		eval, err := getPolicyEvaluator(logger, policyCfg)
+		eval, err := getPolicyEvaluator(settings, policyCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +103,7 @@ func newTracesProcessor(ctx context.Context, logger *zap.Logger, nextConsumer co
 		ctx:             ctx,
 		nextConsumer:    nextConsumer,
 		maxNumTraces:    cfg.NumTraces,
-		logger:          logger,
+		logger:          settings.Logger,
 		decisionBatcher: inBatcher,
 		policies:        policies,
 		tickerFrequency: time.Second,
@@ -116,51 +116,51 @@ func newTracesProcessor(ctx context.Context, logger *zap.Logger, nextConsumer co
 	return tsp, nil
 }
 
-func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEvaluator, error) {
+func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (sampling.PolicyEvaluator, error) {
 	switch cfg.Type {
 	case Composite:
-		return getNewCompositePolicy(logger, &cfg.CompositeCfg)
+		return getNewCompositePolicy(settings, &cfg.CompositeCfg)
 	case And:
-		return getNewAndPolicy(logger, &cfg.AndCfg)
+		return getNewAndPolicy(settings, &cfg.AndCfg)
 	default:
-		return getSharedPolicyEvaluator(logger, &cfg.sharedPolicyCfg)
+		return getSharedPolicyEvaluator(settings, &cfg.sharedPolicyCfg)
 	}
 }
 
-func getSharedPolicyEvaluator(logger *zap.Logger, cfg *sharedPolicyCfg) (sampling.PolicyEvaluator, error) {
+func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedPolicyCfg) (sampling.PolicyEvaluator, error) {
 	switch cfg.Type {
 	case AlwaysSample:
-		return sampling.NewAlwaysSample(logger), nil
+		return sampling.NewAlwaysSample(settings.Logger), nil
 	case Latency:
 		lfCfg := cfg.LatencyCfg
-		return sampling.NewLatency(logger, lfCfg.ThresholdMs), nil
+		return sampling.NewLatency(settings.Logger, lfCfg.ThresholdMs), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
-		return sampling.NewNumericAttributeFilter(logger, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
+		return sampling.NewNumericAttributeFilter(settings.Logger, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
 	case Probabilistic:
 		pCfg := cfg.ProbabilisticCfg
-		return sampling.NewProbabilisticSampler(logger, pCfg.HashSalt, pCfg.SamplingPercentage), nil
+		return sampling.NewProbabilisticSampler(settings.Logger, pCfg.HashSalt, pCfg.SamplingPercentage), nil
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
-		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
+		return sampling.NewStringAttributeFilter(settings.Logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
 	case StatusCode:
 		scfCfg := cfg.StatusCodeCfg
-		return sampling.NewStatusCodeFilter(logger, scfCfg.StatusCodes)
+		return sampling.NewStatusCodeFilter(settings.Logger, scfCfg.StatusCodes)
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
-		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
+		return sampling.NewRateLimiting(settings.Logger, rlfCfg.SpansPerSecond), nil
 	case SpanCount:
 		spCfg := cfg.SpanCountCfg
-		return sampling.NewSpanCount(logger, spCfg.MinSpans, spCfg.MaxSpans), nil
+		return sampling.NewSpanCount(settings.Logger, spCfg.MinSpans, spCfg.MaxSpans), nil
 	case TraceState:
 		tsfCfg := cfg.TraceStateCfg
-		return sampling.NewTraceStateFilter(logger, tsfCfg.Key, tsfCfg.Values), nil
+		return sampling.NewTraceStateFilter(settings.Logger, tsfCfg.Key, tsfCfg.Values), nil
 	case BooleanAttribute:
 		bafCfg := cfg.BooleanAttributeCfg
-		return sampling.NewBooleanAttributeFilter(logger, bafCfg.Key, bafCfg.Value), nil
+		return sampling.NewBooleanAttributeFilter(settings.Logger, bafCfg.Key, bafCfg.Value), nil
 	case OTTLCondition:
 		ottlfCfg := cfg.OTTLConditionCfg
-		return sampling.NewOTTLConditionFilter(logger, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
+		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
 
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
