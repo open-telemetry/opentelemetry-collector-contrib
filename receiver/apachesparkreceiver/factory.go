@@ -21,7 +21,6 @@ import (
 
 	// "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -48,9 +47,9 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 15 * time.Second,
 		},
-		HttpClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: defaultEndpoint,
-		},
+		// HttpClientSettings: confighttp.HTTPClientSettings{
+		// 	Endpoint: defaultEndpoint,
+		// },
 		// MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(), TODO: add back when metadata file exists
 	}
 }
