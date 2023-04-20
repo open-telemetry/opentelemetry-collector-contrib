@@ -19,6 +19,7 @@ import (
 	"regexp"
 
 	"github.com/golang/groupcache/lru"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -44,7 +45,7 @@ var _ PolicyEvaluator = (*stringAttributeFilter)(nil)
 
 // NewStringAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
-func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, regexMatchEnabled bool, evictSize int, invertMatch bool) PolicyEvaluator {
+func NewStringAttributeFilter(settings component.TelemetrySettings, key string, values []string, regexMatchEnabled bool, evictSize int, invertMatch bool) PolicyEvaluator {
 	// initialize regex filter rules and LRU cache for matched results
 	if regexMatchEnabled {
 		if evictSize <= 0 {
@@ -58,7 +59,7 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, r
 
 		return &stringAttributeFilter{
 			key:    key,
-			logger: logger,
+			logger: settings.Logger,
 			// matcher returns true if the given string matches the regex rules defined in string attribute filters
 			matcher: func(toMatch string) bool {
 				if v, ok := regexStrSetting.matchedAttrs.Get(toMatch); ok {
@@ -88,7 +89,7 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, r
 	}
 	return &stringAttributeFilter{
 		key:    key,
-		logger: logger,
+		logger: settings.Logger,
 		// matcher returns true if the given string matches any of the string attribute filters
 		matcher: func(toMatch string) bool {
 			_, matched := valuesMap[toMatch]

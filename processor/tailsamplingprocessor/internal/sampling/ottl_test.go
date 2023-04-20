@@ -16,12 +16,14 @@ package sampling
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
-	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestEvaluate_OTTL(t *testing.T) {
@@ -81,7 +83,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			filter, _ := NewOTTLConditionFilter(zap.NewNop(), c.SpanConditions, c.SpanEventConditions, ottl.IgnoreError)
+			filter, _ := NewOTTLConditionFilter(componenttest.NewNopTelemetrySettings(), c.SpanConditions, c.SpanEventConditions, ottl.IgnoreError)
 			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithSpansAttributes(c.Spans))
 
 			assert.NoError(t, err)

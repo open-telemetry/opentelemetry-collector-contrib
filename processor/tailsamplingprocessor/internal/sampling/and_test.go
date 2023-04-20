@@ -20,13 +20,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
 func TestAndEvaluatorNotSampled(t *testing.T) {
-	n1 := NewStringAttributeFilter(zap.NewNop(), "name", []string{"value"}, false, 0, false)
-	n2, err := NewStatusCodeFilter(zap.NewNop(), []string{"ERROR"})
+	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "name", []string{"value"}, false, 0, false)
+	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
 	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
@@ -50,8 +51,8 @@ func TestAndEvaluatorNotSampled(t *testing.T) {
 }
 
 func TestAndEvaluatorSampled(t *testing.T) {
-	n1 := NewStringAttributeFilter(zap.NewNop(), "attribute_name", []string{"attribute_value"}, false, 0, false)
-	n2, err := NewStatusCodeFilter(zap.NewNop(), []string{"ERROR"})
+	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "attribute_name", []string{"attribute_value"}, false, 0, false)
+	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
 	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
@@ -76,8 +77,8 @@ func TestAndEvaluatorSampled(t *testing.T) {
 }
 
 func TestAndEvaluatorStringInvertSampled(t *testing.T) {
-	n1 := NewStringAttributeFilter(zap.NewNop(), "attribute_name", []string{"no_match"}, false, 0, true)
-	n2, err := NewStatusCodeFilter(zap.NewNop(), []string{"ERROR"})
+	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "attribute_name", []string{"no_match"}, false, 0, true)
+	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
 	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
@@ -102,8 +103,8 @@ func TestAndEvaluatorStringInvertSampled(t *testing.T) {
 }
 
 func TestAndEvaluatorStringInvertNotSampled(t *testing.T) {
-	n1 := NewStringAttributeFilter(zap.NewNop(), "attribute_name", []string{"attribute_value"}, false, 0, true)
-	n2, err := NewStatusCodeFilter(zap.NewNop(), []string{"ERROR"})
+	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "attribute_name", []string{"attribute_value"}, false, 0, true)
+	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
 	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})

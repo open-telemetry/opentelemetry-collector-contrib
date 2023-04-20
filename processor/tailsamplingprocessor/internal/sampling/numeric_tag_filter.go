@@ -16,6 +16,8 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -31,12 +33,12 @@ var _ PolicyEvaluator = (*numericAttributeFilter)(nil)
 
 // NewNumericAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
-func NewNumericAttributeFilter(logger *zap.Logger, key string, minValue, maxValue int64) PolicyEvaluator {
+func NewNumericAttributeFilter(settings component.TelemetrySettings, key string, minValue, maxValue int64) PolicyEvaluator {
 	return &numericAttributeFilter{
 		key:      key,
 		minValue: minValue,
 		maxValue: maxValue,
-		logger:   logger,
+		logger:   settings.Logger,
 	}
 }
 

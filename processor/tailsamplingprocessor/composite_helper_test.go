@@ -15,11 +15,11 @@
 package tailsamplingprocessor
 
 import (
-	"go.opentelemetry.io/collector/component/componenttest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
@@ -61,11 +61,11 @@ func TestCompositeHelper(t *testing.T) {
 
 		expected := sampling.NewComposite(zap.NewNop(), 1000, []sampling.SubPolicyEvalParams{
 			{
-				Evaluator:         sampling.NewLatency(zap.NewNop(), 100),
+				Evaluator:         sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100),
 				MaxSpansPerSecond: 250,
 			},
 			{
-				Evaluator:         sampling.NewLatency(zap.NewNop(), 200),
+				Evaluator:         sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 200),
 				MaxSpansPerSecond: 500,
 			},
 		}, sampling.MonotonicClock{})

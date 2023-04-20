@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
@@ -32,10 +33,10 @@ type rateLimiting struct {
 var _ PolicyEvaluator = (*rateLimiting)(nil)
 
 // NewRateLimiting creates a policy evaluator the samples all traces.
-func NewRateLimiting(logger *zap.Logger, spansPerSecond int64) PolicyEvaluator {
+func NewRateLimiting(settings component.TelemetrySettings, spansPerSecond int64) PolicyEvaluator {
 	return &rateLimiting{
 		spansPerSecond: spansPerSecond,
-		logger:         logger,
+		logger:         settings.Logger,
 	}
 }
 

@@ -16,6 +16,8 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
@@ -27,9 +29,9 @@ type alwaysSample struct {
 var _ PolicyEvaluator = (*alwaysSample)(nil)
 
 // NewAlwaysSample creates a policy evaluator the samples all traces.
-func NewAlwaysSample(logger *zap.Logger) PolicyEvaluator {
+func NewAlwaysSample(settings component.TelemetrySettings) PolicyEvaluator {
 	return &alwaysSample{
-		logger: logger,
+		logger: settings.Logger,
 	}
 }
 

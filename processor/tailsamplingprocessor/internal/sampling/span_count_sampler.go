@@ -16,6 +16,8 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
@@ -29,9 +31,9 @@ type spanCount struct {
 var _ PolicyEvaluator = (*spanCount)(nil)
 
 // NewSpanCount creates a policy evaluator sampling traces with more than one span per trace
-func NewSpanCount(logger *zap.Logger, minSpans, maxSpans int32) PolicyEvaluator {
+func NewSpanCount(settings component.TelemetrySettings, minSpans, maxSpans int32) PolicyEvaluator {
 	return &spanCount{
-		logger:   logger,
+		logger:   settings.Logger,
 		minSpans: minSpans,
 		maxSpans: maxSpans,
 	}

@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -33,7 +34,7 @@ var _ PolicyEvaluator = (*statusCodeFilter)(nil)
 
 // NewStatusCodeFilter creates a policy evaluator that samples all traces with
 // a given status code.
-func NewStatusCodeFilter(logger *zap.Logger, statusCodeString []string) (PolicyEvaluator, error) {
+func NewStatusCodeFilter(settings component.TelemetrySettings, statusCodeString []string) (PolicyEvaluator, error) {
 	if len(statusCodeString) == 0 {
 		return nil, errors.New("expected at least one status code to filter on")
 	}
@@ -54,7 +55,7 @@ func NewStatusCodeFilter(logger *zap.Logger, statusCodeString []string) (PolicyE
 	}
 
 	return &statusCodeFilter{
-		logger:      logger,
+		logger:      settings.Logger,
 		statusCodes: statusCodes,
 	}, nil
 }

@@ -20,15 +20,15 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 func TestBooleanTagFilter(t *testing.T) {
 
 	var empty = map[string]interface{}{}
-	filter := NewBooleanAttributeFilter(zap.NewNop(), "example", true)
+	filter := NewBooleanAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", true)
 
 	resAttr := map[string]interface{}{}
 	resAttr["example"] = 8

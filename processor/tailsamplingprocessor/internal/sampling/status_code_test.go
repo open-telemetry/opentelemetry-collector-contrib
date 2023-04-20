@@ -19,16 +19,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 func TestNewStatusCodeFilter_errorHandling(t *testing.T) {
-	_, err := NewStatusCodeFilter(zap.NewNop(), []string{})
+	_, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{})
 	assert.Error(t, err, "expected at least one status code to filter on")
 
-	_, err = NewStatusCodeFilter(zap.NewNop(), []string{"OK", "ERR"})
+	_, err = NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"OK", "ERR"})
 	assert.EqualError(t, err, "unknown status code \"ERR\", supported: OK, ERROR, UNSET")
 }
 
@@ -84,7 +84,7 @@ func TestStatusCodeSampling(t *testing.T) {
 				ReceivedBatches: traces,
 			}
 
-			statusCodeFilter, err := NewStatusCodeFilter(zap.NewNop(), c.StatusCodesToFilterOn)
+			statusCodeFilter, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), c.StatusCodesToFilterOn)
 			assert.NoError(t, err)
 
 			decision, err := statusCodeFilter.Evaluate(context.Background(), traceID, trace)
