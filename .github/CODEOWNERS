@@ -29,6 +29,7 @@ cmd/telemetrygen/                                        @open-telemetry/collect
 confmap/provider/s3provider/                             @open-telemetry/collector-contrib-approvers @Aneurysm9
 
 connector/countconnector/                                @open-telemetry/collector-contrib-approvers @djaglowski @jpkrohling
+connector/exceptionsconnector/                           @open-telemetry/collector-contrib-approvers @jpkrohling
 connector/servicegraphconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
 connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @albertteoh @kovrus
 

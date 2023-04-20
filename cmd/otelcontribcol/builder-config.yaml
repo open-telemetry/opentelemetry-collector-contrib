@@ -196,6 +196,7 @@ receivers:
 connectors:
   - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.79.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.79.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.79.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.79.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.79.0
 

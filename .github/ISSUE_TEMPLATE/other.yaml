@@ -19,6 +19,7 @@ body:
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - connector/count
+      - connector/exceptions
       - connector/servicegraph
       - connector/spanmetrics
       - examples/demo
