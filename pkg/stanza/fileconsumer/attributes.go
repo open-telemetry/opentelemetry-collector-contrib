@@ -41,7 +41,7 @@ func resolveFileAttributes(path string) (*FileAttributes, error) {
 	resolved := ""
 	var symErr error
 	// Dirty solution, waiting for this permanent fix https://github.com/golang/go/issues/39786
-	// EvalSymlinks on windows is partialy working depending on the way you use Symlinks and Junctions
+	// EvalSymlinks on windows is partially working depending on the way you use Symlinks and Junctions
     	if runtime.GOOS != "windows" {
 		resolved, symErr = filepath.EvalSymlinks(path)
  	} else {
