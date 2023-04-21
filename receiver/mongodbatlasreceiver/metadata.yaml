@@ -1,4 +1,4 @@
-name: mongoatlasreceiver
+type: mongoatlasreceiver
 
 resource_attributes:
   mongodb_atlas.org_name:
