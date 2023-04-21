@@ -207,3 +207,23 @@ func TestFailedReq(t *testing.T) {
 		})
 	}
 }
+
+func TestHealthCheck(t *testing.T) {
+	defaultConfig := createDefaultConfig().(*Config)
+	defaultConfig.Endpoint = "0.0.0.0:0"
+	consumer := consumertest.NewNop()
+	receiver, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *defaultConfig, consumer)
+	require.NoError(t, err, "failed to create receiver")
+
+	r := receiver.(*eventReceiver)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "failed to start receiver")
+	defer func() {
+		require.NoError(t, r.Shutdown(context.Background()), "failed to shutdown revceiver")
+	}()
+
+	w := httptest.NewRecorder()
+	r.handleHealthCheck(w, httptest.NewRequest("GET", "http://0.0.0.0/health", nil), httprouter.ParamsFromContext(context.Background()))
+
+	response := w.Result()
+	require.Equal(t, http.StatusOK, response.StatusCode)
+}

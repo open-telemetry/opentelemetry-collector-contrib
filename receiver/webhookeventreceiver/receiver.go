@@ -31,6 +31,8 @@ var (
 	// errConsumerError        = errors.New("error with log consumer")
 )
 
+const healthyResponse = `{"text": "Webhookevent receiver is healthy"}`
+
 type eventReceiver struct {
 	settings    receiver.CreateSettings
 	cfg         *Config
@@ -94,6 +96,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	router := httprouter.New()
 
 	router.POST(er.cfg.Path, er.handleReq)
+	router.GET(er.cfg.HealthPath, er.handleHealthCheck)
 
 	// webhook server standup and configuration
 	er.server, err = er.cfg.HTTPServerSettings.ToServer(host, er.settings.TelemetrySettings, router)
@@ -185,6 +188,13 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 		w.WriteHeader(http.StatusOK)
 		er.obsrecv.EndLogsOp(ctx, typeStr, numLogs, nil)
 	}
+}
+
+func (er *eventReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	_, _ = w.Write([]byte(healthyResponse))
 }
 
 // write response on a failed/bad request. Generates a small json body based on the thrown by
