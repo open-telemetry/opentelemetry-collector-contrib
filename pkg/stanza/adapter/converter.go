@@ -20,12 +20,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash/fnv"
 	"math"
 	"runtime"
 	"sort"
 	"sync"
 
+	"github.com/cespare/xxhash/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -265,7 +265,7 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 		copy(buffer[0:8], ent.SpanID)
 		dest.SetSpanID(buffer)
 	}
-	if ent.TraceFlags != nil {
+	if ent.TraceFlags != nil && len(ent.TraceFlags) > 0 {
 		// The 8 least significant bits are the trace flags as defined in W3C Trace
 		// Context specification. Don't override the 24 reserved bits.
 		flags := uint32(ent.TraceFlags[0])
@@ -398,8 +398,24 @@ var defaultSevTextMap = map[entry.Severity]string{
 var pairSep = []byte{0xfe}
 
 // emptyResourceID is the ID returned by HashResource when it is passed an empty resource.
-// This specific number is chosen as it is the starting offset of fnv64.
-const emptyResourceID uint64 = 14695981039346656037
+// This specific number is chosen as it is the starting offset of xxHash.
+const emptyResourceID uint64 = 17241709254077376921
+
+type hashWriter struct {
+	h        *xxhash.Digest
+	keySlice []string
+}
+
+func newHashWriter() *hashWriter {
+	return &hashWriter{
+		h:        xxhash.New(),
+		keySlice: make([]string, 0),
+	}
+}
+
+var hashWriterPool = &sync.Pool{
+	New: func() interface{} { return newHashWriter() },
+}
 
 // HashResource will hash an entry.Entry.Resource
 func HashResource(resource map[string]interface{}) uint64 {
@@ -407,39 +423,39 @@ func HashResource(resource map[string]interface{}) uint64 {
 		return emptyResourceID
 	}
 
-	var fnvHash = fnv.New64a()
-	var fnvHashOut = make([]byte, 0, 16)
-	var keySlice = make([]string, 0, len(resource))
+	hw := hashWriterPool.Get().(*hashWriter)
+	defer hashWriterPool.Put(hw)
+	hw.h.Reset()
+	hw.keySlice = hw.keySlice[:0]
 
 	for k := range resource {
-		keySlice = append(keySlice, k)
+		hw.keySlice = append(hw.keySlice, k)
 	}
 
-	if len(keySlice) > 1 {
+	if len(hw.keySlice) > 1 {
 		// In order for this to be deterministic, we need to sort the map. Using range, like above,
 		// has no guarantee about order.
-		sort.Strings(keySlice)
+		sort.Strings(hw.keySlice)
 	}
 
-	for _, k := range keySlice {
-		fnvHash.Write([]byte(k))
-		fnvHash.Write(pairSep)
+	for _, k := range hw.keySlice {
+		hw.h.Write([]byte(k)) //nolint:errcheck
+		hw.h.Write(pairSep)   //nolint:errcheck
 
 		switch t := resource[k].(type) {
 		case string:
-			fnvHash.Write([]byte(t))
+			hw.h.Write([]byte(t)) //nolint:errcheck
 		case []byte:
-			fnvHash.Write(t)
+			hw.h.Write(t) //nolint:errcheck
 		case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-			binary.Write(fnvHash, binary.BigEndian, t) // nolint - nothing to do about it
+			binary.Write(hw.h, binary.BigEndian, t) // nolint - nothing to do about it
 		default:
 			b, _ := json.Marshal(t)
-			fnvHash.Write(b)
+			hw.h.Write(b) //nolint:errcheck
 		}
 
-		fnvHash.Write(pairSep)
+		hw.h.Write(pairSep) //nolint:errcheck
 	}
 
-	fnvHashOut = fnvHash.Sum(fnvHashOut)
-	return binary.BigEndian.Uint64(fnvHashOut)
+	return hw.h.Sum64()
 }

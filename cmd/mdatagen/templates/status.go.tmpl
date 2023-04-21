@@ -6,4 +6,7 @@ import (
     "go.opentelemetry.io/collector/component"
 )
 
-const Stability = component.StabilityLevel{{ casesTitle .Status.Stability }}
+const (
+	Type = "{{ .Type }}"
+	Stability = component.StabilityLevel{{ casesTitle .Status.Stability }}
+)

@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/antonmedv/expr v1.12.5
 	github.com/bmatcuk/doublestar/v4 v4.6.0
+	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
@@ -21,8 +22,8 @@ require (
 	go.opentelemetry.io/collector/receiver v0.75.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/sys v0.6.0
-	golang.org/x/text v0.8.0
+	golang.org/x/sys v0.7.0
+	golang.org/x/text v0.9.0
 	gonum.org/v1/gonum v0.12.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -50,7 +51,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5 // indirect
-	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/grpc v1.54.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect

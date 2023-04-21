@@ -17,7 +17,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solace
 go 1.19
 
 require (
-	github.com/Azure/go-amqp v0.18.1
+	github.com/Azure/go-amqp v0.19.1
 	github.com/stretchr/testify v1.8.2
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.75.0
@@ -50,9 +50,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/grpc v1.54.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

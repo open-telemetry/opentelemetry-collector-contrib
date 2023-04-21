@@ -24,7 +24,7 @@ cmd/configschema/                                        @open-telemetry/collect
 cmd/mdatagen/                                            @open-telemetry/collector-contrib-approvers @dmitryax
 cmd/otelcontribcol/                                      @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                      @open-telemetry/collector-contrib-approvers
-cmd/telemetrygen/                                        @open-telemetry/collector-contrib-approvers @mx-psi @amenasria @codeboten
+cmd/telemetrygen/                                        @open-telemetry/collector-contrib-approvers @mx-psi @codeboten
 
 confmap/provider/s3provider/                             @open-telemetry/collector-contrib-approvers @Aneurysm9
 
@@ -39,7 +39,7 @@ exporter/awscloudwatchlogsexporter/                      @open-telemetry/collect
 exporter/awsemfexporter/                                 @open-telemetry/collector-contrib-approvers @Aneurysm9 @shaochengwang @mxiamxia
 exporter/awskinesisexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
 exporter/awss3exporter/                                  @open-telemetry/collector-contrib-approvers @atoulme @pdelewski
-exporter/awsxrayexporter/                                @open-telemetry/collector-contrib-approvers @willarmiros
+exporter/awsxrayexporter/                                @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 exporter/azuremonitorexporter/                           @open-telemetry/collector-contrib-approvers @pcwiese
 exporter/azuredataexplorerexporter/                      @open-telemetry/collector-contrib-approvers @asaharan @ag-ramachandran
 exporter/carbonexporter/                                 @open-telemetry/collector-contrib-approvers @pjanotti
@@ -161,7 +161,7 @@ receiver/awscloudwatchreceiver/                          @open-telemetry/collect
 receiver/awscontainerinsightreceiver/                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/                 @open-telemetry/collector-contrib-approvers @Aneurysm9
 receiver/awsfirehosereceiver/                            @open-telemetry/collector-contrib-approvers @Aneurysm9
-receiver/awsxrayreceiver/                                @open-telemetry/collector-contrib-approvers @willarmiros
+receiver/awsxrayreceiver/                                @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 receiver/azureblobreceiver/                              @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi
 receiver/bigipreceiver/                                  @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek
 receiver/carbonreceiver/                                 @open-telemetry/collector-contrib-approvers @pjanotti
@@ -176,6 +176,7 @@ receiver/elasticsearchreceiver/                          @open-telemetry/collect
 receiver/expvarreceiver/                                 @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/filelogreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/filereceiver/                               @open-telemetry/collector-contrib-approvers @pmcollins @djaglowski
+receiver/filestatsreceiver/                              @open-telemetry/collector-contrib-approvers @atoulme
 receiver/flinkmetricsreceiver/                           @open-telemetry/collector-contrib-approvers @jonathanwamsley @djaglowski
 receiver/fluentforwardreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/googlecloudpubsubreceiver/                      @open-telemetry/collector-contrib-approvers @alexvanboxel
@@ -240,5 +241,5 @@ receiver/zipkinreceiver/                                 @open-telemetry/collect
 receiver/zookeeperreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 
 testbed/                                                 @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
-testbed/mockdatareceivers/mockawsxrayreceiver/           @open-telemetry/collector-contrib-approvers @willarmiros
+testbed/mockdatareceivers/mockawsxrayreceiver/           @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 testbed/mockdatasenders/mockdatadogagentexporter/        @open-telemetry/collector-contrib-approvers @boostchicken

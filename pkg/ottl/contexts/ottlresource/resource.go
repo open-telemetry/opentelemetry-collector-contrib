@@ -22,10 +22,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
-var _ ottlcommon.ResourceContext = TransformContext{}
+var _ internal.ResourceContext = TransformContext{}
 
 type TransformContext struct {
 	resource pcommon.Resource
@@ -101,7 +102,7 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 		}
 		return accessCacheKey(mapKey), nil
 	default:
-		return ottlcommon.ResourcePathGetSetter[TransformContext](path)
+		return internal.ResourcePathGetSetter[TransformContext](path)
 	}
 }
 

@@ -105,7 +105,7 @@ providing the following information:
 * The configuration options your component will accept. This will help us understand what it does and have an idea of
   how the implementation might look like.
 
-Components comprise of exporters, extensions, receivers, and processors. The key criteria to implementing a component is to:
+Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
 * Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
 * Provide a configuration structure which defines the configuration of the component
@@ -145,6 +145,23 @@ and the rest of contributors.
 - Add the sponsor for your component and yourself to a new line for your component in the
   [`.github/CODEOWNERS`](./.github/CODEOWNERS) file.
 - Run `make generate-gh-issue-templates` to add your component to the dropdown list in the issue templates.
+
+When submitting a component to the community, consider breaking it down into separate PRs as follows:
+
+* **First PR** should include the overall structure of the new component:
+  * Readme, configuration, and factory implementation usually using the helper
+    factory structs.
+  * This PR is usually trivial to review, so the size limit does not apply to
+    it.
+  * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector#development) in its README.
+* **Second PR** should include the concrete implementation of the component. If the
+  size of this PR is larger than the recommended size consider splitting it in
+  multiple PRs.
+* **Last PR** should mark the new component as `Alpha` stability and add it to the `cmd/otelcontribcol`
+  binary by updating the `cmd/otelcontribcol/components.go` file. The component must be enabled
+  only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
+* Once a new component has been added to the executable, please add the component
+  to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
 ### Releasing New Components
 After a component has been approved and merged, and has been enabled in `internal/components/`, it must be added to the

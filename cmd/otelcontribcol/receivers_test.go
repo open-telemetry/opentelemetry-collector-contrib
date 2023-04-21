@@ -240,6 +240,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires access to certificates to auth against kubelet
 		},
 		{
+			receiver: "loki",
+		},
+		{
 			receiver: "memcached",
 		},
 		{

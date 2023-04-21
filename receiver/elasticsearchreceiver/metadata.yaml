@@ -1,4 +1,4 @@
-name: elasticsearchreceiver
+type: elasticsearchreceiver
 
 resource_attributes:
   elasticsearch.cluster.name:

@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				Metrics: []string{
 					"metric1",
@@ -42,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "missing_name"),
+			id:           component.NewIDWithName(metadata.Type, "missing_name"),
 			errorMessage: "metric names are missing",
 		},
 	}

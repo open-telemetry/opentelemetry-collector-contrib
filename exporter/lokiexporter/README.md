@@ -98,7 +98,7 @@ processors:
 In this case the value of the `host.name` resource attribute is used to group logs
 by tenant and send requests with the `X-Scope-OrgID` header set to relevant tenants.
 
-If the `loki.tenant` hint attribute is present in both resource or log attributes,
+If the `loki.tenant` hint attribute is present in both resource and log attributes,
 then the look-up for a tenant value from resource attributes takes precedence.
 
 ### Format
@@ -122,14 +122,6 @@ The following formats are supported:
 ## Severity
 
 OpenTelemetry uses `record.severity` to track log levels where loki uses `record.attributes.level` for the same. The exporter automatically maps the two, except if a "level" attribute already exists.
-
-## Deprecated configuration
-The following options are now deprecated:
-
-- `labels.{attributes/resource}`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
-- `labels.record`. Deprecated and will be removed by v0.59.0. See the [Labels](#labels) section for more information.
-- `tenant`: Deprecated and will be removed by v0.59.0. See the [Tenant information](#tenant-information) section for more information.
-- `format` Deprecated without replacement. See the [Format](#format) section for more information.
 
 ## Advanced Configuration
 
