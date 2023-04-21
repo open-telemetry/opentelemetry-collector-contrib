@@ -111,6 +111,10 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 
+	if cfg.Authentication.SASL.Version < 0 || cfg.Authentication.SASL.Version > 1 {
+		return fmt.Errorf("auth.sasl.version has to be either 0 or 1. configured value %v", cfg.Authentication.SASL.Version)
+	}
+
 	return nil
 }
 
