@@ -36,6 +36,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -47,6 +48,15 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+)
+
+const (
+	clientKey  = "./testdata/client.key"
+	clientCert = "./testdata/client.crt"
+	caCert     = "./testdata/ca.crt"
+	serverCert = "./testdata/server.crt"
+	serverKey  = "./testdata/server.key"
+	hostname   = "localhost"
 )
 
 var requestTimeRegex = regexp.MustCompile(`time":(\d+)`)
@@ -221,18 +231,36 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	}
 
 	factory := NewFactory()
-	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "https://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
+	cfg.TLSSetting = configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   caCert,
+			CertFile: clientCert,
+			KeyFile:  clientKey,
+		},
+		ServerName: hostname,
+	}
+
+	tlsSetting := configtls.TLSServerSetting{
+		TLSSetting: configtls.TLSSetting{
+			CertFile: serverCert,
+			KeyFile:  serverKey,
+		},
+	}
+	serverTls, err := tlsSetting.LoadTLSConfig()
+	assert.NoError(t, err)
 
 	rr := make(chan receivedRequest)
 	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
 		ReadHeaderTimeout: 20 * time.Second,
+		TLSConfig:         serverTls,
 	}
 	defer s.Close()
 	go func() {
-		if e := s.Serve(listener); e != http.ErrServerClosed {
+		if e := s.ServeTLS(listener, serverCert, serverKey); e != http.ErrServerClosed {
 			require.NoError(t, e)
 		}
 	}()
@@ -272,20 +300,38 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "https://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = testConfig.DisableCompression
 	cfg.MaxContentLengthTraces = testConfig.MaxContentLengthTraces
 	cfg.Token = "1234-1234"
+	cfg.TLSSetting = configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   caCert,
+			CertFile: clientCert,
+			KeyFile:  clientKey,
+		},
+		ServerName: hostname,
+	}
+
+	tlsSetting := configtls.TLSServerSetting{
+		TLSSetting: configtls.TLSSetting{
+			CertFile: serverCert,
+			KeyFile:  serverKey,
+		},
+	}
+	serverTls, err := tlsSetting.LoadTLSConfig()
+	assert.NoError(t, err)
 
 	rr := make(chan receivedRequest)
 	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
 		ReadHeaderTimeout: 20 * time.Second,
+		TLSConfig:         serverTls,
 	}
 	defer s.Close()
 	go func() {
-		if e := s.Serve(listener); e != http.ErrServerClosed {
+		if e := s.ServeTLS(listener, serverCert, serverKey); e != http.ErrServerClosed {
 			require.NoError(t, e)
 		}
 	}()
@@ -334,18 +380,35 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 		panic(err)
 	}
 
-	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "https://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
+	cfg.TLSSetting = configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   caCert,
+			CertFile: clientCert,
+			KeyFile:  clientKey,
+		},
+		ServerName: hostname,
+	}
 
+	tlsSetting := configtls.TLSServerSetting{
+		TLSSetting: configtls.TLSSetting{
+			CertFile: serverCert,
+			KeyFile:  serverKey,
+		},
+	}
+	serverTls, err := tlsSetting.LoadTLSConfig()
+	assert.NoError(t, err)
 	rr := make(chan receivedRequest)
 	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
 		ReadHeaderTimeout: 20 * time.Second,
+		TLSConfig:         serverTls,
 	}
 	defer s.Close()
 	go func() {
-		if e := s.Serve(listener); e != http.ErrServerClosed {
+		if e := s.ServeTLS(listener, serverCert, serverKey); e != http.ErrServerClosed {
 			require.NoError(t, e)
 		}
 	}()
@@ -1117,6 +1180,98 @@ func TestErrorReceived(t *testing.T) {
 		t.Fatal("Should have received request")
 	}
 	assert.EqualError(t, err, "HTTP 500 \"Internal Server Error\"")
+}
+
+func TestTlsErrors(t *testing.T) {
+	tests := []struct {
+		name       string
+		serverCert string
+		tlsVersion string
+		errMsg     string
+	}{
+		{
+			name:       "Signed by different CA",
+			serverCert: "./testdata/differentCA.crt",
+			tlsVersion: "1.2",
+			errMsg:     "certificate signed by unknown authority",
+		},
+		{
+			name:       "Certificate is expired",
+			serverCert: "./testdata/expired.crt",
+			tlsVersion: "1.2",
+			errMsg:     "has expired or is not yet valid",
+		},
+		{
+			name:       "Certificate uses the insecure SHA-1 algorithm",
+			serverCert: "./testdata/insecure.crt",
+			tlsVersion: "1.2",
+			errMsg:     "insecure algorithm SHA1-RSA",
+		},
+		{
+			name:       "Client uses different TLS versions",
+			serverCert: serverCert,
+			tlsVersion: "1.0",
+			errMsg:     "protocol version not supported",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			listener, err := net.Listen("tcp", "127.0.0.1:0")
+			require.NoError(t, err, "should be no error initializing mock server listener")
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.HTTPClientSettings.Endpoint = "https://" + listener.Addr().String()
+			// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
+			// otherwise we will not see the error.
+			cfg.QueueSettings.Enabled = false
+			// Disable retries to not wait too much time for the return error.
+			cfg.RetrySettings.Enabled = false
+			cfg.DisableCompression = true
+			cfg.Token = "1234-1234"
+			cfg.TLSSetting = configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile:   caCert,
+					CertFile: clientCert,
+					KeyFile:  clientKey,
+				},
+				ServerName: hostname,
+			}
+
+			tlsSetting := configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CertFile:   tt.serverCert,
+					KeyFile:    serverKey,
+					MinVersion: tt.tlsVersion,
+					MaxVersion: tt.tlsVersion,
+				},
+			}
+			serverTls, err := tlsSetting.LoadTLSConfig()
+			assert.NoError(t, err)
+			s := &http.Server{
+				TLSConfig: serverTls,
+			}
+			go func() {
+				if e := s.ServeTLS(listener, tt.serverCert, serverKey); e != http.ErrServerClosed {
+					require.NoError(t, e)
+				}
+			}()
+
+			params := exportertest.NewNopCreateSettings()
+			exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+			assert.NoError(t, err)
+			assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, exporter.Shutdown(context.Background()))
+			}()
+
+			err = exporter.ConsumeLogs(context.Background(), createLogData(1, 1, 1))
+			assert.Contains(t, err.Error(), tt.errMsg)
+
+			err = s.Close()
+			assert.NoError(t, err)
+		})
+	}
 }
 
 func TestInvalidLogs(t *testing.T) {

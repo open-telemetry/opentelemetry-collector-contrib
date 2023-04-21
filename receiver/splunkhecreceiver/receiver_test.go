@@ -495,6 +495,109 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	assert.Equal(t, want, got[0])
 }
 
+func Test_splunkhecReceiver_tlsNegativeCases(t *testing.T) {
+	const (
+		validKey = "./testdata/server.key"
+	)
+
+	tlscs := configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   "./testdata/ca.crt",
+			CertFile: "./testdata/client.crt",
+			KeyFile:  "./testdata/client.key",
+		},
+		ServerName: "localhost",
+	}
+	tls, errTLS := tlscs.LoadTLSConfig()
+	assert.NoError(t, errTLS)
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tls,
+		},
+	}
+
+	tests := []struct {
+		name    string
+		tlsConf *configtls.TLSServerSetting
+		errMsg  string
+	}{
+		{
+			name: "Signed by different CA",
+			tlsConf: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CertFile: "./testdata/differentCA.crt",
+					KeyFile:  validKey,
+				},
+				ClientCAFile: "./testdata/ca.crt",
+			},
+			errMsg: "certificate signed by unknown authority",
+		},
+		{
+			name: "Certificate is expired",
+			tlsConf: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CertFile: "./testdata/expired.crt",
+					KeyFile:  validKey,
+				},
+			},
+			errMsg: "has expired or is not yet valid",
+		},
+		{
+			name: "Certificate uses the insecure SHA-1 algorithm",
+			tlsConf: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CertFile: "./testdata/insecure.crt",
+					KeyFile:  validKey,
+				},
+			},
+			errMsg: "insecure algorithm SHA1-RSA",
+		},
+		{
+			name: "Client uses different TLS versions",
+			tlsConf: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CertFile:   "./testdata/server.crt",
+					KeyFile:    validKey,
+					MinVersion: "1.0",
+					MaxVersion: "1.0",
+				},
+			},
+			errMsg: "protocol version not supported",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			addr := testutil.GetAvailableLocalAddress(t)
+			config := createDefaultConfig().(*Config)
+			config.Endpoint = addr
+			config.TLSSetting = tt.tlsConf
+
+			sink := new(consumertest.LogsSink)
+			r, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, r.Shutdown(context.Background()))
+			}()
+
+			mh := newAssertNoErrorHost(t)
+			require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start log reception")
+
+			body, err := json.Marshal(buildSplunkHecMsg(float64(time.Now().UnixNano()), 0))
+			require.NoError(t, err, fmt.Sprintf("failed to marshal Splunk message: %v", err))
+
+			url := fmt.Sprintf("https://%s", addr)
+
+			req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+			require.NoErrorf(t, err, "should have no errors with new request: %v", err)
+
+			_, err = client.Do(req)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.errMsg)
+		})
+	}
+}
+
 func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 	tests := []struct {
 		name          string
