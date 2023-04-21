@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
@@ -79,10 +78,6 @@ func getDatasetExporter(entity string, config *Config, logger *zap.Logger) (*dat
 }
 
 func (e *datasetExporter) consumeLogs(ctx context.Context, ld plog.Logs) error {
-	return nil
-}
-
-func (e *datasetExporter) consumeMetrics(ctx context.Context, ld pmetric.Metrics) error {
 	return nil
 }
 
