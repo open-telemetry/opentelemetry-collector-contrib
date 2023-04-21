@@ -317,10 +317,10 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 
 			for _, metric := range result.Value {
 
-				for _, timeserie := range metric.Timeseries {
-					if timeserie.Data != nil {
-						for _, timeserieData := range timeserie.Data {
-							s.processTimeserieData(resourceID, metric, timeserieData, timeserie.Metadatavalues)
+				for _, timeseriesElement := range metric.Timeseries {
+					if timeseriesElement.Data != nil {
+						for _, metricValue := range timeseriesElement.Data {
+							s.processTimeseriesData(resourceID, metric, metricValue, timeseriesElement.Metadatavalues)
 						}
 					}
 				}
@@ -352,10 +352,10 @@ func getResourceMetricsValuesRequestOptions(
 	return filter
 }
 
-func (s *azureScraper) processTimeserieData(
+func (s *azureScraper) processTimeseriesData(
 	resourceID string,
 	metric *armmonitor.Metric,
-	timeserieData *armmonitor.MetricValue,
+	metricValue *armmonitor.MetricValue,
 	metadataValues []*armmonitor.MetadataValue,
 ) {
 	s.mutex.Lock()
@@ -367,11 +367,11 @@ func (s *azureScraper) processTimeserieData(
 		name  string
 		value *float64
 	}{
-		{"Average", timeserieData.Average},
-		{"Count", timeserieData.Count},
-		{"Maximum", timeserieData.Maximum},
-		{"Minimum", timeserieData.Minimum},
-		{"Total", timeserieData.Total},
+		{"Average", metricValue.Average},
+		{"Count", metricValue.Count},
+		{"Maximum", metricValue.Maximum},
+		{"Minimum", metricValue.Minimum},
+		{"Total", metricValue.Total},
 	}
 	for _, aggregation := range aggregationsData {
 		if aggregation.value != nil {
