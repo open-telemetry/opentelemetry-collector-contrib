@@ -39,8 +39,9 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 	scrapeCfgs := []*config.ScrapeConfig{}
 
 	commomLabel := model.LabelSet{
-		"deployment.environment": model.LabelValue(r.cfg.Env),
-		"host.name":              model.LabelValue(r.cfg.Endpoint),
+		"env":           model.LabelValue(r.cfg.Env),
+		"fa_array_name": model.LabelValue(r.cfg.Endpoint),
+		"host":          model.LabelValue(r.cfg.Endpoint),
 	}
 
 	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Array, r.cfg.Settings.ReloadIntervals.Array, commomLabel)
@@ -71,7 +72,7 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 		return err
 	}
 
-	volumesScraper := internal.NewScraper(ctx, internal.ScraperTypeVolumes, r.cfg.Endpoint, r.cfg.Volumes, r.cfg.Settings.ReloadIntervals.Volumes, model.LabelSet{})
+	volumesScraper := internal.NewScraper(ctx, internal.ScraperTypeVolumes, r.cfg.Endpoint, r.cfg.Volumes, r.cfg.Settings.ReloadIntervals.Volumes, commomLabel)
 	if scCfgs, err := volumesScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
