@@ -1,4 +1,4 @@
-type: azuremonitorreceiver
+type: azuremonitor
 
 status:
    class: receiver

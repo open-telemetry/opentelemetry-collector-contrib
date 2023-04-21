@@ -27,16 +27,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "azuremonitor"
-)
-
 var errConfigNotAzureMonitor = errors.New("Config was not a Azure Monitor receiver config")
 
 // NewFactory creates a new receiver factory
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.Stability))
 }

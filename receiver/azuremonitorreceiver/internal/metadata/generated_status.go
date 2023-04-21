@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "azuremonitorreceiver"
+	Type      = "azuremonitor"
 	Stability = component.StabilityLevelDevelopment
 )
