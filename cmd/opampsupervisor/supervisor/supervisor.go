@@ -23,6 +23,7 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"sync/atomic"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -34,7 +35,6 @@ import (
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
@@ -72,14 +72,14 @@ type Supervisor struct {
 	// TODO: store this persistently so that when starting we can compose the effective
 	// config correctly.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21078
-	agentConfigOwnMetricsSection atomic.Value
+	agentConfigOwnMetricsSection *atomic.Value
 
 	// agentHealthCheckEndpoint is the endpoint the Collector's health check extension
 	// will listen on for health check requests from the Supervisor.
 	agentHealthCheckEndpoint string
 
 	// Final effective config of the Collector.
-	effectiveConfig atomic.Value
+	effectiveConfig *atomic.Value
 
 	// Location of the effective config file.
 	effectiveConfigFilePath string
@@ -96,9 +96,11 @@ type Supervisor struct {
 
 func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	s := &Supervisor{
-		logger:                  logger,
-		hasNewConfig:            make(chan struct{}, 1),
-		effectiveConfigFilePath: "effective.yaml",
+		logger:                       logger,
+		hasNewConfig:                 make(chan struct{}, 1),
+		effectiveConfigFilePath:      "effective.yaml",
+		agentConfigOwnMetricsSection: &atomic.Value{},
+		effectiveConfig:              &atomic.Value{},
 	}
 
 	if err := s.loadConfig(configFile); err != nil {
@@ -123,7 +125,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 
 	s.loadAgentEffectiveConfig()
 
-	if err := s.startOpAMP(); err != nil {
+	if err = s.startOpAMP(); err != nil {
 		return nil, fmt.Errorf("cannot start OpAMP client: %w", err)
 	}
 
@@ -160,6 +162,7 @@ func (s *Supervisor) loadConfig(configFile string) error {
 }
 
 // TODO: Implement bootstrapping https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21071
+// nolint: unparam
 func (s *Supervisor) getBootstrapInfo() (err error) {
 	s.agentVersion = "1.0.0"
 
@@ -475,7 +478,7 @@ func (s *Supervisor) startAgent() {
 	err := s.commander.Start(context.Background())
 	if err != nil {
 		s.logger.Error("Cannot start the agent", zap.Error(err))
-		err := s.opampClient.SetHealth(&protobufs.AgentHealth{Healthy: false, LastError: fmt.Sprintf("Cannot start the agent: %v", err)})
+		err = s.opampClient.SetHealth(&protobufs.AgentHealth{Healthy: false, LastError: fmt.Sprintf("Cannot start the agent: %v", err)})
 
 		if err != nil {
 			s.logger.Error("Failed to report OpAMP client health", zap.Error(err))
@@ -678,7 +681,10 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 			zap.String("old_id", s.instanceID.String()),
 			zap.String("new_id", newInstanceID.String()))
 		s.instanceID = newInstanceID
-		s.opampClient.SetAgentDescription(s.createAgentDescription())
+		err = s.opampClient.SetAgentDescription(s.createAgentDescription())
+		if err != nil {
+			s.logger.Error("Failed to send agent description to OpAMP server")
+		}
 
 		configChanged = true
 	}
@@ -699,7 +705,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 }
 
 func (s *Supervisor) findRandomPort() (int, error) {
-	l, err := net.Listen("tcp", ":0")
+	l, err := net.Listen("tcp", "localhost:0")
 
 	if err != nil {
 		return 0, err

@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sync/atomic"
 	"syscall"
 	"time"
 
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
@@ -50,7 +50,7 @@ func NewCommander(logger *zap.Logger, cfg *config.Agent, args ...string) (*Comma
 		logger:  logger,
 		cfg:     cfg,
 		args:    args,
-		running: atomic.NewInt64(0),
+		running: &atomic.Int64{},
 	}, nil
 }
 
@@ -103,7 +103,7 @@ func (c *Commander) watch() {
 	// cmd.Wait returns an exec.ExitError when the Collector exits unsuccessfully or stops
 	// after receiving a signal. The Commander caller will handle these cases, so we filter
 	// them out here.
-	if _, ok := err.(*exec.ExitError); err != nil && !ok {
+	if ok := errors.Is(err, &exec.ExitError{}); err != nil && !ok {
 		c.logger.Error("An error occurred while watching the agent process", zap.Error(err))
 	}
 
