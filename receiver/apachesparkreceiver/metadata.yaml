@@ -11,6 +11,15 @@ attributes:
     type: string
 
 metrics:
+  spark.memory_used:
+    description: Amount of memory used by spark
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: Mb
+    attributes: [] # TODO: confirm what level this metric collects from (eg. app level, cluster level)
   spark.stage.executor_run_time:
     description: Amount of time spent by the executor in this stage.
     enabled: true
@@ -28,4 +37,13 @@ metrics:
       monotonic: false
       value_type: int
     unit: bytes
+    attributes: [application_id]
+  spark.job.active_tasks:
+    description: Number of active tasks in this job.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: string
+    unit: "{tasks}"
     attributes: [application_id]

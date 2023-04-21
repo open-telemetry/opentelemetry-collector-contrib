@@ -1,0 +1,23 @@
+default:
+all_set:
+  metrics:
+    spark.memory_used:
+      enabled: true
+    spark.stage.executor_run_time:
+      enabled: true
+    spark.executor.memory_used:
+      enabled: true
+    spark.job.active_tasks:
+      enabled: true
+  resource_attributes:
+none_set:
+  metrics:
+    spark.memory_used:
+      enabled: false
+    spark.stage.executor_run_time:
+      enabled: false
+    spark.executor.memory_used:
+      enabled: false
+    spark.job.active_tasks:
+      enabled: false
+  resource_attributes:
