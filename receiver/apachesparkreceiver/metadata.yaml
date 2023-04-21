@@ -11,21 +11,21 @@ attributes:
     type: string
 
 metrics:
-  spark.stage.active_tasks:
-    description: Number of active tasks in this stage.
+  spark.stage.executor_run_time:
+    description: Amount of time spent by the executor in this stage.
     enabled: true
     sum:
       aggregation: cumulative
-      monotonic: false
+      monotonic: true
       value_type: int
-    unit: "{tasks}"
+    unit: ms
     attributes: [application_id]
-  spark.executor.max_tasks:
-    description: Maximum number of tasks that can run concurrently in this executor.
+  spark.executor.memory_used:
+    description: Storage memory used by this executor.
     enabled: true
     sum:
       aggregation: cumulative
       monotonic: false
       value_type: int
-    unit: "{tasks}"
+    unit: bytes
     attributes: [application_id]
