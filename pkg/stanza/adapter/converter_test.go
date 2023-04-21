@@ -836,6 +836,8 @@ func BenchmarkConverter(b *testing.B) {
 				converter := NewConverter(zap.NewNop())
 				converter.Start()
 				defer converter.Stop()
+
+				b.ReportAllocs()
 				b.ResetTimer()
 
 				go func() {
@@ -868,15 +870,8 @@ func BenchmarkConverter(b *testing.B) {
 						}
 
 						rLogs := pLogs.ResourceLogs()
-						require.Equal(b, 1, rLogs.Len())
-
-						rLog := rLogs.At(0)
-						ills := rLog.ScopeLogs()
-						require.Equal(b, 1, ills.Len())
-
-						sl := ills.At(0)
-
-						n += sl.LogRecords().Len()
+						require.Equal(b, hostsCount, rLogs.Len())
+						n += pLogs.LogRecordCount()
 
 					case <-timeoutTimer.C:
 						break forLoop
@@ -894,6 +889,7 @@ func BenchmarkConverter(b *testing.B) {
 func BenchmarkGetResourceID(b *testing.B) {
 	b.StopTimer()
 	res := getResource()
+	b.ReportAllocs()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -902,6 +898,7 @@ func BenchmarkGetResourceID(b *testing.B) {
 
 func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
 	res := map[string]interface{}{}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -912,6 +909,7 @@ func BenchmarkGetResourceIDSingleResource(b *testing.B) {
 	res := map[string]interface{}{
 		"resource": "value",
 	}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -926,6 +924,7 @@ func BenchmarkGetResourceIDComplexResource(b *testing.B) {
 			"three": 4,
 		},
 	}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)

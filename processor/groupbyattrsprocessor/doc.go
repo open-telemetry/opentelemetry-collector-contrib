@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
 // Package groupbyattrsprocessor creates Resources based on specified
 // attributes, and groups metrics, log records and spans with matching
 // attributes under the corresponding Resource.
