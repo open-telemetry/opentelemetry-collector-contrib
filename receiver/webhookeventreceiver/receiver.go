@@ -174,7 +174,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	// finish reading the body into a log
 	sc := bufio.NewScanner(bodyReader)
-	ld, numLogs := reqToLog(sc, r.URL.Query(), er.cfg)
+	ld, numLogs := reqToLog(sc, r.URL.Query(), er.cfg, er.settings.ID.String())
 	consumerErr := er.logConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()
