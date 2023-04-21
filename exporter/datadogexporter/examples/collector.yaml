@@ -95,7 +95,7 @@ exporters:
     ## @param endpoint - string - required
     ## Endpoint where to send telemetry. On gateway mode, we set it to the gateway host IP.
     #
-    # endpoint: ${GATEWAY_HOST_IP}:4317
+    # endpoint: ${env:GATEWAY_HOST_IP}:4317
 
   # The Datadog exporter is necessary for exporting telemetry signals to Datadog.
   datadog:
