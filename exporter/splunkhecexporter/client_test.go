@@ -248,7 +248,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 			KeyFile:  serverKey,
 		},
 	}
-	serverTls, err := tlsSetting.LoadTLSConfig()
+	serverTLS, err := tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)
 
 	rr := make(chan receivedRequest)
@@ -256,7 +256,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	s := &http.Server{
 		Handler:           &capture,
 		ReadHeaderTimeout: 20 * time.Second,
-		TLSConfig:         serverTls,
+		TLSConfig:         serverTLS,
 	}
 	defer s.Close()
 	go func() {
@@ -319,7 +319,7 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 			KeyFile:  serverKey,
 		},
 	}
-	serverTls, err := tlsSetting.LoadTLSConfig()
+	serverTLS, err := tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)
 
 	rr := make(chan receivedRequest)
@@ -327,7 +327,7 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 	s := &http.Server{
 		Handler:           &capture,
 		ReadHeaderTimeout: 20 * time.Second,
-		TLSConfig:         serverTls,
+		TLSConfig:         serverTLS,
 	}
 	defer s.Close()
 	go func() {
@@ -397,14 +397,14 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 			KeyFile:  serverKey,
 		},
 	}
-	serverTls, err := tlsSetting.LoadTLSConfig()
+	serverTLS, err := tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)
 	rr := make(chan receivedRequest)
 	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
 		ReadHeaderTimeout: 20 * time.Second,
-		TLSConfig:         serverTls,
+		TLSConfig:         serverTLS,
 	}
 	defer s.Close()
 	go func() {
@@ -1246,10 +1246,10 @@ func TestTlsErrors(t *testing.T) {
 					MaxVersion: tt.tlsVersion,
 				},
 			}
-			serverTls, err := tlsSetting.LoadTLSConfig()
+			serverTLS, err := tlsSetting.LoadTLSConfig()
 			assert.NoError(t, err)
 			s := &http.Server{
-				TLSConfig: serverTls,
+				TLSConfig: serverTLS,
 			}
 			go func() {
 				if e := s.ServeTLS(listener, tt.serverCert, serverKey); e != http.ErrServerClosed {
