@@ -1249,7 +1249,8 @@ func TestTlsErrors(t *testing.T) {
 			serverTLS, err := tlsSetting.LoadTLSConfig()
 			assert.NoError(t, err)
 			s := &http.Server{
-				TLSConfig: serverTLS,
+				ReadHeaderTimeout: 20 * time.Second,
+				TLSConfig:         serverTLS,
 			}
 			go func() {
 				if e := s.ServeTLS(listener, tt.serverCert, serverKey); e != http.ErrServerClosed {
