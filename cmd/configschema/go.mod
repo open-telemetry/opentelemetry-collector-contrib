@@ -21,6 +21,8 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.5 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.5 // indirect
+	github.com/gocql/gocql v1.3.1 // indirect
+	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.75.0 // indirect
@@ -29,6 +31,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.75.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.75.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.75.0 // indirect
@@ -699,6 +702,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azure
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../../exporter/carbonexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter => ../../exporter/clickhouseexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter => ../../exporter/cassandraexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter => ../../exporter/coralogixexporter
 
