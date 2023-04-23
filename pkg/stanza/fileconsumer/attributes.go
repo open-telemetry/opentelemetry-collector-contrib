@@ -15,9 +15,8 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
-	"runtime"
-
 	"path/filepath"
+	"runtime"
 
 	"go.uber.org/multierr"
 )
