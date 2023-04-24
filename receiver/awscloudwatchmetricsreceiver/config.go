@@ -60,13 +60,10 @@ type MetricDimensionsConfig struct {
 }
 
 var (
-	errNoMetricsConfigured = errors.New("no metrics configured")
-	errNoRegion            = errors.New("no region was specified")
-	errInvalidPollInterval = errors.New("poll interval is incorrect, it must be a duration greater than one second")
-
-	// https://docs.aws.amazon.com/cli/latest/reference/cloudwatch/get-metric-data.html
-	// GetMetricData supports up to 500 metrics per API call
-	errTooManyMetrics = errors.New("you cannot define more than 500 metrics")
+	errNoMetricsConfigured   = errors.New("no metrics configured")
+	errNoNamespaceConfigured = errors.New("no metric namespace configured")
+	errNoRegion              = errors.New("no region was specified")
+	errInvalidPollInterval   = errors.New("poll interval is incorrect, it must be a duration greater than one second")
 
 	// https://docs.aws.amazon.com/cli/latest/reference/cloudwatch/get-metric-data.html
 	errEmptyDimensions      = errors.New("dimensions name and value is empty")
@@ -114,12 +111,9 @@ func (cfg *Config) validateDimensionsConfig() error {
 	var errs error
 
 	metricsNames := cfg.Metrics.Names
-	if len(metricsNames) > 500 {
-		return errTooManyMetrics
-	}
 	for _, name := range metricsNames {
 		if name.Namespace == "" {
-			return errNoMetricsConfigured
+			return errNoNamespaceConfigured
 		}
 		err := validateAwsAggregation(name.AwsAggregation)
 		if err != nil {

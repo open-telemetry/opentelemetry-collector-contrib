@@ -48,7 +48,7 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
-			name: "No metric defined",
+			name: "No metrics defined",
 			config: Config{
 				Region:       "eu-west-1",
 				PollInterval: time.Minute * 5,
@@ -75,7 +75,7 @@ func TestValidate(t *testing.T) {
 					}},
 				},
 			},
-			expectedErr: errNoMetricsConfigured,
+			expectedErr: errNoNamespaceConfigured,
 		},
 		{
 			name: "No metric name defined",
