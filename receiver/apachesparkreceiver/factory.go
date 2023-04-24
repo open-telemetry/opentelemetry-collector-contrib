@@ -48,7 +48,7 @@ func createDefaultConfig() component.Config {
 		// HttpClientSettings: confighttp.HTTPClientSettings{
 		// 	Endpoint: defaultEndpoint,
 		// },
-		// MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(), TODO: add back when metadata file exists
+		// MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(), TODO: add back when metadata dir exists
 	}
 }
 

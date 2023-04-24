@@ -33,7 +33,7 @@ var (
 )
 
 type sparkScraper struct {
-	client   client // match client type from Ian's code
+	client   client
 	logger   *zap.Logger
 	cfg      *Config
 	settings component.TelemetrySettings
