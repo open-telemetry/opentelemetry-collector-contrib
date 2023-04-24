@@ -45,7 +45,7 @@ func resolveFileAttributes(path string) (*FileAttributes, error) {
 	} else {
 		resolved, symErr = filepath.EvalSymlinks(path)
 		if symErr == "EvalSymlinks: too many links" {
-			symErr = nil # We must reset the error to avoid problems later in the stack
+			symErr = nil // We must reset the error to avoid problems later in the stack
 			resolved = path
 		}
 	}
