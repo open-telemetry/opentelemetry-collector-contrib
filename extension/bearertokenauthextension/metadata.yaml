@@ -2,5 +2,6 @@ type: bearertokenauth
 
 status:
   class: extension
-  stability: beta
+  stability:
+    extension: beta
   distributions: [contrib]

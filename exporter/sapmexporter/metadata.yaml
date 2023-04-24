@@ -2,6 +2,6 @@ type: sapm
 
 status:
   class: exporter
-  stability: beta
-  pipelines: [traces]
+  stability:
+    traces: beta
   distributions: [contrib]

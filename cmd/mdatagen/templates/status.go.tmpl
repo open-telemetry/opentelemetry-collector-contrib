@@ -8,5 +8,7 @@ import (
 
 const (
 	Type = "{{ .Type }}"
-	Stability = component.StabilityLevel{{ casesTitle .Status.Stability }}
+	{{- range $pipeline, $value := .Status.Stability }}
+	{{ casesTitle $pipeline }}Stability = component.StabilityLevel{{ casesTitle $value }}
+	{{- end }}
 )

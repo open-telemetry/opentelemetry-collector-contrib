@@ -7,6 +7,8 @@ import (
 )
 
 const (
-	Type      = "parquet"
-	Stability = component.StabilityLevelDevelopment
+	Type             = "parquet"
+	LogsStability    = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelDevelopment
+	TracesStability  = component.StabilityLevelDevelopment
 )

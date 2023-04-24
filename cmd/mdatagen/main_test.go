@@ -58,8 +58,10 @@ metrics:
 type: metricreceiver
 status:
   class: exporter
-  stability: beta
-  pipelines: [metrics, logs, traces]
+  stability:
+    metrics: beta
+    logs: beta
+    traces: beta
   distributions: [contrib]
 `,
 			wantStatusGenerated: true,
@@ -207,8 +209,7 @@ Some warning there.
 		t.Run(tt.name, func(t *testing.T) {
 			md := metadata{
 				Status: Status{
-					Stability:     "beta",
-					Pipelines:     []string{"metrics"},
+					Stability:     map[string]string{"metrics": "beta"},
 					Distributions: []string{"contrib"},
 					Class:         tt.componentClass,
 					Warnings:      tt.warnings,
@@ -229,7 +230,7 @@ Some warning there.
 			expected, err := os.ReadFile(filepath.Join("testdata", tt.outputFile))
 			require.NoError(t, err)
 			expected = bytes.ReplaceAll(expected, []byte("\r\n"), []byte("\n"))
-			require.Equal(t, expected, got)
+			require.Equal(t, expected, got, "got: %s\nexpected: %s", got, expected)
 		})
 	}
 }
@@ -246,8 +247,7 @@ func TestGenerateStatusMetadata(t *testing.T) {
 			md: metadata{
 				Type: "foo",
 				Status: Status{
-					Stability:     "beta",
-					Pipelines:     []string{"metrics"},
+					Stability:     map[string]string{"metrics": "beta"},
 					Distributions: []string{"contrib"},
 					Class:         "receiver",
 				},
@@ -261,8 +261,8 @@ import (
 )
 
 const (
-	Type      = "foo"
-	Stability = component.StabilityLevelBeta
+	Type             = "foo"
+	MetricsStability = component.StabilityLevelBeta
 )
 `,
 		},
@@ -271,8 +271,7 @@ const (
 			md: metadata{
 				Type: "foo",
 				Status: Status{
-					Stability:     "alpha",
-					Pipelines:     []string{"metrics"},
+					Stability:     map[string]string{"metrics": "alpha"},
 					Distributions: []string{"contrib"},
 					Class:         "receiver",
 				},
@@ -286,8 +285,8 @@ import (
 )
 
 const (
-	Type      = "foo"
-	Stability = component.StabilityLevelAlpha
+	Type             = "foo"
+	MetricsStability = component.StabilityLevelAlpha
 )
 `,
 		},

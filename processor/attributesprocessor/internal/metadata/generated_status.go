@@ -7,6 +7,8 @@ import (
 )
 
 const (
-	Type      = "attributes"
-	Stability = component.StabilityLevelBeta
+	Type             = "attributes"
+	LogsStability    = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelBeta
+	TracesStability  = component.StabilityLevelBeta
 )

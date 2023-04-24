@@ -24,9 +24,8 @@ var distros = map[string]string{
 }
 
 type Status struct {
-	Stability     string   `mapstructure:"stability"`
-	Pipelines     []string `mapstructure:"pipelines"`
-	Distributions []string `mapstructure:"distributions"`
-	Class         string   `mapstructure:"class"`
-	Warnings      []string `mapstructure:"warnings"`
+	Stability     map[string]string `mapstructure:"stability"`
+	Distributions []string          `mapstructure:"distributions"`
+	Class         string            `mapstructure:"class"`
+	Warnings      []string          `mapstructure:"warnings"`
 }

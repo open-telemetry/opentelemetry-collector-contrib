@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "ecs_task_observer"
-	Stability = component.StabilityLevelBeta
+	Type               = "ecs_task_observer"
+	ExtensionStability = component.StabilityLevelBeta
 )

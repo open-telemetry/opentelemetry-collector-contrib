@@ -33,7 +33,7 @@ func NewFactory() extension.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		metadata.Stability,
+		metadata.ExtensionStability,
 	)
 }
 

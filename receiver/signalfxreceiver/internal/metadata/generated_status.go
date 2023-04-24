@@ -7,6 +7,7 @@ import (
 )
 
 const (
-	Type      = "signalfx"
-	Stability = component.StabilityLevelBeta
+	Type             = "signalfx"
+	LogsStability    = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelBeta
 )

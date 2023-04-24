@@ -2,5 +2,6 @@ type: host_observer
 
 status:
   class: extension
-  stability: beta
+  stability:
+    extension: beta
   distributions: [contrib]

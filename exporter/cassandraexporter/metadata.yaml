@@ -2,7 +2,8 @@ type: cassandra
 
 status:
   class: exporter
-  stability: alpha
-  pipelines: [logs, traces]
+  stability:
+    traces: alpha
+    logs: alpha
   distributions: [contrib]
 

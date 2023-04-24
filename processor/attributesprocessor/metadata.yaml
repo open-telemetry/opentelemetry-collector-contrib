@@ -2,7 +2,9 @@ type: attributes
 
 status:
   class: processor
-  stability: beta
-  pipelines: [traces,metrics,logs]
-  distributions: [core,contrib]
+  stability:
+    traces: beta
+    metrics: beta
+    logs: beta
+  distributions: [core, contrib]
   warnings: [Identity Conflict]

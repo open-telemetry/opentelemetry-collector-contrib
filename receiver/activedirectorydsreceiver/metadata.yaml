@@ -2,8 +2,8 @@ type: activedirectorydsreceiver
 
 status:
   class: receiver
-  stability: beta
-  pipelines: [metrics]
+  stability:
+    metrics: beta
   distributions: [contrib]
 
 attributes:

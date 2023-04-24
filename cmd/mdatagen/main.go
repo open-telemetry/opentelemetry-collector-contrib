@@ -24,9 +24,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"text/template"
 
+	"golang.org/x/exp/slices"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -130,6 +132,28 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				"inc":         func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {
 					return distros[name]
+				},
+				"keys": func(input map[string]string) []string {
+					keys := []string{}
+					for k, _ := range input {
+						keys = append(keys, k)
+					}
+					sort.Slice(keys, func(i, j int) bool {
+						return keys[i] > keys[j]
+					})
+					return keys
+				},
+				"uniqueValues": func(input map[string]string) []string {
+					vals := []string{}
+					for _, v := range input {
+						if !slices.Contains(vals, v) {
+							vals = append(vals, v)
+						}
+					}
+					sort.Slice(vals, func(i, j int) bool {
+						return vals[i] < vals[j]
+					})
+					return vals
 				},
 				// ParseFS delegates the parsing of the files to `Glob`
 				// which uses the `\` as a special character.

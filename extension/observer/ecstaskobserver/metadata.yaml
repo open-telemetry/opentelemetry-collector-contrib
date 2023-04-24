@@ -2,5 +2,6 @@ type: ecs_task_observer
 
 status:
   class: extension
-  stability: beta
+  stability:
+    extension: beta
   distributions: [contrib]

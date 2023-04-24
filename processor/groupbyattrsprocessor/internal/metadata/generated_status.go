@@ -7,6 +7,8 @@ import (
 )
 
 const (
-	Type      = "groupbyattrs"
-	Stability = component.StabilityLevelBeta
+	Type             = "groupbyattrs"
+	LogsStability    = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelBeta
+	TracesStability  = component.StabilityLevelBeta
 )

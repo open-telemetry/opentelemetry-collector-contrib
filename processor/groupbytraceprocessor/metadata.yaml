@@ -2,7 +2,7 @@ type: groupbytrace
 
 status:
   class: processor
-  stability: beta
-  pipelines: [traces]
+  stability:
+    traces: beta
   distributions: [contrib]
   warnings: [Statefulness]

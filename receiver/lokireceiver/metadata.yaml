@@ -2,6 +2,6 @@ type: loki
 
 status:
   class: receiver
-  stability: alpha
-  pipelines: [logs]
+  stability:
+    logs: alpha
   distributions: [contrib]

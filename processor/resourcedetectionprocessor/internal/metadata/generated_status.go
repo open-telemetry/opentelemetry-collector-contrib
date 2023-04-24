@@ -7,6 +7,8 @@ import (
 )
 
 const (
-	Type      = "resourcedetectionprocessor"
-	Stability = component.StabilityLevelBeta
+	Type             = "resourcedetectionprocessor"
+	LogsStability    = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelBeta
+	TracesStability  = component.StabilityLevelBeta
 )

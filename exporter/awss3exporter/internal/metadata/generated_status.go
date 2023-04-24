@@ -7,6 +7,8 @@ import (
 )
 
 const (
-	Type      = "awss3"
-	Stability = component.StabilityLevelAlpha
+	Type             = "awss3"
+	LogsStability    = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelAlpha
+	TracesStability  = component.StabilityLevelAlpha
 )
