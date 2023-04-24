@@ -104,12 +104,12 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	readTimeout, err := time.ParseDuration(er.cfg.ReadTimeout + "ms")
+	readTimeout, err := time.ParseDuration(er.cfg.ReadTimeout)
 	if err != nil {
 		return err
 	}
 
-	writeTimeout, err := time.ParseDuration(er.cfg.WriteTimeout + "ms")
+	writeTimeout, err := time.ParseDuration(er.cfg.WriteTimeout)
 	if err != nil {
 		return err
 	}

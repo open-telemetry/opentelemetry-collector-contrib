@@ -22,8 +22,8 @@ const (
 	// endpoint to be declared by the user.
 	// Default endpoints to bind to.
 	// defaultEndpoint = "localhost:8080"
-	defaultReadTimeout  = "500"
-	defaultWriteTimeout = "500"
+	defaultReadTimeout  = "500ms"
+	defaultWriteTimeout = "500ms"
 	defaultPath         = "/events"
 	defaultHealthPath   = "/health_check"
 )

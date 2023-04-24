@@ -11,13 +11,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.uber.org/multierr"
 )
 
 // only one validate check so far
 func TestValidateConfig(t *testing.T) {
 	t.Parallel()
 
-	// in case we need to add more tests this can just be extended with more cases
+    var errs error
+    errs = multierr.Append(errs, errMissingEndpointFromConfig)
+    errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
+    errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
+
+
 	tests := []struct {
 		desc   string
 		expect error
@@ -32,6 +38,37 @@ func TestValidateConfig(t *testing.T) {
 				},
 			},
 		},
+        {
+            desc: "ReadTimeout exceeds maximum value",
+            expect: errReadTimeoutExceedsMaxValue,
+            conf: Config{
+                HTTPServerSettings: confighttp.HTTPServerSettings{
+                    Endpoint: "0.0.0.0:0",
+                },
+                ReadTimeout: "14s",
+            },
+        },
+        {
+            desc: "WriteTimeout exceeds maximum value",
+            expect: errWriteTimeoutExceedsMaxValue,
+            conf: Config{
+                HTTPServerSettings: confighttp.HTTPServerSettings{
+                    Endpoint: "0.0.0.0:0",
+                },
+                WriteTimeout: "14s",
+            },
+        },
+        {
+            desc: "Multiple invalid configs",
+            expect: errs,
+            conf: Config{
+                HTTPServerSettings: confighttp.HTTPServerSettings{
+                    Endpoint: "",
+                },
+                WriteTimeout: "14s",
+                ReadTimeout: "15s",
+            },
+        },
 	}
 
 	for _, test := range tests {
@@ -57,8 +94,8 @@ func TestLoadConfig(t *testing.T) {
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "0.0.0.0:8080",
 		},
-		ReadTimeout:  "500",
-		WriteTimeout: "500",
+		ReadTimeout:  "500ms",
+		WriteTimeout: "500ms",
 		Path:         "some/path",
 		HealthPath:   "health/path",
 	}
