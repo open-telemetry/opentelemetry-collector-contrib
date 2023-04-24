@@ -46,8 +46,9 @@ func (config *Config) validateForLog() error {
 	case "otlp_proto_log":
 	case "raw_text":
 	case "raw_json":
+	case "cloud_logging":
 	default:
-		return fmt.Errorf("log encoding %v is not supported.  supported encoding formats include [otlp_proto_log,raw_text,raw_json]", config.Encoding)
+		return fmt.Errorf("log encoding %v is not supported.  supported encoding formats include [otlp_proto_log,raw_text,raw_json,cloud_logging]", config.Encoding)
 	}
 	return nil
 }

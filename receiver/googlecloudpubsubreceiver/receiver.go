@@ -12,6 +12,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	pubsub "cloud.google.com/go/pubsub/apiv1"
 	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
@@ -43,6 +44,7 @@ type pubsubReceiver struct {
 	tracesUnmarshaler  ptrace.Unmarshaler
 	metricsUnmarshaler pmetric.Unmarshaler
 	logsUnmarshaler    plog.Unmarshaler
+	timeProvider       *func() time.Time
 	handler            *internal.StreamHandler
 	startOnce          sync.Once
 }
@@ -55,6 +57,7 @@ const (
 	otlpProtoMetric          = iota
 	otlpProtoLog             = iota
 	rawTextLog               = iota
+	cloudLogging             = iota
 )
 
 type compression int
@@ -134,6 +137,39 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 	lr.Body().SetStr(data)
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(timestamp.AsTime()))
 	return receiver.logsConsumer.ConsumeLogs(ctx, out)
+}
+
+func (receiver *pubsubReceiver) setObservedTimestampe(lr plog.LogRecord) {
+	var t time.Time
+	if receiver.timeProvider != nil {
+		t = (*receiver.timeProvider)()
+	} else {
+		t = time.Now()
+	}
+
+	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(t))
+}
+
+func (receiver *pubsubReceiver) handleCloudLoggingLogEntry(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
+	resource, lr, err := internal.TranslateLogEntry(ctx, receiver.logger, message.Message.Data)
+
+	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	if err != nil {
+		receiver.logger.Error("got an error", zap.Error(err))
+		return err
+	}
+
+	out := plog.NewLogs()
+	logs := out.ResourceLogs()
+	rls := logs.AppendEmpty()
+	resource.CopyTo(rls.Resource())
+
+	ills := rls.ScopeLogs().AppendEmpty()
+	lr.CopyTo(ills.LogRecords().AppendEmpty())
+
+	return receiver.logsConsumer.ConsumeLogs(ctx, out)
+
 }
 
 func decompress(payload []byte, compression compression) ([]byte, error) {
@@ -222,6 +258,8 @@ func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (en
 			otlpEncoding = otlpProtoMetric
 		case "otlp_proto_log":
 			otlpEncoding = otlpProtoLog
+		case "cloud_logging":
+			otlpEncoding = cloudLogging
 		case "raw_text":
 			otlpEncoding = rawTextLog
 		}
@@ -264,6 +302,10 @@ func (receiver *pubsubReceiver) createReceiverHandler(ctx context.Context) error
 			case otlpProtoLog:
 				if receiver.logsConsumer != nil {
 					return receiver.handleLog(ctx, payload, compression)
+				}
+			case cloudLogging:
+				if receiver.logsConsumer != nil {
+					return receiver.handleCloudLoggingLogEntry(ctx, message)
 				}
 			case rawTextLog:
 				return receiver.handleLogStrings(ctx, message)
