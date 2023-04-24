@@ -33,7 +33,7 @@ func rowToMetric(row stringMap, cfg MetricCfg, dest pmetric.Metric, startTime pc
 		if val, found := row[cfg.StartTsColumn]; found {
 			timestamp, err := strconv.ParseInt(val, 10, 64)
 			if err != nil {
-				return fmt.Errorf("failed to parse uint64 for %s, value was %s: %w", cfg.StartTsColumn, val, err)
+				return fmt.Errorf("failed to parse uint64 for %q, value was %q: %w", cfg.StartTsColumn, val, err)
 			}
 			startTime = pcommon.Timestamp(timestamp)
 		}
