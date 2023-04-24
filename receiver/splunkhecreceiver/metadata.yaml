@@ -1,7 +1,7 @@
-name: splunkhecreceiver
+type: splunkhecreceiver
 
 status:
-  type: receiver
+  class: receiver
   stability: beta
   pipelines: [metrics, logs]
   distributions: [contrib]

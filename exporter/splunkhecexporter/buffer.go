@@ -43,12 +43,14 @@ type bufferState struct {
 	compressionAvailable bool
 	compressionEnabled   bool
 	bufferMaxLen         uint
+	maxEventLength       uint
 	writer               io.Writer
 	buf                  *bytes.Buffer
 	bufFront             *index
 	resource             int
 	library              int
 	containsData         bool
+	rawLength            int
 }
 
 func (b *bufferState) reset() {
@@ -56,6 +58,7 @@ func (b *bufferState) reset() {
 	b.compressionEnabled = false
 	b.writer = &cancellableBytesWriter{innerWriter: b.buf, maxCapacity: b.bufferMaxLen}
 	b.containsData = false
+	b.rawLength = 0
 }
 
 func (b *bufferState) Read(p []byte) (n int, err error) {
@@ -71,6 +74,9 @@ func (b *bufferState) Close() error {
 
 // accept returns true if data is accepted by the buffer
 func (b *bufferState) accept(data []byte) (bool, error) {
+	if len(data)+b.rawLength > int(b.maxEventLength) {
+		return false, nil
+	}
 	_, err := b.writer.Write(data)
 	overCapacity := errors.Is(err, errOverCapacity)
 	bufLen := b.buf.Len()
@@ -111,6 +117,7 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 			}
 
 		}
+		b.rawLength += len(data)
 		b.containsData = true
 		return true, nil
 	}
@@ -118,6 +125,7 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 		return false, nil
 	}
 	b.containsData = true
+	b.rawLength += len(data)
 	return true, err
 }
 
@@ -180,7 +188,7 @@ func (c *cancellableGzipWriter) close() error {
 	return c.innerWriter.Close()
 }
 
-func makeBlankBufferState(bufCap uint, compressionAvailable bool) *bufferState {
+func makeBlankBufferState(bufCap uint, compressionAvailable bool, maxEventLength uint) *bufferState {
 	// Buffer of JSON encoded Splunk events, last record is expected to overflow bufCap, hence the padding
 	buf := bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
 
@@ -190,6 +198,7 @@ func makeBlankBufferState(bufCap uint, compressionAvailable bool) *bufferState {
 		writer:               &cancellableBytesWriter{innerWriter: buf, maxCapacity: bufCap},
 		buf:                  buf,
 		bufferMaxLen:         bufCap,
+		maxEventLength:       maxEventLength,
 		bufFront:             nil, // Index of the log record of the first unsent event in buffer.
 		resource:             0,   // Index of currently processed Resource
 		library:              0,   // Index of currently processed Library
