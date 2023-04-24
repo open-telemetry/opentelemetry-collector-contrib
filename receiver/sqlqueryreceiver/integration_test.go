@@ -244,7 +244,7 @@ func TestOracleDBIntegration(t *testing.T) {
 			},
 		},
 		{
-			SQL: "select * from simple_logs",
+			SQL: "select * from sys.simple_logs",
 			Logs: []LogsCfg{
 				{},
 			},

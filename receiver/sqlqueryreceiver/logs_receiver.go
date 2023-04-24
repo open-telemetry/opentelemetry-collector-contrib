@@ -112,7 +112,6 @@ func (queryReceiver *logsQueryReceiver) start() {
 
 func (queryReceiver *logsQueryReceiver) scrape(ctx context.Context) (plog.Logs, error) {
 	out := plog.NewLogs()
-	//TODO: dla testu Oraclowego to queryRows nie działa i nie wypisuje danych - Andrzej obiecał sprawdzić co sie dzieje
 	rows, err := queryReceiver.client.queryRows(ctx)
 	if err != nil {
 		return out, fmt.Errorf("scraper: %w", err)
