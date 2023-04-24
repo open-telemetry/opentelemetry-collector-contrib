@@ -99,38 +99,6 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 	assert.NoError(t, recv.Shutdown(ctx))
 }
 
-func TestAllMetricsIntegration(t *testing.T) {
-	req := testcontainers.ContainerRequest{
-		Image:        "docker.io/library/nginx:1.17",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForListeningPort("80/tcp"),
-	}
-	container, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.Nil(t, err)
-	require.NotNil(t, container)
-
-	consumer := new(consumertest.MetricsSink)
-	f, config := factory()
-
-	params, ctx, cancel := paramsAndContext(t)
-	defer cancel()
-
-	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
-	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, recv.Start(ctx, &testHost{
-		t: t,
-	}))
-
-	assert.Eventuallyf(t, func() bool {
-		return len(consumer.AllMetrics()) > 0
-	}, 5*time.Second, 1*time.Second, "failed to receive any metrics")
-
-	assert.NoError(t, recv.Shutdown(ctx))
-}
-
 func TestMonitoringAddedContainerIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
