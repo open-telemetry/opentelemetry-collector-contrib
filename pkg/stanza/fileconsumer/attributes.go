@@ -16,7 +16,6 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"path/filepath"
-	"runtime"
 
 	"go.uber.org/multierr"
 )
@@ -44,7 +43,11 @@ func resolveFileAttributes(path string) (*FileAttributes, error) {
 	if runtime.GOOS != "windows" {
 		resolved, symErr = filepath.EvalSymlinks(path)
 	} else {
-		resolved = path
+		resolved, symErr = filepath.EvalSymlinks(path)
+		if symErr == "EvalSymlinks: too many links" {
+			symErr = nil # We must reset the error to avoid problems later in the stack
+			resolved = path
+		}
 	}
 	abs, absErr := filepath.Abs(resolved)
 
