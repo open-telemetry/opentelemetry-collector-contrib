@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/google
 go 1.19
 
 require (
-	cloud.google.com/go/spanner v1.45.0
+	cloud.google.com/go/spanner v1.45.1
 	github.com/ReneKroon/ttlcache/v2 v2.11.0
 	github.com/mitchellh/hashstructure v1.1.0
 	github.com/stretchr/testify v1.8.2
@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rc9
 	go.opentelemetry.io/collector/receiver v0.75.0
 	go.uber.org/zap v1.24.0
-	google.golang.org/api v0.118.0
+	google.golang.org/api v0.119.0
 	google.golang.org/grpc v1.54.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -37,7 +37,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/s2a-go v0.1.0 // indirect
+	github.com/google/s2a-go v0.1.2 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -68,7 +68,7 @@ require (
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230403163135-c38d8f061ccd // indirect
+	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )

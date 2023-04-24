@@ -216,7 +216,7 @@ require (
 	cloud.google.com/go/longrunning v0.4.1 // indirect
 	cloud.google.com/go/monitoring v1.13.0 // indirect
 	cloud.google.com/go/pubsub v1.30.0 // indirect
-	cloud.google.com/go/spanner v1.45.0 // indirect
+	cloud.google.com/go/spanner v1.45.1 // indirect
 	cloud.google.com/go/trace v1.9.0 // indirect
 	code.cloudfoundry.org/clock v1.0.0 // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20211115184647-b584dd5df32c // indirect
@@ -246,21 +246,21 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ClickHouse/ch-go v0.52.1 // indirect
-	github.com/ClickHouse/clickhouse-go/v2 v2.9.0 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.81 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.45.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.45.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.45.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.45.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.45.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.45.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.45.0-rc.1 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.11.0 // indirect
+	github.com/ClickHouse/clickhouse-go/v2 v2.9.1 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.82 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.45.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.45.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.45.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.45.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.45.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.45.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.45.0-rc.3 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.12.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.5 // indirect
-	github.com/DataDog/sketches-go v1.4.1 // indirect
+	github.com/DataDog/sketches-go v1.4.2 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.13.1 // indirect
@@ -286,7 +286,7 @@ require (
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.245 // indirect
+	github.com/aws/aws-sdk-go v1.44.249 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.8 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.21 // indirect
@@ -392,7 +392,7 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/s2a-go v0.1.0 // indirect
+	github.com/google/s2a-go v0.1.2 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
 	github.com/gophercloud/gophercloud v1.2.0 // indirect
@@ -559,7 +559,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.639 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.645 // indirect
 	github.com/tg123/go-htpasswd v1.2.1 // indirect
 	github.com/tidwall/gjson v1.14.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -626,7 +626,7 @@ require (
 	golang.org/x/tools v0.8.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
-	google.golang.org/api v0.118.0 // indirect
+	google.golang.org/api v0.119.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.54.0 // indirect
