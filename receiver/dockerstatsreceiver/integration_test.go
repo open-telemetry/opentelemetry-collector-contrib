@@ -19,11 +19,9 @@ package dockerstatsreceiver
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	testcontainers "github.com/testcontainers/testcontainers-go"
@@ -36,8 +34,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
 type testHost struct {
@@ -121,7 +117,7 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 	assert.NoError(t, recv.Shutdown(ctx))
 }
 
-func TestMonitoringAddedContainerIntegration(t *testing.T) {
+func TestMonitoringAddedAndRemovedContainerIntegration(t *testing.T) {
 	t.Parallel()
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
@@ -136,9 +132,18 @@ func TestMonitoringAddedContainerIntegration(t *testing.T) {
 
 	container := createNginxContainer(t, ctx)
 
+	// Check metrics are collected for added container.
 	assert.Eventuallyf(t, func() bool {
 		return hasResourceScopeMetrics(container.GetContainerID(), consumer.AllMetrics())
 	}, 5*time.Second, 1*time.Second, "failed to receive any metrics")
+
+	container.Terminate(ctx)
+	consumer.Reset()
+
+	// Check metrics are not collected for removed container.
+	assert.Never(t, func() bool {
+		return hasResourceScopeMetrics(container.GetContainerID(), consumer.AllMetrics())
+	}, 5*time.Second, 1*time.Second, "received undesired metrics")
 
 	assert.NoError(t, recv.Shutdown(ctx))
 }
@@ -165,60 +170,4 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	}, 5*time.Second, 1*time.Second, "received undesired metrics")
 
 	assert.NoError(t, recv.Shutdown(ctx))
-}
-
-func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
-	_, config := factory()
-	config.ExcludedImages = append(config.ExcludedImages, "!*nginx*")
-
-	dConfig, err := docker.NewConfig(config.Endpoint, config.Timeout, config.ExcludedImages, config.DockerAPIVersion)
-	require.NoError(t, err)
-
-	client, err := docker.NewDockerClient(dConfig, zap.NewNop())
-	require.NoError(t, err)
-	require.NoError(t, client.LoadContainerList(context.Background()))
-	go client.ContainerEventLoop(context.Background())
-
-	initialCount := len(client.Containers())
-
-	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "docker.io/library/nginx:1.17",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForListeningPort("80/tcp"),
-		SkipReaper:   true,
-	}
-	nginx, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.Nil(t, err)
-	require.NotNil(t, nginx)
-
-	t.Log(nginx.GetContainerID())
-	desiredAmount := func(numDesired int) func() bool {
-		return func() bool {
-			return len(client.Containers()) == numDesired
-		}
-	}
-
-	require.Eventuallyf(t, desiredAmount(initialCount+1), 5*time.Second, 1*time.Millisecond, "failed to load container stores")
-
-	err = nginx.Terminate(ctx)
-	require.Nil(t, err)
-
-	require.Eventuallyf(t, desiredAmount(initialCount), 5*time.Second, 1*time.Millisecond, "failed to clear container stores")
-
-	// Confirm missing container paths
-	dc := docker.Container{
-		ContainerJSON: &types.ContainerJSON{
-			ContainerJSONBase: &types.ContainerJSONBase{
-				ID: nginx.GetContainerID(),
-			},
-		},
-	}
-	statsJSON, err := client.FetchContainerStatsAsJSON(context.Background(), dc)
-	assert.Nil(t, statsJSON)
-	require.Error(t, err)
-	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", nginx.GetContainerID()), err.Error())
 }
