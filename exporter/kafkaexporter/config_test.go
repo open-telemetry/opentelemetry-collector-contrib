@@ -66,6 +66,7 @@ func TestLoadConfig(t *testing.T) {
 						Username: "jdoe",
 						Password: "pass",
 					},
+					SASL: &SASLConfig{},
 				},
 				Metadata: Metadata{
 					Full: false,
@@ -85,8 +86,13 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
-			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig()
+			cfg := applyConfigOption(func(conf *Config) {
+				// config.Validate() reads the Authentication.SASL struct, but it's not present
+				// in the default config. This sets it to avoid a segfault during testing
+				conf.Authentication = Authentication{
+					SASL: &SASLConfig{},
+				}
+			})
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
@@ -108,6 +114,23 @@ func TestValidate_err_compression(t *testing.T) {
 	err := config.Validate()
 	assert.Error(t, err)
 	assert.Equal(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
+}
+
+func TestValidate_sasl_version(t *testing.T) {
+	config := &Config{
+		Producer: Producer{
+			Compression: "none",
+		},
+		Authentication: Authentication{
+			SASL: &SASLConfig{
+				Version: 42,
+			},
+		},
+	}
+
+	err := config.Validate()
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "auth.sasl.version has to be either 0 or 1. configured value 42")
 }
 
 func Test_saramaProducerCompressionCodec(t *testing.T) {
