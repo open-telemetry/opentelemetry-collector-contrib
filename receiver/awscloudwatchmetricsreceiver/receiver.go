@@ -36,7 +36,7 @@ type metricReceiver struct {
 	doneChan      chan bool
 }
 
-func newMetricsRceiver(cfg *Config, logger *zap.Logger, consumer consumer.Metrics) *metricReceiver {
+func newMetricReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Metrics) *metricReceiver {
 	return &metricReceiver{
 		region:        cfg.Region,
 		profile:       cfg.Profile,
