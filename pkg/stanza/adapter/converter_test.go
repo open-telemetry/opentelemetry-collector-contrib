@@ -889,6 +889,7 @@ func BenchmarkConverter(b *testing.B) {
 func BenchmarkGetResourceID(b *testing.B) {
 	b.StopTimer()
 	res := getResource()
+	b.ReportAllocs()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -897,6 +898,7 @@ func BenchmarkGetResourceID(b *testing.B) {
 
 func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
 	res := map[string]interface{}{}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -907,6 +909,7 @@ func BenchmarkGetResourceIDSingleResource(b *testing.B) {
 	res := map[string]interface{}{
 		"resource": "value",
 	}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -921,6 +924,7 @@ func BenchmarkGetResourceIDComplexResource(b *testing.B) {
 			"three": 4,
 		},
 	}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)

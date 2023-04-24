@@ -37,6 +37,7 @@ body:
       - exporter/azuredataexplorer
       - exporter/azuremonitor
       - exporter/carbon
+      - exporter/cassandra
       - exporter/clickhouse
       - exporter/coralogix
       - exporter/datadog
