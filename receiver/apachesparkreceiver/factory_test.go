@@ -19,8 +19,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/metadata"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -47,7 +49,10 @@ func TestNewFactory(t *testing.T) {
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: 15 * time.Second,
 					},
-					// TODO: add HTTPClientSettings and MetricsBuilderConfig once configured
+					HTTPClientSettings: confighttp.HTTPClientSettings{
+						Endpoint: "http://localhost:4040",
+					},
+					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

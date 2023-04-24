@@ -26,11 +26,12 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/metadata"
 )
 
 var (
-	errClientNotInit    = errors.New("client not initialized")
-	errScrapedNoMetrics = errors.New("failed to scrape any metrics")
+	errClientNotInit = errors.New("client not initialized")
 )
 
 type sparkScraper struct {
@@ -38,8 +39,7 @@ type sparkScraper struct {
 	logger   *zap.Logger
 	config   *Config
 	settings component.TelemetrySettings
-	// TODO: add when metadata is created
-	// mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+	mb       *metadata.MetricsBuilder
 }
 
 func newSparkScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *sparkScraper {
@@ -47,6 +47,7 @@ func newSparkScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSe
 		logger:   logger,
 		config:   cfg,
 		settings: settings.TelemetrySettings,
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
 
@@ -61,6 +62,7 @@ func (s *sparkScraper) start(_ context.Context, host component.Host) (err error)
 
 func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
+	fmt.Println(now)
 	var scrapeErrors scrapererror.ScrapeErrors
 
 	if s.client == nil {
@@ -69,6 +71,11 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 	// get stats from the 'metrics' endpoint
 	clusterStats, err := s.client.GetStats("/metrics/json")
+	if err != nil {
+		scrapeErrors.AddPartial(1, err)
+		s.logger.Warn("Failed to scrape cluster stats", zap.Error(err))
+	}
+	fmt.Println(clusterStats) // print statements keep vscode from complaining about stats not being used
 
 	// call applications endpoint
 	applicationStats, err := s.client.GetStats("/applications")
@@ -76,20 +83,23 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		scrapeErrors.AddPartial(1, err)
 		s.logger.Warn("Failed to scrape application stats", zap.Error(err))
 	}
+	fmt.Println(applicationStats)
 	// determine application ids
 
 	// for each application id, get stats from stages & executors endpoints
-	stageStats, err := s.client.GetStats("/applications/APP_ID_HERE/stages")
-	if err != nil {
-		scrapeErrors.AddPartial(1, err)
-		s.logger.Warn("Failed to scrape stage stats", zap.Error(err))
-	}
+	// stageStats, err := s.client.GetStats("/applications/APP_ID_HERE/stages")
+	// if err != nil {
+	// 	scrapeErrors.AddPartial(1, err)
+	// 	s.logger.Warn("Failed to scrape stage stats", zap.Error(err))
+	// }
+	// fmt.Println(stageStats)
 
-	executorStats, err := s.client.GetStats("/applications/APP_ID_HERE/executors")
-	if err != nil {
-		scrapeErrors.AddPartial(1, err)
-		s.logger.Warn("Failed to scrape executor stats", zap.Error(err))
-	}
+	// executorStats, err := s.client.GetStats("/applications/APP_ID_HERE/executors")
+	// if err != nil {
+	// 	scrapeErrors.AddPartial(1, err)
+	// 	s.logger.Warn("Failed to scrape executor stats", zap.Error(err))
+	// }
+	// fmt.Println(executorStats)
 	md := pmetric.NewMetrics()
 
 	return md, nil

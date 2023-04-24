@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/mocks"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -29,7 +30,7 @@ import (
 func TestScraper(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
-	scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopCreateSettings())
+	scraper := newSparkScraper(zap.NewNop(), cfg, receivertest.NewNopCreateSettings())
 	scraper.client = newMockClient(t)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -44,7 +45,6 @@ func TestScraper(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
-func newMockClient(t *testing.T) (err error) {
-	// TODO: mock client
-	return nil
+func newMockClient(t *testing.T) *mocks.MockClient {
+	return &mocks.MockClient{}
 }
