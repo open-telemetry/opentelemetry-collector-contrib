@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	defaultPollInterval = time.Minute
+	defaultPollInterval = 5 * time.Minute
 )
 
 // Config is the overall config structure for the awscloudwatchmetricsreceiver
