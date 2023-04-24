@@ -104,7 +104,10 @@ func (queryReceiver *logsQueryReceiver) start() {
 	}
 	queryReceiver.client = queryReceiver.clientProviderFunc(dbWrapper{db}, queryReceiver.query.SQL, nil)
 	//TODO: napisać scrappowanie co jakiś ustalony czas
-	queryReceiver.scrape(context.Background())
+	_, err = queryReceiver.scrape(context.Background())
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (queryReceiver *logsQueryReceiver) scrape(ctx context.Context) (plog.Logs, error) {
