@@ -1,0 +1,6 @@
+type: ecstaskobserver
+
+status:
+  class: extension
+  stability: beta
+  distributions: [contrib]

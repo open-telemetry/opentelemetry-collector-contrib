@@ -1,0 +1,8 @@
+type: cumulativetodelta
+
+status:
+  class: processor
+  stability: beta
+  pipelines: [metrics]
+  distributions: [contrib]
+  warnings: [Statefulness]

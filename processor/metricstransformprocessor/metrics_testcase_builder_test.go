@@ -46,6 +46,11 @@ func metricBuilder(metricType pmetric.MetricType, name string, attrs ...string) 
 	}
 }
 
+func (b builder) addDescription(description string) builder {
+	b.metric.SetDescription(description)
+	return b
+}
+
 func (b builder) addIntDatapoint(start, ts pcommon.Timestamp, val int64, attrValues ...string) builder {
 	dp := b.addNumberDatapoint(start, ts, attrValues)
 	dp.SetIntValue(val)

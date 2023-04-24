@@ -3,7 +3,7 @@
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [{{ .Status.Stability }}]   |
-{{- if ne .Status.Type "extension" }}
+{{- if ne .Status.Class "extension" }}
 | Supported pipeline types | {{ stringsJoin .Status.Pipelines ", " }}   |
 {{- end }}
 | Distributions            | [{{ stringsJoin .Status.Distributions "], [" }}] |

@@ -1,0 +1,6 @@
+type: k8sobserver
+
+status:
+  class: extension
+  stability: alpha
+  distributions: [contrib]

@@ -245,11 +245,11 @@ var (
 			in: []pmetric.Metric{
 				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
 					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
-					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").addDescription("foobar").build(),
 			},
 			out: []pmetric.Metric{
 				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
-					addIntDatapoint(1, 2, 4, "label1-value1").build(),
+					addIntDatapoint(1, 2, 4, "label1-value1").addDescription("foobar").build(),
 			},
 		},
 		{

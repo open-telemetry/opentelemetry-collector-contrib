@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
 // Package oauth2clientauthextension implements `cauth.Client`
 // This extension provides OAuth2 Client Credentials flow authenticator for HTTP and gRPC based exporters.
 // The extension fetches and refreshes the token after expiry

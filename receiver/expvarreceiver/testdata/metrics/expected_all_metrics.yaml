@@ -1,0 +1,245 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Bytes of memory in profiling bucket hash tables.
+            name: process.runtime.memstats.buck_hash_sys
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3875"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Cumulative count of heap objects freed.
+            name: process.runtime.memstats.frees
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "18672"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+              isMonotonic: true
+            unit: '{objects}'
+          - description: The fraction of this program's available CPU time used by the GC since the program started.
+            gauge:
+              dataPoints:
+                - asDouble: 2.204356098795297e-06
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            name: process.runtime.memstats.gc_cpu_fraction
+            unit: "1"
+          - description: Bytes of memory in garbage collection metadata.
+            name: process.runtime.memstats.gc_sys
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4590752"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Bytes of allocated heap objects.
+            name: process.runtime.memstats.heap_alloc
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1266984"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Bytes in idle (unused) spans.
+            name: process.runtime.memstats.heap_idle
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "5939200"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Bytes in in-use spans.
+            name: process.runtime.memstats.heap_inuse
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1925120"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Number of allocated heap objects.
+            name: process.runtime.memstats.heap_objects
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3205"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: '{objects}'
+          - description: Bytes of physical memory returned to the OS.
+            name: process.runtime.memstats.heap_released
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3252224"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Bytes of heap memory obtained by the OS.
+            name: process.runtime.memstats.heap_sys
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "7864320"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: The most recent stop-the-world pause time.
+            gauge:
+              dataPoints:
+                - asInt: "93108"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            name: process.runtime.memstats.last_pause
+            unit: ns
+          - description: Number of pointer lookups performed by the runtime.
+            name: process.runtime.memstats.lookups
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: '{lookups}'
+          - description: Cumulative count of heap objects allocated.
+            name: process.runtime.memstats.mallocs
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "21877"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+              isMonotonic: true
+            unit: '{objects}'
+          - description: Bytes of allocated mcache structures.
+            name: process.runtime.memstats.mcache_inuse
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "14400"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Bytes of memory obtained from the OS for mcache structures.
+            name: process.runtime.memstats.mcache_sys
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "15600"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Bytes of allocated mspan structures.
+            name: process.runtime.memstats.mspan_inuse
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "56168"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Bytes of memory obtained from the OS for mspan structures.
+            name: process.runtime.memstats.mspan_sys
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "81600"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: The target heap size of the next GC cycle.
+            name: process.runtime.memstats.next_gc
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4194304"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Number of GC cycles that were forced by the application calling the GC function.
+            name: process.runtime.memstats.num_forced_gc
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+              isMonotonic: true
+            unit: By
+          - description: Number of completed GC cycles.
+            name: process.runtime.memstats.num_gc
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+              isMonotonic: true
+            unit: By
+          - description: Bytes of memory in miscellaneous off-heap runtime allocations.
+            name: process.runtime.memstats.other_sys
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1029021"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: The cumulative nanoseconds in GC stop-the-world pauses since the program started.
+            name: process.runtime.memstats.pause_total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "151575"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+              isMonotonic: true
+            unit: By
+          - description: Bytes in stack spans.
+            name: process.runtime.memstats.stack_inuse
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "524288"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Bytes of stack memory obtained from the OS.
+            name: process.runtime.memstats.stack_sys
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "524288"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Total bytes of memory obtained from the OS.
+            name: process.runtime.memstats.sys
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "14109456"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+            unit: By
+          - description: Cumulative bytes allocated for heap objects.
+            name: process.runtime.memstats.total_alloc
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8102120"
+                  startTimeUnixNano: "1653023581589787000"
+                  timeUnixNano: "1653023581592037000"
+              isMonotonic: true
+            unit: By
+        scope:
+          name: otelcol/expvarreceiver
+          version: latest

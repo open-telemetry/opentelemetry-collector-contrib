@@ -1,0 +1,6 @@
+type: pprofextension
+
+status:
+  class: extension
+  stability: beta
+  distributions: [core, contrib]

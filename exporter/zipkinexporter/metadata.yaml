@@ -1,7 +1,7 @@
-name: zipkinexporter
+type: zipkinexporter
 
 status:
-  type: exporter
+  class: exporter
   stability: beta
   pipelines: [traces]
   distributions: [core, contrib]

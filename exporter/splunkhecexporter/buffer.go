@@ -43,17 +43,22 @@ type bufferState struct {
 	compressionAvailable bool
 	compressionEnabled   bool
 	bufferMaxLen         uint
+	maxEventLength       uint
 	writer               io.Writer
 	buf                  *bytes.Buffer
 	bufFront             *index
 	resource             int
 	library              int
+	containsData         bool
+	rawLength            int
 }
 
 func (b *bufferState) reset() {
 	b.buf.Reset()
 	b.compressionEnabled = false
 	b.writer = &cancellableBytesWriter{innerWriter: b.buf, maxCapacity: b.bufferMaxLen}
+	b.containsData = false
+	b.rawLength = 0
 }
 
 func (b *bufferState) Read(p []byte) (n int, err error) {
@@ -69,6 +74,9 @@ func (b *bufferState) Close() error {
 
 // accept returns true if data is accepted by the buffer
 func (b *bufferState) accept(data []byte) (bool, error) {
+	if len(data)+b.rawLength > int(b.maxEventLength) {
+		return false, nil
+	}
 	_, err := b.writer.Write(data)
 	overCapacity := errors.Is(err, errOverCapacity)
 	bufLen := b.buf.Len()
@@ -91,8 +99,7 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 			zipWriter.maxCapacity = 0
 		}
 
-		// the new data is so big, even with a zip writer, we are over the max limit.
-		// abandon and return false, so we can send what is already in our buffer.
+		// we write the bytes buffer into the zip buffer. Any error from this is I/O, and should stop the process.
 		if _, err2 := zipWriter.Write(b.buf.Bytes()); err2 != nil {
 			return false, err2
 		}
@@ -102,15 +109,23 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 		// if the byte writer was over capacity, try to write the new entry in the zip writer:
 		if overCapacity {
 			if _, err2 := zipWriter.Write(data); err2 != nil {
+				overCapacity2 := errors.Is(err2, errOverCapacity)
+				if overCapacity2 {
+					return false, nil
+				}
 				return false, err2
 			}
 
 		}
+		b.rawLength += len(data)
+		b.containsData = true
 		return true, nil
 	}
 	if overCapacity {
 		return false, nil
 	}
+	b.containsData = true
+	b.rawLength += len(data)
 	return true, err
 }
 
@@ -173,7 +188,7 @@ func (c *cancellableGzipWriter) close() error {
 	return c.innerWriter.Close()
 }
 
-func makeBlankBufferState(bufCap uint, compressionAvailable bool) *bufferState {
+func makeBlankBufferState(bufCap uint, compressionAvailable bool, maxEventLength uint) *bufferState {
 	// Buffer of JSON encoded Splunk events, last record is expected to overflow bufCap, hence the padding
 	buf := bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
 
@@ -183,6 +198,7 @@ func makeBlankBufferState(bufCap uint, compressionAvailable bool) *bufferState {
 		writer:               &cancellableBytesWriter{innerWriter: buf, maxCapacity: bufCap},
 		buf:                  buf,
 		bufferMaxLen:         bufCap,
+		maxEventLength:       maxEventLength,
 		bufFront:             nil, // Index of the log record of the first unsent event in buffer.
 		resource:             0,   // Index of currently processed Resource
 		library:              0,   // Index of currently processed Library

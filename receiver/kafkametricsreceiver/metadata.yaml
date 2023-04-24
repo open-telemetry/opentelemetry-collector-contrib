@@ -1,4 +1,4 @@
-name: kafkametricsreceiver
+type: kafkametricsreceiver
 
 attributes:
   topic:
