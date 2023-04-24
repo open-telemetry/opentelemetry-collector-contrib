@@ -5,7 +5,7 @@ change_type: enhancement
 component: vcenterreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Adds VM CPU usage and utilisation metrics
+note: Adds VM CPU usage and utilization metrics
 
 # One or more tracking issues related to the change
 issues: [20895]
