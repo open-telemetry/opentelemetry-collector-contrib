@@ -25,7 +25,7 @@ This receiver supports Apache Spark versions:
 
 These configuration options are for connecting to an Apache Spark application.
 
-- `collection_interval`: (default = `15s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `collection_interval`: (default = `60s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `endpoint`: (default = `http://localhost:4040`): Apache Spark endpoint to connect to in the form of `[http][://]{host}[:{port}]`
 
 ### Example Configuration
