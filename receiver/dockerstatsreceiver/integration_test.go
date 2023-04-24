@@ -20,7 +20,6 @@ package dockerstatsreceiver
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -31,6 +30,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -67,15 +67,13 @@ func paramsAndContext(t *testing.T) (rcvr.CreateSettings, context.Context, conte
 	return settings, ctx, cancel
 }
 
-func TestDefaultMetricsIntegration(t *testing.T) {
-	params, ctx, cancel := paramsAndContext(t)
-	defer cancel()
-
+func createNginxContainer(t *testing.T, ctx context.Context) testcontainers.Container {
 	req := testcontainers.ContainerRequest{
 		Image:        "docker.io/library/nginx:1.17",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		WaitingFor:   wait.ForExposedPort(),
 	}
+
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
@@ -83,6 +81,30 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, container)
 
+	return container
+}
+
+func hasResourceScopeMetrics(containerID string, metrics []pmetric.Metrics) bool {
+	for _, m := range metrics {
+		for i := 0; i < m.ResourceMetrics().Len(); i++ {
+			rm := m.ResourceMetrics().At(i)
+
+			id, ok := rm.Resource().Attributes().Get(conventions.AttributeContainerID)
+			if ok && id.AsString() == containerID && rm.ScopeMetrics().Len() > 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func TestDefaultMetricsIntegration(t *testing.T) {
+	t.Parallel()
+	params, ctx, cancel := paramsAndContext(t)
+	defer cancel()
+
+	container := createNginxContainer(t, ctx)
+
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
 	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
@@ -93,13 +115,14 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 	}))
 
 	assert.Eventuallyf(t, func() bool {
-		return len(consumer.AllMetrics()) > 0
+		return hasResourceScopeMetrics(container.GetContainerID(), consumer.AllMetrics())
 	}, 5*time.Second, 1*time.Second, "failed to receive any metrics")
 
 	assert.NoError(t, recv.Shutdown(ctx))
 }
 
 func TestMonitoringAddedContainerIntegration(t *testing.T) {
+	t.Parallel()
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 	consumer := new(consumertest.MetricsSink)
@@ -111,43 +134,24 @@ func TestMonitoringAddedContainerIntegration(t *testing.T) {
 		t: t,
 	}))
 
-	req := testcontainers.ContainerRequest{
-		Image:        "docker.io/library/nginx:1.17",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForListeningPort("80/tcp"),
-	}
-	container, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.Nil(t, err)
-	require.NotNil(t, container)
+	container := createNginxContainer(t, ctx)
 
 	assert.Eventuallyf(t, func() bool {
-		return len(consumer.AllMetrics()) > 0
+		return hasResourceScopeMetrics(container.GetContainerID(), consumer.AllMetrics())
 	}, 5*time.Second, 1*time.Second, "failed to receive any metrics")
 
 	assert.NoError(t, recv.Shutdown(ctx))
 }
 
 func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
+	t.Parallel()
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 
-	req := testcontainers.ContainerRequest{
-		Image:        "docker.io/library/redis:6.0.3",
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForListeningPort("6379/tcp"),
-	}
-	container, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.Nil(t, err)
-	require.NotNil(t, container)
+	container := createNginxContainer(t, ctx)
 
 	f, config := factory()
-	config.ExcludedImages = append(config.ExcludedImages, "*redis*")
+	config.ExcludedImages = append(config.ExcludedImages, "*nginx*")
 
 	consumer := new(consumertest.MetricsSink)
 	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
@@ -157,21 +161,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	}))
 
 	assert.Never(t, func() bool {
-		if metrics := consumer.AllMetrics(); len(metrics) > 0 {
-			for _, metric := range metrics {
-				resourceMetrics := metric.ResourceMetrics()
-				for i := 0; i < resourceMetrics.Len(); i++ {
-					resourceMetric := resourceMetrics.At(i)
-					resource := resourceMetric.Resource()
-					if nameAttr, ok := resource.Attributes().Get(conventions.AttributeContainerImageName); ok {
-						if strings.Contains(nameAttr.Str(), "redis") {
-							return true
-						}
-					}
-				}
-			}
-		}
-		return false
+		return hasResourceScopeMetrics(container.GetContainerID(), consumer.AllMetrics())
 	}, 5*time.Second, 1*time.Second, "received undesired metrics")
 
 	assert.NoError(t, recv.Shutdown(ctx))
