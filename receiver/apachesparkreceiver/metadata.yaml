@@ -1,0 +1,31 @@
+name: apachesparkreceiver
+
+status:
+  type: receiver
+  stability: development
+  pipelines: [metrics]
+
+attributes:
+  application_id:
+    description: The id of the application that the metric comes from
+    type: string
+
+metrics:
+  spark.stage.executor_run_time:
+    description: Amount of time spent by the executor in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: ms
+    attributes: [application_id]
+  spark.executor.memory_used:
+    description: Storage memory used by this executor.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: bytes
+    attributes: [application_id]
