@@ -674,6 +674,26 @@ Packets sent.
 | ---- | ----------- | ------ |
 | interface | Network interface. | Any Str |
 
+### container.pids.count
+
+Number of pids in the container's cgroup.
+
+It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supporeted. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {pids} | Gauge | Int |
+
+### container.pids.max
+
+Maximum number of pids in the container's cgroup.
+
+It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supporeted. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {pids} | Gauge | Int |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

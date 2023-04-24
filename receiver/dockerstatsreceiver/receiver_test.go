@@ -107,6 +107,8 @@ var (
 		ContainerNetworkIoUsageTxDropped:           metricEnabled,
 		ContainerNetworkIoUsageTxErrors:            metricEnabled,
 		ContainerNetworkIoUsageTxPackets:           metricEnabled,
+		ContainerPidsCount:                         metricEnabled,
+		ContainerPidsMax:                           metricEnabled,
 	}
 )
 
@@ -149,25 +151,43 @@ func TestScrapeV2(t *testing.T) {
 	containerIDs := []string{
 		"10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326",
 		"89d28931fd8b95c8806343a532e9e76bf0a0b76ee8f19452b8f75dee1ebcebb7",
-		"a359c0fc87c546b42d2ad32db7c978627f1d89b49cb3827a7b19ba97a1febcce"}
+		"a359c0fc87c546b42d2ad32db7c978627f1d89b49cb3827a7b19ba97a1febcce",
+		"78de07328afff50a9777b07dd36a28c709dffe081baaf67235db618843399643",
+	}
 
 	singleContainerEngineMock, err := dockerMockServer(&map[string]string{
-		"/v1.22/containers/json":                          filepath.Join(mockFolder, "single_container", "containers.json"),
-		"/v1.22/containers/" + containerIDs[0] + "/json":  filepath.Join(mockFolder, "single_container", "container.json"),
-		"/v1.22/containers/" + containerIDs[0] + "/stats": filepath.Join(mockFolder, "single_container", "stats.json"),
+		"/v1.23/containers/json":                          filepath.Join(mockFolder, "single_container", "containers.json"),
+		"/v1.23/containers/" + containerIDs[0] + "/json":  filepath.Join(mockFolder, "single_container", "container.json"),
+		"/v1.23/containers/" + containerIDs[0] + "/stats": filepath.Join(mockFolder, "single_container", "stats.json"),
 	})
 	assert.NoError(t, err)
 	defer singleContainerEngineMock.Close()
 
 	twoContainerEngineMock, err := dockerMockServer(&map[string]string{
-		"/v1.22/containers/json":                          filepath.Join(mockFolder, "two_containers", "containers.json"),
-		"/v1.22/containers/" + containerIDs[1] + "/json":  filepath.Join(mockFolder, "two_containers", "container1.json"),
-		"/v1.22/containers/" + containerIDs[2] + "/json":  filepath.Join(mockFolder, "two_containers", "container2.json"),
-		"/v1.22/containers/" + containerIDs[1] + "/stats": filepath.Join(mockFolder, "two_containers", "stats1.json"),
-		"/v1.22/containers/" + containerIDs[2] + "/stats": filepath.Join(mockFolder, "two_containers", "stats2.json"),
+		"/v1.23/containers/json":                          filepath.Join(mockFolder, "two_containers", "containers.json"),
+		"/v1.23/containers/" + containerIDs[1] + "/json":  filepath.Join(mockFolder, "two_containers", "container1.json"),
+		"/v1.23/containers/" + containerIDs[2] + "/json":  filepath.Join(mockFolder, "two_containers", "container2.json"),
+		"/v1.23/containers/" + containerIDs[1] + "/stats": filepath.Join(mockFolder, "two_containers", "stats1.json"),
+		"/v1.23/containers/" + containerIDs[2] + "/stats": filepath.Join(mockFolder, "two_containers", "stats2.json"),
 	})
 	assert.NoError(t, err)
 	defer twoContainerEngineMock.Close()
+
+	noPidsStatsEngineMock, err := dockerMockServer(&map[string]string{
+		"/v1.23/containers/json":                          filepath.Join(mockFolder, "no_pids_stats", "containers.json"),
+		"/v1.23/containers/" + containerIDs[0] + "/json":  filepath.Join(mockFolder, "no_pids_stats", "container.json"),
+		"/v1.23/containers/" + containerIDs[0] + "/stats": filepath.Join(mockFolder, "no_pids_stats", "stats.json"),
+	})
+	assert.NoError(t, err)
+	defer noPidsStatsEngineMock.Close()
+
+	pidsStatsMaxEngineMock, err := dockerMockServer(&map[string]string{
+		"/v1.23/containers/json":                          filepath.Join(mockFolder, "pids_stats_max", "containers.json"),
+		"/v1.23/containers/" + containerIDs[3] + "/json":  filepath.Join(mockFolder, "pids_stats_max", "container.json"),
+		"/v1.23/containers/" + containerIDs[3] + "/stats": filepath.Join(mockFolder, "pids_stats_max", "stats.json"),
+	})
+	assert.NoError(t, err)
+	defer pidsStatsMaxEngineMock.Close()
 
 	testCases := []struct {
 		desc                string
@@ -183,6 +203,16 @@ func TestScrapeV2(t *testing.T) {
 			desc:                "scrapeV2_two_containers",
 			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.yaml"),
 			mockDockerEngine:    twoContainerEngineMock,
+		},
+		{
+			desc:                "scrapeV2_no_pids_stats",
+			expectedMetricsFile: filepath.Join(mockFolder, "no_pids_stats", "expected_metrics.yaml"),
+			mockDockerEngine:    noPidsStatsEngineMock,
+		},
+		{
+			desc:                "scrapeV2_pid_stats_max",
+			expectedMetricsFile: filepath.Join(mockFolder, "pids_stats_max", "expected_metrics.yaml"),
+			mockDockerEngine:    pidsStatsMaxEngineMock,
 		},
 	}
 

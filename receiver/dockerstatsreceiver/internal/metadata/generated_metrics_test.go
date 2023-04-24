@@ -260,6 +260,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(ts, 1, "attr-val")
 
+			allMetricsCount++
+			mb.RecordContainerPidsCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerPidsMaxDataPoint(ts, 1)
+
 			metrics := mb.Emit(WithContainerHostname("attr-val"), WithContainerID("attr-val"), WithContainerImageName("attr-val"), WithContainerName("attr-val"), WithContainerRuntime("attr-val"))
 
 			if test.configSet == testSetNone {
@@ -273,36 +279,36 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("container.hostname")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerHostname.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerHostname.Enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ContainerHostname.Enabled, ok)
+			if mb.resourceAttributesSettings.ContainerHostname.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("container.id")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerID.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerID.Enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ContainerID.Enabled, ok)
+			if mb.resourceAttributesSettings.ContainerID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("container.image.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerImageName.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerImageName.Enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ContainerImageName.Enabled, ok)
+			if mb.resourceAttributesSettings.ContainerImageName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("container.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerName.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerName.Enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ContainerName.Enabled, ok)
+			if mb.resourceAttributesSettings.ContainerName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("container.runtime")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerRuntime.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerRuntime.Enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ContainerRuntime.Enabled, ok)
+			if mb.resourceAttributesSettings.ContainerRuntime.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
@@ -1297,6 +1303,30 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+				case "container.pids.count":
+					assert.False(t, validatedMetrics["container.pids.count"], "Found a duplicate in the metrics slice: container.pids.count")
+					validatedMetrics["container.pids.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of pids in the container's cgroup.", ms.At(i).Description())
+					assert.Equal(t, "{pids}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.pids.max":
+					assert.False(t, validatedMetrics["container.pids.max"], "Found a duplicate in the metrics slice: container.pids.max")
+					validatedMetrics["container.pids.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Maximum number of pids in the container's cgroup.", ms.At(i).Description())
+					assert.Equal(t, "{pids}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				}
 			}
 		})

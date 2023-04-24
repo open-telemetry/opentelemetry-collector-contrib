@@ -628,3 +628,19 @@ metrics:
       aggregation: cumulative
     attributes:
       - interface
+
+  # Pids
+  container.pids.count:
+    enabled: false
+    description: "Number of pids in the container's cgroup."
+    extended_documentation: "It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supporeted. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)"
+    unit: "{pids}"
+    gauge:
+      value_type: int
+  container.pids.max:
+    enabled: false
+    description: "Maximum number of pids in the container's cgroup."
+    extended_documentation: "It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supporeted. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)"
+    unit: "{pids}"
+    gauge:
+      value_type: int
