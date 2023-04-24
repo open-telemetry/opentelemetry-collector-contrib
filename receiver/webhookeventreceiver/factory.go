@@ -29,7 +29,7 @@ const (
 )
 
 // NewFactory creates a factory for Generic Webhook Receiver.
-func NewFactory() component.Factory {
+func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
