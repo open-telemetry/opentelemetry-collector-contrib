@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -278,6 +279,12 @@ func testdataConfigYaml() *FileLogConfig {
 						return cfg
 					}(),
 				},
+			},
+			RetryOnFailure: consumerretry.Config{
+				Enabled:         false,
+				InitialInterval: 1 * time.Second,
+				MaxInterval:     30 * time.Second,
+				MaxElapsedTime:  5 * time.Minute,
 			},
 		},
 		InputConfig: func() file.Config {
