@@ -56,7 +56,6 @@ func (s *SuiteFactory) TestCreateDefaultConfig() {
 }
 
 func (s *SuiteFactory) TestLoadConfig() {
-
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	s.Nil(err)
 
