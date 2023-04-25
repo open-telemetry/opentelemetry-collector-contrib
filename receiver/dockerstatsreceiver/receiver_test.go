@@ -335,3 +335,36 @@ func dockerMockServer(urlToFile *map[string]string) (*httptest.Server, error) {
 		_, _ = rw.Write(data)
 	})), nil
 }
+
+type testConfigBuilder struct {
+	config *Config
+}
+
+func newTestConfigBuilder() *testConfigBuilder {
+	return &testConfigBuilder{config: createDefaultConfig().(*Config)}
+}
+
+func (cb *testConfigBuilder) withEndpoint(endpoint string) *testConfigBuilder {
+	cb.config.Endpoint = endpoint
+	return cb
+}
+
+func (cb *testConfigBuilder) withMetrics(ms metadata.MetricsSettings) *testConfigBuilder {
+	cb.config.MetricsBuilderConfig.Metrics = ms
+	return cb
+}
+
+func (cb *testConfigBuilder) withResourceAttributes(ras metadata.ResourceAttributesSettings) *testConfigBuilder {
+	cb.config.MetricsBuilderConfig.ResourceAttributes = ras
+	return cb
+}
+
+func (cb *testConfigBuilder) withDefaultLabels() *testConfigBuilder {
+	cb.config.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
+	cb.config.ContainerLabelsToMetricLabels = map[string]string{"container.label": "container-metric-label"}
+	return cb
+}
+
+func (cb *testConfigBuilder) build() *Config {
+	return cb.config
+}
