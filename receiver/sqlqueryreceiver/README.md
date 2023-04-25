@@ -43,7 +43,7 @@ receivers:
     queries:
       - sql: "select * from my_logs"
         logs:
-          - {}
+          - body_column: log_body
       - sql: "select count(*) as count, genre from movie group by genre"
         metrics:
           - metric_name: movie.genres
@@ -52,7 +52,9 @@ receivers:
 
 #### Logs Queries
 
-The `logs` section currently has no options. This section is in development.
+The `logs` section is in development.
+
+- `body_column` (required) defines the column to use as the log record's body.
 
 #### Metrics queries
 
@@ -84,7 +86,8 @@ receivers:
     datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
     queries:
       - sql: "select * from my_logs"
-        logs: {}
+        logs:
+          - body_column: log_body
       - sql: "select count(*) as count, genre from movie group by genre"
         metrics:
           - metric_name: movie.genres

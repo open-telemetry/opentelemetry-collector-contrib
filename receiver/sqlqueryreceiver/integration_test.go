@@ -140,7 +140,9 @@ func TestPostgresIntegration(t *testing.T) {
 		{
 			SQL: "select * from simple_logs",
 			Logs: []LogsCfg{
-				{},
+				{
+					BodyColumn: "body",
+				},
 			},
 		},
 	}
@@ -247,7 +249,9 @@ func TestOracleDBIntegration(t *testing.T) {
 		{
 			SQL: "select * from sys.simple_logs",
 			Logs: []LogsCfg{
-				{},
+				{
+					BodyColumn: "BODY",
+				},
 			},
 		},
 	}
@@ -375,7 +379,17 @@ func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metr
 
 func testSimpleLogs(t *testing.T, logs []plog.Logs) {
 	assert.Equal(t, 1, len(logs))
-	assert.Equal(t, 5, logs[0].ResourceLogs().Len())
+	assert.Equal(t, 1, logs[0].ResourceLogs().Len())
 	assert.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
-	assert.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+	assert.Equal(t, 5, logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+	expectedEntries := []string{
+		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6197 4 \"-\" \"-\" 445af8e6c428303f -",
+		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6205 5 \"-\" \"-\" 3285f43cd4baa202 -",
+		"- - - [03/Jun/2022:21:59:29 +0000] \"GET /api/health HTTP/1.1\" 200 6233 4 \"-\" \"-\" 579e8362d3185b61 -",
+		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6207 5 \"-\" \"-\" 8c6ac61ae66e509f -",
+		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6200 4 \"-\" \"-\" c163495861e873d8 -",
+	}
+	for i, _ := range expectedEntries {
+		assert.Equal(t, expectedEntries[i], logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i).Body().Str())
+	}
 }

@@ -126,11 +126,18 @@ func TestLoadConfig(t *testing.T) {
 					{
 						SQL: "select * from test_logs",
 						Logs: []LogsCfg{
-							{},
+							{
+								BodyColumn: "log_body",
+							},
 						},
 					},
 				},
 			},
+		},
+		{
+			fname:        "config-logs-missing-body-column.yaml",
+			id:           component.NewIDWithName(typeStr, ""),
+			errorMessage: "'body_column' must not be empty",
 		},
 		{
 			fname:        "config-unnecessary-aggregation.yaml",

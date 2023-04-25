@@ -5,4 +5,4 @@ sqlquery:
   queries:
     - sql: "select * from test_logs"
       logs:
-      - body_column: log_body
+      - {}

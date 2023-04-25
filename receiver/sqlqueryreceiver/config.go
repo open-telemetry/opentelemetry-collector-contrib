@@ -77,10 +77,14 @@ func (q Query) Validate() error {
 }
 
 type LogsCfg struct {
+	BodyColumn string `mapstructure:"body_column"`
 }
 
 func (config LogsCfg) Validate() error {
 	var errs error
+	if config.BodyColumn == "" {
+		errs = multierr.Append(errs, errors.New("'body_column' must not be empty"))
+	}
 	return errs
 }
 

@@ -18,14 +18,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
 type logsReceiver struct {
@@ -33,7 +32,7 @@ type logsReceiver struct {
 	settings         receiver.CreateSettings
 	createConnection dbProviderFunc
 	createClient     clientProviderFunc
-	queryReceivers   []logsQueryReceiver
+	queryReceivers   []*logsQueryReceiver
 	nextConsumer     consumer.Logs
 }
 
@@ -65,77 +64,103 @@ func (receiver *logsReceiver) createQueryReceivers() {
 			continue
 		}
 		id := component.NewIDWithName("sqlqueryreceiver", fmt.Sprintf("query-%d: %s", i, query.SQL))
-		queryReceiver := logsQueryReceiver{
-			id:                 id,
-			query:              query,
-			nextConsumer:       receiver.nextConsumer,
-			clientProviderFunc: receiver.createClient,
-			dbProviderFunc:     receiver.createConnection,
-		}
+		queryReceiver := newLogsQueryReceiver(
+			id,
+			query,
+			receiver.createConnection,
+			receiver.createClient,
+			receiver.settings.Logger,
+		)
 		receiver.queryReceivers = append(receiver.queryReceivers, queryReceiver)
 	}
 }
 
 func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) error {
 	for _, queryReceiver := range receiver.queryReceivers {
-		queryReceiver.start()
+		err := queryReceiver.start()
+		if err != nil {
+			return err
+		}
+	}
+	for _, queryReceiver := range receiver.queryReceivers {
+		logs, err := queryReceiver.scrape(ctx)
+		if err != nil {
+			return err
+		}
+		receiver.nextConsumer.ConsumeLogs(ctx, logs)
 	}
 	return nil
 }
 
 func (receiver *logsReceiver) Shutdown(ctx context.Context) error {
+	for _, queryReceiver := range receiver.queryReceivers {
+		queryReceiver.shutdown(ctx)
+	}
 	return nil
 }
 
 type logsQueryReceiver struct {
-	id                 component.ID
-	query              Query
-	nextConsumer       consumer.Logs
-	clientProviderFunc clientProviderFunc
-	dbProviderFunc     dbProviderFunc
-	client             dbClient
+	id           component.ID
+	query        Query
+	createDb     dbProviderFunc
+	createClient clientProviderFunc
+	logger       *zap.Logger
+	db           *sql.DB
+	client       dbClient
 }
 
-func (queryReceiver *logsQueryReceiver) start() {
-	db, err := queryReceiver.dbProviderFunc()
-	if err != nil {
-		//TODO: zalogować jakiś piękny błąd
-		panic(err)
+func newLogsQueryReceiver(
+	id component.ID,
+	query Query,
+	dbProviderFunc dbProviderFunc,
+	clientProviderFunc clientProviderFunc,
+	logger *zap.Logger,
+) *logsQueryReceiver {
+	queryReceiver := &logsQueryReceiver{
+		id:           id,
+		query:        query,
+		createDb:     dbProviderFunc,
+		createClient: clientProviderFunc,
+		logger:       logger,
 	}
-	queryReceiver.client = queryReceiver.clientProviderFunc(dbWrapper{db}, queryReceiver.query.SQL, nil)
-	//TODO: napisać scrappowanie co jakiś ustalony czas
-	_, err = queryReceiver.scrape(context.Background())
+	return queryReceiver
+}
+
+func (queryReceiver *logsQueryReceiver) start() error {
+	var err error
+	queryReceiver.db, err = queryReceiver.createDb()
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to open db connection: %w", err)
 	}
+	queryReceiver.client = queryReceiver.createClient(dbWrapper{queryReceiver.db}, queryReceiver.query.SQL, queryReceiver.logger)
+
+	return nil
 }
 
 func (queryReceiver *logsQueryReceiver) scrape(ctx context.Context) (plog.Logs, error) {
-	out := plog.NewLogs()
+	logs := plog.NewLogs()
+
 	rows, err := queryReceiver.client.queryRows(ctx)
 	if err != nil {
-		return out, fmt.Errorf("scraper: %w", err)
+		return logs, fmt.Errorf("error getting rows: %w", err)
 	}
-	for _, row := range rows {
-		logRecord := out.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-		newRecord := plog.NewLogRecord()
 
-		//TODO: wczytywać dane na podstawie configa, ale na razie nie wiem jak ten config miałby wyglądać
-		if bodyValue, ok := row["body"]; ok {
-			newRecord.Body().SetStr(bodyValue)
-		}
-		if idValue, ok := row["id"]; ok {
-			timeValue, err := strconv.ParseInt(idValue, 10, 64)
-			if err != nil {
-				panic(err)
+	var errs error
+	scopeLogs := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	for _, logsConfig := range queryReceiver.query.Logs {
+		for i, row := range rows {
+			if err = rowToLog(row, logsConfig, scopeLogs.AppendEmpty()); err != nil {
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = multierr.Append(errs, err)
 			}
-			newRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(timeValue, 0)))
 		}
-		newRecord.CopyTo(logRecord)
 	}
-	//TODO: to powinniśmy wysyłać po jednym logu? batch? całość?
-	queryReceiver.nextConsumer.ConsumeLogs(ctx, out)
-	return out, nil
+	return logs, nil
+}
+
+func rowToLog(row stringMap, config LogsCfg, logRecord plog.LogRecord) error {
+	logRecord.Body().SetStr(row[config.BodyColumn])
+	return nil
 }
 
 func (queryReceiver *logsQueryReceiver) shutdown(ctx context.Context) error {
