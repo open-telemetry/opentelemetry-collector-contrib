@@ -315,7 +315,7 @@ type ResourceAttributesSettings struct {
 func DefaultResourceAttributesSettings() ResourceAttributesSettings {
 	return ResourceAttributesSettings{
 		MongodbAtlasClusterName: ResourceAttributeSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbAtlasDbName: ResourceAttributeSettings{
 			Enabled: true,

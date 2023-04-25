@@ -23,7 +23,7 @@ resource_attributes:
     type: string
   mongodb_atlas.cluster.name:
     description: Cluster Name
-    enabled: true
+    enabled: false
     type: string
   mongodb_atlas.process.port:
     description: Port process is bound to
