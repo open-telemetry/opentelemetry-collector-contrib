@@ -60,7 +60,6 @@ func getDatasetExporter(entity string, config *Config, logger *zap.Logger) (*dat
 		lock.Lock()
 		defer lock.Unlock()
 		if exporterInstance == nil {
-
 			logger.Info(
 				"DataSetExport is using config: ",
 				zap.String("config", config.String()),
