@@ -95,8 +95,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerUptime:                            MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					ContainerCommand:   ResourceAttributeConfig{Enabled: true},
 					ContainerHostname:  ResourceAttributeConfig{Enabled: true},
 					ContainerID:        ResourceAttributeConfig{Enabled: true},
+					ContainerImageID:   ResourceAttributeConfig{Enabled: true},
 					ContainerImageName: ResourceAttributeConfig{Enabled: true},
 					ContainerName:      ResourceAttributeConfig{Enabled: true},
 					ContainerRuntime:   ResourceAttributeConfig{Enabled: true},
@@ -176,8 +178,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerUptime:                            MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					ContainerCommand:   ResourceAttributeConfig{Enabled: false},
 					ContainerHostname:  ResourceAttributeConfig{Enabled: false},
 					ContainerID:        ResourceAttributeConfig{Enabled: false},
+					ContainerImageID:   ResourceAttributeConfig{Enabled: false},
 					ContainerImageName: ResourceAttributeConfig{Enabled: false},
 					ContainerName:      ResourceAttributeConfig{Enabled: false},
 					ContainerRuntime:   ResourceAttributeConfig{Enabled: false},

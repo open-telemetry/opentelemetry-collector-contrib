@@ -268,6 +268,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(ts, 1, "attr-val")
 
+			metrics := mb.Emit(WithContainerCommand("attr-val"), WithContainerHostname("attr-val"), WithContainerID("attr-val"), WithContainerImageID("attr-val"), WithContainerImageName("attr-val"), WithContainerName("attr-val"), WithContainerRuntime("attr-val"))
 			allMetricsCount++
 			mb.RecordContainerPidsCountDataPoint(ts, 1)
 
@@ -288,7 +289,14 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("container.hostname")
+			attrVal, ok := rm.Resource().Attributes().Get("container.command")
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesConfig.ContainerCommand.Enabled, ok)
+			if mb.resourceAttributesConfig.ContainerCommand.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			attrVal, ok = rm.Resource().Attributes().Get("container.hostname")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.ContainerHostname.Enabled, ok)
 			if mb.resourceAttributesConfig.ContainerHostname.Enabled {
@@ -299,6 +307,13 @@ func TestMetricsBuilder(t *testing.T) {
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.ContainerID.Enabled, ok)
 			if mb.resourceAttributesConfig.ContainerID.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			attrVal, ok = rm.Resource().Attributes().Get("container.image.id")
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesConfig.ContainerImageID.Enabled, ok)
+			if mb.resourceAttributesConfig.ContainerImageID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
@@ -324,7 +339,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 5)
+			assert.Equal(t, attrCount, 7)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()

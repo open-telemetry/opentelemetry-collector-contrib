@@ -136,9 +136,13 @@ all_set:
     container.uptime:
       enabled: true
   resource_attributes:
+    container.command:
+      enabled: true
     container.hostname:
       enabled: true
     container.id:
+      enabled: true
+    container.image.id:
       enabled: true
     container.image.name:
       enabled: true
@@ -283,9 +287,13 @@ none_set:
     container.uptime:
       enabled: false
   resource_attributes:
+    container.command:
+      enabled: false
     container.hostname:
       enabled: false
     container.id:
+      enabled: false
+    container.image.id:
       enabled: false
     container.image.name:
       enabled: false
