@@ -23,8 +23,8 @@ import (
 type writeYamlFunc func(cfg cfgInfo, bytes []byte) error
 
 type yamlFileWriter struct {
-	baseDir     string
 	dirsCreated map[string]struct{}
+	baseDir     string
 }
 
 func newYamlFileWriter(dir string) *yamlFileWriter {

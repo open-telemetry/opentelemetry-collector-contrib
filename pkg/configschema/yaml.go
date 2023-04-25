@@ -24,10 +24,10 @@ import (
 
 // generateYAMLFiles is the entry point for cfgschema. Component factories are
 // passed in so it can be used by other distros.
-func generateYAMLFiles(factories otelcol.Factories, readComments readCommentsFunc, writeYaml writeYamlFunc) error {
+func generateYAMLFiles(factories otelcol.Factories, commentReader commentReaderFunc, writeYaml writeYamlFunc) error {
 	configs := getAllCfgInfos(factories)
 	for _, ci := range configs {
-		err := writeComponentYAML(writeYaml, ci, readComments)
+		err := writeComponentYAML(writeYaml, ci, commentReader)
 		if err != nil {
 			fmt.Printf("skipped writing config meta yaml for type: %s: %v\n", ci.Type, err)
 		}
@@ -35,8 +35,8 @@ func generateYAMLFiles(factories otelcol.Factories, readComments readCommentsFun
 	return nil
 }
 
-func writeComponentYAML(writeYaml writeYamlFunc, ci cfgInfo, readComments readCommentsFunc) error {
-	fields, err := readFields(reflect.ValueOf(ci.CfgInstance), readComments)
+func writeComponentYAML(writeYaml writeYamlFunc, ci cfgInfo, commentReader commentReaderFunc) error {
+	fields, err := readFields(reflect.ValueOf(ci.CfgInstance), commentReader)
 	if err != nil {
 		return fmt.Errorf("error reading fields for component for type: %s: %w", ci.Type, err)
 	}

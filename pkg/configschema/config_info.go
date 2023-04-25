@@ -31,12 +31,9 @@ const (
 // cfgInfo contains a component config instance, as well as its group name and
 // type.
 type cfgInfo struct {
-	// the name of the component group, e.g. "receiver"
-	Group string
-	// the component type, e.g. "otlpreceiver.Config"
-	Type component.Type
-	// an instance of the component's configuration struct
 	CfgInstance interface{}
+	Group       string
+	Type        component.Type
 }
 
 // getAllCfgInfos accepts a Factories struct, then creates and returns a cfgInfo

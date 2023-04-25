@@ -24,7 +24,7 @@ import (
 	"strings"
 )
 
-type readCommentsFunc func(v reflect.Value) (map[string]string, error)
+type commentReaderFunc func(v reflect.Value) (map[string]string, error)
 
 type commentReader struct {
 	dr dirResolver

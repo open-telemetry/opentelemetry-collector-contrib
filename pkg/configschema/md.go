@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 )
 
-func generateMDFile(factories otelcol.Factories, readComments readCommentsFunc, writeFile writeFileFunc, componentType, componentName string) error {
+func generateMDFile(factories otelcol.Factories, readComments commentReaderFunc, writeFile writeFileFunc, componentType, componentName string) error {
 	tableTmpl, err := tableTemplate()
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func generateMDFile(factories otelcol.Factories, readComments readCommentsFunc, 
 	return writeMarkdown(tableTmpl, ci, writeFile, readComments)
 }
 
-func generateMDFiles(factories otelcol.Factories, readComments readCommentsFunc, writeFile writeFileFunc) error {
+func generateMDFiles(factories otelcol.Factories, readComments commentReaderFunc, writeFile writeFileFunc) error {
 	tableTmpl, err := tableTemplate()
 	if err != nil {
 		return err
@@ -55,7 +55,7 @@ func generateMDFiles(factories otelcol.Factories, readComments readCommentsFunc,
 
 type writeFileFunc func(v reflect.Value, data []byte) error
 
-func writeMarkdown(tableTmpl *template.Template, ci cfgInfo, writeFile writeFileFunc, readComments readCommentsFunc) error {
+func writeMarkdown(tableTmpl *template.Template, ci cfgInfo, writeFile writeFileFunc, readComments commentReaderFunc) error {
 	v := reflect.ValueOf(ci.CfgInstance)
 	f, err := readFields(v, readComments)
 	if err != nil {

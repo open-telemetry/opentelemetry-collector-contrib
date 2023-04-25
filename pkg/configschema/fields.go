@@ -33,21 +33,21 @@ type cfgField struct {
 	CfgFields []*cfgField `yaml:"fields,omitempty"`
 }
 
-// readFields accepts both a config struct's Value, as well as a readCommentsFunc,
+// readFields accepts both a config struct's Value, as well as a commentReaderFunc,
 // and returns a cfgField pointer for the top level struct as well as all of its
 // recursive subfields.
-func readFields(v reflect.Value, readComments readCommentsFunc) (*cfgField, error) {
+func readFields(v reflect.Value, commentReader commentReaderFunc) (*cfgField, error) {
 	cfgType := v.Type()
 	field := &cfgField{
 		Type: cfgType.String(),
 	}
-	err := refl(field, v, readComments)
+	err := refl(field, v, commentReader)
 	return field, err
 }
 
-func refl(field *cfgField, v reflect.Value, readComments readCommentsFunc) error {
+func refl(field *cfgField, v reflect.Value, commentReader commentReaderFunc) error {
 	if v.Kind() == reflect.Ptr {
-		err := refl(field, v.Elem(), readComments)
+		err := refl(field, v.Elem(), commentReader)
 		if err != nil {
 			return err
 		}
@@ -55,7 +55,7 @@ func refl(field *cfgField, v reflect.Value, readComments readCommentsFunc) error
 	if v.Kind() != reflect.Struct {
 		return nil
 	}
-	comments, err := readComments(v)
+	comments, err := commentReader(v)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func refl(field *cfgField, v reflect.Value, readComments readCommentsFunc) error
 			}
 			field.CfgFields = append(field.CfgFields, next)
 		}
-		err = handleKind(fv, next, readComments)
+		err = handleKind(fv, next, commentReader)
 		if err != nil {
 			return err
 		}
@@ -108,22 +108,22 @@ func refl(field *cfgField, v reflect.Value, readComments readCommentsFunc) error
 	return nil
 }
 
-func handleKind(v reflect.Value, f *cfgField, readComments readCommentsFunc) (err error) {
+func handleKind(v reflect.Value, f *cfgField, commentReader commentReaderFunc) (err error) {
 	switch v.Kind() {
 	case reflect.Struct:
-		err = refl(f, v, readComments)
+		err = refl(f, v, commentReader)
 	case reflect.Ptr:
 		if v.IsNil() {
-			err = refl(f, reflect.New(v.Type().Elem()), readComments)
+			err = refl(f, reflect.New(v.Type().Elem()), commentReader)
 		} else {
-			err = refl(f, v.Elem(), readComments)
+			err = refl(f, v.Elem(), commentReader)
 		}
 	case reflect.Slice:
 		e := v.Type().Elem()
 		if e.Kind() == reflect.Struct {
-			err = refl(f, reflect.New(e), readComments)
+			err = refl(f, reflect.New(e), commentReader)
 		} else if e.Kind() == reflect.Ptr {
-			err = refl(f, reflect.New(e.Elem()), readComments)
+			err = refl(f, reflect.New(e.Elem()), commentReader)
 		}
 	case reflect.String:
 		f.Default = v.String()
