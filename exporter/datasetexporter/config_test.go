@@ -144,8 +144,6 @@ func (s *SuiteConfig) TestConfigValidate() {
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
 			err := tt.config.Validate()
-			// TODO: Figure out
-			// s.EqualErrorIs(err, tt.expected)
 			if err == nil {
 				s.Nil(tt.expected, tt.name)
 			} else {
