@@ -226,6 +226,89 @@ func TestAzureScraperScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricsOrder(),
 			))
 		})
+
+		t.Run(tt.name, func(t *testing.T) {
+			settings := receivertest.NewNopCreateSettings()
+
+			armClientMock := &armClientMock{
+				current: 0,
+				pages:   getResourcesWithAttributesMockData(),
+			}
+
+			counters, pages := getMetricsDefinitionsMockData()
+
+			metricsDefinitionsClientMock := &metricsDefinitionsClientMock{
+				current: counters,
+				pages:   pages,
+			}
+
+			metricsValuesClientMock := &metricsValuesClientMock{
+				lists: getMetricsValuesMockData(),
+			}
+
+			cfgWithAttributesOn := createDefaultConfig().(*Config)
+			cfgWithAttributesOn.MaximumNumberOfMetricsInACall = 2
+			cfgWithAttributesOn.AppendTagsAsAttributes = true
+
+			s := &azureScraper{
+				cfg:                      cfgWithAttributesOn,
+				clientResources:          armClientMock,
+				clientMetricsDefinitions: metricsDefinitionsClientMock,
+				clientMetricsValues:      metricsValuesClientMock,
+				mb:                       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				mutex:                    &sync.Mutex{},
+			}
+			s.resources = map[string]*azureResource{}
+
+			metrics, err := s.scrape(tt.args.ctx)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("azureScraper.scrape() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			expectedFile := filepath.Join("testdata", "expected_metrics", "metrics_resource_tags.yaml")
+			expectedMetrics, err := golden.ReadMetrics(expectedFile)
+			require.NoError(t, err)
+
+			require.NoError(t, pmetrictest.CompareMetrics(
+				expectedMetrics,
+				metrics,
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreMetricsOrder(),
+			))
+		},
+		)
+	}
+}
+
+func getResourcesWithAttributesMockData() []armresources.ClientListResponse {
+	id1, id2, id3, location1, tagName1, tagValue1 := "resourceId1", "resourceId2", "resourceId3", "location1", "tagName1", "tagValue1"
+
+	return []armresources.ClientListResponse{
+		{
+			ResourceListResult: armresources.ResourceListResult{
+				Value: []*armresources.GenericResourceExpanded{
+					{
+						ID:       &id1,
+						Location: &location1,
+						Tags:     map[string]*string{tagName1: &tagValue1},
+					},
+					{
+						ID: &id2,
+					},
+				},
+			},
+		},
+		{
+			ResourceListResult: armresources.ResourceListResult{
+				Value: []*armresources.GenericResourceExpanded{
+					{
+						ID: &id3,
+					},
+				},
+			},
+		},
 	}
 }
 
