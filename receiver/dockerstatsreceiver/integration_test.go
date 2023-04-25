@@ -63,7 +63,7 @@ func paramsAndContext(t *testing.T) (rcvr.CreateSettings, context.Context, conte
 	return settings, ctx, cancel
 }
 
-func createNginxContainer(t *testing.T, ctx context.Context) testcontainers.Container {
+func createNginxContainer(ctx context.Context, t *testing.T) testcontainers.Container {
 	req := testcontainers.ContainerRequest{
 		Image:        "docker.io/library/nginx:1.17",
 		ExposedPorts: []string{"80/tcp"},
@@ -99,7 +99,7 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 
-	container := createNginxContainer(t, ctx)
+	container := createNginxContainer(ctx, t)
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
@@ -130,14 +130,14 @@ func TestMonitoringAddedAndRemovedContainerIntegration(t *testing.T) {
 		t: t,
 	}))
 
-	container := createNginxContainer(t, ctx)
+	container := createNginxContainer(ctx, t)
 
 	// Check metrics are collected for added container.
 	assert.Eventuallyf(t, func() bool {
 		return hasResourceScopeMetrics(container.GetContainerID(), consumer.AllMetrics())
 	}, 5*time.Second, 1*time.Second, "failed to receive any metrics")
 
-	container.Terminate(ctx)
+	require.NoError(t, container.Terminate(ctx))
 	consumer.Reset()
 
 	// Check metrics are not collected for removed container.
@@ -153,7 +153,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 
-	container := createNginxContainer(t, ctx)
+	container := createNginxContainer(ctx, t)
 
 	f, config := factory()
 	config.ExcludedImages = append(config.ExcludedImages, "*nginx*")
