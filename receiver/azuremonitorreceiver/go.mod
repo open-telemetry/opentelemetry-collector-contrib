@@ -39,10 +39,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.75.0 // indirect
 	github.com/pkg/browser v0.0.0-20210115035449-ce105d075bb4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.75.1-0.20230424163446-8e33ded10872 // indirect
-	go.opentelemetry.io/collector/exporter v0.75.0 // indirect
+	go.opentelemetry.io/collector/exporter v0.75.1-0.20230424163446-8e33ded10872 // indirect
 	go.opentelemetry.io/collector/featuregate v0.75.1-0.20230424163446-8e33ded10872 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
