@@ -66,7 +66,12 @@ func TestLoadConfig(t *testing.T) {
 						Username: "jdoe",
 						Password: "pass",
 					},
-					SASL: &SASLConfig{},
+					SASL: &SASLConfig{
+						Username:  "jdoe",
+						Password:  "pass",
+						Mechanism: "PLAIN",
+						Version:   0,
+					},
 				},
 				Metadata: Metadata{
 					Full: false,
@@ -88,9 +93,14 @@ func TestLoadConfig(t *testing.T) {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			cfg := applyConfigOption(func(conf *Config) {
 				// config.Validate() reads the Authentication.SASL struct, but it's not present
-				// in the default config. This sets it to avoid a segfault during testing
+				// in the default config. This sets it to avoid a segfault during testing.
 				conf.Authentication = Authentication{
-					SASL: &SASLConfig{},
+					SASL: &SASLConfig{
+						Username:  "jdoe",
+						Password:  "pass",
+						Mechanism: "PLAIN",
+						Version:   0,
+					},
 				}
 			})
 
@@ -116,6 +126,63 @@ func TestValidate_err_compression(t *testing.T) {
 	assert.Equal(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
 }
 
+func TestValidate_sasl_username(t *testing.T) {
+	config := &Config{
+		Producer: Producer{
+			Compression: "none",
+		},
+		Authentication: Authentication{
+			SASL: &SASLConfig{
+				Username:  "",
+				Password:  "pass",
+				Mechanism: "PLAIN",
+			},
+		},
+	}
+
+	err := config.Validate()
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "auth.sasl.username is required")
+}
+
+func TestValidate_sasl_password(t *testing.T) {
+	config := &Config{
+		Producer: Producer{
+			Compression: "none",
+		},
+		Authentication: Authentication{
+			SASL: &SASLConfig{
+				Username:  "jdoe",
+				Password:  "",
+				Mechanism: "PLAIN",
+			},
+		},
+	}
+
+	err := config.Validate()
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "auth.sasl.password is required")
+}
+
+func TestValidate_sasl_mechanism(t *testing.T) {
+	config := &Config{
+		Producer: Producer{
+			Compression: "none",
+		},
+		Authentication: Authentication{
+			SASL: &SASLConfig{
+				Username:  "jdoe",
+				Password:  "pass",
+				Mechanism: "FAKE",
+			},
+		},
+	}
+
+	err := config.Validate()
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), fmt.Sprintf("auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FAKE"))
+}
+
 func TestValidate_sasl_version(t *testing.T) {
 	config := &Config{
 		Producer: Producer{
@@ -123,7 +190,10 @@ func TestValidate_sasl_version(t *testing.T) {
 		},
 		Authentication: Authentication{
 			SASL: &SASLConfig{
-				Version: 42,
+				Username:  "jdoe",
+				Password:  "pass",
+				Mechanism: "PLAIN",
+				Version:   42,
 			},
 		},
 	}
