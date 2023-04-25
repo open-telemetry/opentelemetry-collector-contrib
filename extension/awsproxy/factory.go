@@ -27,16 +27,13 @@ import (
 )
 
 const (
-	// The value of extension "type" in configuration.
-	typeStr = "awsproxy"
-
 	defaultEndpoint = "0.0.0.0:2000"
 )
 
 // NewFactory creates a factory for awsproxy extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
 		metadata.Stability,
