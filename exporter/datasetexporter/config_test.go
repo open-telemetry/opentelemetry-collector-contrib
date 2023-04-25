@@ -51,8 +51,6 @@ func (s *SuiteConfig) TestConfigUnmarshalUnknownAttributes() {
 	expectedError := fmt.Errorf("cannot unmarshal config: %w", unmarshalErr)
 
 	s.Equal(err.Error(), expectedError.Error())
-	// TODO: Why it does not work?
-	// s.EqualErrorIs(err, expectedError)
 }
 
 func (s *SuiteConfig) TestConfigKeepValuesWhenEnvSet() {
