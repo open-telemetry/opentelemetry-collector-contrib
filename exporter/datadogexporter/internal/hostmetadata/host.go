@@ -35,7 +35,7 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Use the 'preview' hostname resolution rules, which are consistent with Datadog cloud integration hostname resolution rules, and set 'host_metadata::hostname_source' to 'config_or_system' by default."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10424"),
-	featuregate.WithRegisterRemovalVersion("0.75.0"),
+	featuregate.WithRegisterToVersion("0.75.0"),
 )
 
 func GetSourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {

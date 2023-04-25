@@ -16,6 +16,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.75.0
@@ -99,6 +100,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.75.0
@@ -168,20 +170,20 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.75.0
 	github.com/prometheus/prometheus v0.43.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.75.0
-	go.opentelemetry.io/collector/component v0.75.0
-	go.opentelemetry.io/collector/connector/forwardconnector v0.75.0
-	go.opentelemetry.io/collector/consumer v0.75.0
-	go.opentelemetry.io/collector/exporter v0.75.0
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.75.0
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.75.0
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.75.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.75.0
-	go.opentelemetry.io/collector/extension/zpagesextension v0.75.0
-	go.opentelemetry.io/collector/processor/batchprocessor v0.75.0
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.75.0
-	go.opentelemetry.io/collector/receiver v0.75.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.75.0
+	go.opentelemetry.io/collector v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/component v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/connector/forwardconnector v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/consumer v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/exporter v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/extension/ballastextension v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/extension/zpagesextension v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/processor/batchprocessor v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/receiver v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.75.1-0.20230424163446-8e33ded10872
 	golang.org/x/sys v0.7.0
 )
 
@@ -210,9 +212,11 @@ require (
 	github.com/Azure/azure-kusto-go v0.11.3 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.3.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.1.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.3.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.1.2 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor v0.8.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.0.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0 // indirect
 	github.com/Azure/azure-storage-blob-go v0.15.0 // indirect
 	github.com/Azure/azure-storage-queue-go v0.0.0-20191125232315-636801874cdd // indirect
@@ -225,7 +229,7 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
-	github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0 // indirect
+	github.com/AzureAD/microsoft-authentication-library-for-go v0.8.1 // indirect
 	github.com/ClickHouse/ch-go v0.52.1 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.9.0 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.81 // indirect
@@ -356,6 +360,7 @@ require (
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/go-zookeeper/zk v1.0.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/gocql/gocql v1.3.1 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
@@ -388,6 +393,7 @@ require (
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
+	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/hashicorp/consul/api v1.20.0 // indirect
 	github.com/hashicorp/cronexpr v1.1.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -594,15 +600,16 @@ require (
 	go.mongodb.org/atlas v0.25.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.75.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.75.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc9 // indirect
-	go.opentelemetry.io/collector/semconv v0.75.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.75.1-0.20230424163446-8e33ded10872 // indirect
+	go.opentelemetry.io/collector/featuregate v0.75.1-0.20230424163446-8e33ded10872 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9.0.20230424163446-8e33ded10872 // indirect
+	go.opentelemetry.io/collector/semconv v0.75.1-0.20230424163446-8e33ded10872 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.40.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.15.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.40.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
+	go.opentelemetry.io/otel/bridge/opencensus v0.37.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.37.0 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.14.0 // indirect
@@ -720,6 +727,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmo
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter => ../../exporter/clickhouseexporter
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter => ../../exporter/cassandraexporter
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver => ../../receiver/udplogreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
@@ -787,6 +796,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadb
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter => ../../exporter/logicmonitorexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ../../receiver/azureeventhubreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver => ../../receiver/azuremonitorreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver => ../../receiver/jmxreceiver
 
