@@ -30,6 +30,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -186,7 +187,7 @@ func TestPostgresIntegration(t *testing.T) {
 		1*time.Second,
 		"failed to receive more than 0 logs",
 	)
-	testSimpleLogs(t)
+	testSimpleLogs(t, logsConsumer.AllLogs())
 }
 
 // This test ensures the collector can connect to an Oracle DB, and properly get metrics. It's not intended to
@@ -292,7 +293,7 @@ func TestOracleDBIntegration(t *testing.T) {
 		1*time.Second,
 		"failed to receive more than 0 logs",
 	)
-	testSimpleLogs(t)
+	testSimpleLogs(t, logsConsumer.AllLogs())
 }
 
 func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey string) {
@@ -372,6 +373,9 @@ func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metr
 	assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.1)
 }
 
-func testSimpleLogs(t *testing.T) {
-
+func testSimpleLogs(t *testing.T, logs []plog.Logs) {
+	assert.Equal(t, 1, len(logs))
+	assert.Equal(t, 5, logs[0].ResourceLogs().Len())
+	assert.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
+	assert.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 }
