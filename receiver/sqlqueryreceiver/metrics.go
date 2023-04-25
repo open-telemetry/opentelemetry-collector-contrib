@@ -36,6 +36,8 @@ func rowToMetric(row stringMap, cfg MetricCfg, dest pmetric.Metric, startTime pc
 				return fmt.Errorf("failed to parse uint64 for %q, value was %q: %w", cfg.StartTsColumn, val, err)
 			}
 			startTime = pcommon.Timestamp(timestamp)
+		} else {
+			return fmt.Errorf("rowToMetric: start_ts_column not found")
 		}
 	}
 	if cfg.EndTsColumn != "" {
@@ -45,6 +47,8 @@ func rowToMetric(row stringMap, cfg MetricCfg, dest pmetric.Metric, startTime pc
 				return fmt.Errorf("failed to parse uint64 for %q, value was %q: %w", cfg.EndTsColumn, val, err)
 			}
 			ts = pcommon.Timestamp(timestamp)
+		} else {
+			return fmt.Errorf("rowToMetric: end_ts_column not found")
 		}
 	}
 	setTimestamp(cfg, dataPoint, startTime, ts, scrapeCfg)
