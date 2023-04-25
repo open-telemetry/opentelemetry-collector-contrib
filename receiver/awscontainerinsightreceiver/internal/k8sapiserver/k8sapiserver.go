@@ -70,9 +70,10 @@ type K8sAPIServer struct {
 	clusterNameProvider clusterNameProvider
 	cancel              context.CancelFunc
 
-	mu             sync.Mutex
-	leading        bool
-	leaderLockName string
+	mu                           sync.Mutex
+	leading                      bool
+	leaderLockName               string
+	leaderLockUsingConfigMapOnly bool
 
 	k8sClient  K8sClient // *k8sclient.K8sClient
 	epClient   k8sclient.EpClient
@@ -94,6 +95,12 @@ type Option func(*K8sAPIServer)
 func WithLeaderLockName(name string) Option {
 	return func(server *K8sAPIServer) {
 		server.leaderLockName = name
+	}
+}
+
+func WithLeaderLockUsingConfigMapOnly(leaderLockUsingConfigMapOnly bool) Option {
+	return func(server *K8sAPIServer) {
+		server.leaderLockUsingConfigMapOnly = leaderLockUsingConfigMapOnly
 	}
 }
 
@@ -218,6 +225,11 @@ func (k *K8sAPIServer) init() error {
 		return errors.New("environment variable K8S_NAMESPACE is not set in k8s deployment config")
 	}
 
+	resourceLockConfig := resourcelock.ResourceLockConfig{
+		Identity:      k.nodeName,
+		EventRecorder: k.createRecorder(k.leaderLockName, lockNamespace),
+	}
+
 	clientSet := k.k8sClient.GetClientSet()
 	configMapInterface := clientSet.CoreV1().ConfigMaps(lockNamespace)
 	if configMap, err := configMapInterface.Get(ctx, k.leaderLockName, metav1.GetOptions{}); configMap == nil || err != nil {
@@ -232,18 +244,29 @@ func (k *K8sAPIServer) init() error {
 		k.logger.Info(fmt.Sprintf("configMap: %v, err: %v", configMap, err))
 	}
 
-	lock, err := resourcelock.New(
-		resourcelock.ConfigMapsLeasesResourceLock,
-		lockNamespace, k.leaderLockName,
-		clientSet.CoreV1(),
-		clientSet.CoordinationV1(),
-		resourcelock.ResourceLockConfig{
-			Identity:      k.nodeName,
-			EventRecorder: k.createRecorder(k.leaderLockName, lockNamespace),
-		})
-	if err != nil {
-		k.logger.Warn("Failed to create resource lock", zap.Error(err))
-		return err
+	var lock resourcelock.Interface
+	if k.leaderLockUsingConfigMapOnly {
+		lock = &ConfigMapLock{
+			ConfigMapMeta: metav1.ObjectMeta{
+				Namespace: lockNamespace,
+				Name:      k.leaderLockName,
+			},
+			Client:     clientSet.CoreV1(),
+			LockConfig: resourceLockConfig,
+		}
+	} else {
+		l, err := resourcelock.New(
+			resourcelock.ConfigMapsLeasesResourceLock,
+			lockNamespace, k.leaderLockName,
+			clientSet.CoreV1(),
+			clientSet.CoordinationV1(),
+			resourceLockConfig)
+		if err != nil {
+			k.logger.Warn("Failed to create resource lock", zap.Error(err))
+			return err
+		} else {
+			lock = l
+		}
 	}
 
 	go k.startLeaderElection(ctx, lock)

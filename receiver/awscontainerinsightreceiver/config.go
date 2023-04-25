@@ -53,4 +53,10 @@ type Config struct {
 	// election process for EKS Container Insights. The elected leader is responsible for scraping cluster level metrics.
 	// The default value is "otel-container-insight-clusterleader".
 	LeaderLockName string `mapstructure:"leader_lock_name"`
+
+	// LeaderLockUsingConfigMapOnly is an optional attribute to override the default behavior when obtaining a locking resource to be used during the leader
+	// election process for EKS Container Insights. By default, the leader election logic prefers a Lease and alternatively the combination of Lease & ConfigMap.
+	// When this flag is set to true, the leader election logic will be forced to use ConfigMap only. This flag mainly exists for backwards compatibility.
+	// The default value is false.
+	LeaderLockUsingConfigMapOnly bool `mapstructure:"leader_lock_using_config_map_only"`
 }

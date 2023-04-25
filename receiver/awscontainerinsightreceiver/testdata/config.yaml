@@ -6,3 +6,5 @@ awscontainerinsightreceiver/cluster_name:
   cluster_name: override_cluster
 awscontainerinsightreceiver/leader_lock_name:
   leader_lock_name: override-container-insight-clusterleader
+awscontainerinsightreceiver/leader_lock_using_config_map_only:
+  leader_lock_using_config_map_only: true

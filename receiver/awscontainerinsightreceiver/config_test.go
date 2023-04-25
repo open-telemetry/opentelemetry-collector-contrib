@@ -70,6 +70,17 @@ func TestLoadConfig(t *testing.T) {
 				LeaderLockName:        "override-container-insight-clusterleader",
 			},
 		},
+		{
+			id: component.NewIDWithName(typeStr, "leader_lock_using_config_map_only"),
+			expected: &Config{
+				CollectionInterval:           60 * time.Second,
+				ContainerOrchestrator:        "eks",
+				TagService:                   true,
+				PrefFullPodName:              false,
+				LeaderLockName:               "otel-container-insight-clusterleader",
+				LeaderLockUsingConfigMapOnly: true,
+			},
+		},
 	}
 
 	for _, tt := range tests {

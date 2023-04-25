@@ -86,7 +86,8 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 		if err != nil {
 			return err
 		}
-		acir.k8sapiserver, err = k8sapiserver.New(hostinfo, acir.settings.Logger, k8sapiserver.WithLeaderLockName(acir.config.LeaderLockName))
+		acir.k8sapiserver, err = k8sapiserver.New(hostinfo, acir.settings.Logger, k8sapiserver.WithLeaderLockName(acir.config.LeaderLockName),
+			k8sapiserver.WithLeaderLockUsingConfigMapOnly(acir.config.LeaderLockUsingConfigMapOnly))
 		if err != nil {
 			return err
 		}
