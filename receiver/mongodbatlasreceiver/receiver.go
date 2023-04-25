@@ -133,10 +133,10 @@ func (s *receiver) poll(ctx context.Context, time timeconstraints) error {
 
 func (s *receiver) getNodeClusterNameMap(
 	ctx context.Context,
-	projectId string,
+	projectID string,
 ) (map[string]string, error) {
 	clusterMap := make(map[string]string)
-	clusters, err := s.client.GetClusters(ctx, projectId)
+	clusters, err := s.client.GetClusters(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
