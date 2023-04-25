@@ -78,7 +78,7 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	fmt.Println(clusterStats) // print statements keep vscode from complaining about stats not being used
 
 	// call applications endpoint
-	applicationStats, err := s.client.GetStats("/applications")
+	applicationStats, err := s.client.GetStats("/api/v1/applications")
 	if err != nil {
 		scrapeErrors.AddPartial(1, err)
 		s.logger.Warn("Failed to scrape application stats", zap.Error(err))
@@ -87,20 +87,20 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	// determine application ids
 
 	// for each application id, get stats from stages & executors endpoints
-	// stageStats, err := s.client.GetStats("/applications/APP_ID_HERE/stages")
+	// stageStats, err := s.client.GetStats("/api/v1/applications/APP_ID_HERE/stages")
 	// if err != nil {
 	// 	scrapeErrors.AddPartial(1, err)
 	// 	s.logger.Warn("Failed to scrape stage stats", zap.Error(err))
 	// }
 	// fmt.Println(stageStats)
 
-	// executorStats, err := s.client.GetStats("/applications/APP_ID_HERE/executors")
+	// executorStats, err := s.client.GetStats("/api/v1/applications/APP_ID_HERE/executors")
 	// if err != nil {
 	// 	scrapeErrors.AddPartial(1, err)
 	// 	s.logger.Warn("Failed to scrape executor stats", zap.Error(err))
 	// }
 	// fmt.Println(executorStats)
-	md := pmetric.NewMetrics()
+	s.mb.Emit()
 
 	return md, nil
 }
