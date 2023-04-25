@@ -268,13 +268,13 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 				"region.az": "eu-west-1a",
 			},
 			hints: map[string]interface{}{
-				hintResources: "host.name",
+				hintResource: "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
 			expectedLines: []string{
-				`{"traceid":"01000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
-				`{"traceid":"02000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
-				`{"traceid":"03000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"01000000000000000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"02000000000000000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"03000000000000000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
 			},
 		},
 		{
@@ -424,13 +424,13 @@ func TestLogsToLoki(t *testing.T) {
 				"region.az": "eu-west-1a",
 			},
 			hints: map[string]interface{}{
-				hintResources: "host.name",
+				hintResource: "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
 			expectedLines: []string{
-				`{"traceid":"01020304000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
-				`{"traceid":"01020304050000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
-				`{"traceid":"01020304050600000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"01020304000000000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"01020304050000000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"01020304050600000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
 			},
 		},
 		{
@@ -440,8 +440,8 @@ func TestLogsToLoki(t *testing.T) {
 				"region.az": "eu-west-1a",
 			},
 			hints: map[string]interface{}{
-				hintResources: "host.name",
-				hintFormat:    formatLogfmt,
+				hintResource: "host.name",
+				hintFormat:   formatLogfmt,
 			},
 			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
 			expectedLines: []string{
@@ -663,12 +663,12 @@ func TestLogToLokiEntry(t *testing.T) {
 				"region.az": "eu-west-1a",
 			},
 			hints: map[string]interface{}{
-				hintResources: "host.name",
+				hintResource: "host.name",
 			},
 			expected: &PushEntry{
 				Entry: &push.Entry{
 					Timestamp: time.Unix(0, 1677592916000000000),
-					Line:      `{"resources":{"region.az":"eu-west-1a"}}`,
+					Line:      `{"resource":{"region.az":"eu-west-1a"}}`,
 				},
 				Labels: model.LabelSet{
 					"exporter":  "OTLP",

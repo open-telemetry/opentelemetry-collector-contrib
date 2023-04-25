@@ -33,7 +33,7 @@ func exampleLog() (plog.LogRecord, pcommon.Resource, pcommon.InstrumentationScop
 }
 
 func TestEncodeJsonWithStringBody(t *testing.T) {
-	in := `{"body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"},"instrumentation_scope":{"name":"example-logger-name","version":"v1"}}`
+	in := `{"body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resource":{"host.name":"something"},"instrumentation_scope":{"name":"example-logger-name","version":"v1"}}`
 	log, resource, scope := exampleLog()
 
 	out, err := Encode(log, resource, scope)
@@ -42,7 +42,7 @@ func TestEncodeJsonWithStringBody(t *testing.T) {
 }
 
 func TestEncodeJsonWithMapBody(t *testing.T) {
-	in := `{"body":{"key1":"value","key2":"value"},"traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"},"instrumentation_scope":{"name":"example-logger-name","version":"v1"}}`
+	in := `{"body":{"key1":"value","key2":"value"},"traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resource":{"host.name":"something"},"instrumentation_scope":{"name":"example-logger-name","version":"v1"}}`
 
 	log, resource, scope := exampleLog()
 	mapVal := pcommon.NewValueMap()

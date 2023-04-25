@@ -16,7 +16,7 @@ import (
 
 const (
 	hintAttributes = "loki.attribute.labels"
-	hintResources  = "loki.resource.labels"
+	hintResource   = "loki.resource.labels"
 	hintTenant     = "loki.tenant"
 	hintFormat     = "loki.format"
 )
@@ -39,7 +39,7 @@ func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model
 		out[model.InstanceLabel] = model.LabelValue(instance)
 	}
 
-	if resourcesToLabel, found := resAttrs.Get(hintResources); found {
+	if resourcesToLabel, found := resAttrs.Get(hintResource); found {
 		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
 		out = out.Merge(labels)
 	}
@@ -47,7 +47,7 @@ func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model
 	// get the hint from the log attributes, not from the resource
 	// the value can be a single resource name to use as label
 	// or a slice of string values
-	if resourcesToLabel, found := logAttrs.Get(hintResources); found {
+	if resourcesToLabel, found := logAttrs.Get(hintResource); found {
 		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
 		out = out.Merge(labels)
 	}
@@ -129,7 +129,7 @@ func parseAttributeNames(attrsToSelect pcommon.Value) []string {
 
 func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
 	attrs.RemoveIf(func(s string, v pcommon.Value) bool {
-		if s == hintAttributes || s == hintResources || s == hintTenant || s == hintFormat {
+		if s == hintAttributes || s == hintResource || s == hintTenant || s == hintFormat {
 			return true
 		}
 

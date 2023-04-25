@@ -24,7 +24,7 @@ type lokiEntry struct {
 	SpanID               string                 `json:"spanid,omitempty"`
 	Severity             string                 `json:"severity,omitempty"`
 	Attributes           map[string]interface{} `json:"attributes,omitempty"`
-	Resources            map[string]interface{} `json:"resources,omitempty"`
+	Resource             map[string]interface{} `json:"resource,omitempty"`
 	InstrumentationScope *instrumentationScope  `json:"instrumentation_scope,omitempty"`
 }
 
@@ -52,7 +52,7 @@ func Encode(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrumentati
 		SpanID:     traceutil.SpanIDToHexOrEmptyString(lr.SpanID()),
 		Severity:   lr.SeverityText(),
 		Attributes: lr.Attributes().AsRaw(),
-		Resources:  res.Attributes().AsRaw(),
+		Resource:   res.Attributes().AsRaw(),
 	}
 
 	scopeName := scope.Name()

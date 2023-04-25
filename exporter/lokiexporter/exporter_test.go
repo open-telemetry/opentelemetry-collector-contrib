@@ -55,7 +55,7 @@ func TestPushLogData(t *testing.T) {
 				"loki.resource.labels": "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
-			expectedLine:  `{"traceid":"01020304000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+			expectedLine:  `{"traceid":"01020304000000000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
 		},
 	}
 	for _, tC := range testCases {
