@@ -21,6 +21,10 @@ resource_attributes:
     description: User-friendly hostname of the cluster node
     enabled: false
     type: string
+  mongodb_atlas.cluster.name:
+    description: Cluster Name
+    enabled: true
+    type: string
   mongodb_atlas.process.port:
     description: Port process is bound to
     enabled: true

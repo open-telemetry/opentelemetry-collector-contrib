@@ -128,6 +128,8 @@ all_set:
     mongodbatlas.system.paging.usage.max:
       enabled: true
   resource_attributes:
+    mongodb_atlas.cluster.name:
+      enabled: true
     mongodb_atlas.db.name:
       enabled: true
     mongodb_atlas.disk.partition:
@@ -277,6 +279,8 @@ none_set:
     mongodbatlas.system.paging.usage.max:
       enabled: false
   resource_attributes:
+    mongodb_atlas.cluster.name:
+      enabled: false
     mongodb_atlas.db.name:
       enabled: false
     mongodb_atlas.disk.partition:

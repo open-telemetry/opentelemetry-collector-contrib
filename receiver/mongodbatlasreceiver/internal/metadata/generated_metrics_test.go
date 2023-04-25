@@ -310,7 +310,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryState(1))
 
-			metrics := mb.Emit(WithMongodbAtlasDbName("attr-val"), WithMongodbAtlasDiskPartition("attr-val"), WithMongodbAtlasHostName("attr-val"), WithMongodbAtlasOrgName("attr-val"), WithMongodbAtlasProcessID("attr-val"), WithMongodbAtlasProcessPort("attr-val"), WithMongodbAtlasProcessTypeName("attr-val"), WithMongodbAtlasProjectID("attr-val"), WithMongodbAtlasProjectName("attr-val"), WithMongodbAtlasUserAlias("attr-val"))
+			metrics := mb.Emit(WithMongodbAtlasClusterName("attr-val"), WithMongodbAtlasDbName("attr-val"), WithMongodbAtlasDiskPartition("attr-val"), WithMongodbAtlasHostName("attr-val"), WithMongodbAtlasOrgName("attr-val"), WithMongodbAtlasProcessID("attr-val"), WithMongodbAtlasProcessPort("attr-val"), WithMongodbAtlasProcessTypeName("attr-val"), WithMongodbAtlasProjectID("attr-val"), WithMongodbAtlasProjectName("attr-val"), WithMongodbAtlasUserAlias("attr-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -321,7 +321,14 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("mongodb_atlas.db.name")
+			attrVal, ok := rm.Resource().Attributes().Get("mongodb_atlas.cluster.name")
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasClusterName.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasClusterName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.db.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled, ok)
 			if mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled {
@@ -392,7 +399,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 10)
+			assert.Equal(t, attrCount, 11)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
