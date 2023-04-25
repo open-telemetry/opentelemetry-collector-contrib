@@ -353,7 +353,7 @@ resourceMetrics:
           - description: Percentage of memory used.
             gauge:
               dataPoints:
-                - asDouble: 0.016983729192463173
+                - asDouble: 0.02053846320949035
                   timeUnixNano: "1657771832637112000"
             name: container.memory.percent
             unit: "1"
@@ -562,7 +562,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "352256"
+                - asInt: "425984"
                   timeUnixNano: "1657771832637112000"
             unit: By
           - description: Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.
@@ -1034,7 +1034,7 @@ resourceMetrics:
           - description: Percentage of memory used.
             gauge:
               dataPoints:
-                - asDouble: 0.01836612575464041
+                - asDouble: 0.037324707178785346
                   timeUnixNano: "1657771832637093000"
             name: container.memory.percent
             unit: "1"
@@ -1243,7 +1243,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "380928"
+                - asInt: "774144"
                   timeUnixNano: "1657771832637093000"
             unit: By
           - description: Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.

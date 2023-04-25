@@ -156,12 +156,14 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 }
 
 func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtypes.MemoryStats) {
-	totalCache := memoryStats.Stats["total_cache"]
-	totalUsage := memoryStats.Usage - totalCache
-	r.mb.RecordContainerMemoryUsageMaxDataPoint(now, int64(memoryStats.MaxUsage))
-	r.mb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats))
+	totalUsage := calculateMemUsageNoCache(memoryStats)
 	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
+
 	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
+
+	r.mb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats.Limit, totalUsage))
+
+	r.mb.RecordContainerMemoryUsageMaxDataPoint(now, int64(memoryStats.MaxUsage))
 
 	recorders := map[string]func(pcommon.Timestamp, int64){
 		"cache":                     r.mb.RecordContainerMemoryCacheDataPoint,
@@ -263,8 +265,8 @@ func (r *receiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtypes.CPUS
 	}
 }
 
-// From container.calculateCPUPercentUnix()
-// https://github.com/docker/cli/blob/dbd96badb6959c2b7070664aecbcf0f7c299c538/cli/command/container/stats_helpers.go
+// From container.calculateCPUPercentUnix(), calculateMemUsageUnixNoCache(), calculateMemPercentUnixNoCache()
+// https://github.com/docker/cli/blob/a2e9ed3b874fccc177b9349f3b0277612403934f/cli/command/container/stats_helpers.go
 // Copyright 2012-2017 Docker, Inc.
 // This product includes software developed at Docker, Inc. (https://www.docker.com).
 // The following is courtesy of our legal counsel:
@@ -293,9 +295,35 @@ func calculateCPUPercent(previous *dtypes.CPUStats, v *dtypes.CPUStats) float64 
 	return cpuPercent
 }
 
-func calculateMemoryPercent(memoryStats *dtypes.MemoryStats) float64 {
-	if float64(memoryStats.Limit) == 0 {
-		return 0
+// calculateMemUsageNoCache calculate memory usage of the container.
+// Cache is intentionally excluded to avoid misinterpretation of the output.
+//
+// On cgroup v1 host, the result is `mem.Usage - mem.Stats["total_inactive_file"]` .
+// On cgroup v2 host, the result is `mem.Usage - mem.Stats["inactive_file"] `.
+//
+// This definition is consistent with cadvisor and containerd/CRI.
+// * https://github.com/google/cadvisor/commit/307d1b1cb320fef66fab02db749f07a459245451
+// * https://github.com/containerd/cri/commit/6b8846cdf8b8c98c1d965313d66bc8489166059a
+//
+// On Docker 19.03 and older, the result was `mem.Usage - mem.Stats["cache"]`.
+// See https://github.com/moby/moby/issues/40727 for the background.
+func calculateMemUsageNoCache(memoryStats *dtypes.MemoryStats) uint64 {
+	// cgroup v1
+	if v, isCgroup1 := memoryStats.Stats["total_inactive_file"]; isCgroup1 && v < memoryStats.Usage {
+		return memoryStats.Usage - v
 	}
-	return 100.0 * (float64(memoryStats.Usage) - float64(memoryStats.Stats["cache"])) / float64(memoryStats.Limit)
+	// cgroup v2
+	if v := memoryStats.Stats["inactive_file"]; v < memoryStats.Usage {
+		return memoryStats.Usage - v
+	}
+	return memoryStats.Usage
+}
+
+func calculateMemoryPercent(limit uint64, usedNoCache uint64) float64 {
+	// MemoryStats.Limit will never be 0 unless the container is not running and we haven't
+	// got any data from cgroup
+	if limit != 0 {
+		return float64(usedNoCache) / float64(limit) * 100.0
+	}
+	return 0.0
 }
