@@ -45,7 +45,7 @@ func (s *SuiteFactory) TestCreateDefaultConfig() {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	s.Equal(cfg, &Config{
+	s.Equal(&Config{
 		MaxDelayMs:      MaxDelayMs,
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
@@ -122,7 +122,7 @@ func (s *SuiteFactory) TestLoadConfig() {
 			s.Require().Nil(err)
 			s.Require().Nil(component.UnmarshalConfig(sub, cfg))
 			if s.Nil(component.ValidateConfig(cfg)) {
-				s.Equal(cfg, tt.expected)
+				s.Equal(tt.expected, cfg)
 			}
 		})
 	}
@@ -165,7 +165,7 @@ func (s *SuiteFactory) TestCreateLogsExporter() {
 			if err == nil {
 				s.Nil(tt.expectedError)
 			} else {
-				s.Equal(err.Error(), tt.expectedError.Error())
+				s.Equal(tt.expectedError.Error(), err.Error())
 				s.Nil(logs)
 			}
 		})
@@ -185,7 +185,7 @@ func (s *SuiteFactory) TestCreateTracesExporter() {
 			if err == nil {
 				s.Nil(tt.expectedError)
 			} else {
-				s.Equal(err.Error(), tt.expectedError.Error())
+				s.Equal(tt.expectedError.Error(), err.Error())
 				s.Nil(logs)
 			}
 		})

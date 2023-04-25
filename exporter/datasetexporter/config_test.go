@@ -16,7 +16,6 @@ package datasetexporter
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -26,10 +25,6 @@ import (
 
 type SuiteConfig struct {
 	suite.Suite
-}
-
-func (s *SuiteConfig) SetupTest() {
-	os.Clearenv()
 }
 
 func TestSuiteConfig(t *testing.T) {
@@ -50,7 +45,7 @@ func (s *SuiteConfig) TestConfigUnmarshalUnknownAttributes() {
 	unmarshalErr := fmt.Errorf("1 error(s) decoding:\n\n* '' has invalid keys: unknown_attribute")
 	expectedError := fmt.Errorf("cannot unmarshal config: %w", unmarshalErr)
 
-	s.Equal(err.Error(), expectedError.Error())
+	s.Equal(expectedError.Error(), err.Error())
 }
 
 func (s *SuiteConfig) TestConfigKeepValuesWhenEnvSet() {
@@ -65,8 +60,8 @@ func (s *SuiteConfig) TestConfigKeepValuesWhenEnvSet() {
 	err := config.Unmarshal(conf)
 	s.Nil(err)
 
-	s.Equal(config.DatasetURL, "https://example.com")
-	s.Equal(config.APIKey, "secret")
+	s.Equal("https://example.com", config.DatasetURL)
+	s.Equal("secret", config.APIKey)
 }
 
 func (s *SuiteConfig) TestConfigUseEnvWhenSet() {
@@ -78,8 +73,8 @@ func (s *SuiteConfig) TestConfigUseEnvWhenSet() {
 	err := config.Unmarshal(conf)
 	s.Nil(err)
 
-	s.Equal(config.DatasetURL, "https://example.org")
-	s.Equal(config.APIKey, "api_key")
+	s.Equal("https://example.org", config.DatasetURL)
+	s.Equal("api_key", config.APIKey)
 }
 
 func (s *SuiteConfig) TestConfigUseDefaultForMaxDelay() {
@@ -92,9 +87,9 @@ func (s *SuiteConfig) TestConfigUseDefaultForMaxDelay() {
 	err := config.Unmarshal(conf)
 	s.Nil(err)
 
-	s.Equal(config.DatasetURL, "https://example.com")
-	s.Equal(config.APIKey, "secret")
-	s.Equal(config.MaxDelayMs, "15000")
+	s.Equal("https://example.com", config.DatasetURL)
+	s.Equal("secret", config.APIKey)
+	s.Equal("15000", config.MaxDelayMs)
 }
 
 func (s *SuiteConfig) TestConfigValidate() {
@@ -145,7 +140,7 @@ func (s *SuiteConfig) TestConfigValidate() {
 			if err == nil {
 				s.Nil(tt.expected, tt.name)
 			} else {
-				s.Equal(err.Error(), tt.expected.Error(), tt.name)
+				s.Equal(tt.expected.Error(), err.Error(), tt.name)
 			}
 		})
 	}
@@ -163,7 +158,7 @@ func (s *SuiteConfig) TestConfigString() {
 	}
 
 	s.Equal(
-		config.String(),
 		"DatasetURL: https://example.com; MaxDelayMs: 1234; GroupBy: [field1 field2]; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:5000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
+		config.String(),
 	)
 }
