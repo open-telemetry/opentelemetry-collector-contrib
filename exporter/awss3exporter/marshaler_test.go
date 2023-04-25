@@ -30,12 +30,6 @@ func TestMarshaler(t *testing.T) {
 		assert.Equal(t, m.format(), "json")
 	}
 	{
-		m, err := NewMarshaler("otlp_proto", zap.NewNop())
-		assert.NoError(t, err)
-		require.NotNil(t, m)
-		assert.Equal(t, m.format(), "proto")
-	}
-	{
 		m, err := NewMarshaler("unknown", zap.NewNop())
 		assert.Error(t, err)
 		require.Nil(t, m)

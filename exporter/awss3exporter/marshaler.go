@@ -34,15 +34,10 @@ var (
 	ErrUnknownMarshaler = errors.New("unknown marshaler")
 )
 
-func NewMarshaler(name string, logger *zap.Logger) (marshaler, error) {
+func NewMarshaler(mType MarshalerType, logger *zap.Logger) (marshaler, error) {
 	marshaler := &s3Marshaler{logger: logger}
-	switch name {
-	case "otlp", "otlp_proto":
-		marshaler.logsMarshaler = &plog.ProtoMarshaler{}
-		marshaler.tracesMarshaler = &ptrace.ProtoMarshaler{}
-		marshaler.metricsMarshaler = &pmetric.ProtoMarshaler{}
-		marshaler.fileFormat = "proto"
-	case "otlp_json":
+	switch mType {
+	case OtlpJSON:
 		marshaler.logsMarshaler = &plog.JSONMarshaler{}
 		marshaler.tracesMarshaler = &ptrace.JSONMarshaler{}
 		marshaler.metricsMarshaler = &pmetric.JSONMarshaler{}

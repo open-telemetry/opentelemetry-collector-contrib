@@ -24,10 +24,16 @@ type S3UploaderConfig struct {
 	FilePrefix  string `mapstructure:"file_prefix"`
 }
 
+type MarshalerType string
+
+const (
+	OtlpJSON MarshalerType = "otlp_json"
+)
+
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
 	S3Uploader    S3UploaderConfig `mapstructure:"s3uploader"`
-	MarshalerName string           `mapstructure:"marshaler_name"`
+	MarshalerName MarshalerType    `mapstructure:"marshaler"`
 
 	FileFormat string `mapstructure:"file_format"`
 }
