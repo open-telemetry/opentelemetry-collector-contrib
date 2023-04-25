@@ -7,12 +7,12 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.8.2
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.639
-	go.opentelemetry.io/collector v0.75.0
-	go.opentelemetry.io/collector/component v0.75.0
-	go.opentelemetry.io/collector/confmap v0.75.0
-	go.opentelemetry.io/collector/exporter v0.75.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc9
-	go.opentelemetry.io/collector/semconv v0.75.0
+	go.opentelemetry.io/collector v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/component v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/confmap v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/exporter v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9.0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/semconv v0.75.1-0.20230424163446-8e33ded10872
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.30.0
 )
@@ -32,9 +32,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.75.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.75.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.75.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.75.1-0.20230424163446-8e33ded10872 // indirect
+	go.opentelemetry.io/collector/featuregate v0.75.1-0.20230424163446-8e33ded10872 // indirect
+	go.opentelemetry.io/collector/receiver v0.75.1-0.20230424163446-8e33ded10872 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect

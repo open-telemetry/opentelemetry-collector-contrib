@@ -8,14 +8,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.75.0
 	github.com/stretchr/testify v1.8.2
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.75.0
-	go.opentelemetry.io/collector/component v0.75.0
-	go.opentelemetry.io/collector/confmap v0.75.0
-	go.opentelemetry.io/collector/consumer v0.75.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc9
-	go.opentelemetry.io/collector/receiver v0.75.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.75.0
-	go.opentelemetry.io/collector/semconv v0.75.0
+	go.opentelemetry.io/collector v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/component v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/confmap v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/consumer v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9.0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/receiver v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/semconv v0.75.1-0.20230424163446-8e33ded10872
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.26.3
@@ -67,11 +67,10 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.opentelemetry.io/collector/exporter v0.75.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.75.0 // indirect
+	go.opentelemetry.io/collector/exporter v0.75.1-0.20230424163446-8e33ded10872 // indirect
+	go.opentelemetry.io/collector/featuregate v0.75.1-0.20230424163446-8e33ded10872 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.40.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
