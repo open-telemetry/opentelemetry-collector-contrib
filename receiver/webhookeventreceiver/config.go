@@ -13,8 +13,8 @@ import (
 
 var (
 	errMissingEndpointFromConfig   = errors.New("missing receiver server endpoint from config")
-    errReadTimeoutExceedsMaxValue  = errors.New("The duration specified for read_timeout exceeds the maximum allowed value of 10s")
-    errWriteTimeoutExceedsMaxValue = errors.New("The duration specified for write_timeout exceeds the maximum allowed value of 10s")
+	errReadTimeoutExceedsMaxValue  = errors.New("The duration specified for read_timeout exceeds the maximum allowed value of 10s")
+	errWriteTimeoutExceedsMaxValue = errors.New("The duration specified for write_timeout exceeds the maximum allowed value of 10s")
 )
 
 // Config defines configuration for the Generic Webhook receiver.
@@ -29,35 +29,35 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	var errs error
 
-    maxReadWriteTimeout, _ := time.ParseDuration("10s")
+	maxReadWriteTimeout, _ := time.ParseDuration("10s")
 
 	if cfg.HTTPServerSettings.Endpoint == "" {
 		errs = multierr.Append(errs, errMissingEndpointFromConfig)
 	}
 
-    // If a user defines a custom read/write timeout there is a maximum value 
-    // of 10s imposed here.
-    if cfg.ReadTimeout != "" {
-        readTimeout, err := time.ParseDuration(cfg.ReadTimeout) 
-        if err != nil {
-            errs = multierr.Append(errs, err)
-        }
+	// If a user defines a custom read/write timeout there is a maximum value
+	// of 10s imposed here.
+	if cfg.ReadTimeout != "" {
+		readTimeout, err := time.ParseDuration(cfg.ReadTimeout)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+		}
 
-        if readTimeout > maxReadWriteTimeout {
-            errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
-        }
-    }
+		if readTimeout > maxReadWriteTimeout {
+			errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
+		}
+	}
 
-    if cfg.WriteTimeout != "" {
-        writeTimeout, err := time.ParseDuration(cfg.WriteTimeout) 
-        if err != nil {
-            errs = multierr.Append(errs, err)
-        }
+	if cfg.WriteTimeout != "" {
+		writeTimeout, err := time.ParseDuration(cfg.WriteTimeout)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+		}
 
-        if writeTimeout > maxReadWriteTimeout {
-            errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
-        }
-    }
+		if writeTimeout > maxReadWriteTimeout {
+			errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
+		}
+	}
 
 	return errs
 }

@@ -18,11 +18,10 @@ import (
 func TestValidateConfig(t *testing.T) {
 	t.Parallel()
 
-    var errs error
-    errs = multierr.Append(errs, errMissingEndpointFromConfig)
-    errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
-    errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
-
+	var errs error
+	errs = multierr.Append(errs, errMissingEndpointFromConfig)
+	errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
+	errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
 
 	tests := []struct {
 		desc   string
@@ -38,37 +37,37 @@ func TestValidateConfig(t *testing.T) {
 				},
 			},
 		},
-        {
-            desc: "ReadTimeout exceeds maximum value",
-            expect: errReadTimeoutExceedsMaxValue,
-            conf: Config{
-                HTTPServerSettings: confighttp.HTTPServerSettings{
-                    Endpoint: "0.0.0.0:0",
-                },
-                ReadTimeout: "14s",
-            },
-        },
-        {
-            desc: "WriteTimeout exceeds maximum value",
-            expect: errWriteTimeoutExceedsMaxValue,
-            conf: Config{
-                HTTPServerSettings: confighttp.HTTPServerSettings{
-                    Endpoint: "0.0.0.0:0",
-                },
-                WriteTimeout: "14s",
-            },
-        },
-        {
-            desc: "Multiple invalid configs",
-            expect: errs,
-            conf: Config{
-                HTTPServerSettings: confighttp.HTTPServerSettings{
-                    Endpoint: "",
-                },
-                WriteTimeout: "14s",
-                ReadTimeout: "15s",
-            },
-        },
+		{
+			desc:   "ReadTimeout exceeds maximum value",
+			expect: errReadTimeoutExceedsMaxValue,
+			conf: Config{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: "0.0.0.0:0",
+				},
+				ReadTimeout: "14s",
+			},
+		},
+		{
+			desc:   "WriteTimeout exceeds maximum value",
+			expect: errWriteTimeoutExceedsMaxValue,
+			conf: Config{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: "0.0.0.0:0",
+				},
+				WriteTimeout: "14s",
+			},
+		},
+		{
+			desc:   "Multiple invalid configs",
+			expect: errs,
+			conf: Config{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: "",
+				},
+				WriteTimeout: "14s",
+				ReadTimeout:  "15s",
+			},
+		},
 	}
 
 	for _, test := range tests {
