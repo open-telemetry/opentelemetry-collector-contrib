@@ -25,14 +25,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension/internal/metadata"
 )
 
-const (
-	// The value of extension "type" in configuration.
-	typeStr = "sigv4auth"
-)
-
 // NewFactory creates a factory for the Sigv4 Authenticator extension.
 func NewFactory() extension.Factory {
-	return extension.NewFactory(typeStr, createDefaultConfig, createExtension, metadata.Stability)
+	return extension.NewFactory(metadata.Type, createDefaultConfig, createExtension, metadata.ExtensionStability)
 }
 
 // createDefaultConfig() creates a Config struct with default values.

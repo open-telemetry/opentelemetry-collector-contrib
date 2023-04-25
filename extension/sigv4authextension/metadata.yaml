@@ -2,5 +2,6 @@ type: sigv4auth
 
 status:
   class: extension
-  stability: beta
+  stability:
+    beta: [extension]
   distributions: [contrib]

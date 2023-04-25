@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "sigv4auth"
-	Stability = component.StabilityLevelBeta
+	Type               = "sigv4auth"
+	ExtensionStability = component.StabilityLevelBeta
 )
