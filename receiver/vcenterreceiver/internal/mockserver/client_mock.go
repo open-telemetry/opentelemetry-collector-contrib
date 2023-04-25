@@ -184,6 +184,9 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 			if ps == "name" {
 				return loadResponse("host-names.xml")
 			}
+			if ps == "summary.hardware" {
+				return loadResponse("host-properties.xml")
+			}
 
 		}
 

@@ -49,7 +49,7 @@ data:
       otlp:
         protocols:
           grpc:
-            endpoint: ${MY_POD_IP}:4317
+            endpoint: ${env:MY_POD_IP}:4317
     service:
       extensions:
       - health_check

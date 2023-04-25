@@ -21,8 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/maxatome/go-testdeep/helpers/tdsuite"
-	"github.com/maxatome/go-testdeep/td"
+	"github.com/stretchr/testify/suite"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -30,46 +29,36 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
-type SuiteFactory struct{}
-
-func (s *SuiteFactory) PreTest(t *td.T, testName string) error {
-	os.Clearenv()
-	return nil
+type SuiteFactory struct {
+	suite.Suite
 }
 
-func (s *SuiteFactory) PostTest(t *td.T, testName string) error {
+func (s *SuiteFactory) SetupTest() {
 	os.Clearenv()
-	return nil
-}
-
-func (s *SuiteFactory) Destroy(t *td.T) error {
-	os.Clearenv()
-	return nil
 }
 
 func TestSuiteFactory(t *testing.T) {
-	td.NewT(t)
-	tdsuite.Run(t, &SuiteFactory{})
+	suite.Run(t, new(SuiteFactory))
 }
 
-func (s *SuiteFactory) TestCreateDefaultConfig(assert, require *td.T) {
+func (s *SuiteFactory) TestCreateDefaultConfig() {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	assert.Cmp(cfg, &Config{
+	s.Equal(cfg, &Config{
 		MaxDelayMs:      MaxDelayMs,
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}, cfg, "failed to create default config")
 
-	assert.Nil(componenttest.CheckConfigStruct(cfg))
+	s.Nil(componenttest.CheckConfigStruct(cfg))
 }
 
-func (s *SuiteFactory) TestLoadConfig(assert, require *td.T) {
+func (s *SuiteFactory) TestLoadConfig() {
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	assert.Nil(err)
+	s.Nil(err)
 
 	tests := []struct {
 		id       component.ID
@@ -126,16 +115,15 @@ func (s *SuiteFactory) TestLoadConfig(assert, require *td.T) {
 	}
 
 	for _, tt := range tests {
-		require.Run(tt.id.Name(), func(*td.T) {
+		s.T().Run(tt.id.Name(), func(*testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
 			sub, err := cm.Sub(tt.id.String())
-			require.Nil(err)
-			require.Nil(component.UnmarshalConfig(sub, cfg))
-
-			if assert.Nil(component.ValidateConfig(cfg)) {
-				assert.Cmp(cfg, tt.expected)
+			s.Require().Nil(err)
+			s.Require().Nil(component.UnmarshalConfig(sub, cfg))
+			if s.Nil(component.ValidateConfig(cfg)) {
+				s.Equal(cfg, tt.expected)
 			}
 		})
 	}
@@ -165,41 +153,41 @@ func createExporterTests() []CreateTest {
 	}
 }
 
-func (s *SuiteFactory) TestCreateLogsExporter(assert, require *td.T) {
+func (s *SuiteFactory) TestCreateLogsExporter() {
 	ctx := context.Background()
 	createSettings := exportertest.NewNopCreateSettings()
 	tests := createExporterTests()
 
 	for _, tt := range tests {
-		require.Run(tt.name, func(*td.T) {
+		s.T().Run(tt.name, func(*testing.T) {
 			exporterInstance = nil
 			logs, err := createLogsExporter(ctx, createSettings, tt.config)
 
 			if err == nil {
-				assert.Nil(tt.expectedError)
+				s.Nil(tt.expectedError)
 			} else {
-				assert.Cmp(err.Error(), tt.expectedError.Error())
-				assert.Nil(logs)
+				s.Equal(err.Error(), tt.expectedError.Error())
+				s.Nil(logs)
 			}
 		})
 	}
 }
 
-func (s *SuiteFactory) TestCreateTracesExporter(assert, require *td.T) {
+func (s *SuiteFactory) TestCreateTracesExporter() {
 	ctx := context.Background()
 	createSettings := exportertest.NewNopCreateSettings()
 	tests := createExporterTests()
 
 	for _, tt := range tests {
-		require.Run(tt.name, func(*td.T) {
+		s.T().Run(tt.name, func(t *testing.T) {
 			exporterInstance = nil
 			logs, err := createTracesExporter(ctx, createSettings, tt.config)
 
 			if err == nil {
-				assert.Nil(tt.expectedError)
+				s.Nil(tt.expectedError)
 			} else {
-				assert.Cmp(err.Error(), tt.expectedError.Error())
-				assert.Nil(logs)
+				s.Equal(err.Error(), tt.expectedError.Error())
+				s.Nil(logs)
 			}
 		})
 	}

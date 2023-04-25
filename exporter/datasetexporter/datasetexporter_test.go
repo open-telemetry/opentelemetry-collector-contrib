@@ -18,32 +18,17 @@ import (
 	"os"
 	"testing"
 
-	"github.com/maxatome/go-testdeep/helpers/tdsuite"
-	"github.com/maxatome/go-testdeep/td"
+	"github.com/stretchr/testify/suite"
 )
 
-type SuiteDataSetExporter struct{}
-
-func (s *SuiteDataSetExporter) PreTest(t *td.T, testName string) error {
-	os.Clearenv()
-	return nil
+type SuiteDataSetExporter struct {
+	suite.Suite
 }
 
-func (s *SuiteDataSetExporter) PostTest(t *td.T, testName string) error {
+func (s *SuiteDataSetExporter) SuiteDataSetExporter() {
 	os.Clearenv()
-	return nil
-}
-
-func (s *SuiteDataSetExporter) Destroy(t *td.T) error {
-	os.Clearenv()
-	return nil
 }
 
 func TestSuiteDataSetExporter(t *testing.T) {
-	td.NewT(t)
-	tdsuite.Run(t, &SuiteDataSetExporter{})
-}
-
-func (s *SuiteDataSetExporter) TestFoo(assert, require *td.T) {
-	assert.Cmp("AA", "AA")
+	suite.Run(t, new(SuiteDataSetExporter))
 }

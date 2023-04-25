@@ -55,7 +55,7 @@ env:
         fieldPath: spec.nodeName
 ```
 
-This spec-determined value would then be available via the `${K8S_NODE_NAME}` usage in the observer configuration.
+This spec-determined value would then be available via the `${env:K8S_NODE_NAME}` usage in the observer configuration.
 
 ## Config
 

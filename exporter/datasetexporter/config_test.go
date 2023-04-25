@@ -19,35 +19,24 @@ import (
 	"os"
 	"testing"
 
-	"github.com/maxatome/go-testdeep/helpers/tdsuite"
-	"github.com/maxatome/go-testdeep/td"
+	"github.com/stretchr/testify/suite"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-type SuiteConfig struct{}
-
-func (s *SuiteConfig) PreTest(t *td.T, testName string) error {
-	os.Clearenv()
-	return nil
+type SuiteConfig struct {
+	suite.Suite
 }
 
-func (s *SuiteConfig) PostTest(t *td.T, testName string) error {
+func (s *SuiteConfig) SetupTest() {
 	os.Clearenv()
-	return nil
-}
-
-func (s *SuiteConfig) Destroy(t *td.T) error {
-	os.Clearenv()
-	return nil
 }
 
 func TestSuiteConfig(t *testing.T) {
-	td.NewT(t)
-	tdsuite.Run(t, &SuiteConfig{})
+	suite.Run(t, new(SuiteConfig))
 }
 
-func (s *SuiteConfig) TestConfigUnmarshalUnknownAttributes(assert, require *td.T) {
+func (s *SuiteConfig) TestConfigUnmarshalUnknownAttributes() {
 	config := Config{}
 	conf := confmap.NewFromStringMap(map[string]interface{}{
 		"dataset_url":       "https://example.com",
@@ -56,19 +45,19 @@ func (s *SuiteConfig) TestConfigUnmarshalUnknownAttributes(assert, require *td.T
 	})
 
 	err := config.Unmarshal(conf)
-	assert.NotNil(err)
+	s.NotNil(err)
 
 	unmarshalErr := fmt.Errorf("1 error(s) decoding:\n\n* '' has invalid keys: unknown_attribute")
 	expectedError := fmt.Errorf("cannot unmarshal config: %w", unmarshalErr)
 
-	assert.Cmp(err.Error(), expectedError.Error())
+	s.Equal(err.Error(), expectedError.Error())
 	// TODO: Why it does not work?
-	// assert.CmpErrorIs(err, expectedError)
+	// s.EqualErrorIs(err, expectedError)
 }
 
-func (s *SuiteConfig) TestConfigKeepValuesWhenEnvSet(assert, require *td.T) {
-	assert.Setenv("DATASET_URL", "https://example.org")
-	assert.Setenv("DATASET_API_KEY", "api_key")
+func (s *SuiteConfig) TestConfigKeepValuesWhenEnvSet() {
+	s.T().Setenv("DATASET_URL", "https://example.org")
+	s.T().Setenv("DATASET_API_KEY", "api_key")
 
 	config := Config{}
 	conf := confmap.NewFromStringMap(map[string]interface{}{
@@ -76,26 +65,26 @@ func (s *SuiteConfig) TestConfigKeepValuesWhenEnvSet(assert, require *td.T) {
 		"api_key":     "secret",
 	})
 	err := config.Unmarshal(conf)
-	assert.Nil(err)
+	s.Nil(err)
 
-	assert.Cmp(config.DatasetURL, "https://example.com")
-	assert.Cmp(config.APIKey, "secret")
+	s.Equal(config.DatasetURL, "https://example.com")
+	s.Equal(config.APIKey, "secret")
 }
 
-func (s *SuiteConfig) TestConfigUseEnvWhenSet(assert, require *td.T) {
-	assert.Setenv("DATASET_URL", "https://example.org")
-	assert.Setenv("DATASET_API_KEY", "api_key")
+func (s *SuiteConfig) TestConfigUseEnvWhenSet() {
+	s.T().Setenv("DATASET_URL", "https://example.org")
+	s.T().Setenv("DATASET_API_KEY", "api_key")
 
 	config := Config{}
 	conf := confmap.NewFromStringMap(map[string]interface{}{})
 	err := config.Unmarshal(conf)
-	assert.Nil(err)
+	s.Nil(err)
 
-	assert.Cmp(config.DatasetURL, "https://example.org")
-	assert.Cmp(config.APIKey, "api_key")
+	s.Equal(config.DatasetURL, "https://example.org")
+	s.Equal(config.APIKey, "api_key")
 }
 
-func (s *SuiteConfig) TestConfigUseDefaultForMaxDelay(assert, require *td.T) {
+func (s *SuiteConfig) TestConfigUseDefaultForMaxDelay() {
 	config := Config{}
 	conf := confmap.NewFromStringMap(map[string]interface{}{
 		"dataset_url":  "https://example.com",
@@ -103,14 +92,14 @@ func (s *SuiteConfig) TestConfigUseDefaultForMaxDelay(assert, require *td.T) {
 		"max_delay_ms": "",
 	})
 	err := config.Unmarshal(conf)
-	assert.Nil(err)
+	s.Nil(err)
 
-	assert.Cmp(config.DatasetURL, "https://example.com")
-	assert.Cmp(config.APIKey, "secret")
-	assert.Cmp(config.MaxDelayMs, "15000")
+	s.Equal(config.DatasetURL, "https://example.com")
+	s.Equal(config.APIKey, "secret")
+	s.Equal(config.MaxDelayMs, "15000")
 }
 
-func (s *SuiteConfig) TestConfigValidate(assert, require *td.T) {
+func (s *SuiteConfig) TestConfigValidate() {
 	tests := []struct {
 		name     string
 		config   Config
@@ -153,20 +142,20 @@ func (s *SuiteConfig) TestConfigValidate(assert, require *td.T) {
 	}
 
 	for _, tt := range tests {
-		require.Run(tt.name, func(*td.T) {
+		s.T().Run(tt.name, func(t *testing.T) {
 			err := tt.config.Validate()
 			// TODO: Figure out
-			// assert.CmpErrorIs(err, tt.expected)
+			// s.EqualErrorIs(err, tt.expected)
 			if err == nil {
-				assert.Nil(tt.expected, tt.name)
+				s.Nil(tt.expected, tt.name)
 			} else {
-				assert.Cmp(err.Error(), tt.expected.Error(), tt.name)
+				s.Equal(err.Error(), tt.expected.Error(), tt.name)
 			}
 		})
 	}
 }
 
-func (s *SuiteConfig) TestConfigString(assert, require *td.T) {
+func (s *SuiteConfig) TestConfigString() {
 	config := Config{
 		DatasetURL:      "https://example.com",
 		APIKey:          "secret",
@@ -177,7 +166,7 @@ func (s *SuiteConfig) TestConfigString(assert, require *td.T) {
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}
 
-	assert.Cmp(
+	s.Equal(
 		config.String(),
 		"DatasetURL: https://example.com; MaxDelayMs: 1234; GroupBy: [field1 field2]; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:5000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
 	)
