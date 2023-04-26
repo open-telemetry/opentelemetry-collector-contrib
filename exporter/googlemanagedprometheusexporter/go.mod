@@ -7,9 +7,9 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.37.1
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/component v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/exporter v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector v0.76.0
+	go.opentelemetry.io/collector/component v0.76.1-0.20230426191218-56daa378f504
+	go.opentelemetry.io/collector/exporter v0.76.1-0.20230426191218-56daa378f504
 )
 
 require (
@@ -65,12 +65,12 @@ require (
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.75.1-0.20230424163446-8e33ded10872 // indirect
-	go.opentelemetry.io/collector/consumer v0.75.1-0.20230424163446-8e33ded10872 // indirect
-	go.opentelemetry.io/collector/featuregate v0.75.1-0.20230424163446-8e33ded10872 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc9.0.20230424163446-8e33ded10872 // indirect
-	go.opentelemetry.io/collector/receiver v0.75.1-0.20230424163446-8e33ded10872 // indirect
-	go.opentelemetry.io/collector/semconv v0.75.1-0.20230424163446-8e33ded10872 // indirect
+	go.opentelemetry.io/collector/confmap v0.76.1-0.20230426191218-56daa378f504 // indirect
+	go.opentelemetry.io/collector/consumer v0.76.1-0.20230426191218-56daa378f504 // indirect
+	go.opentelemetry.io/collector/featuregate v0.76.1-0.20230426191218-56daa378f504 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9.0.20230426191218-56daa378f504 // indirect
+	go.opentelemetry.io/collector/receiver v0.76.1-0.20230426191218-56daa378f504 // indirect
+	go.opentelemetry.io/collector/semconv v0.76.1-0.20230426191218-56daa378f504 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.15.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/bridge/opencensus v0.37.0 // indirect

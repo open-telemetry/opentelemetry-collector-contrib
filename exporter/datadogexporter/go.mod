@@ -24,17 +24,17 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.75.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/component v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/confmap v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/consumer v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/exporter v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/featuregate v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/pdata v1.0.0-rc9.0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/processor/batchprocessor v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/receiver v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/semconv v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector v0.76.0
+	go.opentelemetry.io/collector/component v0.76.1-0.20230426191218-56daa378f504
+	go.opentelemetry.io/collector/confmap v0.76.1-0.20230426191218-56daa378f504
+	go.opentelemetry.io/collector/consumer v0.76.1-0.20230426191218-56daa378f504
+	go.opentelemetry.io/collector/exporter v0.76.1-0.20230426191218-56daa378f504
+	go.opentelemetry.io/collector/featuregate v0.76.1-0.20230426191218-56daa378f504
+	go.opentelemetry.io/collector/pdata v1.0.0-rc9.0.20230426191218-56daa378f504
+	go.opentelemetry.io/collector/processor/batchprocessor v0.76.1-0.20230426191218-56daa378f504
+	go.opentelemetry.io/collector/receiver v0.76.1-0.20230426191218-56daa378f504
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.76.1-0.20230426191218-56daa378f504
+	go.opentelemetry.io/collector/semconv v0.76.1-0.20230426191218-56daa378f504
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.30.0
