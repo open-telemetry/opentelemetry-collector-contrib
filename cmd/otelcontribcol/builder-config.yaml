@@ -6,8 +6,8 @@ dist:
   otelcol_version: 0.75.0
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.75.0
-  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.75.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.75.1-0.20230424163446-8e33ded10872
+  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.75.1-0.20230424163446-8e33ded10872
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.75.0
@@ -27,9 +27,9 @@ extensions:
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.75.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.75.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.75.0
+  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.75.1-0.20230424163446-8e33ded10872
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.75.1-0.20230424163446-8e33ded10872
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.75.1-0.20230424163446-8e33ded10872
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.75.0
@@ -39,6 +39,7 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.75.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.75.0
@@ -74,8 +75,8 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.75.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.75.0
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.75.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.75.1-0.20230424163446-8e33ded10872
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.75.1-0.20230424163446-8e33ded10872
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.75.0
@@ -98,7 +99,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.75.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.75.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.75.1-0.20230424163446-8e33ded10872
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.75.0
@@ -109,6 +110,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.75.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.75.0
@@ -178,7 +180,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.75.0
 
 connectors:
-  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.75.0
+  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.75.1-0.20230424163446-8e33ded10872
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.75.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.75.0
@@ -219,6 +221,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter => ../../exporter/skywalkingexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter => ../../exporter/mezmoexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter => ../../exporter/clickhouseexporter
+  - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter => ../../exporter/cassandraexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver => ../../receiver/udplogreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver => ../../receiver/podmanreceiver
@@ -253,6 +256,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter => ../../exporter/loadbalancingexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter => ../../exporter/logicmonitorexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ../../receiver/azureeventhubreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver => ../../receiver/azuremonitorreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver => ../../receiver/jmxreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver => ../../receiver/awsfirehosereceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ../../extension/oauth2clientauthextension

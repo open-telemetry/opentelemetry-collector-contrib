@@ -1738,6 +1738,23 @@ resourceMetrics:
             stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
     scopeMetrics:
       - metrics:
+          - description: The amount of CPU used by the VM.
+            name: vcenter.vm.cpu.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "12"
+                  startTimeUnixNano: "1681411341273350000"
+                  timeUnixNano: "1681411341283889000"
+            unit: MHz
+          - description: The CPU utilization of the VM.
+            gauge:
+              dataPoints:
+                - asDouble: 0.11569610489780177
+                  startTimeUnixNano: "1681411341273350000"
+                  timeUnixNano: "1681411341283889000"
+            name: vcenter.vm.cpu.utilization
+            unit: '%'
           - description: The latency of operations to the virtual machine's disk.
             gauge:
               dataPoints:

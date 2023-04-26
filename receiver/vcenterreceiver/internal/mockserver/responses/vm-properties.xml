@@ -1268,7 +1268,7 @@
                             <timestamp>2022-05-17T14:28:26.159606Z</timestamp>
                         </storage>
                         <quickStats>
-                            <overallCpuUsage>0</overallCpuUsage>
+                            <overallCpuUsage>12</overallCpuUsage>
                             <overallCpuDemand>0</overallCpuDemand>
                             <overallCpuReadiness>0</overallCpuReadiness>
                             <guestMemoryUsage>163</guestMemoryUsage>

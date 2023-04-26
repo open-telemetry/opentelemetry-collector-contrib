@@ -19,9 +19,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -47,6 +49,7 @@ func createDefaultConfig() component.Config {
 		LogStreamName:                   "",
 		Namespace:                       "",
 		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
+		Version:                         "1",
 		RetainInitialValueOfDeltaMetric: false,
 		OutputDestination:               "cloudwatch",
 		logger:                          zap.NewNop(),
@@ -54,11 +57,24 @@ func createDefaultConfig() component.Config {
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
-func createMetricsExporter(_ context.Context,
-	params exporter.CreateSettings,
-	config component.Config) (exporter.Metrics, error) {
-
+func createMetricsExporter(ctx context.Context, params exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
 	expCfg := config.(*Config)
 
-	return newEmfExporter(expCfg, params)
+	emfExp, err := newEmfExporter(expCfg, params)
+	if err != nil {
+		return nil, err
+	}
+
+	exporter, err := exporterhelper.NewMetricsExporter(
+		ctx,
+		params,
+		config,
+		emfExp.pushMetricsData,
+		exporterhelper.WithShutdown(emfExp.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return resourcetotelemetry.WrapMetricsExporter(expCfg.ResourceToTelemetrySettings, exporter), nil
 }
