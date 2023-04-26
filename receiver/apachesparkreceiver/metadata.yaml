@@ -7,25 +7,91 @@ status:
 
 attributes:
   application_id:
-    description: The id of the application that the metric comes from
+    description: The ID of the application for which the metric was recorded.
     type: string
-  location:
-    description: The categorization of memory allocated to spark
+  stage_id:
+    description: The ID of the application stage for which the metric was recorded.
+    type: int
+  attempt_id:
+    description: The ID of the stage attempt for which the metric was recorded.
+    type: int
+  stage_status:
+    description: The status of the stage for which the metric was recorded.
     type: string
     enum:
-      - off_heap
+      - ACTIVE
+      - COMPLETE
+      - PENDING
+      - FAILED
+  source:
+    description: The source from which data was fetched for the metric.
+    type: string
+    enum:
+      - local
+      - remote
+  location:
+    description: The location of the memory which is quantified in the metric.
+    type: string
+    enum:
       - on_heap
+      - off_heap
+  executor_id:
+    description: The ID of the executor for which the metric was recorded.
+    type: string
+  job_id:
+    description: The ID of the job for which the metric was recorded.
+    type: int
+  pool_memory_type:
+    description: The type of pool memory for which the metric was recorded.
+    type: string
+    enum:
+      - direct
+      - mapped
+  gc_severity:
+    description: The severity of the garbage collection performed for the metric.
+    type: string
+    enum:
+      - major
+      - minor
 
 metrics:
-  spark.driver.block_manager.memory.used:
-    description: Memory used by the BlockManager.
+  #stage
+  spark.stage.active_tasks:
+    description: Number of active tasks in this stage.
     enabled: true
     sum:
       aggregation: cumulative
       monotonic: false
       value_type: int
-    unit: Mb
-    attributes: [application_id, location]
+    unit: { tasks }
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.complete_tasks:
+    description: Number of complete tasks in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.failed_tasks:
+    description: Number of failed tasks in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.killed_tasks:
+    description: Number of killed tasks in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, stage_id, attempt_id, stage_status]
   spark.stage.executor_run_time:
     description: Amount of time spent by the executor in this stage.
     enabled: true
@@ -34,7 +100,179 @@ metrics:
       monotonic: true
       value_type: int
     unit: ms
-    attributes: [application_id]
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.executor_cpu_time:
+    description: CPU time spent by the executor in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: ns
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.result_size:
+    description: The sum of the bytes transmitted back to the driver by all the tasks in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.jvm_gc_time:
+    description: The amount of time the JVM spent on garbage collection in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.memory_spilled:
+    description: The amount of memory moved to disk due to size constraints (spilled) in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.disk_space_spilled:
+    description: The amount of disk space used for storing portions of overly large data chunks that couldn’t fit in memory in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.peak_execution_memory:
+    description: Peak memory used by internal data structures created during shuffles, aggregations and joins in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.input_bytes:
+    description: Number of bytes read in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.input_records:
+    description: Number of records read in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { records }
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.output_bytes:
+    description: Number of bytes written in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.output_records:
+    description: Number of records written in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { records }
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.shuffle.blocks_fetched:
+    description: Number of blocks fetched in shuffle operations in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { blocks }
+    attributes: [application_id, stage_id, attempt_id, stage_status, source]
+  spark.stage.shuffle.fetch_wait_time:
+    description: Time spent in this stage waiting for remote shuffle blocks.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: ms
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.shuffle.bytes_read:
+    description: Number of bytes read in shuffle operations in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, stage_id, attempt_id, stage_status, source]
+  spark.stage.shuffle.remote_bytes_read_to_disk:
+    description: Number of remote bytes read to disk in shuffle operations (sometimes required for large blocks, as opposed to the default behavior of reading into memory).
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.shuffle.read_bytes:
+    description: Number of bytes read in shuffle operations in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.shuffle.read_records:
+    description: Number of records read in shuffle operations in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { records }
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.shuffle.write_bytes:
+    description: Number of bytes written in shuffle operations in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.shuffle.write_records:
+    description: Number of records written in shuffle operations in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { records }
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  spark.stage.shuffle.write_time:
+    description: Time spent blocking on writes to disk or buffer cache in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: ns
+    attributes: [application_id, stage_id, attempt_id, stage_status]
+  #executor
   spark.executor.memory_used:
     description: Storage memory used by this executor.
     enabled: true
@@ -43,7 +281,125 @@ metrics:
       monotonic: false
       value_type: int
     unit: bytes
-    attributes: [application_id]
+    attributes: [application_id, executor_id]
+  spark.executor.disk_used:
+    description: Disk space used by this executor for RDD storage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: bytes
+    attributes: [application_id, executor_id]
+  spark.executor.max_tasks:
+    description: Maximum number of tasks that can run concurrently in this executor.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, executor_id]
+  spark.executor.active_tasks:
+    description: Number of tasks currently running in this executor.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, executor_id]
+  spark.executor.failed_tasks:
+    description: Number of tasks that have failed in this executor.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, executor_id]
+  spark.executor.completed_tasks:
+    description: Number of tasks that have been completed by this executor.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, executor_id]
+  spark.executor.duration:
+    description: Elapsed time the JVM spent executing tasks in this executor.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: ms
+    attributes: [application_id, executor_id]
+  spark.executor.gc_time:
+    description: Elapsed time the JVM spent in garbage collection in this executor.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: ms
+    attributes: [application_id, executor_id]
+  spark.executor.input_bytes:
+    description: Input bytes for this executor.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, executor_id]
+  spark.executor.shuffle_read_bytes:
+    description: Number of bytes read during shuffle operations for this executor.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, executor_id]
+  spark.executor.shuffle_write_bytes:
+    description: Number of bytes written during shuffle operations for this executor.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes: [application_id, executor_id]
+  spark.executor.max_memory:
+    description: Total amount of memory available for storage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: bytes
+    attributes: [application_id, executor_id]
+  spark.executor.used_storage_memory:
+    description: Amount of memory currently used for storage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: bytes
+    attributes: [application_id, executor_id, location]
+  spark.executor.total_storage_memory:
+    description: Total memory that can be used for storage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: bytes
+    attributes: [application_id, executor_id, location]
+  #job
   spark.job.active_tasks:
     description: Number of active tasks in this job.
     enabled: true
@@ -51,5 +407,365 @@ metrics:
       aggregation: cumulative
       monotonic: false
       value_type: int
-    unit: "{tasks}"
+    unit: { tasks }
+    attributes: [application_id, job_id]
+  spark.job.completed_tasks:
+    description: Number of completed tasks in this job.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, job_id]
+  spark.job.skipped_tasks:
+    description: Number of skipped tasks in this job.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, job_id]
+  spark.job.failed_tasks:
+    description: Number of failed tasks in this job.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, job_id]
+  spark.job.active_stages:
+    description: Number of active stages in this job.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, job_id]
+  spark.job.completed_stages:
+    description: Number of completed stages in this job.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, job_id]
+  spark.job.skipped_stages:
+    description: Number of skipped stages in this job.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, job_id]
+  spark.job.failed_stages:
+    description: Number of failed stages in this job.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { tasks }
+    attributes: [application_id, job_id]
+  # metrics
+  spark.driver.block_manager.disk.diskSpaceUsed:
+    description: Disk space used by the BlockManager.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: mb
     attributes: [application_id]
+  spark.driver.block_manager.memory.max:
+    description: Maximum memory available to the BlockManager.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: mb
+    attributes: [application_id, location]
+  spark.driver.block_manager.memory.used:
+    description: Memory used by the BlockManager.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: mb
+    attributes: [application_id, location]
+  spark.driver.block_manager.memory.remaining:
+    description: Memory remaining for the BlockManager.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: mb
+    attributes: [application_id, location]
+  spark.driver.hive_external_catalog.file_cache_hits:
+    description: Number of file cache hits on the HiveExternalCatalog.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { hits }
+    attributes: [application_id]
+  spark.driver.hive_external_catalog.files_discovered:
+    description: Number of files discovered while listing the partitions of a table in the Hive metastore
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { files }
+    attributes: [application_id]
+  spark.driver.hive_external_catalog.hive_client_calls:
+    description: Number of calls to the underlying Hive Metastore client made by the Spark application.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { calls }
+    attributes: [application_id]
+  spark.driver.hive_external_catalog.parallel_listing_jobs:
+    description: Number of parallel listing jobs initiated by the HiveExternalCatalog when listing partitions of a table.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { listing_jobs }
+    attributes: [application_id]
+  spark.driver.hive_external_catalog.partitions_fetched:
+    description: Table partitions fetched by the HiveExternalCatalog.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { partitions }
+    attributes: [application_id]
+  spark.driver.code_generator.compilation.count:
+    description: Number of source code compilation operations performed by the CodeGenerator.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { compilations }
+    attributes: [application_id]
+  spark.driver.code_generator.compilation.average_time:
+    description: Average time spent during CodeGenerator source code compilation operations.
+    enabled: true
+    gauge:
+      value_type: double
+    unit: bytes
+    attributes: [application_id]
+  spark.driver.code_generator.generated_class.count:
+    description: Number of classes generated by the CodeGenerator.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { classes }
+    attributes: [application_id]
+  spark.driver.code_generator.generated_class.average_size:
+    description: Average class size of the classes generated by the CodeGenerator.
+    enabled: true
+    gauge:
+      value_type: double
+    unit: bytes
+    attributes: [application_id]
+  spark.driver.code_generator.generated_method.count:
+    description: Number of methods generated by the CodeGenerator.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { methods }
+    attributes: [application_id]
+  spark.driver.code_generator.generated_method.average_size:
+    description: Average method size of the classes generated by the CodeGenerator.
+    enabled: true
+    gauge:
+      value_type: double
+    unit: bytes
+    attributes: [application_id]
+  spark.driver.code_generator.source_code.count:
+    description: Number of source code generation operations performed by the CodeGenerator.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { operations }
+    attributes: [application_id]
+  spark.driver.code_generator.source_code.average_size:
+    description: Average size of the source code generated by a CodeGenerator code generation operation.
+    enabled: true
+    gauge:
+      value_type: double
+    unit: bytes
+    attributes: [application_id]
+  spark.driver.dag_scheduler.job.active_jobs:
+    description: Number of active jobs currently being processed by the DAGScheduler.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: { jobs }
+    attributes: [application_id]
+  spark.driver.dag_scheduler.job.all_jobs:
+    description: Number of jobs that have been submitted to the DAGScheduler.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { jobs }
+    attributes: [application_id]
+  spark.driver.dag_scheduler.stage.failed_stages:
+    description: Number of failed stages run by the DAGScheduler.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { stages }
+    attributes: [application_id]
+  spark.driver.dag_scheduler.stage.running_stages:
+    description: Number of stages the DAGScheduler is currently running.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: { stages }
+    attributes: [application_id]
+  spark.driver.dag_scheduler.stage.waiting_stages:
+    description: Number of stages waiting to be run by the DAGScheduler.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: { stages }
+    attributes: [application_id]
+  spark.driver.live_listener_bus.events_posted:
+    description: Number of events that have been posted on the LiveListenerBus.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { events }
+    attributes: [application_id]
+  spark.driver.live_listener_bus.listener_processing_time.average:
+    description: Average time taken for the LiveListenerBus to process an event posted to it.
+    enabled: true
+    gauge:
+      value_type: double
+    unit: ms
+    attributes: [application_id]
+  spark.driver.live_listener_bus.events_dropped:
+    description: Number of events that have been dropped by the LiveListenerBus.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { events }
+    attributes: [application_id]
+  spark.driver.live_listener_bus.queue_size:
+    description: Number of events currently waiting to be processed by the LiveListenerBus.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: { events }
+    attributes: [application_id]
+  spark.driver.jvm_cpu_time:
+    description: Current CPU time taken by the Spark driver.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: ns
+    attributes: [application_id]
+  spark.driver.executor_metrics.jvm_memory:
+    description: Amount of memory used by the driver JVM.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: bytes
+    attributes: [application_id, location]
+  spark.driver.executor_metrics.execution_memory:
+    description: Amount of execution memory currently used by the driver.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: bytes
+    attributes: [application_id, location]
+  spark.driver.executor_metrics.storage_memory:
+    description: Amount of storage memory currently used by the driver.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: bytes
+    attributes: [application_id, location]
+  spark.driver.executor_metrics.unified_memory:
+    description: Amount of unified memory currently used by the driver.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: bytes
+    attributes: [application_id, location]
+  spark.driver.executor_metrics.pool_memory:
+    description: Amount of pool memory currently used by the driver.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: bytes
+    attributes: [application_id, pool_memory_type]
+  spark.driver.executor_metrics.gc_count:
+    description: Number of garbage collection operations performed.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: { gc_operations }
+    attributes: [application_id, gc_severity]
+  spark.driver.executor_metrics.gc_time:
+    description: Total elapsed time during garbage collection operations.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: ms
+    attributes: [application_id, gc_severity]
