@@ -680,9 +680,9 @@ Number of pids in the container's cgroup.
 
 It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supported. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pids} | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {pids} | Sum | Int | Cumulative | false |
 
 ### container.pids.max
 
@@ -690,9 +690,9 @@ Maximum number of pids in the container's cgroup.
 
 It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supported. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pids} | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {pids} | Sum | Int | Cumulative | false |
 
 ## Resource Attributes
 
