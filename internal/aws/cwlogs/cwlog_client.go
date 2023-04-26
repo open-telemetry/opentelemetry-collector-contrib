@@ -25,10 +25,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs/handler"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs/handler"
 )
 
 const (
@@ -159,7 +158,7 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 			if client.tags != nil && len(client.tags) > 0 {
 				_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
 					LogGroupName: logGroup,
-					Tags: client.tags,
+					Tags:         client.tags,
 				})
 			} else {
 				_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
