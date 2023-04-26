@@ -18,6 +18,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -34,6 +35,10 @@ type logsReceiver struct {
 	createClient     clientProviderFunc
 	queryReceivers   []*logsQueryReceiver
 	nextConsumer     consumer.Logs
+
+	isStarted                bool
+	collectionIntervalTicker *time.Ticker
+	shutdownRequested        chan struct{}
 }
 
 func newLogsReceiver(
@@ -76,27 +81,78 @@ func (receiver *logsReceiver) createQueryReceivers() {
 }
 
 func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) error {
+	if receiver.isStarted {
+		receiver.settings.Logger.Debug("requested start, but already started, ignoring.")
+		return nil
+	}
+	receiver.settings.Logger.Debug("starting...")
+	receiver.isStarted = true
+
 	for _, queryReceiver := range receiver.queryReceivers {
 		err := queryReceiver.start()
 		if err != nil {
 			return err
 		}
 	}
-	for _, queryReceiver := range receiver.queryReceivers {
-		logs, err := queryReceiver.scrape(ctx)
-		if err != nil {
-			return err
-		}
-		receiver.nextConsumer.ConsumeLogs(ctx, logs)
-	}
+	receiver.startCollecting()
+	receiver.settings.Logger.Debug("started.")
 	return nil
 }
 
+func (receiver *logsReceiver) startCollecting() {
+	receiver.collectionIntervalTicker = time.NewTicker(receiver.config.CollectionInterval)
+
+	go func() {
+		for {
+			select {
+			case <-receiver.collectionIntervalTicker.C:
+				receiver.collect()
+			case <-receiver.shutdownRequested:
+				return
+			}
+		}
+	}()
+}
+
+func (receiver *logsReceiver) collect() {
+	logsChannel := make(chan plog.Logs)
+	for _, queryReceiver := range receiver.queryReceivers {
+		go func(queryReceiver *logsQueryReceiver) {
+			logs, err := queryReceiver.collect(context.Background())
+			if err != nil {
+				receiver.settings.Logger.Error("Error collecting logs", zap.Error(err), zap.Stringer("scraper", queryReceiver.ID()))
+			}
+			logsChannel <- logs
+		}(queryReceiver)
+	}
+
+	allLogs := plog.NewLogs()
+	for range receiver.queryReceivers {
+		logs := <-logsChannel
+		logs.ResourceLogs().MoveAndAppendTo(allLogs.ResourceLogs())
+	}
+	receiver.nextConsumer.ConsumeLogs(context.Background(), allLogs)
+}
+
 func (receiver *logsReceiver) Shutdown(ctx context.Context) error {
+	if !receiver.isStarted {
+		receiver.settings.Logger.Debug("Requested shutdown, but not started, ignoring.")
+		return nil
+	}
+
+	receiver.stopCollecting()
 	for _, queryReceiver := range receiver.queryReceivers {
 		queryReceiver.shutdown(ctx)
 	}
+
+	receiver.isStarted = false
+
 	return nil
+}
+
+func (receiver *logsReceiver) stopCollecting() {
+	receiver.collectionIntervalTicker.Stop()
+	close(receiver.shutdownRequested)
 }
 
 type logsQueryReceiver struct {
@@ -126,6 +182,10 @@ func newLogsQueryReceiver(
 	return queryReceiver
 }
 
+func (queryReceiver *logsQueryReceiver) ID() component.ID {
+	return queryReceiver.id
+}
+
 func (queryReceiver *logsQueryReceiver) start() error {
 	var err error
 	queryReceiver.db, err = queryReceiver.createDb()
@@ -137,7 +197,7 @@ func (queryReceiver *logsQueryReceiver) start() error {
 	return nil
 }
 
-func (queryReceiver *logsQueryReceiver) scrape(ctx context.Context) (plog.Logs, error) {
+func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
 	rows, err := queryReceiver.client.queryRows(ctx)
