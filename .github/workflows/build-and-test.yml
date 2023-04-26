@@ -423,9 +423,9 @@ jobs:
       - name: Test ${{ matrix.package_type }} package
         run: |
           if [[ "${{ matrix.package_type }}" = "deb" ]]; then
-              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*amd64.deb examples/tracing/otel-collector-config.yml
+              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*amd64.deb examples/demo/otel-collector-config.yaml
           else
-              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/tracing/otel-collector-config.yml
+              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/demo/otel-collector-config.yaml
           fi
       - name: Upload Packages
         uses: actions/upload-artifact@v3

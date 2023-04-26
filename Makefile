@@ -310,7 +310,7 @@ otel-from-lib:
 
 .PHONY: build-examples
 build-examples:
-	docker-compose -f examples/tracing/docker-compose.yml build
+	docker-compose -f examples/demo/docker-compose.yaml build
 	docker-compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
 .PHONY: deb-rpm-package
