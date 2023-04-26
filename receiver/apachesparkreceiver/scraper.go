@@ -28,6 +28,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 )
 
 var (
@@ -62,45 +63,73 @@ func (s *sparkScraper) start(_ context.Context, host component.Host) (err error)
 
 func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
-	fmt.Println(now)
 	var scrapeErrors scrapererror.ScrapeErrors
 
 	if s.client == nil {
 		return pmetric.NewMetrics(), errClientNotInit
 	}
 
+	// call applications endpoint
+	// not getting app name for now, just ids
+	appIds, err := s.client.GetApplicationIDs()
+	if err != nil {
+		scrapeErrors.AddPartial(1, err)
+		s.logger.Warn("Failed to scrape application ids", zap.Error(err))
+	}
+
 	// get stats from the 'metrics' endpoint
-	clusterStats, err := s.client.GetStats("/metrics/json")
+	clusterStats, err := s.client.GetClusterStats()
 	if err != nil {
 		scrapeErrors.AddPartial(1, err)
 		s.logger.Warn("Failed to scrape cluster stats", zap.Error(err))
 	}
-	fmt.Println(clusterStats) // print statements keep vscode from complaining about stats not being used
 
-	// call applications endpoint
-	applicationStats, err := s.client.GetStats("/api/v1/applications")
-	if err != nil {
-		scrapeErrors.AddPartial(1, err)
-		s.logger.Warn("Failed to scrape application stats", zap.Error(err))
+	for _, appID := range appIds {
+		s.collectCluster(clusterStats, now, appID)
 	}
-	fmt.Println(applicationStats)
-	// determine application ids
 
 	// for each application id, get stats from stages & executors endpoints
-	// stageStats, err := s.client.GetStats("/api/v1/applications/APP_ID_HERE/stages")
-	// if err != nil {
-	// 	scrapeErrors.AddPartial(1, err)
-	// 	s.logger.Warn("Failed to scrape stage stats", zap.Error(err))
-	// }
-	// fmt.Println(stageStats)
+	for _, appID := range appIds {
 
-	// executorStats, err := s.client.GetStats("/api/v1/applications/APP_ID_HERE/executors")
-	// if err != nil {
-	// 	scrapeErrors.AddPartial(1, err)
-	// 	s.logger.Warn("Failed to scrape executor stats", zap.Error(err))
-	// }
-	// fmt.Println(executorStats)
-	s.mb.Emit()
+		stageStats, err := s.client.GetStageStats(appID)
+		if err != nil {
+			scrapeErrors.AddPartial(1, err)
+			s.logger.Warn("Failed to scrape stage stats", zap.Error(err))
+		}
+		s.collectStage(*stageStats, now, appID)
 
-	return md, nil
+		executorStats, err := s.client.GetExecutorStats(appID)
+		if err != nil {
+			scrapeErrors.AddPartial(1, err)
+			s.logger.Warn("Failed to scrape executor stats", zap.Error(err))
+		}
+		s.collectExecutor(*executorStats, now, appID)
+
+		jobStats, err := s.client.GetJobStats(appID)
+		if err != nil {
+			scrapeErrors.AddPartial(1, err)
+			s.logger.Warn("Failed to scrape job stats", zap.Error(err))
+		}
+		s.collectJob(*jobStats, now, appID)
+	}
+
+	return s.mb.Emit(), scrapeErrors.Combine()
+}
+
+func (s *sparkScraper) collectCluster(clusterStats *models.ClusterProperties, now pcommon.Timestamp, appID string) {
+	key := fmt.Sprintf("%s.driver.BlockManager.memory.offHeapMemUsed_MB", appID)
+	s.mb.RecordSparkDriverBlockManagerMemoryUsedDataPoint(now, int64(clusterStats.Gauges[key].Value), appID, metadata.AttributeLocationOffHeap)
+	s.mb.RecordSparkDriverBlockManagerMemoryUsedDataPoint(now, int64(clusterStats.Gauges[key].Value), appID, metadata.AttributeLocationOnHeap)
+}
+
+func (s *sparkScraper) collectStage(stageStats models.Stages, now pcommon.Timestamp, appID string) {
+	s.mb.RecordSparkStageExecutorRunTimeDataPoint(now, int64(stageStats[0].ExecutorRunTime), appID)
+}
+
+func (s *sparkScraper) collectExecutor(executorStats models.Executors, now pcommon.Timestamp, appID string) {
+	s.mb.RecordSparkExecutorMemoryUsedDataPoint(now, int64(executorStats[0].MemoryUsed), appID)
+}
+
+func (s *sparkScraper) collectJob(jobStats models.Jobs, now pcommon.Timestamp, appID string) {
+	s.mb.RecordSparkJobActiveTasksDataPoint(now, int64(jobStats[0].NumActiveTasks), appID)
 }

@@ -14,17 +14,13 @@
 
 package models // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 
-// ClusterMetrics represents the top level json returned by the /metrics/json endpoint
-type ClusterMetrics struct {
-	Items []ClusterProperties `json:"items"`
-}
-
+// ClusterProperties represents the top level json returned by the /metrics/json endpoint
 type ClusterProperties struct {
-	Version    string      `json:"version"`
-	Gauges     []Gauge     `json:"gauges"`
-	Counters   []Counter   `json:"counters"`
-	Histograms []Histogram `json:"histograms"`
-	Timers     []Timer     `json:"timers"`
+	Version    string               `json:"version"`
+	Gauges     map[string]Gauge     `json:"gauges"`
+	Counters   map[string]Counter   `json:"counters"`
+	Histograms map[string]Histogram `json:"histograms"`
+	Timers     map[string]Timer     `json:"timers"`
 }
 
 type Gauge struct {
