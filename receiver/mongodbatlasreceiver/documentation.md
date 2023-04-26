@@ -140,9 +140,9 @@ Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USE
 | ---- | ----------- | ------ |
 | disk_status | Disk measurement type | Str: ``free``, ``used`` |
 
-### mongodbatlas.disk.partition.utilization.average
+### mongodbatlas.disk.partition.usage.average
 
-Disk partition utilization (%)
+Disk partition usage (%)
 
 Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_SPACE_PERCENT_USED
 
@@ -156,9 +156,9 @@ Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_S
 | ---- | ----------- | ------ |
 | disk_status | Disk measurement type | Str: ``free``, ``used`` |
 
-### mongodbatlas.disk.partition.utilization.max
+### mongodbatlas.disk.partition.usage.max
 
-Disk partition utilization (%)
+Disk partition usage (%)
 
 Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PARTITION_SPACE_PERCENT_FREE
 
@@ -171,6 +171,26 @@ Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PAR
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | disk_status | Disk measurement type | Str: ``free``, ``used`` |
+
+### mongodbatlas.disk.partition.utilization.average
+
+The maximum percentage of time during which requests are being issued to and serviced by the partition.
+
+MongoDB Metrics DISK_PARTITION_UTILIZATION
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### mongodbatlas.disk.partition.utilization.max
+
+The percentage of time during which requests are being issued to and serviced by the partition.
+
+MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 ### mongodbatlas.process.asserts
 

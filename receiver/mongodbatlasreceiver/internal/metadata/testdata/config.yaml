@@ -17,6 +17,10 @@ all_set:
       enabled: true
     mongodbatlas.disk.partition.space.max:
       enabled: true
+    mongodbatlas.disk.partition.usage.average:
+      enabled: true
+    mongodbatlas.disk.partition.usage.max:
+      enabled: true
     mongodbatlas.disk.partition.utilization.average:
       enabled: true
     mongodbatlas.disk.partition.utilization.max:
@@ -161,6 +165,10 @@ none_set:
     mongodbatlas.disk.partition.space.average:
       enabled: false
     mongodbatlas.disk.partition.space.max:
+      enabled: false
+    mongodbatlas.disk.partition.usage.average:
+      enabled: false
+    mongodbatlas.disk.partition.usage.max:
       enabled: false
     mongodbatlas.disk.partition.utilization.average:
       enabled: false

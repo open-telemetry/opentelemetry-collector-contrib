@@ -605,20 +605,34 @@ metrics:
     attributes: [disk_direction]
     gauge:
       value_type: double
-  mongodbatlas.disk.partition.utilization.max:
+  mongodbatlas.disk.partition.usage.max:
     enabled: true
-    description: Disk partition utilization (%)
+    description: Disk partition usage (%)
     extended_documentation: Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PARTITION_SPACE_PERCENT_FREE
     unit: 1
     attributes: [disk_status]
     gauge:
       value_type: double
-  mongodbatlas.disk.partition.utilization.average:
+  mongodbatlas.disk.partition.usage.average:
     enabled: true
-    description: Disk partition utilization (%)
+    description: Disk partition usage (%)
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_SPACE_PERCENT_USED
     unit: 1
     attributes: [disk_status]
+    gauge:
+      value_type: double
+  mongodbatlas.disk.partition.utilization.max:
+    enabled: true
+    description: The percentage of time during which requests are being issued to and serviced by the partition.
+    extended_documentation: MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
+    unit: 1
+    gauge:
+      value_type: double
+  mongodbatlas.disk.partition.utilization.average:
+    enabled: true
+    description: The maximum percentage of time during which requests are being issued to and serviced by the partition.
+    extended_documentation: MongoDB Metrics DISK_PARTITION_UTILIZATION
+    unit: 1
     gauge:
       value_type: double
   mongodbatlas.disk.partition.latency.max:
