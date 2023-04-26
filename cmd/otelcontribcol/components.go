@@ -20,6 +20,7 @@ import (
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 	countconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
+	servicegraphconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 	spanmetricsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 	alibabacloudlogserviceexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 	awscloudwatchlogsexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
@@ -29,6 +30,7 @@ import (
 	azuredataexplorerexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 	azuremonitorexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	carbonexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
+	cassandraexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter"
 	clickhouseexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 	coralogixexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 	datadogexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
@@ -50,6 +52,7 @@ import (
 	lokiexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	mezmoexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	opencensusexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	parquetexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	prometheusexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	prometheusremotewriteexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	pulsarexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
@@ -71,6 +74,7 @@ import (
 	httpforwarder "github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	jaegerremotesampling "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	oauth2clientauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
+	ecstaskobserver "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	hostobserver "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	k8sobserver "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	oidcauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
@@ -105,9 +109,12 @@ import (
 	awsecscontainermetricsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	awsfirehosereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
 	awsxrayreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
+	azureblobreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 	azureeventhubreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
+	azuremonitorreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 	bigipreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver"
 	carbonreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
+	chronyreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	cloudfoundryreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 	collectdreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	couchdbreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
@@ -135,6 +142,7 @@ import (
 	kafkametricsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	kafkareceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 	kubeletstatsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
+	lokireceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver"
 	memcachedreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
 	mongodbatlasreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	mongodbreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
@@ -189,6 +197,7 @@ func components() (otelcol.Factories, error) {
 		httpforwarder.NewFactory(),
 		jaegerremotesampling.NewFactory(),
 		oauth2clientauthextension.NewFactory(),
+		ecstaskobserver.NewFactory(),
 		hostobserver.NewFactory(),
 		k8sobserver.NewFactory(),
 		oidcauthextension.NewFactory(),
@@ -210,9 +219,12 @@ func components() (otelcol.Factories, error) {
 		awsecscontainermetricsreceiver.NewFactory(),
 		awsfirehosereceiver.NewFactory(),
 		awsxrayreceiver.NewFactory(),
+		azureblobreceiver.NewFactory(),
 		azureeventhubreceiver.NewFactory(),
+		azuremonitorreceiver.NewFactory(),
 		bigipreceiver.NewFactory(),
 		carbonreceiver.NewFactory(),
+		chronyreceiver.NewFactory(),
 		cloudfoundryreceiver.NewFactory(),
 		collectdreceiver.NewFactory(),
 		couchdbreceiver.NewFactory(),
@@ -240,6 +252,7 @@ func components() (otelcol.Factories, error) {
 		kafkametricsreceiver.NewFactory(),
 		kafkareceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
+		lokireceiver.NewFactory(),
 		memcachedreceiver.NewFactory(),
 		mongodbatlasreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
@@ -294,6 +307,7 @@ func components() (otelcol.Factories, error) {
 		azuremonitorexporter.NewFactory(),
 		carbonexporter.NewFactory(),
 		clickhouseexporter.NewFactory(),
+		cassandraexporter.NewFactory(),
 		coralogixexporter.NewFactory(),
 		datadogexporter.NewFactory(),
 		dynatraceexporter.NewFactory(),
@@ -314,6 +328,7 @@ func components() (otelcol.Factories, error) {
 		lokiexporter.NewFactory(),
 		mezmoexporter.NewFactory(),
 		opencensusexporter.NewFactory(),
+		parquetexporter.NewFactory(),
 		prometheusexporter.NewFactory(),
 		prometheusremotewriteexporter.NewFactory(),
 		pulsarexporter.NewFactory(),
@@ -362,6 +377,7 @@ func components() (otelcol.Factories, error) {
 	factories.Connectors, err = connector.MakeFactoryMap(
 		forwardconnector.NewFactory(),
 		countconnector.NewFactory(),
+		servicegraphconnector.NewFactory(),
 		spanmetricsconnector.NewFactory(),
 	)
 	if err != nil {

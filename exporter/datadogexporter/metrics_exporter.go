@@ -65,8 +65,8 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
 	}
 
-	if cfg.Metrics.HistConfig.SendCountSum {
-		options = append(options, otlpmetrics.WithCountSumMetrics())
+	if cfg.Metrics.HistConfig.SendAggregations {
+		options = append(options, otlpmetrics.WithHistogramAggregations())
 	}
 
 	if cfg.Metrics.SummaryConfig.Mode == SummaryModeGauges {
@@ -92,10 +92,6 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 	}
 
 	options = append(options, otlpmetrics.WithNumberMode(numberMode))
-
-	if hostmetadata.HostnamePreviewFeatureGate.IsEnabled() {
-		options = append(options, otlpmetrics.WithPreviewHostnameFromAttributes())
-	}
 
 	return otlpmetrics.NewTranslator(logger, options...)
 }

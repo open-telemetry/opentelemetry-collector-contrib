@@ -1,0 +1,2382 @@
+resourceMetrics:
+  - resource: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: Average CPU Load over 15 minutes.
+            gauge:
+              dataPoints:
+                - asDouble: 3.88671875
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983792092000"
+            name: system.cpu.load_average.15m
+            unit: "1"
+          - description: Average CPU Load over 1 minute.
+            gauge:
+              dataPoints:
+                - asDouble: 8.388671875
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983792092000"
+            name: system.cpu.load_average.1m
+            unit: "1"
+          - description: Average CPU Load over 5 minutes.
+            gauge:
+              dataPoints:
+                - asDouble: 5.22314453125
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983792092000"
+            name: system.cpu.load_average.5m
+            unit: "1"
+        scope:
+          name: otelcol/hostmetricsreceiver/load
+          version: v0.55.0-341-gf787ff695
+  - resource: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: Bytes of memory in use.
+            name: system.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "11588075520"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983792184000"
+                - asInt: "14974976"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983792184000"
+                - asInt: "5576818688"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: inactive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983792184000"
+            unit: By
+        scope:
+          name: otelcol/hostmetricsreceiver/memory
+          version: v0.55.0-341-gf787ff695
+  - resource: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: The number of connections.
+            name: system.network.connections
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: protocol
+                      value:
+                        stringValue: tcp
+                    - key: state
+                      value:
+                        stringValue: SYN_SENT
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983809515000"
+                - asInt: "0"
+                  attributes:
+                    - key: protocol
+                      value:
+                        stringValue: tcp
+                    - key: state
+                      value:
+                        stringValue: SYN_RECEIVED
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983809515000"
+                - asInt: "40"
+                  attributes:
+                    - key: protocol
+                      value:
+                        stringValue: tcp
+                    - key: state
+                      value:
+                        stringValue: ESTABLISHED
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983809515000"
+                - asInt: "0"
+                  attributes:
+                    - key: protocol
+                      value:
+                        stringValue: tcp
+                    - key: state
+                      value:
+                        stringValue: FIN_WAIT_2
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983809515000"
+                - asInt: "0"
+                  attributes:
+                    - key: protocol
+                      value:
+                        stringValue: tcp
+                    - key: state
+                      value:
+                        stringValue: LAST_ACK
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983809515000"
+                - asInt: "7"
+                  attributes:
+                    - key: protocol
+                      value:
+                        stringValue: tcp
+                    - key: state
+                      value:
+                        stringValue: LISTEN
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983809515000"
+                - asInt: "0"
+                  attributes:
+                    - key: protocol
+                      value:
+                        stringValue: tcp
+                    - key: state
+                      value:
+                        stringValue: FIN_WAIT_1
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983809515000"
+                - asInt: "0"
+                  attributes:
+                    - key: protocol
+                      value:
+                        stringValue: tcp
+                    - key: state
+                      value:
+                        stringValue: TIME_WAIT
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983809515000"
+                - asInt: "1"
+                  attributes:
+                    - key: protocol
+                      value:
+                        stringValue: tcp
+                    - key: state
+                      value:
+                        stringValue: CLOSE_WAIT
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983809515000"
+                - asInt: "9"
+                  attributes:
+                    - key: protocol
+                      value:
+                        stringValue: tcp
+                    - key: state
+                      value:
+                        stringValue: CLOSED
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983809515000"
+                - asInt: "0"
+                  attributes:
+                    - key: protocol
+                      value:
+                        stringValue: tcp
+                    - key: state
+                      value:
+                        stringValue: CLOSING
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983809515000"
+                - asInt: "0"
+                  attributes:
+                    - key: protocol
+                      value:
+                        stringValue: tcp
+                    - key: state
+                      value:
+                        stringValue: DELETE
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983809515000"
+            unit: '{connections}'
+          - description: The number of packets dropped. (Deprecated)
+            name: system.network.dropped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: lo0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: lo0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: gif0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: gif0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: stf0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: stf0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "265"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en5
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en5
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: ap1
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: ap1
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "92"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: awdl0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: awdl0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: bridge0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: bridge0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: llw0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: llw0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en1
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en1
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en2
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en2
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en3
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en3
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en4
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en4
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun1
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun1
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun2
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun2
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun3
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun3
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun4
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun4
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+              isMonotonic: true
+            unit: '{packets}'
+          - description: The number of errors encountered. (Deprecated)
+            name: system.network.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: lo0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: lo0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: gif0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: gif0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: stf0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: stf0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "1713"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en5
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en5
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: ap1
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: ap1
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: awdl0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: awdl0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: bridge0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: bridge0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: llw0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: llw0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en1
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en1
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en2
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en2
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en3
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en3
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en4
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en4
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun1
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun1
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun2
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun2
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun3
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun3
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun4
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun4
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: The number of bytes transmitted and received. (Deprecated)
+            name: system.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8847154350"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: lo0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "8847154350"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: lo0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: gif0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: gif0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: stf0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: stf0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "22030657"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en5
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "12925751"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en5
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: ap1
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: ap1
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "35633750873"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "51187707011"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "634503"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: awdl0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: awdl0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: bridge0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: bridge0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: llw0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: llw0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en1
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en1
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en2
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en2
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en3
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en3
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en4
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en4
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "57764"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun1
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun1
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "57764"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun2
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun2
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "57764"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun3
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun3
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "1710037831"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun4
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "6121600440"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun4
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+              isMonotonic: true
+            unit: By
+          - description: The number of packets transferred. (Deprecated)
+            name: system.network.packets
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9586731"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: lo0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "9586731"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: lo0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: gif0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: gif0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: stf0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: stf0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "94253"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en5
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "96401"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en5
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: ap1
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: ap1
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "34071280"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "57181061"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "5638"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: awdl0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: awdl0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: bridge0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: bridge0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: llw0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: llw0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en1
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en1
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en2
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en2
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en3
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en3
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en4
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: en4
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "289"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun1
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun1
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "289"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun2
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun2
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "289"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun3
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun3
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "2499786"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun4
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+                - asInt: "9422600"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: utun4
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943983799413000"
+              isMonotonic: true
+            unit: '{packets}'
+        scope:
+          name: otelcol/hostmetricsreceiver/network
+          version: v0.55.0-341-gf787ff695
+  - resource: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: The number of page faults.
+            name: system.paging.faults
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: major
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125693000"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: minor
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125693000"
+              isMonotonic: true
+            unit: '{faults}'
+          - description: The number of paging operations.
+            name: system.paging.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: page_in
+                    - key: type
+                      value:
+                        stringValue: major
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125693000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: page_out
+                    - key: type
+                      value:
+                        stringValue: major
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125693000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: page_in
+                    - key: type
+                      value:
+                        stringValue: minor
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125693000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: page_out
+                    - key: type
+                      value:
+                        stringValue: minor
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125693000"
+              isMonotonic: true
+            unit: '{operations}'
+          - description: Swap (unix) or pagefile (windows) usage.
+            name: system.paging.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: ""
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984119168000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: ""
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984119168000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: ""
+                    - key: state
+                      value:
+                        stringValue: cached
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984119168000"
+            unit: By
+        scope:
+          name: otelcol/hostmetricsreceiver/paging
+          version: v0.55.0-341-gf787ff695
+  - resource: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: FileSystem inodes used.
+            name: system.filesystem.inodes.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "501138"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "3048528120"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "664"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: type
+                      value:
+                        stringValue: devfs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: type
+                      value:
+                        stringValue: devfs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "5"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "3048528120"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "1796"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s3
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "3048528120"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s3
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "17"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "3048528120"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "1661749"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "3048528120"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: type
+                      value:
+                        stringValue: autofs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: type
+                      value:
+                        stringValue: autofs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+            unit: '{inodes}'
+          - description: Filesystem bytes used.
+            name: system.filesystem.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "187793895424"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "312169279488"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "196096"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: type
+                      value:
+                        stringValue: devfs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: type
+                      value:
+                        stringValue: devfs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: type
+                      value:
+                        stringValue: devfs
+                    - key: state
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "187793895424"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "312169279488"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "187793895424"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s3
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "312169279488"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s3
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s3
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "187793895424"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "312169279488"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "187793895424"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "312169279488"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: type
+                      value:
+                        stringValue: apfs
+                    - key: state
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: type
+                      value:
+                        stringValue: autofs
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: type
+                      value:
+                        stringValue: autofs
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: type
+                      value:
+                        stringValue: autofs
+                    - key: state
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1659645944000000000"
+                  timeUnixNano: "1660943984125836000"
+            unit: By
+        scope:
+          name: otelcol/hostmetricsreceiver/filesystem
+          version: v0.55.0-341-gf787ff695

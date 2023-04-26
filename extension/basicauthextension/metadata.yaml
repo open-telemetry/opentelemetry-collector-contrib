@@ -1,7 +1,6 @@
-name: basicauthextension
+type: basicauthextension
 
 status:
-  type: extension
+  class: extension
   stability: beta
-  pipelines: [logs, metrics, traces]
   distributions: [contrib]

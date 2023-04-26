@@ -1,0 +1,6 @@
+type: dockerobserver
+
+status:
+  class: extension
+  stability: beta
+  distributions: [contrib]

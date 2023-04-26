@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubele
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.74.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.74.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.75.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.74.0
+	go.opentelemetry.io/collector v0.75.1-0.20230424163446-8e33ded10872
 	go.uber.org/zap v1.24.0
 	k8s.io/client-go v0.26.3
 )
@@ -14,6 +14,7 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
@@ -36,12 +37,12 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	go.uber.org/multierr v1.10.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/oauth2 v0.6.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/term v0.6.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/oauth2 v0.7.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/term v0.7.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect

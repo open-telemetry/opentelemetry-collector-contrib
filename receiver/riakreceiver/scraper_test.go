@@ -138,7 +138,7 @@ func TestScaperScrape(t *testing.T) {
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "expected_disabled.json")
+				goldenPath := filepath.Join("testdata", "scraper", "expected_disabled.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -183,7 +183,7 @@ func TestScaperScrape(t *testing.T) {
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "expected.json")
+				goldenPath := filepath.Join("testdata", "scraper", "expected.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics

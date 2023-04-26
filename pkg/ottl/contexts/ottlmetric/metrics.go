@@ -23,12 +23,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
-var _ ottlcommon.ResourceContext = TransformContext{}
-var _ ottlcommon.InstrumentationScopeContext = TransformContext{}
-var _ ottlcommon.MetricContext = TransformContext{}
+var _ internal.ResourceContext = TransformContext{}
+var _ internal.InstrumentationScopeContext = TransformContext{}
+var _ internal.MetricContext = TransformContext{}
 
 type TransformContext struct {
 	metric               pmetric.Metric
@@ -96,7 +97,7 @@ func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySett
 	return s
 }
 
-var symbolTable = ottlcommon.MetricSymbolTable
+var symbolTable = internal.MetricSymbolTable
 
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
@@ -124,11 +125,11 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 		}
 		return accessCacheKey(mapKey), nil
 	case "resource":
-		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
+		return internal.ResourcePathGetSetter[TransformContext](path[1:])
 	case "instrumentation_scope":
-		return ottlcommon.ScopePathGetSetter[TransformContext](path[1:])
+		return internal.ScopePathGetSetter[TransformContext](path[1:])
 	default:
-		return ottlcommon.MetricPathGetSetter[TransformContext](path)
+		return internal.MetricPathGetSetter[TransformContext](path)
 	}
 }
 

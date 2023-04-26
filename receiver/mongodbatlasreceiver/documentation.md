@@ -972,3 +972,4 @@ Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED
 | mongodb_atlas.process.type_name | Process type | Any Str | true |
 | mongodb_atlas.project.id | Project ID | Any Str | true |
 | mongodb_atlas.project.name | Project Name | Any Str | true |
+| mongodb_atlas.user.alias | User-friendly hostname of the cluster node | Any Str | false |

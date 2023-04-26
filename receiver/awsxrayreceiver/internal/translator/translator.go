@@ -24,6 +24,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 )
 
 const (
@@ -35,7 +36,7 @@ const (
 // `toPdata` in this receiver to a common package later
 
 // ToTraces converts X-Ray segment (and its subsegments) to an OT ResourceSpans.
-func ToTraces(rawSeg []byte) (ptrace.Traces, int, error) {
+func ToTraces(rawSeg []byte, recorder telemetry.Recorder) (ptrace.Traces, int, error) {
 	var seg awsxray.Segment
 	err := json.Unmarshal(rawSeg, &seg)
 	if err != nil {
@@ -44,9 +45,11 @@ func ToTraces(rawSeg []byte) (ptrace.Traces, int, error) {
 		return ptrace.Traces{}, 1, err
 	}
 	count := totalSegmentsCount(seg)
+	recorder.RecordSegmentsReceived(count)
 
 	err = seg.Validate()
 	if err != nil {
+		recorder.RecordSegmentsRejected(count)
 		return ptrace.Traces{}, count, err
 	}
 
@@ -75,6 +78,7 @@ func ToTraces(rawSeg []byte) (ptrace.Traces, int, error) {
 	// the embedded subsegment to generate independent child spans.
 	_, err = segToSpans(seg, seg.TraceID, nil, spans)
 	if err != nil {
+		recorder.RecordSegmentsRejected(count)
 		return ptrace.Traces{}, count, err
 	}
 

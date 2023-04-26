@@ -25,11 +25,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
-var _ ottlcommon.ResourceContext = TransformContext{}
-var _ ottlcommon.InstrumentationScopeContext = TransformContext{}
+var _ internal.ResourceContext = TransformContext{}
+var _ internal.InstrumentationScopeContext = TransformContext{}
 
 type TransformContext struct {
 	logRecord            plog.LogRecord
@@ -151,9 +152,9 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 		}
 		return accessCacheKey(mapKey), nil
 	case "resource":
-		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
+		return internal.ResourcePathGetSetter[TransformContext](path[1:])
 	case "instrumentation_scope":
-		return ottlcommon.ScopePathGetSetter[TransformContext](path[1:])
+		return internal.ScopePathGetSetter[TransformContext](path[1:])
 	case "time_unix_nano":
 		return accessTimeUnixNano(), nil
 	case "observed_time_unix_nano":
@@ -363,7 +364,7 @@ func accessStringTraceID() ottl.StandardGetSetter[TransformContext] {
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
 			if str, ok := val.(string); ok {
-				id, err := ottlcommon.ParseTraceID(str)
+				id, err := internal.ParseTraceID(str)
 				if err != nil {
 					return err
 				}
@@ -396,7 +397,7 @@ func accessStringSpanID() ottl.StandardGetSetter[TransformContext] {
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
 			if str, ok := val.(string); ok {
-				id, err := ottlcommon.ParseSpanID(str)
+				id, err := internal.ParseSpanID(str)
 				if err != nil {
 					return err
 				}

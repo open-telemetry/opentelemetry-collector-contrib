@@ -1,4 +1,4 @@
-name: zookeeperreceiver
+type: zookeeperreceiver
 
 resource_attributes:
   server.state:

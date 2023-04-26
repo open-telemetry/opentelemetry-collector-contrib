@@ -99,6 +99,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.StatefulSetName = true
 			case conventions.AttributeK8SStatefulSetUID:
 				p.rules.StatefulSetUID = true
+			case conventions.AttributeK8SContainerName:
+				p.rules.ContainerName = true
 			case conventions.AttributeK8SJobName:
 				p.rules.JobName = true
 			case conventions.AttributeK8SJobUID:

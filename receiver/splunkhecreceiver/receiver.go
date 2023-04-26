@@ -43,6 +43,7 @@ const (
 	defaultServerTimeout = 20 * time.Second
 
 	responseOK                        = "OK"
+	responseHecHealthy                = `{"text": "HEC is healthy", "code": 17}`
 	responseInvalidMethod             = `Only "POST" method is supported`
 	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
 	responseInvalidDataFormat         = `{"text":"Invalid data format","code":6}`
@@ -203,6 +204,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 
 	mx := mux.NewRouter()
 	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
+	mx.NewRoute().Path(r.config.HealthPath + "/1.0").HandlerFunc(r.handleHealthReq).Methods("GET")
 	if r.logsConsumer != nil {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}
@@ -458,7 +460,9 @@ func (r *splunkReceiver) failRequest(
 }
 
 func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
-	writer.WriteHeader(200)
+	writer.Header().Add("Content-Type", "application/json")
+	writer.WriteHeader(http.StatusOK)
+	_, _ = writer.Write([]byte(responseHecHealthy))
 }
 
 func initJSONResponse(s string) []byte {

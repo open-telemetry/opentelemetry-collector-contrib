@@ -62,6 +62,10 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
+
+			expected := factory.CreateDefaultConfig().(*Config)
+
+			require.Equal(t, expected, cfg)
 		})
 	}
 }

@@ -16,6 +16,7 @@ package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 )
 
 // Config defines configuration for AWS X-Ray exporter.
@@ -32,4 +33,6 @@ type Config struct {
 	IndexAllAttributes bool `mapstructure:"index_all_attributes"`
 
 	LogGroupNames []string `mapstructure:"aws_log_groups"`
+	// TelemetryConfig contains the options for telemetry collection.
+	TelemetryConfig telemetry.Config `mapstructure:"telemetry,omitempty"`
 }

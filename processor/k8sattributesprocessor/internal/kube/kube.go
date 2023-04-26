@@ -120,14 +120,23 @@ type Pod struct {
 	Namespace   string
 	HostNetwork bool
 
-	// Containers is a map of container name to Container struct.
-	Containers map[string]*Container
+	// Containers specifies all containers in this pod.
+	Containers PodContainers
 
 	DeletedAt time.Time
 }
 
+// PodContainers specifies a list of pod containers. It is not safe for concurrent use.
+type PodContainers struct {
+	// ByID specifies all containers in a pod by container ID.
+	ByID map[string]*Container
+	// ByName specifies all containers in a pod by container name (k8s.container.name).
+	ByName map[string]*Container
+}
+
 // Container stores resource attributes for a specific container defined by k8s pod spec.
 type Container struct {
+	Name      string
 	ImageName string
 	ImageTag  string
 
@@ -200,6 +209,7 @@ type ExtractionRules struct {
 	StatefulSetName    bool
 	Node               bool
 	StartTime          bool
+	ContainerName      bool
 	ContainerID        bool
 	ContainerImageName bool
 	ContainerImageTag  bool
