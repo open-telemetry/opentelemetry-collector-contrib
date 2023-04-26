@@ -82,7 +82,7 @@ type MetricCfg struct {
 	Description      string            `mapstructure:"description"`
 	StaticAttributes map[string]string `mapstructure:"static_attributes"`
 	StartTsColumn    string            `mapstructure:"start_ts_column"`
-	EndTsColumn      string            `mapstructure:"end_ts_column"`
+	TsColumn         string            `mapstructure:"ts_column"`
 }
 
 func (c MetricCfg) Validate() error {

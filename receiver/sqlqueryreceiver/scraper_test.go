@@ -411,13 +411,13 @@ func TestScraper_FakeDB_MultiRows_Error(t *testing.T) {
 	assert.True(t, scrapererror.IsPartialScrapeError(err))
 }
 
-func TestScraper_StartAndEndTS(t *testing.T) {
+func TestScraper_StartAndTSColumn(t *testing.T) {
 	client := &fakeDBClient{
 		stringMaps: [][]stringMap{{
 			{
 				"mycol":   "42",
 				"StartTs": "1682417791",
-				"EndTs":   "1682418264",
+				"Ts":      "1682418264",
 			},
 		}},
 	}
@@ -427,7 +427,7 @@ func TestScraper_StartAndEndTS(t *testing.T) {
 			Metrics: []MetricCfg{{
 				MetricName:    "my.name",
 				ValueColumn:   "mycol",
-				EndTsColumn:   "EndTs",
+				TsColumn:      "Ts",
 				StartTsColumn: "StartTs",
 				DataType:      MetricTypeSum,
 				Aggregation:   MetricAggregationCumulative,
@@ -441,7 +441,7 @@ func TestScraper_StartAndEndTS(t *testing.T) {
 	assert.Equal(t, pcommon.Timestamp(1682418264), metric.Sum().DataPoints().At(0).Timestamp())
 }
 
-func TestScraper_StartAndEndTS_ErrorOnColumnNotFound(t *testing.T) {
+func TestScraper_StartAndTS_ErrorOnColumnNotFound(t *testing.T) {
 	client := &fakeDBClient{
 		stringMaps: [][]stringMap{{
 			{
@@ -456,7 +456,7 @@ func TestScraper_StartAndEndTS_ErrorOnColumnNotFound(t *testing.T) {
 			Metrics: []MetricCfg{{
 				MetricName:    "my.name",
 				ValueColumn:   "mycol",
-				EndTsColumn:   "EndTs",
+				TsColumn:      "Ts",
 				StartTsColumn: "StartTs",
 				DataType:      MetricTypeSum,
 				Aggregation:   MetricAggregationCumulative,
@@ -467,7 +467,7 @@ func TestScraper_StartAndEndTS_ErrorOnColumnNotFound(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestScraper_StartAndEndTS_ErrorOnParse(t *testing.T) {
+func TestScraper_StartAndTS_ErrorOnParse(t *testing.T) {
 	client := &fakeDBClient{
 		stringMaps: [][]stringMap{{
 			{
