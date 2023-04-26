@@ -141,7 +141,7 @@ func BenchmarkReadLine(b *testing.B) {
 	var operatorCfgs []operator.Config
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
-	emitter := NewLogEmitter(zap.NewNop().Sugar())
+	emitter := NewLogEmitter(zap.NewNop().Sugar(), NewDefaultBatchConfig())
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
@@ -206,7 +206,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 	var operatorCfgs []operator.Config
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
-	emitter := NewLogEmitter(zap.NewNop().Sugar())
+	emitter := NewLogEmitter(zap.NewNop().Sugar(), NewDefaultBatchConfig())
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()

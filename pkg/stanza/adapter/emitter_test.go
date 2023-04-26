@@ -26,7 +26,7 @@ import (
 )
 
 func TestLogEmitter(t *testing.T) {
-	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
+	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar(), NewDefaultBatchConfig())
 
 	require.NoError(t, emitter.Start(nil))
 
@@ -49,11 +49,11 @@ func TestLogEmitter(t *testing.T) {
 }
 
 func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
-	const (
-		maxBatchSize = 100
-		timeout      = time.Second
-	)
-	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
+	const maxBatchSize = 10
+	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar(), BatchConfig{
+		MaxBatchSize: maxBatchSize,
+		Timeout:      time.Second,
+	})
 
 	require.NoError(t, emitter.Start(nil))
 	defer func() {
@@ -69,7 +69,7 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 		}
 	}()
 
-	timeoutChan := time.After(timeout)
+	timeoutChan := time.After(500 * time.Millisecond)
 
 	select {
 	case recv := <-emitter.logChan:
@@ -80,30 +80,25 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 }
 
 func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
-	const (
-		flushInterval = 100 * time.Millisecond
-		timeout       = time.Second
-	)
-	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
+	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar(), BatchConfig{
+		MaxBatchSize: 100,
+		Timeout:      10 * time.Millisecond,
+	})
 
 	require.NoError(t, emitter.Start(nil))
 	defer func() {
 		require.NoError(t, emitter.Stop())
 	}()
 
-	entry := complexEntry()
-
 	go func() {
 		ctx := context.Background()
-		require.NoError(t, emitter.Process(ctx, entry))
+		require.NoError(t, emitter.Process(ctx, complexEntry()))
 	}()
-
-	timeoutChan := time.After(timeout)
 
 	select {
 	case recv := <-emitter.logChan:
 		require.Equal(t, 1, len(recv), "Should have received one entry, got %d instead", len(recv))
-	case <-timeoutChan:
+	case <-time.After(time.Millisecond * 50):
 		require.FailNow(t, "Failed to receive log entry before timeout")
 	}
 }

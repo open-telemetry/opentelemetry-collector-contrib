@@ -39,13 +39,8 @@ type LogEmitter struct {
 	flushInterval time.Duration
 }
 
-var (
-	defaultFlushInterval      = 100 * time.Millisecond
-	defaultMaxBatchSize  uint = 100
-)
-
 // NewLogEmitter creates a new receiver output
-func NewLogEmitter(logger *zap.SugaredLogger) *LogEmitter {
+func NewLogEmitter(logger *zap.SugaredLogger, bc BatchConfig) *LogEmitter {
 	return &LogEmitter{
 		OutputOperator: helper.OutputOperator{
 			BasicOperator: helper.BasicOperator{
@@ -55,9 +50,9 @@ func NewLogEmitter(logger *zap.SugaredLogger) *LogEmitter {
 			},
 		},
 		logChan:       make(chan []*entry.Entry),
-		maxBatchSize:  defaultMaxBatchSize,
-		batch:         make([]*entry.Entry, 0, defaultMaxBatchSize),
-		flushInterval: defaultFlushInterval,
+		maxBatchSize:  bc.MaxBatchSize,
+		batch:         make([]*entry.Entry, 0, bc.MaxBatchSize),
+		flushInterval: bc.Timeout,
 		cancel:        func() {},
 	}
 }

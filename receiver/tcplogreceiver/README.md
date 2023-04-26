@@ -10,17 +10,19 @@ Receives logs over TCP.
 
 ## Configuration
 
-| Field             | Default          | Description                                                                                                        |
-| ---               | ---              | ---                                                                                                                |
-| `max_log_size`    | `1MiB`           | The maximum size of a log entry to read before failing. Protects against reading large amounts of data into memory |
-| `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                                                         |
-| `tls`             | nil              | An optional `TLS` configuration (see the TLS configuration section)                                                |
-| `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes                                                       |
-| `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                                                         |
-| `add_attributes`  | false            | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes] |
-| `multiline`       |                  | A `multiline` configuration block. See below for details                                                           |
-| `encoding`        | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options               |
-| `operators`       | []               | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
+| Field                  | Default            | Description                                                                                                                                                                                                                        |
+|------------------------|--------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `max_log_size`         | `1MiB`             | The maximum size of a log entry to read before failing. Protects against reading large amounts of data into memory                                                                                                                 |
+| `listen_address`       | required           | A listen address of the form `<ip>:<port>`                                                                                                                                                                                         |
+| `tls`                  | nil                | An optional `TLS` configuration (see the TLS configuration section)                                                                                                                                                                |
+| `attributes`           | {}                 | A map of `key: value` pairs to add to the entry's attributes                                                                                                                                                                       |
+| `resource`             | {}                 | A map of `key: value` pairs to add to the entry's resource                                                                                                                                                                         |
+| `add_attributes`       | false              | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes] |
+| `multiline`            |                    | A `multiline` configuration block. See below for details                                                                                                                                                                           |
+| `encoding`             | `utf-8`            | The encoding of the file being read. See the list of supported encodings below for available options                                                                                                                               |
+| `operators`            | []                 | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details                                                                                                        |
+| `batch.max_batch_size` | `100`              | Maximum number of log records per emitted batch.                                                                                                                                                                                   |
+| `batch.timeout`        | `100 milliseconds` | Maximum duration to wait before sending out the log records batch.                                                                                                                                                                 |
 
 ### TLS Configuration
 

@@ -56,6 +56,7 @@ func TestLoadConfig(t *testing.T) {
 					}(),
 				},
 			},
+			Batch: adapter.NewDefaultBatchConfig(),
 		},
 	}, cfg)
 }

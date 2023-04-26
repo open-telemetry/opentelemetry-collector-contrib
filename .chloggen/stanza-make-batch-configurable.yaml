@@ -1,0 +1,16 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: pkg/stanza
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Make batching behavior configurable
+
+# One or more tracking issues related to the change
+issues: [21184]
+
+subtext: |
+  Expose configuration options to control the batching behavior of the stanza receivers:
+  - `batch.max_batch_size`: The maximum number of spans to batch together.
+  - `batch.timeout`: The maximum amount of time to wait before sending a batch.

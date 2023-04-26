@@ -47,6 +47,7 @@ func (f ReceiverType) CreateDefaultConfig() component.Config {
 	return &UDPLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{},
+			Batch:     adapter.NewDefaultBatchConfig(),
 		},
 		InputConfig: *udp.NewConfig(),
 	}

@@ -34,7 +34,7 @@ import (
 )
 
 func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
-	emitter := NewLogEmitter(zap.NewNop().Sugar())
+	emitter := NewLogEmitter(zap.NewNop().Sugar(), NewDefaultBatchConfig())
 
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{

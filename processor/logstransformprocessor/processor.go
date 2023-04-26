@@ -55,7 +55,7 @@ func newProcessor(config *Config, nextConsumer consumer.Logs, logger *zap.Logger
 
 	baseCfg := p.config.BaseConfig
 
-	p.emitter = adapter.NewLogEmitter(p.logger.Sugar())
+	p.emitter = adapter.NewLogEmitter(p.logger.Sugar(), adapter.NewDefaultBatchConfig())
 	pipe, err := pipeline.Config{
 		Operators:     baseCfg.Operators,
 		DefaultOutput: p.emitter,

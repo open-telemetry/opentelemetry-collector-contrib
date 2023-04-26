@@ -51,6 +51,7 @@ func (f ReceiverType) CreateDefaultConfig() component.Config {
 	return &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			Operators:      []operator.Config{},
+			Batch:          adapter.NewDefaultBatchConfig(),
 			RetryOnFailure: consumerretry.NewDefaultConfig(),
 		},
 		InputConfig: *syslog.NewConfig(),

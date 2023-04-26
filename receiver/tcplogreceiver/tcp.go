@@ -47,6 +47,7 @@ func (f ReceiverType) CreateDefaultConfig() component.Config {
 	return &TCPLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{},
+			Batch:     adapter.NewDefaultBatchConfig(),
 		},
 		InputConfig: *tcp.NewConfig(),
 	}

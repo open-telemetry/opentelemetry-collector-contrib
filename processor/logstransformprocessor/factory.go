@@ -46,6 +46,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{},
+			Batch:     adapter.NewDefaultBatchConfig(),
 		},
 	}
 }

@@ -17,6 +17,7 @@ package logstransformprocessor
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -58,6 +59,10 @@ func TestCreateProcessor(t *testing.T) {
 						return cfg
 					}(),
 				},
+			},
+			Batch: adapter.BatchConfig{
+				MaxBatchSize: 1000,
+				Timeout:      200 * time.Millisecond,
 			},
 		},
 	}

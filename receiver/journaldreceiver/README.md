@@ -24,6 +24,8 @@ Journald receiver is dependent on `journalctl` binary to be present and must be 
 | `retry_on_failure.initial_interval` | `1 second`                           | Time to wait after the first failure before retrying.                                                                                                                                                                                    |
 | `retry_on_failure.max_interval`     | `30 seconds`                         | Upper bound on retry backoff interval. Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                     |
 | `retry_on_failure.max_elapsed_time` | `5 minutes`                          | Maximum amount of time (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                            |
+| `batch.max_batch_size`              | `100`                                | Maximum number of log records per emitted batch.                                                                                                                                                                                         |
+| `batch.timeout`                     | `100 milliseconds`                   | Maximum duration to wait before sending out the log records batch.                                                                                                                                                                       |
 
 ### Example Configurations
 

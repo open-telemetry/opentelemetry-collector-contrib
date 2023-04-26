@@ -51,6 +51,7 @@ func createDefaultConfig() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			Operators:      []operator.Config{},
+			Batch:          adapter.NewDefaultBatchConfig(),
 			RetryOnFailure: consumerretry.NewDefaultConfig(),
 		},
 		InputConfig: *file.NewConfig(),

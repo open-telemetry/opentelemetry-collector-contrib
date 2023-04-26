@@ -83,6 +83,7 @@ func (f TestReceiverType) CreateDefaultConfig() component.Config {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
 			Operators: []operator.Config{},
+			Batch:     NewDefaultBatchConfig(),
 		},
 		Input: operator.NewConfig(noop.NewConfig()),
 	}
