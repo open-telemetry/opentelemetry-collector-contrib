@@ -140,9 +140,9 @@ Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USE
 | ---- | ----------- | ------ |
 | disk_status | Disk measurement type | Str: ``free``, ``used`` |
 
-### mongodbatlas.disk.partition.usage.average
+### mongodbatlas.disk.partition.utilization.average
 
-Disk partition usage (%)
+Disk partition utilization (%)
 
 Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_SPACE_PERCENT_USED
 
@@ -156,9 +156,9 @@ Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_S
 | ---- | ----------- | ------ |
 | disk_status | Disk measurement type | Str: ``free``, ``used`` |
 
-### mongodbatlas.disk.partition.usage.max
+### mongodbatlas.disk.partition.utilization.max
 
-Disk partition usage (%)
+Disk partition utilization (%)
 
 Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PARTITION_SPACE_PERCENT_FREE
 
@@ -171,26 +171,6 @@ Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PAR
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | disk_status | Disk measurement type | Str: ``free``, ``used`` |
-
-### mongodbatlas.disk.partition.utilization.average
-
-Disk partition utilization (%)
-
-MongoDB Metrics DISK_PARTITION_UTILIZATION
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-### mongodbatlas.disk.partition.utilization.max
-
-Disk partition utilization (%)
-
-MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
 
 ### mongodbatlas.process.asserts
 
@@ -501,6 +481,22 @@ Aggregate of MongoDB Metrics DB_INDEX_SIZE_TOTAL, DB_DATA_SIZE_TOTAL_WO_SYSTEM, 
 | ---- | ----------- | ------ |
 | storage_status | Views on database size | Str: ``total``, ``data_size``, ``index_size``, ``data_size_wo_system`` |
 
+### mongodbatlas.process.fts.cpu.usage
+
+Full text search CPU (%)
+
+Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` |
+
 ### mongodbatlas.process.global_lock
 
 Number and status of locks
@@ -765,9 +761,7 @@ Aggregate of MongoDB Metrics FTS_PROCESS_NORMALIZED_CPU_USER, FTS_PROCESS_NORMAL
 
 ### mongodbatlas.system.fts.cpu.usage
 
-Full text search CPU (%)
-
-Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
+Full-text search (%)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -783,7 +777,7 @@ Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
 
 Full text search disk usage
 
-MongoDB Metric FTS_DISK_USAGE (Documentation incorrectly claims FTS_DISK_UTILIZATION)
+MongoDB Metric FTS_DISK_USAGE
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

@@ -17,10 +17,6 @@ all_set:
       enabled: true
     mongodbatlas.disk.partition.space.max:
       enabled: true
-    mongodbatlas.disk.partition.usage.average:
-      enabled: true
-    mongodbatlas.disk.partition.usage.max:
-      enabled: true
     mongodbatlas.disk.partition.utilization.average:
       enabled: true
     mongodbatlas.disk.partition.utilization.max:
@@ -64,6 +60,8 @@ all_set:
     mongodbatlas.process.db.query_targeting.scanned_per_returned:
       enabled: true
     mongodbatlas.process.db.storage:
+      enabled: true
+    mongodbatlas.process.fts.cpu.usage:
       enabled: true
     mongodbatlas.process.global_lock:
       enabled: true
@@ -164,10 +162,6 @@ none_set:
       enabled: false
     mongodbatlas.disk.partition.space.max:
       enabled: false
-    mongodbatlas.disk.partition.usage.average:
-      enabled: false
-    mongodbatlas.disk.partition.usage.max:
-      enabled: false
     mongodbatlas.disk.partition.utilization.average:
       enabled: false
     mongodbatlas.disk.partition.utilization.max:
@@ -211,6 +205,8 @@ none_set:
     mongodbatlas.process.db.query_targeting.scanned_per_returned:
       enabled: false
     mongodbatlas.process.db.storage:
+      enabled: false
+    mongodbatlas.process.fts.cpu.usage:
       enabled: false
     mongodbatlas.process.global_lock:
       enabled: false

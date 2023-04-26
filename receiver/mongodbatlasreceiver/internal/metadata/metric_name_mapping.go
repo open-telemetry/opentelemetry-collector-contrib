@@ -772,18 +772,6 @@ func getRecordFunc(metricName string) metricRecordFunc {
 			mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionWrite)
 		}
 
-	// The percentage of time during which requests are being issued to and serviced by the partition.
-	// This includes requests from any process, not just MongoDB processes.
-	case "DISK_PARTITION_UTILIZATION":
-		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
-			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, float64(*dp.Value))
-		}
-
-	case "MAX_DISK_PARTITION_UTILIZATION":
-		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
-			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, float64(*dp.Value))
-		}
-
 	// Measures the free disk space and used disk space on the disk partition used by MongoDB.
 	case "DISK_PARTITION_SPACE_FREE":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {

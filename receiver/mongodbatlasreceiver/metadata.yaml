@@ -344,6 +344,14 @@ metrics:
     attributes: [document_status]
     gauge:
       value_type: double
+  mongodbatlas.process.fts.cpu.usage:
+    enabled: true
+    description: Full text search CPU (%)
+    extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
+    unit: 1
+    attributes: [cpu_state]
+    gauge:
+      value_type: double
   mongodbatlas.process.global_lock:
     enabled: true
     description: Number and status of locks
@@ -597,34 +605,20 @@ metrics:
     attributes: [disk_direction]
     gauge:
       value_type: double
-  mongodbatlas.disk.partition.usage.max:
+  mongodbatlas.disk.partition.utilization.max:
     enabled: true
-    description: Disk partition usage (%)
+    description: Disk partition utilization (%)
     extended_documentation: Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PARTITION_SPACE_PERCENT_FREE
     unit: 1
     attributes: [disk_status]
     gauge:
       value_type: double
-  mongodbatlas.disk.partition.usage.average:
-    enabled: true
-    description: Disk partition usage (%)
-    extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_SPACE_PERCENT_USED
-    unit: 1
-    attributes: [disk_status]
-    gauge:
-      value_type: double
-  mongodbatlas.disk.partition.utilization.max:
-    enabled: true
-    description: Disk partition utilization (%)
-    extended_documentation: MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
-    unit: 1
-    gauge:
-      value_type: double
   mongodbatlas.disk.partition.utilization.average:
     enabled: true
     description: Disk partition utilization (%)
-    extended_documentation: MongoDB Metrics DISK_PARTITION_UTILIZATION
+    extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_SPACE_PERCENT_USED
     unit: 1
+    attributes: [disk_status]
     gauge:
       value_type: double
   mongodbatlas.disk.partition.latency.max:
@@ -688,14 +682,13 @@ metrics:
   mongodbatlas.system.fts.disk.used:
     enabled: true
     description: Full text search disk usage
-    extended_documentation: MongoDB Metric FTS_DISK_USAGE (Documentation incorrectly claims FTS_DISK_UTILIZATION)
+    extended_documentation: MongoDB Metric FTS_DISK_USAGE
     unit: By
     gauge:
       value_type: double
   mongodbatlas.system.fts.cpu.usage:
     enabled: true
-    description: Full text search CPU (%)
-    extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
+    description: Full-text search (%)
     unit: 1
     attributes: [cpu_state]
     gauge:
