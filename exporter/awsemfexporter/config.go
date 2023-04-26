@@ -134,8 +134,8 @@ func (config *Config) Validate() error {
 	}
 	config.MetricDescriptors = validDescriptors
 
-	if !cwlogs.IsValidRetentionValue(config.LogRetention) {
-		return errors.New("invalid value for retention policy.  Please make sure to use the following values: 0 (Never Expire), 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653")
+	if retErr := cwlogs.IsValidRetentionValue(config.LogRetention); retErr != nil {
+		return retErr
 	}
 
 	tagInputErr := cwlogs.ValidateTagsInput(config.Tags)

@@ -17,17 +17,14 @@ package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
-	"github.com/aws/aws-sdk-go/service/sts"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
@@ -46,18 +43,14 @@ type Client struct {
 	svc          cloudwatchlogsiface.CloudWatchLogsAPI
 	logRetention int64
 	tags         map[string]*string
-	accountID    string
-	region       string
 	logger       *zap.Logger
 }
 
 // Create a log client based on the actual cloudwatch logs client.
-func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, tags map[string]*string, accountID string, region string, logger *zap.Logger) *Client {
+func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, tags map[string]*string, logger *zap.Logger) *Client {
 	logClient := &Client{svc: svc,
 		logRetention: logRetention,
 		tags:         tags,
-		accountID:    accountID,
-		region:       region,
 		logger:       logger}
 	return logClient
 }
@@ -67,20 +60,7 @@ func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Bu
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
-	// Assign region if it is defined in the config
-	region := ""
-	if !reflect.ValueOf(awsConfig.Region).IsNil() {
-		region = *awsConfig.Region
-	}
-	// Get the account id with sts regional endpoint
-	awsConfig = awsConfig.WithSTSRegionalEndpoint(endpoints.RegionalSTSEndpoint)
-	stsClient := sts.New(sess, awsConfig)
-	accountCall, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
-	if err != nil {
-		return newCloudWatchLogClient(client, logRetention, tags, "", region, logger)
-	}
-	accountID := accountCall.Account
-	return newCloudWatchLogClient(client, logRetention, tags, *accountID, region, logger)
+	return newCloudWatchLogClient(client, logRetention, tags, logger)
 }
 
 // PutLogEvents mainly handles different possible error could be returned from server side, and retries them
@@ -176,9 +156,16 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 		client.logger.Debug("cwlog_client: creating stream fail", zap.Error(err))
 		var awsErr awserr.Error
 		if errors.As(err, &awsErr) && awsErr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
-			_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
-				LogGroupName: logGroup,
-			})
+			if client.tags != nil && len(client.tags) > 0 {
+				_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
+					LogGroupName: logGroup,
+					Tags: client.tags,
+				})
+			} else {
+				_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
+					LogGroupName: logGroup,
+				})
+			}
 			if err == nil {
 				// For newly created log groups, set the log retention polic if specified or non-zero.  Otheriwse, set to Never Expire
 				if client.logRetention != 0 {
@@ -187,17 +174,6 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 						var awsErr awserr.Error
 						if errors.As(err, &awsErr) {
 							client.logger.Debug("CreateLogStream / CreateLogGroup has errors related to log retention policy.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.Error(e))
-							return token, err
-						}
-					}
-				}
-				logGroupArn := "arn:aws:logs:" + client.region + ":" + client.accountID + ":log-group:" + *logGroup
-				if client.tags != nil && len(client.tags) > 0 {
-					_, err = client.svc.TagResource(&cloudwatchlogs.TagResourceInput{ResourceArn: &logGroupArn, Tags: client.tags})
-					if err != nil {
-						var awsErr awserr.Error
-						if errors.As(err, &awsErr) {
-							client.logger.Debug("CreateLogStream / CreateLogGroup has errors related to the tags.  Please check the log group ARN.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.String("LogGroupArn", logGroupArn), zap.Error(e))
 							return token, err
 						}
 					}

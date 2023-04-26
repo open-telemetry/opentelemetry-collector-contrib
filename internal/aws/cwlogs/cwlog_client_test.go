@@ -49,7 +49,7 @@ func newAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) *Cli
 		&cloudwatchlogs.DescribeLogStreamsOutput{
 			LogStreams: []*cloudwatchlogs.LogStream{{UploadSequenceToken: &expectedNextSequenceToken}}},
 		nil)
-	return newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	return newCloudWatchLogClient(svc, 0, nil, logger)
 }
 
 type mockCloudWatchLogsClient struct {
@@ -107,7 +107,7 @@ func TestPutLogEvents_HappyCase(t *testing.T) {
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil)
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -133,7 +133,7 @@ func TestPutLogEvents_HappyCase_SomeRejectedInfo(t *testing.T) {
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil)
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -153,7 +153,7 @@ func TestPutLogEvents_NonAWSError(t *testing.T) {
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, errors.New("some random error")).Once()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -174,7 +174,7 @@ func TestPutLogEvents_InvalidParameterException(t *testing.T) {
 	invalidParameterException := &cloudwatchlogs.InvalidParameterException{}
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, invalidParameterException).Once()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -197,7 +197,7 @@ func TestPutLogEvents_InvalidSequenceTokenException(t *testing.T) {
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -218,7 +218,7 @@ func TestPutLogEvents_DataAlreadyAcceptedException(t *testing.T) {
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -239,7 +239,7 @@ func TestPutLogEvents_OperationAbortedException(t *testing.T) {
 	operationAbortedException := &cloudwatchlogs.OperationAbortedException{}
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, operationAbortedException).Once()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -260,7 +260,7 @@ func TestPutLogEvents_ServiceUnavailableException(t *testing.T) {
 	serviceUnavailableException := &cloudwatchlogs.ServiceUnavailableException{}
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, serviceUnavailableException).Once()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -281,7 +281,7 @@ func TestPutLogEvents_UnknownException(t *testing.T) {
 	unknownException := awserr.New("unknownException", "", nil)
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, unknownException).Once()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -302,7 +302,7 @@ func TestPutLogEvents_ThrottlingException(t *testing.T) {
 	throttlingException := awserr.New(errCodeThrottlingException, "", nil)
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, throttlingException).Once()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -329,7 +329,7 @@ func TestPutLogEvents_ResourceNotFoundException(t *testing.T) {
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -364,7 +364,7 @@ func TestLogRetention_NeverExpire(t *testing.T) {
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -400,7 +400,7 @@ func TestLogRetention_RetentionDaysInputted(t *testing.T) {
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
 
-	client := newCloudWatchLogClient(svc, 365, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 365, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -425,17 +425,17 @@ func TestSetTags_NotCalled(t *testing.T) {
 	svc.On("CreateLogStream",
 		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), awsErr).Once()
 
+	// Tags not added because it is not set
+
 	svc.On("CreateLogGroup",
 		&cloudwatchlogs.CreateLogGroupInput{LogGroupName: &logGroup}).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil).Once()
-
-	// TagResource is not called because it is not set
 
 	svc.On("CreateLogStream",
 		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil).Once()
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -456,7 +456,6 @@ func TestSetTags_Called(t *testing.T) {
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	avalue := "avalue"
-	resourceArn := "arn:aws:logs:::log-group:logGroup"
 	sampleTags := map[string]*string{"akey": &avalue}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
@@ -465,17 +464,14 @@ func TestSetTags_Called(t *testing.T) {
 		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), awsErr).Once()
 
 	svc.On("CreateLogGroup",
-		&cloudwatchlogs.CreateLogGroupInput{LogGroupName: &logGroup}).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil).Once()
-
-	svc.On("TagResource",
-		&cloudwatchlogs.TagResourceInput{ResourceArn: &resourceArn, Tags: sampleTags}).Return(new(cloudwatchlogs.TagResourceOutput), nil).Once()
+		&cloudwatchlogs.CreateLogGroupInput{LogGroupName: &logGroup, Tags: sampleTags}).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil).Once()
 
 	svc.On("CreateLogStream",
 		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil).Once()
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
 
-	client := newCloudWatchLogClient(svc, 0, sampleTags, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, sampleTags, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -500,7 +496,7 @@ func TestPutLogEvents_AllRetriesFail(t *testing.T) {
 	svc.On("CreateLogStream",
 		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil).Twice()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
@@ -514,7 +510,7 @@ func TestCreateStream_HappyCase(t *testing.T) {
 	svc.On("CreateLogStream",
 		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil)
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	token, err := client.CreateStream(&logGroup, &logStreamName)
 
 	svc.AssertExpectations(t)
@@ -531,7 +527,7 @@ func TestCreateStream_CreateLogStream_ResourceAlreadyExists(t *testing.T) {
 		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(
 		new(cloudwatchlogs.CreateLogStreamOutput), resourceAlreadyExistsException)
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	token, err := client.CreateStream(&logGroup, &logStreamName)
 
 	svc.AssertExpectations(t)
@@ -556,7 +552,7 @@ func TestCreateStream_CreateLogStream_ResourceNotFound(t *testing.T) {
 		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(
 		new(cloudwatchlogs.CreateLogStreamOutput), nil).Once()
 
-	client := newCloudWatchLogClient(svc, 0, nil, "", "", logger)
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
 	token, err := client.CreateStream(&logGroup, &logStreamName)
 
 	svc.AssertExpectations(t)
