@@ -161,6 +161,11 @@ func TestAzureScraperScrape(t *testing.T) {
 	}
 	cfg := createDefaultConfig().(*Config)
 	cfg.MaximumNumberOfMetricsInACall = 2
+
+	cfgTagsEnabled := createDefaultConfig().(*Config)
+	cfgTagsEnabled.AppendTagsAsAttributes = true
+	cfgTagsEnabled.MaximumNumberOfMetricsInACall = 2
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -168,9 +173,18 @@ func TestAzureScraperScrape(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "",
+			name: "metrics_golden",
 			fields: fields{
 				cfg: cfg,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
+		{
+			name: "metrics_tags_golden",
+			fields: fields{
+				cfg: cfgTagsEnabled,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -184,7 +198,7 @@ func TestAzureScraperScrape(t *testing.T) {
 
 			armClientMock := &armClientMock{
 				current: 0,
-				pages:   getResourcesMockData(),
+				pages:   getResourcesMockData(tt.fields.cfg.AppendTagsAsAttributes),
 			}
 
 			counters, pages := getMetricsDefinitionsMockData()
@@ -214,7 +228,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				return
 			}
 
-			expectedFile := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
+			expectedFile := filepath.Join("testdata", "expected_metrics", tt.name+".yaml")
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 
@@ -227,101 +241,24 @@ func TestAzureScraperScrape(t *testing.T) {
 			))
 		})
 
-		t.Run(tt.name, func(t *testing.T) {
-			settings := receivertest.NewNopCreateSettings()
-
-			armClientMock := &armClientMock{
-				current: 0,
-				pages:   getResourcesWithAttributesMockData(),
-			}
-
-			counters, pages := getMetricsDefinitionsMockData()
-
-			metricsDefinitionsClientMock := &metricsDefinitionsClientMock{
-				current: counters,
-				pages:   pages,
-			}
-
-			metricsValuesClientMock := &metricsValuesClientMock{
-				lists: getMetricsValuesMockData(),
-			}
-
-			cfgWithAttributesOn := createDefaultConfig().(*Config)
-			cfgWithAttributesOn.MaximumNumberOfMetricsInACall = 2
-			cfgWithAttributesOn.AppendTagsAsAttributes = true
-
-			s := &azureScraper{
-				cfg:                      cfgWithAttributesOn,
-				clientResources:          armClientMock,
-				clientMetricsDefinitions: metricsDefinitionsClientMock,
-				clientMetricsValues:      metricsValuesClientMock,
-				mb:                       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-				mutex:                    &sync.Mutex{},
-			}
-			s.resources = map[string]*azureResource{}
-
-			metrics, err := s.scrape(tt.args.ctx)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("azureScraper.scrape() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			expectedFile := filepath.Join("testdata", "expected_metrics", "metrics_resource_tags.yaml")
-			expectedMetrics, err := golden.ReadMetrics(expectedFile)
-			require.NoError(t, err)
-
-			require.NoError(t, pmetrictest.CompareMetrics(
-				expectedMetrics,
-				metrics,
-				pmetrictest.IgnoreTimestamp(),
-				pmetrictest.IgnoreStartTimestamp(),
-				pmetrictest.IgnoreMetricsOrder(),
-			))
-		},
-		)
 	}
 }
 
-func getResourcesWithAttributesMockData() []armresources.ClientListResponse {
+func getResourcesMockData(tags bool) []armresources.ClientListResponse {
 	id1, id2, id3, location1, tagName1, tagValue1 := "resourceId1", "resourceId2", "resourceId3", "location1", "tagName1", "tagValue1"
 
-	return []armresources.ClientListResponse{
-		{
-			ResourceListResult: armresources.ResourceListResult{
-				Value: []*armresources.GenericResourceExpanded{
-					{
-						ID:       &id1,
-						Location: &location1,
-						Tags:     map[string]*string{tagName1: &tagValue1},
-					},
-					{
-						ID: &id2,
-					},
-				},
-			},
-		},
-		{
-			ResourceListResult: armresources.ResourceListResult{
-				Value: []*armresources.GenericResourceExpanded{
-					{
-						ID: &id3,
-					},
-				},
-			},
-		},
+	resourceID1 := armresources.GenericResourceExpanded{
+		ID: &id1,
 	}
-}
-
-func getResourcesMockData() []armresources.ClientListResponse {
-	id1, id2, id3 := "resourceId1", "resourceId2", "resourceId3"
-
+	if tags {
+		resourceID1.Location = &location1
+		resourceID1.Tags = map[string]*string{tagName1: &tagValue1}
+	}
 	return []armresources.ClientListResponse{
 		{
 			ResourceListResult: armresources.ResourceListResult{
 				Value: []*armresources.GenericResourceExpanded{
-					{
-						ID: &id1,
-					},
+					&resourceID1,
 					{
 						ID: &id2,
 					},
