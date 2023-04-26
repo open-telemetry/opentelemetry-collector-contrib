@@ -344,14 +344,6 @@ metrics:
     attributes: [document_status]
     gauge:
       value_type: double
-  mongodbatlas.process.fts.cpu.usage:
-    enabled: true
-    description: Full text search CPU (%)
-    extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
-    unit: 1
-    attributes: [cpu_state]
-    gauge:
-      value_type: double
   mongodbatlas.process.global_lock:
     enabled: true
     description: Number and status of locks
@@ -703,6 +695,7 @@ metrics:
   mongodbatlas.system.fts.cpu.usage:
     enabled: true
     description: Full-text search (%)
+    extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
     unit: 1
     attributes: [cpu_state]
     gauge:
