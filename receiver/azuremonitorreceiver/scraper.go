@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
@@ -56,6 +55,12 @@ var (
 		"Minimum",
 		"Total",
 	}
+)
+
+const (
+	tagPrefix      = "tags_"
+	metadataPrefix = "metadata_"
+	location       = tagPrefix + "location"
 )
 
 type azureResource struct {
@@ -327,13 +332,17 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 					if timeseriesElement.Data != nil {
 						attributes := map[string]*string{}
 						for _, value := range timeseriesElement.Metadatavalues {
-							attributes[*value.Name.Value] = value.Value
+							name := metadataPrefix + *value.Name.Value
+							attributes[name] = value.Value
 						}
 						if len(res.location) > 0 {
-							attributes["location"] = &res.location
+							attributes[location] = &res.location
 						}
 						if s.cfg.AppendTagsAsAttributes {
-							maps.Copy(attributes, res.tags)
+							for tagName, value := range res.tags {
+								name := tagPrefix + tagName
+								attributes[name] = value
+							}
 						}
 						for _, metricValue := range timeseriesElement.Data {
 							s.processTimeseriesData(resourceID, metric, metricValue, attributes)
