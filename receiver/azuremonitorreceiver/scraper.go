@@ -60,7 +60,7 @@ var (
 const (
 	tagPrefix      = "tags_"
 	metadataPrefix = "metadata_"
-	location       = tagPrefix + "location"
+	location       = "location"
 )
 
 type azureResource struct {
@@ -336,7 +336,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 							attributes[name] = value.Value
 						}
 						if len(res.location) > 0 {
-							attributes[location] = &res.location
+							attributes[tagPrefix+location] = &res.location
 						}
 						if s.cfg.AppendTagsAsAttributes {
 							for tagName, value := range res.tags {
