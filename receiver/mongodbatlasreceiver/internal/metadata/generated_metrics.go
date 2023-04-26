@@ -65,7 +65,6 @@ type MetricsSettings struct {
 	MongodbatlasProcessDbQueryExecutorScanned             MetricSettings `mapstructure:"mongodbatlas.process.db.query_executor.scanned"`
 	MongodbatlasProcessDbQueryTargetingScannedPerReturned MetricSettings `mapstructure:"mongodbatlas.process.db.query_targeting.scanned_per_returned"`
 	MongodbatlasProcessDbStorage                          MetricSettings `mapstructure:"mongodbatlas.process.db.storage"`
-	MongodbatlasProcessFtsCPUUsage                        MetricSettings `mapstructure:"mongodbatlas.process.fts.cpu.usage"`
 	MongodbatlasProcessGlobalLock                         MetricSettings `mapstructure:"mongodbatlas.process.global_lock"`
 	MongodbatlasProcessIndexBtreeMissRatio                MetricSettings `mapstructure:"mongodbatlas.process.index.btree_miss_ratio"`
 	MongodbatlasProcessIndexCounters                      MetricSettings `mapstructure:"mongodbatlas.process.index.counters"`
@@ -194,9 +193,6 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MongodbatlasProcessDbStorage: MetricSettings{
-			Enabled: true,
-		},
-		MongodbatlasProcessFtsCPUUsage: MetricSettings{
 			Enabled: true,
 		},
 		MongodbatlasProcessGlobalLock: MetricSettings{
@@ -1588,10 +1584,9 @@ func (m *metricMongodbatlasDiskPartitionUtilizationAverage) init() {
 	m.data.SetDescription("Disk partition utilization (%)")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbatlasDiskPartitionUtilizationAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
+func (m *metricMongodbatlasDiskPartitionUtilizationAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1599,7 +1594,6 @@ func (m *metricMongodbatlasDiskPartitionUtilizationAverage) recordDataPoint(star
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("disk_status", diskStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1639,10 +1633,9 @@ func (m *metricMongodbatlasDiskPartitionUtilizationMax) init() {
 	m.data.SetDescription("Disk partition utilization (%)")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbatlasDiskPartitionUtilizationMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskStatusAttributeValue string) {
+func (m *metricMongodbatlasDiskPartitionUtilizationMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1650,7 +1643,6 @@ func (m *metricMongodbatlasDiskPartitionUtilizationMax) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("disk_status", diskStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2701,57 +2693,6 @@ func newMetricMongodbatlasProcessDbStorage(settings MetricSettings) metricMongod
 	return m
 }
 
-type metricMongodbatlasProcessFtsCPUUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills mongodbatlas.process.fts.cpu.usage metric with initial data.
-func (m *metricMongodbatlasProcessFtsCPUUsage) init() {
-	m.data.SetName("mongodbatlas.process.fts.cpu.usage")
-	m.data.SetDescription("Full text search CPU (%)")
-	m.data.SetUnit("1")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricMongodbatlasProcessFtsCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuStateAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu_state", cpuStateAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMongodbatlasProcessFtsCPUUsage) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMongodbatlasProcessFtsCPUUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricMongodbatlasProcessFtsCPUUsage(settings MetricSettings) metricMongodbatlasProcessFtsCPUUsage {
-	m := metricMongodbatlasProcessFtsCPUUsage{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricMongodbatlasProcessGlobalLock struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -3718,7 +3659,7 @@ type metricMongodbatlasSystemFtsCPUUsage struct {
 // init fills mongodbatlas.system.fts.cpu.usage metric with initial data.
 func (m *metricMongodbatlasSystemFtsCPUUsage) init() {
 	m.data.SetName("mongodbatlas.system.fts.cpu.usage")
-	m.data.SetDescription("Full-text search (%)")
+	m.data.SetDescription("Full text search CPU (%)")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -4317,7 +4258,6 @@ type MetricsBuilder struct {
 	metricMongodbatlasProcessDbQueryExecutorScanned             metricMongodbatlasProcessDbQueryExecutorScanned
 	metricMongodbatlasProcessDbQueryTargetingScannedPerReturned metricMongodbatlasProcessDbQueryTargetingScannedPerReturned
 	metricMongodbatlasProcessDbStorage                          metricMongodbatlasProcessDbStorage
-	metricMongodbatlasProcessFtsCPUUsage                        metricMongodbatlasProcessFtsCPUUsage
 	metricMongodbatlasProcessGlobalLock                         metricMongodbatlasProcessGlobalLock
 	metricMongodbatlasProcessIndexBtreeMissRatio                metricMongodbatlasProcessIndexBtreeMissRatio
 	metricMongodbatlasProcessIndexCounters                      metricMongodbatlasProcessIndexCounters
@@ -4412,7 +4352,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricMongodbatlasProcessDbQueryExecutorScanned:             newMetricMongodbatlasProcessDbQueryExecutorScanned(mbc.Metrics.MongodbatlasProcessDbQueryExecutorScanned),
 		metricMongodbatlasProcessDbQueryTargetingScannedPerReturned: newMetricMongodbatlasProcessDbQueryTargetingScannedPerReturned(mbc.Metrics.MongodbatlasProcessDbQueryTargetingScannedPerReturned),
 		metricMongodbatlasProcessDbStorage:                          newMetricMongodbatlasProcessDbStorage(mbc.Metrics.MongodbatlasProcessDbStorage),
-		metricMongodbatlasProcessFtsCPUUsage:                        newMetricMongodbatlasProcessFtsCPUUsage(mbc.Metrics.MongodbatlasProcessFtsCPUUsage),
 		metricMongodbatlasProcessGlobalLock:                         newMetricMongodbatlasProcessGlobalLock(mbc.Metrics.MongodbatlasProcessGlobalLock),
 		metricMongodbatlasProcessIndexBtreeMissRatio:                newMetricMongodbatlasProcessIndexBtreeMissRatio(mbc.Metrics.MongodbatlasProcessIndexBtreeMissRatio),
 		metricMongodbatlasProcessIndexCounters:                      newMetricMongodbatlasProcessIndexCounters(mbc.Metrics.MongodbatlasProcessIndexCounters),
@@ -4617,7 +4556,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMongodbatlasProcessDbQueryExecutorScanned.emit(ils.Metrics())
 	mb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.emit(ils.Metrics())
 	mb.metricMongodbatlasProcessDbStorage.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessFtsCPUUsage.emit(ils.Metrics())
 	mb.metricMongodbatlasProcessGlobalLock.emit(ils.Metrics())
 	mb.metricMongodbatlasProcessIndexBtreeMissRatio.emit(ils.Metrics())
 	mb.metricMongodbatlasProcessIndexCounters.emit(ils.Metrics())
@@ -4719,13 +4657,13 @@ func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts pc
 }
 
 // RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint adds a data point to mongodbatlas.disk.partition.utilization.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
-	mb.metricMongodbatlasDiskPartitionUtilizationAverage.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricMongodbatlasDiskPartitionUtilizationAverage.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint adds a data point to mongodbatlas.disk.partition.utilization.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
-	mb.metricMongodbatlasDiskPartitionUtilizationMax.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricMongodbatlasDiskPartitionUtilizationMax.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbatlasProcessAssertsDataPoint adds a data point to mongodbatlas.process.asserts metric.
@@ -4826,11 +4764,6 @@ func (mb *MetricsBuilder) RecordMongodbatlasProcessDbQueryTargetingScannedPerRet
 // RecordMongodbatlasProcessDbStorageDataPoint adds a data point to mongodbatlas.process.db.storage metric.
 func (mb *MetricsBuilder) RecordMongodbatlasProcessDbStorageDataPoint(ts pcommon.Timestamp, val float64, storageStatusAttributeValue AttributeStorageStatus) {
 	mb.metricMongodbatlasProcessDbStorage.recordDataPoint(mb.startTime, ts, val, storageStatusAttributeValue.String())
-}
-
-// RecordMongodbatlasProcessFtsCPUUsageDataPoint adds a data point to mongodbatlas.process.fts.cpu.usage metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessFtsCPUUsageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasProcessFtsCPUUsage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessGlobalLockDataPoint adds a data point to mongodbatlas.process.global_lock metric.

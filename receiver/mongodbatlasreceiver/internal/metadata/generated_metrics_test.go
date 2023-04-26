@@ -100,11 +100,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, 1, AttributeDiskStatus(1))
+			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, 1, AttributeDiskStatus(1))
+			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -185,10 +185,6 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 1, AttributeStorageStatus(1))
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessFtsCPUUsageDataPoint(ts, 1, AttributeCPUState(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -567,9 +563,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("disk_status")
-					assert.True(t, ok)
-					assert.Equal(t, "free", attrVal.Str())
 				case "mongodbatlas.disk.partition.utilization.max":
 					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.utilization.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.utilization.max")
 					validatedMetrics["mongodbatlas.disk.partition.utilization.max"] = true
@@ -582,9 +575,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("disk_status")
-					assert.True(t, ok)
-					assert.Equal(t, "free", attrVal.Str())
 				case "mongodbatlas.process.asserts":
 					assert.False(t, validatedMetrics["mongodbatlas.process.asserts"], "Found a duplicate in the metrics slice: mongodbatlas.process.asserts")
 					validatedMetrics["mongodbatlas.process.asserts"] = true
@@ -888,21 +878,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("storage_status")
 					assert.True(t, ok)
 					assert.Equal(t, "total", attrVal.Str())
-				case "mongodbatlas.process.fts.cpu.usage":
-					assert.False(t, validatedMetrics["mongodbatlas.process.fts.cpu.usage"], "Found a duplicate in the metrics slice: mongodbatlas.process.fts.cpu.usage")
-					validatedMetrics["mongodbatlas.process.fts.cpu.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Full text search CPU (%)", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", attrVal.Str())
 				case "mongodbatlas.process.global_lock":
 					assert.False(t, validatedMetrics["mongodbatlas.process.global_lock"], "Found a duplicate in the metrics slice: mongodbatlas.process.global_lock")
 					validatedMetrics["mongodbatlas.process.global_lock"] = true
@@ -1174,7 +1149,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["mongodbatlas.system.fts.cpu.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Full-text search (%)", ms.At(i).Description())
+					assert.Equal(t, "Full text search CPU (%)", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
