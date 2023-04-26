@@ -9,8 +9,23 @@ attributes:
   application_id:
     description: The id of the application that the metric comes from
     type: string
+  location:
+    description: The categorization of memory allocated to spark
+    type: string
+    enum:
+      - off_heap
+      - on_heap
 
 metrics:
+  spark.driver.block_manager.memory.used:
+    description: Memory used by the BlockManager.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: Mb
+    attributes: [application_id, location]
   spark.stage.executor_run_time:
     description: Amount of time spent by the executor in this stage.
     enabled: true
@@ -28,4 +43,13 @@ metrics:
       monotonic: false
       value_type: int
     unit: bytes
+    attributes: [application_id]
+  spark.job.active_tasks:
+    description: Number of active tasks in this job.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: "{tasks}"
     attributes: [application_id]
