@@ -329,10 +329,10 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 						for _, value := range timeseriesElement.Metadatavalues {
 							attributes[*value.Name.Value] = value.Value
 						}
+						if len(res.location) > 0 {
+							attributes["location"] = &res.location
+						}
 						if s.cfg.AppendTagsAsAttributes {
-							if len(res.location) > 0 {
-								attributes["location"] = &res.location
-							}
 							maps.Copy(attributes, res.tags)
 						}
 						for _, metricValue := range timeseriesElement.Data {
