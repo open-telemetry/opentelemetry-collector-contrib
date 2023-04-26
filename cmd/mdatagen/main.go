@@ -135,7 +135,7 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				},
 				"keys": func(input map[string]string) []string {
 					keys := []string{}
-					for k, _ := range input {
+					for k := range input {
 						keys = append(keys, k)
 					}
 					sort.Slice(keys, func(i, j int) bool {
