@@ -678,7 +678,7 @@ Packets sent.
 
 Number of pids in the container's cgroup.
 
-It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supporeted. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)
+It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supported. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -688,7 +688,7 @@ It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup
 
 Maximum number of pids in the container's cgroup.
 
-It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supporeted. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)
+It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supported. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
