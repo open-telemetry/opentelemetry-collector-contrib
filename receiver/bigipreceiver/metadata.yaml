@@ -1,5 +1,11 @@
 type: bigipreceiver
 
+status:
+  class: receiver
+  stability: beta
+  pipelines: [metrics]
+  distributions: [contrib]
+
 resource_attributes:
   bigip.virtual_server.name:
     description: The name of the Big-IP Virtual Server.
