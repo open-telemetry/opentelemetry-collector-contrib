@@ -109,10 +109,7 @@ func (s *receiver) poll(ctx context.Context, time timeconstraints) error {
 				return fmt.Errorf("error retrieving MongoDB Atlas processes for project %s: %w", project.ID, err)
 			}
 			for _, process := range processes {
-				clusterName := ""
-				if v, ok := nodeClusterMap[process.UserAlias]; ok {
-					clusterName = v
-				}
+				clusterName := nodeClusterMap[process.UserAlias]
 
 				if err := s.extractProcessMetrics(ctx, time, org.Name, project, process, clusterName); err != nil {
 					return fmt.Errorf("error when polling process metrics from MongoDB Atlas for process %s: %w", process.ID, err)
