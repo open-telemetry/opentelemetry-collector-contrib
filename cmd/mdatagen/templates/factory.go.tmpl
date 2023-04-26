@@ -1,0 +1,88 @@
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package {{ .Type }}{{ .Status.Class }} // import "github.com/open-telemetry/opentelemetry-collector-contrib/{{ .Status.Class }}/{{ .Type }}{{ .Status.Class }}"
+
+import (
+	// scaffold-off
+	"context"
+	"errors"
+
+	"go.opentelemetry.io/collector/component"
+    "go.opentelemetry.io/collector/consumer"
+    "go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/{{ .Status.Class }}/{{ .Type }}{{ .Status.Class }}/internal/metadata"
+	// scaffold-on
+)
+
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
+		metadata.Type,
+		createDefaultConfig,
+		{{ range .Status.Pipelines }}
+		{{- if eq . "logs" }}		receiver.WithLogs(newLogsReceiver, metadata.Stability),{{ end }}
+		{{- if eq . "metrics" }}		receiver.WithMetrics(newMetricsReceiver, metadata.Stability),{{ end }}
+        {{- if eq . "traces" }}		receiver.WithTraces(newTracesReceiver, metadata.Stability),{{ end }}
+		{{ end }}
+	)
+}
+
+func createDefaultConfig() component.Config {
+	return &Config{
+		// scaffold-off
+		// scaffold-on
+	}
+}
+
+{{ range .Status.Pipelines }}
+{{- if eq . "logs" }}
+func newLogsReceiver(
+	_ context.Context,
+	settings receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Logs,
+) (receiver.Logs, error) {
+	// scaffold-off
+	return nil, errors.New("not implemented yet")
+	// scaffold-on
+}
+{{ end }}
+{{- if eq . "metrics" }}
+func newMetricsReceiver(
+	_ context.Context,
+	settings receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	// scaffold-off
+	return nil, errors.New("not implemented yet")
+	// scaffold-on
+}
+{{ end }}
+{{- if eq . "traces" }}
+func newTracesReceiver(
+	_ context.Context,
+	settings receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Traces,
+) (receiver.Traces, error) {
+	// scaffold-off
+	return nil, errors.New("not implemented yet")
+	// scaffold-on
+}
+{{ end }}
+{{ end }}
+
+

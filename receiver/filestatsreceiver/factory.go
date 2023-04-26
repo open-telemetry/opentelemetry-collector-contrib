@@ -15,6 +15,7 @@
 package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 
 import (
+	// scaffold-off
 	"context"
 	"time"
 
@@ -24,35 +25,37 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
+	// scaffold-on
 )
 
-const (
-	typeStr = "filestats"
-)
-
-// NewFactory creates a new HAProxy receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
-		newDefaultConfig,
-		receiver.WithMetrics(newReceiver, metadata.Stability))
+		metadata.Type,
+		createDefaultConfig,
+				receiver.WithMetrics(newMetricsReceiver, metadata.Stability),
+		
+	)
 }
 
-func newDefaultConfig() component.Config {
+func createDefaultConfig() component.Config {
 	return &Config{
+		// scaffold-off
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 1 * time.Minute,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		// scaffold-on
 	}
 }
 
-func newReceiver(
+
+func newMetricsReceiver(
 	_ context.Context,
 	settings receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
+	// scaffold-off
 	fileStatsConfig := cfg.(*Config)
 	metricsBuilder := metadata.NewMetricsBuilder(fileStatsConfig.MetricsBuilderConfig, settings)
 
@@ -69,4 +72,9 @@ func newReceiver(
 		consumer,
 		opt,
 	)
+	// scaffold-on
 }
+
+
+
+

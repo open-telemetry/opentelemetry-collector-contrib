@@ -5,6 +5,7 @@ status:
   stability: development
   pipelines: [metrics]
   distributions: [contrib]
+  scaffold: true
 
 
 resource_attributes:

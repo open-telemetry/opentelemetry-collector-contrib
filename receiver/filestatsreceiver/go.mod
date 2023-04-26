@@ -2,6 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filest
 
 go 1.19
 
+// scaffold-off
 require (
 	github.com/bmatcuk/doublestar/v4 v4.6.0
 	github.com/stretchr/testify v1.8.2
@@ -42,3 +43,5 @@ require (
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+// scaffold-on

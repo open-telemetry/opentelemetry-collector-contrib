@@ -25,4 +25,5 @@ type Status struct {
 	Distributions []string `mapstructure:"distributions"`
 	Class         string   `mapstructure:"class"`
 	Warnings      []string `mapstructure:"warnings"`
+	Scaffold      bool     `mapstructure:"scaffold,omitempty"`
 }

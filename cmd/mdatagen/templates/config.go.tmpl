@@ -12,31 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
+package {{ .Type }}{{ .Status.Class }} // import "github.com/open-telemetry/opentelemetry-collector-contrib/{{ .Status.Class }}/{{ .Type }}{{ .Status.Class }}"
 
 import (
-	// scaffold-off
-	"errors"
-
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
-	// scaffold-on
+    // scaffold-off
+    // scaffold-on
 )
 
 type Config struct {
 	// scaffold-off
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	Include                                 string `mapstructure:"include"`
 	// scaffold-on
 }
 
 func (c Config) Validate() error {
 	// scaffold-off
-	if c.Include == "" {
-		return errors.New("include must not be empty")
-	}
 	// scaffold-on
 	return nil
 }
