@@ -303,3 +303,62 @@ func TestServiceNameForResource(t *testing.T) {
 	require.Equal(t, name, "<nil-service-name>")
 
 }
+
+func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
+	testCases := []struct {
+		name string
+		mc   *filterconfig.MatchConfig
+		skip bool
+	}{
+		{
+			name: "service_name_match_regexp",
+			mc: &filterconfig.MatchConfig{
+				Include: &filterconfig.MatchProperties{
+					Config:   *createConfig(filterset.Regexp),
+					Services: []string{"svcA"},
+				},
+			},
+			skip: false,
+		},
+		{
+			name: "service_name_match_static",
+			mc: &filterconfig.MatchConfig{
+				Include: &filterconfig.MatchProperties{
+					Config:   *createConfig(filterset.Strict),
+					Services: []string{"svcA"},
+				},
+			},
+			skip: false,
+		},
+	}
+
+	for _, tt := range testCases {
+		skipExpr, err := NewSkipExpr(tt.mc)
+		assert.NoError(b, err)
+
+		span := ptrace.NewSpan()
+		span.SetName("spanName")
+
+		span.Attributes().PutStr("keyString", "arithmetic")
+		span.Attributes().PutInt("keyInt", 123)
+		span.Attributes().PutDouble("keyDouble", 3245.6)
+		span.Attributes().PutBool("keyBool", true)
+		span.Attributes().PutStr("keyExists", "present")
+		span.SetKind(ptrace.SpanKindClient)
+
+		resource := pcommon.NewResource()
+		resource.Attributes().PutStr(conventions.AttributeServiceName, "svcA")
+
+		scope := pcommon.NewInstrumentationScope()
+
+		tCtx := ottlspan.NewTransformContext(span, scope, resource)
+
+		b.Run(tt.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				skip, err := skipExpr.Eval(context.Background(), tCtx)
+				assert.NoError(b, err)
+				assert.Equal(b, tt.skip, skip)
+			}
+		})
+	}
+}
