@@ -386,7 +386,7 @@ func (p *serviceGraphProcessor) updateErrorMetrics(key string) { p.reqFailedTota
 
 func (p *serviceGraphProcessor) updateDurationMetrics(key string, serverDuration, clientDuration float64) {
 	p.updateServerDurationMetrics(key, serverDuration)
-	p.updateClientDurationMetrics(key, serverDuration)
+	p.updateClientDurationMetrics(key, clientDuration)
 }
 
 func (p *serviceGraphProcessor) updateServerDurationMetrics(key string, duration float64) {
