@@ -1581,7 +1581,7 @@ type metricMongodbatlasDiskPartitionUtilizationAverage struct {
 // init fills mongodbatlas.disk.partition.utilization.average metric with initial data.
 func (m *metricMongodbatlasDiskPartitionUtilizationAverage) init() {
 	m.data.SetName("mongodbatlas.disk.partition.utilization.average")
-	m.data.SetDescription("The maximum percentage of time during which requests are being issued to and serviced by the partition.")
+	m.data.SetDescription("The percentage of time during which requests are being issued to and serviced by the partition.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
@@ -1630,7 +1630,7 @@ type metricMongodbatlasDiskPartitionUtilizationMax struct {
 // init fills mongodbatlas.disk.partition.utilization.max metric with initial data.
 func (m *metricMongodbatlasDiskPartitionUtilizationMax) init() {
 	m.data.SetName("mongodbatlas.disk.partition.utilization.max")
-	m.data.SetDescription("The percentage of time during which requests are being issued to and serviced by the partition.")
+	m.data.SetDescription("The maximum percentage of time during which requests are being issued to and serviced by the partition.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }

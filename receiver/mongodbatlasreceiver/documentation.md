@@ -174,7 +174,7 @@ Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PAR
 
 ### mongodbatlas.disk.partition.utilization.average
 
-The maximum percentage of time during which requests are being issued to and serviced by the partition.
+The percentage of time during which requests are being issued to and serviced by the partition.
 
 MongoDB Metrics DISK_PARTITION_UTILIZATION
 
@@ -184,7 +184,7 @@ MongoDB Metrics DISK_PARTITION_UTILIZATION
 
 ### mongodbatlas.disk.partition.utilization.max
 
-The percentage of time during which requests are being issued to and serviced by the partition.
+The maximum percentage of time during which requests are being issued to and serviced by the partition.
 
 MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
 

@@ -615,14 +615,14 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.utilization.max:
     enabled: true
-    description: The percentage of time during which requests are being issued to and serviced by the partition.
+    description: The maximum percentage of time during which requests are being issued to and serviced by the partition.
     extended_documentation: MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
     unit: 1
     gauge:
       value_type: double
   mongodbatlas.disk.partition.utilization.average:
     enabled: true
-    description: The maximum percentage of time during which requests are being issued to and serviced by the partition.
+    description: The percentage of time during which requests are being issued to and serviced by the partition.
     extended_documentation: MongoDB Metrics DISK_PARTITION_UTILIZATION
     unit: 1
     gauge:

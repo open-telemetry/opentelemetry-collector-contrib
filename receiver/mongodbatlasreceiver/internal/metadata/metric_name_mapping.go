@@ -689,17 +689,12 @@ func getRecordFunc(metricName string) metricRecordFunc {
 		}
 
 	// Disk space, in bytes, that Atlas Search indexes use.
-	case "FTS_DISK_USAGE":
+	// FTS_DISK_UTILIZATION is the documented field name, but FTS_DISK_USAGE is what is returned from the API.
+	// Including both so if the API changes to match the documentation this metric is still collected.
+	case "FTS_DISK_USAGE", "FTS_DISK_UTILIZATION":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
 			mb.RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts, float64(*dp.Value))
 		}
-	// This is the documented field name, but FTS_DISK_USAGE is what is returned from the API.
-	// Placing this here in case the metric naming is fixed in the future.
-	case "FTS_DISK_UTILIZATION":
-		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
-			mb.RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts, float64(*dp.Value))
-		}
-
 	// Percentage of CPU that Atlas Search processes use.
 	case "FTS_PROCESS_CPU_USER":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {

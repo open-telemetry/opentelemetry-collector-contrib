@@ -556,7 +556,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["mongodbatlas.disk.partition.utilization.average"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The maximum percentage of time during which requests are being issued to and serviced by the partition.", ms.At(i).Description())
+					assert.Equal(t, "The percentage of time during which requests are being issued to and serviced by the partition.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -568,7 +568,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["mongodbatlas.disk.partition.utilization.max"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The percentage of time during which requests are being issued to and serviced by the partition.", ms.At(i).Description())
+					assert.Equal(t, "The maximum percentage of time during which requests are being issued to and serviced by the partition.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
