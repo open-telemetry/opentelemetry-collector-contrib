@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -99,7 +100,7 @@ func createCombinedLogReceiver(
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
+	c := &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		Granularity:               defaultGranularity,
 		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
@@ -116,4 +117,8 @@ func createDefaultConfig() component.Config {
 			Projects: []*ProjectConfig{},
 		},
 	}
+	// reset default of 1 minute to be 3 minutes in order to avoid null values for some metrics that do not publish
+	// more frequently
+	c.ScraperControllerSettings.CollectionInterval = 3 * time.Minute
+	return c
 }

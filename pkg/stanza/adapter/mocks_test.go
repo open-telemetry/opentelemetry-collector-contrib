@@ -19,8 +19,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -67,15 +65,6 @@ func (o *UnstartableOperator) Start(_ operator.Persister) error {
 // Process will return nil
 func (o *UnstartableOperator) Process(ctx context.Context, entry *entry.Entry) error {
 	return nil
-}
-
-type mockLogsRejecter struct {
-	consumertest.LogsSink
-}
-
-func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	_ = m.LogsSink.ConsumeLogs(ctx, ld)
-	return errors.New("no")
 }
 
 const testType = "test"

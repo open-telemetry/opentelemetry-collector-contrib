@@ -63,7 +63,7 @@ func TestScraper(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err, "error scraping metrics from mocdb")
 
-	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
 
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err, "error reading expected metrics")

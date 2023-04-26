@@ -32,7 +32,7 @@ import (
 
 const (
 	typeStr   = "dotnet_diagnostics"
-	stability = component.StabilityLevelAlpha
+	stability = component.StabilityLevelDeprecated
 )
 
 func NewFactory() rcvr.Factory {

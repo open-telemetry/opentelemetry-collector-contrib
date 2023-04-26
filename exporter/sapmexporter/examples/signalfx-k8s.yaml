@@ -12,7 +12,7 @@ data:
       health_check:
       http_forwarder:
         egress:
-          endpoint: "https://api.${SFX_REALM}.signalfx.com"
+          endpoint: "https://api.${env:SFX_REALM}.signalfx.com"
       zpages:
     receivers:
       sapm:
@@ -68,7 +68,7 @@ data:
       # Traces
       sapm:
         access_token: "${env:SFX_TOKEN}"
-        endpoint: "https://ingest.${SFX_REALM}.signalfx.com/v2/trace"
+        endpoint: "https://ingest.${env:SFX_REALM}.signalfx.com/v2/trace"
       # Metrics
       signalfx:
         access_token: "${env:SFX_TOKEN}"
