@@ -1,0 +1,87 @@
+receivers:
+  filelog:
+    include: [ ./*.json ]
+  splunk_hec/logs:
+    endpoint: 0.0.0.0:8883
+  splunk_hec/metrics:
+    endpoint: 0.0.0.0:8884
+  splunk_hec/logs_invalid:
+    endpoint: 0.0.0.0:8885
+  splunk_hec/disabled:
+    endpoint: 0.0.0.0:8886
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu:
+      disk:
+      load:
+      filesystem:
+      memory:
+      network:
+exporters:
+  splunk_hec:
+    # Splunk HTTP Event Collector token.
+    token: "00000000-0000-0000-0000-000000000000"
+    # URL to a Splunk instance to send data to.
+    endpoint: "https://SPLUNK_IP:8088/services/collector"
+    index: "metrics"
+    health_path: "/services/collector/health"
+    health_check_enabled: true
+    tls:
+      insecure_skip_verify: true
+  splunk_hec/logs:
+    # Splunk HTTP Event Collector token.
+    token: "00000000-0000-0000-0000-000000000000"
+    # URL to a Splunk instance to send data to.
+    endpoint: "https://SPLUNK_IP:8088/services/collector"
+    sourcetype: "filelog_sourcetype"
+    index: "file_logs"
+    health_path: "/services/collector/health"
+    health_check_enabled: true
+    tls:
+      insecure_skip_verify: true
+  splunk_hec/invalid:
+    # Splunk HTTP Event Collector token.
+    token: "00000000-0000-0000-0000-000000000001"
+    # URL to a Splunk instance to send data to.
+    endpoint: "https://SPLUNK_IP:8088/services/collector"
+    index: "main"
+    health_path: "/services/collector/health"
+    health_check_enabled: true
+    tls:
+      insecure_skip_verify: true
+  splunk_hec/disabled:
+    # Splunk HTTP Event Collector token.
+    token: "f035f5d0-c141-4d83-9f57-00073b992c74"
+    # URL to a Splunk instance to send data to.
+    endpoint: "https://SPLUNK_IP:8088/services/collector"
+    index: "main"
+    health_path: "/services/collector/health"
+    health_check_enabled: true
+    tls:
+      insecure_skip_verify: true
+  logging:
+    loglevel: debug
+service:
+  telemetry:
+    logs:
+      level: "debug"
+  pipelines:
+    metrics:
+      receivers: [splunk_hec/metrics]
+      exporters: [splunk_hec, logging]
+    metrics/2:
+      receivers: [hostmetrics]
+      exporters: [splunk_hec, logging]
+    logs:
+      receivers: [splunk_hec/logs]
+      exporters: [splunk_hec, logging]
+    logs/2:
+      receivers: [ filelog ]
+      exporters: [ splunk_hec/logs, logging ]
+    logs/invalid_hec:
+      receivers: [ splunk_hec/logs_invalid ]
+      exporters: [ splunk_hec/invalid, logging ]
+    logs/disabled_hec:
+      receivers: [ splunk_hec/disabled ]
+      exporters: [ splunk_hec/disabled, logging ]

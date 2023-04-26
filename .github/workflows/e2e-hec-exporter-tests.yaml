@@ -1,0 +1,103 @@
+name: e2e-hec-exporter-tests
+
+on: 
+  pull_request
+
+jobs:
+  e2e-test:
+    name: HEC Exporter e2e tests
+    runs-on: ubuntu-latest
+
+    env:
+      CI_SPLUNK_PORT: 8089
+      CI_SPLUNK_USERNAME: admin
+      CI_SPLUNK_HEC_TOKEN: 00000000-0000-0000-0000-000000000000
+      CI_SPLUNK_HEC_TOKEN_DISABLED: f035f5d0-c141-4d83-9f57-00073b992c74
+      CI_SPLUNK_PASSWORD: helloworld
+      CI_INDEX_EVENTS: sck-otel
+      CI_INDEX_TIMESTAMP_EVENTS: timestamp
+      CI_INDEX_EVENTS_FILE_LOGS: file_logs
+      CI_INDEX_METRICS_HOST_METRICS_EVENTS: metrics
+      CI_INDEX_METRICS_HEC_RECEIVER_EVENTS: sck-metrics
+      CONTAINER_RUNTIME: docker
+      KUBERNETES_VERSION: v1.26.2
+      MINIKUBE_VERSION: v1.30.1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+
+      - name: Setup Minikube
+        run: |
+          # Install Kubectl
+          curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          mkdir -p ${HOME}/.kube
+          touch ${HOME}/.kube/config
+          # Install Minikube
+          curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64
+          chmod +x minikube
+          sudo mv minikube /usr/local/bin/
+          sudo sysctl fs.protected_regular=0
+          # Start Minikube and Wait
+          minikube start --container-runtime=${CONTAINER_RUNTIME} --cpus 2 --memory 4096 --kubernetes-version=${KUBERNETES_VERSION} --no-vtx-check
+          #kubectl apply -f https://docs.projectcalico.org/v3.14/manifests/calico.yaml
+          export JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'
+          until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do
+            sleep 1;
+          done
+      - name: Install Splunk
+        run: |
+          # Wait until default service account is created
+          until kubectl -n default get serviceaccount default -o name; do
+            sleep 1;
+          done
+          # Install Splunk on minikube
+          kubectl apply -f exporter/splunkhecexporter/test/config/k8s-splunk.yml
+          # Wait until splunk is ready
+          until kubectl logs splunk --tail=2 | grep -q 'Ansible playbook complete'; do
+            sleep 1;
+          done
+          export CI_SPLUNK_HOST=$(kubectl get pod splunk --template={{.status.podIP}})
+          # Setup Indexes
+          curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/data/indexes -d name=$CI_INDEX_EVENTS -d datatype=event
+          curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/data/indexes -d name=$CI_INDEX_TIMESTAMP_EVENTS -d datatype=event
+          curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/data/indexes -d name=$CI_INDEX_EVENTS_FILE_LOGS -d datatype=event
+          curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/data/indexes -d name=$CI_INDEX_METRICS_HOST_METRICS_EVENTS -d datatype=metric
+          curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/data/indexes -d name=$CI_INDEX_METRICS_HEC_RECEIVER_EVENTS -d datatype=metric
+          # Enable HEC services
+          curl -X POST -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD -k https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/servicesNS/nobody/splunk_httpinput/data/inputs/http/http/enable
+          # Create new HEC token
+          curl -X POST -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD -k -d "name=splunk_hec_token&token=$CI_SPLUNK_HEC_TOKEN&disabled=0&index=main&indexes=main,$CI_INDEX_EVENTS,$CI_INDEX_EVENTS_FILE_LOGS,$CI_INDEX_METRICS_HOST_METRICS_EVENTS,$CI_INDEX_METRICS_HEC_RECEIVER_EVENTS,$CI_INDEX_TIMESTAMP_EVENTS" https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/servicesNS/nobody/splunk_httpinput/data/inputs/http
+          curl -X POST -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD -k -d "name=splunk_hec_token_disabled&token=$CI_SPLUNK_HEC_TOKEN_DISABLED&disabled=1&index=main&indexes=main,$CI_INDEX_EVENTS" https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/servicesNS/nobody/splunk_httpinput/data/inputs/http
+          # Restart Splunk
+          curl -k -u $CI_SPLUNK_USERNAME:$CI_SPLUNK_PASSWORD https://$CI_SPLUNK_HOST:$CI_SPLUNK_PORT/services/server/control/restart -X POST
+
+      - name: Deploy otel contrib collector
+        run: |
+          go version
+          make otelcontribcol
+          cd ./bin
+          ls
+          export CI_SPLUNK_HOST=$(kubectl get pod splunk --template={{.status.podIP}})
+          sed -i 's/SPLUNK_IP/$CI_SPLUNK_HOST/g' ../exporter/splunkhecexporter/test/config/config.yaml
+          cat ../exporter/splunkhecexporter/test/config/config.yaml
+          ./otelcontribcol_linux_amd64 --config ../exporter/splunkhecexporter/test/config/config.yaml &
+          pwd
+
+
+      - name: Run functional tests
+        run: |
+          export CI_SPLUNK_HOST=$(kubectl get pod splunk --template={{.status.podIP}})
+          echo $CI_SPLUNK_HOST
+          cd exporter/splunkhecexporter/test
+          pwd
+          go get github.com/spf13/viper
+          echo "Running functional tests....."
+          go test -v
