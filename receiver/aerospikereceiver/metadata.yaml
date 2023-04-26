@@ -1,4 +1,10 @@
-name: aerospikereceiver
+type: aerospikereceiver
+
+status:
+  class: receiver
+  stability: alpha
+  pipelines: [metrics]
+  distributions: [contrib]
 
 resource_attributes:
   aerospike.node.name:

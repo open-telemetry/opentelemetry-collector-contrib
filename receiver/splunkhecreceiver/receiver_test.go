@@ -190,7 +190,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 		{
 			name: "incorrect_content_type",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/foo", nil)
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("Content-Type", "application/not-json")
 				return req
 			}(),
@@ -234,7 +236,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseErrUnmarshalBody, body)
+				assert.Equal(t, responseInvalidDataFormat, body)
 			},
 		},
 		{
@@ -244,8 +246,51 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusOK, status)
-				assert.Equal(t, responseOK, body)
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseNoData, body)
+			},
+		},
+		{
+			name: "invalid_data_format",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(`{"foo":"bar"}`)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseInvalidDataFormat, body)
+			},
+		},
+		{
+			name: "event_required_error",
+			req: func() *http.Request {
+				nilEventMsg := buildSplunkHecMsg(currentTime, 3)
+				nilEventMsg.Event = nil
+				msgBytes, err := json.Marshal(nilEventMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseErrEventRequired, body)
+			},
+		},
+		{
+			name: "event_cannot_be_blank_error",
+			req: func() *http.Request {
+				blankEventMsg := buildSplunkHecMsg(currentTime, 3)
+				blankEventMsg.Event = ""
+				msgBytes, err := json.Marshal(blankEventMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseErrEventBlank, body)
 			},
 		},
 		{
@@ -864,7 +909,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 		{
 			name: "incorrect_content_type",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/foo", nil)
+				req := httptest.NewRequest("POST", "http://localhost/foo", strings.NewReader("foo\nbar"))
 				req.Header.Set("Content-Type", "application/not-json")
 				return req
 			}(),
@@ -891,7 +936,8 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseNoData, body)
 			},
 		},
 
@@ -996,12 +1042,12 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 		assert.NoError(t, r.Shutdown(context.Background()))
 	}()
 	w := httptest.NewRecorder()
-	r.handleHealthReq(w, httptest.NewRequest("POST", "http://localhost/services/collector/health", nil))
+	r.handleHealthReq(w, httptest.NewRequest("GET", "http://localhost/services/collector/health", nil))
 
 	resp := w.Result()
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
-	assert.Len(t, respBytes, 0)
+	assert.Equal(t, string(respBytes), responseHecHealthy)
 	assert.Equal(t, 200, resp.StatusCode)
 }
 
@@ -1220,5 +1266,76 @@ func BenchmarkHandleReq(b *testing.B) {
 		resp := w.Result()
 		_, err = io.ReadAll(resp.Body)
 		assert.NoError(b, err)
+	}
+}
+
+func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+
+	tests := []struct {
+		name           string
+		req            *http.Request
+		assertResponse func(t *testing.T, status int, body string)
+	}{
+		{
+			name: "correct_healthcheck",
+			req: func() *http.Request {
+				req := httptest.NewRequest("GET", "http://localhost:0/services/collector/health", nil)
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, responseHecHealthy, body)
+			},
+		},
+		{
+			name: "correct_healthcheck_v1",
+			req: func() *http.Request {
+				req := httptest.NewRequest("GET", "http://localhost:0/services/collector/health/1.0", nil)
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, responseHecHealthy, body)
+			},
+		},
+		{
+			name: "incorrect_healthcheck_methods_v1",
+			req: func() *http.Request {
+				req := httptest.NewRequest("POST", "http://localhost:0/services/collector/health/1.0", nil)
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseNoData, body)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sink := new(consumertest.LogsSink)
+			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			assert.NoError(t, err)
+
+			r := rcv.(*splunkReceiver)
+			assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, r.Shutdown(context.Background()))
+			}()
+
+			w := httptest.NewRecorder()
+			r.server.Handler.ServeHTTP(w, tt.req)
+			resp := w.Result()
+			respBytes, err := io.ReadAll(resp.Body)
+			assert.NoError(t, err)
+			var bodyStr string
+			if err := json.Unmarshal(respBytes, &bodyStr); err != nil {
+				bodyStr = string(respBytes)
+			}
+
+			tt.assertResponse(t, resp.StatusCode, bodyStr)
+		})
 	}
 }

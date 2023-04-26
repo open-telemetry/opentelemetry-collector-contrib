@@ -24,14 +24,21 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-func TestNewFactory(t *testing.T) {
+func Test_NewFactory(t *testing.T) {
 	f := NewFactory()
 	assert.Equal(t, component.Type("azureeventhub"), f.Type())
 }
 
-func TestNewLogsReceiver(t *testing.T) {
+func Test_NewLogsReceiver(t *testing.T) {
 	f := NewFactory()
 	receiver, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, receiver)
+}
+
+func Test_NewMetricsReceiver(t *testing.T) {
+	f := NewFactory()
+	receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver)
 }

@@ -1,6 +1,0 @@
-k8sobjects:
-  objects:
-    - name: pods
-      mode: pull
-      resource_version: "1"
-    

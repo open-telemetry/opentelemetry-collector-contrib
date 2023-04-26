@@ -1,0 +1,6 @@
+type: basicauthextension
+
+status:
+  class: extension
+  stability: beta
+  distributions: [contrib]

@@ -2,16 +2,6 @@
 
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
@@ -93,6 +83,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/exporter/awss3exporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/exporter/awsxrayexporter"
     schedule:
       interval: "weekly"
@@ -109,6 +104,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/carbonexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/cassandraexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -718,6 +718,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/receiver/azuremonitorreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/receiver/bigipreceiver"
     schedule:
       interval: "weekly"
@@ -784,6 +789,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/filereceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/filestatsreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -874,6 +884,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/kubeletstatsreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/lokireceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1084,21 +1099,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/windowsperfcountersreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/zipkinreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/zookeeperreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/testbed"
     schedule:
       interval: "weekly"
       day: "wednesday"

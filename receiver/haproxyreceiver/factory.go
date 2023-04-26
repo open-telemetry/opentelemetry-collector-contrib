@@ -27,8 +27,7 @@ import (
 )
 
 const (
-	typeStr   = "haproxy"
-	stability = component.StabilityLevelAlpha
+	typeStr = "haproxy"
 )
 
 // NewFactory creates a new HAProxy receiver factory.
@@ -36,7 +35,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		newDefaultConfig,
-		receiver.WithMetrics(newReceiver, stability))
+		receiver.WithMetrics(newReceiver, metadata.Stability))
 }
 
 func newDefaultConfig() component.Config {

@@ -99,6 +99,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.StatefulSetName = true
 			case conventions.AttributeK8SStatefulSetUID:
 				p.rules.StatefulSetUID = true
+			case conventions.AttributeK8SContainerName:
+				p.rules.ContainerName = true
 			case conventions.AttributeK8SJobName:
 				p.rules.JobName = true
 			case conventions.AttributeK8SJobUID:
@@ -297,28 +299,16 @@ func withExtractPodAssociations(podAssociations ...PodAssociationConfig) option 
 
 			var name string
 
-			if association.From != "" {
-				if association.From == kube.ConnectionSource {
+			for _, associationSource := range association.Sources {
+				if associationSource.From == kube.ConnectionSource {
 					name = ""
 				} else {
-					name = association.Name
+					name = associationSource.Name
 				}
 				assoc.Sources = append(assoc.Sources, kube.AssociationSource{
-					From: association.From,
+					From: associationSource.From,
 					Name: name,
 				})
-			} else {
-				for _, associationSource := range association.Sources {
-					if associationSource.From == kube.ConnectionSource {
-						name = ""
-					} else {
-						name = associationSource.Name
-					}
-					assoc.Sources = append(assoc.Sources, kube.AssociationSource{
-						From: associationSource.From,
-						Name: name,
-					})
-				}
 			}
 			associations = append(associations, assoc)
 		}

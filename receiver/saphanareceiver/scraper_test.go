@@ -27,8 +27,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-const fullExpectedMetricsPath = "./testdata/expected_metrics/full.json"
-const partialExpectedMetricsPath = "./testdata/expected_metrics/mostly_disabled.json"
+const fullExpectedMetricsPath = "./testdata/expected_metrics/full.yaml"
+const partialExpectedMetricsPath = "./testdata/expected_metrics/mostly_disabled.yaml"
 const allQueryMetrics = "./testdata/mocked_queries/all_query_results.json"
 const mostlyDisabledQueryMetrics = "./testdata/mocked_queries/mostly_disabled_results.json"
 

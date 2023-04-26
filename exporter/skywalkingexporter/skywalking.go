@@ -99,6 +99,9 @@ func (oce *swExporter) start(ctx context.Context, host component.Host) error {
 }
 
 func (oce *swExporter) shutdown(context.Context) error {
+	if oce.grpcClientConn == nil {
+		return nil
+	}
 	if oce.logsClients != nil {
 		// First remove all the clients from the channel.
 		for i := 0; i < oce.cfg.NumStreams; i++ {

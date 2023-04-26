@@ -51,7 +51,7 @@ func createDefaultConfig() component.Config {
 		LogsTableName:    "otel_logs",
 		TracesTableName:  "otel_traces",
 		MetricsTableName: "otel_metrics",
-		TTLDays:          7,
+		TTLDays:          0,
 	}
 }
 

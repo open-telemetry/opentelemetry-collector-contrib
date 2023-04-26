@@ -1,0 +1,6 @@
+type: oauth2clientauthextension
+
+status:
+  class: extension
+  stability: beta
+  distributions: [contrib]

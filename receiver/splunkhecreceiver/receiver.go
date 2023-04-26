@@ -43,14 +43,19 @@ const (
 	defaultServerTimeout = 20 * time.Second
 
 	responseOK                        = "OK"
+	responseHecHealthy                = `{"text": "HEC is healthy", "code": 17}`
 	responseInvalidMethod             = `Only "POST" method is supported`
 	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
+	responseInvalidDataFormat         = `{"text":"Invalid data format","code":6}`
+	responseErrEventRequired          = `{"text":"Event field is required","code":12}`
+	responseErrEventBlank             = `{"text":"Event field cannot be blank","code":13}`
 	responseErrGzipReader             = "Error on gzip body"
 	responseErrUnmarshalBody          = "Failed to unmarshal message body"
 	responseErrInternalServerError    = "Internal Server Error"
 	responseErrUnsupportedMetricEvent = "Unsupported metric event"
 	responseErrUnsupportedLogEvent    = "Unsupported log event"
 	responseErrHandlingIndexedFields  = `{"text":"Error in handling indexed fields","code":15,"invalid-event-number":%d}`
+	responseNoData                    = `{"text":"No data","code":5}`
 	// Centralizing some HTTP and related string constants.
 	gzipEncoding              = "gzip"
 	httpContentEncodingHeader = "Content-Encoding"
@@ -64,13 +69,17 @@ var (
 	errInvalidEncoding        = errors.New("invalid encoding")
 
 	okRespBody                = initJSONResponse(responseOK)
-	invalidMethodRespBody     = initJSONResponse(responseInvalidMethod)
+	eventRequiredRespBody     = initJSONResponse(responseErrEventRequired)
+	eventBlankRespBody        = initJSONResponse(responseErrEventBlank)
 	invalidEncodingRespBody   = initJSONResponse(responseInvalidEncoding)
+	invalidFormatRespBody     = initJSONResponse(responseInvalidDataFormat)
+	invalidMethodRespBody     = initJSONResponse(responseInvalidMethod)
 	errGzipReaderRespBody     = initJSONResponse(responseErrGzipReader)
 	errUnmarshalBodyRespBody  = initJSONResponse(responseErrUnmarshalBody)
 	errInternalServerError    = initJSONResponse(responseErrInternalServerError)
 	errUnsupportedMetricEvent = initJSONResponse(responseErrUnsupportedMetricEvent)
 	errUnsupportedLogEvent    = initJSONResponse(responseErrUnsupportedLogEvent)
+	noDataRespBody            = initJSONResponse(responseNoData)
 )
 
 // splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
@@ -195,6 +204,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 
 	mx := mux.NewRouter()
 	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
+	mx.NewRoute().Path(r.config.HealthPath + "/1.0").HandlerFunc(r.handleHealthReq).Methods("GET")
 	if r.logsConsumer != nil {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}
@@ -246,6 +256,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 	if req.ContentLength == 0 {
 		r.obsrecv.EndLogsOp(ctx, typeStr, 0, nil)
+		r.failRequest(ctx, resp, http.StatusBadRequest, noDataRespBody, 0, nil)
 		return
 	}
 
@@ -311,9 +322,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	if req.ContentLength == 0 {
-		if _, err := resp.Write(okRespBody); err != nil {
-			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, 0, err)
-		}
+		r.failRequest(ctx, resp, http.StatusBadRequest, noDataRespBody, 0, nil)
 		return
 	}
 
@@ -325,7 +334,17 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		var msg splunk.Event
 		err := dec.Decode(&msg)
 		if err != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, len(events), err)
+			r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, len(events), err)
+			return
+		}
+
+		if msg.Event == nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, eventRequiredRespBody, len(events), nil)
+			return
+		}
+
+		if msg.Event == "" {
+			r.failRequest(ctx, resp, http.StatusBadRequest, eventBlankRespBody, len(events), nil)
 			return
 		}
 
@@ -441,7 +460,9 @@ func (r *splunkReceiver) failRequest(
 }
 
 func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
-	writer.WriteHeader(200)
+	writer.Header().Add("Content-Type", "application/json")
+	writer.WriteHeader(http.StatusOK)
+	_, _ = writer.Write([]byte(responseHecHealthy))
 }
 
 func initJSONResponse(s string) []byte {

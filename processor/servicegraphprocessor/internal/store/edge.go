@@ -31,7 +31,7 @@ const (
 
 // Edge is an Edge between two nodes in the graph
 type Edge struct {
-	key Key
+	Key Key
 
 	TraceID                            pcommon.TraceID
 	ConnectionType                     ConnectionType
@@ -53,7 +53,7 @@ type Edge struct {
 
 func newEdge(key Key, ttl time.Duration) *Edge {
 	return &Edge{
-		key:        key,
+		Key:        key,
 		Dimensions: make(map[string]string),
 		expiration: time.Now().Add(ttl),
 		Peer:       make(map[string]string),

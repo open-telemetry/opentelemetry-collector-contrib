@@ -24,7 +24,7 @@ import (
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -94,6 +94,12 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
 					spanAttr := attributesToMap(r.Attributes())
+					if spans.ScopeSpans().At(j).Scope().Name() != "" {
+						spanAttr[conventions.AttributeOtelScopeName] = spans.ScopeSpans().At(j).Scope().Name()
+					}
+					if spans.ScopeSpans().At(j).Scope().Version() != "" {
+						spanAttr[conventions.AttributeOtelScopeVersion] = spans.ScopeSpans().At(j).Scope().Version()
+					}
 					status := r.Status()
 					eventTimes, eventNames, eventAttrs := convertEvents(r.Events())
 					linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs := convertLinks(r.Links())

@@ -2,7 +2,7 @@
 
 | Status                   |                       |
 | ------------------------ | --------------------- |
-| Stability                | [alpha]               |
+| Stability                | [beta]               |
 | Supported pipeline types | logs, metrics, traces |
 | Distributions            | [contrib]             |
 
@@ -177,5 +177,5 @@ with ( docstring = "Histo sum count processing function", folder = "UpdatePolicy
 @'[{ "IsEnabled": true, "Source": "RawMetricsData","Query": "ExtractHistoCountColumns()", "IsTransactional": false, "PropagateIngestionProperties": false}]'
 ```
 
-[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
