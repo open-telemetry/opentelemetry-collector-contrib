@@ -18,10 +18,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
