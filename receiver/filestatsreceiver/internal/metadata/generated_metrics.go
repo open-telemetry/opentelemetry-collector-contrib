@@ -31,7 +31,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsSettings provides settings for filestatsreceiver metrics.
+// MetricsSettings provides settings for filestats metrics.
 type MetricsSettings struct {
 	FileAtime MetricSettings `mapstructure:"file.atime"`
 	FileCtime MetricSettings `mapstructure:"file.ctime"`
@@ -61,7 +61,7 @@ type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for filestatsreceiver metrics.
+// ResourceAttributesSettings provides settings for filestats metrics.
 type ResourceAttributesSettings struct {
 	FileName ResourceAttributeSettings `mapstructure:"file.name"`
 	FilePath ResourceAttributeSettings `mapstructure:"file.path"`
@@ -404,7 +404,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/filestatsreceiver")
+	ils.Scope().SetName("otelcol/filestats")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricFileAtime.emit(ils.Metrics())
