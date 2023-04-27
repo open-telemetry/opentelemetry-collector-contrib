@@ -18,6 +18,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"strings"
 	"time"
 
@@ -189,7 +190,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (e *expHistogramMetrics) Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error {
+func (e *expHistogramMetrics) Add(resAttr map[string]string, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
 	expHistogram, ok := metrics.(pmetric.ExponentialHistogram)
 	if !ok {
 		return fmt.Errorf("metrics param is not type of ExponentialHistogram")
@@ -199,8 +200,13 @@ func (e *expHistogramMetrics) Add(metrics any, metaData *MetricsMetaData, name s
 		metricName:        name,
 		metricDescription: description,
 		metricUnit:        unit,
-		metadata:          metaData,
-		expHistogram:      expHistogram,
+		metadata: &MetricsMetaData{
+			ResAttr:    resAttr,
+			ResURL:     resURL,
+			ScopeURL:   scopeURL,
+			ScopeInstr: scopeInstr,
+		},
+		expHistogram: expHistogram,
 	})
 
 	return nil

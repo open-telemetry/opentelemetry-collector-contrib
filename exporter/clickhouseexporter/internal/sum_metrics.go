@@ -18,6 +18,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"strings"
 	"time"
 
@@ -168,7 +169,7 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (s *sumMetrics) Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error {
+func (s *sumMetrics) Add(resAttr map[string]string, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
 	sum, ok := metrics.(pmetric.Sum)
 	if !ok {
 		return fmt.Errorf("metrics param is not type of Sum")
@@ -178,8 +179,13 @@ func (s *sumMetrics) Add(metrics any, metaData *MetricsMetaData, name string, de
 		metricName:        name,
 		metricDescription: description,
 		metricUnit:        unit,
-		metadata:          metaData,
-		sum:               sum,
+		metadata: &MetricsMetaData{
+			ResAttr:    resAttr,
+			ResURL:     resURL,
+			ScopeURL:   scopeURL,
+			ScopeInstr: scopeInstr,
+		},
+		sum: sum,
 	})
 	return nil
 }
