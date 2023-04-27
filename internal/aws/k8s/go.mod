@@ -56,4 +56,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-retract v0.65.0
+retract (
+	v0.76.1
+	v0.65.0
+)

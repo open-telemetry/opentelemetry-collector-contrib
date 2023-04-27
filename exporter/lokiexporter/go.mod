@@ -83,4 +83,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
-retract v0.65.0
+retract (
+	v0.76.1
+	v0.65.0
+)

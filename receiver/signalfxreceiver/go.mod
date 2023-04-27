@@ -104,7 +104,10 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-retract v0.65.0
+retract (
+	v0.76.1
+	v0.65.0
+)
 
 // https://github.com/go-openapi/spec/issues/156
 replace github.com/go-openapi/spec v0.20.5 => github.com/go-openapi/spec v0.20.6

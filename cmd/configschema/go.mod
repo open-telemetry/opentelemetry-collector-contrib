@@ -1052,7 +1052,10 @@ exclude github.com/docker/distribution v2.8.0+incompatible
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
 
-retract v0.65.0
+retract (
+	v0.76.1
+	v0.65.0
+)
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ../../receiver/sshcheckreceiver
 

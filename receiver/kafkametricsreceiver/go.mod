@@ -106,4 +106,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
 
-retract v0.65.0
+retract (
+	v0.76.1
+	v0.65.0
+)

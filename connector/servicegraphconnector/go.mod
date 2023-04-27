@@ -38,6 +38,9 @@ require (
 	google.golang.org/protobuf v1.30.0 // indirect
 )
 
-retract v0.65.0
+retract (
+	v0.76.1
+	v0.65.0
+)
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor => ../../processor/servicegraphprocessor/
