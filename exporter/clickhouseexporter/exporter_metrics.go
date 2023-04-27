@@ -70,12 +70,12 @@ func (e *metricsExporter) shutdown(ctx context.Context) error {
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	metricsMap := internal.NewMetricsModel(e.cfg.MetricsTableName)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		metaData := internal.MetricsMetaData{}
 		metrics := md.ResourceMetrics().At(i)
 		res := metrics.Resource()
-		metaData.ResAttr = attributesToMap(res.Attributes())
-		metaData.ResURL = metrics.SchemaUrl()
 		for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
+			metaData := internal.MetricsMetaData{}
+			metaData.ResAttr = attributesToMap(res.Attributes())
+			metaData.ResURL = metrics.SchemaUrl()
 			rs := metrics.ScopeMetrics().At(j).Metrics()
 			metaData.ScopeURL = metrics.ScopeMetrics().At(j).SchemaUrl()
 			metaData.ScopeInstr = metrics.ScopeMetrics().At(j).Scope()
