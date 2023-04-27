@@ -245,13 +245,14 @@ func TestAzureScraperScrape(t *testing.T) {
 }
 
 func getResourcesMockData(tags bool) []armresources.ClientListResponse {
-	id1, id2, id3, location1, tagName1, tagValue1 := "resourceId1", "resourceId2", "resourceId3", "location1", "tagName1", "tagValue1"
+	id1, id2, id3, location1 := "resourceId1", "resourceId2", "resourceId3", "location1"
 
 	resourceID1 := armresources.GenericResourceExpanded{
-		ID: &id1,
+		ID:       &id1,
+		Location: &location1,
 	}
 	if tags {
-		resourceID1.Location = &location1
+		tagName1, tagValue1 := "tagName1", "tagValue1"
 		resourceID1.Tags = map[string]*string{tagName1: &tagValue1}
 	}
 	return []armresources.ClientListResponse{

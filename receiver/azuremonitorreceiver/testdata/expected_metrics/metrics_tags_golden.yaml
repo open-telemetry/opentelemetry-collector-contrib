@@ -16,7 +16,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: dimension
+                    - key: metadata_dimension
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -30,7 +30,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: dimension
+                    - key: metadata_dimension
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -44,7 +44,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: dimension
+                    - key: metadata_dimension
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -58,10 +58,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -75,10 +75,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -92,10 +92,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -109,10 +109,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -126,10 +126,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -143,10 +143,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -160,10 +160,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -188,7 +188,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: dimension
+                    - key: metadata_dimension
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -202,7 +202,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: dimension
+                    - key: metadata_dimension
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -216,10 +216,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -244,7 +244,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: dimension
+                    - key: metadata_dimension
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -258,7 +258,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: dimension
+                    - key: metadata_dimension
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -272,10 +272,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -311,7 +311,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: dimension
+                    - key: metadata_dimension
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -325,10 +325,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -342,10 +342,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -359,7 +359,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId3
-                    - key: dimension
+                    - key: metadata_dimension
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -373,7 +373,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: dimension
+                    - key: metadata_dimension
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -387,10 +387,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -404,10 +404,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -432,7 +432,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: dimension
+                    - key: metadata_dimension
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -446,10 +446,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
@@ -463,10 +463,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: location
+                    - key: tags_location
                       value:
                         stringValue: location1
-                    - key: tagName1
+                    - key: tags_tagName1
                       value:
                         stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
