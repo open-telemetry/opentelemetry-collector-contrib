@@ -83,7 +83,7 @@ func (config *Config) Validate() error {
 	if config.QueueSettings.QueueSize < 1 {
 		return errors.New("'sending_queue.queue_size' must be 1 or greater")
 	}
-	if retErr := cwlogs.IsValidRetentionValue(config.LogRetention); retErr != nil {
+	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
 		return retErr
 	}
 	tagInputErr := cwlogs.ValidateTagsInput(config.Tags)

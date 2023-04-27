@@ -157,16 +157,10 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 		var awsErr awserr.Error
 		if errors.As(err, &awsErr) && awsErr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
 			// Create Log Group with tags if they exist and were specified in the config
-			if client.tags != nil && len(client.tags) > 0 {
-				_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
-					LogGroupName: logGroup,
-					Tags:         client.tags,
-				})
-			} else {
-				_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
-					LogGroupName: logGroup,
-				})
-			}
+			_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
+				LogGroupName: logGroup,
+				Tags:         client.tags,
+			})
 			if err == nil {
 				// For newly created log groups, set the log retention polic if specified or non-zero.  Otheriwse, set to Never Expire
 				if client.logRetention != 0 {

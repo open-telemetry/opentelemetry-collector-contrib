@@ -17,6 +17,7 @@ package awscloudwatchlogsexporter
 import (
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/cenkalti/backoff/v4"
@@ -165,6 +166,23 @@ func TestTagsValidateCorrect(t *testing.T) {
 
 }
 
+func TestTagsValidateTooLittleTags(t *testing.T) {
+	m := make(map[string]*string)
+	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	wrongcfg := &Config{
+		RetrySettings:      defaultRetrySettings,
+		LogGroupName:       "test-1",
+		LogStreamName:      "testing",
+		Endpoint:           "",
+		Tags:               m,
+		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
+		QueueSettings: QueueSettings{
+			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+		},
+	}
+	assert.EqualError(t, component.ValidateConfig(wrongcfg), "invalid amount of items. Please input at least 1 tag or remove the tag field")
+}
+
 func TestTagsValidateTooManyTags(t *testing.T) {
 	m := make(map[string]*string)
 	avalue := "avalue"
@@ -239,17 +257,14 @@ func TestTagsValidateKeyTooShort(t *testing.T) {
 
 func TestTagsValidateKeyTooLong(t *testing.T) {
 	avalue := "avalue"
-	akey := ""
-	for i := 0; i < 129; i++ {
-		akey += "a"
-	}
+	akey := strings.Repeat("a", 129)
 	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
 	wrongcfg := &Config{
 		RetrySettings:      defaultRetrySettings,
 		LogGroupName:       "test-1",
 		LogStreamName:      "testing",
 		Endpoint:           "",
-		Tags:               map[string]*string{"": &avalue},
+		Tags:               map[string]*string{akey: &avalue},
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 		QueueSettings: QueueSettings{
 			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
@@ -276,10 +291,7 @@ func TestTagsValidateValueTooShort(t *testing.T) {
 }
 
 func TestTagsValidateValueTooLong(t *testing.T) {
-	avalue := ""
-	for i := 0; i < 257; i++ {
-		avalue += "a"
-	}
+	avalue := strings.Repeat("a", 257)
 	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
 	wrongcfg := &Config{
 		RetrySettings:      defaultRetrySettings,

@@ -142,7 +142,7 @@ func (config *Config) Validate() error {
 	}
 	config.MetricDescriptors = validDescriptors
 
-	if retErr := cwlogs.IsValidRetentionValue(config.LogRetention); retErr != nil {
+	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
 		return retErr
 	}
 

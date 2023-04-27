@@ -17,6 +17,7 @@ package awsemfexporter
 import (
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -201,6 +202,21 @@ func TestTagsValidateCorrect(t *testing.T) {
 
 }
 
+func TestTagsValidateTooLittleTags(t *testing.T) {
+	m := make(map[string]*string)
+	wrongcfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		Tags:                        m,
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.EqualError(t, component.ValidateConfig(wrongcfg), "invalid amount of items. Please input at least 1 tag or remove the tag field")
+}
+
 func TestTagsValidateTooManyTags(t *testing.T) {
 	m := make(map[string]*string)
 	avalue := "avalue"
@@ -267,10 +283,7 @@ func TestTagsValidateKeyTooShort(t *testing.T) {
 
 func TestTagsValidateKeyTooLong(t *testing.T) {
 	avalue := "avalue"
-	akey := ""
-	for i := 0; i < 129; i++ {
-		akey += "a"
-	}
+	akey := strings.Repeat("a", 129)
 	wrongcfg := &Config{
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
@@ -300,10 +313,7 @@ func TestTagsValidateValueTooShort(t *testing.T) {
 }
 
 func TestTagsValidateValueTooLong(t *testing.T) {
-	avalue := ""
-	for i := 0; i < 257; i++ {
-		avalue += "a"
-	}
+	avalue := strings.Repeat("a", 257)
 	wrongcfg := &Config{
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,

@@ -21,7 +21,7 @@ import (
 )
 
 // Added function to check if value is an accepted number of log retention days
-func IsValidRetentionValue(input int64) error {
+func ValidateRetentionValue(input int64) error {
 	switch input {
 	case
 		0,
@@ -53,9 +53,13 @@ func IsValidRetentionValue(input int64) error {
 
 // Check if the tags input is valid
 func ValidateTagsInput(input map[string]*string) error {
+	if input != nil && len(input) < 1 {
+		return fmt.Errorf("invalid amount of items. Please input at least 1 tag or remove the tag field")
+	}
 	if len(input) > 50 {
 		return fmt.Errorf("invalid amount of items. Please input at most 50 tags")
 	}
+	// The regex for the Key and Value requires "alphanumerics, whitespace, and _.:/=+-!" as noted here: https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_CreateLogGroup.html#:~:text=%5E(%5B%5Cp%7BL%7D%5Cp%7BZ%7D%5Cp%7BN%7D_.%3A/%3D%2B%5C%2D%40%5D%2B)%24
 	validKeyPattern := regexp.MustCompile(`^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`)
 	validValuePattern := regexp.MustCompile(`^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
 	for key, value := range input {
