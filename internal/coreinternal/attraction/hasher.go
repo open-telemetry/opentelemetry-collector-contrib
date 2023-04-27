@@ -34,7 +34,7 @@ var (
 	byteFalse = [1]byte{0}
 )
 
-// Deprecated: [v0.76.2] use sha2Hasher instead.
+// Deprecated: [v0.75.0] use sha2Hasher instead.
 // sha1Hasher hashes an AttributeValue using SHA1 and returns a
 // hashed version of the attribute. In practice, this would mostly be used
 // for string attributes but we support all types for completeness/correctness
