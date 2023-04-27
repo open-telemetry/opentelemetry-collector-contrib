@@ -20,6 +20,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.76.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.76.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.76.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter v0.76.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.76.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.76.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.76.1
