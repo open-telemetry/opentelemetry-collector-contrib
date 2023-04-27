@@ -224,6 +224,7 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
 
 retract (
+	v0.76.2
 	v0.76.1
 	v0.65.0
 )

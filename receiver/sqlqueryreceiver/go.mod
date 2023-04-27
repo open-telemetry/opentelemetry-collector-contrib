@@ -112,6 +112,7 @@ require (
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 
 retract (
+	v0.76.2
 	v0.76.1
 	v0.65.0
 )

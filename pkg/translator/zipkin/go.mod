@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/jaegertracing/jaeger v1.41.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.3
 	github.com/openzipkin/zipkin-go v0.4.1
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
@@ -38,6 +38,7 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
 
 retract (
+	v0.76.2
 	v0.76.1
 	v0.65.0
 )

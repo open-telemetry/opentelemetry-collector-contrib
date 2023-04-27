@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/aws/aws-sdk-go v1.44.249
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.76.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.76.3
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector/component v0.76.1
 	go.uber.org/zap v1.24.0
@@ -36,6 +36,7 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ../../../internal/aws/awsutil
 
 retract (
+	v0.76.2
 	v0.76.1
 	v0.65.0
 )
