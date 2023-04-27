@@ -1,4 +1,4 @@
-type: filestatsreceiver
+type: filestats
 
 status:
   class: receiver
