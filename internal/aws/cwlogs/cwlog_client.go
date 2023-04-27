@@ -156,6 +156,7 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 		client.logger.Debug("cwlog_client: creating stream fail", zap.Error(err))
 		var awsErr awserr.Error
 		if errors.As(err, &awsErr) && awsErr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
+			// Create Log Group with tags if they exist and were specified in the config
 			if client.tags != nil && len(client.tags) > 0 {
 				_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
 					LogGroupName: logGroup,
