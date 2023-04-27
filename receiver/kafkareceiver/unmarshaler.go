@@ -76,10 +76,12 @@ func defaultLogsUnmarshalers() map[string]LogsUnmarshaler {
 	raw := newRawLogsUnmarshaler()
 	text := newTextLogsUnmarshaler()
 	json := newJSONLogsUnmarshaler()
+	avro := newAVROLogsUnmarshaler()
 	return map[string]LogsUnmarshaler{
 		otlpPb.Encoding(): otlpPb,
 		raw.Encoding():    raw,
 		text.Encoding():   text,
 		json.Encoding():   json,
+		avro.Encoding():   avro,
 	}
 }

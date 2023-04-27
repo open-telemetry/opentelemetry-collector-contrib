@@ -1,0 +1,53 @@
+{
+   "type" : "record",
+   "namespace" : "com.example",
+   "name" : "LogMsg",
+   "fields" : [
+      {
+         "name": "timestamp",
+         "type": "long",
+         "logicalType": "timestamp-millis"
+      },
+      { "name" : "message" , "type" : "string" },
+      { "name" : "hostname" , "type" : "string" },
+      { "name" : "count" , "type" : "int" },
+      {
+         "name": "levelEnum",
+         "type": {
+            "type": "enum",
+            "namespace": "com.example",
+            "name": "Level",
+            "symbols": [
+               "DEBUG",
+               "INFO",
+               "ERROR"
+            ]
+         },
+         "default": "INFO"
+      },
+      { "name" : "severity" , "type" : "int", "default": 0 },
+      { "name" : "level" , "type" : "string", "default": "warn" },
+      {
+         "name": "properties",
+         "type": { "type": "array", "items": "string" },
+         "default": []
+      },
+      {
+         "name": "nestedRecord",
+         "type": {
+            "type": "record",
+            "name": "NestedRecord",
+            "fields": [
+               { "name": "field1", "type": "long", "default": 0 },
+               { "name": "field2", "type": "string", "default": "val2" }
+            ]
+         },
+         "default": {}
+      },
+      {
+         "name": "mapField",
+         "type": { "type": "map", "values": "string" },
+         "default": {}
+      }
+   ]
+}
