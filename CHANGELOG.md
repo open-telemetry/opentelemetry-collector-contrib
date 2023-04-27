@@ -4,6 +4,92 @@
 
 <!-- next version -->
 
+## v0.76.1
+
+### 🛑 Breaking changes 🛑
+
+- `prometheusreceiver, prometheusexporter, prometheusremotewrite`: Enable pkg.translator.prometheus.NormalizeName by default (#20518)
+  Enabling normalization by default changes the emitted metrics for components that rely on
+  the prometheus translation package. This feature can still be disabled via the following
+  `--feature-gates=-pkg.translator.prometheus.NormalizeName`
+  
+- `cumulativetodeltaprocessor`: Removes stable `processor.cumulativetodeltaprocessor.EnableHistogramSupport` feature gate. Setting this gate will cause an error. (#20717)
+- `exporter/lokiexporter`: Remove deprecated Loki exporters parameters. (#15653, #15365)
+  The support of `labels.{attributes/resource}`, `labels.record`, `tenant`, | and `format` configuration parameters are dropped in favor of attribute hints way of configuring the exporter.
+- `solacereceiver`: Changed the type of the max_unacknowledged configuration option from uint32 to int32 (#20666)
+
+### 🚩 Deprecations 🚩
+
+- `dotnetdiagnosticsreceiver`: add deprecation notice (#20740)
+
+### 🚀 New components 🚀
+
+- `lokireceiver`: Added implementation of the Loki receiver component (#18635)
+- `receiver/azuremonitorreceiver`: New component for scraping Azure Monitor metrics (#18899)
+- `cassandra_exporter`: Cassandra exporter implementation (#17910)
+- `lokireceiver`: Mark loki receiver as Alpha (#18635)
+- `filestatsreceiver`: Add the structure of a new component reporting file statistics. (#19729)
+
+### 💡 Enhancements 💡
+
+- `jmxreceiver`: Add the JMX metrics gatherer version 1.24.0-alpha to the supported jars hash list (#20551)
+- `jmxreceiver`: Add the JMX metrics gatherer version 1.25.0-alpha to the supported jars hash list (#21052)
+- `jmxreceiver`: Add the JMX metrics gatherer version 1.25.1-alpha to the supported jars hash list (#21103)
+- `exporter/awsxray`: Add opt-in telemetry for X-Ray receiver/exporter (#19415)
+- `awsemfexporter`: Add support AWS Embedded Metric Format Version 0 (#20314)
+- `splunkhecexporter`: Set the default value of the idle connection timeout to 10s, rather than 30s by default (#20543)
+- `coralogixexporter`: Allow users to use only Coralogix domain to configure exporter (#20719)
+- `datadogexporter`: Ensure that container tags are set globally on the payload so that they can be picked up as primary tags in the app (APM). (#20923)
+- `datadogexporter`: Reduce log level of retriable errors to Debug level (#20755)
+- `datadogexporter`: Support OTel semconv 1.17.0 in Datadog OTLP trace ingestion. (#20923)
+- `datadogexporter`: Use minimum and maximum values from cumulative Histograms. Values are used only when we can assume they are from the last time window or otherwise to clamp estimates. (#20872)
+- `journaldreceiver`: add support for `matches` configuration (#20295)
+- `fileexporter`: Add periodic flushing (#18251)
+  Adding flushing to the file exporter eases the analysis
+  of the output the exporter generates.
+  
+- `pkg/stanza`: Add and option to pause reading a file and attempt to resend the current batch of logs if it encounters an error from downstream components. (#20511)
+  Add a `retry_on_failure` config option (disabled by default) that can be used to slow down reading logs instead of 
+  dropping logs if downstream components return a non-permanent error. The configuration has the following options:
+    - `enabled`: Enable or disable the retry mechanism. Default is `false`.
+    - `initial_interval`: The initial interval to wait before retrying. Default is `1s`.
+    - `max_interval`: The maximum interval to wait before retrying. Default is `30s`.
+    - `max_elapsed_time`: The maximum amount of time to wait before giving up. Default is `5m`.
+  
+- `k8sattributesprocessor`: Allow getting k8s.container.name, container.image.name and container.image.tag by container.id. (#19468)
+  The container.id resource attribute can be set automatically in most SDKs by means of API.
+- `instanaexporter`: Preserve resource attributes in converted spans (#20454)
+- `splunkhecexporter`: Apply a new config `maxEventSize` on our events, it would break down the events based on this. This basically implements HEC's `maxEventSize` on our exporter. It is implemented on uncompressed data. (#20290)
+- `splunkhecreceiver`: Make Splunk HEC receiver Health endpoint mimic the real one (#20871)
+- `receiver/mongodbatlasreceiver`: emit "`mongodb_atlas.user.alias`" attribute which is the user-friendly hostname of the cluster node as displayed in the Atlas portal. This attribute is disabled by default, if you want to emit it, you'll need to explicitly enable it. (#18881)
+- `prometheusreceiver`: All receivers are setting receiver name and version when sending data. This change introduces the same behaviour to the prometheus receiver. (#20902)
+- `splunkhecexporter`: Adding an option in splunkhecexporter to enable heartbeat. A heartbeat is a metadata event about the current environment and build information. If heartbeat is enabled, splunkhecexporter will periodically send heartbeat to the destination in given time intervals from configurations. (#20225)
+- `vcenterreceiver`: Adds VM CPU usage and utilization metrics (#20895)
+
+### 🧰 Bug fixes 🧰
+
+- `servicegraphprocessor`: Only create client virtual nodes when server spans are orphans (#19764)
+- `datadogexporter`: Re-add support for span links (span links are added as metadata to the converted span), which were erroneously removed from previous release. (#20923)
+- `datadogexporter`: Fix issue in hostname detection. (#20923)
+  In the latest release, feature gate (exporter.datadog.hostname.preview) was graduated to Stable. The behaviour was set to the behaviour of the feature gate disabled, instead of enabled. The behaviour is now set to the behaviour of the feature gate enabled.
+- `azuremonitorexporter`: Ensure that metric attributes are exported to Azure Monitor (#19407)
+- `pkg/stanza`: fix eventData format for Windows events (#20547)
+- `fluentforwardreceiver`: Fixed performance issue. (#20721)
+- `receiver/k8scluster`: Use newer v2 HorizontalPodAutoscaler for Kubernetes 1.26 (#20480)
+  v2beta2 HorizontalPodAutoscaler is no longer available starting in Kubernetes 1.26
+- `pkg/stanza`: fix flaky test (#20877)
+- `pkg/stanza`: Fix issue where recombine operator would never flush. (#20451)
+  1.Make the forceFlushTimeout compare with timeSinceFirstEntry not timeSinceLastEntry 2.set the period of ticker to 1/5 forceFlushTimeout
+- `spanmetricsconnector`: fix spanmetrics connector to support adding exemplar to metric (#20771)
+- `mongodbreceiver`: Fixes scraper error `Unauthorized` by not calling index stats on an internal local MongoDB database. (#21114)
+- `receiver/mongodbatlasreceiver`: Ensure that Process metrics are emitted with only the correct subset of attributes. (#21155)
+- `splunkhecexporter`: Do not send data to a Splunk backend if no data is present in the batch. Previously compressed batches would not correctly detect data was not present in the batch. (#20290)
+- `filelogreceiver`: Fix issue where first few lines of a file could be ignored when another file had recently contained the same beginning. (#20745)
+- `filelogreceiver`: stanza panic when trace_flags is an empty string (#20924)
+- `hostmetricsreceiver/processscraper`: fixing the processmetrics tests to support testing collection in darwin (#19141)
+  Darwin only supports some of the processmetrics + using Cmdline to get the Executable Path, which caused tests to fail.
+- `awsxrayexporter`: Fixed DynamoDB table name from being set as an empty string when reading from attributes (#19204)
+
 ## v0.75.0
 
 ### 🛑 Breaking changes 🛑
