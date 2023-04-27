@@ -8,8 +8,8 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.41.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.76.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.76.3
 	github.com/stretchr/testify v1.8.2
 	github.com/xdg-go/scram v1.1.2
 	go.opentelemetry.io/collector v0.76.1
@@ -79,6 +79,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
 
 retract (
+	v0.76.2
 	v0.76.1
 	v0.65.0
 )
