@@ -56,6 +56,9 @@ type Config struct {
 	GroupID string `mapstructure:"group_id"`
 	// The consumer client ID that receiver will use (default "otel-collector")
 	ClientID string `mapstructure:"client_id"`
+	// The initial offset to use if no offset was previously committed.
+	// Must be `latest` or `earliest` (default "latest").
+	InitialOffset string `mapstructure:"initial_offset"`
 
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.
@@ -69,6 +72,11 @@ type Config struct {
 	// Controls the way the messages are marked as consumed
 	MessageMarking MessageMarking `mapstructure:"message_marking"`
 }
+
+const (
+	offsetLatest   string = "latest"
+	offsetEarliest string = "earliest"
+)
 
 var _ component.Config = (*Config)(nil)
 
