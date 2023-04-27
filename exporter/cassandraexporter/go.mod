@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/gocql/gocql v1.3.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.1
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector/component v0.76.1-0.20230426191218-56daa378f504
 	go.opentelemetry.io/collector/confmap v0.76.1-0.20230426191218-56daa378f504

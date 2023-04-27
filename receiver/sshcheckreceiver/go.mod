@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshche
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.76.1
 	github.com/pkg/sftp v1.13.5
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.76.1-0.20230426191218-56daa378f504
@@ -17,7 +17,7 @@ require (
 )
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.75.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.76.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	go.opentelemetry.io/collector/exporter v0.76.1-0.20230426191218-56daa378f504 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
@@ -25,7 +25,7 @@ require (
 
 require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.1
 )
 
 require (

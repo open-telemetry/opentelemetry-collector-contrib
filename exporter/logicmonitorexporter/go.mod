@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/logicmonitor/lm-data-sdk-go v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.76.1
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.76.1-0.20230426191218-56daa378f504
 	go.opentelemetry.io/collector/component v0.76.1-0.20230426191218-56daa378f504

@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.1
 	github.com/stretchr/testify v1.8.2
 	github.com/wavefronthq/wavefront-sdk-go v0.12.0
 	go.opentelemetry.io/collector v0.76.1-0.20230426191218-56daa378f504
