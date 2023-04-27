@@ -163,7 +163,7 @@ type fakeDBClient struct {
 	err            error
 }
 
-func (c *fakeDBClient) queryRows(context.Context) ([]stringMap, error) {
+func (c *fakeDBClient) queryRows(context.Context, ...any) ([]stringMap, error) {
 	if c.err != nil {
 		return nil, c.err
 	}

@@ -31,7 +31,7 @@ import (
 type stringMap map[string]string
 
 type dbClient interface {
-	queryRows(ctx context.Context) ([]stringMap, error)
+	queryRows(ctx context.Context, args ...any) ([]stringMap, error)
 }
 
 type dbSQLClient struct {
@@ -48,8 +48,8 @@ func newDbClient(db db, sql string, logger *zap.Logger) dbClient {
 	}
 }
 
-func (cl dbSQLClient) queryRows(ctx context.Context) ([]stringMap, error) {
-	sqlRows, err := cl.db.QueryContext(ctx, cl.sql)
+func (cl dbSQLClient) queryRows(ctx context.Context, args ...any) ([]stringMap, error) {
+	sqlRows, err := cl.db.QueryContext(ctx, cl.sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,3 +73,6 @@ func (cl dbSQLClient) queryRows(ctx context.Context) ([]stringMap, error) {
 	}
 	return out, warnings
 }
+
+// getRowsSinceId(ctx context.Context, id int)
+// getRowsSinceTimestamp(ctx context.Context, timestamp time.Time)

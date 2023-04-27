@@ -50,9 +50,11 @@ func (c Config) Validate() error {
 }
 
 type Query struct {
-	SQL     string      `mapstructure:"sql"`
-	Metrics []MetricCfg `mapstructure:"metrics"`
-	Logs    []LogsCfg   `mapstructure:"logs"`
+	SQL                string      `mapstructure:"sql"`
+	Metrics            []MetricCfg `mapstructure:"metrics"`
+	Logs               []LogsCfg   `mapstructure:"logs"`
+	TrackingColumn     string      `mapstructure:"tracking_column"`
+	TrackingStartValue int         `mapstructure:"tracking_start_value"`
 }
 
 func (q Query) Validate() error {

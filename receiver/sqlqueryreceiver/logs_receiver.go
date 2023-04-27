@@ -18,6 +18,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -140,12 +141,14 @@ func (receiver *logsReceiver) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
+	receiver.settings.Logger.Debug("stopping...")
 	receiver.stopCollecting()
 	for _, queryReceiver := range receiver.queryReceivers {
 		queryReceiver.shutdown(ctx)
 	}
 
 	receiver.isStarted = false
+	receiver.settings.Logger.Debug("stopped.")
 
 	return nil
 }
@@ -161,8 +164,10 @@ type logsQueryReceiver struct {
 	createDb     dbProviderFunc
 	createClient clientProviderFunc
 	logger       *zap.Logger
-	db           *sql.DB
-	client       dbClient
+
+	db            *sql.DB
+	client        dbClient
+	trackingValue int
 }
 
 func newLogsQueryReceiver(
@@ -179,6 +184,7 @@ func newLogsQueryReceiver(
 		createClient: clientProviderFunc,
 		logger:       logger,
 	}
+	queryReceiver.trackingValue = queryReceiver.query.TrackingStartValue
 	return queryReceiver
 }
 
@@ -200,22 +206,43 @@ func (queryReceiver *logsQueryReceiver) start() error {
 func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
-	rows, err := queryReceiver.client.queryRows(ctx)
+	var rows []stringMap
+	var err error
+	if queryReceiver.query.TrackingColumn != "" {
+		rows, err = queryReceiver.client.queryRows(ctx, queryReceiver.trackingValue)
+	} else {
+		rows, err = queryReceiver.client.queryRows(ctx)
+	}
 	if err != nil {
 		return logs, fmt.Errorf("error getting rows: %w", err)
 	}
 
 	var errs error
 	scopeLogs := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
-	for _, logsConfig := range queryReceiver.query.Logs {
+	for logsConfigIndex, logsConfig := range queryReceiver.query.Logs {
 		for i, row := range rows {
 			if err = rowToLog(row, logsConfig, scopeLogs.AppendEmpty()); err != nil {
 				err = fmt.Errorf("row %d: %w", i, err)
 				errs = multierr.Append(errs, err)
 			}
+			if logsConfigIndex == 0 {
+				queryReceiver.storeTrackingValue(row)
+			}
 		}
 	}
 	return logs, nil
+}
+
+func (queryReceiver *logsQueryReceiver) storeTrackingValue(row stringMap) {
+	currentTrackingColumnValueString := row[queryReceiver.query.TrackingColumn]
+	currentTrackingColumnValue, err := strconv.Atoi(currentTrackingColumnValueString)
+	if err != nil {
+		queryReceiver.logger.Error("tracking column value is not integer", zap.String("tracking_column_value", currentTrackingColumnValueString))
+		return
+	}
+	if currentTrackingColumnValue > queryReceiver.trackingValue {
+		queryReceiver.trackingValue = currentTrackingColumnValue
+	}
 }
 
 func rowToLog(row stringMap, config LogsCfg, logRecord plog.LogRecord) error {

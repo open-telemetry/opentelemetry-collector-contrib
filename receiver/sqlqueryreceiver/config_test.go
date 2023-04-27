@@ -124,7 +124,9 @@ func TestLoadConfig(t *testing.T) {
 				DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
 				Queries: []Query{
 					{
-						SQL: "select * from test_logs",
+						SQL:                "select * from test_logs where log_id > ?",
+						TrackingColumn:     "log_id",
+						TrackingStartValue: 10,
 						Logs: []LogsCfg{
 							{
 								BodyColumn: "log_body",
