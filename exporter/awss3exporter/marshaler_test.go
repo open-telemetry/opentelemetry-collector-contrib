@@ -12,10 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
+package awss3exporter
 
-import "context"
+import (
+	"testing"
 
-type dataWriter interface {
-	writeBuffer(ctx context.Context, buf []byte, config *Config, metadata string, format string) error
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+)
+
+func TestMarshaler(t *testing.T) {
+	{
+		m, err := NewMarshaler("otlp_json", zap.NewNop())
+		assert.NoError(t, err)
+		require.NotNil(t, m)
+		assert.Equal(t, m.format(), "json")
+	}
+	{
+		m, err := NewMarshaler("unknown", zap.NewNop())
+		assert.Error(t, err)
+		require.Nil(t, m)
+	}
 }

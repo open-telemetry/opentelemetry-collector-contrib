@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
+// Package awss3exporter stores OpenTelemetry data as an AWS S3 exporter.
 package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
-
-import "context"
-
-type dataWriter interface {
-	writeBuffer(ctx context.Context, buf []byte, config *Config, metadata string, format string) error
-}
