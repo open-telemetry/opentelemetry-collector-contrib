@@ -22,17 +22,30 @@ Functions:
 - May return values.  Although not common and not required, Functions may return values.
 
 Available Functions:
-- [delete_key](#delete_key)
-- [delete_matching_keys](#delete_matching_keys)
-- [keep_keys](#keep_keys)
-- [limit](#limit)
-- [merge_maps](#merge_maps)
-- [replace_all_matches](#replace_all_matches)
-- [replace_all_patterns](#replace_all_patterns)
-- [replace_match](#replace_match)
-- [replace_pattern](#replace_pattern)
-- [set](#set)
-- [truncate_all](#truncate_all)
+- [OTTL Functions](#ottl-functions)
+  - [Functions](#functions)
+    - [delete\_key](#delete_key)
+    - [delete\_matching\_keys](#delete_matching_keys)
+    - [keep\_keys](#keep_keys)
+    - [limit](#limit)
+    - [merge\_maps](#merge_maps)
+    - [replace\_all\_matches](#replace_all_matches)
+    - [replace\_all\_patterns](#replace_all_patterns)
+    - [replace\_pattern](#replace_pattern)
+    - [replace\_match](#replace_match)
+    - [set](#set)
+    - [truncate\_all](#truncate_all)
+  - [Converters](#converters)
+    - [Concat](#concat)
+    - [ConvertCase](#convertcase)
+    - [Int](#int)
+    - [IsMatch](#ismatch)
+    - [ParseJSON](#parsejson)
+    - [SpanID](#spanid)
+    - [Split](#split)
+    - [TraceID](#traceid)
+    - [Substring](#substring)
+  - [Function syntax](#function-syntax)
 
 ### delete_key
 
@@ -248,12 +261,8 @@ Examples:
 
 ## Converters
 
-Converters are functions that help translate between the OTTL grammar and the underlying pdata structure.
-They manipulate the OTTL grammar value into a form that will make working with the telemetry easier or more efficient.
-
-Converters:
-- Are pure functions.  They should never change the underlying telemetry and the same inputs should always result in the same output.
-- Always return something.
+Converters are pure functions that take OTTL values as input and output a single value for use within a statement.
+Unlike functions, they do not modify any input telemetry and always return a value.
 
 Available Converters:
 - [Concat](#concat)
