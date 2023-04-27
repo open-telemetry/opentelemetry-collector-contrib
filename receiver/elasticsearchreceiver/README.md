@@ -76,5 +76,3 @@ This feature gate will eventually be enabled by default, and eventually the old 
 to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
 is 0.69.0.
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
