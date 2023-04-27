@@ -21,13 +21,23 @@ import (
 	"net/http" // client defines the basic HTTP client interface.
 	"strconv"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
 
+const (
+	metricsPath      = "/metrics/json"
+	applicationsPath = "/api/v1/applications"
+)
+
 type client interface {
 	Get(path string) ([]byte, error)
-	GetStats(nodeName string) (map[string]interface{}, error)
+	GetClusterStats() (*models.ClusterProperties, error)
+	GetApplicationIDs() ([]string, error)
+	GetStageStats(appID string) (*models.Stages, error)
+	GetExecutorStats(appID string) (*models.Executors, error)
+	GetJobStats(appID string) (*models.Jobs, error)
 }
 
 var _ client = (*apacheSparkClient)(nil)
@@ -85,21 +95,87 @@ func (c *apacheSparkClient) Get(path string) ([]byte, error) {
 	return body, nil
 }
 
-// GetStats gets Spark stats at a specific endpoint.
-func (c *apacheSparkClient) GetStats(path string) (map[string]interface{}, error) {
-	body, err := c.Get(path)
+func (c *apacheSparkClient) GetClusterStats() (*models.ClusterProperties, error) {
+	body, err := c.Get(metricsPath)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: unmarshal correctly
-	var stats map[string]interface{}
-	err = json.Unmarshal(body, &stats)
+	var clusterStats *models.ClusterProperties
+	err = json.Unmarshal(body, &clusterStats)
 	if err != nil {
 		return nil, err
 	}
 
-	return stats, nil
+	return clusterStats, nil
+}
+
+func (c *apacheSparkClient) GetApplicationIDs() ([]string, error) {
+	body, err := c.Get(applicationsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var apps *models.Applications
+	err = json.Unmarshal(body, &apps)
+	if err != nil {
+		return nil, err
+	}
+
+	var appIds = []string{}
+	for _, value := range *apps {
+		appIds = append(appIds, value.ID)
+	}
+
+	return appIds, nil
+}
+
+func (c *apacheSparkClient) GetStageStats(appID string) (*models.Stages, error) {
+	stagePath := fmt.Sprintf("/api/v1/applications/%s/stages", appID)
+	body, err := c.Get(stagePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var stageStats *models.Stages
+	err = json.Unmarshal(body, &stageStats)
+	if err != nil {
+		return nil, err
+	}
+
+	return stageStats, nil
+}
+
+func (c *apacheSparkClient) GetExecutorStats(appID string) (*models.Executors, error) {
+	executorPath := fmt.Sprintf("/api/v1/applications/%s/executors", appID)
+	body, err := c.Get(executorPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var executorStats *models.Executors
+	err = json.Unmarshal(body, &executorStats)
+	if err != nil {
+		return nil, err
+	}
+
+	return executorStats, nil
+}
+
+func (c *apacheSparkClient) GetJobStats(appID string) (*models.Jobs, error) {
+	jobPath := fmt.Sprintf("/api/v1/applications/%s/jobs", appID)
+	body, err := c.Get(jobPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var jobStats *models.Jobs
+	err = json.Unmarshal(body, &jobStats)
+	if err != nil {
+		return nil, err
+	}
+
+	return jobStats, nil
 }
 
 func (c *apacheSparkClient) buildReq(path string) (*http.Request, error) {

@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -37,9 +38,8 @@ var (
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	// TODO: add metadata when file created
-	// metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
+	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 }
 
 // Validate validates missing and invalid configuration fields.
