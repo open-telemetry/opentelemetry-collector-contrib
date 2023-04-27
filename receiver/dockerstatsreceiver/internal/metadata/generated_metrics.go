@@ -98,7 +98,7 @@ type MetricsSettings struct {
 	ContainerNetworkIoUsageTxErrors            MetricSettings `mapstructure:"container.network.io.usage.tx_errors"`
 	ContainerNetworkIoUsageTxPackets           MetricSettings `mapstructure:"container.network.io.usage.tx_packets"`
 	ContainerPidsCount                         MetricSettings `mapstructure:"container.pids.count"`
-	ContainerPidsMax                           MetricSettings `mapstructure:"container.pids.max"`
+	ContainerPidsLimit                         MetricSettings `mapstructure:"container.pids.limit"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -295,7 +295,7 @@ func DefaultMetricsSettings() MetricsSettings {
 		ContainerPidsCount: MetricSettings{
 			Enabled: false,
 		},
-		ContainerPidsMax: MetricSettings{
+		ContainerPidsLimit: MetricSettings{
 			Enabled: false,
 		},
 	}
@@ -3645,15 +3645,15 @@ func newMetricContainerPidsCount(settings MetricSettings) metricContainerPidsCou
 	return m
 }
 
-type metricContainerPidsMax struct {
+type metricContainerPidsLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills container.pids.max metric with initial data.
-func (m *metricContainerPidsMax) init() {
-	m.data.SetName("container.pids.max")
+// init fills container.pids.limit metric with initial data.
+func (m *metricContainerPidsLimit) init() {
+	m.data.SetName("container.pids.limit")
 	m.data.SetDescription("Maximum number of pids in the container's cgroup.")
 	m.data.SetUnit("{pids}")
 	m.data.SetEmptySum()
@@ -3661,7 +3661,7 @@ func (m *metricContainerPidsMax) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricContainerPidsMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricContainerPidsLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3672,14 +3672,14 @@ func (m *metricContainerPidsMax) recordDataPoint(start pcommon.Timestamp, ts pco
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerPidsMax) updateCapacity() {
+func (m *metricContainerPidsLimit) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerPidsMax) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerPidsLimit) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -3687,8 +3687,8 @@ func (m *metricContainerPidsMax) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerPidsMax(settings MetricSettings) metricContainerPidsMax {
-	m := metricContainerPidsMax{settings: settings}
+func newMetricContainerPidsLimit(settings MetricSettings) metricContainerPidsLimit {
+	m := metricContainerPidsLimit{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3775,7 +3775,7 @@ type MetricsBuilder struct {
 	metricContainerNetworkIoUsageTxErrors            metricContainerNetworkIoUsageTxErrors
 	metricContainerNetworkIoUsageTxPackets           metricContainerNetworkIoUsageTxPackets
 	metricContainerPidsCount                         metricContainerPidsCount
-	metricContainerPidsMax                           metricContainerPidsMax
+	metricContainerPidsLimit                         metricContainerPidsLimit
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -3872,7 +3872,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerNetworkIoUsageTxErrors:            newMetricContainerNetworkIoUsageTxErrors(mbc.Metrics.ContainerNetworkIoUsageTxErrors),
 		metricContainerNetworkIoUsageTxPackets:           newMetricContainerNetworkIoUsageTxPackets(mbc.Metrics.ContainerNetworkIoUsageTxPackets),
 		metricContainerPidsCount:                         newMetricContainerPidsCount(mbc.Metrics.ContainerPidsCount),
-		metricContainerPidsMax:                           newMetricContainerPidsMax(mbc.Metrics.ContainerPidsMax),
+		metricContainerPidsLimit:                         newMetricContainerPidsLimit(mbc.Metrics.ContainerPidsLimit),
 	}
 	for _, op := range options {
 		op(mb)
@@ -4035,7 +4035,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerNetworkIoUsageTxErrors.emit(ils.Metrics())
 	mb.metricContainerNetworkIoUsageTxPackets.emit(ils.Metrics())
 	mb.metricContainerPidsCount.emit(ils.Metrics())
-	mb.metricContainerPidsMax.emit(ils.Metrics())
+	mb.metricContainerPidsLimit.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(mb.resourceAttributesSettings, rm)
@@ -4376,9 +4376,9 @@ func (mb *MetricsBuilder) RecordContainerPidsCountDataPoint(ts pcommon.Timestamp
 	mb.metricContainerPidsCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordContainerPidsMaxDataPoint adds a data point to container.pids.max metric.
-func (mb *MetricsBuilder) RecordContainerPidsMaxDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerPidsMax.recordDataPoint(mb.startTime, ts, val)
+// RecordContainerPidsLimitDataPoint adds a data point to container.pids.limit metric.
+func (mb *MetricsBuilder) RecordContainerPidsLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricContainerPidsLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

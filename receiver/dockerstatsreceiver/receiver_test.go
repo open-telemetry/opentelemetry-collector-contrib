@@ -108,7 +108,7 @@ var (
 		ContainerNetworkIoUsageTxErrors:            metricEnabled,
 		ContainerNetworkIoUsageTxPackets:           metricEnabled,
 		ContainerPidsCount:                         metricEnabled,
-		ContainerPidsMax:                           metricEnabled,
+		ContainerPidsLimit:                         metricEnabled,
 	}
 )
 

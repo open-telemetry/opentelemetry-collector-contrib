@@ -404,7 +404,7 @@ resourceMetrics:
                   timeUnixNano: "1682495678005429000"
             unit: '{pids}'
           - description: Maximum number of pids in the container's cgroup.
-            name: container.pids.max
+            name: container.pids.limit
             sum:
               aggregationTemporality: 2
               dataPoints:

@@ -269,7 +269,7 @@ func (r *receiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *dtypes.Pi
 	if pidsStats.Current != 0 {
 		r.mb.RecordContainerPidsCountDataPoint(now, int64(pidsStats.Current))
 		if pidsStats.Limit != 0 {
-			r.mb.RecordContainerPidsMaxDataPoint(now, int64(pidsStats.Limit))
+			r.mb.RecordContainerPidsLimitDataPoint(now, int64(pidsStats.Limit))
 		}
 	}
 }

@@ -684,7 +684,7 @@ It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {pids} | Sum | Int | Cumulative | false |
 
-### container.pids.max
+### container.pids.limit
 
 Maximum number of pids in the container's cgroup.
 

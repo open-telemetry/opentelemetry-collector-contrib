@@ -264,7 +264,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerPidsCountDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerPidsMaxDataPoint(ts, 1)
+			mb.RecordContainerPidsLimitDataPoint(ts, 1)
 
 			metrics := mb.Emit(WithContainerHostname("attr-val"), WithContainerID("attr-val"), WithContainerImageName("attr-val"), WithContainerName("attr-val"), WithContainerRuntime("attr-val"))
 
@@ -1317,9 +1317,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "container.pids.max":
-					assert.False(t, validatedMetrics["container.pids.max"], "Found a duplicate in the metrics slice: container.pids.max")
-					validatedMetrics["container.pids.max"] = true
+				case "container.pids.limit":
+					assert.False(t, validatedMetrics["container.pids.limit"], "Found a duplicate in the metrics slice: container.pids.limit")
+					validatedMetrics["container.pids.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Maximum number of pids in the container's cgroup.", ms.At(i).Description())
