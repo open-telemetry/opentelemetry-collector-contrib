@@ -28,7 +28,7 @@
 - `receiver/azuremonitorreceiver`: New component for scraping Azure Monitor metrics (#18899)
 - `cassandra_exporter`: Cassandra exporter implementation (#17910)
 - `lokireceiver`: Mark loki receiver as Alpha (#18635)
-- `filestatsreceiver`: Add the structure of a new component reporting file statistics. (#19729)
+- `filestatsreceiver`: Initial implementation of the new filestatsreceiver component. (#19729)
 
 ### 💡 Enhancements 💡
 
@@ -65,6 +65,7 @@
 - `prometheusreceiver`: All receivers are setting receiver name and version when sending data. This change introduces the same behaviour to the prometheus receiver. (#20902)
 - `splunkhecexporter`: Adding an option in splunkhecexporter to enable heartbeat. A heartbeat is a metadata event about the current environment and build information. If heartbeat is enabled, splunkhecexporter will periodically send heartbeat to the destination in given time intervals from configurations. (#20225)
 - `vcenterreceiver`: Adds VM CPU usage and utilization metrics (#20895)
+- `awss3exporter`: Add implementation of AWS S3 exporter (#2835)
 
 ### 🧰 Bug fixes 🧰
 
