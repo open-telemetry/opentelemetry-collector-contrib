@@ -486,8 +486,8 @@ go.opentelemetry.io/collector/exporter v0.76.1-0.20230426191218-56daa378f504 h1:
 go.opentelemetry.io/collector/exporter v0.76.1-0.20230426191218-56daa378f504/go.mod h1:havOURkBY5lB/iLQTUVizR8sH/Mqbpy3I9UvRi2Ir0Y=
 go.opentelemetry.io/collector/featuregate v0.76.1-0.20230426191218-56daa378f504 h1:XM+AualTA986PXsu7xaiiSublJKFBxGz/d9j5DXEFC0=
 go.opentelemetry.io/collector/featuregate v0.76.1-0.20230426191218-56daa378f504/go.mod h1:S3iqaiAYSyfNlvs9ZCj1YfWKN3YclNB/fi+Gi+hP2BI=
-go.opentelemetry.io/collector/pdata v1.0.0-rc9.0.20230426191218-56daa378f504 h1:ljI84DU7NP0zMyGZFhHHNs81oa9+3Q0vay3sDmRicrI=
-go.opentelemetry.io/collector/pdata v1.0.0-rc9.0.20230426191218-56daa378f504/go.mod h1:ZPMyfub988wSQPGGoibk8shkDyGrCC7VDRjCBxwplho=
+go.opentelemetry.io/collector/pdata v1.0.0-rcv0011 h1:7lT0vseP89mHtUpvgmWYRvQZ0eY+SHbVsnXY20xkoMg=
+go.opentelemetry.io/collector/pdata v1.0.0-rcv0011/go.mod h1:9vrXSQBeMRrdfGt9oMgYweqERJ8adaiQjN6LSbqRMMA=
 go.opentelemetry.io/collector/receiver v0.76.1-0.20230426191218-56daa378f504 h1:JN45rnjszpGFdTqHetWqDpTN4i+KYeb8rKgU7KPEXAU=
 go.opentelemetry.io/collector/receiver v0.76.1-0.20230426191218-56daa378f504/go.mod h1:apV0aHa6xz0aFjUQ5NbrBhUHvJ8P4IwnjiBBeRmIEyA=
 go.opentelemetry.io/collector/semconv v0.76.1-0.20230426191218-56daa378f504 h1:tFYyoahHremNRtElf4qErRpquJWuvu9zk1cyGQ+gXXE=
