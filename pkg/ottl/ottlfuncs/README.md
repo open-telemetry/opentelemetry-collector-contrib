@@ -14,7 +14,7 @@ See the component-specific guides for how each uses error mode:
 
 ## Functions
 
-Functions are the way that components that use OTTL to transform telemetry.
+Functions are what OTTL uses to transform telemetry.
 
 Functions:
 - Are allowed to transform telemetry.  When a Function is invoked the expectation is that the underlying telemetry is modified in some way.
