@@ -46,13 +46,13 @@ func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions
 
 	var err error
 	if len(spanConditions) > 0 {
-		if filter.sampleSpanExpr, err = filterottl.NewBoolExprForSpan(spanConditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, settings); err != nil {
+		if filter.sampleSpanExpr, err = filterottl.NewBoolExprForSpan(spanConditions, filterottl.StandardSpanFuncs(), errMode, settings); err != nil {
 			return nil, err
 		}
 	}
 
 	if len(spanEventConditions) > 0 {
-		if filter.sampleSpanEventExpr, err = filterottl.NewBoolExprForSpanEvent(spanEventConditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, settings); err != nil {
+		if filter.sampleSpanEventExpr, err = filterottl.NewBoolExprForSpanEvent(spanEventConditions, filterottl.StandardSpanEventFuncs(), errMode, settings); err != nil {
 			return nil, err
 		}
 	}
