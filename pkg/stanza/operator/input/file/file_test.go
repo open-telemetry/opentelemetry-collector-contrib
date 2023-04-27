@@ -72,7 +72,7 @@ func TestAddFileFields(t *testing.T) {
 // AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
 // when IncludeFileNameResolved and IncludeFilePathResolved are set to true
 func TestAddFileResolvedFields(t *testing.T) {
-	if runtime.GOOS == windowsOS {
+	if runtime.GOOS == "windows" {
 		t.Skip("Windows symlinks usage disabled for now. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21088")
 	}
 	t.Parallel()
@@ -124,7 +124,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 // monitored file (symlink) -> middleSymlink -> file_1
 // monitored file (symlink) -> middleSymlink -> file_2
 func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
-	if runtime.GOOS == windowsOS {
+	if runtime.GOOS == "windows" {
 		t.Skip("Windows symlinks usage disabled for now. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21088")
 	}
 	t.Parallel()
