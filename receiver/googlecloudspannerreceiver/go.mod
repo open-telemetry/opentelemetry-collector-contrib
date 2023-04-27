@@ -72,4 +72,7 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
 
-retract v0.65.0
+retract (
+	v0.76.1
+	v0.65.0
+)

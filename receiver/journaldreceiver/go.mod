@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journa
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.76.2
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector/component v0.76.1
 	go.opentelemetry.io/collector/confmap v0.76.1
@@ -54,6 +54,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/stor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
-retract v0.65.0
+retract (
+	v0.76.1
+	v0.65.0
+)
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal

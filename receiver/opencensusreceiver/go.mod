@@ -5,10 +5,10 @@ go 1.19
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.76.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.76.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.76.2
 	github.com/rs/cors v1.9.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.8.2
@@ -82,7 +82,10 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/share
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
 
-retract v0.65.0
+retract (
+	v0.76.1
+	v0.65.0
+)
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
