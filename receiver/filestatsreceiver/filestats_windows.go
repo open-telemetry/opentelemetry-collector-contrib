@@ -20,6 +20,7 @@ package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"os"
 	"syscall"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
