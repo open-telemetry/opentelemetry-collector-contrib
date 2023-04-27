@@ -1138,7 +1138,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.usage.total"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Memory usage of the container. This excludes the total cache.", ms.At(i).Description())
+					assert.Equal(t, "Memory usage of the container. This excludes the cache.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
