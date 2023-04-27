@@ -93,15 +93,36 @@ The following settings can be optionally configured:
     Other fields can be mapped to either resource attributes or log record attributes
 
     Example:
-    `mapping:`
-      `message: body`
-      `hostname: resource.attributes.hostname`
-      `class: attributes.class`
+    ```yaml
+    mapping:
+      message: body
+      hostname: resource.attributes.hostname
+      class: attributes.class
+    ```
 
-Example:
+Examples:
 
 ```yaml
 receivers:
   kafka:
     protocol_version: 2.0.0
+```
+
+Using Avro as a log format
+
+```yaml
+receivers:
+  kafka:
+    encoding: avro
+    avro:
+      schema_url: "file:folder/example.avro"
+      mapping:
+        timestamp: timestamp
+        properties: resource.attributes.properties
+        hostname: resource.attributes.hostname
+        count: attributes.count
+        message: body
+        nestedRecord: attributes.nestedRecord
+        levelEnum: severityText
+        severity: severityNumber
 ```

@@ -31,6 +31,13 @@ type MessageMarking struct {
 	OnError bool `mapstructure:"on_error"`
 }
 
+type Avro struct {
+	// Local file path 'file:' or schema registry url to load schema from
+	SchemaURL string `mapstructure:"schema_url"`
+	// Mapping definition from AVRO fields to otel logs fields and attributes
+	Mapping map[string]string `mapstructure:"mapping"`
+}
+
 // Config defines configuration for Kafka receiver.
 type Config struct {
 	// The list of kafka brokers (default localhost:9092)
@@ -62,12 +69,7 @@ type Config struct {
 	MessageMarking MessageMarking `mapstructure:"message_marking"`
 
 	// AVRO encoder config when "encoding: avro"
-	Avro struct {
-		// Local file path 'file:' or schema registry url to load schema from
-		SchemaURL string `mapstructure:"schema_url"`
-		// Mapping definition from AVRO fields to otel logs fields and attributes
-		Mapping map[string]string `mapstructure:"mapping"`
-	} `mapstructure:"avro"`
+	Avro Avro `mapstructure:"avro"`
 }
 
 const (
