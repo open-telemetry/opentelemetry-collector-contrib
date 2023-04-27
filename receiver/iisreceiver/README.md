@@ -23,9 +23,10 @@ The following settings are optional:
 Example:
 
 ```yaml
-receivers:
-  iis:
-    collection_interval: 10s
+    receivers:
+      iis:
+        collection_interval: 10s
+
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go).
