@@ -26,7 +26,7 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr        = "syslog"
-	stabilityLevel = component.StabilityLevelAlpha
+	stabilityLevel = component.StabilityLevelDevelopment
 )
 
 // NewFactory returns a new factory for the syslog exporter.
