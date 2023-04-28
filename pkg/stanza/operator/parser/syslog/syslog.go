@@ -294,7 +294,7 @@ var severityText = [...]string{
 	7: "debug",
 }
 
-var severityField = entry.NewAttributeField("severity")
+var severityField = entry.NewAttributeField("syslog_severity")
 
 func postprocess(e *entry.Entry) error {
 	sev, ok := severityField.Delete(e)
