@@ -2,6 +2,14 @@
 
 The following functions are intended to be used in implementations of the OpenTelemetry Transformation Language that
 interact with OTel data via the Collector's internal data model, [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata).
+
+This document contains documentation for both types of OTTL functions:
+
+- [Functions](#functions) that transform telemetry.
+- [Converters](#converters) that provide utilities for transforming telemetry.
+
+## Working with functions
+
 Functions generally expect specific types to be returned by `Paths`.
 For these functions, if that type is not returned or if `nil` is returned, the function will error.
 Some functions are able to handle different types and will generally convert those types to their desired type.
