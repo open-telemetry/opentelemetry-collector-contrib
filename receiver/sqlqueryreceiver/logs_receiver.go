@@ -133,7 +133,9 @@ func (receiver *logsReceiver) collect() {
 		logs := <-logsChannel
 		logs.ResourceLogs().MoveAndAppendTo(allLogs.ResourceLogs())
 	}
-	receiver.nextConsumer.ConsumeLogs(context.Background(), allLogs)
+	if allLogs.LogRecordCount() > 0 {
+		receiver.nextConsumer.ConsumeLogs(context.Background(), allLogs)
+	}
 }
 
 func (receiver *logsReceiver) Shutdown(ctx context.Context) error {
