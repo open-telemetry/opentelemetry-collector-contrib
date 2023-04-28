@@ -37,8 +37,8 @@ Available Functions:
 - [merge_maps](#merge_maps)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
-- [replace_pattern](#replace_pattern)
 - [replace_match](#replace_match)
+- [replace_pattern](#replace_pattern)
 - [set](#set)
 - [truncate_all](#truncate_all)
 
@@ -179,6 +179,20 @@ Note that when using OTTL within the collector's configuration file, `$` must be
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
 If using OTTL outside of collector configuration, `$` should not be escaped and a literal `$` can be entered using `$$`.
 
+### replace_match
+
+`replace_match(target, pattern, replacement)`
+
+The `replace_match` function allows replacing entire strings if they match a glob pattern.
+
+`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string.
+
+If `target` matches `pattern` it will get replaced with `replacement`.
+
+Examples:
+
+- `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
+
 ### replace_pattern
 
 `replace_pattern(target, regex, replacement)`
@@ -199,20 +213,6 @@ Examples:
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
 If using OTTL outside of collector configuration, `$` should not be escaped and a literal `$` can be entered using `$$`.
-
-### replace_match
-
-`replace_match(target, pattern, replacement)`
-
-The `replace_match` function allows replacing entire strings if they match a glob pattern.
-
-`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string.
-
-If `target` matches `pattern` it will get replaced with `replacement`.
-
-Examples:
-
-- `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
 
 ### set
 
