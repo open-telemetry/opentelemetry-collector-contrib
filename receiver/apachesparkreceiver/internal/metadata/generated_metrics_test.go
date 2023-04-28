@@ -60,323 +60,311 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverBlockManagerDiskDiskSpaceUsedDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverBlockManagerDiskDiskSpaceUsedDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverBlockManagerMemoryMaxDataPoint(ts, 1, "attr-val", AttributeLocation(1))
+			mb.RecordSparkDriverBlockManagerMemoryRemainingDataPoint(ts, 1, "attr-val", "attr-val", AttributeLocation(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverBlockManagerMemoryRemainingDataPoint(ts, 1, "attr-val", AttributeLocation(1))
+			mb.RecordSparkDriverBlockManagerMemoryUsedDataPoint(ts, 1, "attr-val", "attr-val", AttributeLocation(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverBlockManagerMemoryUsedDataPoint(ts, 1, "attr-val", AttributeLocation(1))
+			mb.RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverCodeGeneratorCompilationCountDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorCompilationCountDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverCodeGeneratorSourceCodeCountDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorSourceCodeCountDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverDagSchedulerJobActiveJobsDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverDagSchedulerJobActiveJobsDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverDagSchedulerJobAllJobsDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverDagSchedulerJobAllJobsDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverDagSchedulerStageFailedStagesDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverDagSchedulerStageFailedStagesDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverDagSchedulerStageRunningStagesDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverDagSchedulerStageRunningStagesDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverDagSchedulerStageWaitingStagesDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverDagSchedulerStageWaitingStagesDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverExecutorMetricsExecutionMemoryDataPoint(ts, 1, "attr-val", "attr-val", AttributeLocation(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverExecutorMetricsExecutionMemoryDataPoint(ts, 1, "attr-val", AttributeLocation(1))
+			mb.RecordSparkDriverExecutorMetricsGcCountDataPoint(ts, 1, "attr-val", "attr-val", AttributeGcType(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverExecutorMetricsGcCountDataPoint(ts, 1, "attr-val", AttributeGcSeverity(1))
+			mb.RecordSparkDriverExecutorMetricsGcTimeDataPoint(ts, 1, "attr-val", "attr-val", AttributeGcType(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverExecutorMetricsGcTimeDataPoint(ts, 1, "attr-val", AttributeGcSeverity(1))
+			mb.RecordSparkDriverExecutorMetricsJvmMemoryDataPoint(ts, 1, "attr-val", "attr-val", AttributeLocation(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverExecutorMetricsJvmMemoryDataPoint(ts, 1, "attr-val", AttributeLocation(1))
+			mb.RecordSparkDriverExecutorMetricsPoolMemoryDataPoint(ts, 1, "attr-val", "attr-val", AttributePoolMemoryType(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverExecutorMetricsPoolMemoryDataPoint(ts, 1, "attr-val", AttributePoolMemoryType(1))
+			mb.RecordSparkDriverExecutorMetricsStorageMemoryDataPoint(ts, 1, "attr-val", "attr-val", AttributeLocation(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverExecutorMetricsStorageMemoryDataPoint(ts, 1, "attr-val", AttributeLocation(1))
+			mb.RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverExecutorMetricsUnifiedMemoryDataPoint(ts, 1, "attr-val", AttributeLocation(1))
+			mb.RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverJvmCPUTimeDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverLiveListenerBusEventsDroppedDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverJvmCPUTimeDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverLiveListenerBusEventsPostedDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverLiveListenerBusEventsDroppedDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverLiveListenerBusListenerProcessingTimeAverageDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverLiveListenerBusEventsPostedDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkDriverLiveListenerBusQueueSizeDataPoint(ts, 1, "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverLiveListenerBusListenerProcessingTimeAverageDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkExecutorActiveTasksDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverLiveListenerBusQueueSizeDataPoint(ts, 1, "attr-val")
+			mb.RecordSparkExecutorCompletedTasksDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorActiveTasksDataPoint(ts, 1, "attr-val", "attr-val")
+			mb.RecordSparkExecutorDiskUsedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorCompletedTasksDataPoint(ts, 1, "attr-val", "attr-val")
+			mb.RecordSparkExecutorDurationDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorDiskUsedDataPoint(ts, 1, "attr-val", "attr-val")
+			mb.RecordSparkExecutorFailedTasksDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorDurationDataPoint(ts, 1, "attr-val", "attr-val")
+			mb.RecordSparkExecutorGcTimeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorFailedTasksDataPoint(ts, 1, "attr-val", "attr-val")
+			mb.RecordSparkExecutorInputBytesDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorGcTimeDataPoint(ts, 1, "attr-val", "attr-val")
+			mb.RecordSparkExecutorMaxTasksDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorInputBytesDataPoint(ts, 1, "attr-val", "attr-val")
+			mb.RecordSparkExecutorMemoryUsedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorMaxMemoryDataPoint(ts, 1, "attr-val", "attr-val")
+			mb.RecordSparkExecutorShuffleReadBytesDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorMaxTasksDataPoint(ts, 1, "attr-val", "attr-val")
+			mb.RecordSparkExecutorShuffleWriteBytesDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorMemoryUsedDataPoint(ts, 1, "attr-val", "attr-val")
+			mb.RecordSparkExecutorTotalStorageMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", AttributeLocation(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorShuffleReadBytesDataPoint(ts, 1, "attr-val", "attr-val")
+			mb.RecordSparkExecutorUsedStorageMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", AttributeLocation(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorShuffleWriteBytesDataPoint(ts, 1, "attr-val", "attr-val")
+			mb.RecordSparkJobActiveStagesDataPoint(ts, 1, "attr-val", "attr-val", 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorTotalStorageMemoryDataPoint(ts, 1, "attr-val", "attr-val", AttributeLocation(1))
+			mb.RecordSparkJobActiveTasksDataPoint(ts, 1, "attr-val", "attr-val", 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorUsedStorageMemoryDataPoint(ts, 1, "attr-val", "attr-val", AttributeLocation(1))
+			mb.RecordSparkJobCompletedStagesDataPoint(ts, 1, "attr-val", "attr-val", 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkJobActiveStagesDataPoint(ts, 1, "attr-val", 1)
+			mb.RecordSparkJobCompletedTasksDataPoint(ts, 1, "attr-val", "attr-val", 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkJobActiveTasksDataPoint(ts, 1, "attr-val", 1)
+			mb.RecordSparkJobFailedStagesDataPoint(ts, 1, "attr-val", "attr-val", 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkJobCompletedStagesDataPoint(ts, 1, "attr-val", 1)
+			mb.RecordSparkJobFailedTasksDataPoint(ts, 1, "attr-val", "attr-val", 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkJobCompletedTasksDataPoint(ts, 1, "attr-val", 1)
+			mb.RecordSparkJobSkippedStagesDataPoint(ts, 1, "attr-val", "attr-val", 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkJobFailedStagesDataPoint(ts, 1, "attr-val", 1)
+			mb.RecordSparkJobSkippedTasksDataPoint(ts, 1, "attr-val", "attr-val", 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkJobFailedTasksDataPoint(ts, 1, "attr-val", 1)
+			mb.RecordSparkStageActiveTasksDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkJobSkippedStagesDataPoint(ts, 1, "attr-val", 1)
+			mb.RecordSparkStageCompleteTasksDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkJobSkippedTasksDataPoint(ts, 1, "attr-val", 1)
+			mb.RecordSparkStageDiskSpaceSpilledDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageActiveTasksDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageExecutorCPUTimeDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageCompleteTasksDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageExecutorRunTimeDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageDiskSpaceSpilledDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageFailedTasksDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageExecutorCPUTimeDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageInputBytesDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageExecutorRunTimeDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageInputRecordsDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageFailedTasksDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageJvmGcTimeDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageInputBytesDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageKilledTasksDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageInputRecordsDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageMemorySpilledDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageJvmGcTimeDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageOutputBytesDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageKilledTasksDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageOutputRecordsDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageMemorySpilledDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStagePeakExecutionMemoryDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageOutputBytesDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageResultSizeDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageOutputRecordsDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1), AttributeSource(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStagePeakExecutionMemoryDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageShuffleBytesReadDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1), AttributeSource(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageResultSizeDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageShuffleFetchWaitTimeDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1), AttributeSource(1))
+			mb.RecordSparkStageShuffleReadBytesDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageShuffleBytesReadDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1), AttributeSource(1))
+			mb.RecordSparkStageShuffleReadRecordsDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageShuffleFetchWaitTimeDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageShuffleRemoteBytesReadToDiskDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageShuffleReadBytesDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageShuffleWriteBytesDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageShuffleReadRecordsDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageShuffleWriteRecordsDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageShuffleRemoteBytesReadToDiskDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageShuffleWriteBytesDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageShuffleWriteRecordsDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageShuffleWriteTimeDataPoint(ts, 1, "attr-val", 1, 1, AttributeStageStatus(1))
+			mb.RecordSparkStageShuffleWriteTimeDataPoint(ts, 1, "attr-val", "attr-val", 1, 1, AttributeStageStatus(1))
 
 			metrics := mb.Emit()
 
@@ -420,26 +408,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
-				case "spark.driver.block_manager.memory.max":
-					assert.False(t, validatedMetrics["spark.driver.block_manager.memory.max"], "Found a duplicate in the metrics slice: spark.driver.block_manager.memory.max")
-					validatedMetrics["spark.driver.block_manager.memory.max"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Maximum memory available to the BlockManager.", ms.At(i).Description())
-					assert.Equal(t, "mb", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("application_id")
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("location")
-					assert.True(t, ok)
-					assert.Equal(t, "on_heap", attrVal.Str())
 				case "spark.driver.block_manager.memory.remaining":
 					assert.False(t, validatedMetrics["spark.driver.block_manager.memory.remaining"], "Found a duplicate in the metrics slice: spark.driver.block_manager.memory.remaining")
 					validatedMetrics["spark.driver.block_manager.memory.remaining"] = true
@@ -455,6 +426,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("location")
@@ -477,6 +451,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("location")
 					assert.True(t, ok)
 					assert.Equal(t, "on_heap", attrVal.Str())
@@ -493,6 +470,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.code_generator.compilation.count":
@@ -512,6 +492,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.code_generator.generated_class.average_size":
 					assert.False(t, validatedMetrics["spark.driver.code_generator.generated_class.average_size"], "Found a duplicate in the metrics slice: spark.driver.code_generator.generated_class.average_size")
 					validatedMetrics["spark.driver.code_generator.generated_class.average_size"] = true
@@ -525,6 +508,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.code_generator.generated_class.count":
@@ -544,6 +530,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.code_generator.generated_method.average_size":
 					assert.False(t, validatedMetrics["spark.driver.code_generator.generated_method.average_size"], "Found a duplicate in the metrics slice: spark.driver.code_generator.generated_method.average_size")
 					validatedMetrics["spark.driver.code_generator.generated_method.average_size"] = true
@@ -557,6 +546,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.code_generator.generated_method.count":
@@ -576,6 +568,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.code_generator.source_code.average_size":
 					assert.False(t, validatedMetrics["spark.driver.code_generator.source_code.average_size"], "Found a duplicate in the metrics slice: spark.driver.code_generator.source_code.average_size")
 					validatedMetrics["spark.driver.code_generator.source_code.average_size"] = true
@@ -589,6 +584,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.code_generator.source_code.count":
@@ -608,6 +606,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.dag_scheduler.job.active_jobs":
 					assert.False(t, validatedMetrics["spark.driver.dag_scheduler.job.active_jobs"], "Found a duplicate in the metrics slice: spark.driver.dag_scheduler.job.active_jobs")
 					validatedMetrics["spark.driver.dag_scheduler.job.active_jobs"] = true
@@ -623,6 +624,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.dag_scheduler.job.all_jobs":
@@ -642,6 +646,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.dag_scheduler.stage.failed_stages":
 					assert.False(t, validatedMetrics["spark.driver.dag_scheduler.stage.failed_stages"], "Found a duplicate in the metrics slice: spark.driver.dag_scheduler.stage.failed_stages")
 					validatedMetrics["spark.driver.dag_scheduler.stage.failed_stages"] = true
@@ -657,6 +664,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.dag_scheduler.stage.running_stages":
@@ -676,6 +686,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.dag_scheduler.stage.waiting_stages":
 					assert.False(t, validatedMetrics["spark.driver.dag_scheduler.stage.waiting_stages"], "Found a duplicate in the metrics slice: spark.driver.dag_scheduler.stage.waiting_stages")
 					validatedMetrics["spark.driver.dag_scheduler.stage.waiting_stages"] = true
@@ -693,6 +706,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.executor_metrics.execution_memory":
 					assert.False(t, validatedMetrics["spark.driver.executor_metrics.execution_memory"], "Found a duplicate in the metrics slice: spark.driver.executor_metrics.execution_memory")
 					validatedMetrics["spark.driver.executor_metrics.execution_memory"] = true
@@ -708,6 +724,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("location")
@@ -730,7 +749,10 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("gc_severity")
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("gc_type")
 					assert.True(t, ok)
 					assert.Equal(t, "major", attrVal.Str())
 				case "spark.driver.executor_metrics.gc_time":
@@ -750,7 +772,10 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("gc_severity")
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("gc_type")
 					assert.True(t, ok)
 					assert.Equal(t, "major", attrVal.Str())
 				case "spark.driver.executor_metrics.jvm_memory":
@@ -768,6 +793,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("location")
@@ -790,6 +818,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("pool_memory_type")
 					assert.True(t, ok)
 					assert.Equal(t, "direct", attrVal.Str())
@@ -810,24 +841,7 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("location")
-					assert.True(t, ok)
-					assert.Equal(t, "on_heap", attrVal.Str())
-				case "spark.driver.executor_metrics.unified_memory":
-					assert.False(t, validatedMetrics["spark.driver.executor_metrics.unified_memory"], "Found a duplicate in the metrics slice: spark.driver.executor_metrics.unified_memory")
-					validatedMetrics["spark.driver.executor_metrics.unified_memory"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Amount of unified memory currently used by the driver.", ms.At(i).Description())
-					assert.Equal(t, "bytes", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("application_id")
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("location")
@@ -850,6 +864,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.hive_external_catalog.files_discovered":
 					assert.False(t, validatedMetrics["spark.driver.hive_external_catalog.files_discovered"], "Found a duplicate in the metrics slice: spark.driver.hive_external_catalog.files_discovered")
 					validatedMetrics["spark.driver.hive_external_catalog.files_discovered"] = true
@@ -865,6 +882,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.hive_external_catalog.hive_client_calls":
@@ -884,6 +904,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.hive_external_catalog.parallel_listing_jobs":
 					assert.False(t, validatedMetrics["spark.driver.hive_external_catalog.parallel_listing_jobs"], "Found a duplicate in the metrics slice: spark.driver.hive_external_catalog.parallel_listing_jobs")
 					validatedMetrics["spark.driver.hive_external_catalog.parallel_listing_jobs"] = true
@@ -899,6 +922,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.hive_external_catalog.partitions_fetched":
@@ -918,6 +944,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.jvm_cpu_time":
 					assert.False(t, validatedMetrics["spark.driver.jvm_cpu_time"], "Found a duplicate in the metrics slice: spark.driver.jvm_cpu_time")
 					validatedMetrics["spark.driver.jvm_cpu_time"] = true
@@ -933,6 +962,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.live_listener_bus.events_dropped":
@@ -952,6 +984,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.live_listener_bus.events_posted":
 					assert.False(t, validatedMetrics["spark.driver.live_listener_bus.events_posted"], "Found a duplicate in the metrics slice: spark.driver.live_listener_bus.events_posted")
 					validatedMetrics["spark.driver.live_listener_bus.events_posted"] = true
@@ -969,6 +1004,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.live_listener_bus.listener_processing_time.average":
 					assert.False(t, validatedMetrics["spark.driver.live_listener_bus.listener_processing_time.average"], "Found a duplicate in the metrics slice: spark.driver.live_listener_bus.listener_processing_time.average")
 					validatedMetrics["spark.driver.live_listener_bus.listener_processing_time.average"] = true
@@ -982,6 +1020,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.driver.live_listener_bus.queue_size":
@@ -1001,6 +1042,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "spark.executor.active_tasks":
 					assert.False(t, validatedMetrics["spark.executor.active_tasks"], "Found a duplicate in the metrics slice: spark.executor.active_tasks")
 					validatedMetrics["spark.executor.active_tasks"] = true
@@ -1016,6 +1060,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
@@ -1038,6 +1085,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -1056,6 +1106,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
@@ -1078,6 +1131,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -1096,6 +1152,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
@@ -1118,6 +1177,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -1138,24 +1200,7 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("executor_id")
-					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
-				case "spark.executor.max_memory":
-					assert.False(t, validatedMetrics["spark.executor.max_memory"], "Found a duplicate in the metrics slice: spark.executor.max_memory")
-					validatedMetrics["spark.executor.max_memory"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total amount of memory available for storage.", ms.At(i).Description())
-					assert.Equal(t, "bytes", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("application_id")
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
@@ -1178,6 +1223,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -1196,6 +1244,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
@@ -1218,6 +1269,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -1238,6 +1292,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -1256,6 +1313,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
@@ -1281,6 +1341,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("executor_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -1304,6 +1367,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("job_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1322,6 +1388,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("job_id")
@@ -1344,6 +1413,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("job_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1362,6 +1434,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("job_id")
@@ -1384,6 +1459,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("job_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1402,6 +1480,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("job_id")
@@ -1424,6 +1505,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("job_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1444,6 +1528,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("job_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1462,6 +1549,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
@@ -1490,6 +1580,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1514,6 +1607,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
@@ -1542,6 +1638,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1566,6 +1665,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
@@ -1594,6 +1696,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1618,6 +1723,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
@@ -1646,6 +1754,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1670,6 +1781,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
@@ -1698,6 +1812,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1722,6 +1839,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
@@ -1750,6 +1870,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1774,6 +1897,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
@@ -1802,6 +1928,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1828,6 +1957,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1852,6 +1984,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
@@ -1883,6 +2018,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1912,6 +2050,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1936,6 +2077,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
@@ -1964,6 +2108,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -1988,6 +2135,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
@@ -2016,6 +2166,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -2042,6 +2195,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("application_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 1, attrVal.Int())
@@ -2066,6 +2222,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("application_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("application_name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("stage_id")

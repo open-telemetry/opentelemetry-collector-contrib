@@ -34,7 +34,7 @@ const (
 type client interface {
 	Get(path string) ([]byte, error)
 	GetClusterStats() (*models.ClusterProperties, error)
-	GetApplicationIDs() ([]string, error)
+	GetApplications() (*models.Applications, error)
 	GetStageStats(appID string) (*models.Stages, error)
 	GetExecutorStats(appID string) (*models.Executors, error)
 	GetJobStats(appID string) (*models.Jobs, error)
@@ -110,7 +110,7 @@ func (c *apacheSparkClient) GetClusterStats() (*models.ClusterProperties, error)
 	return clusterStats, nil
 }
 
-func (c *apacheSparkClient) GetApplicationIDs() ([]string, error) {
+func (c *apacheSparkClient) GetApplications() (*models.Applications, error) {
 	body, err := c.Get(applicationsPath)
 	if err != nil {
 		return nil, err
@@ -122,12 +122,7 @@ func (c *apacheSparkClient) GetApplicationIDs() ([]string, error) {
 		return nil, err
 	}
 
-	var appIds = []string{}
-	for _, value := range *apps {
-		appIds = append(appIds, value.ID)
-	}
-
-	return appIds, nil
+	return apps, nil
 }
 
 func (c *apacheSparkClient) GetStageStats(appID string) (*models.Stages, error) {
@@ -137,13 +132,13 @@ func (c *apacheSparkClient) GetStageStats(appID string) (*models.Stages, error) 
 		return nil, err
 	}
 
-	var stageStats *models.Stages
+	var stageStats models.Stages
 	err = json.Unmarshal(body, &stageStats)
 	if err != nil {
 		return nil, err
 	}
 
-	return stageStats, nil
+	return &stageStats, nil
 }
 
 func (c *apacheSparkClient) GetExecutorStats(appID string) (*models.Executors, error) {

@@ -3,8 +3,6 @@ all_set:
   metrics:
     spark.driver.block_manager.disk.diskSpaceUsed:
       enabled: true
-    spark.driver.block_manager.memory.max:
-      enabled: true
     spark.driver.block_manager.memory.remaining:
       enabled: true
     spark.driver.block_manager.memory.used:
@@ -47,8 +45,6 @@ all_set:
       enabled: true
     spark.driver.executor_metrics.storage_memory:
       enabled: true
-    spark.driver.executor_metrics.unified_memory:
-      enabled: true
     spark.driver.hive_external_catalog.file_cache_hits:
       enabled: true
     spark.driver.hive_external_catalog.files_discovered:
@@ -82,8 +78,6 @@ all_set:
     spark.executor.gc_time:
       enabled: true
     spark.executor.input_bytes:
-      enabled: true
-    spark.executor.max_memory:
       enabled: true
     spark.executor.max_tasks:
       enabled: true
@@ -166,8 +160,6 @@ none_set:
   metrics:
     spark.driver.block_manager.disk.diskSpaceUsed:
       enabled: false
-    spark.driver.block_manager.memory.max:
-      enabled: false
     spark.driver.block_manager.memory.remaining:
       enabled: false
     spark.driver.block_manager.memory.used:
@@ -210,8 +202,6 @@ none_set:
       enabled: false
     spark.driver.executor_metrics.storage_memory:
       enabled: false
-    spark.driver.executor_metrics.unified_memory:
-      enabled: false
     spark.driver.hive_external_catalog.file_cache_hits:
       enabled: false
     spark.driver.hive_external_catalog.files_discovered:
@@ -245,8 +235,6 @@ none_set:
     spark.executor.gc_time:
       enabled: false
     spark.executor.input_bytes:
-      enabled: false
-    spark.executor.max_memory:
       enabled: false
     spark.executor.max_tasks:
       enabled: false

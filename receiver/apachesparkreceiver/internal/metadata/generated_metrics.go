@@ -34,7 +34,6 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 // MetricsSettings provides settings for apachesparkreceiver metrics.
 type MetricsSettings struct {
 	SparkDriverBlockManagerDiskDiskSpaceUsed                MetricSettings `mapstructure:"spark.driver.block_manager.disk.diskSpaceUsed"`
-	SparkDriverBlockManagerMemoryMax                        MetricSettings `mapstructure:"spark.driver.block_manager.memory.max"`
 	SparkDriverBlockManagerMemoryRemaining                  MetricSettings `mapstructure:"spark.driver.block_manager.memory.remaining"`
 	SparkDriverBlockManagerMemoryUsed                       MetricSettings `mapstructure:"spark.driver.block_manager.memory.used"`
 	SparkDriverCodeGeneratorCompilationAverageTime          MetricSettings `mapstructure:"spark.driver.code_generator.compilation.average_time"`
@@ -56,7 +55,6 @@ type MetricsSettings struct {
 	SparkDriverExecutorMetricsJvmMemory                     MetricSettings `mapstructure:"spark.driver.executor_metrics.jvm_memory"`
 	SparkDriverExecutorMetricsPoolMemory                    MetricSettings `mapstructure:"spark.driver.executor_metrics.pool_memory"`
 	SparkDriverExecutorMetricsStorageMemory                 MetricSettings `mapstructure:"spark.driver.executor_metrics.storage_memory"`
-	SparkDriverExecutorMetricsUnifiedMemory                 MetricSettings `mapstructure:"spark.driver.executor_metrics.unified_memory"`
 	SparkDriverHiveExternalCatalogFileCacheHits             MetricSettings `mapstructure:"spark.driver.hive_external_catalog.file_cache_hits"`
 	SparkDriverHiveExternalCatalogFilesDiscovered           MetricSettings `mapstructure:"spark.driver.hive_external_catalog.files_discovered"`
 	SparkDriverHiveExternalCatalogHiveClientCalls           MetricSettings `mapstructure:"spark.driver.hive_external_catalog.hive_client_calls"`
@@ -74,7 +72,6 @@ type MetricsSettings struct {
 	SparkExecutorFailedTasks                                MetricSettings `mapstructure:"spark.executor.failed_tasks"`
 	SparkExecutorGcTime                                     MetricSettings `mapstructure:"spark.executor.gc_time"`
 	SparkExecutorInputBytes                                 MetricSettings `mapstructure:"spark.executor.input_bytes"`
-	SparkExecutorMaxMemory                                  MetricSettings `mapstructure:"spark.executor.max_memory"`
 	SparkExecutorMaxTasks                                   MetricSettings `mapstructure:"spark.executor.max_tasks"`
 	SparkExecutorMemoryUsed                                 MetricSettings `mapstructure:"spark.executor.memory_used"`
 	SparkExecutorShuffleReadBytes                           MetricSettings `mapstructure:"spark.executor.shuffle_read_bytes"`
@@ -118,9 +115,6 @@ type MetricsSettings struct {
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
 		SparkDriverBlockManagerDiskDiskSpaceUsed: MetricSettings{
-			Enabled: true,
-		},
-		SparkDriverBlockManagerMemoryMax: MetricSettings{
 			Enabled: true,
 		},
 		SparkDriverBlockManagerMemoryRemaining: MetricSettings{
@@ -186,9 +180,6 @@ func DefaultMetricsSettings() MetricsSettings {
 		SparkDriverExecutorMetricsStorageMemory: MetricSettings{
 			Enabled: true,
 		},
-		SparkDriverExecutorMetricsUnifiedMemory: MetricSettings{
-			Enabled: true,
-		},
 		SparkDriverHiveExternalCatalogFileCacheHits: MetricSettings{
 			Enabled: true,
 		},
@@ -238,9 +229,6 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		SparkExecutorInputBytes: MetricSettings{
-			Enabled: true,
-		},
-		SparkExecutorMaxMemory: MetricSettings{
 			Enabled: true,
 		},
 		SparkExecutorMaxTasks: MetricSettings{
@@ -373,30 +361,30 @@ func DefaultResourceAttributesSettings() ResourceAttributesSettings {
 	return ResourceAttributesSettings{}
 }
 
-// AttributeGcSeverity specifies the a value gc_severity attribute.
-type AttributeGcSeverity int
+// AttributeGcType specifies the a value gc_type attribute.
+type AttributeGcType int
 
 const (
-	_ AttributeGcSeverity = iota
-	AttributeGcSeverityMajor
-	AttributeGcSeverityMinor
+	_ AttributeGcType = iota
+	AttributeGcTypeMajor
+	AttributeGcTypeMinor
 )
 
-// String returns the string representation of the AttributeGcSeverity.
-func (av AttributeGcSeverity) String() string {
+// String returns the string representation of the AttributeGcType.
+func (av AttributeGcType) String() string {
 	switch av {
-	case AttributeGcSeverityMajor:
+	case AttributeGcTypeMajor:
 		return "major"
-	case AttributeGcSeverityMinor:
+	case AttributeGcTypeMinor:
 		return "minor"
 	}
 	return ""
 }
 
-// MapAttributeGcSeverity is a helper map of string to AttributeGcSeverity attribute value.
-var MapAttributeGcSeverity = map[string]AttributeGcSeverity{
-	"major": AttributeGcSeverityMajor,
-	"minor": AttributeGcSeverityMinor,
+// MapAttributeGcType is a helper map of string to AttributeGcType attribute value.
+var MapAttributeGcType = map[string]AttributeGcType{
+	"major": AttributeGcTypeMajor,
+	"minor": AttributeGcTypeMinor,
 }
 
 // AttributeLocation specifies the a value location attribute.
@@ -528,7 +516,7 @@ func (m *metricSparkDriverBlockManagerDiskDiskSpaceUsed) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverBlockManagerDiskDiskSpaceUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverBlockManagerDiskDiskSpaceUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -537,6 +525,7 @@ func (m *metricSparkDriverBlockManagerDiskDiskSpaceUsed) recordDataPoint(start p
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -564,60 +553,6 @@ func newMetricSparkDriverBlockManagerDiskDiskSpaceUsed(settings MetricSettings) 
 	return m
 }
 
-type metricSparkDriverBlockManagerMemoryMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills spark.driver.block_manager.memory.max metric with initial data.
-func (m *metricSparkDriverBlockManagerMemoryMax) init() {
-	m.data.SetName("spark.driver.block_manager.memory.max")
-	m.data.SetDescription("Maximum memory available to the BlockManager.")
-	m.data.SetUnit("mb")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSparkDriverBlockManagerMemoryMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
-	dp.Attributes().PutStr("location", locationAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkDriverBlockManagerMemoryMax) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkDriverBlockManagerMemoryMax) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSparkDriverBlockManagerMemoryMax(settings MetricSettings) metricSparkDriverBlockManagerMemoryMax {
-	m := metricSparkDriverBlockManagerMemoryMax{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricSparkDriverBlockManagerMemoryRemaining struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -635,7 +570,7 @@ func (m *metricSparkDriverBlockManagerMemoryRemaining) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverBlockManagerMemoryRemaining) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue string) {
+func (m *metricSparkDriverBlockManagerMemoryRemaining) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, locationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -644,6 +579,7 @@ func (m *metricSparkDriverBlockManagerMemoryRemaining) recordDataPoint(start pco
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("location", locationAttributeValue)
 }
 
@@ -689,7 +625,7 @@ func (m *metricSparkDriverBlockManagerMemoryUsed) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverBlockManagerMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue string) {
+func (m *metricSparkDriverBlockManagerMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, locationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -698,6 +634,7 @@ func (m *metricSparkDriverBlockManagerMemoryUsed) recordDataPoint(start pcommon.
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("location", locationAttributeValue)
 }
 
@@ -741,7 +678,7 @@ func (m *metricSparkDriverCodeGeneratorCompilationAverageTime) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverCodeGeneratorCompilationAverageTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverCodeGeneratorCompilationAverageTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -750,6 +687,7 @@ func (m *metricSparkDriverCodeGeneratorCompilationAverageTime) recordDataPoint(s
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -794,7 +732,7 @@ func (m *metricSparkDriverCodeGeneratorCompilationCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverCodeGeneratorCompilationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverCodeGeneratorCompilationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -803,6 +741,7 @@ func (m *metricSparkDriverCodeGeneratorCompilationCount) recordDataPoint(start p
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -845,7 +784,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedClassAverageSize) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverCodeGeneratorGeneratedClassAverageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverCodeGeneratorGeneratedClassAverageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -854,6 +793,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedClassAverageSize) recordDataPoin
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -898,7 +838,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedClassCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverCodeGeneratorGeneratedClassCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverCodeGeneratorGeneratedClassCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -907,6 +847,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedClassCount) recordDataPoint(star
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -949,7 +890,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedMethodAverageSize) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverCodeGeneratorGeneratedMethodAverageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverCodeGeneratorGeneratedMethodAverageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -958,6 +899,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedMethodAverageSize) recordDataPoi
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1002,7 +944,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedMethodCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverCodeGeneratorGeneratedMethodCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverCodeGeneratorGeneratedMethodCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1011,6 +953,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedMethodCount) recordDataPoint(sta
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1053,7 +996,7 @@ func (m *metricSparkDriverCodeGeneratorSourceCodeAverageSize) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverCodeGeneratorSourceCodeAverageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverCodeGeneratorSourceCodeAverageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1062,6 +1005,7 @@ func (m *metricSparkDriverCodeGeneratorSourceCodeAverageSize) recordDataPoint(st
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1106,7 +1050,7 @@ func (m *metricSparkDriverCodeGeneratorSourceCodeCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverCodeGeneratorSourceCodeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverCodeGeneratorSourceCodeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1115,6 +1059,7 @@ func (m *metricSparkDriverCodeGeneratorSourceCodeCount) recordDataPoint(start pc
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1159,7 +1104,7 @@ func (m *metricSparkDriverDagSchedulerJobActiveJobs) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverDagSchedulerJobActiveJobs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverDagSchedulerJobActiveJobs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1168,6 +1113,7 @@ func (m *metricSparkDriverDagSchedulerJobActiveJobs) recordDataPoint(start pcomm
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1212,7 +1158,7 @@ func (m *metricSparkDriverDagSchedulerJobAllJobs) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverDagSchedulerJobAllJobs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverDagSchedulerJobAllJobs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1221,6 +1167,7 @@ func (m *metricSparkDriverDagSchedulerJobAllJobs) recordDataPoint(start pcommon.
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1265,7 +1212,7 @@ func (m *metricSparkDriverDagSchedulerStageFailedStages) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverDagSchedulerStageFailedStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverDagSchedulerStageFailedStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1274,6 +1221,7 @@ func (m *metricSparkDriverDagSchedulerStageFailedStages) recordDataPoint(start p
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1318,7 +1266,7 @@ func (m *metricSparkDriverDagSchedulerStageRunningStages) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverDagSchedulerStageRunningStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverDagSchedulerStageRunningStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1327,6 +1275,7 @@ func (m *metricSparkDriverDagSchedulerStageRunningStages) recordDataPoint(start 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1371,7 +1320,7 @@ func (m *metricSparkDriverDagSchedulerStageWaitingStages) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverDagSchedulerStageWaitingStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverDagSchedulerStageWaitingStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1380,6 +1329,7 @@ func (m *metricSparkDriverDagSchedulerStageWaitingStages) recordDataPoint(start 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1424,7 +1374,7 @@ func (m *metricSparkDriverExecutorMetricsExecutionMemory) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverExecutorMetricsExecutionMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue string) {
+func (m *metricSparkDriverExecutorMetricsExecutionMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, locationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1433,6 +1383,7 @@ func (m *metricSparkDriverExecutorMetricsExecutionMemory) recordDataPoint(start 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("location", locationAttributeValue)
 }
 
@@ -1478,7 +1429,7 @@ func (m *metricSparkDriverExecutorMetricsGcCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverExecutorMetricsGcCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, gcSeverityAttributeValue string) {
+func (m *metricSparkDriverExecutorMetricsGcCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, gcTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1487,7 +1438,8 @@ func (m *metricSparkDriverExecutorMetricsGcCount) recordDataPoint(start pcommon.
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
-	dp.Attributes().PutStr("gc_severity", gcSeverityAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
+	dp.Attributes().PutStr("gc_type", gcTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1532,7 +1484,7 @@ func (m *metricSparkDriverExecutorMetricsGcTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverExecutorMetricsGcTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, gcSeverityAttributeValue string) {
+func (m *metricSparkDriverExecutorMetricsGcTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, gcTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1541,7 +1493,8 @@ func (m *metricSparkDriverExecutorMetricsGcTime) recordDataPoint(start pcommon.T
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
-	dp.Attributes().PutStr("gc_severity", gcSeverityAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
+	dp.Attributes().PutStr("gc_type", gcTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1586,7 +1539,7 @@ func (m *metricSparkDriverExecutorMetricsJvmMemory) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverExecutorMetricsJvmMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue string) {
+func (m *metricSparkDriverExecutorMetricsJvmMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, locationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1595,6 +1548,7 @@ func (m *metricSparkDriverExecutorMetricsJvmMemory) recordDataPoint(start pcommo
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("location", locationAttributeValue)
 }
 
@@ -1640,7 +1594,7 @@ func (m *metricSparkDriverExecutorMetricsPoolMemory) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverExecutorMetricsPoolMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, poolMemoryTypeAttributeValue string) {
+func (m *metricSparkDriverExecutorMetricsPoolMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, poolMemoryTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1649,6 +1603,7 @@ func (m *metricSparkDriverExecutorMetricsPoolMemory) recordDataPoint(start pcomm
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("pool_memory_type", poolMemoryTypeAttributeValue)
 }
 
@@ -1694,7 +1649,7 @@ func (m *metricSparkDriverExecutorMetricsStorageMemory) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverExecutorMetricsStorageMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue string) {
+func (m *metricSparkDriverExecutorMetricsStorageMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, locationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1703,6 +1658,7 @@ func (m *metricSparkDriverExecutorMetricsStorageMemory) recordDataPoint(start pc
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("location", locationAttributeValue)
 }
 
@@ -1731,60 +1687,6 @@ func newMetricSparkDriverExecutorMetricsStorageMemory(settings MetricSettings) m
 	return m
 }
 
-type metricSparkDriverExecutorMetricsUnifiedMemory struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills spark.driver.executor_metrics.unified_memory metric with initial data.
-func (m *metricSparkDriverExecutorMetricsUnifiedMemory) init() {
-	m.data.SetName("spark.driver.executor_metrics.unified_memory")
-	m.data.SetDescription("Amount of unified memory currently used by the driver.")
-	m.data.SetUnit("bytes")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSparkDriverExecutorMetricsUnifiedMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
-	dp.Attributes().PutStr("location", locationAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkDriverExecutorMetricsUnifiedMemory) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkDriverExecutorMetricsUnifiedMemory) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSparkDriverExecutorMetricsUnifiedMemory(settings MetricSettings) metricSparkDriverExecutorMetricsUnifiedMemory {
-	m := metricSparkDriverExecutorMetricsUnifiedMemory{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricSparkDriverHiveExternalCatalogFileCacheHits struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1802,7 +1704,7 @@ func (m *metricSparkDriverHiveExternalCatalogFileCacheHits) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverHiveExternalCatalogFileCacheHits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverHiveExternalCatalogFileCacheHits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1811,6 +1713,7 @@ func (m *metricSparkDriverHiveExternalCatalogFileCacheHits) recordDataPoint(star
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1855,7 +1758,7 @@ func (m *metricSparkDriverHiveExternalCatalogFilesDiscovered) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverHiveExternalCatalogFilesDiscovered) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverHiveExternalCatalogFilesDiscovered) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1864,6 +1767,7 @@ func (m *metricSparkDriverHiveExternalCatalogFilesDiscovered) recordDataPoint(st
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1908,7 +1812,7 @@ func (m *metricSparkDriverHiveExternalCatalogHiveClientCalls) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverHiveExternalCatalogHiveClientCalls) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverHiveExternalCatalogHiveClientCalls) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1917,6 +1821,7 @@ func (m *metricSparkDriverHiveExternalCatalogHiveClientCalls) recordDataPoint(st
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1961,7 +1866,7 @@ func (m *metricSparkDriverHiveExternalCatalogParallelListingJobs) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverHiveExternalCatalogParallelListingJobs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverHiveExternalCatalogParallelListingJobs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1970,6 +1875,7 @@ func (m *metricSparkDriverHiveExternalCatalogParallelListingJobs) recordDataPoin
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2014,7 +1920,7 @@ func (m *metricSparkDriverHiveExternalCatalogPartitionsFetched) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverHiveExternalCatalogPartitionsFetched) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverHiveExternalCatalogPartitionsFetched) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2023,6 +1929,7 @@ func (m *metricSparkDriverHiveExternalCatalogPartitionsFetched) recordDataPoint(
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2067,7 +1974,7 @@ func (m *metricSparkDriverJvmCPUTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverJvmCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverJvmCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2076,6 +1983,7 @@ func (m *metricSparkDriverJvmCPUTime) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2120,7 +2028,7 @@ func (m *metricSparkDriverLiveListenerBusEventsDropped) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverLiveListenerBusEventsDropped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverLiveListenerBusEventsDropped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2129,6 +2037,7 @@ func (m *metricSparkDriverLiveListenerBusEventsDropped) recordDataPoint(start pc
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2173,7 +2082,7 @@ func (m *metricSparkDriverLiveListenerBusEventsPosted) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverLiveListenerBusEventsPosted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverLiveListenerBusEventsPosted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2182,6 +2091,7 @@ func (m *metricSparkDriverLiveListenerBusEventsPosted) recordDataPoint(start pco
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2224,7 +2134,7 @@ func (m *metricSparkDriverLiveListenerBusListenerProcessingTimeAverage) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverLiveListenerBusListenerProcessingTimeAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverLiveListenerBusListenerProcessingTimeAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2233,6 +2143,7 @@ func (m *metricSparkDriverLiveListenerBusListenerProcessingTimeAverage) recordDa
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2277,7 +2188,7 @@ func (m *metricSparkDriverLiveListenerBusQueueSize) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverLiveListenerBusQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
+func (m *metricSparkDriverLiveListenerBusQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2286,6 +2197,7 @@ func (m *metricSparkDriverLiveListenerBusQueueSize) recordDataPoint(start pcommo
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2330,7 +2242,7 @@ func (m *metricSparkExecutorActiveTasks) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorActiveTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
+func (m *metricSparkExecutorActiveTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2339,6 +2251,7 @@ func (m *metricSparkExecutorActiveTasks) recordDataPoint(start pcommon.Timestamp
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 }
 
@@ -2384,7 +2297,7 @@ func (m *metricSparkExecutorCompletedTasks) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorCompletedTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
+func (m *metricSparkExecutorCompletedTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2393,6 +2306,7 @@ func (m *metricSparkExecutorCompletedTasks) recordDataPoint(start pcommon.Timest
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 }
 
@@ -2438,7 +2352,7 @@ func (m *metricSparkExecutorDiskUsed) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorDiskUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
+func (m *metricSparkExecutorDiskUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2447,6 +2361,7 @@ func (m *metricSparkExecutorDiskUsed) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 }
 
@@ -2492,7 +2407,7 @@ func (m *metricSparkExecutorDuration) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
+func (m *metricSparkExecutorDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2501,6 +2416,7 @@ func (m *metricSparkExecutorDuration) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 }
 
@@ -2546,7 +2462,7 @@ func (m *metricSparkExecutorFailedTasks) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorFailedTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
+func (m *metricSparkExecutorFailedTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2555,6 +2471,7 @@ func (m *metricSparkExecutorFailedTasks) recordDataPoint(start pcommon.Timestamp
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 }
 
@@ -2600,7 +2517,7 @@ func (m *metricSparkExecutorGcTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorGcTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
+func (m *metricSparkExecutorGcTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2609,6 +2526,7 @@ func (m *metricSparkExecutorGcTime) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 }
 
@@ -2654,7 +2572,7 @@ func (m *metricSparkExecutorInputBytes) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorInputBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
+func (m *metricSparkExecutorInputBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2663,6 +2581,7 @@ func (m *metricSparkExecutorInputBytes) recordDataPoint(start pcommon.Timestamp,
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 }
 
@@ -2691,60 +2610,6 @@ func newMetricSparkExecutorInputBytes(settings MetricSettings) metricSparkExecut
 	return m
 }
 
-type metricSparkExecutorMaxMemory struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills spark.executor.max_memory metric with initial data.
-func (m *metricSparkExecutorMaxMemory) init() {
-	m.data.SetName("spark.executor.max_memory")
-	m.data.SetDescription("Total amount of memory available for storage.")
-	m.data.SetUnit("bytes")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSparkExecutorMaxMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
-	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkExecutorMaxMemory) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkExecutorMaxMemory) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSparkExecutorMaxMemory(settings MetricSettings) metricSparkExecutorMaxMemory {
-	m := metricSparkExecutorMaxMemory{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricSparkExecutorMaxTasks struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -2762,7 +2627,7 @@ func (m *metricSparkExecutorMaxTasks) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorMaxTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
+func (m *metricSparkExecutorMaxTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2771,6 +2636,7 @@ func (m *metricSparkExecutorMaxTasks) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 }
 
@@ -2816,7 +2682,7 @@ func (m *metricSparkExecutorMemoryUsed) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
+func (m *metricSparkExecutorMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2825,6 +2691,7 @@ func (m *metricSparkExecutorMemoryUsed) recordDataPoint(start pcommon.Timestamp,
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 }
 
@@ -2870,7 +2737,7 @@ func (m *metricSparkExecutorShuffleReadBytes) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorShuffleReadBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
+func (m *metricSparkExecutorShuffleReadBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2879,6 +2746,7 @@ func (m *metricSparkExecutorShuffleReadBytes) recordDataPoint(start pcommon.Time
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 }
 
@@ -2924,7 +2792,7 @@ func (m *metricSparkExecutorShuffleWriteBytes) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorShuffleWriteBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
+func (m *metricSparkExecutorShuffleWriteBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2933,6 +2801,7 @@ func (m *metricSparkExecutorShuffleWriteBytes) recordDataPoint(start pcommon.Tim
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 }
 
@@ -2978,7 +2847,7 @@ func (m *metricSparkExecutorTotalStorageMemory) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorTotalStorageMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string, locationAttributeValue string) {
+func (m *metricSparkExecutorTotalStorageMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string, locationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2987,6 +2856,7 @@ func (m *metricSparkExecutorTotalStorageMemory) recordDataPoint(start pcommon.Ti
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 	dp.Attributes().PutStr("location", locationAttributeValue)
 }
@@ -3033,7 +2903,7 @@ func (m *metricSparkExecutorUsedStorageMemory) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkExecutorUsedStorageMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string, locationAttributeValue string) {
+func (m *metricSparkExecutorUsedStorageMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string, locationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3042,6 +2912,7 @@ func (m *metricSparkExecutorUsedStorageMemory) recordDataPoint(start pcommon.Tim
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutStr("executor_id", executorIDAttributeValue)
 	dp.Attributes().PutStr("location", locationAttributeValue)
 }
@@ -3088,7 +2959,7 @@ func (m *metricSparkJobActiveStages) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkJobActiveStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
+func (m *metricSparkJobActiveStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3097,6 +2968,7 @@ func (m *metricSparkJobActiveStages) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("job_id", jobIDAttributeValue)
 }
 
@@ -3142,7 +3014,7 @@ func (m *metricSparkJobActiveTasks) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkJobActiveTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
+func (m *metricSparkJobActiveTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3151,6 +3023,7 @@ func (m *metricSparkJobActiveTasks) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("job_id", jobIDAttributeValue)
 }
 
@@ -3196,7 +3069,7 @@ func (m *metricSparkJobCompletedStages) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkJobCompletedStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
+func (m *metricSparkJobCompletedStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3205,6 +3078,7 @@ func (m *metricSparkJobCompletedStages) recordDataPoint(start pcommon.Timestamp,
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("job_id", jobIDAttributeValue)
 }
 
@@ -3250,7 +3124,7 @@ func (m *metricSparkJobCompletedTasks) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkJobCompletedTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
+func (m *metricSparkJobCompletedTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3259,6 +3133,7 @@ func (m *metricSparkJobCompletedTasks) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("job_id", jobIDAttributeValue)
 }
 
@@ -3304,7 +3179,7 @@ func (m *metricSparkJobFailedStages) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkJobFailedStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
+func (m *metricSparkJobFailedStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3313,6 +3188,7 @@ func (m *metricSparkJobFailedStages) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("job_id", jobIDAttributeValue)
 }
 
@@ -3358,7 +3234,7 @@ func (m *metricSparkJobFailedTasks) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkJobFailedTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
+func (m *metricSparkJobFailedTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3367,6 +3243,7 @@ func (m *metricSparkJobFailedTasks) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("job_id", jobIDAttributeValue)
 }
 
@@ -3412,7 +3289,7 @@ func (m *metricSparkJobSkippedStages) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkJobSkippedStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
+func (m *metricSparkJobSkippedStages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3421,6 +3298,7 @@ func (m *metricSparkJobSkippedStages) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("job_id", jobIDAttributeValue)
 }
 
@@ -3466,7 +3344,7 @@ func (m *metricSparkJobSkippedTasks) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkJobSkippedTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
+func (m *metricSparkJobSkippedTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3475,6 +3353,7 @@ func (m *metricSparkJobSkippedTasks) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("job_id", jobIDAttributeValue)
 }
 
@@ -3520,7 +3399,7 @@ func (m *metricSparkStageActiveTasks) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageActiveTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageActiveTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3529,6 +3408,7 @@ func (m *metricSparkStageActiveTasks) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -3576,7 +3456,7 @@ func (m *metricSparkStageCompleteTasks) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageCompleteTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageCompleteTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3585,6 +3465,7 @@ func (m *metricSparkStageCompleteTasks) recordDataPoint(start pcommon.Timestamp,
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -3632,7 +3513,7 @@ func (m *metricSparkStageDiskSpaceSpilled) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageDiskSpaceSpilled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageDiskSpaceSpilled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3641,6 +3522,7 @@ func (m *metricSparkStageDiskSpaceSpilled) recordDataPoint(start pcommon.Timesta
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -3688,7 +3570,7 @@ func (m *metricSparkStageExecutorCPUTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageExecutorCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageExecutorCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3697,6 +3579,7 @@ func (m *metricSparkStageExecutorCPUTime) recordDataPoint(start pcommon.Timestam
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -3744,7 +3627,7 @@ func (m *metricSparkStageExecutorRunTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageExecutorRunTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageExecutorRunTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3753,6 +3636,7 @@ func (m *metricSparkStageExecutorRunTime) recordDataPoint(start pcommon.Timestam
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -3800,7 +3684,7 @@ func (m *metricSparkStageFailedTasks) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageFailedTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageFailedTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3809,6 +3693,7 @@ func (m *metricSparkStageFailedTasks) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -3856,7 +3741,7 @@ func (m *metricSparkStageInputBytes) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageInputBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageInputBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3865,6 +3750,7 @@ func (m *metricSparkStageInputBytes) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -3912,7 +3798,7 @@ func (m *metricSparkStageInputRecords) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageInputRecords) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageInputRecords) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3921,6 +3807,7 @@ func (m *metricSparkStageInputRecords) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -3968,7 +3855,7 @@ func (m *metricSparkStageJvmGcTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageJvmGcTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageJvmGcTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -3977,6 +3864,7 @@ func (m *metricSparkStageJvmGcTime) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4024,7 +3912,7 @@ func (m *metricSparkStageKilledTasks) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageKilledTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageKilledTasks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4033,6 +3921,7 @@ func (m *metricSparkStageKilledTasks) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4080,7 +3969,7 @@ func (m *metricSparkStageMemorySpilled) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageMemorySpilled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageMemorySpilled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4089,6 +3978,7 @@ func (m *metricSparkStageMemorySpilled) recordDataPoint(start pcommon.Timestamp,
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4136,7 +4026,7 @@ func (m *metricSparkStageOutputBytes) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageOutputBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageOutputBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4145,6 +4035,7 @@ func (m *metricSparkStageOutputBytes) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4192,7 +4083,7 @@ func (m *metricSparkStageOutputRecords) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageOutputRecords) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageOutputRecords) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4201,6 +4092,7 @@ func (m *metricSparkStageOutputRecords) recordDataPoint(start pcommon.Timestamp,
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4248,7 +4140,7 @@ func (m *metricSparkStagePeakExecutionMemory) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStagePeakExecutionMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStagePeakExecutionMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4257,6 +4149,7 @@ func (m *metricSparkStagePeakExecutionMemory) recordDataPoint(start pcommon.Time
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4304,7 +4197,7 @@ func (m *metricSparkStageResultSize) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageResultSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageResultSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4313,6 +4206,7 @@ func (m *metricSparkStageResultSize) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4360,7 +4254,7 @@ func (m *metricSparkStageShuffleBlocksFetched) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageShuffleBlocksFetched) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string, sourceAttributeValue string) {
+func (m *metricSparkStageShuffleBlocksFetched) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string, sourceAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4369,6 +4263,7 @@ func (m *metricSparkStageShuffleBlocksFetched) recordDataPoint(start pcommon.Tim
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4417,7 +4312,7 @@ func (m *metricSparkStageShuffleBytesRead) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageShuffleBytesRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string, sourceAttributeValue string) {
+func (m *metricSparkStageShuffleBytesRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string, sourceAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4426,6 +4321,7 @@ func (m *metricSparkStageShuffleBytesRead) recordDataPoint(start pcommon.Timesta
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4474,7 +4370,7 @@ func (m *metricSparkStageShuffleFetchWaitTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageShuffleFetchWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageShuffleFetchWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4483,6 +4379,7 @@ func (m *metricSparkStageShuffleFetchWaitTime) recordDataPoint(start pcommon.Tim
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4530,7 +4427,7 @@ func (m *metricSparkStageShuffleReadBytes) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageShuffleReadBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageShuffleReadBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4539,6 +4436,7 @@ func (m *metricSparkStageShuffleReadBytes) recordDataPoint(start pcommon.Timesta
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4586,7 +4484,7 @@ func (m *metricSparkStageShuffleReadRecords) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageShuffleReadRecords) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageShuffleReadRecords) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4595,6 +4493,7 @@ func (m *metricSparkStageShuffleReadRecords) recordDataPoint(start pcommon.Times
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4642,7 +4541,7 @@ func (m *metricSparkStageShuffleRemoteBytesReadToDisk) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageShuffleRemoteBytesReadToDisk) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageShuffleRemoteBytesReadToDisk) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4651,6 +4550,7 @@ func (m *metricSparkStageShuffleRemoteBytesReadToDisk) recordDataPoint(start pco
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4698,7 +4598,7 @@ func (m *metricSparkStageShuffleWriteBytes) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageShuffleWriteBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageShuffleWriteBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4707,6 +4607,7 @@ func (m *metricSparkStageShuffleWriteBytes) recordDataPoint(start pcommon.Timest
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4754,7 +4655,7 @@ func (m *metricSparkStageShuffleWriteRecords) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageShuffleWriteRecords) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageShuffleWriteRecords) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4763,6 +4664,7 @@ func (m *metricSparkStageShuffleWriteRecords) recordDataPoint(start pcommon.Time
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4810,7 +4712,7 @@ func (m *metricSparkStageShuffleWriteTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageShuffleWriteTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
+func (m *metricSparkStageShuffleWriteTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -4819,6 +4721,7 @@ func (m *metricSparkStageShuffleWriteTime) recordDataPoint(start pcommon.Timesta
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("application_id", applicationIDAttributeValue)
+	dp.Attributes().PutStr("application_name", applicationNameAttributeValue)
 	dp.Attributes().PutInt("stage_id", stageIDAttributeValue)
 	dp.Attributes().PutInt("attempt_id", attemptIDAttributeValue)
 	dp.Attributes().PutStr("stage_status", stageStatusAttributeValue)
@@ -4865,7 +4768,6 @@ type MetricsBuilder struct {
 	buildInfo                                                     component.BuildInfo // contains version information
 	resourceAttributesSettings                                    ResourceAttributesSettings
 	metricSparkDriverBlockManagerDiskDiskSpaceUsed                metricSparkDriverBlockManagerDiskDiskSpaceUsed
-	metricSparkDriverBlockManagerMemoryMax                        metricSparkDriverBlockManagerMemoryMax
 	metricSparkDriverBlockManagerMemoryRemaining                  metricSparkDriverBlockManagerMemoryRemaining
 	metricSparkDriverBlockManagerMemoryUsed                       metricSparkDriverBlockManagerMemoryUsed
 	metricSparkDriverCodeGeneratorCompilationAverageTime          metricSparkDriverCodeGeneratorCompilationAverageTime
@@ -4887,7 +4789,6 @@ type MetricsBuilder struct {
 	metricSparkDriverExecutorMetricsJvmMemory                     metricSparkDriverExecutorMetricsJvmMemory
 	metricSparkDriverExecutorMetricsPoolMemory                    metricSparkDriverExecutorMetricsPoolMemory
 	metricSparkDriverExecutorMetricsStorageMemory                 metricSparkDriverExecutorMetricsStorageMemory
-	metricSparkDriverExecutorMetricsUnifiedMemory                 metricSparkDriverExecutorMetricsUnifiedMemory
 	metricSparkDriverHiveExternalCatalogFileCacheHits             metricSparkDriverHiveExternalCatalogFileCacheHits
 	metricSparkDriverHiveExternalCatalogFilesDiscovered           metricSparkDriverHiveExternalCatalogFilesDiscovered
 	metricSparkDriverHiveExternalCatalogHiveClientCalls           metricSparkDriverHiveExternalCatalogHiveClientCalls
@@ -4905,7 +4806,6 @@ type MetricsBuilder struct {
 	metricSparkExecutorFailedTasks                                metricSparkExecutorFailedTasks
 	metricSparkExecutorGcTime                                     metricSparkExecutorGcTime
 	metricSparkExecutorInputBytes                                 metricSparkExecutorInputBytes
-	metricSparkExecutorMaxMemory                                  metricSparkExecutorMaxMemory
 	metricSparkExecutorMaxTasks                                   metricSparkExecutorMaxTasks
 	metricSparkExecutorMemoryUsed                                 metricSparkExecutorMemoryUsed
 	metricSparkExecutorShuffleReadBytes                           metricSparkExecutorShuffleReadBytes
@@ -4977,7 +4877,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		buildInfo:                  settings.BuildInfo,
 		resourceAttributesSettings: mbc.ResourceAttributes,
 		metricSparkDriverBlockManagerDiskDiskSpaceUsed:                newMetricSparkDriverBlockManagerDiskDiskSpaceUsed(mbc.Metrics.SparkDriverBlockManagerDiskDiskSpaceUsed),
-		metricSparkDriverBlockManagerMemoryMax:                        newMetricSparkDriverBlockManagerMemoryMax(mbc.Metrics.SparkDriverBlockManagerMemoryMax),
 		metricSparkDriverBlockManagerMemoryRemaining:                  newMetricSparkDriverBlockManagerMemoryRemaining(mbc.Metrics.SparkDriverBlockManagerMemoryRemaining),
 		metricSparkDriverBlockManagerMemoryUsed:                       newMetricSparkDriverBlockManagerMemoryUsed(mbc.Metrics.SparkDriverBlockManagerMemoryUsed),
 		metricSparkDriverCodeGeneratorCompilationAverageTime:          newMetricSparkDriverCodeGeneratorCompilationAverageTime(mbc.Metrics.SparkDriverCodeGeneratorCompilationAverageTime),
@@ -4999,7 +4898,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSparkDriverExecutorMetricsJvmMemory:                     newMetricSparkDriverExecutorMetricsJvmMemory(mbc.Metrics.SparkDriverExecutorMetricsJvmMemory),
 		metricSparkDriverExecutorMetricsPoolMemory:                    newMetricSparkDriverExecutorMetricsPoolMemory(mbc.Metrics.SparkDriverExecutorMetricsPoolMemory),
 		metricSparkDriverExecutorMetricsStorageMemory:                 newMetricSparkDriverExecutorMetricsStorageMemory(mbc.Metrics.SparkDriverExecutorMetricsStorageMemory),
-		metricSparkDriverExecutorMetricsUnifiedMemory:                 newMetricSparkDriverExecutorMetricsUnifiedMemory(mbc.Metrics.SparkDriverExecutorMetricsUnifiedMemory),
 		metricSparkDriverHiveExternalCatalogFileCacheHits:             newMetricSparkDriverHiveExternalCatalogFileCacheHits(mbc.Metrics.SparkDriverHiveExternalCatalogFileCacheHits),
 		metricSparkDriverHiveExternalCatalogFilesDiscovered:           newMetricSparkDriverHiveExternalCatalogFilesDiscovered(mbc.Metrics.SparkDriverHiveExternalCatalogFilesDiscovered),
 		metricSparkDriverHiveExternalCatalogHiveClientCalls:           newMetricSparkDriverHiveExternalCatalogHiveClientCalls(mbc.Metrics.SparkDriverHiveExternalCatalogHiveClientCalls),
@@ -5017,7 +4915,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSparkExecutorFailedTasks:                                newMetricSparkExecutorFailedTasks(mbc.Metrics.SparkExecutorFailedTasks),
 		metricSparkExecutorGcTime:                                     newMetricSparkExecutorGcTime(mbc.Metrics.SparkExecutorGcTime),
 		metricSparkExecutorInputBytes:                                 newMetricSparkExecutorInputBytes(mbc.Metrics.SparkExecutorInputBytes),
-		metricSparkExecutorMaxMemory:                                  newMetricSparkExecutorMaxMemory(mbc.Metrics.SparkExecutorMaxMemory),
 		metricSparkExecutorMaxTasks:                                   newMetricSparkExecutorMaxTasks(mbc.Metrics.SparkExecutorMaxTasks),
 		metricSparkExecutorMemoryUsed:                                 newMetricSparkExecutorMemoryUsed(mbc.Metrics.SparkExecutorMemoryUsed),
 		metricSparkExecutorShuffleReadBytes:                           newMetricSparkExecutorShuffleReadBytes(mbc.Metrics.SparkExecutorShuffleReadBytes),
@@ -5109,7 +5006,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSparkDriverBlockManagerDiskDiskSpaceUsed.emit(ils.Metrics())
-	mb.metricSparkDriverBlockManagerMemoryMax.emit(ils.Metrics())
 	mb.metricSparkDriverBlockManagerMemoryRemaining.emit(ils.Metrics())
 	mb.metricSparkDriverBlockManagerMemoryUsed.emit(ils.Metrics())
 	mb.metricSparkDriverCodeGeneratorCompilationAverageTime.emit(ils.Metrics())
@@ -5131,7 +5027,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSparkDriverExecutorMetricsJvmMemory.emit(ils.Metrics())
 	mb.metricSparkDriverExecutorMetricsPoolMemory.emit(ils.Metrics())
 	mb.metricSparkDriverExecutorMetricsStorageMemory.emit(ils.Metrics())
-	mb.metricSparkDriverExecutorMetricsUnifiedMemory.emit(ils.Metrics())
 	mb.metricSparkDriverHiveExternalCatalogFileCacheHits.emit(ils.Metrics())
 	mb.metricSparkDriverHiveExternalCatalogFilesDiscovered.emit(ils.Metrics())
 	mb.metricSparkDriverHiveExternalCatalogHiveClientCalls.emit(ils.Metrics())
@@ -5149,7 +5044,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSparkExecutorFailedTasks.emit(ils.Metrics())
 	mb.metricSparkExecutorGcTime.emit(ils.Metrics())
 	mb.metricSparkExecutorInputBytes.emit(ils.Metrics())
-	mb.metricSparkExecutorMaxMemory.emit(ils.Metrics())
 	mb.metricSparkExecutorMaxTasks.emit(ils.Metrics())
 	mb.metricSparkExecutorMemoryUsed.emit(ils.Metrics())
 	mb.metricSparkExecutorShuffleReadBytes.emit(ils.Metrics())
@@ -5209,403 +5103,388 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordSparkDriverBlockManagerDiskDiskSpaceUsedDataPoint adds a data point to spark.driver.block_manager.disk.diskSpaceUsed metric.
-func (mb *MetricsBuilder) RecordSparkDriverBlockManagerDiskDiskSpaceUsedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverBlockManagerDiskDiskSpaceUsed.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
-}
-
-// RecordSparkDriverBlockManagerMemoryMaxDataPoint adds a data point to spark.driver.block_manager.memory.max metric.
-func (mb *MetricsBuilder) RecordSparkDriverBlockManagerMemoryMaxDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue AttributeLocation) {
-	mb.metricSparkDriverBlockManagerMemoryMax.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, locationAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkDriverBlockManagerDiskDiskSpaceUsedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverBlockManagerDiskDiskSpaceUsed.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverBlockManagerMemoryRemainingDataPoint adds a data point to spark.driver.block_manager.memory.remaining metric.
-func (mb *MetricsBuilder) RecordSparkDriverBlockManagerMemoryRemainingDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue AttributeLocation) {
-	mb.metricSparkDriverBlockManagerMemoryRemaining.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, locationAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkDriverBlockManagerMemoryRemainingDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, locationAttributeValue AttributeLocation) {
+	mb.metricSparkDriverBlockManagerMemoryRemaining.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, locationAttributeValue.String())
 }
 
 // RecordSparkDriverBlockManagerMemoryUsedDataPoint adds a data point to spark.driver.block_manager.memory.used metric.
-func (mb *MetricsBuilder) RecordSparkDriverBlockManagerMemoryUsedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue AttributeLocation) {
-	mb.metricSparkDriverBlockManagerMemoryUsed.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, locationAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkDriverBlockManagerMemoryUsedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, locationAttributeValue AttributeLocation) {
+	mb.metricSparkDriverBlockManagerMemoryUsed.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, locationAttributeValue.String())
 }
 
 // RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint adds a data point to spark.driver.code_generator.compilation.average_time metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(ts pcommon.Timestamp, val float64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverCodeGeneratorCompilationAverageTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(ts pcommon.Timestamp, val float64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverCodeGeneratorCompilationAverageTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverCodeGeneratorCompilationCountDataPoint adds a data point to spark.driver.code_generator.compilation.count metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorCompilationCountDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverCodeGeneratorCompilationCount.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorCompilationCountDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverCodeGeneratorCompilationCount.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint adds a data point to spark.driver.code_generator.generated_class.average_size metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(ts pcommon.Timestamp, val float64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverCodeGeneratorGeneratedClassAverageSize.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(ts pcommon.Timestamp, val float64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverCodeGeneratorGeneratedClassAverageSize.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint adds a data point to spark.driver.code_generator.generated_class.count metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverCodeGeneratorGeneratedClassCount.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverCodeGeneratorGeneratedClassCount.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint adds a data point to spark.driver.code_generator.generated_method.average_size metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts pcommon.Timestamp, val float64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverCodeGeneratorGeneratedMethodAverageSize.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts pcommon.Timestamp, val float64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverCodeGeneratorGeneratedMethodAverageSize.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint adds a data point to spark.driver.code_generator.generated_method.count metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverCodeGeneratorGeneratedMethodCount.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverCodeGeneratorGeneratedMethodCount.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint adds a data point to spark.driver.code_generator.source_code.average_size metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(ts pcommon.Timestamp, val float64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverCodeGeneratorSourceCodeAverageSize.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(ts pcommon.Timestamp, val float64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverCodeGeneratorSourceCodeAverageSize.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverCodeGeneratorSourceCodeCountDataPoint adds a data point to spark.driver.code_generator.source_code.count metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorSourceCodeCountDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverCodeGeneratorSourceCodeCount.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorSourceCodeCountDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverCodeGeneratorSourceCodeCount.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverDagSchedulerJobActiveJobsDataPoint adds a data point to spark.driver.dag_scheduler.job.active_jobs metric.
-func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerJobActiveJobsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverDagSchedulerJobActiveJobs.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerJobActiveJobsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverDagSchedulerJobActiveJobs.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverDagSchedulerJobAllJobsDataPoint adds a data point to spark.driver.dag_scheduler.job.all_jobs metric.
-func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerJobAllJobsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverDagSchedulerJobAllJobs.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerJobAllJobsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverDagSchedulerJobAllJobs.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverDagSchedulerStageFailedStagesDataPoint adds a data point to spark.driver.dag_scheduler.stage.failed_stages metric.
-func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerStageFailedStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverDagSchedulerStageFailedStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerStageFailedStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverDagSchedulerStageFailedStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverDagSchedulerStageRunningStagesDataPoint adds a data point to spark.driver.dag_scheduler.stage.running_stages metric.
-func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerStageRunningStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverDagSchedulerStageRunningStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerStageRunningStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverDagSchedulerStageRunningStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverDagSchedulerStageWaitingStagesDataPoint adds a data point to spark.driver.dag_scheduler.stage.waiting_stages metric.
-func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerStageWaitingStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverDagSchedulerStageWaitingStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerStageWaitingStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverDagSchedulerStageWaitingStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverExecutorMetricsExecutionMemoryDataPoint adds a data point to spark.driver.executor_metrics.execution_memory metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsExecutionMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue AttributeLocation) {
-	mb.metricSparkDriverExecutorMetricsExecutionMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, locationAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsExecutionMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, locationAttributeValue AttributeLocation) {
+	mb.metricSparkDriverExecutorMetricsExecutionMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, locationAttributeValue.String())
 }
 
 // RecordSparkDriverExecutorMetricsGcCountDataPoint adds a data point to spark.driver.executor_metrics.gc_count metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsGcCountDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, gcSeverityAttributeValue AttributeGcSeverity) {
-	mb.metricSparkDriverExecutorMetricsGcCount.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, gcSeverityAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsGcCountDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, gcTypeAttributeValue AttributeGcType) {
+	mb.metricSparkDriverExecutorMetricsGcCount.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, gcTypeAttributeValue.String())
 }
 
 // RecordSparkDriverExecutorMetricsGcTimeDataPoint adds a data point to spark.driver.executor_metrics.gc_time metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsGcTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, gcSeverityAttributeValue AttributeGcSeverity) {
-	mb.metricSparkDriverExecutorMetricsGcTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, gcSeverityAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsGcTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, gcTypeAttributeValue AttributeGcType) {
+	mb.metricSparkDriverExecutorMetricsGcTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, gcTypeAttributeValue.String())
 }
 
 // RecordSparkDriverExecutorMetricsJvmMemoryDataPoint adds a data point to spark.driver.executor_metrics.jvm_memory metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsJvmMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue AttributeLocation) {
-	mb.metricSparkDriverExecutorMetricsJvmMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, locationAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsJvmMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, locationAttributeValue AttributeLocation) {
+	mb.metricSparkDriverExecutorMetricsJvmMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, locationAttributeValue.String())
 }
 
 // RecordSparkDriverExecutorMetricsPoolMemoryDataPoint adds a data point to spark.driver.executor_metrics.pool_memory metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsPoolMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, poolMemoryTypeAttributeValue AttributePoolMemoryType) {
-	mb.metricSparkDriverExecutorMetricsPoolMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, poolMemoryTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsPoolMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, poolMemoryTypeAttributeValue AttributePoolMemoryType) {
+	mb.metricSparkDriverExecutorMetricsPoolMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, poolMemoryTypeAttributeValue.String())
 }
 
 // RecordSparkDriverExecutorMetricsStorageMemoryDataPoint adds a data point to spark.driver.executor_metrics.storage_memory metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsStorageMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue AttributeLocation) {
-	mb.metricSparkDriverExecutorMetricsStorageMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, locationAttributeValue.String())
-}
-
-// RecordSparkDriverExecutorMetricsUnifiedMemoryDataPoint adds a data point to spark.driver.executor_metrics.unified_memory metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsUnifiedMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, locationAttributeValue AttributeLocation) {
-	mb.metricSparkDriverExecutorMetricsUnifiedMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, locationAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkDriverExecutorMetricsStorageMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, locationAttributeValue AttributeLocation) {
+	mb.metricSparkDriverExecutorMetricsStorageMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, locationAttributeValue.String())
 }
 
 // RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint adds a data point to spark.driver.hive_external_catalog.file_cache_hits metric.
-func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverHiveExternalCatalogFileCacheHits.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverHiveExternalCatalogFileCacheHits.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint adds a data point to spark.driver.hive_external_catalog.files_discovered metric.
-func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverHiveExternalCatalogFilesDiscovered.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverHiveExternalCatalogFilesDiscovered.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint adds a data point to spark.driver.hive_external_catalog.hive_client_calls metric.
-func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverHiveExternalCatalogHiveClientCalls.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverHiveExternalCatalogHiveClientCalls.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint adds a data point to spark.driver.hive_external_catalog.parallel_listing_jobs metric.
-func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverHiveExternalCatalogParallelListingJobs.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverHiveExternalCatalogParallelListingJobs.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint adds a data point to spark.driver.hive_external_catalog.partitions_fetched metric.
-func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverHiveExternalCatalogPartitionsFetched.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverHiveExternalCatalogPartitionsFetched.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverJvmCPUTimeDataPoint adds a data point to spark.driver.jvm_cpu_time metric.
-func (mb *MetricsBuilder) RecordSparkDriverJvmCPUTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverJvmCPUTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverJvmCPUTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverJvmCPUTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverLiveListenerBusEventsDroppedDataPoint adds a data point to spark.driver.live_listener_bus.events_dropped metric.
-func (mb *MetricsBuilder) RecordSparkDriverLiveListenerBusEventsDroppedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverLiveListenerBusEventsDropped.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverLiveListenerBusEventsDroppedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverLiveListenerBusEventsDropped.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverLiveListenerBusEventsPostedDataPoint adds a data point to spark.driver.live_listener_bus.events_posted metric.
-func (mb *MetricsBuilder) RecordSparkDriverLiveListenerBusEventsPostedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverLiveListenerBusEventsPosted.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverLiveListenerBusEventsPostedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverLiveListenerBusEventsPosted.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverLiveListenerBusListenerProcessingTimeAverageDataPoint adds a data point to spark.driver.live_listener_bus.listener_processing_time.average metric.
-func (mb *MetricsBuilder) RecordSparkDriverLiveListenerBusListenerProcessingTimeAverageDataPoint(ts pcommon.Timestamp, val float64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverLiveListenerBusListenerProcessingTimeAverage.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverLiveListenerBusListenerProcessingTimeAverageDataPoint(ts pcommon.Timestamp, val float64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverLiveListenerBusListenerProcessingTimeAverage.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkDriverLiveListenerBusQueueSizeDataPoint adds a data point to spark.driver.live_listener_bus.queue_size metric.
-func (mb *MetricsBuilder) RecordSparkDriverLiveListenerBusQueueSizeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string) {
-	mb.metricSparkDriverLiveListenerBusQueueSize.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverLiveListenerBusQueueSizeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string) {
+	mb.metricSparkDriverLiveListenerBusQueueSize.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue)
 }
 
 // RecordSparkExecutorActiveTasksDataPoint adds a data point to spark.executor.active_tasks metric.
-func (mb *MetricsBuilder) RecordSparkExecutorActiveTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	mb.metricSparkExecutorActiveTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkExecutorActiveTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
+	mb.metricSparkExecutorActiveTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue)
 }
 
 // RecordSparkExecutorCompletedTasksDataPoint adds a data point to spark.executor.completed_tasks metric.
-func (mb *MetricsBuilder) RecordSparkExecutorCompletedTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	mb.metricSparkExecutorCompletedTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkExecutorCompletedTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
+	mb.metricSparkExecutorCompletedTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue)
 }
 
 // RecordSparkExecutorDiskUsedDataPoint adds a data point to spark.executor.disk_used metric.
-func (mb *MetricsBuilder) RecordSparkExecutorDiskUsedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	mb.metricSparkExecutorDiskUsed.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkExecutorDiskUsedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
+	mb.metricSparkExecutorDiskUsed.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue)
 }
 
 // RecordSparkExecutorDurationDataPoint adds a data point to spark.executor.duration metric.
-func (mb *MetricsBuilder) RecordSparkExecutorDurationDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	mb.metricSparkExecutorDuration.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkExecutorDurationDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
+	mb.metricSparkExecutorDuration.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue)
 }
 
 // RecordSparkExecutorFailedTasksDataPoint adds a data point to spark.executor.failed_tasks metric.
-func (mb *MetricsBuilder) RecordSparkExecutorFailedTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	mb.metricSparkExecutorFailedTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkExecutorFailedTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
+	mb.metricSparkExecutorFailedTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue)
 }
 
 // RecordSparkExecutorGcTimeDataPoint adds a data point to spark.executor.gc_time metric.
-func (mb *MetricsBuilder) RecordSparkExecutorGcTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	mb.metricSparkExecutorGcTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkExecutorGcTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
+	mb.metricSparkExecutorGcTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue)
 }
 
 // RecordSparkExecutorInputBytesDataPoint adds a data point to spark.executor.input_bytes metric.
-func (mb *MetricsBuilder) RecordSparkExecutorInputBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	mb.metricSparkExecutorInputBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue)
-}
-
-// RecordSparkExecutorMaxMemoryDataPoint adds a data point to spark.executor.max_memory metric.
-func (mb *MetricsBuilder) RecordSparkExecutorMaxMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	mb.metricSparkExecutorMaxMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkExecutorInputBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
+	mb.metricSparkExecutorInputBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue)
 }
 
 // RecordSparkExecutorMaxTasksDataPoint adds a data point to spark.executor.max_tasks metric.
-func (mb *MetricsBuilder) RecordSparkExecutorMaxTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	mb.metricSparkExecutorMaxTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkExecutorMaxTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
+	mb.metricSparkExecutorMaxTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue)
 }
 
 // RecordSparkExecutorMemoryUsedDataPoint adds a data point to spark.executor.memory_used metric.
-func (mb *MetricsBuilder) RecordSparkExecutorMemoryUsedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	mb.metricSparkExecutorMemoryUsed.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkExecutorMemoryUsedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
+	mb.metricSparkExecutorMemoryUsed.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue)
 }
 
 // RecordSparkExecutorShuffleReadBytesDataPoint adds a data point to spark.executor.shuffle_read_bytes metric.
-func (mb *MetricsBuilder) RecordSparkExecutorShuffleReadBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	mb.metricSparkExecutorShuffleReadBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkExecutorShuffleReadBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
+	mb.metricSparkExecutorShuffleReadBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue)
 }
 
 // RecordSparkExecutorShuffleWriteBytesDataPoint adds a data point to spark.executor.shuffle_write_bytes metric.
-func (mb *MetricsBuilder) RecordSparkExecutorShuffleWriteBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string) {
-	mb.metricSparkExecutorShuffleWriteBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkExecutorShuffleWriteBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string) {
+	mb.metricSparkExecutorShuffleWriteBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue)
 }
 
 // RecordSparkExecutorTotalStorageMemoryDataPoint adds a data point to spark.executor.total_storage_memory metric.
-func (mb *MetricsBuilder) RecordSparkExecutorTotalStorageMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string, locationAttributeValue AttributeLocation) {
-	mb.metricSparkExecutorTotalStorageMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue, locationAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkExecutorTotalStorageMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string, locationAttributeValue AttributeLocation) {
+	mb.metricSparkExecutorTotalStorageMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue, locationAttributeValue.String())
 }
 
 // RecordSparkExecutorUsedStorageMemoryDataPoint adds a data point to spark.executor.used_storage_memory metric.
-func (mb *MetricsBuilder) RecordSparkExecutorUsedStorageMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, executorIDAttributeValue string, locationAttributeValue AttributeLocation) {
-	mb.metricSparkExecutorUsedStorageMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, executorIDAttributeValue, locationAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkExecutorUsedStorageMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, executorIDAttributeValue string, locationAttributeValue AttributeLocation) {
+	mb.metricSparkExecutorUsedStorageMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, executorIDAttributeValue, locationAttributeValue.String())
 }
 
 // RecordSparkJobActiveStagesDataPoint adds a data point to spark.job.active_stages metric.
-func (mb *MetricsBuilder) RecordSparkJobActiveStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
-	mb.metricSparkJobActiveStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, jobIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkJobActiveStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
+	mb.metricSparkJobActiveStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, jobIDAttributeValue)
 }
 
 // RecordSparkJobActiveTasksDataPoint adds a data point to spark.job.active_tasks metric.
-func (mb *MetricsBuilder) RecordSparkJobActiveTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
-	mb.metricSparkJobActiveTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, jobIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkJobActiveTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
+	mb.metricSparkJobActiveTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, jobIDAttributeValue)
 }
 
 // RecordSparkJobCompletedStagesDataPoint adds a data point to spark.job.completed_stages metric.
-func (mb *MetricsBuilder) RecordSparkJobCompletedStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
-	mb.metricSparkJobCompletedStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, jobIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkJobCompletedStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
+	mb.metricSparkJobCompletedStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, jobIDAttributeValue)
 }
 
 // RecordSparkJobCompletedTasksDataPoint adds a data point to spark.job.completed_tasks metric.
-func (mb *MetricsBuilder) RecordSparkJobCompletedTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
-	mb.metricSparkJobCompletedTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, jobIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkJobCompletedTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
+	mb.metricSparkJobCompletedTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, jobIDAttributeValue)
 }
 
 // RecordSparkJobFailedStagesDataPoint adds a data point to spark.job.failed_stages metric.
-func (mb *MetricsBuilder) RecordSparkJobFailedStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
-	mb.metricSparkJobFailedStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, jobIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkJobFailedStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
+	mb.metricSparkJobFailedStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, jobIDAttributeValue)
 }
 
 // RecordSparkJobFailedTasksDataPoint adds a data point to spark.job.failed_tasks metric.
-func (mb *MetricsBuilder) RecordSparkJobFailedTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
-	mb.metricSparkJobFailedTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, jobIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkJobFailedTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
+	mb.metricSparkJobFailedTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, jobIDAttributeValue)
 }
 
 // RecordSparkJobSkippedStagesDataPoint adds a data point to spark.job.skipped_stages metric.
-func (mb *MetricsBuilder) RecordSparkJobSkippedStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
-	mb.metricSparkJobSkippedStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, jobIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkJobSkippedStagesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
+	mb.metricSparkJobSkippedStages.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, jobIDAttributeValue)
 }
 
 // RecordSparkJobSkippedTasksDataPoint adds a data point to spark.job.skipped_tasks metric.
-func (mb *MetricsBuilder) RecordSparkJobSkippedTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, jobIDAttributeValue int64) {
-	mb.metricSparkJobSkippedTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, jobIDAttributeValue)
+func (mb *MetricsBuilder) RecordSparkJobSkippedTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, jobIDAttributeValue int64) {
+	mb.metricSparkJobSkippedTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, jobIDAttributeValue)
 }
 
 // RecordSparkStageActiveTasksDataPoint adds a data point to spark.stage.active_tasks metric.
-func (mb *MetricsBuilder) RecordSparkStageActiveTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageActiveTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageActiveTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageActiveTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageCompleteTasksDataPoint adds a data point to spark.stage.complete_tasks metric.
-func (mb *MetricsBuilder) RecordSparkStageCompleteTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageCompleteTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageCompleteTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageCompleteTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageDiskSpaceSpilledDataPoint adds a data point to spark.stage.disk_space_spilled metric.
-func (mb *MetricsBuilder) RecordSparkStageDiskSpaceSpilledDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageDiskSpaceSpilled.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageDiskSpaceSpilledDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageDiskSpaceSpilled.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageExecutorCPUTimeDataPoint adds a data point to spark.stage.executor_cpu_time metric.
-func (mb *MetricsBuilder) RecordSparkStageExecutorCPUTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageExecutorCPUTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageExecutorCPUTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageExecutorCPUTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageExecutorRunTimeDataPoint adds a data point to spark.stage.executor_run_time metric.
-func (mb *MetricsBuilder) RecordSparkStageExecutorRunTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageExecutorRunTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageExecutorRunTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageExecutorRunTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageFailedTasksDataPoint adds a data point to spark.stage.failed_tasks metric.
-func (mb *MetricsBuilder) RecordSparkStageFailedTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageFailedTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageFailedTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageFailedTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageInputBytesDataPoint adds a data point to spark.stage.input_bytes metric.
-func (mb *MetricsBuilder) RecordSparkStageInputBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageInputBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageInputBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageInputBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageInputRecordsDataPoint adds a data point to spark.stage.input_records metric.
-func (mb *MetricsBuilder) RecordSparkStageInputRecordsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageInputRecords.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageInputRecordsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageInputRecords.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageJvmGcTimeDataPoint adds a data point to spark.stage.jvm_gc_time metric.
-func (mb *MetricsBuilder) RecordSparkStageJvmGcTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageJvmGcTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageJvmGcTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageJvmGcTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageKilledTasksDataPoint adds a data point to spark.stage.killed_tasks metric.
-func (mb *MetricsBuilder) RecordSparkStageKilledTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageKilledTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageKilledTasksDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageKilledTasks.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageMemorySpilledDataPoint adds a data point to spark.stage.memory_spilled metric.
-func (mb *MetricsBuilder) RecordSparkStageMemorySpilledDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageMemorySpilled.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageMemorySpilledDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageMemorySpilled.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageOutputBytesDataPoint adds a data point to spark.stage.output_bytes metric.
-func (mb *MetricsBuilder) RecordSparkStageOutputBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageOutputBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageOutputBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageOutputBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageOutputRecordsDataPoint adds a data point to spark.stage.output_records metric.
-func (mb *MetricsBuilder) RecordSparkStageOutputRecordsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageOutputRecords.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageOutputRecordsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageOutputRecords.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStagePeakExecutionMemoryDataPoint adds a data point to spark.stage.peak_execution_memory metric.
-func (mb *MetricsBuilder) RecordSparkStagePeakExecutionMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStagePeakExecutionMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStagePeakExecutionMemoryDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStagePeakExecutionMemory.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageResultSizeDataPoint adds a data point to spark.stage.result_size metric.
-func (mb *MetricsBuilder) RecordSparkStageResultSizeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageResultSize.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageResultSizeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageResultSize.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageShuffleBlocksFetchedDataPoint adds a data point to spark.stage.shuffle.blocks_fetched metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleBlocksFetchedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus, sourceAttributeValue AttributeSource) {
-	mb.metricSparkStageShuffleBlocksFetched.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String(), sourceAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageShuffleBlocksFetchedDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus, sourceAttributeValue AttributeSource) {
+	mb.metricSparkStageShuffleBlocksFetched.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String(), sourceAttributeValue.String())
 }
 
 // RecordSparkStageShuffleBytesReadDataPoint adds a data point to spark.stage.shuffle.bytes_read metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleBytesReadDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus, sourceAttributeValue AttributeSource) {
-	mb.metricSparkStageShuffleBytesRead.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String(), sourceAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageShuffleBytesReadDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus, sourceAttributeValue AttributeSource) {
+	mb.metricSparkStageShuffleBytesRead.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String(), sourceAttributeValue.String())
 }
 
 // RecordSparkStageShuffleFetchWaitTimeDataPoint adds a data point to spark.stage.shuffle.fetch_wait_time metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleFetchWaitTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageShuffleFetchWaitTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageShuffleFetchWaitTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageShuffleFetchWaitTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageShuffleReadBytesDataPoint adds a data point to spark.stage.shuffle.read_bytes metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleReadBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageShuffleReadBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageShuffleReadBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageShuffleReadBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageShuffleReadRecordsDataPoint adds a data point to spark.stage.shuffle.read_records metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleReadRecordsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageShuffleReadRecords.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageShuffleReadRecordsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageShuffleReadRecords.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageShuffleRemoteBytesReadToDiskDataPoint adds a data point to spark.stage.shuffle.remote_bytes_read_to_disk metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleRemoteBytesReadToDiskDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageShuffleRemoteBytesReadToDisk.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageShuffleRemoteBytesReadToDiskDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageShuffleRemoteBytesReadToDisk.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageShuffleWriteBytesDataPoint adds a data point to spark.stage.shuffle.write_bytes metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleWriteBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageShuffleWriteBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageShuffleWriteBytesDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageShuffleWriteBytes.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageShuffleWriteRecordsDataPoint adds a data point to spark.stage.shuffle.write_records metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleWriteRecordsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageShuffleWriteRecords.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageShuffleWriteRecordsDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageShuffleWriteRecords.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // RecordSparkStageShuffleWriteTimeDataPoint adds a data point to spark.stage.shuffle.write_time metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleWriteTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
-	mb.metricSparkStageShuffleWriteTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordSparkStageShuffleWriteTimeDataPoint(ts pcommon.Timestamp, val int64, applicationIDAttributeValue string, applicationNameAttributeValue string, stageIDAttributeValue int64, attemptIDAttributeValue int64, stageStatusAttributeValue AttributeStageStatus) {
+	mb.metricSparkStageShuffleWriteTime.recordDataPoint(mb.startTime, ts, val, applicationIDAttributeValue, applicationNameAttributeValue, stageIDAttributeValue, attemptIDAttributeValue, stageStatusAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
