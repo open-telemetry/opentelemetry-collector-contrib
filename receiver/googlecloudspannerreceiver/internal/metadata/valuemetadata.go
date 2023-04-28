@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata // import "github.com/darron/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
+package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
 type ValueType string
 

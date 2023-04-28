@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/darron/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
-	"github.com/darron/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
 )
 
 const (

@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/darron/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
 )
 
 func TestFilterBuilder_BuildFilterByMetricZeroTotalLimit(t *testing.T) {

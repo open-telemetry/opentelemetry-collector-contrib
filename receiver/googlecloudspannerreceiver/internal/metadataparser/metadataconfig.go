@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadataparser // import "github.com/darron/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadataparser"
+package metadataparser // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadataparser"
 
 type MetadataConfig struct {
 	Metadata []Metadata `yaml:"metadata"`

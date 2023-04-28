@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package statsreader // import "github.com/darron/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
+package statsreader // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/darron/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
 type ProjectReader struct {

@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/darron/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 )
 
 const (

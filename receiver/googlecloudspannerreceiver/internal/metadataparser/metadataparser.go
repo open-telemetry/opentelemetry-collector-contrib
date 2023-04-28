@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadataparser // import "github.com/darron/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadataparser"
+package metadataparser // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadataparser"
 
 import (
 	"gopkg.in/yaml.v3"
 
-	"github.com/darron/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
 func ParseMetadataConfig(metadataContentYaml []byte) ([]*metadata.MetricsMetadata, error) {

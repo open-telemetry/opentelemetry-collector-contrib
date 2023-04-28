@@ -1,4 +1,4 @@
-module github.com/darron/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver
 
 go 1.19
 

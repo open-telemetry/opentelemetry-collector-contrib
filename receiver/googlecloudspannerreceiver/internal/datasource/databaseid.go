@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datasource // import "github.com/darron/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
+package datasource // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 
 import "fmt"
 
