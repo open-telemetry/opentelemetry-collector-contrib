@@ -23,7 +23,7 @@ import (
 
 // parsedStatement represents a parsed statement. It is the entry point into the statement DSL.
 type parsedStatement struct {
-	Invocation invocation `parser:"(@@"`
+	Editor editor `parser:"(@@"`
 	// If converter is matched then return error
 	Converter   *converter         `parser:"|@@)"`
 	WhereClause *booleanExpression `parser:"( 'where' @@ )?"`
@@ -31,9 +31,9 @@ type parsedStatement struct {
 
 func (p *parsedStatement) checkForCustomError() error {
 	if p.Converter != nil {
-		return fmt.Errorf("invocation names must start with a lowercase letter but got '%v'", p.Converter.Function)
+		return fmt.Errorf("editor names must start with a lowercase letter but got '%v'", p.Converter.Function)
 	}
-	err := p.Invocation.checkForCustomError()
+	err := p.Editor.checkForCustomError()
 	if err != nil {
 		return err
 	}
@@ -198,15 +198,15 @@ func (c *comparison) checkForCustomError() error {
 	return err
 }
 
-// invocation represents the function call of a statement.
-type invocation struct {
+// editor represents the function call of a statement.
+type editor struct {
 	Function  string  `parser:"@(Lowercase(Uppercase | Lowercase)*)"`
 	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 	// If keys are matched return an error
 	Keys []Key `parser:"( @@ )*"`
 }
 
-func (i *invocation) checkForCustomError() error {
+func (i *editor) checkForCustomError() error {
 	var err error
 	for _, arg := range i.Arguments {
 		err = arg.checkForCustomError()
@@ -215,7 +215,7 @@ func (i *invocation) checkForCustomError() error {
 		}
 	}
 	if i.Keys != nil {
-		return fmt.Errorf("only paths and converters may be indexed, not invocations, but got %v %v", i.Function, i.Keys)
+		return fmt.Errorf("only paths and converters may be indexed, not editors, but got %v %v", i.Function, i.Keys)
 	}
 	return nil
 }
@@ -300,17 +300,17 @@ func (n *isNil) Capture(_ []string) error {
 }
 
 type mathExprLiteral struct {
-	// If invocation is matched then error
-	Invocation *invocation `parser:"( @@"`
-	Converter  *converter  `parser:"| @@"`
-	Float      *float64    `parser:"| @Float"`
-	Int        *int64      `parser:"| @Int"`
-	Path       *Path       `parser:"| @@ )"`
+	// If editor is matched then error
+	Editor    *editor    `parser:"( @@"`
+	Converter *converter `parser:"| @@"`
+	Float     *float64   `parser:"| @Float"`
+	Int       *int64     `parser:"| @Int"`
+	Path      *Path      `parser:"| @@ )"`
 }
 
 func (m *mathExprLiteral) checkForCustomError() error {
-	if m.Invocation != nil {
-		return fmt.Errorf("converter names must start with an uppercase letter but got '%v'", m.Invocation.Function)
+	if m.Editor != nil {
+		return fmt.Errorf("converter names must start with an uppercase letter but got '%v'", m.Editor.Function)
 	}
 	return nil
 }

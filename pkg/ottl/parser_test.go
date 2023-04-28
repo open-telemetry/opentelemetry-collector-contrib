@@ -39,10 +39,10 @@ func Test_parse(t *testing.T) {
 		expected  *parsedStatement
 	}{
 		{
-			name:      "invocation with string",
+			name:      "editor with string",
 			statement: `set("foo")`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -54,10 +54,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with float",
+			name:      "editor with float",
 			statement: `met(1.2)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "met",
 					Arguments: []value{
 						{
@@ -71,10 +71,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with int",
+			name:      "editor with int",
 			statement: `fff(12)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "fff",
 					Arguments: []value{
 						{
@@ -88,10 +88,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "complex invocation",
+			name:      "complex editor",
 			statement: `set("foo", GetSomething(bear.honey))`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -129,7 +129,7 @@ func Test_parse(t *testing.T) {
 			name:      "complex path",
 			statement: `set(foo.attributes["bar"].cat, "dog")`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -166,7 +166,7 @@ func Test_parse(t *testing.T) {
 			name:      "complex path",
 			statement: `set(foo.bar["x"]["y"].z, Test()[0]["pass"])`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -218,7 +218,7 @@ func Test_parse(t *testing.T) {
 			name:      "where == clause",
 			statement: `set(foo.attributes["bar"].cat, "dog") where name == "fido"`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -277,7 +277,7 @@ func Test_parse(t *testing.T) {
 			name:      "where != clause",
 			statement: `set(foo.attributes["bar"].cat, "dog") where name != "fido"`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -336,7 +336,7 @@ func Test_parse(t *testing.T) {
 			name:      "ignore extra spaces",
 			statement: `set  ( foo.attributes[ "bar"].cat,   "dog")   where name=="fido"`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -395,7 +395,7 @@ func Test_parse(t *testing.T) {
 			name:      "handle quotes",
 			statement: `set("fo\"o")`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -407,10 +407,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with boolean false",
+			name:      "editor with boolean false",
 			statement: `convert_gauge_to_sum("cumulative", false)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "convert_gauge_to_sum",
 					Arguments: []value{
 						{
@@ -425,10 +425,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with boolean true",
+			name:      "editor with boolean true",
 			statement: `convert_gauge_to_sum("cumulative", true)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "convert_gauge_to_sum",
 					Arguments: []value{
 						{
@@ -443,10 +443,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with bytes",
+			name:      "editor with bytes",
 			statement: `set(attributes["bytes"], 0x0102030405060708)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -474,10 +474,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with nil",
+			name:      "editor with nil",
 			statement: `set(attributes["test"], nil)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -505,10 +505,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with Enum",
+			name:      "editor with Enum",
 			statement: `set(attributes["test"], TEST_ENUM)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -539,7 +539,7 @@ func Test_parse(t *testing.T) {
 			name:      "Converter with empty list",
 			statement: `set(attributes["test"], [])`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -572,7 +572,7 @@ func Test_parse(t *testing.T) {
 			name:      "Converter with single-value list",
 			statement: `set(attributes["test"], ["value0"])`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -609,7 +609,7 @@ func Test_parse(t *testing.T) {
 			name:      "Converter with multi-value list",
 			statement: `set(attributes["test"], ["value1", "value2"])`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -649,7 +649,7 @@ func Test_parse(t *testing.T) {
 			name:      "Converter with nested heterogeneous types",
 			statement: `set(attributes["test"], [Concat(["a", "b"], "+"), ["1", 2, 3.0], nil, attributes["test"]])`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -745,7 +745,7 @@ func Test_parse(t *testing.T) {
 			name:      "Converter math mathExpression",
 			statement: `set(attributes["test"], 1000 - 600) where 1 + 1 * 2 == three / One()`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -892,7 +892,7 @@ func testParsePath(val *Path) (GetSetter[interface{}], error) {
 // Parse string should start with `set(name, "test") where`...
 func setNameTest(b *booleanExpression) *parsedStatement {
 	return &parsedStatement{
-		Invocation: invocation{
+		Editor: editor{
 			Function: "set",
 			Arguments: []value{
 				{

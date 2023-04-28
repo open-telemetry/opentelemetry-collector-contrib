@@ -30,10 +30,10 @@ type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
-func (p *Parser[K]) newFunctionCall(inv invocation) (Expr[K], error) {
-	f, ok := p.functions[inv.Function]
+func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
+	f, ok := p.functions[ed.Function]
 	if !ok {
-		return Expr[K]{}, fmt.Errorf("undefined function %v", inv.Function)
+		return Expr[K]{}, fmt.Errorf("undefined function %v", ed.Function)
 	}
 	args := f.CreateDefaultArguments()
 
@@ -43,12 +43,12 @@ func (p *Parser[K]) newFunctionCall(inv invocation) (Expr[K], error) {
 		// settability requirements. Non-pointer values are not
 		// modifiable through reflection.
 		if reflect.TypeOf(args).Kind() != reflect.Pointer {
-			return Expr[K]{}, fmt.Errorf("factory for %s must return a pointer to an Arguments value in its CreateDefaultArguments method", inv.Function)
+			return Expr[K]{}, fmt.Errorf("factory for %s must return a pointer to an Arguments value in its CreateDefaultArguments method", ed.Function)
 		}
 
-		err := p.buildArgs(inv, reflect.ValueOf(args).Elem())
+		err := p.buildArgs(ed, reflect.ValueOf(args).Elem())
 		if err != nil {
-			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to '%v': %w", inv.Function, err)
+			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to '%v': %w", ed.Function, err)
 		}
 	}
 
@@ -60,9 +60,9 @@ func (p *Parser[K]) newFunctionCall(inv invocation) (Expr[K], error) {
 	return Expr[K]{exprFunc: fn}, err
 }
 
-func (p *Parser[K]) buildArgs(inv invocation, argsVal reflect.Value) error {
-	if len(inv.Arguments) != argsVal.NumField() {
-		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(inv.Arguments))
+func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
+	if len(ed.Arguments) != argsVal.NumField() {
+		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(ed.Arguments))
 	}
 
 	argsType := argsVal.Type()
@@ -83,11 +83,11 @@ func (p *Parser[K]) buildArgs(inv invocation, argsVal reflect.Value) error {
 			return fmt.Errorf("ottlarg struct tag on field '%s' is not a valid integer: %w", argsType.Field(i).Name, err)
 		}
 
-		if argNum < 0 || argNum >= len(inv.Arguments) {
-			return fmt.Errorf("ottlarg struct tag on field '%s' has value %d, but must be between 0 and %d", argsType.Field(i).Name, argNum, len(inv.Arguments))
+		if argNum < 0 || argNum >= len(ed.Arguments) {
+			return fmt.Errorf("ottlarg struct tag on field '%s' has value %d, but must be between 0 and %d", argsType.Field(i).Name, argNum, len(ed.Arguments))
 		}
 
-		argVal := inv.Arguments[argNum]
+		argVal := ed.Arguments[argNum]
 
 		var val any
 		if fieldType.Kind() == reflect.Slice {
@@ -172,7 +172,7 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 	}
 }
 
-// Handle interfaces that can be passed as arguments to OTTL function invocations.
+// Handle interfaces that can be passed as arguments to OTTL functions.
 func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	name := argType.Name()
 	switch {
