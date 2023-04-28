@@ -264,9 +264,8 @@ func (k *K8sAPIServer) init() error {
 		if err != nil {
 			k.logger.Warn("Failed to create resource lock", zap.Error(err))
 			return err
-		} else {
-			lock = l
 		}
+		lock = l
 	}
 
 	go k.startLeaderElection(ctx, lock)
