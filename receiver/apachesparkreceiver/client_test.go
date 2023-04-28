@@ -15,6 +15,7 @@
 package apachesparkreceiver
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -27,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 )
 
 const (
@@ -140,9 +143,15 @@ func TestGetClusterStats(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
+				var expected *models.ClusterProperties
+				data = loadAPIResponseData(t, clusterStatsResponseFile)
+				err := json.Unmarshal(data, &expected)
+				require.NoError(t, err)
+
 				clusterStats, err := tc.GetClusterStats()
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.NotNil(t, clusterStats)
+				require.Equal(t, expected, clusterStats)
 			},
 		},
 	}
@@ -185,7 +194,7 @@ func TestGetApplications(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					var err error
 					if strings.HasSuffix(r.RequestURI, "applications") {
-						_, err = w.Write([]byte("[{}]"))
+						_, err = w.Write([]byte(""))
 						require.NoError(t, err)
 					} else {
 						_, err = w.Write(data)
@@ -196,8 +205,8 @@ func TestGetApplications(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				clusterStats, err := tc.GetApplications()
-				require.Nil(t, clusterStats)
+				apps, err := tc.GetApplications()
+				require.Nil(t, apps)
 				require.NotNil(t, err)
 			},
 		},
@@ -214,6 +223,267 @@ func TestGetApplications(t *testing.T) {
 					require.NoError(t, err)
 				}))
 				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				var expected *models.Applications
+				data = loadAPIResponseData(t, appsStatsResponseFile)
+				err := json.Unmarshal(data, &expected)
+				require.NoError(t, err)
+
+				apps, err := tc.GetApplications()
+				require.NoError(t, err)
+				require.NotNil(t, apps)
+				require.Equal(t, expected, apps)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func TestGetStageStats(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		testFunc func(*testing.T)
+	}{
+		{
+			desc: "Returns an error on Get() failure",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, stagesStatsResponseFile)
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if strings.HasSuffix(r.RequestURI, "stages") {
+						w.WriteHeader(http.StatusUnauthorized)
+					} else {
+						_, err := w.Write(data)
+						require.NoError(t, err)
+					}
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, URL)
+
+				stageStats, err := tc.GetStageStats("some_app_id")
+				require.NotNil(t, err)
+				require.Nil(t, stageStats)
+			},
+		},
+		{
+			desc: "Handles case where result cannot be unmarshalled",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, stagesStatsResponseFile)
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					var err error
+					if strings.HasSuffix(r.RequestURI, "stages") {
+						_, err = w.Write([]byte(""))
+						require.NoError(t, err)
+					} else {
+						_, err = w.Write(data)
+					}
+					require.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				stageStats, err := tc.GetStageStats("some_app_id")
+				require.Nil(t, stageStats)
+				require.NotNil(t, err)
+			},
+		},
+		{
+			desc: "Success case",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, stagesStatsResponseFile)
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					var err error
+					if strings.HasSuffix(r.RequestURI, "stages") {
+						_, err = w.Write(data)
+						require.NoError(t, err)
+					}
+					require.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				var expected *models.Stages
+				data = loadAPIResponseData(t, stagesStatsResponseFile)
+				err := json.Unmarshal(data, &expected)
+				require.NoError(t, err)
+
+				stageStats, err := tc.GetStageStats("some_app_id")
+				require.NoError(t, err)
+				require.NotNil(t, stageStats)
+				require.Equal(t, expected, stageStats)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func TestGetExecutorStats(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		testFunc func(*testing.T)
+	}{
+		{
+			desc: "Returns an error on Get() failure",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, executorsStatsResponseFile)
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if strings.HasSuffix(r.RequestURI, "executors") {
+						w.WriteHeader(http.StatusUnauthorized)
+					} else {
+						_, err := w.Write(data)
+						require.NoError(t, err)
+					}
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, URL)
+
+				executorStats, err := tc.GetExecutorStats("some_app_id")
+				require.NotNil(t, err)
+				require.Nil(t, executorStats)
+			},
+		},
+		{
+			desc: "Handles case where result cannot be unmarshalled",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, executorsStatsResponseFile)
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					var err error
+					if strings.HasSuffix(r.RequestURI, "executors") {
+						_, err = w.Write([]byte(""))
+						require.NoError(t, err)
+					} else {
+						_, err = w.Write(data)
+					}
+					require.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				executorStats, err := tc.GetExecutorStats("some_app_id")
+				require.Nil(t, executorStats)
+				require.NotNil(t, err)
+			},
+		},
+		{
+			desc: "Success case",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, executorsStatsResponseFile)
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					var err error
+					if strings.HasSuffix(r.RequestURI, "executors") {
+						_, err = w.Write(data)
+						require.NoError(t, err)
+					}
+					require.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				var expected *models.Executors
+				data = loadAPIResponseData(t, executorsStatsResponseFile)
+				err := json.Unmarshal(data, &expected)
+				require.NoError(t, err)
+
+				executorStats, err := tc.GetExecutorStats("some_app_id")
+				require.NoError(t, err)
+				require.NotNil(t, executorStats)
+				require.Equal(t, expected, executorStats)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func TestGetJobStats(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		testFunc func(*testing.T)
+	}{
+		{
+			desc: "Returns an error on Get() failure",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, jobsStatsResponseFile)
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if strings.HasSuffix(r.RequestURI, "jobs") {
+						w.WriteHeader(http.StatusUnauthorized)
+					} else {
+						_, err := w.Write(data)
+						require.NoError(t, err)
+					}
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, URL)
+
+				jobStats, err := tc.GetJobStats("some_app_id")
+				require.NotNil(t, err)
+				require.Nil(t, jobStats)
+			},
+		},
+		{
+			desc: "Handles case where result cannot be unmarshalled",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, jobsStatsResponseFile)
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					var err error
+					if strings.HasSuffix(r.RequestURI, "jobs") {
+						_, err = w.Write([]byte(""))
+						require.NoError(t, err)
+					} else {
+						_, err = w.Write(data)
+					}
+					require.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				jobStats, err := tc.GetJobStats("some_app_id")
+				require.Nil(t, jobStats)
+				require.NotNil(t, err)
+			},
+		},
+		{
+			desc: "Success case",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, jobsStatsResponseFile)
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					var err error
+					if strings.HasSuffix(r.RequestURI, "jobs") {
+						_, err = w.Write(data)
+						require.NoError(t, err)
+					}
+					require.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				var expected *models.Jobs
+				data = loadAPIResponseData(t, jobsStatsResponseFile)
+				err := json.Unmarshal(data, &expected)
+				require.NoError(t, err)
+
+				jobStats, err := tc.GetJobStats("some_app_id")
+				require.NoError(t, err)
+				require.NotNil(t, jobStats)
+				require.Equal(t, expected, jobStats)
 			},
 		},
 	}
