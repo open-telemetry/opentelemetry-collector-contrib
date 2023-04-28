@@ -295,6 +295,7 @@ type ResourceAttributeSettings struct {
 
 // ResourceAttributesSettings provides settings for mongoatlasreceiver metrics.
 type ResourceAttributesSettings struct {
+	MongodbAtlasClusterName     ResourceAttributeSettings `mapstructure:"mongodb_atlas.cluster.name"`
 	MongodbAtlasDbName          ResourceAttributeSettings `mapstructure:"mongodb_atlas.db.name"`
 	MongodbAtlasDiskPartition   ResourceAttributeSettings `mapstructure:"mongodb_atlas.disk.partition"`
 	MongodbAtlasHostName        ResourceAttributeSettings `mapstructure:"mongodb_atlas.host.name"`
@@ -309,6 +310,9 @@ type ResourceAttributesSettings struct {
 
 func DefaultResourceAttributesSettings() ResourceAttributesSettings {
 	return ResourceAttributesSettings{
+		MongodbAtlasClusterName: ResourceAttributeSettings{
+			Enabled: false,
+		},
 		MongodbAtlasDbName: ResourceAttributeSettings{
 			Enabled: true,
 		},
@@ -4401,6 +4405,15 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+
+// WithMongodbAtlasClusterName sets provided value as "mongodb_atlas.cluster.name" attribute for current resource.
+func WithMongodbAtlasClusterName(val string) ResourceMetricsOption {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.MongodbAtlasClusterName.Enabled {
+			rm.Resource().Attributes().PutStr("mongodb_atlas.cluster.name", val)
+		}
+	}
+}
 
 // WithMongodbAtlasDbName sets provided value as "mongodb_atlas.db.name" attribute for current resource.
 func WithMongodbAtlasDbName(val string) ResourceMetricsOption {

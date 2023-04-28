@@ -937,6 +937,7 @@ Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
+| mongodb_atlas.cluster.name | Cluster Name | Any Str | false |
 | mongodb_atlas.db.name | Name of the Database | Any Str | true |
 | mongodb_atlas.disk.partition | Name of a disk partition | Any Str | true |
 | mongodb_atlas.host.name | Hostname of the process | Any Str | true |
