@@ -234,6 +234,9 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 }
 
 func (queryReceiver *logsQueryReceiver) storeTrackingValue(row stringMap) {
+	if queryReceiver.query.TrackingColumn == "" {
+		return
+	}
 	currentTrackingColumnValueString := row[queryReceiver.query.TrackingColumn]
 	currentTrackingColumnValue, err := strconv.Atoi(currentTrackingColumnValueString)
 	if err != nil {
