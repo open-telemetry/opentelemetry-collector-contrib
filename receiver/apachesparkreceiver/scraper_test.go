@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
-)
+) 
 
 const (
 	clusterStatsResponseFile   = "cluster_stats_response.json"
