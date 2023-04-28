@@ -55,8 +55,9 @@ func newLogsReceiver(
 		createConnection: func() (*sql.DB, error) {
 			return sqlOpenerFunc(config.Driver, config.DataSource)
 		},
-		createClient: createClient,
-		nextConsumer: nextConsumer,
+		createClient:      createClient,
+		nextConsumer:      nextConsumer,
+		shutdownRequested: make(chan struct{}),
 	}
 
 	receiver.createQueryReceivers()
