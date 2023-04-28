@@ -2,13 +2,13 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: datadogexporter
+component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Re-add support for span links (span links are added as metadata to the converted span), which were erroneously removed from previous release.
+note: Fix errors in loop evaluating file attributes on windows if the file path contains a Junction
 
 # One or more tracking issues related to the change
-issues: [20923]
+issues: [21088]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

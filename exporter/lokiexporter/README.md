@@ -52,6 +52,22 @@ Currently, Loki does not support label names with dots.
 That's why lokiexporter normalizes label names to follow Prometheus label names standard before sending requests to Loki.
 More information on label normalization could be found [here](../../pkg/translator/prometheus/README.md#Labels)
 
+The promotion of multiple resource and log attributes to labels is done with single action with comma-separated desired labels:
+```yaml
+processors:
+  attributes:
+    actions:
+      - action: insert
+        key: loki.attribute.labels
+        value: event.domain, event.name
+
+  resource:
+    attributes:
+      - action: insert
+        key: loki.resource.labels
+        value: service.name, service.namespace
+```
+
 Default labels:
 - `job=service.namespace/service.name`
 - `instance=service.instance.id`
