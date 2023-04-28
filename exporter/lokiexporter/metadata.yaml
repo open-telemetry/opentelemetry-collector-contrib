@@ -1,0 +1,7 @@
+type: loki
+
+status:
+  class: exporter
+  stability: beta
+  pipelines: [logs]
+  distributions: [contrib]

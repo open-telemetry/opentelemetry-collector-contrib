@@ -16,7 +16,6 @@ package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -54,6 +53,20 @@ func newReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	return nil, errors.New("not implemented yet")
+	fileStatsConfig := cfg.(*Config)
+	metricsBuilder := metadata.NewMetricsBuilder(fileStatsConfig.MetricsBuilderConfig, settings)
 
+	mp := newScraper(metricsBuilder, fileStatsConfig, settings.TelemetrySettings.Logger)
+	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.scrape)
+	if err != nil {
+		return nil, err
+	}
+	opt := scraperhelper.AddScraper(s)
+
+	return scraperhelper.NewScraperControllerReceiver(
+		&fileStatsConfig.ScraperControllerSettings,
+		settings,
+		consumer,
+		opt,
+	)
 }

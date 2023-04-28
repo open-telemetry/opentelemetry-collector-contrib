@@ -236,6 +236,8 @@ processors:
 
 If you are using a proxy server on your EC2 instance, it's important that you exempt requests for instance metadata as [described in the AWS cli user guide](https://github.com/awsdocs/aws-cli-user-guide/blob/a2393582590b64bd2a1d9978af15b350e1f9eb8e/doc_source/cli-configure-proxy.md#using-a-proxy-on-amazon-ec2-instances). Failing to do so can result in proxied or missing instance data.
 
+If the instance is part of AWS ParallelCluster and the detector is failing to connect to the metadata server, check the iptable and make sure the chain `PARALLELCLUSTER_IMDS` contains a rule that allows OTEL user to access `169.254.169.254/32`
+
 ### Amazon ECS
 
 Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.

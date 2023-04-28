@@ -71,7 +71,7 @@ receivers:
   kubeletstats:
     collection_interval: 20s
     auth_type: "serviceAccount"
-    endpoint: "https://${K8S_NODE_NAME}:10250"
+    endpoint: "https://${env:K8S_NODE_NAME}:10250"
     insecure_skip_verify: true
 exporters:
   file:
@@ -97,7 +97,7 @@ receivers:
   kubeletstats:
     collection_interval: 20s
     auth_type: "none"
-    endpoint: "http://${K8S_NODE_NAME}:10255"
+    endpoint: "http://${env:K8S_NODE_NAME}:10255"
 exporters:
   file:
     path: "fileexporter.txt"
@@ -118,7 +118,7 @@ receivers:
     collection_interval: 20s
     auth_type: "kubeConfig"
     insecure_skip_verify: true
-    endpoint: "${K8S_NODE_NAME}"
+    endpoint: "${env:K8S_NODE_NAME}"
 exporters:
   file:
     path: "fileexporter.txt"
@@ -152,7 +152,7 @@ receivers:
   kubeletstats:
     collection_interval: 10s
     auth_type: "serviceAccount"
-    endpoint: "${K8S_NODE_NAME}:10250"
+    endpoint: "${env:K8S_NODE_NAME}:10250"
     insecure_skip_verify: true
     extra_metadata_labels:
       - container.id
@@ -171,7 +171,7 @@ receivers:
   kubeletstats:
     collection_interval: 10s
     auth_type: "serviceAccount"
-    endpoint: "${K8S_NODE_NAME}:10250"
+    endpoint: "${env:K8S_NODE_NAME}:10250"
     insecure_skip_verify: true
     extra_metadata_labels:
       - k8s.volume.type
@@ -195,7 +195,7 @@ receivers:
   kubeletstats:
     collection_interval: 10s
     auth_type: "serviceAccount"
-    endpoint: "${K8S_NODE_NAME}:10250"
+    endpoint: "${env:K8S_NODE_NAME}:10250"
     insecure_skip_verify: true
     metric_groups:
       - node

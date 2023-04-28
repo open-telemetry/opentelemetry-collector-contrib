@@ -49,6 +49,10 @@ all_set:
       enabled: true
     vcenter.resource_pool.memory.usage:
       enabled: true
+    vcenter.vm.cpu.usage:
+      enabled: true
+    vcenter.vm.cpu.utilization:
+      enabled: true
     vcenter.vm.disk.latency.avg:
       enabled: true
     vcenter.vm.disk.latency.max:
@@ -135,6 +139,10 @@ none_set:
     vcenter.resource_pool.memory.shares:
       enabled: false
     vcenter.resource_pool.memory.usage:
+      enabled: false
+    vcenter.vm.cpu.usage:
+      enabled: false
+    vcenter.vm.cpu.utilization:
       enabled: false
     vcenter.vm.disk.latency.avg:
       enabled: false

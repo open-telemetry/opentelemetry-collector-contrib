@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.75.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.75.0
+	go.opentelemetry.io/collector v0.76.1
 	go.uber.org/zap v1.24.0
 	k8s.io/client-go v0.26.3
 )
@@ -14,6 +14,7 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
