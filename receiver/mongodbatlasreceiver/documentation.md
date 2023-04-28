@@ -174,7 +174,7 @@ Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PAR
 
 ### mongodbatlas.disk.partition.utilization.average
 
-Disk partition utilization (%)
+The percentage of time during which requests are being issued to and serviced by the partition.
 
 MongoDB Metrics DISK_PARTITION_UTILIZATION
 
@@ -182,27 +182,15 @@ MongoDB Metrics DISK_PARTITION_UTILIZATION
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| disk_status | Disk measurement type | Str: ``free``, ``used`` |
-
 ### mongodbatlas.disk.partition.utilization.max
 
-Disk partition utilization (%)
+The maximum percentage of time during which requests are being issued to and serviced by the partition.
 
 MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| disk_status | Disk measurement type | Str: ``free``, ``used`` |
 
 ### mongodbatlas.process.asserts
 
@@ -513,22 +501,6 @@ Aggregate of MongoDB Metrics DB_INDEX_SIZE_TOTAL, DB_DATA_SIZE_TOTAL_WO_SYSTEM, 
 | ---- | ----------- | ------ |
 | storage_status | Views on database size | Str: ``total``, ``data_size``, ``index_size``, ``data_size_wo_system`` |
 
-### mongodbatlas.process.fts.cpu.usage
-
-Full text search CPU (%)
-
-Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| cpu_state | CPU state | Str: ``kernel``, ``user``, ``nice``, ``iowait``, ``irq``, ``softirq``, ``guest``, ``steal`` |
-
 ### mongodbatlas.process.global_lock
 
 Number and status of locks
@@ -794,6 +766,8 @@ Aggregate of MongoDB Metrics FTS_PROCESS_NORMALIZED_CPU_USER, FTS_PROCESS_NORMAL
 ### mongodbatlas.system.fts.cpu.usage
 
 Full-text search (%)
+
+Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

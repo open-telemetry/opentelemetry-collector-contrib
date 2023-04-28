@@ -65,8 +65,6 @@ all_set:
       enabled: true
     mongodbatlas.process.db.storage:
       enabled: true
-    mongodbatlas.process.fts.cpu.usage:
-      enabled: true
     mongodbatlas.process.global_lock:
       enabled: true
     mongodbatlas.process.index.btree_miss_ratio:
@@ -213,8 +211,6 @@ none_set:
     mongodbatlas.process.db.query_targeting.scanned_per_returned:
       enabled: false
     mongodbatlas.process.db.storage:
-      enabled: false
-    mongodbatlas.process.fts.cpu.usage:
       enabled: false
     mongodbatlas.process.global_lock:
       enabled: false
