@@ -4,9 +4,7 @@
 package splunkhec // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/codec/splunkhec"
 
 import (
-	"bufio"
 	"errors"
-	"net/url"
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -69,25 +67,6 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, config *splu
 	}
 
 	return ld, nil
-}
-
-// SplunkHecRawToLogData transforms raw splunk event into log
-func SplunkHecRawToLogData(sc *bufio.Scanner, query url.Values, resourceCustomizer func(pcommon.Resource), config *splunk.HecToOtelAttrs) (plog.Logs, int) {
-	ld := plog.NewLogs()
-	rl := ld.ResourceLogs().AppendEmpty()
-	appendSplunkMetadata(rl, config, query.Get(host), query.Get(source), query.Get(sourcetype), query.Get(index))
-	if resourceCustomizer != nil {
-		resourceCustomizer(rl.Resource())
-	}
-
-	sl := rl.ScopeLogs().AppendEmpty()
-	for sc.Scan() {
-		logRecord := sl.LogRecords().AppendEmpty()
-		logLine := sc.Text()
-		logRecord.Body().SetStr(logLine)
-	}
-
-	return ld, sl.LogRecords().Len()
 }
 
 func appendSplunkMetadata(rl plog.ResourceLogs, attrs *splunk.HecToOtelAttrs, host, source, sourceType, index string) {

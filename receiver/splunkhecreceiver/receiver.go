@@ -274,7 +274,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 	sc := bufio.NewScanner(bodyReader)
 	resourceCustomizer := r.createResourceCustomizer(req)
-	ld, slLen := splunkhec.SplunkHecRawToLogData(sc, req.URL.Query(), resourceCustomizer, &r.config.HecToOtelAttrs)
+	ld, slLen := splunkHecRawToLogData(sc, req.URL.Query(), resourceCustomizer, &r.config.HecToOtelAttrs)
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()
