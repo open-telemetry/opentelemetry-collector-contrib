@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
+package splunkhec // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/codec/splunkhec"
 
 import (
 	"fmt"
@@ -18,8 +18,7 @@ import (
 // splunkHecToMetricsData converts Splunk HEC metric points to
 // pmetric.Metrics. Returning the converted data and the number of
 // dropped time series.
-func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (pmetric.Metrics, int) {
-	numDroppedTimeSeries := 0
+func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, config *splunk.HecToOtelAttrs) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	scopeMetricsMap := make(map[[4]string]pmetric.ScopeMetrics)
 	for _, event := range events {
@@ -43,12 +42,11 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 			case *float64:
 				addDoubleGauge(metrics, metricName, *v, pointTimestamp, labels)
 			case string:
-				convertString(logger, &numDroppedTimeSeries, metrics, metricName, pointTimestamp, v, labels)
+				convertString(logger, metrics, metricName, pointTimestamp, v, labels)
 			case *string:
-				convertString(logger, &numDroppedTimeSeries, metrics, metricName, pointTimestamp, *v, labels)
+				convertString(logger, metrics, metricName, pointTimestamp, *v, labels)
 			default:
 				// drop this point as we do not know how to extract a value from it
-				numDroppedTimeSeries++
 				logger.Debug("Cannot convert metric, unknown input type",
 					zap.String("metric", metricName))
 			}
@@ -67,32 +65,28 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 
 			attrs := resourceMetrics.Resource().Attributes()
 			if event.Host != "" {
-				attrs.PutStr(config.HecToOtelAttrs.Host, event.Host)
+				attrs.PutStr(config.Host, event.Host)
 			}
 			if event.Source != "" {
-				attrs.PutStr(config.HecToOtelAttrs.Source, event.Source)
+				attrs.PutStr(config.Source, event.Source)
 			}
 			if event.SourceType != "" {
-				attrs.PutStr(config.HecToOtelAttrs.SourceType, event.SourceType)
+				attrs.PutStr(config.SourceType, event.SourceType)
 			}
 			if event.Index != "" {
-				attrs.PutStr(config.HecToOtelAttrs.Index, event.Index)
-			}
-			if resourceCustomizer != nil {
-				resourceCustomizer(resourceMetrics.Resource())
+				attrs.PutStr(config.Index, event.Index)
 			}
 		}
 		metrics.MoveAndAppendTo(sm.Metrics())
 	}
 
-	return md, numDroppedTimeSeries
+	return md
 }
 
-func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pmetric.MetricSlice, metricName string, pointTimestamp pcommon.Timestamp, s string, attributes pcommon.Map) {
+func convertString(logger *zap.Logger, metrics pmetric.MetricSlice, metricName string, pointTimestamp pcommon.Timestamp, s string, attributes pcommon.Map) {
 	// best effort, cast to string and turn into a number
 	dbl, err := strconv.ParseFloat(s, 64)
 	if err != nil {
-		*numDroppedTimeSeries++
 		logger.Debug("Cannot convert metric value from string to number",
 			zap.String("metric", metricName))
 	} else {

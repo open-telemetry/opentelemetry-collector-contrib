@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package splunkhecreceiver
+package splunkhec
 
 import (
 	"testing"
@@ -45,7 +45,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		splunkDataPoint       *splunk.Event
 		wantMetricsData       pmetric.Metrics
 		wantDroppedTimeseries int
-		hecConfig             *Config
+		hecConfig             *splunk.HecToOtelAttrs
 	}{
 		{
 			name:            "int_gauge",
@@ -154,12 +154,11 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				intPt.SetTimestamp(pcommon.Timestamp(nanos))
 				return metrics
 			}(),
-			hecConfig: &Config{HecToOtelAttrs: splunk.HecToOtelAttrs{
+			hecConfig: &splunk.HecToOtelAttrs{
 				Source:     "mysource",
 				SourceType: "mysourcetype",
 				Index:      "myindex",
 				Host:       "myhost",
-			},
 			},
 		},
 		{
@@ -293,8 +292,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), []*splunk.Event{tt.splunkDataPoint}, func(resource pcommon.Resource) {}, tt.hecConfig)
-			assert.Equal(t, tt.wantDroppedTimeseries, numDroppedTimeseries)
+			md := splunkHecToMetricsData(zap.NewNop(), []*splunk.Event{tt.splunkDataPoint}, tt.hecConfig)
 			assert.NoError(t, pmetrictest.CompareMetrics(tt.wantMetricsData, md, pmetrictest.IgnoreMetricsOrder()))
 		})
 	}
@@ -439,8 +437,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 		dataPt.SetTimestamp(pcommon.Timestamp(nanoseconds))
 		dataPt.Attributes().PutStr("field", "value2-1")
 	}
-	md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), events, func(resource pcommon.Resource) {}, defaultTestingHecConfig)
-	assert.Equal(t, 0, numDroppedTimeseries)
+	md := splunkHecToMetricsData(zap.NewNop(), events, defaultTestingHecConfig)
 	assert.EqualValues(t, metrics, md)
 }
 

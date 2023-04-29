@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package splunkhecreceiver
+package splunkhec
 
 import (
 	"bufio"
@@ -19,13 +19,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-var defaultTestingHecConfig = &Config{
-	HecToOtelAttrs: splunk.HecToOtelAttrs{
-		Source:     splunk.DefaultSourceLabel,
-		SourceType: splunk.DefaultSourceTypeLabel,
-		Index:      splunk.DefaultIndexLabel,
-		Host:       conventions.AttributeHostName,
-	},
+var defaultTestingHecConfig = &splunk.HecToOtelAttrs{
+	Source:     splunk.DefaultSourceLabel,
+	SourceType: splunk.DefaultSourceTypeLabel,
+	Index:      splunk.DefaultIndexLabel,
+	Host:       conventions.AttributeHostName,
 }
 
 func Test_SplunkHecToLogData(t *testing.T) {
@@ -37,7 +35,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		name      string
 		events    []*splunk.Event
 		output    plog.ResourceLogsSlice
-		hecConfig *Config
+		hecConfig *splunk.HecToOtelAttrs
 		wantErr   error
 	}{
 		{
@@ -177,13 +175,11 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 			},
-			hecConfig: &Config{
-				HecToOtelAttrs: splunk.HecToOtelAttrs{
-					Source:     "mysource",
-					SourceType: "mysourcetype",
-					Index:      "myindex",
-					Host:       "myhost",
-				},
+			hecConfig: &splunk.HecToOtelAttrs{
+				Source:     "mysource",
+				SourceType: "mysourcetype",
+				Index:      "myindex",
+				Host:       "myhost",
 			},
 			output: func() plog.ResourceLogsSlice {
 				lrs := plog.NewResourceLogsSlice()
@@ -331,7 +327,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 	n := len(tests)
 	for _, tt := range tests[n-1:] {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := splunkHecToLogData(zap.NewNop(), tt.events, func(resource pcommon.Resource) {}, tt.hecConfig)
+			result, err := splunkHecToLogData(zap.NewNop(), tt.events, tt.hecConfig)
 			assert.Equal(t, tt.wantErr, err)
 			require.Equal(t, tt.output.Len(), result.ResourceLogs().Len())
 			for i := 0; i < result.ResourceLogs().Len(); i++ {
@@ -342,13 +338,11 @@ func Test_SplunkHecToLogData(t *testing.T) {
 }
 
 func Test_SplunkHecRawToLogData(t *testing.T) {
-	hecConfig := &Config{
-		HecToOtelAttrs: splunk.HecToOtelAttrs{
-			Source:     "mysource",
-			SourceType: "mysourcetype",
-			Index:      "myindex",
-			Host:       "myhost",
-		},
+	hecConfig := &splunk.HecToOtelAttrs{
+		Source:     "mysource",
+		SourceType: "mysourcetype",
+		Index:      "myindex",
+		Host:       "myhost",
 	}
 	tests := []struct {
 		name           string
@@ -430,7 +424,7 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, slLen := splunkHecRawToLogData(tt.sc, tt.query, func(resource pcommon.Resource) {}, hecConfig)
+			result, slLen := SplunkHecRawToLogData(tt.sc, tt.query, func(resource pcommon.Resource) {}, hecConfig)
 			tt.assertResource(t, result, slLen)
 		})
 	}

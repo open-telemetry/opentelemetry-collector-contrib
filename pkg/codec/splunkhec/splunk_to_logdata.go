@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
+package splunkhec // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/codec/splunkhec"
 
 import (
 	"bufio"
@@ -29,7 +29,7 @@ var (
 )
 
 // splunkHecToLogData transforms splunk events into logs
-func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, error) {
+func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, config *splunk.HecToOtelAttrs) (plog.Logs, error) {
 	ld := plog.NewLogs()
 	scopeLogsMap := make(map[[4]string]plog.ScopeLogs)
 	for _, event := range events {
@@ -40,10 +40,7 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 			rl := ld.ResourceLogs().AppendEmpty()
 			sl = rl.ScopeLogs().AppendEmpty()
 			scopeLogsMap[key] = sl
-			appendSplunkMetadata(rl, config.HecToOtelAttrs, event.Host, event.Source, event.SourceType, event.Index)
-			if resourceCustomizer != nil {
-				resourceCustomizer(rl.Resource())
-			}
+			appendSplunkMetadata(rl, config, event.Host, event.Source, event.SourceType, event.Index)
 		}
 
 		// The SourceType field is the most logical "name" of the event.
@@ -74,11 +71,11 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 	return ld, nil
 }
 
-// splunkHecRawToLogData transforms raw splunk event into log
-func splunkHecRawToLogData(sc *bufio.Scanner, query url.Values, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, int) {
+// SplunkHecRawToLogData transforms raw splunk event into log
+func SplunkHecRawToLogData(sc *bufio.Scanner, query url.Values, resourceCustomizer func(pcommon.Resource), config *splunk.HecToOtelAttrs) (plog.Logs, int) {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
-	appendSplunkMetadata(rl, config.HecToOtelAttrs, query.Get(host), query.Get(source), query.Get(sourcetype), query.Get(index))
+	appendSplunkMetadata(rl, config, query.Get(host), query.Get(source), query.Get(sourcetype), query.Get(index))
 	if resourceCustomizer != nil {
 		resourceCustomizer(rl.Resource())
 	}
@@ -93,7 +90,7 @@ func splunkHecRawToLogData(sc *bufio.Scanner, query url.Values, resourceCustomiz
 	return ld, sl.LogRecords().Len()
 }
 
-func appendSplunkMetadata(rl plog.ResourceLogs, attrs splunk.HecToOtelAttrs, host, source, sourceType, index string) {
+func appendSplunkMetadata(rl plog.ResourceLogs, attrs *splunk.HecToOtelAttrs, host, source, sourceType, index string) {
 	if host != "" {
 		rl.Resource().Attributes().PutStr(attrs.Host, host)
 	}

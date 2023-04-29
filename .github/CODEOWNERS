@@ -114,6 +114,7 @@ internal/filter/                                         @open-telemetry/collect
 internal/sharedcomponent/                                @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
 pkg/batchpersignal/                                      @open-telemetry/collector-contrib-approvers @jpkrohling
+pkg/codec/splunkhec/                                     @open-telemetry/collector-contrib-approvers @atoulme
 pkg/ottl/                                                @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 pkg/pdatatest/                                           @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 pkg/pdatautil/                                           @open-telemetry/collector-contrib-approvers @dmitryax
