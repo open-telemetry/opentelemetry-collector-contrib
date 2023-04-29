@@ -696,7 +696,7 @@ func validateAttributes(t *testing.T, expectedStringAttributes map[string]string
 				for k, v := range expectedStringAttributes {
 					val, ok := lr.Attributes().Get(k)
 					require.True(t, ok)
-					require.Equal(t, val.AsString(), v)
+					require.Equal(t, v, val.AsString())
 				}
 			}
 		}

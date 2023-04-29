@@ -41,6 +41,7 @@ type Config struct {
 	Alerts                                  AlertConfig                   `mapstructure:"alerts"`
 	Events                                  *EventsConfig                 `mapstructure:"events"`
 	Logs                                    LogConfig                     `mapstructure:"logs"`
+	AccessLogs                              *AccessLogsConfig             `mapstructure:"access_logs"`
 	RetrySettings                           exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 	StorageID                               *component.ID                 `mapstructure:"storage"`
 }
@@ -88,6 +89,13 @@ type OrgConfig struct {
 	ID string `mapstructure:"id"`
 }
 
+// AccessLogsConfig is the configuration options for access logs collection
+type AccessLogsConfig struct {
+	Projects     []ProjectConfig `mapstructure:"projects"`
+	PollInterval time.Duration   `mapstructure:"poll_interval"`
+	AuthResult   *bool           `mapstructure:"auth_result"`
+}
+
 func (pc *ProjectConfig) populateIncludesAndExcludes() *ProjectConfig {
 	pc.includesByClusterName = map[string]struct{}{}
 	for _, inclusion := range pc.IncludeClusters {
@@ -128,6 +136,9 @@ func (c *Config) Validate() error {
 	if c.Events != nil {
 		errs = multierr.Append(errs, c.Events.validate())
 	}
+	if c.AccessLogs != nil {
+		errs = multierr.Append(errs, c.AccessLogs.validate())
+	}
 
 	return errs
 }
@@ -137,6 +148,21 @@ func (l *LogConfig) validate() error {
 		return nil
 	}
 
+	var errs error
+	if len(l.Projects) == 0 {
+		errs = multierr.Append(errs, errNoProjects)
+	}
+
+	for _, project := range l.Projects {
+		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
+			errs = multierr.Append(errs, errClusterConfig)
+		}
+	}
+
+	return errs
+}
+
+func (l *AccessLogsConfig) validate() error {
 	var errs error
 	if len(l.Projects) == 0 {
 		errs = multierr.Append(errs, errNoProjects)

@@ -27,6 +27,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
+var authResultTrue = true
+
 func TestValidate(t *testing.T) {
 	testCases := []struct {
 		name        string
@@ -238,6 +240,46 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errNoEvents.Error(),
 		},
+		{
+			name: "Valid Access Logs Config",
+			input: Config{
+				AccessLogs: &AccessLogsConfig{
+					Projects: []ProjectConfig{
+						{
+							Name:            "Project1",
+							IncludeClusters: []string{"Cluster1"},
+						},
+					},
+					AuthResult:   &authResultTrue,
+					PollInterval: 60 * time.Second,
+				},
+			},
+		},
+		{
+			name: "Invalid Access Logs Config - no projects",
+			input: Config{
+				AccessLogs: &AccessLogsConfig{
+					PollInterval: 60 * time.Second,
+				},
+			},
+			expectedErr: errNoProjects.Error(),
+		},
+		{
+			name: "Invalid Access Logs Config - bad project config",
+			input: Config{
+				AccessLogs: &AccessLogsConfig{
+					Projects: []ProjectConfig{
+						{
+							Name:            "Project1",
+							IncludeClusters: []string{"Cluster1"},
+							ExcludeClusters: []string{"Cluster3"},
+						},
+					},
+					PollInterval: 60 * time.Second,
+				},
+			},
+			expectedErr: errClusterConfig.Error(),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -304,6 +346,17 @@ func TestLoadConfig(t *testing.T) {
 		PollInterval: time.Minute,
 		MaxPages:     defaultEventsMaxPages,
 		PageSize:     defaultEventsPageSize,
+	}
+
+	expected.AccessLogs = &AccessLogsConfig{
+		Projects: []ProjectConfig{
+			{
+				Name:            "Project 0",
+				IncludeClusters: []string{"Cluster0"},
+			},
+		},
+		PollInterval: 2 * time.Minute,
+		AuthResult:   &authResultTrue,
 	}
 	require.Equal(t, expected, cfg)
 }

@@ -56,6 +56,11 @@ const collectionInterval = time.Minute * 5
 
 func newMongoDBAtlasLogsReceiver(settings rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) *logsReceiver {
 	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
+
+	for _, p := range cfg.Logs.Projects {
+		p.populateIncludesAndExcludes()
+	}
+
 	return &logsReceiver{
 		log:         settings.Logger,
 		cfg:         cfg,
@@ -145,28 +150,13 @@ func (s *logsReceiver) collect(ctx context.Context) {
 }
 
 func (s *logsReceiver) processClusters(ctx context.Context, projectCfg ProjectConfig, projectID string) ([]mongodbatlas.Cluster, error) {
-	include, exclude := projectCfg.IncludeClusters, projectCfg.ExcludeClusters
 	clusters, err := s.client.GetClusters(ctx, projectID)
 	if err != nil {
 		s.log.Error("Failure to collect clusters from project: %w", zap.Error(err))
 		return nil, err
 	}
 
-	// check to include or exclude clusters
-	switch {
-	// keep all clusters if include and exclude are not specified
-	case len(include) == 0 && len(exclude) == 0:
-		return clusters, nil
-	// include is initialized
-	case len(include) > 0 && len(exclude) == 0:
-		return filterClusters(clusters, include, true), nil
-	// exclude is initialized
-	case len(exclude) > 0 && len(include) == 0:
-		return filterClusters(clusters, exclude, false), nil
-	// both are initialized
-	default:
-		return nil, errors.New("both Include and Exclude clusters configured")
-	}
+	return filterClusters(clusters, projectCfg)
 }
 
 func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig, pc ProjectContext) {
@@ -184,20 +174,35 @@ func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, proje
 	}
 }
 
-func filterClusters(clusters []mongodbatlas.Cluster, clusterNames []string, include bool) []mongodbatlas.Cluster {
-	// Arrange cluster names for quick reference
+func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) ([]mongodbatlas.Cluster, error) {
+	include, exclude := projectCfg.IncludeClusters, projectCfg.ExcludeClusters
+	whitelist := false
 	clusterNameSet := map[string]struct{}{}
-	for _, clusterName := range clusterNames {
-		clusterNameSet[clusterName] = struct{}{}
+	// check to include or exclude clusters
+	switch {
+	// keep all clusters if include and exclude are not specified
+	case len(include) == 0 && len(exclude) == 0:
+		return clusters, nil
+	// include is initialized
+	case len(include) > 0 && len(exclude) == 0:
+		whitelist = true
+		clusterNameSet = projectCfg.includesByClusterName
+	// exclude is initialized
+	case len(exclude) > 0 && len(include) == 0:
+		whitelist = false
+		clusterNameSet = projectCfg.excludesByClusterName
+	// both are initialized
+	default:
+		return nil, errors.New("both Include and Exclude clusters configured")
 	}
 
 	var filtered []mongodbatlas.Cluster
 	for _, cluster := range clusters {
-		if _, ok := clusterNameSet[cluster.Name]; (!ok && !include) || (ok && include) {
+		if _, ok := clusterNameSet[cluster.Name]; (!ok && !whitelist) || (ok && whitelist) {
 			filtered = append(filtered, cluster)
 		}
 	}
-	return filtered
+	return filtered, nil
 }
 
 func (s *logsReceiver) getHostLogs(groupID, hostname, logName string, clusterMajorVersion string) ([]model.LogEntry, error) {

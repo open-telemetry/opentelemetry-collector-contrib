@@ -711,6 +711,42 @@ func (s *MongoDBAtlasClient) GetOrganizationEvents(ctx context.Context, orgID st
 	return events.Results, hasNext(response.Links), nil
 }
 
+// GetAccessLogsOptions are the options to use for making a request to get Access Logs
+type GetAccessLogsOptions struct {
+	// The oldest date to look back for the events
+	MinDate time.Time
+	// the newest time to accept events
+	MaxDate time.Time
+	// If true, only return successful access attempts; if false, only return failed access attempts
+	// If nil, return both successful and failed access attempts
+	AuthResult *bool
+	// Maximum number of entries to return
+	NLogs int
+}
+
+// GetAccessLogs returns the access logs specified for the cluster requested
+func (s *MongoDBAtlasClient) GetAccessLogs(ctx context.Context, groupID string, clusterName string, opts *GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
+
+	options := mongodbatlas.AccessLogOptions{
+		// Earliest Timestamp in ISO 8601 date and time format in UTC from when Atlas should access log results
+		Start: opts.MinDate.Format(time.RFC3339),
+		// Latest Timestamp in ISO 8601 date and time format in UTC from when Atlas should access log results
+		End: opts.MaxDate.Format(time.RFC3339),
+		// If true, only return successful access attempts; if false, only return failed access attempts
+		// If nil, return both successful and failed access attempts
+		AuthResult: opts.AuthResult,
+		// Maximum number of entries to return (0-20000)
+		NLogs: opts.NLogs,
+	}
+
+	accessLogs, response, err := s.client.AccessTracking.ListByCluster(ctx, groupID, clusterName, &options)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, err
+	}
+	return accessLogs.AccessLogs, nil
+}
+
 func toUnixString(t time.Time) string {
 	return strconv.Itoa(int(t.Unix()))
 }
