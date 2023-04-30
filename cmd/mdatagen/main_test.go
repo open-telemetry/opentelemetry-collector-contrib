@@ -234,63 +234,6 @@ Some warning there.
 	}
 }
 
-func Test_inlinePreserve(t *testing.T) {
-	tests := []struct {
-		name       string
-		input      string
-		outputFile string
-	}{
-		{
-			name: "preserve custom code",
-			input: `
-type Config struct {
-	// scaffold-off
-	FOO
-	// scaffold-on
-}
-
-func (c Config) Validate() error {
-	// scaffold-off
-	BAR
-	// scaffold-on
-	return nil
-}
-`,
-			outputFile: "config_scaffold.txt",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			md := metadata{
-				Type: "foo",
-				Status: Status{
-					Stability:     "beta",
-					Pipelines:     []string{"metrics"},
-					Distributions: []string{"contrib"},
-					Class:         "receiver",
-					Scaffold:      true,
-				},
-			}
-			tmpdir := t.TempDir()
-
-			file := filepath.Join(tmpdir, "sample")
-			require.NoError(t, os.WriteFile(file, []byte(tt.input), 0600))
-
-			err := inlinePreserve(filepath.Join("templates", "config.go.tmpl"), file, md, scaffoldOff, scaffoldOn)
-			require.NoError(t, err)
-
-			require.FileExists(t, filepath.Join(tmpdir, "sample"))
-			got, err := os.ReadFile(filepath.Join(tmpdir, "sample"))
-			require.NoError(t, err)
-			got = bytes.ReplaceAll(got, []byte("\r\n"), []byte("\n"))
-			expected, err := os.ReadFile(filepath.Join("testdata", tt.outputFile))
-			require.NoError(t, err)
-			expected = bytes.ReplaceAll(expected, []byte("\r\n"), []byte("\n"))
-			require.Equal(t, string(expected), string(got))
-		})
-	}
-}
-
 func TestGenerateStatusMetadata(t *testing.T) {
 	tests := []struct {
 		name     string

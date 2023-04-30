@@ -15,7 +15,6 @@
 package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 
 import (
-	// scaffold-off
 	"context"
 	"time"
 
@@ -25,29 +24,16 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
-	// scaffold-on
 )
-
-func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
-		metadata.Type,
-		createDefaultConfig,
-				receiver.WithMetrics(newMetricsReceiver, metadata.Stability),
-		
-	)
-}
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		// scaffold-off
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 1 * time.Minute,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		// scaffold-on
 	}
 }
-
 
 func newMetricsReceiver(
 	_ context.Context,
@@ -55,7 +41,6 @@ func newMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	// scaffold-off
 	fileStatsConfig := cfg.(*Config)
 	metricsBuilder := metadata.NewMetricsBuilder(fileStatsConfig.MetricsBuilderConfig, settings)
 
@@ -72,9 +57,4 @@ func newMetricsReceiver(
 		consumer,
 		opt,
 	)
-	// scaffold-on
 }
-
-
-
-

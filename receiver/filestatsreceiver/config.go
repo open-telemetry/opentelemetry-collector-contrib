@@ -15,28 +15,22 @@
 package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 
 import (
-	// scaffold-off
 	"errors"
 
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
-	// scaffold-on
 )
 
 type Config struct {
-	// scaffold-off
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 	Include                                 string `mapstructure:"include"`
-	// scaffold-on
 }
 
 func (c Config) Validate() error {
-	// scaffold-off
 	if c.Include == "" {
 		return errors.New("include must not be empty")
 	}
-	// scaffold-on
 	return nil
 }

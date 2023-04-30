@@ -14,35 +14,8 @@
 
 package {{ .Type }}{{ .Status.Class }} // import "github.com/open-telemetry/opentelemetry-collector-contrib/{{ .Status.Class }}/{{ .Type }}{{ .Status.Class }}"
 
-import (
-	// scaffold-off
-	"context"
-	"errors"
-
-	"go.opentelemetry.io/collector/component"
-    "go.opentelemetry.io/collector/consumer"
-    "go.opentelemetry.io/collector/receiver"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/{{ .Status.Class }}/{{ .Type }}{{ .Status.Class }}/internal/metadata"
-	// scaffold-on
-)
-
-func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
-		metadata.Type,
-		createDefaultConfig,
-		{{ range .Status.Pipelines }}
-		{{- if eq . "logs" }}		receiver.WithLogs(newLogsReceiver, metadata.Stability),{{ end }}
-		{{- if eq . "metrics" }}		receiver.WithMetrics(newMetricsReceiver, metadata.Stability),{{ end }}
-        {{- if eq . "traces" }}		receiver.WithTraces(newTracesReceiver, metadata.Stability),{{ end }}
-		{{ end }}
-	)
-}
-
 func createDefaultConfig() component.Config {
 	return &Config{
-		// scaffold-off
-		// scaffold-on
 	}
 }
 
@@ -54,9 +27,7 @@ func newLogsReceiver(
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
-	// scaffold-off
 	return nil, errors.New("not implemented yet")
-	// scaffold-on
 }
 {{ end }}
 {{- if eq . "metrics" }}
@@ -66,9 +37,7 @@ func newMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	// scaffold-off
 	return nil, errors.New("not implemented yet")
-	// scaffold-on
 }
 {{ end }}
 {{- if eq . "traces" }}
@@ -78,11 +47,7 @@ func newTracesReceiver(
 	cfg component.Config,
 	consumer consumer.Traces,
 ) (receiver.Traces, error) {
-	// scaffold-off
 	return nil, errors.New("not implemented yet")
-	// scaffold-on
 }
 {{ end }}
 {{ end }}
-
-

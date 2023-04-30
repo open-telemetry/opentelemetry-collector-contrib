@@ -31,10 +31,16 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 
 	var (
 		templateFiles = map[string]struct{}{
+			path.Join(rootDir, "config.go.tmpl"):               {},
+			path.Join(rootDir, "doc.go.tmpl"):                  {},
 			path.Join(rootDir, "documentation.md.tmpl"):        {},
-			path.Join(rootDir, "metrics_test.go.tmpl"):         {},
+			path.Join(rootDir, "factory.go.tmpl"):              {},
+			path.Join(rootDir, "factory_generated.go.tmpl"):    {},
+			path.Join(rootDir, "go.mod.tmpl"):                  {},
 			path.Join(rootDir, "metrics.go.tmpl"):              {},
+			path.Join(rootDir, "metrics_test.go.tmpl"):         {},
 			path.Join(rootDir, "readme.md.tmpl"):               {},
+			path.Join(rootDir, "scaffold-README.md.tmpl"):      {},
 			path.Join(rootDir, "status.go.tmpl"):               {},
 			path.Join(rootDir, "testdata", "config.yaml.tmpl"): {},
 		}

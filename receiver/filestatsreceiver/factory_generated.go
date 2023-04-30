@@ -12,25 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fooreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fooreceiver"
+package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 
 import (
-	"errors"
-
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fooreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver"
 )
 
-type Config struct {
-	// scaffold-off
-	FOO
-	// scaffold-on
-}
-
-func (c Config) Validate() error {
-	// scaffold-off
-	BAR
-	// scaffold-on
-	return nil
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
+		metadata.Type,
+		createDefaultConfig,
+		receiver.WithMetrics(newMetricsReceiver, metadata.Stability),
+	)
 }
