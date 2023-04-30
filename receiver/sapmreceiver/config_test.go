@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -39,11 +40,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "customname"),
+			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "0.0.0.0:7276",
@@ -51,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "tls"),
+			id: component.NewIDWithName(metadata.Type, "tls"),
 			expected: &Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: ":7276",
@@ -65,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "passthrough"),
+			id: component.NewIDWithName(metadata.Type, "passthrough"),
 			expected: &Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: ":7276",
