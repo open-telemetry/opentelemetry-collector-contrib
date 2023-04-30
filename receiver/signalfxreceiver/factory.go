@@ -32,8 +32,6 @@ import (
 // This file implements factory for SignalFx receiver.
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "signalfx"
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":9943"
@@ -42,7 +40,7 @@ const (
 // NewFactory creates a factory for SignalFx receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.Stability),
 		receiver.WithLogs(createLogsReceiver, metadata.Stability))
