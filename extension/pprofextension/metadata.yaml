@@ -1,4 +1,4 @@
-type: pprofextension
+type: pprof
 
 status:
   class: extension

@@ -8,5 +8,5 @@ import (
 
 const (
 	Type      = "filestats"
-	Stability = component.StabilityLevelDevelopment
+	Stability = component.StabilityLevelAlpha
 )
