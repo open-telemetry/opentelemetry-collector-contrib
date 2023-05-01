@@ -12,7 +12,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.5
 	github.com/DataDog/sketches-go v1.4.2
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.13.1
-	github.com/aws/aws-sdk-go v1.44.249
+	github.com/aws/aws-sdk-go v1.44.254
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.3
