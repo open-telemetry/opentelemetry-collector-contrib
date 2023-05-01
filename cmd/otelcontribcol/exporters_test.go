@@ -96,6 +96,9 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle: true,
 		},
 		{
+			exporter: "awss3",
+		},
+		{
 			exporter: "file",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["file"].CreateDefaultConfig().(*fileexporter.Config)

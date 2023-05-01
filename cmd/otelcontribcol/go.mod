@@ -12,6 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.76.3
@@ -1037,6 +1038,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/obse
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver => ../../receiver/lokireceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver => ../../receiver/filestatsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter => ../../exporter/awss3exporter
 
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 
