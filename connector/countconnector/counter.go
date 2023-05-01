@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
@@ -55,12 +54,15 @@ func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) erro
 		countAttrs := pcommon.NewMap()
 		for _, attr := range md.attrs {
 			attrVal, ok := attrs.Get(attr.Key)
-			if !ok && attr.MaxDepth > 1 {
-				// couldn't find the attribute so check if it is nested when any_depth is true
-				attrVal, ok = getNestedAttribute(attr.Key, attr.MaxDepth, attrs) // shadows the OK from above on purpose
-			}
 			if ok {
 				countAttrs.PutStr(attr.Key, attrVal.Str())
+			} else if !ok && attr.MaxDepth > 1  {
+				attrVal = getNestedAttribute(attr.Key, attr.MaxDepth, attrs)
+				if attrVal.Str() != "" {
+					countAttrs.PutStr(attr.Key, attrVal.Str())
+				} else if attr.DefaultValue != "" {
+					countAttrs.PutStr(attr.Key, attr.DefaultValue)
+				}
 			} else if attr.DefaultValue != "" {
 				countAttrs.PutStr(attr.Key, attr.DefaultValue)
 			}
@@ -126,23 +128,20 @@ func (c *counter[K]) appendMetricsTo(metricSlice pmetric.MetricSlice) {
 	}
 }
 
-func getNestedAttribute(attr string, depth int, attributes pcommon.Map) (pcommon.Value, bool) {
-	logger := zap.NewExample()
-	defer logger.Sync()
+func getNestedAttribute(attr string, maxDepth int, attributes pcommon.Map) (pcommon.Value) {
 	left, right, _ := strings.Cut(attr, ".")
 	av, ok := attributes.Get(left)
-	if ok && depth > 0 {
+	if ok && maxDepth > 0 {
 		if av.Type().String() == "Slice" {
-			logger.Warn("[connector/count] cannot use Type Slice as an attribute source", zap.String("attribute", attr))
-			return pcommon.Value{}, false
+			return pcommon.Value{}
 		} else if len(right) == 0 {
-			return av, ok
+			return av
 		}
 	}
 
 	if !ok {
-		return pcommon.Value{}, false
+		return pcommon.Value{}
 	}
 
-	return getNestedAttribute(right, depth-1, av.Map())
+	return getNestedAttribute(right, maxDepth-1, av.Map())
 }
