@@ -126,31 +126,31 @@ func TestLoadConfig(t *testing.T) {
 				Spans: map[string]MetricInfo{
 					"my.span.count": {
 						Description: "My span count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s")`},
 					},
 				},
 				SpanEvents: map[string]MetricInfo{
 					"my.spanevent.count": {
 						Description: "My span event count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e")`},
 					},
 				},
 				Metrics: map[string]MetricInfo{
 					"my.metric.count": {
 						Description: "My metric count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m")`},
 					},
 				},
 				DataPoints: map[string]MetricInfo{
 					"my.datapoint.count": {
 						Description: "My data point count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d")`},
 					},
 				},
 				Logs: map[string]MetricInfo{
 					"my.logrecord.count": {
 						Description: "My log record count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l")`},
 					},
 				},
 			},
@@ -162,8 +162,8 @@ func TestLoadConfig(t *testing.T) {
 					"my.span.count": {
 						Description: "My span count.",
 						Conditions: []string{
-							`IsMatch(resource.attributes["host.name"], "pod-s") == true`,
-							`IsMatch(resource.attributes["foo"], "bar-s") == true`,
+							`IsMatch(resource.attributes["host.name"], "pod-s")`,
+							`IsMatch(resource.attributes["foo"], "bar-s")`,
 						},
 					},
 				},
@@ -171,8 +171,8 @@ func TestLoadConfig(t *testing.T) {
 					"my.spanevent.count": {
 						Description: "My span event count.",
 						Conditions: []string{
-							`IsMatch(resource.attributes["host.name"], "pod-e") == true`,
-							`IsMatch(resource.attributes["foo"], "bar-e") == true`,
+							`IsMatch(resource.attributes["host.name"], "pod-e")`,
+							`IsMatch(resource.attributes["foo"], "bar-e")`,
 						},
 					},
 				},
@@ -180,8 +180,8 @@ func TestLoadConfig(t *testing.T) {
 					"my.metric.count": {
 						Description: "My metric count.",
 						Conditions: []string{
-							`IsMatch(resource.attributes["host.name"], "pod-m") == true`,
-							`IsMatch(resource.attributes["foo"], "bar-m") == true`,
+							`IsMatch(resource.attributes["host.name"], "pod-m")`,
+							`IsMatch(resource.attributes["foo"], "bar-m")`,
 						},
 					},
 				},
@@ -189,8 +189,8 @@ func TestLoadConfig(t *testing.T) {
 					"my.datapoint.count": {
 						Description: "My data point count.",
 						Conditions: []string{
-							`IsMatch(resource.attributes["host.name"], "pod-d") == true`,
-							`IsMatch(resource.attributes["foo"], "bar-d") == true`,
+							`IsMatch(resource.attributes["host.name"], "pod-d")`,
+							`IsMatch(resource.attributes["foo"], "bar-d")`,
 						},
 					},
 				},
@@ -198,8 +198,8 @@ func TestLoadConfig(t *testing.T) {
 					"my.logrecord.count": {
 						Description: "My log record count.",
 						Conditions: []string{
-							`IsMatch(resource.attributes["host.name"], "pod-l") == true`,
-							`IsMatch(resource.attributes["foo"], "bar-l") == true`,
+							`IsMatch(resource.attributes["host.name"], "pod-l")`,
+							`IsMatch(resource.attributes["foo"], "bar-l")`,
 						},
 					},
 				},
@@ -256,7 +256,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					"limited.span.count": {
 						Description: "Limited span count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s")`},
 						Attributes: []AttributeConfig{
 							{
 								Key: "env",
@@ -274,7 +274,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					"limited.spanevent.count": {
 						Description: "Limited span event count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e")`},
 						Attributes: []AttributeConfig{
 							{
 								Key: "env",
@@ -291,7 +291,7 @@ func TestLoadConfig(t *testing.T) {
 						Description: "My metric count."},
 					"limited.metric.count": {
 						Description: "Limited metric count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m")`},
 					},
 				},
 				DataPoints: map[string]MetricInfo{
@@ -300,7 +300,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					"limited.datapoint.count": {
 						Description: "Limited data point count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d")`},
 						Attributes: []AttributeConfig{
 							{
 								Key: "env",
@@ -318,7 +318,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					"limited.logrecord.count": {
 						Description: "Limited log record count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l")`},
 						Attributes: []AttributeConfig{
 							{
 								Key: "env",

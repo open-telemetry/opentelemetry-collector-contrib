@@ -43,13 +43,18 @@ func (p *parsedStatement) checkForCustomError() error {
 	return nil
 }
 
+type constExpr struct {
+	Boolean   *boolean   `parser:"( @Boolean"`
+	Converter *converter `parser:"| @@ )"`
+}
+
 // booleanValue represents something that evaluates to a boolean --
 // either an equality or inequality, explicit true or false, or
 // a parenthesized subexpression.
 type booleanValue struct {
 	Negation   *string            `parser:"@OpNot?"`
 	Comparison *comparison        `parser:"( @@"`
-	ConstExpr  *boolean           `parser:"| @Boolean"`
+	ConstExpr  *constExpr         `parser:"| @@"`
 	SubExpr    *booleanExpression `parser:"| '(' @@ ')' )"`
 }
 
