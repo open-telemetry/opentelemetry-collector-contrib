@@ -58,7 +58,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -75,7 +75,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -92,7 +92,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -109,7 +109,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -126,7 +126,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -143,7 +143,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -160,7 +160,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -216,7 +216,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -272,7 +272,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -325,7 +325,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -342,7 +342,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -387,7 +387,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -404,7 +404,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -446,7 +446,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1
@@ -463,7 +463,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId1
-                    - key: tags_location
+                    - key: location
                       value:
                         stringValue: location1
                     - key: tags_tagName1

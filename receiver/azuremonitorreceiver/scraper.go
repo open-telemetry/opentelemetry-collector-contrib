@@ -336,7 +336,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 							attributes[name] = value.Value
 						}
 						if len(res.location) > 0 {
-							attributes[tagPrefix+location] = &res.location
+							attributes[location] = &res.location
 						}
 						if s.cfg.AppendTagsAsAttributes {
 							for tagName, value := range res.tags {
