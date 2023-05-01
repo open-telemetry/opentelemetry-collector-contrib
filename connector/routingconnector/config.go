@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	errEmptyRoute      = errors.New("empty routing attribute provided")
+	errEmptyRoute      = errors.New("no statement provided")
 	errNoPipelines     = errors.New("no pipelines defined for the route")
 	errTooFewPipelines = errors.New("routingconnector requires at least two pipelines to route between")
 	errNoTableItems    = errors.New("the routing table is empty")

@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 const (
@@ -40,7 +42,9 @@ func NewFactory() connector.Factory {
 
 // createDefaultConfig creates the default configuration.
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		ErrorMode: ottl.PropagateError,
+	}
 }
 
 func createTracesToTraces(_ context.Context, set connector.CreateSettings, cfg component.Config, traces consumer.Traces) (connector.Traces, error) {
