@@ -141,7 +141,6 @@ func translateDataDogKeyToOtel(k string) string {
 	case "error.msg":
 		return semconv.AttributeExceptionMessage
 	case "service.name":
-	case "service_name":
 		return semconv.AttributeServiceName
 	default:
 		return k
