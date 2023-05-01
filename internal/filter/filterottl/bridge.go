@@ -37,13 +37,13 @@ const (
 	attributesStaticStatement         = `attributes["%v"] == %v`
 	resourceAttributesStaticStatement = `resource.attributes["%v"] == %v`
 
-	serviceNameRegexStatement        = `IsMatch(resource.attributes["service.name"], "%v") == true`
-	spanNameRegexStatement           = `IsMatch(name, "%v") == true`
-	spanKindRegexStatement           = `IsMatch(kind, "%v") == true`
-	scopeNameRegexStatement          = `IsMatch(instrumentation_scope.name, "%v") == true`
-	scopeVersionRegexStatement       = `IsMatch(instrumentation_scope.version, "%v") == true`
-	attributesRegexStatement         = `IsMatch(attributes["%v"], "%v") == true`
-	resourceAttributesRegexStatement = `IsMatch(resource.attributes["%v"], "%v") == true`
+	serviceNameRegexStatement        = `IsMatch(resource.attributes["service.name"], "%v")`
+	spanNameRegexStatement           = `IsMatch(name, "%v")`
+	spanKindRegexStatement           = `IsMatch(kind, "%v")`
+	scopeNameRegexStatement          = `IsMatch(instrumentation_scope.name, "%v")`
+	scopeVersionRegexStatement       = `IsMatch(instrumentation_scope.version, "%v")`
+	attributesRegexStatement         = `IsMatch(attributes["%v"], "%v")`
+	resourceAttributesRegexStatement = `IsMatch(resource.attributes["%v"], "%v")`
 )
 
 func NewSpanSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[ottlspan.TransformContext], error) {
