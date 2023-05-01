@@ -1,4 +1,4 @@
-type: bearertokenauthextension
+type: bearertokenauth
 
 status:
   class: extension
