@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.7.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.7.0
 	go.opentelemetry.io/build-tools/multimod v0.7.0
-	go.opentelemetry.io/collector/cmd/builder v0.75.0
+	go.opentelemetry.io/collector/cmd/builder v0.76.1
 	golang.org/x/tools v0.8.0
 	golang.org/x/vuln v0.0.0-20230313161840-8a73a7e4f203
 )
@@ -223,4 +223,8 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 // It appears that the v0.2.0 tag was modified.  Replacing with v0.2.1
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)

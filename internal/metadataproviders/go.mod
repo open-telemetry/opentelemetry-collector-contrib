@@ -45,4 +45,8 @@ require (
 	gotest.tools/v3 v3.2.0 // indirect
 )
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)

@@ -43,3 +43,8 @@ require (
 	google.golang.org/grpc v1.54.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 )
+
+retract (
+	v0.76.2
+	v0.76.1
+)
