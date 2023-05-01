@@ -148,12 +148,12 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
+// ResourceAttributeSettings provides common settings for a particular resource attribute.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for bigipreceiver metrics.
+// ResourceAttributesSettings provides settings for bigipreceiver resource attributes.
 type ResourceAttributesSettings struct {
 	BigipNodeIPAddress            ResourceAttributeSettings `mapstructure:"bigip.node.ip_address"`
 	BigipNodeName                 ResourceAttributeSettings `mapstructure:"bigip.node.name"`
