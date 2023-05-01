@@ -141,6 +141,7 @@ func Run(c *Config, logger *zap.Logger) error {
 			running:          running,
 			wg:               &wg,
 			logger:           logger.With(zap.Int("worker", i)),
+			serviceName:      c.ServiceName,
 		}
 
 		go w.simulateTraces()

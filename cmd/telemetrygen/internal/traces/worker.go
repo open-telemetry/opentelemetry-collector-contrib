@@ -37,6 +37,7 @@ type worker struct {
 	limitPerSecond   rate.Limit      // how many spans per second to generate
 	wg               *sync.WaitGroup // notify when done
 	logger           *zap.Logger
+	serviceName      string
 }
 
 const (
@@ -53,7 +54,7 @@ func (w worker) simulateTraces() {
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
 			attribute.String("span.kind", "client"), // is there a semantic convention for this?
 			semconv.NetPeerIPKey.String(fakeIP),
-			semconv.PeerServiceKey.String("telemetrygen-server"),
+			semconv.PeerServiceKey.String(w.serviceName),
 		))
 
 		childCtx := ctx
@@ -69,7 +70,7 @@ func (w worker) simulateTraces() {
 		_, child := tracer.Start(childCtx, "okey-dokey", trace.WithAttributes(
 			attribute.String("span.kind", "server"),
 			semconv.NetPeerIPKey.String(fakeIP),
-			semconv.PeerServiceKey.String("telemetrygen-client"),
+			semconv.PeerServiceKey.String(w.serviceName),
 		))
 
 		if err := limiter.Wait(context.Background()); err != nil {
