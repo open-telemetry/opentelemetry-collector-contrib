@@ -6,7 +6,7 @@ require (
 	github.com/SAP/go-hdb v1.2.1
 	github.com/denisenkom/go-mssqldb v0.12.2
 	github.com/docker/go-connections v0.4.0
-	github.com/go-sql-driver/mysql v1.7.0
+	github.com/go-sql-driver/mysql v1.7.1
 	github.com/lib/pq v1.10.8
 	github.com/sijms/go-ora/v2 v2.6.17
 	github.com/snowflakedb/gosnowflake v1.6.18
