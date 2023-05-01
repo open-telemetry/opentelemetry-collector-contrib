@@ -1,4 +1,4 @@
-FROM cassandra:3.11
+FROM cassandra:4.1
 ENV LOCAL_JMX=no
 ENV JVM_OPTS="-Djava.rmi.server.hostname=0.0.0.0"
 RUN echo 'cassandra cassandra' > /etc/cassandra/jmxremote.password
