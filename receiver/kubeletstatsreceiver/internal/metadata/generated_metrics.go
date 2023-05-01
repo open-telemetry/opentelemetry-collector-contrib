@@ -208,12 +208,12 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
+// ResourceAttributeSettings provides common settings for a particular resource attribute.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for kubeletstatsreceiver metrics.
+// ResourceAttributesSettings provides settings for kubeletstatsreceiver resource attributes.
 type ResourceAttributesSettings struct {
 	AwsVolumeID                  ResourceAttributeSettings `mapstructure:"aws.volume.id"`
 	ContainerID                  ResourceAttributeSettings `mapstructure:"container.id"`
