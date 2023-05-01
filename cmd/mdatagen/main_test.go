@@ -243,7 +243,7 @@ Some info about a component
 				stability = tt.stability
 			}
 			md := metadata{
-				Status: Status{
+				Status: &Status{
 					Stability:     stability,
 					Distributions: tt.distros,
 					Class:         tt.componentClass,
@@ -281,7 +281,7 @@ func TestGenerateStatusMetadata(t *testing.T) {
 			name: "foo component with beta status",
 			md: metadata{
 				Type: "foo",
-				Status: Status{
+				Status: &Status{
 					Stability:     map[string][]string{"beta": {"metrics"}},
 					Distributions: []string{"contrib"},
 					Class:         "receiver",
@@ -305,7 +305,7 @@ const (
 			name: "foo component with alpha status",
 			md: metadata{
 				Type: "foo",
-				Status: Status{
+				Status: &Status{
 					Stability:     map[string][]string{"alpha": {"metrics"}},
 					Distributions: []string{"contrib"},
 					Class:         "receiver",
