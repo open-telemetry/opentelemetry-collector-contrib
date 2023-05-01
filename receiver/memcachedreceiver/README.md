@@ -50,3 +50,4 @@ with detailed sample configurations [here](./testdata/config.yaml).
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
+
