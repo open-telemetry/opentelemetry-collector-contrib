@@ -68,7 +68,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.75.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.75.0

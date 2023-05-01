@@ -33,7 +33,7 @@ import (
 
 var (
 	errClientNotInit         = errors.New("client not initialized")
-	errFailedAppIdCollection = errors.New("failed to retrieve app ids")
+	errFailedAppIDCollection = errors.New("failed to retrieve app ids")
 )
 
 type sparkScraper struct {
@@ -75,7 +75,7 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var apps *models.Applications
 	apps, err := s.client.GetApplications()
 	if err != nil {
-		return pmetric.NewMetrics(), errFailedAppIdCollection
+		return pmetric.NewMetrics(), errFailedAppIDCollection
 	}
 
 	// get stats from the 'metrics' endpoint
@@ -85,35 +85,35 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		s.logger.Warn("Failed to scrape cluster stats", zap.Error(err))
 	} else {
 		for _, app := range *apps {
-			s.collectCluster(clusterStats, now, app.ID, app.Name)
+			s.collectCluster(clusterStats, now, app.ApplicationID, app.Name)
 		}
 	}
 
 	// for each application id, get stats from stages & executors endpoints
 	for _, app := range *apps {
 
-		stageStats, err := s.client.GetStageStats(app.ID)
+		stageStats, err := s.client.GetStageStats(app.ApplicationID)
 		if err != nil {
 			scrapeErrors.AddPartial(1, err)
 			s.logger.Warn("Failed to scrape stage stats", zap.Error(err))
 		} else {
-			s.collectStage(*stageStats, now, app.ID, app.Name)
+			s.collectStage(*stageStats, now, app.ApplicationID, app.Name)
 		}
 
-		executorStats, err := s.client.GetExecutorStats(app.ID)
+		executorStats, err := s.client.GetExecutorStats(app.ApplicationID)
 		if err != nil {
 			scrapeErrors.AddPartial(1, err)
 			s.logger.Warn("Failed to scrape executor stats", zap.Error(err))
 		} else {
-			s.collectExecutor(*executorStats, now, app.ID, app.Name)
+			s.collectExecutor(*executorStats, now, app.ApplicationID, app.Name)
 		}
 
-		jobStats, err := s.client.GetJobStats(app.ID)
+		jobStats, err := s.client.GetJobStats(app.ApplicationID)
 		if err != nil {
 			scrapeErrors.AddPartial(1, err)
 			s.logger.Warn("Failed to scrape job stats", zap.Error(err))
 		} else {
-			s.collectJob(*jobStats, now, app.ID, app.Name)
+			s.collectJob(*jobStats, now, app.ApplicationID, app.Name)
 		}
 	}
 	return s.mb.Emit(), scrapeErrors.Combine()
@@ -247,64 +247,64 @@ func (s *sparkScraper) collectStage(stageStats models.Stages, now pcommon.Timest
 			stageStatus = metadata.AttributeStageStatusFAILED
 		}
 
-		s.mb.RecordSparkStageActiveTasksDataPoint(now, int64(stageStats[i].ExecutorRunTime), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageCompleteTasksDataPoint(now, int64(stageStats[i].ExecutorRunTime), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageFailedTasksDataPoint(now, int64(stageStats[i].ExecutorRunTime), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageKilledTasksDataPoint(now, int64(stageStats[i].ExecutorRunTime), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageExecutorRunTimeDataPoint(now, int64(stageStats[i].ExecutorRunTime), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageExecutorCPUTimeDataPoint(now, int64(stageStats[i].ExecutorCpuTime), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageResultSizeDataPoint(now, int64(stageStats[i].ResultSize), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageJvmGcTimeDataPoint(now, int64(stageStats[i].JvmGcTime), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageMemorySpilledDataPoint(now, int64(stageStats[i].MemoryBytesSpilled), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageDiskSpaceSpilledDataPoint(now, int64(stageStats[i].DiskBytesSpilled), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStagePeakExecutionMemoryDataPoint(now, int64(stageStats[i].PeakExecutionMemory), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageInputBytesDataPoint(now, int64(stageStats[i].InputBytes), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageInputRecordsDataPoint(now, int64(stageStats[i].InputRecords), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageOutputBytesDataPoint(now, int64(stageStats[i].OutputBytes), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageOutputRecordsDataPoint(now, int64(stageStats[i].OutputRecords), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageShuffleBlocksFetchedDataPoint(now, int64(stageStats[i].ShuffleRemoteBlocksFetched), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus, metadata.AttributeSourceRemote)
-		s.mb.RecordSparkStageShuffleBlocksFetchedDataPoint(now, int64(stageStats[i].ShuffleLocalBlocksFetched), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus, metadata.AttributeSourceLocal)
-		s.mb.RecordSparkStageShuffleFetchWaitTimeDataPoint(now, int64(stageStats[i].ShuffleFetchWaitTime), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageShuffleBytesReadDataPoint(now, int64(stageStats[i].ShuffleRemoteBytesRead), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus, metadata.AttributeSourceRemote)
-		s.mb.RecordSparkStageShuffleBytesReadDataPoint(now, int64(stageStats[i].ShuffleLocalBytesRead), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus, metadata.AttributeSourceLocal)
-		s.mb.RecordSparkStageShuffleRemoteBytesReadToDiskDataPoint(now, int64(stageStats[i].ShuffleRemoteBytesReadToDisk), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageShuffleReadBytesDataPoint(now, int64(stageStats[i].ShuffleReadBytes), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageShuffleReadRecordsDataPoint(now, int64(stageStats[i].ShuffleReadRecords), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageShuffleWriteBytesDataPoint(now, int64(stageStats[i].ShuffleWriteBytes), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageShuffleWriteRecordsDataPoint(now, int64(stageStats[i].ShuffleWriteRecords), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
-		s.mb.RecordSparkStageShuffleWriteTimeDataPoint(now, int64(stageStats[i].ShuffleWriteTime), appID, appName, stageStats[i].StageId, stageStats[i].AttemptId, stageStatus)
+		s.mb.RecordSparkStageActiveTasksDataPoint(now, int64(stageStats[i].ExecutorRunTime), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageCompleteTasksDataPoint(now, int64(stageStats[i].ExecutorRunTime), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageFailedTasksDataPoint(now, int64(stageStats[i].ExecutorRunTime), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageKilledTasksDataPoint(now, int64(stageStats[i].ExecutorRunTime), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageExecutorRunTimeDataPoint(now, int64(stageStats[i].ExecutorRunTime), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageExecutorCPUTimeDataPoint(now, int64(stageStats[i].ExecutorCPUTime), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageResultSizeDataPoint(now, int64(stageStats[i].ResultSize), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageJvmGcTimeDataPoint(now, int64(stageStats[i].JvmGcTime), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageMemorySpilledDataPoint(now, int64(stageStats[i].MemoryBytesSpilled), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageDiskSpaceSpilledDataPoint(now, int64(stageStats[i].DiskBytesSpilled), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStagePeakExecutionMemoryDataPoint(now, int64(stageStats[i].PeakExecutionMemory), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageInputBytesDataPoint(now, int64(stageStats[i].InputBytes), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageInputRecordsDataPoint(now, int64(stageStats[i].InputRecords), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageOutputBytesDataPoint(now, int64(stageStats[i].OutputBytes), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageOutputRecordsDataPoint(now, int64(stageStats[i].OutputRecords), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageShuffleBlocksFetchedDataPoint(now, int64(stageStats[i].ShuffleRemoteBlocksFetched), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus, metadata.AttributeSourceRemote)
+		s.mb.RecordSparkStageShuffleBlocksFetchedDataPoint(now, int64(stageStats[i].ShuffleLocalBlocksFetched), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus, metadata.AttributeSourceLocal)
+		s.mb.RecordSparkStageShuffleFetchWaitTimeDataPoint(now, int64(stageStats[i].ShuffleFetchWaitTime), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageShuffleBytesReadDataPoint(now, int64(stageStats[i].ShuffleRemoteBytesRead), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus, metadata.AttributeSourceRemote)
+		s.mb.RecordSparkStageShuffleBytesReadDataPoint(now, int64(stageStats[i].ShuffleLocalBytesRead), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus, metadata.AttributeSourceLocal)
+		s.mb.RecordSparkStageShuffleRemoteBytesReadToDiskDataPoint(now, int64(stageStats[i].ShuffleRemoteBytesReadToDisk), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageShuffleReadBytesDataPoint(now, int64(stageStats[i].ShuffleReadBytes), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageShuffleReadRecordsDataPoint(now, int64(stageStats[i].ShuffleReadRecords), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageShuffleWriteBytesDataPoint(now, int64(stageStats[i].ShuffleWriteBytes), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageShuffleWriteRecordsDataPoint(now, int64(stageStats[i].ShuffleWriteRecords), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
+		s.mb.RecordSparkStageShuffleWriteTimeDataPoint(now, int64(stageStats[i].ShuffleWriteTime), appID, appName, stageStats[i].StageID, stageStats[i].AttemptID, stageStatus)
 	}
 }
 
 func (s *sparkScraper) collectExecutor(executorStats models.Executors, now pcommon.Timestamp, appID string, appName string) {
 	for i := range executorStats {
-		s.mb.RecordSparkExecutorMemoryUsedDataPoint(now, executorStats[i].MemoryUsed, appID, appName, executorStats[i].Id)
-		s.mb.RecordSparkExecutorDiskUsedDataPoint(now, executorStats[i].DiskUsed, appID, appName, executorStats[i].Id)
-		s.mb.RecordSparkExecutorMaxTasksDataPoint(now, executorStats[i].MaxTasks, appID, appName, executorStats[i].Id)
-		s.mb.RecordSparkExecutorActiveTasksDataPoint(now, executorStats[i].ActiveTasks, appID, appName, executorStats[i].Id)
-		s.mb.RecordSparkExecutorFailedTasksDataPoint(now, executorStats[i].FailedTasks, appID, appName, executorStats[i].Id)
-		s.mb.RecordSparkExecutorCompletedTasksDataPoint(now, executorStats[i].CompletedTasks, appID, appName, executorStats[i].Id)
-		s.mb.RecordSparkExecutorDurationDataPoint(now, executorStats[i].TotalDuration, appID, appName, executorStats[i].Id)
-		s.mb.RecordSparkExecutorGcTimeDataPoint(now, executorStats[i].TotalGCTime, appID, appName, executorStats[i].Id)
-		s.mb.RecordSparkExecutorInputBytesDataPoint(now, executorStats[i].TotalInputBytes, appID, appName, executorStats[i].Id)
-		s.mb.RecordSparkExecutorShuffleReadBytesDataPoint(now, executorStats[i].TotalShuffleRead, appID, appName, executorStats[i].Id)
-		s.mb.RecordSparkExecutorShuffleWriteBytesDataPoint(now, executorStats[i].TotalShuffleWrite, appID, appName, executorStats[i].Id)
-		s.mb.RecordSparkExecutorUsedStorageMemoryDataPoint(now, executorStats[i].UsedOnHeapStorageMemory, appID, appName, executorStats[i].Id, metadata.AttributeLocationOnHeap)
-		s.mb.RecordSparkExecutorUsedStorageMemoryDataPoint(now, executorStats[i].UsedOffHeapStorageMemory, appID, appName, executorStats[i].Id, metadata.AttributeLocationOffHeap)
-		s.mb.RecordSparkExecutorTotalStorageMemoryDataPoint(now, executorStats[i].TotalOnHeapStorageMemory, appID, appName, executorStats[i].Id, metadata.AttributeLocationOnHeap)
-		s.mb.RecordSparkExecutorTotalStorageMemoryDataPoint(now, executorStats[i].TotalOffHeapStorageMemory, appID, appName, executorStats[i].Id, metadata.AttributeLocationOffHeap)
+		s.mb.RecordSparkExecutorMemoryUsedDataPoint(now, executorStats[i].MemoryUsed, appID, appName, executorStats[i].ExecutorID)
+		s.mb.RecordSparkExecutorDiskUsedDataPoint(now, executorStats[i].DiskUsed, appID, appName, executorStats[i].ExecutorID)
+		s.mb.RecordSparkExecutorMaxTasksDataPoint(now, executorStats[i].MaxTasks, appID, appName, executorStats[i].ExecutorID)
+		s.mb.RecordSparkExecutorActiveTasksDataPoint(now, executorStats[i].ActiveTasks, appID, appName, executorStats[i].ExecutorID)
+		s.mb.RecordSparkExecutorFailedTasksDataPoint(now, executorStats[i].FailedTasks, appID, appName, executorStats[i].ExecutorID)
+		s.mb.RecordSparkExecutorCompletedTasksDataPoint(now, executorStats[i].CompletedTasks, appID, appName, executorStats[i].ExecutorID)
+		s.mb.RecordSparkExecutorDurationDataPoint(now, executorStats[i].TotalDuration, appID, appName, executorStats[i].ExecutorID)
+		s.mb.RecordSparkExecutorGcTimeDataPoint(now, executorStats[i].TotalGCTime, appID, appName, executorStats[i].ExecutorID)
+		s.mb.RecordSparkExecutorInputBytesDataPoint(now, executorStats[i].TotalInputBytes, appID, appName, executorStats[i].ExecutorID)
+		s.mb.RecordSparkExecutorShuffleReadBytesDataPoint(now, executorStats[i].TotalShuffleRead, appID, appName, executorStats[i].ExecutorID)
+		s.mb.RecordSparkExecutorShuffleWriteBytesDataPoint(now, executorStats[i].TotalShuffleWrite, appID, appName, executorStats[i].ExecutorID)
+		s.mb.RecordSparkExecutorUsedStorageMemoryDataPoint(now, executorStats[i].UsedOnHeapStorageMemory, appID, appName, executorStats[i].ExecutorID, metadata.AttributeLocationOnHeap)
+		s.mb.RecordSparkExecutorUsedStorageMemoryDataPoint(now, executorStats[i].UsedOffHeapStorageMemory, appID, appName, executorStats[i].ExecutorID, metadata.AttributeLocationOffHeap)
+		s.mb.RecordSparkExecutorTotalStorageMemoryDataPoint(now, executorStats[i].TotalOnHeapStorageMemory, appID, appName, executorStats[i].ExecutorID, metadata.AttributeLocationOnHeap)
+		s.mb.RecordSparkExecutorTotalStorageMemoryDataPoint(now, executorStats[i].TotalOffHeapStorageMemory, appID, appName, executorStats[i].ExecutorID, metadata.AttributeLocationOffHeap)
 	}
 }
 
 func (s *sparkScraper) collectJob(jobStats models.Jobs, now pcommon.Timestamp, appID string, appName string) {
 	for i := range jobStats {
-		s.mb.RecordSparkJobActiveTasksDataPoint(now, int64(jobStats[i].NumActiveTasks), appID, appName, jobStats[i].JobId)
-		s.mb.RecordSparkJobCompletedTasksDataPoint(now, int64(jobStats[i].NumCompletedTasks), appID, appName, jobStats[i].JobId)
-		s.mb.RecordSparkJobSkippedTasksDataPoint(now, int64(jobStats[i].NumSkippedTasks), appID, appName, jobStats[i].JobId)
-		s.mb.RecordSparkJobFailedTasksDataPoint(now, int64(jobStats[i].NumFailedTasks), appID, appName, jobStats[i].JobId)
-		s.mb.RecordSparkJobActiveStagesDataPoint(now, int64(jobStats[i].NumActiveStages), appID, appName, jobStats[i].JobId)
-		s.mb.RecordSparkJobCompletedStagesDataPoint(now, int64(jobStats[i].NumCompletedStages), appID, appName, jobStats[i].JobId)
-		s.mb.RecordSparkJobSkippedStagesDataPoint(now, int64(jobStats[i].NumSkippedStages), appID, appName, jobStats[i].JobId)
-		s.mb.RecordSparkJobFailedStagesDataPoint(now, int64(jobStats[i].NumFailedStages), appID, appName, jobStats[i].JobId)
+		s.mb.RecordSparkJobActiveTasksDataPoint(now, jobStats[i].NumActiveTasks, appID, appName, jobStats[i].JobID)
+		s.mb.RecordSparkJobCompletedTasksDataPoint(now, jobStats[i].NumCompletedTasks, appID, appName, jobStats[i].JobID)
+		s.mb.RecordSparkJobSkippedTasksDataPoint(now, jobStats[i].NumSkippedTasks, appID, appName, jobStats[i].JobID)
+		s.mb.RecordSparkJobFailedTasksDataPoint(now, jobStats[i].NumFailedTasks, appID, appName, jobStats[i].JobID)
+		s.mb.RecordSparkJobActiveStagesDataPoint(now, jobStats[i].NumActiveStages, appID, appName, jobStats[i].JobID)
+		s.mb.RecordSparkJobCompletedStagesDataPoint(now, jobStats[i].NumCompletedStages, appID, appName, jobStats[i].JobID)
+		s.mb.RecordSparkJobSkippedStagesDataPoint(now, jobStats[i].NumSkippedStages, appID, appName, jobStats[i].JobID)
+		s.mb.RecordSparkJobFailedStagesDataPoint(now, jobStats[i].NumFailedStages, appID, appName, jobStats[i].JobID)
 	}
 }

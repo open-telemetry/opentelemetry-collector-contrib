@@ -16,6 +16,6 @@ package models // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 // Application represents the json returned by the api/v1/applications endpoint for each application
 type Applications []struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ApplicationID string `json:"id"`
+	Name          string `json:"name"`
 }

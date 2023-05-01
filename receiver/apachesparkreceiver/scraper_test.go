@@ -21,17 +21,18 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/mocks"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
-) 
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/mocks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
+)
 
 const (
 	clusterStatsResponseFile   = "cluster_stats_response.json"
@@ -68,7 +69,7 @@ func TestScraper(t *testing.T) {
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
-			expectedErr: errFailedAppIdCollection,
+			expectedErr: errFailedAppIDCollection,
 		},
 		{
 			desc: "Successful Full Empty Collection",

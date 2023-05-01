@@ -16,7 +16,7 @@ package models // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 // Executors represents the top level json returned by the api/v1/applications/[app-id]/executors endpoint
 type Executors []struct {
-	Id                        string `json:"id"`
+	ExecutorID                string `json:"id"`
 	MemoryUsed                int64  `json:"memoryUsed"`
 	DiskUsed                  int64  `json:"diskUsed"`
 	MaxTasks                  int64  `json:"maxTasks"`

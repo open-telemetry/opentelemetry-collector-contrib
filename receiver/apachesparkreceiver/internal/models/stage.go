@@ -17,14 +17,14 @@ package models // import "github.com/open-telemetry/opentelemetry-collector-cont
 // Stages represents the top level json returned by the api/v1/applications/[app-id]/stages endpoint
 type Stages []struct {
 	Status                       string `json:"status"`
-	StageId                      int64  `json:"stageId"`
-	AttemptId                    int64  `json:"attemptId"`
+	StageID                      int64  `json:"stageId"`
+	AttemptID                    int64  `json:"attemptId"`
 	NumActiveTasks               int    `json:"numActiveTasks"`
 	NumCompleteTasks             int    `json:"numCompleteTasks"`
 	NumFailedTasks               int    `json:"numFailedTasks"`
 	NumKilledTasks               int    `json:"numKilledTasks"`
 	ExecutorRunTime              int    `json:"executorRunTime"`
-	ExecutorCpuTime              int    `json:"executorCpuTime"`
+	ExecutorCPUTime              int    `json:"executorCpuTime"`
 	ResultSize                   int    `json:"resultSize"`
 	JvmGcTime                    int    `json:"jvmGcTime"`
 	MemoryBytesSpilled           int    `json:"memoryBytesSpilled"`

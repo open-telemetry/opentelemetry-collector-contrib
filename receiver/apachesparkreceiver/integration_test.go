@@ -24,14 +24,19 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-) 
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+)
 
 const (
 	sparkPort = "4040/tcp"
 )
 
 var (
-	setupScript      = []string{"/setup.sh"}
 	containerRequest = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
@@ -45,19 +50,13 @@ var (
 type testCase struct {
 	name      string
 	container testcontainers.ContainerRequest
-	script    []string
-	cfgMod    func(defaultCfg *Config, endpoint string)
 }
 
 func TestApacheSparkIntegration(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:      "apache-spark",
-			script:    setupScript,
 			container: containerRequest,
-			cfgMod: func(cfg *Config, endpoint string) {
-				cfg.Endpoint = endpoint
-			},
 		},
 	}
 
@@ -68,39 +67,38 @@ func TestApacheSparkIntegration(t *testing.T) {
 
 func (tt testCase) run(t *testing.T) {
 	t.Parallel()
-	container, _ := getContainer(t, tt.container, tt.script)
+	container, endpoint := getContainer(t, tt.container)
 	defer func() {
 		require.NoError(t, container.Terminate(context.Background()))
 	}()
 
-	// f := NewFactory()
-	// cfg := f.CreateDefaultConfig().(*Config)
-	// cfg.CollectionInterval = 10 * time.Second
-	// tt.cfgMod(cfg, endpoint)
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.CollectionInterval = 5 * time.Second
+	cfg.Endpoint = endpoint
 
-	// consumer := new(consumertest.MetricsSink)
-	// settings := receivertest.NewNopCreateSettings()
-	// rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-	// require.NoError(t, err, "failed creating metrics receiver")
+	consumer := new(consumertest.MetricsSink)
+	settings := receivertest.NewNopCreateSettings()
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+	require.NoError(t, err, "failed creating metrics receiver")
 
-	// require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
-	// // Wait for multiple collections, in case the first represents partially started system
-	// require.Eventuallyf(t, func() bool {
-	// 	return len(consumer.AllMetrics()) > 1
-	// }, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-	// require.NoError(t, rcvr.Shutdown(context.Background()))
-	// actualMetrics := consumer.AllMetrics()[1]
+	// Wait for multiple collections, in case the first represents partially started system
+	require.Eventuallyf(t, func() bool {
+		return len(consumer.AllMetrics()) > 1
+	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+	require.NoError(t, rcvr.Shutdown(context.Background()))
+	actualMetrics := consumer.AllMetrics()[1]
 
-	// expectedFile := filepath.Join("testdata", "integration", fmt.Sprintf("expected.%s.yaml", tt.name))
-	// expectedMetrics, err := golden.ReadMetrics(expectedFile)
-	// require.NoError(t, err)
+	expectedFile := filepath.Join("testdata", "integration", fmt.Sprintf("expected.%s.yaml", tt.name))
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
 
-	// require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
-	// 	pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricAttributeValue("application_id"), pmetrictest.IgnoreMetricAttributeValue("application_name"), pmetrictest.IgnoreMetricDataPointsOrder()))
 }
 
-func getContainer(t *testing.T, req testcontainers.ContainerRequest, _ []string) (testcontainers.Container, string) {
+func getContainer(t *testing.T, req testcontainers.ContainerRequest) (testcontainers.Container, string) {
 	require.NoError(t, req.Validate())
 
 	ctx := context.Background()
@@ -113,11 +111,7 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest, _ []string)
 		})
 	require.NoError(t, err)
 
-	// code, _, err := container.Exec(ctx, script)
-	// require.NoError(t, err)
-	// require.Equal(t, 0, code)
-
-	err = container.Start(ctx)
+	err = container.Start(context.Background())
 	require.NoError(t, err)
 
 	mappedPort, err := container.MappedPort(ctx, sparkPort)
@@ -126,7 +120,7 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest, _ []string)
 	hostIP, err := container.Host(ctx)
 	require.Nil(t, err)
 
-	endpoint := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
+	endpoint := fmt.Sprintf("http://%s:%s", hostIP, mappedPort.Port())
 
 	return container, endpoint
 }

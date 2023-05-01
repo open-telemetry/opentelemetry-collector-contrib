@@ -21,9 +21,10 @@ import (
 	"net/http" // client defines the basic HTTP client interface.
 	"strconv"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 )
 
 const (

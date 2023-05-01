@@ -68,5 +68,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
-    time.sleep(110)
+    for i in range(100):
+        main()
