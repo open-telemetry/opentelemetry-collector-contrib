@@ -184,6 +184,9 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
+			receiver: "filestats",
+		},
+		{
 			receiver: "flinkmetrics",
 		},
 		{

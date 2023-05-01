@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "filestats"
-	Stability = component.StabilityLevelAlpha
+	Type      = "sapm"
+	Stability = component.StabilityLevelBeta
 )

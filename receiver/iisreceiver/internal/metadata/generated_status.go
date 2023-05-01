@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "filestats"
-	Stability = component.StabilityLevelAlpha
+	Type      = "iisreceiver"
+	Stability = component.StabilityLevelBeta
 )
