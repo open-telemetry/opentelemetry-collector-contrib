@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "oidcauthextension"
+	Type      = "oidc"
 	Stability = component.StabilityLevelBeta
 )
