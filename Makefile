@@ -237,6 +237,11 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) generate ./...
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
+.PHONY: metadata-validate
+metadata-validate:
+	cd cmd/mvalidate && $(GOCMD) install .
+	$(MAKE) for-all CMD="mvalidate metadata.yaml"
+
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: $(CHLOGGEN)
