@@ -12,6 +12,80 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
+// MetricSettings provides common settings for a particular metric.
+type MetricSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MetricsSettings provides settings for test metrics.
+type MetricsSettings struct {
+	DefaultMetric            MetricSettings `mapstructure:"default.metric"`
+	DefaultMetricToBeRemoved MetricSettings `mapstructure:"default.metric.to_be_removed"`
+	OptionalMetric           MetricSettings `mapstructure:"optional.metric"`
+}
+
+func DefaultMetricsSettings() MetricsSettings {
+	return MetricsSettings{
+		DefaultMetric: MetricSettings{
+			Enabled: true,
+		},
+		DefaultMetricToBeRemoved: MetricSettings{
+			Enabled: true,
+		},
+		OptionalMetric: MetricSettings{
+			Enabled: false,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesSettings provides settings for test metrics.
+type ResourceAttributesSettings struct {
+	MapResourceAttr        ResourceAttributeSettings `mapstructure:"map.resource.attr"`
+	OptionalResourceAttr   ResourceAttributeSettings `mapstructure:"optional.resource.attr"`
+	SliceResourceAttr      ResourceAttributeSettings `mapstructure:"slice.resource.attr"`
+	StringEnumResourceAttr ResourceAttributeSettings `mapstructure:"string.enum.resource.attr"`
+	StringResourceAttr     ResourceAttributeSettings `mapstructure:"string.resource.attr"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		MapResourceAttr: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		OptionalResourceAttr: ResourceAttributeSettings{
+			Enabled: false,
+		},
+		SliceResourceAttr: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		StringEnumResourceAttr: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		StringResourceAttr: ResourceAttributeSettings{
+			Enabled: true,
+		},
+	}
+}
+
 // AttributeEnumAttr specifies the a value enum_attr attribute.
 type AttributeEnumAttr int
 
