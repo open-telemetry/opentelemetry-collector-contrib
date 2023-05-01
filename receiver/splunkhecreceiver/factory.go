@@ -31,9 +31,6 @@ import (
 // This file implements factory for Splunk HEC receiver.
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "splunk_hec"
-
 	// Default endpoints to bind to.
 	defaultEndpoint = ":8088"
 )
@@ -41,7 +38,7 @@ const (
 // NewFactory creates a factory for Splunk HEC receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.Stability),
 		receiver.WithLogs(createLogsReceiver, metadata.Stability))
