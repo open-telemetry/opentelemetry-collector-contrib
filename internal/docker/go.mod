@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
 go 1.19
 
 require (
-	github.com/docker/docker v23.0.3+incompatible
+	github.com/docker/docker v23.0.4+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.8.2
 	go.uber.org/zap v1.24.0
@@ -34,4 +34,8 @@ require (
 	gotest.tools/v3 v3.0.3 // indirect
 )
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)

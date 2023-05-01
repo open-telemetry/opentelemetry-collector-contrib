@@ -34,6 +34,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+// allow monkey patching for injecting pushLogData function in test
+var getPushLogFn = func(c *client) func(ctx context.Context, ld plog.Logs) error {
+	return c.pushLogData
+}
+
 // client sends the data to the splunk backend.
 type client struct {
 	config            *Config
@@ -42,6 +47,7 @@ type client struct {
 	telemetrySettings component.TelemetrySettings
 	hecWorker         hecWorker
 	buildInfo         component.BuildInfo
+	heartbeater       *heartbeater
 }
 
 func (c *client) pushMetricsData(
@@ -631,6 +637,9 @@ func subTracesByType(src ptrace.Traces, from *index, dst ptrace.Traces) {
 
 func (c *client) stop(context.Context) error {
 	c.wg.Wait()
+	if c.heartbeater != nil {
+		c.heartbeater.shutdown()
+	}
 	return nil
 }
 
@@ -650,6 +659,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 	}
 	url, _ := c.config.getURL()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo)}
+	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c))
 	return nil
 }
 
