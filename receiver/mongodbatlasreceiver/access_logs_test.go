@@ -17,6 +17,7 @@ package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -150,59 +151,136 @@ func TestAccessLogToLogRecord(t *testing.T) {
 }
 
 func TestAccessLogsRetrieval(t *testing.T) {
-	config := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
-		Granularity:               defaultGranularity,
-		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
-		AccessLogs: &AccessLogsConfig{
-			Projects: []ProjectConfig{
-				{
-					Name: testProjectName,
-				},
+	cases := []struct {
+		name            string
+		config          func() *Config
+		setup           func(rcvr *accessLogsReceiver)
+		validateEntries func(*testing.T, plog.Logs)
+	}{
+		{
+			name: "basic",
+			config: func() *Config {
+				return &Config{
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					Granularity:               defaultGranularity,
+					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					AccessLogs: &AccessLogsConfig{
+						Projects: []ProjectConfig{
+							{
+								Name: testProjectName,
+							},
+						},
+						PollInterval: 1 * time.Second,
+					},
+				}
 			},
-			PollInterval: 1 * time.Second,
+			setup: func(rcvr *accessLogsReceiver) {
+				maximumLogEntriesPerRequest = 20000
+				rcvr.client = simpleAccessLogClient()
+			},
+			validateEntries: func(t *testing.T, logs plog.Logs) {
+				expectedStringAttributes := map[string]string{
+					"event.domain": "mongodbatlas",
+					"auth.result":  "success",
+					"auth.source":  "admin",
+					"username":     "test",
+					"hostname":     "test-hostname.mongodb.net",
+					"remote.ip":    "192.168.1.1",
+				}
+				validateAttributes(t, expectedStringAttributes, logs)
+				expectedResourceAttributes := map[string]string{
+					"mongodbatlas.cluster.name": testClusterName,
+					"mongodbatlas.project.name": testProjectName,
+					"mongodbatlas.project.id":   testProjectID,
+					"mongodbatlas.org.id":       testOrgID,
+				}
+
+				ra := logs.ResourceLogs().At(0).Resource().Attributes()
+				for k, v := range expectedResourceAttributes {
+					value, ok := ra.Get(k)
+					require.True(t, ok)
+					require.Equal(t, v, value.AsString())
+				}
+			},
+		},
+		{
+			name: "multiple page read all",
+			config: func() *Config {
+				return &Config{
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					Granularity:               defaultGranularity,
+					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					AccessLogs: &AccessLogsConfig{
+						Projects: []ProjectConfig{
+							{
+								Name: testProjectName,
+							},
+						},
+						PollInterval: 1 * time.Second,
+					},
+				}
+			},
+			setup: func(rcvr *accessLogsReceiver) {
+				maximumLogEntriesPerRequest = 2
+				rcvr.client = repeatedRequestAccessLogClient()
+			},
+			validateEntries: func(t *testing.T, logs plog.Logs) {
+				require.Equal(t, 1, logs.ResourceLogs().Len())
+				require.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().Len())
+				require.Equal(t, 3, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+			},
+		},
+		{
+			name: "multiple page break early",
+			config: func() *Config {
+				return &Config{
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					Granularity:               defaultGranularity,
+					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					AccessLogs: &AccessLogsConfig{
+						Projects: []ProjectConfig{
+							{
+								Name: testProjectName,
+							},
+						},
+						PollInterval: 1 * time.Second,
+					},
+				}
+			},
+			setup: func(rcvr *accessLogsReceiver) {
+				maximumLogEntriesPerRequest = 2
+				rcvr.client = maxSizeButOldDataAccessLogsClient()
+			},
+			validateEntries: func(t *testing.T, logs plog.Logs) {
+				require.Equal(t, 1, logs.ResourceLogs().Len())
+				require.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().Len())
+				require.Equal(t, 2, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+			},
 		},
 	}
 
-	logSink := &consumertest.LogsSink{}
-	rcvr := newAccessLogsReceiver(receivertest.NewNopCreateSettings(), config, logSink)
-	rcvr.client = testAccessLogClient()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			logSink := &consumertest.LogsSink{}
+			rcvr := newAccessLogsReceiver(receivertest.NewNopCreateSettings(), tc.config(), logSink)
+			tc.setup(rcvr)
 
-	err := rcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
-	require.NoError(t, err)
+			err := rcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
+			require.NoError(t, err)
 
-	require.Eventually(t, func() bool {
-		return logSink.LogRecordCount() > 0
-	}, 10*time.Second, 10*time.Millisecond)
+			require.Eventually(t, func() bool {
+				return logSink.LogRecordCount() > 0
+			}, 20*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, rcvr.Shutdown(context.Background()))
-	logs := logSink.AllLogs()[0]
+			require.NoError(t, rcvr.Shutdown(context.Background()))
+			logs := logSink.AllLogs()[0]
 
-	expectedStringAttributes := map[string]string{
-		"event.domain": "mongodbatlas",
-		"auth.result":  "success",
-		"auth.source":  "admin",
-		"username":     "test",
-		"hostname":     "test-hostname.mongodb.net",
-		"remote.ip":    "192.168.1.1",
-	}
-	validateAttributes(t, expectedStringAttributes, logs)
-	expectedResourceAttributes := map[string]string{
-		"mongodbatlas.cluster.name": testClusterName,
-		"mongodbatlas.project.name": testProjectName,
-		"mongodbatlas.project.id":   testProjectID,
-		"mongodbatlas.org.id":       testOrgID,
-	}
-
-	ra := logs.ResourceLogs().At(0).Resource().Attributes()
-	for k, v := range expectedResourceAttributes {
-		value, ok := ra.Get(k)
-		require.True(t, ok)
-		require.Equal(t, v, value.AsString())
+			tc.validateEntries(t, logs)
+		})
 	}
 }
 
-func testAccessLogClient() *mockAccessLogsClient {
+func testClientBase() *mockAccessLogsClient {
 	ac := &mockAccessLogsClient{}
 	ac.On("GetProject", mock.Anything, mock.Anything).Return(&mongodbatlas.Project{
 		ID:    testProjectID,
@@ -219,6 +297,11 @@ func testAccessLogClient() *mockAccessLogsClient {
 			},
 		},
 		nil)
+	return ac
+}
+
+func simpleAccessLogClient() accessLogClient {
+	ac := testClientBase()
 	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterID, mock.Anything).Return(
 		[]*mongodbatlas.AccessLogs{
 			{
@@ -234,6 +317,81 @@ func testAccessLogClient() *mockAccessLogsClient {
 			},
 		},
 		nil)
+	return ac
+}
+
+func repeatedRequestAccessLogClient() accessLogClient {
+	currentTime := time.Now().UTC()
+	ac := testClientBase()
+	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterID, mock.Anything).Return(
+		[]*mongodbatlas.AccessLogs{
+			{
+				GroupID:     testProjectID,
+				Hostname:    "test-hostname.mongodb.net",
+				ClusterName: testClusterName,
+				IPAddress:   "192.168.1.1",
+				AuthResult:  &authTrue,
+				AuthSource:  "admin",
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(500*time.Millisecond).Format(time.RFC3339)),
+				Username:    "test",
+			},
+			{
+				GroupID:     testProjectID,
+				Hostname:    "test-hostname.mongodb.net",
+				ClusterName: testClusterName,
+				IPAddress:   "192.168.1.1",
+				AuthResult:  &authTrue,
+				AuthSource:  "admin",
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(400*time.Millisecond).Format(time.RFC3339)),
+				Username:    "test",
+			},
+		},
+		nil).Once()
+
+	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterID, mock.Anything).Return(
+		[]*mongodbatlas.AccessLogs{
+			{
+				GroupID:     testProjectID,
+				Hostname:    "test-hostname.mongodb.net",
+				ClusterName: testClusterName,
+				IPAddress:   "192.168.1.1",
+				AuthResult:  &authTrue,
+				AuthSource:  "admin",
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(300*time.Millisecond).Format(time.RFC3339)),
+				Username:    "test",
+			},
+		},
+		nil).Once()
+	return ac
+}
+
+func maxSizeButOldDataAccessLogsClient() accessLogClient {
+	currentTime := time.Now().UTC()
+	ac := testClientBase()
+	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterID, mock.Anything).Return(
+		[]*mongodbatlas.AccessLogs{
+			{
+				GroupID:     testProjectID,
+				Hostname:    "test-hostname.mongodb.net",
+				ClusterName: testClusterName,
+				IPAddress:   "192.168.1.1",
+				AuthResult:  &authTrue,
+				AuthSource:  "admin",
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(500*time.Millisecond).Format(time.RFC3339)),
+				Username:    "test",
+			},
+			{
+				GroupID:     testProjectID,
+				Hostname:    "test-hostname.mongodb.net",
+				ClusterName: testClusterName,
+				IPAddress:   "192.168.1.1",
+				AuthResult:  &authTrue,
+				AuthSource:  "admin",
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(-100*time.Millisecond).Format(time.RFC3339)),
+				Username:    "test",
+			},
+		},
+		nil).Once()
 	return ac
 }
 

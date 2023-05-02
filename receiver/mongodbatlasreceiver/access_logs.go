@@ -35,8 +35,9 @@ import (
 const (
 	accessLogStorageKey          = "last_endtime_access_logs"
 	defaultAccessLogPollInterval = time.Minute
-	maximumLogEntriesPerRequest  = 20000
 )
+
+var maximumLogEntriesPerRequest = 20000
 
 type accessLogClient interface {
 	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
