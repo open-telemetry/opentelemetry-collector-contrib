@@ -2,7 +2,7 @@ type: jqprocessor
 
 status:
   class: processor
-  stability: alpha
+  stability: development
   pipelines: [logs]
   distributions: [contrib]
   warnings: []
