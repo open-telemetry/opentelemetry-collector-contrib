@@ -572,9 +572,6 @@ jobs:
     needs: [publish-stable]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
-      - name: Set Release Tag
-        id: github_tag
-        run: ./.github/workflows/scripts/set_release_tag.sh
       - uses: actions/github-script@v6
         with:
           script: |
@@ -589,7 +586,7 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   milestone_number: milestone.number,
-                  title: "${{ steps.github_tag.outputs.tag }}"
+                  title: "${{ github.ref_name }}"
                 });
                 await github.rest.issues.createMilestone({
                   owner: context.repo.owner,
