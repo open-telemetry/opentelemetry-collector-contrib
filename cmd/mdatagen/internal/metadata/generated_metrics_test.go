@@ -72,7 +72,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordDefaultMetricDataPoint(ts, 1, "attr-val", 1, AttributeEnumAttr(1))
+			mb.RecordDefaultMetricDataPoint(ts, 1, "attr-val", 1, AttributeEnumAttr(1), []any{"one", "two"}, map[string]any{"onek": "onev", "twok": "twov"})
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -81,7 +81,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOptionalMetricDataPoint(ts, 1, "attr-val", true)
 
-			metrics := mb.Emit(WithOptionalResourceAttr("attr-val"), WithStringEnumResourceAttrOne, WithStringResourceAttr("attr-val"))
+			metrics := mb.Emit(WithMapResourceAttr(map[string]any{"onek": "onev", "twok": "twov"}), WithOptionalResourceAttr("attr-val"), WithSliceResourceAttr([]any{"one", "two"}), WithStringEnumResourceAttrOne, WithStringResourceAttr("attr-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -92,12 +92,26 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("optional.resource.attr")
+			attrVal, ok := rm.Resource().Attributes().Get("map.resource.attr")
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MapResourceAttr.Enabled, ok)
+			if mb.resourceAttributesSettings.MapResourceAttr.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, map[string]any{"onek": "onev", "twok": "twov"}, attrVal.Map().AsRaw())
+			}
+			attrVal, ok = rm.Resource().Attributes().Get("optional.resource.attr")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.OptionalResourceAttr.Enabled, ok)
 			if mb.resourceAttributesSettings.OptionalResourceAttr.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			attrVal, ok = rm.Resource().Attributes().Get("slice.resource.attr")
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.SliceResourceAttr.Enabled, ok)
+			if mb.resourceAttributesSettings.SliceResourceAttr.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, []any{"one", "two"}, attrVal.Slice().AsRaw())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("string.enum.resource.attr")
 			attrCount++
@@ -114,7 +128,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 3)
+			assert.Equal(t, attrCount, 5)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
@@ -150,6 +164,12 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("enum_attr")
 					assert.True(t, ok)
 					assert.Equal(t, "red", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("slice_attr")
+					assert.True(t, ok)
+					assert.EqualValues(t, []any{"one", "two"}, attrVal.Slice().AsRaw())
+					attrVal, ok = dp.Attributes().Get("map_attr")
+					assert.True(t, ok)
+					assert.EqualValues(t, map[string]any{"onek": "onev", "twok": "twov"}, attrVal.Map().AsRaw())
 				case "default.metric.to_be_removed":
 					assert.False(t, validatedMetrics["default.metric.to_be_removed"], "Found a duplicate in the metrics slice: default.metric.to_be_removed")
 					validatedMetrics["default.metric.to_be_removed"] = true

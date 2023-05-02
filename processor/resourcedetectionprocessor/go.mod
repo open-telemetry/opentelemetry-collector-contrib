@@ -5,10 +5,10 @@ go 1.19
 require (
 	cloud.google.com/go/compute/metadata v0.2.3
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.13.1
-	github.com/aws/aws-sdk-go v1.44.249
+	github.com/aws/aws-sdk-go v1.44.253
 	github.com/hashicorp/consul/api v1.20.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.76.3
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.76.1
 	go.opentelemetry.io/collector/component v0.76.1
@@ -70,7 +70,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.75.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.76.3 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/panta/machineid v1.0.2 // indirect
@@ -114,4 +114,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/e
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ../../internal/metadataproviders
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)

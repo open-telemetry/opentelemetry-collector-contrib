@@ -158,12 +158,12 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
+// ResourceAttributeSettings provides common settings for a particular resource attribute.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for flinkmetricsreceiver metrics.
+// ResourceAttributesSettings provides settings for flinkmetricsreceiver resource attributes.
 type ResourceAttributesSettings struct {
 	FlinkJobName       ResourceAttributeSettings `mapstructure:"flink.job.name"`
 	FlinkResourceType  ResourceAttributeSettings `mapstructure:"flink.resource.type"`

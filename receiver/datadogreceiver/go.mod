@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.45.0-rc.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.76.3
 	github.com/stretchr/testify v1.8.2
 	github.com/vmihailenco/msgpack/v4 v4.3.12
 	go.opentelemetry.io/collector v0.76.1
@@ -60,3 +60,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
+
+retract (
+	v0.76.2
+	v0.76.1
+)

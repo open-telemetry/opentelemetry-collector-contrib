@@ -209,16 +209,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 			return p.pathParser(eL.Path)
 		}
 		if eL.Converter != nil {
-			call, err := p.newFunctionCall(invocation{
-				Function:  eL.Converter.Function,
-				Arguments: eL.Converter.Arguments,
-			})
-			if err != nil {
-				return nil, err
-			}
-			return &exprGetter[K]{
-				expr: call,
-			}, nil
+			return p.newGetterFromConverter(*eL.Converter)
 		}
 	}
 
@@ -239,4 +230,14 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 		return nil, fmt.Errorf("no value field set. This is a bug in the OpenTelemetry Transformation Language")
 	}
 	return p.evaluateMathExpression(val.MathExpression)
+}
+
+func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
+	call, err := p.newFunctionCall(invocation(c))
+	if err != nil {
+		return nil, err
+	}
+	return &exprGetter[K]{
+		expr: call,
+	}, nil
 }

@@ -32,4 +32,8 @@ require (
 	google.golang.org/protobuf v1.30.0 // indirect
 )
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)

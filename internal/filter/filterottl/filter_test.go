@@ -53,7 +53,7 @@ func Test_NewBoolExprForSpan(t *testing.T) {
 		{
 			name: "With Converter",
 			conditions: []string{
-				`IsMatch("test", "pass") == true`,
+				`IsMatch("test", "pass")`,
 			},
 			expectedResult: false,
 		},
@@ -95,7 +95,7 @@ func Test_NewBoolExprForSpanEvent(t *testing.T) {
 		{
 			name: "With Converter",
 			conditions: []string{
-				`IsMatch("test", "pass") == true`,
+				`IsMatch("test", "pass")`,
 			},
 			expectedResult: false,
 		},
@@ -137,7 +137,7 @@ func Test_NewBoolExprForMetric(t *testing.T) {
 		{
 			name: "With Converter",
 			conditions: []string{
-				`IsMatch("test", "pass") == true`,
+				`IsMatch("test", "pass")`,
 			},
 			expectedResult: false,
 		},
@@ -179,7 +179,7 @@ func Test_NewBoolExprForDataPoint(t *testing.T) {
 		{
 			name: "With Converter",
 			conditions: []string{
-				`IsMatch("test", "pass") == true`,
+				`IsMatch("test", "pass")`,
 			},
 			expectedResult: false,
 		},
@@ -221,7 +221,7 @@ func Test_NewBoolExprForLog(t *testing.T) {
 		{
 			name: "With Converter",
 			conditions: []string{
-				`IsMatch("test", "pass") == true`,
+				`IsMatch("test", "pass")`,
 			},
 			expectedResult: false,
 		},

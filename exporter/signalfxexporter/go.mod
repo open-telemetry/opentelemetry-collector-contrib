@@ -6,12 +6,12 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.76.3
 	github.com/shirou/gopsutil/v3 v3.23.3
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20230214151822-6a6813cf5bf1
@@ -92,7 +92,11 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experiment
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../pkg/translator/signalfx
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 

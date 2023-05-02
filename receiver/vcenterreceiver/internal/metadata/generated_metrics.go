@@ -192,12 +192,12 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
+// ResourceAttributeSettings provides common settings for a particular resource attribute.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for vcenterreceiver metrics.
+// ResourceAttributesSettings provides settings for vcenterreceiver resource attributes.
 type ResourceAttributesSettings struct {
 	VcenterClusterName      ResourceAttributeSettings `mapstructure:"vcenter.cluster.name"`
 	VcenterDatastoreName    ResourceAttributeSettings `mapstructure:"vcenter.datastore.name"`

@@ -52,14 +52,14 @@ func ReplaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 					updatedString := compiledPattern.ReplaceAllString(originalValue.Str(), replacement)
 					updated.PutStr(key, updatedString)
 				} else {
-					updated.PutStr(key, originalValue.Str())
+					originalValue.CopyTo(updated.PutEmpty(key))
 				}
 			case modeKey:
 				if compiledPattern.MatchString(key) {
 					updatedKey := compiledPattern.ReplaceAllLiteralString(key, replacement)
-					updated.PutStr(updatedKey, originalValue.Str())
+					originalValue.CopyTo(updated.PutEmpty(updatedKey))
 				} else {
-					updated.PutStr(key, originalValue.Str())
+					originalValue.CopyTo(updated.PutEmpty(key))
 				}
 			}
 			return true
