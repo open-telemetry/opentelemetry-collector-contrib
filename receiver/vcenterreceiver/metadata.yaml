@@ -405,7 +405,7 @@ metrics:
       aggregation: cumulative
     attributes: []
   vcenter.vm.memory.utilization:
-    enabled: true
+    enabled: false
     description: The memory utilization of the VM.
     unit: "%"
     gauge:
