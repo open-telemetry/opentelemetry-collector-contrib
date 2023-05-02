@@ -59,6 +59,9 @@ func TestLoadConfig(t *testing.T) {
 					Index:      "myindex",
 					Host:       "myhostfield",
 				},
+				Resources: map[string]interface{}{
+					"strKey": "strValue",
+				},
 			},
 		},
 		{
@@ -84,6 +87,7 @@ func TestLoadConfig(t *testing.T) {
 					Index:      "com.splunk.index",
 					Host:       "host.name",
 				},
+				Resources: map[string]interface{}{},
 			},
 		},
 	}

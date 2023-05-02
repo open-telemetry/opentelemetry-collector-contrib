@@ -412,16 +412,40 @@ func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event
 }
 
 func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {
+	var customizer func(resource pcommon.Resource)
 	if r.config.AccessTokenPassthrough {
 		accessToken := req.Header.Get("Authorization")
 		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
-			return func(resource pcommon.Resource) {
+			customizer = func(resource pcommon.Resource) {
 				resource.Attributes().PutStr(splunk.HecTokenLabel, accessTokenValue)
 			}
 		}
 	}
-	return nil
+	if len(r.config.Resources) != 0 {
+		prevCustomizer := customizer
+		customizer = func(resource pcommon.Resource) {
+			// build nested customizer function
+			if prevCustomizer != nil {
+				prevCustomizer(resource)
+			}
+			for key, val := range r.config.Resources {
+				switch v := val.(type) {
+				case int64:
+					resource.Attributes().PutInt(key, v)
+				case string:
+					resource.Attributes().PutStr(key, v)
+				case bool:
+					resource.Attributes().PutBool(key, v)
+				case float64:
+					resource.Attributes().PutDouble(key, v)
+				default:
+					r.settings.Logger.Warn("unsupported resource value type", zap.Any("value", v))
+				}
+			}
+		}
+	}
+	return customizer
 }
 
 func (r *splunkReceiver) failRequest(

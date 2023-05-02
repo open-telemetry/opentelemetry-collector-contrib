@@ -31,4 +31,6 @@ type Config struct {
 	HealthPath string `mapstructure:"health_path"`
 	// HecToOtelAttrs creates a mapping from HEC metadata to attributes.
 	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
+	// Resources are the optional metadata to be amended on all resource attributes
+	Resources map[string]interface{} `mapstructure:"resources"`
 }

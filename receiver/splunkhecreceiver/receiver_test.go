@@ -47,6 +47,32 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+func getDefaultCustomResources() map[string]interface{} {
+	return map[string]interface{}{
+		"customStr":   "customStrVal",
+		"customInt":   int64(100),
+		"customFloat": float64(200),
+		"customBool":  true,
+	}
+}
+
+func assertDefaultCustomResources(t *testing.T, got []plog.Logs, expectedResourcesLen int) {
+	require.Equal(t, 1, len(got))
+	resources := got[0].ResourceLogs()
+	assert.Equal(t, 1, resources.Len())
+	resource := resources.At(0).Resource().Attributes()
+	assert.Equal(t, expectedResourcesLen, resource.Len())
+
+	val, _ := resource.Get("customStr")
+	assert.Equal(t, "customStrVal", val.AsString())
+	val, _ = resource.Get("customInt")
+	assert.Equal(t, int64(100), val.Int())
+	val, _ = resource.Get("customFloat")
+	assert.Equal(t, float64(200), val.Double())
+	val, _ = resource.Get("customBool")
+	assert.True(t, val.Bool())
+}
+
 func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	emptyEndpointConfig := createDefaultConfig().(*Config)
@@ -170,6 +196,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.Resources = getDefaultCustomResources()
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
@@ -177,12 +204,12 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	tests := []struct {
 		name           string
 		req            *http.Request
-		assertResponse func(t *testing.T, status int, body string)
+		assertResponse func(t *testing.T, status int, body string, resultLogs []plog.Logs)
 	}{
 		{
 			name: "incorrect_method",
 			req:  httptest.NewRequest("PUT", "http://localhost/foo", nil),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body string, _ []plog.Logs) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidMethod, body)
 			},
@@ -196,7 +223,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req.Header.Set("Content-Type", "application/not-json")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body string, _ []plog.Logs) {
 				assert.Equal(t, http.StatusOK, status)
 				assert.Equal(t, responseOK, body)
 			},
@@ -211,7 +238,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body string, _ []plog.Logs) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseErrUnsupportedMetricEvent, body)
 			},
@@ -223,7 +250,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body string, _ []plog.Logs) {
 				assert.Equal(t, http.StatusUnsupportedMediaType, status)
 				assert.Equal(t, responseInvalidEncoding, body)
 			},
@@ -234,7 +261,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader([]byte{1, 2, 3, 4}))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body string, _ []plog.Logs) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidDataFormat, body)
 			},
@@ -245,7 +272,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(nil))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body string, _ []plog.Logs) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseNoData, body)
 			},
@@ -258,7 +285,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body string, _ []plog.Logs) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidDataFormat, body)
 			},
@@ -273,7 +300,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body string, _ []plog.Logs) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseErrEventRequired, body)
 			},
@@ -288,7 +315,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body string, _ []plog.Logs) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseErrEventBlank, body)
 			},
@@ -301,9 +328,10 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body string, resultLogs []plog.Logs) {
 				assert.Equal(t, http.StatusOK, status)
 				assert.Equal(t, responseOK, body)
+				assertDefaultCustomResources(t, resultLogs, 6) // message contains index and sourcetype
 			},
 		},
 		{
@@ -322,7 +350,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body string, _ []plog.Logs) {
 				assert.Equal(t, http.StatusOK, status)
 				assert.Equal(t, responseOK, body)
 			},
@@ -337,7 +365,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body string, _ []plog.Logs) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseErrGzipReader, body)
 			},
@@ -361,7 +389,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
 
-			tt.assertResponse(t, resp.StatusCode, bodyStr)
+			tt.assertResponse(t, resp.StatusCode, bodyStr, sink.AllLogs())
 		})
 	}
 }
@@ -755,6 +783,9 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0"
+			cfg.Resources = map[string]interface{}{
+				"customStr": "customStrVal",
+			}
 
 			receivedSplunkMetrics := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -1142,9 +1173,10 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		req            *http.Request
-		assertResource func(t *testing.T, got []plog.Logs)
+		name            string
+		req             *http.Request
+		customResources map[string]interface{}
+		assertResource  func(t *testing.T, got []plog.Logs)
 	}{
 		{
 			name: "all_metadata",
@@ -1156,6 +1188,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 					bytes.NewReader(msgBytes))
 				return req
 			}(),
+			customResources: map[string]interface{}{},
 			assertResource: func(t *testing.T, got []plog.Logs) {
 				require.Equal(t, 1, len(got))
 				resources := got[0].ResourceLogs()
@@ -1181,6 +1214,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 					bytes.NewReader(msgBytes))
 				return req
 			}(),
+			customResources: map[string]interface{}{},
 			assertResource: func(t *testing.T, got []plog.Logs) {
 				require.Equal(t, 1, len(got))
 				resources := got[0].ResourceLogs()
@@ -1206,6 +1240,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 					bytes.NewReader(msgBytes))
 				return req
 			}(),
+			customResources: map[string]interface{}{},
 			assertResource: func(t *testing.T, got []plog.Logs) {
 				require.Equal(t, 1, len(got))
 				resources := got[0].ResourceLogs()
@@ -1214,10 +1249,52 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 				assert.Equal(t, 0, resource.Len())
 			},
 		},
+		{
+			name: "only_custom_resources",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST",
+					"http://localhost/foo",
+					bytes.NewReader(msgBytes))
+				return req
+			}(),
+			customResources: getDefaultCustomResources(),
+			assertResource: func(t *testing.T, got []plog.Logs) {
+				assertDefaultCustomResources(t, got, 4)
+			},
+		},
+		{
+			name: "metadata_with_custom_resource",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST",
+					"http://localhost/foo?index=bar",
+					bytes.NewReader(msgBytes))
+				return req
+			}(),
+			customResources: map[string]interface{}{
+				"customStr": "customStrVal",
+			},
+			assertResource: func(t *testing.T, got []plog.Logs) {
+				require.Equal(t, 1, len(got))
+				resources := got[0].ResourceLogs()
+				assert.Equal(t, 1, resources.Len())
+				resource := resources.At(0).Resource().Attributes()
+				assert.Equal(t, 2, resource.Len())
+
+				val, _ := resource.Get("customStr")
+				assert.Equal(t, "customStrVal", val.AsString())
+				val, _ = resource.Get(config.HecToOtelAttrs.Index)
+				assert.Equal(t, "bar", val.AsString())
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
+			config.Resources = tt.customResources
 			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
 			assert.NoError(t, err)
 

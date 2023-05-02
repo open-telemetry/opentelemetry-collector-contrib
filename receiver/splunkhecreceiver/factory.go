@@ -62,6 +62,7 @@ func createDefaultConfig() component.Config {
 		},
 		RawPath:    splunk.DefaultRawPath,
 		HealthPath: splunk.DefaultHealthPath,
+		Resources:  map[string]interface{}{},
 	}
 }
 

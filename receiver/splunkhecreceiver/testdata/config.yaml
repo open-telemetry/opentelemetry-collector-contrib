@@ -11,6 +11,8 @@ splunk_hec/allsettings:
     sourcetype: "foobar"
     index: "myindex"
     host: "myhostfield"
+  resources:
+    strKey: strValue
 splunk_hec/tls:
   tls:
     cert_file: /test.crt
