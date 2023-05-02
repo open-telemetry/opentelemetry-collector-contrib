@@ -190,406 +190,406 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		DatabricksSparkBlockManagerMemoryDiskSpaceUsed: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkBlockManagerMemoryMax: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkBlockManagerMemoryOffHeapMax: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkBlockManagerMemoryOffHeapUsed: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkBlockManagerMemoryOnHeapMax: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkBlockManagerMemoryOnHeapUsed: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkBlockManagerMemoryRemaining: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkBlockManagerMemoryRemainingOffHeap: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkBlockManagerMemoryRemainingOnHeap: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkBlockManagerMemoryUsed: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkCodeGeneratorCompilationTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkCodeGeneratorGeneratedClassSize: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkCodeGeneratorGeneratedMethodSize: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkCodeGeneratorSourcecodeSize: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDagSchedulerJobsActive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDagSchedulerJobsAll: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDagSchedulerStagesFailed: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDagSchedulerStagesRunning: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDagSchedulerStagesWaiting: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitAutoVacuumCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitDeletedFilesFiltered: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitFilterListingCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitJobCommitCompleted: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitMarkerReadErrors: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitMarkerRefreshCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitMarkerRefreshErrors: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitMarkersRead: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitRepeatedListCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitUncommittedFilesFiltered: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitUntrackedFilesFound: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitVacuumCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksDirectoryCommitVacuumErrors: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksPreemptionChecksCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksPreemptionPoolsAutoexpiredCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksPreemptionPoolstarvationTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksPreemptionSchedulerOverheadTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksPreemptionTaskWastedTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksPreemptionTasksPreemptedCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesActivePools: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesBypassLaneActivePools: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesFastLaneActivePools: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesFinishedQueriesTotalTaskTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesLaneCleanupMarkedPools: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesLaneCleanupTwoPhasePoolsCleaned: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesLaneCleanupZombiePoolsCleaned: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesPreemptionSlotTransferSuccessfulPreemptionIterationsCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesPreemptionSlotTransferTasksPreemptedCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesPreemptionSlotTransferWastedTaskTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesSlotReservationGradualDecreaseCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesSlotReservationQuickDropCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesSlotReservationQuickJumpCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesSlotReservationSlotsReserved: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesSlowLaneActivePools: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkDatabricksTaskSchedulingLanesTotalquerygroupsfinished: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorDiskUsed: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMaxMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMemoryUsed: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorTotalInputBytes: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorTotalShuffleRead: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorTotalShuffleWrite: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsDirectPoolMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsJvmHeapMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsJvmOffHeapMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsMajorGcCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsMajorGcTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsMappedPoolMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsMinorGcCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsMinorGcTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsOffHeapExecutionMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsOffHeapStorageMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsOffHeapUnifiedMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsOnHeapExecutionMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsOnHeapStorageMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsOnHeapUnifiedMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsProcessTreeJvmRssMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsProcessTreeJvmVMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsProcessTreeOtherRssMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsProcessTreeOtherVMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsProcessTreePythonRssMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkExecutorMetricsProcessTreePythonVMemory: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkHiveExternalCatalogFileCacheHits: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkHiveExternalCatalogFilesDiscovered: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkHiveExternalCatalogHiveClientCalls: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkHiveExternalCatalogParallelListingJobsCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkHiveExternalCatalogPartitionsFetched: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkJobNumActiveStages: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkJobNumActiveTasks: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkJobNumCompletedStages: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkJobNumCompletedTasks: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkJobNumFailedStages: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkJobNumFailedTasks: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkJobNumSkippedStages: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkJobNumSkippedTasks: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkJobNumTasks: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkJvmCPUTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkLiveListenerBusEventsPostedCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkLiveListenerBusQueueAppStatusDroppedEventsCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkLiveListenerBusQueueAppstatusSize: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkLiveListenerBusQueueExecutorManagementDroppedEventsCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkLiveListenerBusQueueExecutormanagementSize: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkLiveListenerBusQueueSharedDroppedEventsCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkLiveListenerBusQueueSharedSize: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkLiveListenerBusQueueStreamsDroppedEventsCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkLiveListenerBusQueueStreamsSize: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkSparkSQLOperationManagerHiveOperationsCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkStageDiskBytesSpilled: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkStageExecutorRunTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkStageInputBytes: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkStageInputRecords: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkStageMemoryBytesSpilled: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkStageOutputBytes: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkStageOutputRecords: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerDagSchedulerMessageProcessingTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkSQLExecutionStreamingQueryListenerBusTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkSQLExecutionTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkSQLExecutionUISQLAppStatusListenerTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkSQLHiveThriftserverUIHiveThriftServer2listenerTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkSQLSparkSessionTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkSQLUtilExecutionListenerBusTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkStatusAppStatusListenerTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkUtilProfilerEnvTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksBackendDaemonDriverDataPlaneEventListenerTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksBackendDaemonDriverDbcEventLoggingListenerTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksPhotonPhotonCleanupListenerTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksSparkUtilExecutorTimeLoggingListenerTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksSparkUtilUsageLoggingListenerTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksSQLAdviceAdvisorListenerTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksSQLDebuggerQueryWatchdogListenerTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksSQLExecutionUIIoCacheListenerTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksSQLIoCachingRepeatedReadsEstimatorTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusQueueAppStatusListenerProcessingTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusQueueExecutorManagementListenerProcessingTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusQueueSharedListenerProcessingTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksSparkTimerLiveListenerBusQueueStreamsListenerProcessingTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		DatabricksTasksRunDuration: MetricSettings{
 			Enabled: true,
@@ -8164,21 +8164,18 @@ type MetricsBuilderConfig struct {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                                                                                                                pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                                                                                                          int                 // maximum observed number of metrics per resource.
-	resourceCapacity                                                                                                         int                 // maximum observed number of resource attributes.
-	metricsBuffer                                                                                                            pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                                                                                                component.BuildInfo // contains version information
-	resourceAttributesSettings                                                                                               ResourceAttributesSettings
-	metricDatabricksJobsActiveTotal                                                                                          metricDatabricksJobsActiveTotal
-	metricDatabricksJobsRunDuration                                                                                          metricDatabricksJobsRunDuration
+	metricsBuffer                                                                                                            pmetric.Metrics
+	buildInfo                                                                                                                component.BuildInfo
+	metricDatabricksSparkExecutorMetricsMappedPoolMemory                                                                     metricDatabricksSparkExecutorMetricsMappedPoolMemory
+	metricDatabricksSparkBlockManagerMemoryOnHeapMax                                                                         metricDatabricksSparkBlockManagerMemoryOnHeapMax
 	metricDatabricksJobsScheduleStatus                                                                                       metricDatabricksJobsScheduleStatus
+	metricDatabricksTasksScheduleStatus                                                                                      metricDatabricksTasksScheduleStatus
 	metricDatabricksJobsTotal                                                                                                metricDatabricksJobsTotal
 	metricDatabricksSparkBlockManagerMemoryDiskSpaceUsed                                                                     metricDatabricksSparkBlockManagerMemoryDiskSpaceUsed
 	metricDatabricksSparkBlockManagerMemoryMax                                                                               metricDatabricksSparkBlockManagerMemoryMax
 	metricDatabricksSparkBlockManagerMemoryOffHeapMax                                                                        metricDatabricksSparkBlockManagerMemoryOffHeapMax
 	metricDatabricksSparkBlockManagerMemoryOffHeapUsed                                                                       metricDatabricksSparkBlockManagerMemoryOffHeapUsed
-	metricDatabricksSparkBlockManagerMemoryOnHeapMax                                                                         metricDatabricksSparkBlockManagerMemoryOnHeapMax
+	metricDatabricksSparkExecutorMetricsMinorGcCount                                                                         metricDatabricksSparkExecutorMetricsMinorGcCount
 	metricDatabricksSparkBlockManagerMemoryOnHeapUsed                                                                        metricDatabricksSparkBlockManagerMemoryOnHeapUsed
 	metricDatabricksSparkBlockManagerMemoryRemaining                                                                         metricDatabricksSparkBlockManagerMemoryRemaining
 	metricDatabricksSparkBlockManagerMemoryRemainingOffHeap                                                                  metricDatabricksSparkBlockManagerMemoryRemainingOffHeap
@@ -8222,7 +8219,7 @@ type MetricsBuilder struct {
 	metricDatabricksSparkDatabricksTaskSchedulingLanesPreemptionSlotTransferSuccessfulPreemptionIterationsCount              metricDatabricksSparkDatabricksTaskSchedulingLanesPreemptionSlotTransferSuccessfulPreemptionIterationsCount
 	metricDatabricksSparkDatabricksTaskSchedulingLanesPreemptionSlotTransferTasksPreemptedCount                              metricDatabricksSparkDatabricksTaskSchedulingLanesPreemptionSlotTransferTasksPreemptedCount
 	metricDatabricksSparkDatabricksTaskSchedulingLanesPreemptionSlotTransferWastedTaskTime                                   metricDatabricksSparkDatabricksTaskSchedulingLanesPreemptionSlotTransferWastedTaskTime
-	metricDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationGradualDecreaseCount                                    metricDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationGradualDecreaseCount
+	metricDatabricksSparkExecutorMetricsMinorGcTime                                                                          metricDatabricksSparkExecutorMetricsMinorGcTime
 	metricDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationQuickDropCount                                          metricDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationQuickDropCount
 	metricDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationQuickJumpCount                                          metricDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationQuickJumpCount
 	metricDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationSlotsReserved                                           metricDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationSlotsReserved
@@ -8239,9 +8236,9 @@ type MetricsBuilder struct {
 	metricDatabricksSparkExecutorMetricsJvmOffHeapMemory                                                                     metricDatabricksSparkExecutorMetricsJvmOffHeapMemory
 	metricDatabricksSparkExecutorMetricsMajorGcCount                                                                         metricDatabricksSparkExecutorMetricsMajorGcCount
 	metricDatabricksSparkExecutorMetricsMajorGcTime                                                                          metricDatabricksSparkExecutorMetricsMajorGcTime
-	metricDatabricksSparkExecutorMetricsMappedPoolMemory                                                                     metricDatabricksSparkExecutorMetricsMappedPoolMemory
-	metricDatabricksSparkExecutorMetricsMinorGcCount                                                                         metricDatabricksSparkExecutorMetricsMinorGcCount
-	metricDatabricksSparkExecutorMetricsMinorGcTime                                                                          metricDatabricksSparkExecutorMetricsMinorGcTime
+	metricDatabricksSparkLiveListenerBusQueueExecutormanagementSize                                                          metricDatabricksSparkLiveListenerBusQueueExecutormanagementSize
+	metricDatabricksJobsRunDuration                                                                                          metricDatabricksJobsRunDuration
+	metricDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationGradualDecreaseCount                                    metricDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationGradualDecreaseCount
 	metricDatabricksSparkExecutorMetricsOffHeapExecutionMemory                                                               metricDatabricksSparkExecutorMetricsOffHeapExecutionMemory
 	metricDatabricksSparkExecutorMetricsOffHeapStorageMemory                                                                 metricDatabricksSparkExecutorMetricsOffHeapStorageMemory
 	metricDatabricksSparkExecutorMetricsOffHeapUnifiedMemory                                                                 metricDatabricksSparkExecutorMetricsOffHeapUnifiedMemory
@@ -8273,7 +8270,7 @@ type MetricsBuilder struct {
 	metricDatabricksSparkLiveListenerBusQueueAppStatusDroppedEventsCount                                                     metricDatabricksSparkLiveListenerBusQueueAppStatusDroppedEventsCount
 	metricDatabricksSparkLiveListenerBusQueueAppstatusSize                                                                   metricDatabricksSparkLiveListenerBusQueueAppstatusSize
 	metricDatabricksSparkLiveListenerBusQueueExecutorManagementDroppedEventsCount                                            metricDatabricksSparkLiveListenerBusQueueExecutorManagementDroppedEventsCount
-	metricDatabricksSparkLiveListenerBusQueueExecutormanagementSize                                                          metricDatabricksSparkLiveListenerBusQueueExecutormanagementSize
+	metricDatabricksJobsActiveTotal                                                                                          metricDatabricksJobsActiveTotal
 	metricDatabricksSparkLiveListenerBusQueueSharedDroppedEventsCount                                                        metricDatabricksSparkLiveListenerBusQueueSharedDroppedEventsCount
 	metricDatabricksSparkLiveListenerBusQueueSharedSize                                                                      metricDatabricksSparkLiveListenerBusQueueSharedSize
 	metricDatabricksSparkLiveListenerBusQueueStreamsDroppedEventsCount                                                       metricDatabricksSparkLiveListenerBusQueueStreamsDroppedEventsCount
@@ -8309,7 +8306,10 @@ type MetricsBuilder struct {
 	metricDatabricksSparkTimerLiveListenerBusQueueSharedListenerProcessingTime                                               metricDatabricksSparkTimerLiveListenerBusQueueSharedListenerProcessingTime
 	metricDatabricksSparkTimerLiveListenerBusQueueStreamsListenerProcessingTime                                              metricDatabricksSparkTimerLiveListenerBusQueueStreamsListenerProcessingTime
 	metricDatabricksTasksRunDuration                                                                                         metricDatabricksTasksRunDuration
-	metricDatabricksTasksScheduleStatus                                                                                      metricDatabricksTasksScheduleStatus
+	startTime                                                                                                                pcommon.Timestamp
+	metricsCapacity                                                                                                          int
+	resourceCapacity                                                                                                         int
+	resourceAttributesSettings                                                                                               ResourceAttributesSettings
 }
 
 // metricBuilderOption applies changes to default metrics builder.

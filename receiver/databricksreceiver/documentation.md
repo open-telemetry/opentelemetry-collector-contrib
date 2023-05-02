@@ -58,6 +58,49 @@ A snapshot of the total number of jobs registered in the Databricks instance tak
 | ---- | ----------- | ---------- |
 | {jobs} | Gauge | Int |
 
+### databricks.tasks.run.duration
+
+The execution duration in milliseconds per completed task
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| job.id | The numeric ID of the Databricks job | Any Int |
+| task.id | The name of the Databricks task | Any Str |
+
+### databricks.tasks.schedule.status
+
+A snapshot of the pause/run status per task taken at each scrape
+
+0=PAUSED, 1=UNPAUSED, 2=NOT_SCHEDULED
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| job.id | The numeric ID of the Databricks job | Any Int |
+| task.id | The name of the Databricks task | Any Str |
+| task.type | The type of the Databricks task | Str: ``NotebookTask``, ``SparkJarTask``, ``SparkPythonTask``, ``PipelineTask``, ``PythonWheelTask``, ``SparkSubmitTask`` |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
 ### databricks.spark.block_manager.memory.disk_space.used
 
 n/a
@@ -2136,44 +2179,11 @@ n/a
 | ---- | ----------- | ------ |
 | spark.app.id | The ID of the Spark application | Any Str |
 
-### databricks.tasks.run.duration
-
-The execution duration in milliseconds per completed task
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| job.id | The numeric ID of the Databricks job | Any Int |
-| task.id | The name of the Databricks task | Any Str |
-
-### databricks.tasks.schedule.status
-
-A snapshot of the pause/run status per task taken at each scrape
-
-0=PAUSED, 1=UNPAUSED, 2=NOT_SCHEDULED
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {status} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| job.id | The numeric ID of the Databricks job | Any Int |
-| task.id | The name of the Databricks task | Any Str |
-| task.type | The type of the Databricks task | Str: ``NotebookTask``, ``SparkJarTask``, ``SparkPythonTask``, ``PipelineTask``, ``PythonWheelTask``, ``SparkSubmitTask`` |
-
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | databricks.cluster.id | The ID of the Databricks cluster | Any Str | true |
 | databricks.instance.name | The name of the Databricks instance as defined by the value of the "instance_name" field in the config | Any Str | true |
-| spark.app.id | The ID of the Spark app | Any Str | true |
+| spark.app.id | The ID of the Spark cluster app | Any Str | true |
 | spark.cluster.name | The name of the Spark cluster | Any Str | true |

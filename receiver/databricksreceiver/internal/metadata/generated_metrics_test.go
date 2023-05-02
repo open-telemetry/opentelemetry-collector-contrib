@@ -74,539 +74,405 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordDatabricksJobsTotalDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkBlockManagerMemoryDiskSpaceUsedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkBlockManagerMemoryMaxDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkBlockManagerMemoryOffHeapMaxDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkBlockManagerMemoryOffHeapUsedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkBlockManagerMemoryOnHeapMaxDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkBlockManagerMemoryOnHeapUsedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkBlockManagerMemoryRemainingDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkBlockManagerMemoryRemainingOffHeapDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkBlockManagerMemoryRemainingOnHeapDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkBlockManagerMemoryUsedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkCodeGeneratorCompilationTimeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkCodeGeneratorGeneratedClassSizeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkCodeGeneratorGeneratedMethodSizeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkCodeGeneratorSourcecodeSizeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDagSchedulerJobsActiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDagSchedulerJobsAllDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDagSchedulerStagesFailedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDagSchedulerStagesRunningDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDagSchedulerStagesWaitingDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitAutoVacuumCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitDeletedFilesFilteredDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitFilterListingCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitJobCommitCompletedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitMarkerReadErrorsDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitMarkerRefreshCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitMarkerRefreshErrorsDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitMarkersReadDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitRepeatedListCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitUncommittedFilesFilteredDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitUntrackedFilesFoundDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitVacuumCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksDirectoryCommitVacuumErrorsDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksPreemptionChecksCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksPreemptionPoolsAutoexpiredCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksPreemptionPoolstarvationTimeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksPreemptionSchedulerOverheadTimeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksPreemptionTaskWastedTimeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksPreemptionTasksPreemptedCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesActivePoolsDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesBypassLaneActivePoolsDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesFastLaneActivePoolsDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesFinishedQueriesTotalTaskTimeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesLaneCleanupMarkedPoolsDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesLaneCleanupTwoPhasePoolsCleanedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesLaneCleanupZombiePoolsCleanedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesPreemptionSlotTransferSuccessfulPreemptionIterationsCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesPreemptionSlotTransferTasksPreemptedCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesPreemptionSlotTransferWastedTaskTimeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationGradualDecreaseCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationQuickDropCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationQuickJumpCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesSlotReservationSlotsReservedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesSlowLaneActivePoolsDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkDatabricksTaskSchedulingLanesTotalquerygroupsfinishedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorDiskUsedDataPoint(ts, 1, "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMaxMemoryDataPoint(ts, 1, "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMemoryUsedDataPoint(ts, 1, "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorTotalInputBytesDataPoint(ts, 1, "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorTotalShuffleReadDataPoint(ts, 1, "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorTotalShuffleWriteDataPoint(ts, 1, "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsDirectPoolMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsJvmHeapMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsJvmOffHeapMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsMajorGcCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsMajorGcTimeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsMappedPoolMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsMinorGcCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsMinorGcTimeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsOffHeapExecutionMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsOffHeapStorageMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsOffHeapUnifiedMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsOnHeapExecutionMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsOnHeapStorageMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsOnHeapUnifiedMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsProcessTreeJvmRssMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsProcessTreeJvmVMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsProcessTreeOtherRssMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsProcessTreeOtherVMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsProcessTreePythonRssMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkExecutorMetricsProcessTreePythonVMemoryDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkHiveExternalCatalogFileCacheHitsDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkHiveExternalCatalogFilesDiscoveredDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkHiveExternalCatalogHiveClientCallsDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkHiveExternalCatalogParallelListingJobsCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkHiveExternalCatalogPartitionsFetchedDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkJobNumActiveStagesDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkJobNumActiveTasksDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkJobNumCompletedStagesDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkJobNumCompletedTasksDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkJobNumFailedStagesDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkJobNumFailedTasksDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkJobNumSkippedStagesDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkJobNumSkippedTasksDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkJobNumTasksDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkJvmCPUTimeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkLiveListenerBusEventsPostedCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkLiveListenerBusQueueAppStatusDroppedEventsCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkLiveListenerBusQueueAppstatusSizeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkLiveListenerBusQueueExecutorManagementDroppedEventsCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkLiveListenerBusQueueExecutormanagementSizeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkLiveListenerBusQueueSharedDroppedEventsCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkLiveListenerBusQueueSharedSizeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkLiveListenerBusQueueStreamsDroppedEventsCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkLiveListenerBusQueueStreamsSizeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkSparkSQLOperationManagerHiveOperationsCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkStageDiskBytesSpilledDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkStageExecutorRunTimeDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkStageInputBytesDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkStageInputRecordsDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkStageMemoryBytesSpilledDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkStageOutputBytesDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkStageOutputRecordsDataPoint(ts, 1, "attr-val", 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerDagSchedulerMessageProcessingTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkSQLExecutionStreamingQueryListenerBusTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkSQLExecutionTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkSQLExecutionUISQLAppStatusListenerTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkSQLHiveThriftserverUIHiveThriftServer2listenerTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkSQLSparkSessionTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkSQLUtilExecutionListenerBusTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkStatusAppStatusListenerTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingApacheSparkUtilProfilerEnvTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksBackendDaemonDriverDataPlaneEventListenerTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksBackendDaemonDriverDbcEventLoggingListenerTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksPhotonPhotonCleanupListenerTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksSparkUtilExecutorTimeLoggingListenerTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksSparkUtilUsageLoggingListenerTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksSQLAdviceAdvisorListenerTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksSQLDebuggerQueryWatchdogListenerTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksSQLExecutionUIIoCacheListenerTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusListenerProcessingDatabricksSQLIoCachingRepeatedReadsEstimatorTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusQueueAppStatusListenerProcessingTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusQueueExecutorManagementListenerProcessingTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusQueueSharedListenerProcessingTimeDataPoint(ts, 1, "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDatabricksSparkTimerLiveListenerBusQueueStreamsListenerProcessingTimeDataPoint(ts, 1, "attr-val")
 

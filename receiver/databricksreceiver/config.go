@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/databricksreceiver/internal/metadata"
 )
 
 func createDefaultConfig() component.Config {
@@ -30,6 +32,7 @@ func createDefaultConfig() component.Config {
 	scs.CollectionInterval = time.Second * 30
 	return &Config{
 		ScraperControllerSettings: scs,
+		Metrics:                   metadata.DefaultMetricsSettings(),
 	}
 }
 
@@ -40,7 +43,8 @@ type Config struct {
 	SparkOrgID                              string `mapstructure:"spark_org_id"`
 	SparkEndpoint                           string `mapstructure:"spark_endpoint"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	SparkUIPort                             int `mapstructure:"spark_ui_port"`
+	SparkUIPort                             int                      `mapstructure:"spark_ui_port"`
+	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 }
 
 func (c *Config) Validate() error {
