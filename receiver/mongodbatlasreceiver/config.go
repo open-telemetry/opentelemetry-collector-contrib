@@ -96,7 +96,7 @@ type AccessLogsConfig struct {
 	AuthResult   *bool           `mapstructure:"auth_result"`
 }
 
-func (pc *ProjectConfig) populateIncludesAndExcludes() *ProjectConfig {
+func (pc *ProjectConfig) populateIncludesAndExcludes() {
 	pc.includesByClusterName = map[string]struct{}{}
 	for _, inclusion := range pc.IncludeClusters {
 		pc.includesByClusterName[inclusion] = struct{}{}
@@ -106,8 +106,6 @@ func (pc *ProjectConfig) populateIncludesAndExcludes() *ProjectConfig {
 	for _, exclusion := range pc.ExcludeClusters {
 		pc.excludesByClusterName[exclusion] = struct{}{}
 	}
-
-	return pc
 }
 
 var (

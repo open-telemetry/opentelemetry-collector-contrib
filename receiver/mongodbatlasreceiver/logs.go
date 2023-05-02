@@ -177,7 +177,7 @@ func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, proje
 func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) ([]mongodbatlas.Cluster, error) {
 	include, exclude := projectCfg.IncludeClusters, projectCfg.ExcludeClusters
 	whitelist := false
-	clusterNameSet := map[string]struct{}{}
+	var clusterNameSet map[string]struct{}
 	// check to include or exclude clusters
 	switch {
 	// keep all clusters if include and exclude are not specified

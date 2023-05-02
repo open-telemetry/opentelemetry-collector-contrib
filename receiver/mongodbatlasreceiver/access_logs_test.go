@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -120,7 +119,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 
 	var logBody map[string]interface{}
 	assert.NoError(t, json.Unmarshal([]byte(inputLogs[0].LogLine), &logBody))
-	lr.Body().SetEmptyMap().FromRaw(logBody)
+	assert.NoError(t, lr.Body().SetEmptyMap().FromRaw(logBody))
 
 	// Second log is an example of a failure, and tests that the timestamp is missing from the log line
 	lr = records.AppendEmpty()
@@ -142,7 +141,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 
 	logBody = map[string]interface{}{}
 	assert.NoError(t, json.Unmarshal([]byte(inputLogs[1].LogLine), &logBody))
-	lr.Body().SetEmptyMap().FromRaw(logBody)
+	assert.NoError(t, lr.Body().SetEmptyMap().FromRaw(logBody))
 
 	logs := transformAccessLogs(now, inputLogs, proj, cluster, zaptest.NewLogger(t))
 

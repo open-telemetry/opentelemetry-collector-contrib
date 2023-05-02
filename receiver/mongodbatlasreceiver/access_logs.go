@@ -233,12 +233,12 @@ func getTimestamp(log *mongodbatlas.AccessLogs, body map[string]interface{}) (ti
 	if err != nil {
 		// The documentation claims ISO8601/RFC3339, but the API has been observed returning timestamps in UnixDate format
 		// UnixDate looks like Wed Apr 26 02:38:56 GMT 2023
-		t, err2 := time.Parse(time.UnixDate, log.Timestamp)
+		unixDate, err2 := time.Parse(time.UnixDate, log.Timestamp)
 		if err2 != nil {
 			// Return the original error as the documentation claims ISO8601
 			return time.Time{}, err
 		}
-		return t, nil
+		return unixDate, nil
 	}
 	return t, nil
 }
@@ -269,7 +269,11 @@ func transformAccessLogs(now pcommon.Timestamp, accessLogs []*mongodbatlas.Acces
 			logger.Error("unable to unmarshal access log into body string", zap.Error(err))
 			continue
 		}
-		logRecord.Body().SetEmptyMap().FromRaw(logBody)
+		err = logRecord.Body().SetEmptyMap().FromRaw(logBody)
+		if err != nil {
+			logger.Error("unable to set log record body as map", zap.Error(err))
+			logRecord.Body().SetStr(accessLog.LogLine)
+		}
 
 		ts, err := getTimestamp(accessLog, logBody)
 		if err != nil {
