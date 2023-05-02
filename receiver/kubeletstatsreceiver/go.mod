@@ -6,13 +6,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.76.3
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.76.2-0.20230502184615-d93102a4c623
-	go.opentelemetry.io/collector/component v0.76.2-0.20230502184615-d93102a4c623
-	go.opentelemetry.io/collector/confmap v0.76.2-0.20230502184615-d93102a4c623
-	go.opentelemetry.io/collector/consumer v0.76.2-0.20230502184615-d93102a4c623
+	go.opentelemetry.io/collector v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/component v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/confmap v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/consumer v0.76.2-0.20230502195822-4df44379e094
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230502184615-d93102a4c623
-	go.opentelemetry.io/collector/receiver v0.76.2-0.20230502184615-d93102a4c623
-	go.opentelemetry.io/collector/semconv v0.76.2-0.20230502184615-d93102a4c623
+	go.opentelemetry.io/collector/receiver v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/semconv v0.76.2-0.20230502195822-4df44379e094
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.26.3
 	k8s.io/apimachinery v0.26.3
@@ -52,8 +52,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/exporter v0.76.2-0.20230502184615-d93102a4c623 // indirect
-	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502184615-d93102a4c623 // indirect
+	go.opentelemetry.io/collector/exporter v0.76.2-0.20230502195822-4df44379e094 // indirect
+	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502195822-4df44379e094 // indirect
 	go.opentelemetry.io/otel v1.15.0 // indirect
 	go.opentelemetry.io/otel/metric v0.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.15.0 // indirect

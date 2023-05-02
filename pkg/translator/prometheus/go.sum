@@ -33,8 +33,8 @@ github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ
 github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502184615-d93102a4c623 h1:uJ9vHK+otwbWhsdOiwYcpQ8sXVX/lENztcwzYjVpixE=
-go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502184615-d93102a4c623/go.mod h1:/kVAsGUCyJXIDSgHftCN63QiwAEVHRLX2Kh/S+dqgHY=
+go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502195822-4df44379e094 h1:Y78cKe1FNHjYy0vLSmbvz8vIOjcT1nZ2KODGICAizfY=
+go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502195822-4df44379e094/go.mod h1:/kVAsGUCyJXIDSgHftCN63QiwAEVHRLX2Kh/S+dqgHY=
 go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230502184615-d93102a4c623 h1:M4DWsOmwOjBayULWO4fqlu9fjptI1NWEA4dUgeXEo6k=
 go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230502184615-d93102a4c623/go.mod h1:ffgMfWatUDXHIMW7PQguHeCIKUmdSpcLyuGZ7KR7TyY=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=

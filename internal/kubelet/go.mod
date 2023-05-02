@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.76.3
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.76.2-0.20230502184615-d93102a4c623
+	go.opentelemetry.io/collector v0.76.2-0.20230502195822-4df44379e094
 	go.uber.org/zap v1.24.0
 	k8s.io/client-go v0.26.3
 )

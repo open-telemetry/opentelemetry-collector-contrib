@@ -13,16 +13,16 @@ require (
 	github.com/prometheus/common v0.42.0
 	github.com/prometheus/prometheus v0.43.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.76.2-0.20230502184615-d93102a4c623
-	go.opentelemetry.io/collector/component v0.76.2-0.20230502184615-d93102a4c623
-	go.opentelemetry.io/collector/confmap v0.76.2-0.20230502184615-d93102a4c623
-	go.opentelemetry.io/collector/consumer v0.76.2-0.20230502184615-d93102a4c623
-	go.opentelemetry.io/collector/exporter v0.76.2-0.20230502184615-d93102a4c623
-	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502184615-d93102a4c623
+	go.opentelemetry.io/collector v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/component v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/confmap v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/consumer v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/exporter v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502195822-4df44379e094
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230502184615-d93102a4c623
 	go.opentelemetry.io/collector/processor/batchprocessor v0.76.2-0.20230502195822-4df44379e094
-	go.opentelemetry.io/collector/receiver v0.76.2-0.20230502184615-d93102a4c623
-	go.opentelemetry.io/collector/semconv v0.76.2-0.20230502184615-d93102a4c623
+	go.opentelemetry.io/collector/receiver v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/semconv v0.76.2-0.20230502195822-4df44379e094
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v2 v2.4.0
