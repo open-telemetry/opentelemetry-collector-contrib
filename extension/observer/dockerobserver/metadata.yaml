@@ -1,4 +1,4 @@
-type: dockerobserver
+type: docker_observer
 
 status:
   class: extension
