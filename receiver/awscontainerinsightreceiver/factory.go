@@ -46,6 +46,9 @@ const (
 	// Don't tag pod full name by default
 	defaultAddFullPodNameMetricLabel = false
 
+	// Don't tag container name by default
+	defaultAddContainerNameMetricLabel = false
+
 	// Rely on EC2 tags to auto-detect cluster name by default
 	defaultClusterName = ""
 
@@ -64,13 +67,14 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig returns a default config for the receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		CollectionInterval:        defaultCollectionInterval,
-		ContainerOrchestrator:     defaultContainerOrchestrator,
-		TagService:                defaultTagService,
-		PrefFullPodName:           defaultPrefFullPodName,
-		AddFullPodNameMetricLabel: defaultAddFullPodNameMetricLabel,
-		ClusterName:               defaultClusterName,
-		LeaderLockName:            defaultLeaderLockName,
+		CollectionInterval:          defaultCollectionInterval,
+		ContainerOrchestrator:       defaultContainerOrchestrator,
+		TagService:                  defaultTagService,
+		PrefFullPodName:             defaultPrefFullPodName,
+		AddFullPodNameMetricLabel:   defaultAddFullPodNameMetricLabel,
+		AddContainerNameMetricLabel: defaultAddContainerNameMetricLabel,
+		ClusterName:                 defaultClusterName,
+		LeaderLockName:              defaultLeaderLockName,
 	}
 }
 
