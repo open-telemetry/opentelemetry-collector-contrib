@@ -61,7 +61,7 @@ github.com/prometheus/procfs v0.9.0 h1:wzCHvIvM5SxWqYvwgVL7yJY8Lz3PKn49KQtpgMYJf
 github.com/prometheus/procfs v0.9.0/go.mod h1:+pB4zwohETzFnmlpe6yd2lSc+0/46IYZRB/chUwxUZY=
 github.com/prometheus/prometheus v0.42.0 h1:G769v8covTkOiNckXFIwLx01XE04OE6Fr0JPA0oR2nI=
 github.com/prometheus/prometheus v0.42.0/go.mod h1:Pfqb/MLnnR2KK+0vchiaH39jXxvLMBk+3lnIGP4N7Vk=
-github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZVejAe8=
+github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
@@ -72,12 +72,12 @@ github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ
 github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector/featuregate v0.76.1 h1:F9jP6cpIu446GsjsvHjzt4rC/ZJ/IPSPbXLzEngxUa8=
-go.opentelemetry.io/collector/featuregate v0.76.1/go.mod h1:stbsuyEexJF0EyVB3AgMs4mEuGvP7MDj3fsNeNdGDMs=
-go.opentelemetry.io/collector/pdata v1.0.0-rcv0011 h1:7lT0vseP89mHtUpvgmWYRvQZ0eY+SHbVsnXY20xkoMg=
-go.opentelemetry.io/collector/pdata v1.0.0-rcv0011/go.mod h1:9vrXSQBeMRrdfGt9oMgYweqERJ8adaiQjN6LSbqRMMA=
-go.opentelemetry.io/collector/semconv v0.76.1 h1:cY5z4uXLB15AuU7GkJFfFCTD82l83fqK7DBRqQ7sZCY=
-go.opentelemetry.io/collector/semconv v0.76.1/go.mod h1:eRAIvw3omXfvZxt1GAt9o4R/NFGSruOVkZ6JiJwPo6U=
+go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502184615-d93102a4c623 h1:uJ9vHK+otwbWhsdOiwYcpQ8sXVX/lENztcwzYjVpixE=
+go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502184615-d93102a4c623/go.mod h1:/kVAsGUCyJXIDSgHftCN63QiwAEVHRLX2Kh/S+dqgHY=
+go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230502184615-d93102a4c623 h1:M4DWsOmwOjBayULWO4fqlu9fjptI1NWEA4dUgeXEo6k=
+go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230502184615-d93102a4c623/go.mod h1:ffgMfWatUDXHIMW7PQguHeCIKUmdSpcLyuGZ7KR7TyY=
+go.opentelemetry.io/collector/semconv v0.76.2-0.20230502184615-d93102a4c623 h1:dO9VF0ZrGZ6kgklGHqqEzYlBAPQy7wKKjoYv3Lvm/+0=
+go.opentelemetry.io/collector/semconv v0.76.2-0.20230502184615-d93102a4c623/go.mod h1:lazBA42nqZPNPWDMiqWfr5eIVeNgRmoLDbQmjXKcm70=
 go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=
 go.uber.org/atomic v1.10.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=
 go.uber.org/goleak v1.2.0 h1:xqgm/S+aQvhWFTtR0XK3Jvg7z8kGV8P4X14IzwN3Eqk=
