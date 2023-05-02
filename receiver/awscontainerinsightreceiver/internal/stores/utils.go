@@ -143,11 +143,15 @@ func TagMetricSource(metric CIMetric) {
 	}
 }
 
-func AddKubernetesInfo(metric CIMetric, kubernetesBlob map[string]interface{}) {
-	needMoveToKubernetes := map[string]string{ci.ContainerNamekey: "container_name", ci.K8sPodNameKey: "pod_name",
-		ci.PodIDKey: "pod_id"}
-
+func AddKubernetesInfo(metric CIMetric, kubernetesBlob map[string]interface{}, retainContainerNameTag bool) {
+	needMoveToKubernetes := map[string]string{ci.K8sPodNameKey: "pod_name", ci.PodIDKey: "pod_id"}
 	needCopyToKubernetes := map[string]string{ci.K8sNamespace: "namespace_name", ci.TypeService: "service_name", ci.NodeNameKey: "host"}
+
+	if retainContainerNameTag {
+		needCopyToKubernetes[ci.ContainerNamekey] = "container_name"
+	} else {
+		needMoveToKubernetes[ci.ContainerNamekey] = "container_name"
+	}
 
 	for k, v := range needMoveToKubernetes {
 		if attVal := metric.GetTag(k); attVal != "" {

@@ -31,7 +31,8 @@ receivers:
     container_orchestrator: eks
     add_service_as_attribute: true 
     prefer_full_pod_name: false 
-    add_full_pod_name_metric_label: false 
+    add_full_pod_name_metric_label: false
+    add_container_name_metric_label: false 
 ```
 There is no need to provide any parameters since they are all optional. 
 
@@ -54,6 +55,10 @@ The "PodName" attribute is set based on the name of the relevant controllers lik
 **add_full_pod_name_metric_label (optional)**
 
 The "FullPodName" attribute is the pod name including suffix. If false FullPodName label is not added. The default value is false
+
+**add_container_name_metric_label (optional)**
+
+The "ContainerName" attribute is the name of the container. If false ContainerName label is not added. The default value is false
 
 **cluster_name (optional)**
 

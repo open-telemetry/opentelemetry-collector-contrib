@@ -86,8 +86,38 @@ func TestUtils_addKubernetesInfo(t *testing.T) {
 	}
 
 	kubernetesBlob := map[string]interface{}{}
-	AddKubernetesInfo(metric, kubernetesBlob)
+	AddKubernetesInfo(metric, kubernetesBlob, false)
 	assert.Equal(t, "", metric.GetTag(ci.ContainerNamekey))
+	assert.Equal(t, "", metric.GetTag(ci.K8sPodNameKey))
+	assert.Equal(t, "", metric.GetTag(ci.PodIDKey))
+	assert.Equal(t, "testNamespace", metric.GetTag(ci.K8sNamespace))
+	assert.Equal(t, "testService", metric.GetTag(ci.TypeService))
+	assert.Equal(t, "testNode", metric.GetTag(ci.NodeNameKey))
+
+	expectedKubeBlob := map[string]interface{}{"container_name": "testContainer", "host": "testNode", "namespace_name": "testNamespace", "pod_id": "123", "pod_name": "testPod", "service_name": "testService"}
+	assert.Equal(t, expectedKubeBlob, kubernetesBlob)
+}
+
+func TestUtils_addKubernetesInfoRetainContainerNameTag(t *testing.T) {
+	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
+	tags := map[string]string{
+		ci.ContainerNamekey: "testContainer",
+		ci.K8sPodNameKey:    "testPod",
+		ci.PodIDKey:         "123",
+		ci.K8sNamespace:     "testNamespace",
+		ci.TypeService:      "testService",
+		ci.NodeNameKey:      "testNode",
+		ci.Timestamp:        strconv.FormatInt(time.Now().UnixNano(), 10),
+	}
+
+	metric := &mockCIMetric{
+		tags:   tags,
+		fields: fields,
+	}
+
+	kubernetesBlob := map[string]interface{}{}
+	AddKubernetesInfo(metric, kubernetesBlob, true)
+	assert.Equal(t, "testContainer", metric.GetTag(ci.ContainerNamekey))
 	assert.Equal(t, "", metric.GetTag(ci.K8sPodNameKey))
 	assert.Equal(t, "", metric.GetTag(ci.PodIDKey))
 	assert.Equal(t, "testNamespace", metric.GetTag(ci.K8sNamespace))
