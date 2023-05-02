@@ -646,3 +646,391 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
