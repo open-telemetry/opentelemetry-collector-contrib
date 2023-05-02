@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-
 )
 
 func TestLoadConfig(t *testing.T) {

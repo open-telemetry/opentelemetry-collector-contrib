@@ -27,14 +27,12 @@ type jqProcessor struct {
 	jqStatement string `mapstructure:"jq_statement"`
 }
 
-
 func (jq *jqProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 
 	if ld.ResourceLogs().Len() > 0 {
 		fmt.Printf("do some jq magic with %s", jq.jqStatement)
-		
+
 		return ld, nil
 	}
 	return ld, nil
 }
-

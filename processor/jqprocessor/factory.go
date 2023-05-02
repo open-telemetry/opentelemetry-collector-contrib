@@ -24,7 +24,6 @@ import (
 	"go.uber.org/zap"
 )
 
-
 func NewFactory() processor.Factory {
 
 	return processor.NewFactory(
@@ -35,8 +34,7 @@ func NewFactory() processor.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-	}
+	return &Config{}
 }
 
 func createLogsProcessor(

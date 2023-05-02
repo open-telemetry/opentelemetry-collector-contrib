@@ -119,6 +119,7 @@ body:
       - processor/filter
       - processor/groupbyattrs
       - processor/groupbytrace
+      - processor/jq
       - processor/k8sattributes
       - processor/logstransform
       - processor/metricsgeneration
