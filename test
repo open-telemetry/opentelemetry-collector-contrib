@@ -1,0 +1,453 @@
+cd cmd/mdatagen && go install .
+/Library/Developer/CommandLineTools/usr/bin/make for-all CMD="go generate ./..."
+running go generate ./... in root
+running go generate ./... in ./cmd/configschema
+running go generate ./... in ./cmd/mdatagen
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./cmd/otelcontribcol
+running go generate ./... in ./cmd/oteltestbedcol
+running go generate ./... in ./cmd/telemetrygen
+running go generate ./... in ./confmap/provider/s3provider
+running go generate ./... in ./connector/countconnector
+running go generate ./... in ./connector/servicegraphconnector
+running go generate ./... in ./connector/spanmetricsconnector
+running go generate ./... in ./examples/demo/client
+running go generate ./... in ./examples/demo/server
+running go generate ./... in ./exporter/alibabacloudlogserviceexporter
+running go generate ./... in ./exporter/awscloudwatchlogsexporter
+running go generate ./... in ./exporter/awsemfexporter
+running go generate ./... in ./exporter/awskinesisexporter
+running go generate ./... in ./exporter/awss3exporter
+templates/status.go.tmpl
+running go generate ./... in ./exporter/awsxrayexporter
+running go generate ./... in ./exporter/azuredataexplorerexporter
+running go generate ./... in ./exporter/azuremonitorexporter
+running go generate ./... in ./exporter/carbonexporter
+running go generate ./... in ./exporter/cassandraexporter
+running go generate ./... in ./exporter/clickhouseexporter
+running go generate ./... in ./exporter/coralogixexporter
+running go generate ./... in ./exporter/datadogexporter
+running go generate ./... in ./exporter/dynatraceexporter
+running go generate ./... in ./exporter/elasticsearchexporter
+running go generate ./... in ./exporter/f5cloudexporter
+running go generate ./... in ./exporter/fileexporter
+running go generate ./... in ./exporter/googlecloudexporter
+running go generate ./... in ./exporter/googlecloudpubsubexporter
+running go generate ./... in ./exporter/googlemanagedprometheusexporter
+running go generate ./... in ./exporter/influxdbexporter
+running go generate ./... in ./exporter/instanaexporter
+running go generate ./... in ./exporter/jaegerexporter
+running go generate ./... in ./exporter/jaegerthrifthttpexporter
+running go generate ./... in ./exporter/kafkaexporter
+running go generate ./... in ./exporter/loadbalancingexporter
+running go generate ./... in ./exporter/logicmonitorexporter
+running go generate ./... in ./exporter/logzioexporter
+running go generate ./... in ./exporter/lokiexporter
+templates/status.go.tmpl
+running go generate ./... in ./exporter/mezmoexporter
+running go generate ./... in ./exporter/opencensusexporter
+running go generate ./... in ./exporter/parquetexporter
+running go generate ./... in ./exporter/prometheusexporter
+running go generate ./... in ./exporter/prometheusremotewriteexporter
+running go generate ./... in ./exporter/pulsarexporter
+running go generate ./... in ./exporter/sapmexporter
+templates/status.go.tmpl
+running go generate ./... in ./exporter/sentryexporter
+running go generate ./... in ./exporter/signalfxexporter
+running go generate ./... in ./exporter/skywalkingexporter
+running go generate ./... in ./exporter/splunkhecexporter
+templates/status.go.tmpl
+running go generate ./... in ./exporter/sumologicexporter
+templates/status.go.tmpl
+running go generate ./... in ./exporter/tanzuobservabilityexporter
+templates/status.go.tmpl
+running go generate ./... in ./exporter/tencentcloudlogserviceexporter
+templates/status.go.tmpl
+running go generate ./... in ./exporter/zipkinexporter
+templates/status.go.tmpl
+running go generate ./... in ./extension/asapauthextension
+templates/status.go.tmpl
+running go generate ./... in ./extension/awsproxy
+running go generate ./... in ./extension/basicauthextension
+templates/status.go.tmpl
+running go generate ./... in ./extension/bearertokenauthextension
+templates/status.go.tmpl
+running go generate ./... in ./extension/headerssetterextension
+templates/status.go.tmpl
+running go generate ./... in ./extension/healthcheckextension
+templates/status.go.tmpl
+running go generate ./... in ./extension/httpforwarder
+templates/status.go.tmpl
+running go generate ./... in ./extension/jaegerremotesampling
+templates/status.go.tmpl
+running go generate ./... in ./extension/oauth2clientauthextension
+templates/status.go.tmpl
+running go generate ./... in ./extension/observer
+running go generate ./... in ./extension/observer/dockerobserver
+templates/status.go.tmpl
+running go generate ./... in ./extension/observer/ecsobserver
+templates/status.go.tmpl
+running go generate ./... in ./extension/observer/ecstaskobserver
+templates/status.go.tmpl
+running go generate ./... in ./extension/observer/hostobserver
+templates/status.go.tmpl
+running go generate ./... in ./extension/observer/k8sobserver
+templates/status.go.tmpl
+running go generate ./... in ./extension/oidcauthextension
+templates/status.go.tmpl
+running go generate ./... in ./extension/pprofextension
+templates/status.go.tmpl
+running go generate ./... in ./extension/sigv4authextension
+running go generate ./... in ./extension/storage
+running go generate ./... in ./internal/aws/awsutil
+running go generate ./... in ./internal/aws/containerinsight
+running go generate ./... in ./internal/aws/cwlogs
+running go generate ./... in ./internal/aws/ecsutil
+running go generate ./... in ./internal/aws/k8s
+running go generate ./... in ./internal/aws/metrics
+running go generate ./... in ./internal/aws/proxy
+running go generate ./... in ./internal/aws/xray
+running go generate ./... in ./internal/aws/xray/testdata/sampleapp
+running go generate ./... in ./internal/aws/xray/testdata/sampleserver
+running go generate ./... in ./internal/common
+running go generate ./... in ./internal/coreinternal
+running go generate ./... in ./internal/docker
+running go generate ./... in ./internal/filter
+running go generate ./... in ./internal/k8sconfig
+running go generate ./... in ./internal/kubelet
+running go generate ./... in ./internal/metadataproviders
+running go generate ./... in ./internal/sharedcomponent
+running go generate ./... in ./internal/splunk
+running go generate ./... in ./internal/tools
+running go generate ./... in ./pkg/batchperresourceattr
+running go generate ./... in ./pkg/batchpersignal
+running go generate ./... in ./pkg/experimentalmetricmetadata
+running go generate ./... in ./pkg/ottl
+running go generate ./... in ./pkg/pdatatest
+running go generate ./... in ./pkg/pdatautil
+running go generate ./... in ./pkg/resourcetotelemetry
+running go generate ./... in ./pkg/stanza
+running go generate ./... in ./pkg/translator/jaeger
+running go generate ./... in ./pkg/translator/loki
+running go generate ./... in ./pkg/translator/opencensus
+running go generate ./... in ./pkg/translator/prometheus
+running go generate ./... in ./pkg/translator/prometheusremotewrite
+running go generate ./... in ./pkg/translator/signalfx
+running go generate ./... in ./pkg/translator/zipkin
+running go generate ./... in ./pkg/winperfcounters
+running go generate ./... in ./processor/attributesprocessor
+templates/status.go.tmpl
+running go generate ./... in ./processor/cumulativetodeltaprocessor
+templates/status.go.tmpl
+running go generate ./... in ./processor/datadogprocessor
+running go generate ./... in ./processor/deltatorateprocessor
+templates/status.go.tmpl
+running go generate ./... in ./processor/filterprocessor
+templates/status.go.tmpl
+running go generate ./... in ./processor/groupbyattrsprocessor
+templates/status.go.tmpl
+running go generate ./... in ./processor/groupbytraceprocessor
+templates/status.go.tmpl
+running go generate ./... in ./processor/k8sattributesprocessor
+running go generate ./... in ./processor/logstransformprocessor
+running go generate ./... in ./processor/metricsgenerationprocessor
+running go generate ./... in ./processor/metricstransformprocessor
+running go generate ./... in ./processor/probabilisticsamplerprocessor
+running go generate ./... in ./processor/redactionprocessor
+running go generate ./... in ./processor/resourcedetectionprocessor
+templates/status.go.tmpl
+running go generate ./... in ./processor/resourceprocessor
+templates/status.go.tmpl
+running go generate ./... in ./processor/routingprocessor
+running go generate ./... in ./processor/schemaprocessor
+running go generate ./... in ./processor/servicegraphprocessor
+running go generate ./... in ./processor/spanmetricsprocessor
+running go generate ./... in ./processor/spanprocessor
+running go generate ./... in ./processor/tailsamplingprocessor
+running go generate ./... in ./processor/transformprocessor
+templates/status.go.tmpl
+running go generate ./... in ./receiver/activedirectorydsreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/aerospikereceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/apachereceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/awscloudwatchreceiver
+running go generate ./... in ./receiver/awscontainerinsightreceiver
+running go generate ./... in ./receiver/awsecscontainermetricsreceiver
+running go generate ./... in ./receiver/awsfirehosereceiver
+running go generate ./... in ./receiver/awsxrayreceiver
+running go generate ./... in ./receiver/azureblobreceiver
+running go generate ./... in ./receiver/azureeventhubreceiver
+templates/status.go.tmpl
+running go generate ./... in ./receiver/azuremonitorreceiver
+templates/status.go.tmpl
+running go generate ./... in ./receiver/bigipreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/carbonreceiver
+running go generate ./... in ./receiver/chronyreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/cloudflarereceiver
+running go generate ./... in ./receiver/cloudfoundryreceiver
+running go generate ./... in ./receiver/collectdreceiver
+running go generate ./... in ./receiver/couchdbreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/datadogreceiver
+running go generate ./... in ./receiver/dockerstatsreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/dotnetdiagnosticsreceiver
+running go generate ./... in ./receiver/elasticsearchreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/expvarreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/filelogreceiver
+running go generate ./... in ./receiver/filereceiver
+running go generate ./... in ./receiver/filestatsreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/flinkmetricsreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/fluentforwardreceiver
+running go generate ./... in ./receiver/googlecloudpubsubreceiver
+running go generate ./... in ./receiver/googlecloudspannerreceiver
+running go generate ./... in ./receiver/haproxyreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/hostmetricsreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/httpcheckreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/iisreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/influxdbreceiver
+running go generate ./... in ./receiver/jaegerreceiver
+running go generate ./... in ./receiver/jmxreceiver
+running go generate ./... in ./receiver/journaldreceiver
+running go generate ./... in ./receiver/k8sclusterreceiver
+running go generate ./... in ./receiver/k8seventsreceiver
+running go generate ./... in ./receiver/k8sobjectsreceiver
+running go generate ./... in ./receiver/kafkametricsreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/kafkareceiver
+running go generate ./... in ./receiver/kubeletstatsreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/lokireceiver
+templates/status.go.tmpl
+running go generate ./... in ./receiver/memcachedreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/mongodbatlasreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/mongodbreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/mysqlreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/nginxreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/nsxtreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/opencensusreceiver
+running go generate ./... in ./receiver/oracledbreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/otlpjsonfilereceiver
+templates/status.go.tmpl
+running go generate ./... in ./receiver/podmanreceiver
+running go generate ./... in ./receiver/postgresqlreceiver
+templates/status.go.tmpl
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/prometheusexecreceiver
+running go generate ./... in ./receiver/prometheusreceiver
+running go generate ./... in ./receiver/pulsarreceiver
+running go generate ./... in ./receiver/purefareceiver
+running go generate ./... in ./receiver/purefbreceiver
+running go generate ./... in ./receiver/rabbitmqreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/receivercreator
+running go generate ./... in ./receiver/redisreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/riakreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/saphanareceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/sapmreceiver
+running go generate ./... in ./receiver/signalfxreceiver
+templates/status.go.tmpl
+running go generate ./... in ./receiver/simpleprometheusreceiver
+running go generate ./... in ./receiver/simpleprometheusreceiver/examples/federation/prom-counter
+running go generate ./... in ./receiver/skywalkingreceiver
+running go generate ./... in ./receiver/snmpreceiver
+running go generate ./... in ./receiver/snowflakereceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/solacereceiver
+running go generate ./... in ./receiver/splunkhecreceiver
+templates/status.go.tmpl
+running go generate ./... in ./receiver/sqlqueryreceiver
+running go generate ./... in ./receiver/sqlserverreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/sshcheckreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/statsdreceiver
+running go generate ./... in ./receiver/syslogreceiver
+running go generate ./... in ./receiver/tcplogreceiver
+running go generate ./... in ./receiver/udplogreceiver
+running go generate ./... in ./receiver/vcenterreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./receiver/wavefrontreceiver
+running go generate ./... in ./receiver/webhookeventreceiver
+running go generate ./... in ./receiver/windowseventlogreceiver
+running go generate ./... in ./receiver/windowsperfcountersreceiver
+running go generate ./... in ./receiver/zipkinreceiver
+templates/status.go.tmpl
+running go generate ./... in ./receiver/zookeeperreceiver
+templates/metrics.go.tmpl
+templates/testdata/config.yaml.tmpl
+templates/metrics_test.go.tmpl
+templates/documentation.md.tmpl
+running go generate ./... in ./testbed
+running go generate ./... in ./testbed/mockdatareceivers/mockawsxrayreceiver
+running go generate ./... in ./testbed/mockdatasenders/mockdatadogagentexporter

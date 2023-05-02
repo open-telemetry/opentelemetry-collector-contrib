@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "azureeventhubreceiver"
+	Type      = "azureeventhub"
 	Stability = component.StabilityLevelAlpha
 )
