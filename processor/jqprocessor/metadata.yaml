@@ -1,0 +1,8 @@
+type: jqprocessor
+
+status:
+  class: processor
+  stability: alpha
+  pipelines: [logs]
+  distributions: [contrib]
+  warnings: []

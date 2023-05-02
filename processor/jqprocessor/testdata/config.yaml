@@ -1,0 +1,2 @@
+jqprocessor/custom:
+  jq_statement: ".arbitraryJsonArray[]"
