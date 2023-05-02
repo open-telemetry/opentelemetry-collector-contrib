@@ -47,7 +47,8 @@ The following settings are optional:
 * `hec_metadata_to_otel_attrs/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of the sourcetype field to a specific unified model attribute.
 * `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'): Specifies the mapping of the  index field to a specific unified model attribute.
 * `hec_metadata_to_otel_attrs/host` (default = 'host.name'): Specifies the mapping of the host field to a specific unified model attribute.
-Example:
+* `resources` (default: empty map): Specifies a custom map of resource attributes to inject into the events.
+* Example:
 
 ```yaml
 receivers:
@@ -63,6 +64,8 @@ receivers:
       sourcetype: "mysourcetype"
       index: "myindex"
       host: "myhost"
+    resources:
+      customKey: customVal
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
