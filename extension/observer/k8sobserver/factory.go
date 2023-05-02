@@ -24,15 +24,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-const (
-	// The value of extension "type" in configuration.
-	typeStr component.Type = "k8s_observer"
-)
-
 // NewFactory should be called to create a factory with default values.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
 		metadata.Stability,
