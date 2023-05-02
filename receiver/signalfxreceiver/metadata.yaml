@@ -1,4 +1,4 @@
-type: signalfxreceiver
+type: signalfx
 
 status:
   class: receiver

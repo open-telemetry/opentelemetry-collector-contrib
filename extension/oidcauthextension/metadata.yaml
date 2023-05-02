@@ -1,4 +1,4 @@
-type: oidcauthextension
+type: oidc
 
 status:
   class: extension

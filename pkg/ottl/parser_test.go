@@ -821,7 +821,9 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(true),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(true),
+						},
 					},
 				},
 			}),
@@ -831,13 +833,17 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(true),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(true),
+						},
 					},
 					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								ConstExpr: booleanp(false),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(false),
+								},
 							},
 						},
 					},
@@ -849,19 +855,25 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(true),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(true),
+						},
 					},
 					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								ConstExpr: booleanp(true),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(true),
+								},
 							},
 						},
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								ConstExpr: booleanp(false),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(false),
+								},
 							},
 						},
 					},
@@ -873,7 +885,9 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(true),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(true),
+						},
 					},
 				},
 				Right: []*opOrTerm{
@@ -881,7 +895,9 @@ func Test_parseWhere(t *testing.T) {
 						Operator: "or",
 						Term: &term{
 							Left: &booleanValue{
-								ConstExpr: booleanp(false),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(false),
+								},
 							},
 						},
 					},
@@ -893,13 +909,17 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(false),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(false),
+						},
 					},
 					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								ConstExpr: booleanp(true),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(true),
+								},
 							},
 						},
 					},
@@ -909,7 +929,9 @@ func Test_parseWhere(t *testing.T) {
 						Operator: "or",
 						Term: &term{
 							Left: &booleanValue{
-								ConstExpr: booleanp(false),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(false),
+								},
 							},
 						},
 					},
@@ -924,13 +946,17 @@ func Test_parseWhere(t *testing.T) {
 						SubExpr: &booleanExpression{
 							Left: &term{
 								Left: &booleanValue{
-									ConstExpr: booleanp(false),
+									ConstExpr: &constExpr{
+										Boolean: booleanp(false),
+									},
 								},
 								Right: []*opAndBooleanValue{
 									{
 										Operator: "and",
 										Value: &booleanValue{
-											ConstExpr: booleanp(true),
+											ConstExpr: &constExpr{
+												Boolean: booleanp(true),
+											},
 										},
 									},
 								},
@@ -943,7 +969,9 @@ func Test_parseWhere(t *testing.T) {
 						Operator: "or",
 						Term: &term{
 							Left: &booleanValue{
-								ConstExpr: booleanp(false),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(false),
+								},
 							},
 						},
 					},
@@ -955,7 +983,9 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(false),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(false),
+						},
 					},
 					Right: []*opAndBooleanValue{
 						{
@@ -964,7 +994,9 @@ func Test_parseWhere(t *testing.T) {
 								SubExpr: &booleanExpression{
 									Left: &term{
 										Left: &booleanValue{
-											ConstExpr: booleanp(true),
+											ConstExpr: &constExpr{
+												Boolean: booleanp(true),
+											},
 										},
 									},
 									Right: []*opOrTerm{
@@ -972,7 +1004,9 @@ func Test_parseWhere(t *testing.T) {
 											Operator: "or",
 											Term: &term{
 												Left: &booleanValue{
-													ConstExpr: booleanp(false),
+													ConstExpr: &constExpr{
+														Boolean: booleanp(false),
+													},
 												},
 											},
 										},
@@ -1091,14 +1125,18 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(true),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(true),
+						},
 					},
 					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								Negation:  ottltest.Strp("not"),
-								ConstExpr: booleanp(false),
+								Negation: ottltest.Strp("not"),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(false),
+								},
 							},
 						},
 					},
@@ -1141,7 +1179,9 @@ func Test_parseWhere(t *testing.T) {
 						SubExpr: &booleanExpression{
 							Left: &term{
 								Left: &booleanValue{
-									ConstExpr: booleanp(true),
+									ConstExpr: &constExpr{
+										Boolean: booleanp(true),
+									},
 								},
 							},
 							Right: []*opOrTerm{
@@ -1149,8 +1189,50 @@ func Test_parseWhere(t *testing.T) {
 									Operator: "or",
 									Term: &term{
 										Left: &booleanValue{
-											ConstExpr: booleanp(false),
+											ConstExpr: &constExpr{
+												Boolean: booleanp(false),
+											},
 										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			statement: `True()`,
+			expected: setNameTest(&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "True",
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			statement: `True() and False()`,
+			expected: setNameTest(&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "True",
+							},
+						},
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								ConstExpr: &constExpr{
+									Converter: &converter{
+										Function: "False",
 									},
 								},
 							},

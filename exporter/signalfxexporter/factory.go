@@ -27,16 +27,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "signalfx"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
-
 	defaultHTTPTimeout = time.Second * 5
 
 	defaultMaxConns = 100
@@ -45,11 +41,11 @@ const (
 // NewFactory creates a factory for SignalFx exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithMetrics(createMetricsExporter, stability),
-		exporter.WithLogs(createLogsExporter, stability),
-		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, metadata.Stability),
+		exporter.WithLogs(createLogsExporter, metadata.Stability),
+		exporter.WithTraces(createTracesExporter, metadata.Stability),
 	)
 }
 

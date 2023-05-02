@@ -168,6 +168,7 @@ Boolean Expressions can be grouped with parentheses to override evaluation prece
 
 Booleans can be either:
 - A literal boolean value (`true` or `false`).
+- A Converter that returns a boolean value (`true` or `false`).
 - A Comparison, made up of a left Value, an operator, and a right Value. See [Values](#values) for details on what a Value can be.
 
 Operators determine how the two Values are compared.
@@ -183,8 +184,8 @@ The valid operators are:
 
 Booleans can be negated with the `not` keyword such as
 - `not true`
-- `not name == "foo"`   
-- `not (IsMatch(name, "http_.*") == true and kind > 0)`
+- `not name == "foo"`
+- `not (IsMatch(name, "http_.*") and kind > 0)`
 
 ### Comparison Rules
 
@@ -212,7 +213,7 @@ Examples:
 - `name == "a name"`
 - `1 < 2`
 - `attributes["custom-attr"] != nil`
-- `IsMatch(resource.attributes["host.name"], "pod-*") == true`
+- `IsMatch(resource.attributes["host.name"], "pod-*")`
 
 ## Accessing signal telemetry
 

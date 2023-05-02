@@ -53,22 +53,30 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
+// ResourceAttributeSettings provides common settings for a particular resource attribute.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for testreceiver metrics.
+// ResourceAttributesSettings provides settings for testreceiver resource attributes.
 type ResourceAttributesSettings struct {
+	MapResourceAttr        ResourceAttributeSettings `mapstructure:"map.resource.attr"`
 	OptionalResourceAttr   ResourceAttributeSettings `mapstructure:"optional.resource.attr"`
+	SliceResourceAttr      ResourceAttributeSettings `mapstructure:"slice.resource.attr"`
 	StringEnumResourceAttr ResourceAttributeSettings `mapstructure:"string.enum.resource.attr"`
 	StringResourceAttr     ResourceAttributeSettings `mapstructure:"string.resource.attr"`
 }
 
 func DefaultResourceAttributesSettings() ResourceAttributesSettings {
 	return ResourceAttributesSettings{
+		MapResourceAttr: ResourceAttributeSettings{
+			Enabled: true,
+		},
 		OptionalResourceAttr: ResourceAttributeSettings{
 			Enabled: false,
+		},
+		SliceResourceAttr: ResourceAttributeSettings{
+			Enabled: true,
 		},
 		StringEnumResourceAttr: ResourceAttributeSettings{
 			Enabled: true,
@@ -126,7 +134,7 @@ func (m *metricDefaultMetric) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string) {
+func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -137,6 +145,8 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	dp.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
 	dp.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
+	dp.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
+	dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -349,11 +359,29 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
+// WithMapResourceAttr sets provided value as "map.resource.attr" attribute for current resource.
+func WithMapResourceAttr(val map[string]any) ResourceMetricsOption {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.MapResourceAttr.Enabled {
+			rm.Resource().Attributes().PutEmptyMap("map.resource.attr").FromRaw(val)
+		}
+	}
+}
+
 // WithOptionalResourceAttr sets provided value as "optional.resource.attr" attribute for current resource.
 func WithOptionalResourceAttr(val string) ResourceMetricsOption {
 	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		if ras.OptionalResourceAttr.Enabled {
 			rm.Resource().Attributes().PutStr("optional.resource.attr", val)
+		}
+	}
+}
+
+// WithSliceResourceAttr sets provided value as "slice.resource.attr" attribute for current resource.
+func WithSliceResourceAttr(val []any) ResourceMetricsOption {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.SliceResourceAttr.Enabled {
+			rm.Resource().Attributes().PutEmptySlice("slice.resource.attr").FromRaw(val)
 		}
 	}
 }
@@ -438,8 +466,8 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordDefaultMetricDataPoint adds a data point to default.metric metric.
-func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr) {
-	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String())
+func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
+	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
 }
 
 // RecordDefaultMetricToBeRemovedDataPoint adds a data point to default.metric.to_be_removed metric.

@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubele
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.76.3
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector v0.76.1
 	go.uber.org/zap v1.24.0
 	k8s.io/client-go v0.26.3
 )
@@ -66,4 +66,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sco
 // openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)

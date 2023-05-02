@@ -3,22 +3,22 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.249
+	github.com/aws/aws-sdk-go v1.44.253
 	github.com/google/cadvisor v0.47.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.76.3
 	github.com/shirou/gopsutil/v3 v3.23.3
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/component v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/confmap v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/consumer v0.75.1-0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/pdata v1.0.0-rc9.0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/receiver v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector v0.76.1
+	go.opentelemetry.io/collector/component v0.76.1
+	go.opentelemetry.io/collector/confmap v0.76.1
+	go.opentelemetry.io/collector/consumer v0.76.1
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
+	go.opentelemetry.io/collector/receiver v0.76.1
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.26.3
 	k8s.io/apimachinery v0.26.3
@@ -80,7 +80,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.75.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.76.3 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
@@ -106,7 +106,7 @@ require (
 	github.com/vishvananda/netlink v1.1.1-0.20201029203352-d40f9887b852 // indirect
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/collector/featuregate v0.75.1-0.20230424163446-8e33ded10872 // indirect
+	go.opentelemetry.io/collector/featuregate v0.76.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
@@ -155,4 +155,8 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)
