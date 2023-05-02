@@ -31,15 +31,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
-const (
-	typeStr = "transform"
-)
-
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		processor.WithLogs(createLogsProcessor, metadata.Stability),
 		processor.WithTraces(createTracesProcessor, metadata.Stability),
