@@ -6,7 +6,7 @@
 | Supported pipeline types | metrics          |
 | Distributions            | [contrib]        |
 
-This receiver fetches metrics for an Apache Spark cluster through the Apache Spark REST API - specifically, the /metrics/json, /api/v1/applications/[app-id]/stages, /api/v1/applications/[app-id]/executors, and  /api/v1/applications/[app-id]/jobs endpoints.
+This receiver fetches metrics for an Apache Spark cluster through the Apache Spark REST API - specifically, the /metrics/json, /api/v1/applications/[app-id]/stages, /api/v1/applications/[app-id]/executors, and /api/v1/applications/[app-id]/jobs endpoints.
 
 ## Purpose
 
@@ -26,7 +26,7 @@ The following settings are optional:
 
 - `collection_interval`: (default = `60s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `endpoint`: (default = `http://localhost:4040`): Apache Spark endpoint to connect to in the form of `[http][://]{host}[:{port}]`
-- `whitelisted_application_ids`: (default = `[]`): An array of Spark application IDs for which metrics should be collected. If unspecified, metrics will be collected for all Spark applications running on the cluster at the specified endpoint.
+- `whitelisted_application_names`: An array of Spark application names for which metrics should be collected. If no application names are specified, metrics will be collected for all Spark applications running on the cluster at the specified endpoint.
 
 ### Example Configuration
 
@@ -35,9 +35,9 @@ receivers:
   apachespark:
     collection_interval: 60s
     endpoint: http://localhost:4040
-    whitelisted_application_ids:
-    - local-1682342040821
-    - local-1891900220622
+    whitelisted_application_names:
+    - PythonStatusAPIDemo
+    - PythonLR
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).

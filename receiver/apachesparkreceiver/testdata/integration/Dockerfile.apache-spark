@@ -1,8 +1,5 @@
 FROM apache/spark
 
-COPY scripts/setup.sh /setup.sh
-RUN chmod +x /setup.sh
-
 COPY sparkprograms/long_running.py /opt/spark/examples/src/main/python/long_running.py
 RUN chmod +x /opt/spark/examples/src/main/python/long_running.py
 

@@ -23,8 +23,6 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	// defaultConfig := createDefaultConfig().(*Config)
-
 	testCases := []struct {
 		desc        string
 		cfg         *Config

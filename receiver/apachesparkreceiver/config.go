@@ -41,7 +41,7 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	WhitelistedApplicationIds               []string `mapstructure:"whitelisted_application_ids"`
+	WhitelistedApplicationNames               []string `mapstructure:"whitelisted_application_names"`
 }
 
 // Validate validates missing and invalid configuration fields.

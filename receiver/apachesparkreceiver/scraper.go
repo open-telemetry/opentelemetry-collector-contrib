@@ -35,7 +35,7 @@ import (
 var (
 	errClientNotInit         = errors.New("client not initialized")
 	errFailedAppIDCollection = errors.New("failed to retrieve app ids")
-	errNoWhitelistedApps     = errors.New("no apps matched whitelisted ids")
+	errNoMatchingWhitelistedApps     = errors.New("no apps matched whitelisted names")
 )
 
 type sparkScraper struct {
@@ -83,17 +83,21 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var whitelistedApps []models.Application
 
 	// if no ids specified, whitelist all apps
-	if s.config.WhitelistedApplicationIds == nil {
+	switch {
+	case s.config.WhitelistedApplicationNames == nil:
 		whitelistedApps = *apps
-	} else {
+	case len(s.config.WhitelistedApplicationNames) == 0:
+		whitelistedApps = *apps
+		s.logger.Warn("Empty array of whitelisted application IDs specified - all applications will be monitored.")
+	default:
 		// some whitelisted ids specified, compare to ids from applications endpoint
 		for _, app := range *apps {
-			if slices.Contains(s.config.WhitelistedApplicationIds, app.ApplicationID) {
+			if slices.Contains(s.config.WhitelistedApplicationNames, app.Name) {
 				whitelistedApps = append(whitelistedApps, app)
 			}
 		}
 		if len(whitelistedApps) == 0 {
-			return pmetric.NewMetrics(), errNoWhitelistedApps
+			return pmetric.NewMetrics(), errNoMatchingWhitelistedApps
 		}
 	}
 
@@ -110,7 +114,6 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 	// for each application id, get stats from stages & executors endpoints
 	for _, app := range whitelistedApps {
-
 		stageStats, err := s.client.GetStageStats(app.ApplicationID)
 		if err != nil {
 			scrapeErrors.AddPartial(1, err)

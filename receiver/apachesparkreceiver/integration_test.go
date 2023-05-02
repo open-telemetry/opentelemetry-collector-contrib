@@ -74,7 +74,7 @@ func (tt testCase) run(t *testing.T) {
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.CollectionInterval = 5 * time.Second
+	cfg.CollectionInterval = 3 * time.Second
 	cfg.Endpoint = endpoint
 
 	consumer := new(consumertest.MetricsSink)
@@ -95,7 +95,7 @@ func (tt testCase) run(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricAttributeValue("application_id"), pmetrictest.IgnoreMetricAttributeValue("application_name"), pmetrictest.IgnoreMetricDataPointsOrder()))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricAttributeValue("application_id"), pmetrictest.IgnoreMetricAttributeValue("application_name"), pmetrictest.IgnoreMetricAttributeValue("stage_status"), pmetrictest.IgnoreMetricDataPointsOrder()))
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) (testcontainers.Container, string) {

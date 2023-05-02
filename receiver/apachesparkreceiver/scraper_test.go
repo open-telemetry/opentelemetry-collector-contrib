@@ -91,13 +91,13 @@ func TestScraper(t *testing.T) {
 			config: &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 15 * time.Second,
 			},
-				WhitelistedApplicationIds: []string{"local-123", "local-987"},
+				WhitelistedApplicationNames: []string{"local-123", "local-987"},
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:4040",
 				},
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
-			expectedErr: errNoWhitelistedApps,
+			expectedErr: errNoMatchingWhitelistedApps,
 		},
 		{
 			desc: "Successful Full Empty Collection",
