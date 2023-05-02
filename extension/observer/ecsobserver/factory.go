@@ -24,14 +24,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver/internal/metadata"
 )
 
-const (
-	typeStr component.Type = "ecs_observer"
-)
-
 // NewFactory creates a factory for ECSObserver extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
 		metadata.Stability,
