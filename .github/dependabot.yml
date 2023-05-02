@@ -1097,3 +1097,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/zipkinreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
