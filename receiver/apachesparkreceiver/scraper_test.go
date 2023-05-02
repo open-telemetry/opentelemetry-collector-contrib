@@ -20,16 +20,20 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 )
 
@@ -46,6 +50,7 @@ func TestScraper(t *testing.T) {
 		desc              string
 		setupMockClient   func(t *testing.T) client
 		expectedMetricGen func(t *testing.T) pmetric.Metrics
+		config            *Config
 		expectedErr       error
 	}{
 		{
@@ -56,6 +61,7 @@ func TestScraper(t *testing.T) {
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
+			config:      createDefaultConfig().(*Config),
 			expectedErr: errClientNotInit,
 		},
 		{
@@ -68,7 +74,29 @@ func TestScraper(t *testing.T) {
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
+			config:      createDefaultConfig().(*Config),
 			expectedErr: errFailedAppIdCollection,
+		},
+		{
+			desc: "No Matching Whitelisted Apps",
+			setupMockClient: func(t *testing.T) client {
+				mockClient := mocks.MockClient{}
+				mockClient.On("GetApplications").Return(&models.Applications{}, nil)
+				return &mockClient
+			},
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				return pmetric.NewMetrics()
+			},
+			config: &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				CollectionInterval: 15 * time.Second,
+			},
+				WhitelistedApplicationIds: []string{"local-123", "local-987"},
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost:4040",
+				},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
+			expectedErr: errNoWhitelistedApps,
 		},
 		{
 			desc: "Successful Full Empty Collection",
@@ -87,6 +115,7 @@ func TestScraper(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
+			config:      createDefaultConfig().(*Config),
 			expectedErr: nil,
 		},
 		{
@@ -117,6 +146,7 @@ func TestScraper(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
+			config:      createDefaultConfig().(*Config),
 			expectedErr: scrapererror.NewPartialScrapeError(errors.New("stage api error; executor api error; jobs api error"), 0),
 		},
 		{
@@ -160,13 +190,14 @@ func TestScraper(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
+			config:      createDefaultConfig().(*Config),
 			expectedErr: nil,
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newSparkScraper(zap.NewNop(), createDefaultConfig().(*Config), receivertest.NewNopCreateSettings())
+			scraper := newSparkScraper(zap.NewNop(), tc.config, receivertest.NewNopCreateSettings())
 			scraper.client = tc.setupMockClient(t)
 
 			actualMetrics, err := scraper.scrape(context.Background())

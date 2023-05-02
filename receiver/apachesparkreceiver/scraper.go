@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 )
@@ -34,6 +36,7 @@ import (
 var (
 	errClientNotInit         = errors.New("client not initialized")
 	errFailedAppIdCollection = errors.New("failed to retrieve app ids")
+	errNoWhitelistedApps     = errors.New("no apps matched whitelisted ids")
 )
 
 type sparkScraper struct {
@@ -70,12 +73,29 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), errClientNotInit
 	}
 
-	// call applications endpoint
-	// not getting app name for now, just ids
+	// call applications endpoint to get ids and names for all apps in the cluster
 	var apps *models.Applications
 	apps, err := s.client.GetApplications()
 	if err != nil {
 		return pmetric.NewMetrics(), errFailedAppIdCollection
+	}
+
+	// check apps against whitelisted app ids from config
+	var whitelistedApps []models.Application
+
+	// if no ids specified, whitelist all apps
+	if s.config.WhitelistedApplicationIds == nil {
+		whitelistedApps = *apps
+	} else {
+		// some whitelisted ids specified, compare to ids from applications endpoint
+		for _, app := range *apps {
+			if slices.Contains(s.config.WhitelistedApplicationIds, app.ID) {
+				whitelistedApps = append(whitelistedApps, app)
+			}
+		}
+		if len(whitelistedApps) == 0 {
+			return pmetric.NewMetrics(), errNoWhitelistedApps
+		}
 	}
 
 	// get stats from the 'metrics' endpoint
@@ -84,13 +104,13 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		scrapeErrors.AddPartial(1, err)
 		s.logger.Warn("Failed to scrape cluster stats", zap.Error(err))
 	} else {
-		for _, app := range *apps {
+		for _, app := range whitelistedApps {
 			s.collectCluster(clusterStats, now, app.ID, app.Name)
 		}
 	}
 
 	// for each application id, get stats from stages & executors endpoints
-	for _, app := range *apps {
+	for _, app := range whitelistedApps {
 
 		stageStats, err := s.client.GetStageStats(app.ID)
 		if err != nil {

@@ -15,13 +15,11 @@
 package apachesparkreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver"
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.uber.org/multierr"
 )
 
 func TestValidate(t *testing.T) {
@@ -33,15 +31,18 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
+			desc:        "default config",
+			cfg:         &Config{},
+			expectedErr: nil,
+		},
+		{
 			desc: "invalid endpoint",
 			cfg: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "invalid://endpoint  12efg",
 				},
 			},
-			expectedErr: multierr.Combine(
-				fmt.Errorf("%s: %w", errors.New(`parse "invalid://endpoint  12efg": invalid character " " in host name"`), errInvalidEndpoint),
-			),
+			expectedErr: fmt.Errorf(errInvalidEndpoint.Error(), "invalid://endpoint  12efg"),
 		},
 	}
 

@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.75.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
+	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
 )
 
 require (
