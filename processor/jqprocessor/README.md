@@ -26,3 +26,7 @@ processors:
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the processor.
 
 The `jq_statement` property takes a valid jq input, performs it on the body of a log, and sends the result on through the pipeline.
+
+
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
