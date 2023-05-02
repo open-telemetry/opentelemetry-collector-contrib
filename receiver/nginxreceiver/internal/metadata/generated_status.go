@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "nginxreceiver"
+	Type      = "nginx"
 	Stability = component.StabilityLevelBeta
 )
