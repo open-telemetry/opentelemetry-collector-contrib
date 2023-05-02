@@ -1,5 +1,11 @@
 type: nginxreceiver
 
+status:
+  class: receiver
+  stability: beta
+  pipelines: [metrics]
+  distributions: [contrib]
+
 attributes:
   state:
     description: The state of a connection
