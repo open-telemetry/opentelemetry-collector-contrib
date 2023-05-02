@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "flinkmetrics"
+	Type      = "flinkmetricsreceiver"
 	Stability = component.StabilityLevelAlpha
 )

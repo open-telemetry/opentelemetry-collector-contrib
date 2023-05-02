@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "zipkin"
+	Type      = "zipkinreceiver"
 	Stability = component.StabilityLevelBeta
 )

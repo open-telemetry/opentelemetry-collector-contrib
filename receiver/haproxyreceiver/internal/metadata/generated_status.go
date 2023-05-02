@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "haproxy"
+	Type      = "haproxyreceiver"
 	Stability = component.StabilityLevelAlpha
 )

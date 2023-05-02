@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "httpcheck"
+	Type      = "httpcheckreceiver"
 	Stability = component.StabilityLevelDevelopment
 )

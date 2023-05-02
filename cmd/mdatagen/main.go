@@ -168,16 +168,8 @@ func inlineReplace(tmplFile string, outputFile string, md metadata, start string
 func generateFile(tmplFile string, outputFile string, md metadata) error {
 	tmpl := templatize(tmplFile, md)
 	buf := bytes.Buffer{}
-	if tmplFile == "templates/status.go.tmpl" {
-		tempMetadata := md
-		tempMetadata.Type = strings.TrimSuffix(tempMetadata.Type, "receiver")
-		if err := tmpl.Execute(&buf, templateContext{metadata: tempMetadata, Package: "metadata"}); err != nil {
-			return fmt.Errorf("failed executing template: %w", err)
-		}
-	} else {
-		if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
-			return fmt.Errorf("failed executing template: %w", err)
-		}
+	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
+		return fmt.Errorf("failed executing template: %w", err)
 	}
 
 	if err := os.Remove(outputFile); err != nil && !errors.Is(err, os.ErrNotExist) {

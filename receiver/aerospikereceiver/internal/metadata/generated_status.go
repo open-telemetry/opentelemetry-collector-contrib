@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "aerospike"
+	Type      = "aerospikereceiver"
 	Stability = component.StabilityLevelAlpha
 )
