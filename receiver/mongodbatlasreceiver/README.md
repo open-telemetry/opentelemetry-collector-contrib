@@ -75,6 +75,16 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
     - This will limit how many pages of events the receiver will request from the MongoDB Atlas API for each project.
   - `types` (defaults to all types of events)
     - This is a list of [event types](https://www.mongodb.com/docs/atlas/reference/api/events-orgs-get-all/#event-type-values) that the receiver will request from the API. If specified, the receiver will collect only the indicated types of events.
+- `access_logs`
+  - `projects`
+    - `name`
+    - `include_clusters` (default empty, exclusive with `exclude_clusters`)
+    - `exclude_clusters` (default empty, exclusive with `include_clusters`)
+      - If both `include_clusters` and `exclude_clusters` are empty, then all clusters in the project will be included
+  - `poll_interval` (default `1m`)
+    - How often the receiver will poll the Access History API for new access logs.
+  - `auth_result`
+    - If specified, will limit the access logs queried to successful accesses (true) or failed accesses (false). If not specified, all will be collected
 
 Examples:
 
@@ -142,6 +152,22 @@ receivers:
       page_size: 100
       max_pages: 25
     # use of a storage extension is recommended to reduce chance of duplicated events
+    storage: file_storage
+```
+
+Poll Access Logs from API:
+
+```yaml
+receivers:
+  mongodbatlas:
+    public_key: <redacted>
+    private_key: <redacted>
+    access_logs:
+      projects:
+      - name: Project 0
+        include_clusters: [Cluster0]
+      poll_interval: 1m
+    # use of a storage extension is recommended to reduce chance of duplicated access logs
     storage: file_storage
 ```
 

@@ -728,10 +728,10 @@ type GetAccessLogsOptions struct {
 func (s *MongoDBAtlasClient) GetAccessLogs(ctx context.Context, groupID string, clusterName string, opts *GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
 
 	options := mongodbatlas.AccessLogOptions{
-		// Earliest Timestamp in ISO 8601 date and time format in UTC from when Atlas should access log results
-		Start: opts.MinDate.Format(time.RFC3339),
-		// Latest Timestamp in ISO 8601 date and time format in UTC from when Atlas should access log results
-		End: opts.MaxDate.Format(time.RFC3339),
+		// Earliest Timestamp in epoch milliseconds from when Atlas should access log results
+		Start: fmt.Sprintf("%d", opts.MinDate.UTC().UnixMilli()),
+		// Latest Timestamp in epoch milliseconds from when Atlas should access log results
+		End: fmt.Sprintf("%d", opts.MaxDate.UTC().UnixMilli()),
 		// If true, only return successful access attempts; if false, only return failed access attempts
 		// If nil, return both successful and failed access attempts
 		AuthResult: opts.AuthResult,
