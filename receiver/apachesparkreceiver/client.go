@@ -149,13 +149,13 @@ func (c *apacheSparkClient) GetExecutorStats(appID string) (*models.Executors, e
 		return nil, err
 	}
 
-	var executorStats *models.Executors
+	var executorStats models.Executors
 	err = json.Unmarshal(body, &executorStats)
 	if err != nil {
 		return nil, err
 	}
 
-	return executorStats, nil
+	return &executorStats, nil
 }
 
 func (c *apacheSparkClient) GetJobStats(appID string) (*models.Jobs, error) {
@@ -165,13 +165,13 @@ func (c *apacheSparkClient) GetJobStats(appID string) (*models.Jobs, error) {
 		return nil, err
 	}
 
-	var jobStats *models.Jobs
+	var jobStats models.Jobs
 	err = json.Unmarshal(body, &jobStats)
 	if err != nil {
 		return nil, err
 	}
 
-	return jobStats, nil
+	return &jobStats, nil
 }
 
 func (c *apacheSparkClient) buildReq(path string) (*http.Request, error) {
