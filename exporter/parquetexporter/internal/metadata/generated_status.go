@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "asapclient"
-	Stability = component.StabilityLevelBeta
+	Type      = "parquet"
+	Stability = component.StabilityLevelDevelopment
 )

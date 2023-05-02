@@ -1,0 +1,7 @@
+type: parquet
+
+status:
+  class: exporter
+  stability: development
+  pipelines: [logs, metrics, traces]
+  distributions: [contrib]

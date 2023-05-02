@@ -26,17 +26,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "cumulativetodelta"
-)
-
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Metrics Generation processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		processor.WithMetrics(createMetricsProcessor, metadata.Stability))
 }
