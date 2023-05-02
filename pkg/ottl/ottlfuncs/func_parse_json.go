@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-// ParseJSON factory function returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
+// ParseJSON returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
 // Each JSON type is converted into a `pdata.Value` using the following map:
 //
 //	JSON boolean -> bool
