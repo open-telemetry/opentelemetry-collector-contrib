@@ -1,4 +1,4 @@
-type: hostobserver
+type: host_observer
 
 status:
   class: extension
