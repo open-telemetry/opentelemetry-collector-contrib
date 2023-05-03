@@ -507,6 +507,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.76.3 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.76.3 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver v0.76.3 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver v0.76.3 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect

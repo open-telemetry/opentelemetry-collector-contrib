@@ -155,6 +155,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver v0.76.3
