@@ -61,7 +61,7 @@ func NewSpanSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[ottlspan
 		if err != nil {
 			return nil, err
 		}
-		statements = append(statements, fmt.Sprintf("(%v)", statement))
+		statements = append(statements, fmt.Sprintf("%v", statement))
 	}
 
 	return NewBoolExprForSpan(statements, StandardSpanFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
@@ -73,26 +73,52 @@ func createStatement(mp filterconfig.MatchProperties) (string, error) {
 		return "", err
 	}
 	var conditions []string
+	var format string
 	if serviceNameConditions != nil {
-		conditions = append(conditions, fmt.Sprintf("(%v)", strings.Join(serviceNameConditions, " or ")))
+		if len(serviceNameConditions) > 1 {
+			format = "(%v)"
+		} else {
+			format = "%v"
+		}
+		conditions = append(conditions, fmt.Sprintf(format, strings.Join(serviceNameConditions, " or ")))
 	}
 	if spanNameConditions != nil {
-		conditions = append(conditions, fmt.Sprintf("(%v)", strings.Join(spanNameConditions, " or ")))
+		if len(spanNameConditions) > 1 {
+			format = "(%v)"
+		} else {
+			format = "%v"
+		}
+		conditions = append(conditions, fmt.Sprintf(format, strings.Join(spanNameConditions, " or ")))
 	}
 	if spanKindConditions != nil {
-		conditions = append(conditions, fmt.Sprintf("(%v)", strings.Join(spanKindConditions, " or ")))
+		if len(spanKindConditions) > 1 {
+			format = "(%v)"
+		} else {
+			format = "%v"
+		}
+		conditions = append(conditions, fmt.Sprintf(format, strings.Join(spanKindConditions, " or ")))
 	}
 	if scopeNameConditions != nil {
-		conditions = append(conditions, fmt.Sprintf("(%v)", strings.Join(scopeNameConditions, " or ")))
+		if len(scopeNameConditions) > 1 {
+			format = "(%v)"
+		} else {
+			format = "%v"
+		}
+		conditions = append(conditions, fmt.Sprintf(format, strings.Join(scopeNameConditions, " or ")))
 	}
 	if scopeVersionConditions != nil {
-		conditions = append(conditions, fmt.Sprintf("(%v)", strings.Join(scopeVersionConditions, " or ")))
+		if len(scopeVersionConditions) > 1 {
+			format = "(%v)"
+		} else {
+			format = "%v"
+		}
+		conditions = append(conditions, fmt.Sprintf(format, strings.Join(scopeVersionConditions, " or ")))
 	}
 	if attributeConditions != nil {
-		conditions = append(conditions, fmt.Sprintf("(%v)", strings.Join(attributeConditions, " and ")))
+		conditions = append(conditions, fmt.Sprintf("%v", strings.Join(attributeConditions, " and ")))
 	}
 	if resourceAttributeConditions != nil {
-		conditions = append(conditions, fmt.Sprintf("(%v)", strings.Join(resourceAttributeConditions, " and ")))
+		conditions = append(conditions, fmt.Sprintf("%v", strings.Join(resourceAttributeConditions, " and ")))
 	}
 	return strings.Join(conditions, " and "), nil
 }
