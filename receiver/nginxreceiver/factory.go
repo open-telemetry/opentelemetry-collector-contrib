@@ -27,11 +27,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
 )
 
+const (
+	typeStr = "nginx"
+)
 
 // NewFactory creates a factory for nginx receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		metadata.Type,
+		typeStr,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.Stability))
 }
@@ -58,7 +61,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newNginxScraper(params, cfg)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}
