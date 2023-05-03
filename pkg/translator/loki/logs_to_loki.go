@@ -123,6 +123,81 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 	return requests
 }
 
+func LogsToLokiRequestsWithResourceFieldInJSONFormat(ld plog.Logs) map[string]PushRequest {
+	groups := map[string]pushRequestGroup{}
+
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		ills := rls.At(i).ScopeLogs()
+		resource := rls.At(i).Resource()
+
+		for j := 0; j < ills.Len(); j++ {
+			logs := ills.At(j).LogRecords()
+			scope := ills.At(j).Scope()
+			for k := 0; k < logs.Len(); k++ {
+				log := logs.At(k)
+				tenant := GetTenantFromTenantHint(log.Attributes(), resource.Attributes())
+				group, ok := groups[tenant]
+				if !ok {
+					group = pushRequestGroup{
+						report:  &PushReport{},
+						streams: make(map[string]*push.Stream),
+					}
+					groups[tenant] = group
+				}
+
+				entry, err := LogToLokiEntryWithResourceFieldInJSONFormat(log, resource, scope)
+				if err != nil {
+					// Couldn't convert so dropping log.
+					group.report.Errors = append(group.report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
+					group.report.NumDropped++
+					continue
+				}
+
+				group.report.NumSubmitted++
+
+				processed := model.LabelSet{}
+				for label := range entry.Labels {
+					// Loki doesn't support dots in label names
+					// labelName is normalized label name to follow Prometheus label names standard
+					labelName := prometheustranslator.NormalizeLabel(string(label))
+					processed[model.LabelName(labelName)] = entry.Labels[label]
+				}
+
+				// create the stream name based on the labels
+				labels := processed.String()
+				if stream, ok := group.streams[labels]; ok {
+					stream.Entries = append(stream.Entries, *entry.Entry)
+					continue
+				}
+
+				group.streams[labels] = &push.Stream{
+					Labels:  labels,
+					Entries: []push.Entry{*entry.Entry},
+				}
+			}
+		}
+	}
+
+	requests := make(map[string]PushRequest)
+	for tenant, g := range groups {
+		pr := &push.PushRequest{
+			Streams: make([]push.Stream, len(g.streams)),
+		}
+
+		i := 0
+		for _, stream := range g.streams {
+			pr.Streams[i] = *stream
+			i++
+		}
+		requests[tenant] = PushRequest{
+			PushRequest: pr,
+			Report:      g.report,
+		}
+	}
+	return requests
+}
+
 // PushEntry is Loki log entry enriched with labels
 type PushEntry struct {
 	Entry  *push.Entry
@@ -150,6 +225,36 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 	removeAttributes(resource.Attributes(), mergedLabels)
 
 	entry, err := convertLogToLokiEntry(log, resource, format, scope)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PushEntry{
+		Entry:  entry,
+		Labels: mergedLabels,
+	}, nil
+}
+
+func LogToLokiEntryWithResourceFieldInJSONFormat(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.InstrumentationScope) (*PushEntry, error) {
+	// we may remove attributes, so change only our version
+	log := plog.NewLogRecord()
+	lr.CopyTo(log)
+
+	// similarly, we may remove attributes, so we make a copy and change our version
+	resource := pcommon.NewResource()
+	rl.CopyTo(resource)
+
+	// adds level attribute from log.severityNumber
+	addLogLevelAttributeAndHint(log)
+
+	format := getFormatFromFormatHint(log.Attributes(), resource.Attributes())
+
+	mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
+	// remove the attributes that were promoted to labels
+	removeAttributes(log.Attributes(), mergedLabels)
+	removeAttributes(resource.Attributes(), mergedLabels)
+
+	entry, err := convertLogToLokiEntryWithResourceFieldInJSONFormat(log, resource, format, scope)
 	if err != nil {
 		return nil, err
 	}

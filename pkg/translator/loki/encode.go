@@ -24,6 +24,17 @@ type lokiEntry struct {
 	SpanID               string                 `json:"spanid,omitempty"`
 	Severity             string                 `json:"severity,omitempty"`
 	Attributes           map[string]interface{} `json:"attributes,omitempty"`
+	Resources            map[string]interface{} `json:"resources,omitempty"`
+	InstrumentationScope *instrumentationScope  `json:"instrumentation_scope,omitempty"`
+}
+
+type lokiEntryWithResourceField struct {
+	Name                 string                 `json:"name,omitempty"`
+	Body                 json.RawMessage        `json:"body,omitempty"`
+	TraceID              string                 `json:"traceid,omitempty"`
+	SpanID               string                 `json:"spanid,omitempty"`
+	Severity             string                 `json:"severity,omitempty"`
+	Attributes           map[string]interface{} `json:"attributes,omitempty"`
 	Resource             map[string]interface{} `json:"resource,omitempty"`
 	InstrumentationScope *instrumentationScope  `json:"instrumentation_scope,omitempty"`
 }
@@ -47,6 +58,43 @@ func Encode(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrumentati
 		return "", err
 	}
 	logRecord = lokiEntry{
+		Body:       body,
+		TraceID:    traceutil.TraceIDToHexOrEmptyString(lr.TraceID()),
+		SpanID:     traceutil.SpanIDToHexOrEmptyString(lr.SpanID()),
+		Severity:   lr.SeverityText(),
+		Attributes: lr.Attributes().AsRaw(),
+		Resources:  res.Attributes().AsRaw(),
+	}
+
+	scopeName := scope.Name()
+	scopeVersion := scope.Version()
+	if scopeName != "" {
+		logRecord.InstrumentationScope = &instrumentationScope{
+			Name: scopeName,
+		}
+		if scopeVersion != "" {
+			logRecord.InstrumentationScope.Version = scopeVersion
+		}
+	}
+
+	jsonRecord, err = json.Marshal(logRecord)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonRecord), nil
+}
+
+func EncodeWithResourceField(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (string, error) {
+	var logRecord lokiEntryWithResourceField
+	var jsonRecord []byte
+	var err error
+	var body []byte
+
+	body, err = serializeBodyJSON(lr.Body())
+	if err != nil {
+		return "", err
+	}
+	logRecord = lokiEntryWithResourceField{
 		Body:       body,
 		TraceID:    traceutil.TraceIDToHexOrEmptyString(lr.TraceID()),
 		SpanID:     traceutil.SpanIDToHexOrEmptyString(lr.SpanID()),

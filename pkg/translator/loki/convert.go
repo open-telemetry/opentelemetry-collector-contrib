@@ -149,6 +149,17 @@ func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommo
 	}, nil
 }
 
+func convertLogToJSONEntryResourceField(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*push.Entry, error) {
+	line, err := EncodeWithResourceField(lr, res, scope)
+	if err != nil {
+		return nil, err
+	}
+	return &push.Entry{
+		Timestamp: timestampFromLogRecord(lr),
+		Line:      line,
+	}, nil
+}
+
 func convertLogToLogfmtEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*push.Entry, error) {
 	line, err := EncodeLogfmt(lr, res, scope)
 	if err != nil {
@@ -179,6 +190,19 @@ func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format strin
 		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s, %s", format, formatJSON, formatLogfmt, formatRaw)
 	}
 
+}
+
+func convertLogToLokiEntryWithResourceFieldInJSONFormat(lr plog.LogRecord, res pcommon.Resource, format string, scope pcommon.InstrumentationScope) (*push.Entry, error) {
+	switch format {
+	case formatJSON:
+		return convertLogToJSONEntryResourceField(lr, res, scope)
+	case formatLogfmt:
+		return convertLogToLogfmtEntry(lr, res, scope)
+	case formatRaw:
+		return convertLogToLogRawEntry(lr)
+	default:
+		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s, %s", format, formatJSON, formatLogfmt, formatRaw)
+	}
 }
 
 func timestampFromLogRecord(lr plog.LogRecord) time.Time {

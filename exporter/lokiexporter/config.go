@@ -13,9 +13,10 @@ import (
 
 // Config defines configuration for Loki exporter.
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	confighttp.HTTPClientSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings         `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings         `mapstructure:"retry_on_failure"`
+	sendResourceFieldInJSONFormatEnabled bool
 }
 
 func (c *Config) Validate() error {

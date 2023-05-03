@@ -236,14 +236,15 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 
 func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 	testCases := []struct {
-		desc           string
-		hints          map[string]interface{}
-		attrs          map[string]interface{}
-		res            map[string]interface{}
-		severity       plog.SeverityNumber
-		levelAttribute string
-		expectedLabel  string
-		expectedLines  []string
+		desc                                 string
+		hints                                map[string]interface{}
+		attrs                                map[string]interface{}
+		res                                  map[string]interface{}
+		severity                             plog.SeverityNumber
+		levelAttribute                       string
+		expectedLabel                        string
+		expectedLines                        []string
+		sendResourceFieldInJSONFormatEnabled bool
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
@@ -272,10 +273,27 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			},
 			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
 			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"02000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"03000000000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+			},
+		},
+		{
+			desc: "with resource to label and regular resource and feature gate flag exporter.loki.sendWithResourceInJSONFormat is set to true",
+			res: map[string]interface{}{
+				"host.name": "guarana",
+				"region.az": "eu-west-1a",
+			},
+			hints: map[string]interface{}{
+				hintResource: "host.name",
+			},
+			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
+			expectedLines: []string{
 				`{"traceid":"01000000000000000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
 				`{"traceid":"02000000000000000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
 				`{"traceid":"03000000000000000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
 			},
+			sendResourceFieldInJSONFormatEnabled: true,
 		},
 		{
 			desc: "with logfmt format",
@@ -370,7 +388,13 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			}
 
 			// test
-			requests := LogsToLokiRequests(ld)
+			var requests map[string]PushRequest
+			if tt.sendResourceFieldInJSONFormatEnabled {
+				requests = LogsToLokiRequestsWithResourceFieldInJSONFormat(ld)
+			} else {
+				requests = LogsToLokiRequests(ld)
+			}
+
 			assert.Len(t, requests, 1)
 			request := requests[""]
 
@@ -428,9 +452,9 @@ func TestLogsToLoki(t *testing.T) {
 			},
 			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
 			expectedLines: []string{
-				`{"traceid":"01020304000000000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
-				`{"traceid":"01020304050000000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
-				`{"traceid":"01020304050600000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"01020304000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"01020304050000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
+				`{"traceid":"01020304050600000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
 			},
 		},
 		{
@@ -622,16 +646,17 @@ func TestLogsToLoki(t *testing.T) {
 
 func TestLogToLokiEntry(t *testing.T) {
 	testCases := []struct {
-		name                 string
-		timestamp            time.Time
-		severity             plog.SeverityNumber
-		levelAttribute       string
-		res                  map[string]interface{}
-		attrs                map[string]interface{}
-		hints                map[string]interface{}
-		instrumentationScope *instrumentationScope
-		expected             *PushEntry
-		err                  error
+		name                                 string
+		timestamp                            time.Time
+		severity                             plog.SeverityNumber
+		levelAttribute                       string
+		res                                  map[string]interface{}
+		attrs                                map[string]interface{}
+		hints                                map[string]interface{}
+		instrumentationScope                 *instrumentationScope
+		expected                             *PushEntry
+		err                                  error
+		sendResourceFieldInJSONFormatEnabled bool
 	}{
 		{
 			name:      "with attribute to label and regular attribute",
@@ -668,6 +693,27 @@ func TestLogToLokiEntry(t *testing.T) {
 			expected: &PushEntry{
 				Entry: &push.Entry{
 					Timestamp: time.Unix(0, 1677592916000000000),
+					Line:      `{"resources":{"region.az":"eu-west-1a"}}`,
+				},
+				Labels: model.LabelSet{
+					"exporter":  "OTLP",
+					"host.name": "guarana",
+				},
+			},
+		},
+		{
+			name:      "with resource to label and regular resource and feature gate flag exporter.loki.sendWithResourceInJSONFormat is set to true",
+			timestamp: time.Unix(0, 1677592916000000000),
+			res: map[string]interface{}{
+				"host.name": "guarana",
+				"region.az": "eu-west-1a",
+			},
+			hints: map[string]interface{}{
+				hintResource: "host.name",
+			},
+			expected: &PushEntry{
+				Entry: &push.Entry{
+					Timestamp: time.Unix(0, 1677592916000000000),
 					Line:      `{"resource":{"region.az":"eu-west-1a"}}`,
 				},
 				Labels: model.LabelSet{
@@ -675,6 +721,7 @@ func TestLogToLokiEntry(t *testing.T) {
 					"host.name": "guarana",
 				},
 			},
+			sendResourceFieldInJSONFormatEnabled: true,
 		},
 		{
 			name:      "with logfmt format",
@@ -792,7 +839,13 @@ func TestLogToLokiEntry(t *testing.T) {
 				lr.Attributes().PutStr(levelAttributeName, tt.levelAttribute)
 			}
 
-			log, err := LogToLokiEntry(lr, resource, scope)
+			var log *PushEntry
+			if tt.sendResourceFieldInJSONFormatEnabled {
+				log, err = LogToLokiEntryWithResourceFieldInJSONFormat(lr, resource, scope)
+			} else {
+				log, err = LogToLokiEntry(lr, resource, scope)
+			}
+
 			assert.Equal(t, tt.err, err)
 			assert.Equal(t, tt.expected, log)
 		})

@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.77.0
 	go.opentelemetry.io/collector/consumer v0.77.0
 	go.opentelemetry.io/collector/exporter v0.77.0
+	go.opentelemetry.io/collector/featuregate v0.77.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
@@ -52,7 +53,6 @@ require (
 	github.com/prometheus/prometheus v0.43.1 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.77.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.77.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.77.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1 // indirect
