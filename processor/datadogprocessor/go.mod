@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datad
 go 1.19
 
 require (
-	github.com/DataDog/datadog-agent/pkg/trace v0.45.0-rc.3
+	github.com/DataDog/datadog-agent/pkg/trace v0.45.0-rc.4
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.4
 	github.com/DataDog/sketches-go v1.4.2
 	github.com/stretchr/testify v1.8.2
@@ -17,12 +17,12 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.45.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.45.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.45.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.45.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.45.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.45.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.45.0-rc.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.45.0-rc.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.45.0-rc.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.45.0-rc.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.45.0-rc.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.45.0-rc.4 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.5 // indirect
@@ -53,8 +53,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.23.3 // indirect
-	github.com/shoenig/go-m1cpu v0.1.4 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.4 // indirect
+	github.com/shoenig/go-m1cpu v0.1.5 // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
@@ -62,9 +62,9 @@ require (
 	go.opentelemetry.io/collector/confmap v0.76.2-0.20230502195822-4df44379e094 // indirect
 	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502195822-4df44379e094 // indirect
 	go.opentelemetry.io/collector/semconv v0.76.2-0.20230502195822-4df44379e094 // indirect
-	go.opentelemetry.io/otel v1.15.0 // indirect
-	go.opentelemetry.io/otel/metric v0.38.0 // indirect
-	go.opentelemetry.io/otel/trace v1.15.0 // indirect
+	go.opentelemetry.io/otel v1.15.1 // indirect
+	go.opentelemetry.io/otel/metric v0.38.1 // indirect
+	go.opentelemetry.io/otel/trace v1.15.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
