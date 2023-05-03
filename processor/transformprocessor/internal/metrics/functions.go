@@ -15,30 +15,29 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-// registry is a map of names to functions for metrics pipelines
-var datapointRegistry = map[string]interface{}{
-	"convert_sum_to_gauge":             convertSumToGauge,
-	"convert_gauge_to_sum":             convertGaugeToSum,
-	"convert_summary_sum_val_to_sum":   convertSummarySumValToSum,
-	"convert_summary_count_val_to_sum": convertSummaryCountValToSum,
-}
+func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext] {
+	functions := common.Functions[ottldatapoint.TransformContext]()
 
-func init() {
-	// Init metrics registry with default functions common to all signals
-	for k, v := range common.Functions[ottldatapoint.TransformContext]() {
-		datapointRegistry[k] = v
+	datapointFunctions := ottl.CreateFactoryMap[ottldatapoint.TransformContext](
+		newConvertSumToGaugeFactory(),
+		newConvertGaugeToSumFactory(),
+		newConvertSummarySumValToSumFactory(),
+		newConvertSummaryCountValToSumFactory(),
+	)
+
+	for k, v := range datapointFunctions {
+		functions[k] = v
 	}
+
+	return functions
 }
 
-func DataPointFunctions() map[string]interface{} {
-	return datapointRegistry
-}
-
-func MetricFunctions() map[string]interface{} {
+func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 	return common.Functions[ottlmetric.TransformContext]()
 }
