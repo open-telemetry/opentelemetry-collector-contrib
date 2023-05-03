@@ -256,7 +256,6 @@ service:
       receivers: [prometheus]
       processors: [filter/teamB]
       exporters: [coralogix/teamB]
-
 ```
 
 ### Need help?
