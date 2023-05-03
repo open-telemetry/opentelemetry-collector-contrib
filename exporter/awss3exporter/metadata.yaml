@@ -3,7 +3,5 @@ type: awss3
 status:
   class: exporter
   stability:
-    logs: alpha
-    metrics: alpha
-    traces: alpha
+    alpha: [traces, metrics, logs]
   distributions: [contrib]

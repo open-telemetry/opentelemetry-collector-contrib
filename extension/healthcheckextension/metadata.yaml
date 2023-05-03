@@ -3,5 +3,5 @@ type: health_check
 status:
   class: extension
   stability:
-    extension: beta
+    beta: [extension]
   distributions: [core, contrib]

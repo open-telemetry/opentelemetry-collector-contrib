@@ -3,8 +3,6 @@ type: filter
 status:
   class: processor
   stability:
-    traces: alpha
-    metrics: alpha
-    logs: alpha
+    alpha: [traces, metrics, logs]
   distributions: [core,contrib]
   warnings: [Orphaned Telemetry, Other]

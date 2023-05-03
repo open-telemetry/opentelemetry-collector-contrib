@@ -4,7 +4,7 @@ type: postgresqlreceiver
 status:
   class: receiver
   stability:
-    metrics: beta
+    beta: [metrics]
   distributions: [contrib]
 
 resource_attributes:

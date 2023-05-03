@@ -3,7 +3,5 @@ type: resourceprocessor
 status:
   class: processor
   stability:
-    logs: beta
-    metrics: beta
-    traces: beta
+    beta: [traces, metrics, logs]
   distributions: [core, contrib]

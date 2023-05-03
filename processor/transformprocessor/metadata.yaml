@@ -3,8 +3,6 @@ type: transform
 status:
   class: processor
   stability:
-    traces: alpha
-    metrics: alpha
-    logs: alpha
+    alpha: [traces, metrics, logs]
   distributions: [contrib]
   warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]

@@ -4,19 +4,16 @@
 | ------------------------ |-----------|
 {{- $class := .Status.Class }}
 {{- $idx := 0 }}
-{{- range $pipeline, $value := .Status.Stability }}
-| {{ if not $idx }}Stability{{- end }}                | {{ if ne $class "extension" }}{{ $pipeline }} {{ end }}[{{ $value }}]   |
+{{- range $stability, $value := .Status.Stability }}
+| {{ if not $idx }}Stability{{- end }}                | [{{ $stability }}] {{ if ne $class "extension" }}[{{ stringsJoin $value ", " }}] {{ end }}  |
 {{- $idx = inc $idx }}
-{{- end }}
-{{- if ne $class "extension" }}
-| Supported pipeline types | {{ stringsJoin (keys .Status.Stability) ", " }}   |
 {{- end }}
 | Distributions            | [{{ stringsJoin .Status.Distributions "], [" }}] |
 {{- if .Status.Warnings }}
 | Warnings                 | [{{ stringsJoin .Status.Warnings ", " }}](#warnings) |
 {{- end }}
-{{range $val := uniqueValues .Status.Stability}}
-[{{ $val }}]: https://github.com/open-telemetry/opentelemetry-collector#{{ $val }}
+{{range $stability, $val := .Status.Stability}}
+[{{ $stability }}]: https://github.com/open-telemetry/opentelemetry-collector#{{ $stability }}
 {{- end }}
 {{- range .Status.Distributions }}
 [{{.}}]: {{ distroURL . }}

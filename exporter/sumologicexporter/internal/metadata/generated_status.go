@@ -8,6 +8,6 @@ import (
 
 const (
 	Type             = "sumologic"
-	LogsStability    = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

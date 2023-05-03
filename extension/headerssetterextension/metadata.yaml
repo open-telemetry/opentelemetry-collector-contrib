@@ -3,5 +3,5 @@ type: headers_setter
 status:
   class: extension
   stability:
-    extension: alpha
+    alpha: [extension]
   distributions: [contrib]

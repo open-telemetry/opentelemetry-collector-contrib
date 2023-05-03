@@ -3,7 +3,6 @@ type: cassandra
 status:
   class: exporter
   stability:
-    traces: alpha
-    logs: alpha
+    alpha: [traces, logs]
   distributions: [contrib]
 

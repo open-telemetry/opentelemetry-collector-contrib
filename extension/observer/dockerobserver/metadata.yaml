@@ -3,5 +3,5 @@ type: docker_observer
 status:
   class: extension
   stability:
-    extension: beta
+    beta: [extension]
   distributions: [contrib]

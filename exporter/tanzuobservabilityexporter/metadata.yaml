@@ -3,6 +3,5 @@ type: tanzuobservability
 status:
   class: exporter
   stability:
-    traces: beta
-    metrics: beta
+    beta: [traces, metrics]
   distributions: [contrib]

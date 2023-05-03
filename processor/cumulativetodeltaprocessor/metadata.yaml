@@ -3,6 +3,6 @@ type: cumulativetodelta
 status:
   class: processor
   stability:
-    metrics: beta
+    beta: [metrics]
   distributions: [contrib]
   warnings: [Statefulness]

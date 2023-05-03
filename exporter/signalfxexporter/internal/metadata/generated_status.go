@@ -8,7 +8,7 @@ import (
 
 const (
 	Type             = "signalfx"
-	LogsStability    = component.StabilityLevelBeta
-	MetricsStability = component.StabilityLevelBeta
 	TracesStability  = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

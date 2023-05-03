@@ -3,5 +3,5 @@ type: jaegerremotesampling
 status:
   class: extension
   stability:
-    extension: alpha
+    alpha: [extension]
   distributions: [contrib]

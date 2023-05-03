@@ -3,5 +3,5 @@ type: pprof
 status:
   class: extension
   stability:
-    extension: beta
+    beta: [extension]
   distributions: [core, contrib]

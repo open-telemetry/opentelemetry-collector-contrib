@@ -59,9 +59,7 @@ type: metricreceiver
 status:
   class: exporter
   stability:
-    metrics: beta
-    logs: beta
-    traces: beta
+    beta: [traces, metrics, logs]
   distributions: [contrib]
 `,
 			wantStatusGenerated: true,
@@ -143,7 +141,7 @@ func Test_inlineReplace(t *testing.T) {
 		outputFile     string
 		componentClass string
 		warnings       []string
-		signals        map[string]string
+		stability      map[string][]string
 	}{
 		{
 			name: "readme with empty status",
@@ -215,18 +213,18 @@ Some warning there.
 Some info about a component
 `,
 			outputFile: "readme_with_multiple_signals.md",
-			signals:    map[string]string{"metrics": "beta", "logs": "alpha"},
+			stability:  map[string][]string{"beta": {"metrics"}, "alpha": {"logs"}},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			signals := map[string]string{"metrics": "beta"}
-			if len(tt.signals) > 0 {
-				signals = tt.signals
+			stability := map[string][]string{"beta": {"metrics"}}
+			if len(tt.stability) > 0 {
+				stability = tt.stability
 			}
 			md := metadata{
 				Status: Status{
-					Stability:     signals,
+					Stability:     stability,
 					Distributions: []string{"contrib"},
 					Class:         tt.componentClass,
 					Warnings:      tt.warnings,
@@ -264,7 +262,7 @@ func TestGenerateStatusMetadata(t *testing.T) {
 			md: metadata{
 				Type: "foo",
 				Status: Status{
-					Stability:     map[string]string{"metrics": "beta"},
+					Stability:     map[string][]string{"beta": {"metrics"}},
 					Distributions: []string{"contrib"},
 					Class:         "receiver",
 				},
@@ -288,7 +286,7 @@ const (
 			md: metadata{
 				Type: "foo",
 				Status: Status{
-					Stability:     map[string]string{"metrics": "alpha"},
+					Stability:     map[string][]string{"alpha": {"metrics"}},
 					Distributions: []string{"contrib"},
 					Class:         "receiver",
 				},

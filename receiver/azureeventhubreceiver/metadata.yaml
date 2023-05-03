@@ -3,6 +3,5 @@ type: azureeventhubreceiver
 status:
   class: receiver
   stability:
-    logs: alpha
-    metrics: alpha
+    alpha: [metrics, logs]
   distributions: [contrib]

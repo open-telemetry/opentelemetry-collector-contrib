@@ -3,7 +3,5 @@ type: parquet
 status:
   class: exporter
   stability:
-    traces: development
-    metrics: development
-    logs: development
+    development: [traces, metrics, logs]
   distributions: [contrib]

@@ -3,6 +3,6 @@ type: zipkin
 status:
   class: exporter
   stability:
-    traces: beta
+    beta: [traces]
   distributions: [core, contrib]
 

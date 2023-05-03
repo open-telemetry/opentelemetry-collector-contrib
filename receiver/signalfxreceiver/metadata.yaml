@@ -3,6 +3,5 @@ type: signalfx
 status:
   class: receiver
   stability:
-    metrics: beta
-    logs: beta
+    beta: [metrics, logs]
   distributions: [contrib]

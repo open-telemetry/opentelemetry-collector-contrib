@@ -3,6 +3,6 @@ type: groupbytrace
 status:
   class: processor
   stability:
-    traces: beta
+    beta: [traces]
   distributions: [contrib]
   warnings: [Statefulness]

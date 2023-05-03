@@ -3,5 +3,5 @@ type: loki
 status:
   class: exporter
   stability:
-    logs: beta
+    beta: [logs]
   distributions: [contrib]

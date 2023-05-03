@@ -3,6 +3,6 @@ type: tencentcloud_logservice
 status:
   class: exporter
   stability:
-    logs: beta
+    beta: [logs]
   distributions: [contrib]
 

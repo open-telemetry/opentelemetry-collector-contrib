@@ -3,7 +3,5 @@ type: splunkhecexporter
 status:
   class: exporter
   stability:
-    metrics: beta
-    logs: beta
-    traces: beta
+    beta: [traces, metrics, logs]
   distributions: [contrib]

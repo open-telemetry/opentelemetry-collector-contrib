@@ -3,5 +3,5 @@ type: deltatorate
 status:
   class: processor
   stability:
-    metrics: development
+    development: [metrics]
   distributions: [contrib]

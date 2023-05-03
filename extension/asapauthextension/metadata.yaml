@@ -3,5 +3,5 @@ type: asapclient
 status:
   class: extension
   stability:
-    extension: beta
+    beta: [extension]
   distributions: [contrib]

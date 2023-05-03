@@ -8,6 +8,6 @@ import (
 
 const (
 	Type             = "azureeventhubreceiver"
-	LogsStability    = component.StabilityLevelAlpha
 	MetricsStability = component.StabilityLevelAlpha
+	LogsStability    = component.StabilityLevelAlpha
 )

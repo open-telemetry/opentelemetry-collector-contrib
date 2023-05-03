@@ -3,7 +3,7 @@ type: aerospikereceiver
 status:
   class: receiver
   stability:
-    metrics: alpha
+    alpha: [metrics]
   distributions: [contrib]
 
 resource_attributes:

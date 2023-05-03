@@ -3,6 +3,5 @@ type: sumologic
 status:
   class: exporter
   stability:
-    logs: beta
-    metrics: beta
+    beta: [metrics, logs]
   distributions: [contrib]

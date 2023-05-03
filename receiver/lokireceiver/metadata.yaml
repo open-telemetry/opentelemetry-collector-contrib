@@ -3,5 +3,5 @@ type: loki
 status:
   class: receiver
   stability:
-    logs: alpha
+    alpha: [logs]
   distributions: [contrib]
