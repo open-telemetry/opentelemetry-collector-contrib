@@ -246,13 +246,13 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
 
-		assert.Len(t, defaultSink.AllMetrics(), 0)
+		assert.Len(t, defaultSink.AllMetrics(), 1)
 		assert.Len(t, sink0.AllMetrics(), 1)
-		assert.Len(t, sink1.AllMetrics(), 1)
+		assert.Len(t, sink1.AllMetrics(), 0)
 
-		assert.Equal(t, sink0.AllMetrics()[0].MetricCount(), 2)
-		assert.Equal(t, sink1.AllMetrics()[0].MetricCount(), 2)
-		assert.Equal(t, sink0.AllMetrics(), sink1.AllMetrics())
+		assert.Equal(t, defaultSink.AllMetrics()[0].MetricCount(), 1)
+		assert.Equal(t, sink0.AllMetrics()[0].MetricCount(), 1)
+		assert.Equal(t, defaultSink.AllMetrics(), sink0.AllMetrics())
 	})
 }
 

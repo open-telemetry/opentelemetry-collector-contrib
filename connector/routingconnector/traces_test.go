@@ -92,7 +92,7 @@ func TestTraces_RegisterConsumersForValidRoute(t *testing.T) {
 	}()
 }
 
-func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
+func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	cfg := &Config{
 		DefaultPipelines: []string{"traces/default"},
 		Table: []RoutingTableItem{
@@ -268,7 +268,7 @@ func TestTraces_ResourceAttribute_DroppedByOTTL(t *testing.T) {
 	)
 }
 
-func TestTraceProcessorCapabilities(t *testing.T) {
+func TestTraceConnectorCapabilities(t *testing.T) {
 	cfg := &Config{
 		Table: []RoutingTableItem{{
 			Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,

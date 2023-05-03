@@ -49,6 +49,42 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			configPath: "config_metrics.yaml",
+			id:         component.NewIDWithName(typeStr, ""),
+			expected: &Config{
+				DefaultPipelines: []string{"metrics/otlp-all"},
+				ErrorMode:        ottl.PropagateError,
+				Table: []RoutingTableItem{
+					{
+						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"acme\"",
+						Pipelines: []string{"metrics/jaeger-acme", "metrics/otlp-acme"},
+					},
+					{
+						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"globex\"",
+						Pipelines: []string{"metrics/otlp-globex"},
+					},
+				},
+			},
+		},
+		{
+			configPath: "config_logs.yaml",
+			id:         component.NewIDWithName(typeStr, ""),
+			expected: &Config{
+				DefaultPipelines: []string{"logs/otlp-all"},
+				ErrorMode:        ottl.PropagateError,
+				Table: []RoutingTableItem{
+					{
+						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"acme\"",
+						Pipelines: []string{"logs/jaeger-acme", "logs/otlp-acme"},
+					},
+					{
+						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"globex\"",
+						Pipelines: []string{"logs/otlp-globex"},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range testcases {
