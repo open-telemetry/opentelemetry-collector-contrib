@@ -1,57 +1,57 @@
-module opentelemetry-collector-contrib
+module github.com/open-telemetry/opentelemetry-collector-contrib
 
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver v0.76.3
@@ -61,108 +61,107 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector v0.76.2-0.20230502195822-4df44379e094
 	go.opentelemetry.io/collector/exporter v0.76.2-0.20230502195822-4df44379e094
@@ -189,7 +188,7 @@ require (
 	cloud.google.com/go/pubsub v1.30.0 // indirect
 	cloud.google.com/go/spanner v1.45.1 // indirect
 	cloud.google.com/go/trace v1.9.0 // indirect
-	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
+	code.cloudfoundry.org/clock v1.0.0 // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20211115184647-b584dd5df32c // indirect
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible // indirect
 	code.cloudfoundry.org/rfc5424 v0.0.0-20201103192249-000122071b78 // indirect
@@ -214,6 +213,7 @@ require (
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.28 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.22 // indirect
+	github.com/Azure/go-autorest/autorest/azure/auth v0.5.12 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
@@ -245,6 +245,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.37.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.13.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.37.1 // indirect
+	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/ReneKroon/ttlcache/v2 v2.11.0 // indirect
 	github.com/SAP/go-hdb v1.2.1 // indirect
@@ -295,7 +296,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/checkpoint-restore/go-criu/v5 v5.3.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
-	github.com/cilium/ebpf v0.7.0 // indirect
+	github.com/cilium/ebpf v0.8.1 // indirect
 	github.com/cloudfoundry-incubator/uaago v0.0.0-20190307164349-8136b7bbe76e // indirect
 	github.com/cncf/udpa/go v0.0.0-20220112060539-c52dc94e7fbe // indirect
 	github.com/cncf/xds/go v0.0.0-20230112175826-46e39c7b9b43 // indirect
@@ -353,7 +354,7 @@ require (
 	github.com/gocql/gocql v1.3.1 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
-	github.com/gofrs/uuid v4.2.0+incompatible // indirect
+	github.com/gofrs/uuid v4.3.1+incompatible // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
@@ -364,6 +365,7 @@ require (
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/btree v1.1.2 // indirect
 	github.com/google/cadvisor v0.47.1 // indirect
 	github.com/google/flatbuffers v2.0.8+incompatible // indirect
 	github.com/google/gnostic v0.6.9 // indirect
@@ -445,7 +447,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-ieproxy v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
-	github.com/mattn/go-sqlite3 v1.14.16 // indirect
+	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/microsoft/ApplicationInsights-Go v0.4.4 // indirect
 	github.com/miekg/dns v1.1.51 // indirect
@@ -505,7 +507,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
 	github.com/opencontainers/runtime-spec v1.0.3-0.20220909204839-494a5a6aca78 // indirect
-	github.com/opencontainers/selinux v1.10.0 // indirect
+	github.com/opencontainers/selinux v1.10.1 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
@@ -552,15 +554,16 @@ require (
 	github.com/snowflakedb/gosnowflake v1.6.18 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
+	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.645 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.650 // indirect
 	github.com/tg123/go-htpasswd v1.2.1 // indirect
-	github.com/tidwall/gjson v1.10.2 // indirect
+	github.com/tidwall/gjson v1.14.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/tinylru v1.1.0 // indirect
@@ -572,8 +575,8 @@ require (
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
-	github.com/vishvananda/netlink v1.1.1-0.20201029203352-d40f9887b852 // indirect
-	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
+	github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5 // indirect
+	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f // indirect
 	github.com/vmware/go-vmware-nsxt v0.0.0-20220328155605-f49a14c1ef5f // indirect
 	github.com/vmware/govmomi v0.30.4 // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
@@ -648,390 +651,421 @@ require (
 	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
+// Replace references to modules that are in this repository with their relateive paths
+// so that we always build with current (latest) version of the source code.
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ./internal/aws/awsutil
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight => ./internal/aws/containerinsight
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs => ./internal/aws/cwlogs
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ./internal/aws/ecsutil
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s => ./internal/aws/k8s
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics => ./internal/aws/metrics
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy => ./internal/aws/proxy
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray => ./internal/aws/xray
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ./internal/common
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ./internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ./internal/docker
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ./internal/filter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ./internal/k8sconfig
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ./internal/kubelet
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ./internal/metadataproviders
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ./internal/sharedcomponent
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ./internal/splunk
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ./exporter/alibabacloudlogserviceexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter => ./exporter/awscloudwatchlogsexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ./exporter/awsemfexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter => ./exporter/awskinesisexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter => ./exporter/awsxrayexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter => ./exporter/azuredataexplorerexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter => ./exporter/azuremonitorexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ./exporter/carbonexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter => ./exporter/clickhouseexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter => ./exporter/cassandraexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter => ./exporter/coralogixexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter => ./exporter/datadogexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter => ./exporter/dynatraceexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter => ./exporter/f5cloudexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter => ./exporter/fileexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter => ./exporter/googlecloudexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter => ./exporter/googlemanagedprometheusexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter => ./exporter/googlecloudpubsubexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter => ./exporter/influxdbexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter => ./exporter/instanaexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter => ./exporter/jaegerexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter => ./exporter/jaegerthrifthttpexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter => ./exporter/kafkaexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter => ./exporter/loadbalancingexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter => ./exporter/logicmonitorexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter => ./exporter/logzioexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter => ./exporter/lokiexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter => ./exporter/mezmoexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ./exporter/opencensusexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/common
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter => ./exporter/parquetexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter => ./exporter/prometheusexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ./exporter/prometheusremotewriteexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter => ./exporter/pulsarexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter => ./exporter/sapmexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter => ./exporter/sentryexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ./exporter/signalfxexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter => ./exporter/skywalkingexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ./exporter/splunkhecexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter => ./exporter/sumologicexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter => ./exporter/tanzuobservabilityexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter => ./exporter/tencentcloudlogserviceexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter => ./exporter/elasticsearchexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter => ./exporter/zipkinexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension => ./extension/asapauthextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy => ./extension/awsproxy
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension => ./extension/basicauthextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension => ./extension/bearertokenauthextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension => ./extension/headerssetterextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension => ./extension/healthcheckextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder => ./extension/httpforwarder
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ./extension/oauth2clientauthextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ./extension/observer
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver => ./extension/observer/ecstaskobserver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver => ./extension/observer/hostobserver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver => ./extension/observer/k8sobserver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension => ./extension/oidcauthextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension => ./extension/pprofextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension => ./extension/sigv4authextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ./extension/storage
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ./pkg/batchperresourceattr
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal => ./pkg/batchpersignal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters => ./pkg/winperfcounters
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ./pkg/experimentalmetricmetadata
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ./pkg/ottl
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ./pkg/pdatatest
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ./pkg/pdatautil
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ./pkg/resourcetotelemetry
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ./pkg/stanza
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ./pkg/translator/jaeger
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki => ./pkg/translator/loki
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ./pkg/translator/opencensus
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ./pkg/translator/prometheus
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ./pkg/translator/prometheusremotewrite
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ./pkg/translator/signalfx
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ./pkg/translator/zipkin
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor => ./processor/attributesprocessor
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor => ./processor/cumulativetodeltaprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor => ./processor/datadogprocessor
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor => ./processor/deltatorateprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor => ./processor/filterprocessor
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor => ./processor/groupbyattrsprocessor
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ./processor/groupbytraceprocessor
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ./processor/k8sattributesprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor => ./processor/metricsgenerationprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ./processor/metricstransformprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor => ./processor/probabilisticsamplerprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ./processor/resourcedetectionprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor => ./processor/resourceprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor => ./processor/routingprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor => ./processor/servicegraphprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor => ./processor/spanmetricsprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor => ./processor/spanprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor => ./processor/tailsamplingprocessor
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ./processor/transformprocessor
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver => ./receiver/activedirectorydsreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver => ./receiver/aerospikereceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => ./receiver/apachereceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver => ./receiver/awscloudwatchreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver => ./receiver/awscontainerinsightreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => ./receiver/awsecscontainermetricsreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver => ./receiver/awsfirehosereceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver => ./receiver/awsxrayreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver => ./receiver/azureblobreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ./receiver/azureeventhubreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver => ./receiver/azuremonitorreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver => ./receiver/bigipreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ./receiver/carbonreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver => ./receiver/chronyreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver => ./receiver/cloudfoundryreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver => ./receiver/collectdreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver => ./receiver/couchdbreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ./receiver/datadogreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver => ./receiver/flinkmetricsreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => ./receiver/dockerstatsreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver => ./receiver/dotnetdiagnosticsreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver => ./receiver/elasticsearchreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver => ./receiver/expvarreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ./receiver/filelogreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver => ./receiver/googlecloudspannerreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver => ./receiver/googlecloudpubsubreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver => ./receiver/haproxyreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ./receiver/hostmetricsreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver => ./receiver/httpcheckreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver => ./receiver/influxdbreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver => ./receiver/iisreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver => ./receiver/jaegerreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver => ./receiver/jmxreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver => ./receiver/journaldreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => ./receiver/k8sclusterreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver => ./receiver/k8seventsreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver => ./receiver/k8sobjectsreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => ./receiver/fluentforwardreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver => ./receiver/kafkametricsreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver => ./receiver/kafkareceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => ./receiver/kubeletstatsreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver => ./receiver/lokireceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver => ./receiver/memcachedreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => ./receiver/mongodbreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver => ./receiver/mongodbatlasreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver => ./receiver/mysqlreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver => ./receiver/nginxreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver => ./receiver/nsxtreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ./receiver/opencensusreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver => ./receiver/oracledbreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver => ./receiver/otlpjsonfilereceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver => ./receiver/podmanreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => ./receiver/postgresqlreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver => ./receiver/prometheusexecreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ./receiver/prometheusreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver => ./receiver/pulsarreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver => ./receiver/purefareceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver => ./receiver/purefbreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver => ./receiver/rabbitmqreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator => ./receiver/receivercreator
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension => ../github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver => ./receiver/redisreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver => ./receiver/riakreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver => ./receiver/saphanareceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver => ./receiver/sapmreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver => ./receiver/signalfxreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver => ./receiver/simpleprometheusreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver => ./receiver/skywalkingreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver => ./receiver/snmpreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver => ./receiver/solacereceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ./receiver/splunkhecreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver => ./receiver/sqlqueryreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver => ./receiver/sqlserverreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ./receiver/sshcheckreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver => ./receiver/statsdreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor => ../github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver => ./receiver/syslogreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver => ./receiver/tcplogreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver => ./receiver/udplogreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver => ./receiver/vcenterreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver => ./receiver/wavefrontreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver => ../github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver => ./receiver/windowseventlogreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver => ./receiver/windowsperfcountersreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter => ../github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver => ./receiver/zipkinreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver => ./receiver/zookeeperreceiver
+
+// see https://github.com/google/gnostic/issues/262
+replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0.5.5
+
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/12322#issuecomment-1185029670
+replace github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 => github.com/docker/go-connections v0.4.0
+
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+	v0.37.0 // Contains dependencies on v0.36.0 components, which should have been updated to v0.37.0.
+)
+
+// see https://github.com/distribution/distribution/issues/3590
+exclude github.com/docker/distribution v2.8.0+incompatible
+
+// see https://github.com/DataDog/agent-payload/issues/218
+exclude github.com/DataDog/agent-payload/v5 v5.0.59
+
+// see https://github.com/mattn/go-ieproxy/issues/45
+replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
+
+// openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
+replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
+
+// It appears that the v0.2.0 tag was modified.  Replacing with v0.2.1
+replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
