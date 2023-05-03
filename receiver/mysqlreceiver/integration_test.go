@@ -47,6 +47,7 @@ func TestMySqlIntegration(t *testing.T) {
 
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.CollectionInterval = time.Second
 		cfg.Endpoint = net.JoinHostPort(hostname, "3306")
 		cfg.Username = "otel"
 		cfg.Password = "otel"
@@ -61,15 +62,21 @@ func TestMySqlIntegration(t *testing.T) {
 		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
-		actualMetrics := consumer.AllMetrics()[0]
-
 		expectedFile := filepath.Join("testdata", "integration", "expected.8_0.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-			pmetrictest.IgnoreMetricValues(), pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+		compareOpts := []pmetrictest.CompareMetricsOption{
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp()}
+
+		require.Eventually(t, func() bool {
+			allMetrics := consumer.AllMetrics()
+			latestMetrics := allMetrics[len(allMetrics)-1]
+			return nil == pmetrictest.CompareMetrics(expectedMetrics, latestMetrics, compareOpts...)
+		}, 30*time.Second, time.Second)
 	})
 }
 
