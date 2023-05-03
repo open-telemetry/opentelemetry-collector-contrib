@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	typeStr = "nginx"
-  stability = component.StabilityLevelBeta
+	typeStr   = "nginx"
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for nginx receiver.
