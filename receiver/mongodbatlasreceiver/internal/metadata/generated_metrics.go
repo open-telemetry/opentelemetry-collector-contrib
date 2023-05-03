@@ -288,12 +288,12 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
+// ResourceAttributeSettings provides common settings for a particular resource attribute.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for mongoatlasreceiver metrics.
+// ResourceAttributesSettings provides settings for mongoatlasreceiver resource attributes.
 type ResourceAttributesSettings struct {
 	MongodbAtlasClusterName     ResourceAttributeSettings `mapstructure:"mongodb_atlas.cluster.name"`
 	MongodbAtlasDbName          ResourceAttributeSettings `mapstructure:"mongodb_atlas.db.name"`

@@ -64,12 +64,12 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
+// ResourceAttributeSettings provides common settings for a particular resource attribute.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for sshcheckreceiver metrics.
+// ResourceAttributesSettings provides settings for sshcheckreceiver resource attributes.
 type ResourceAttributesSettings struct {
 	SSHEndpoint ResourceAttributeSettings `mapstructure:"ssh.endpoint"`
 }

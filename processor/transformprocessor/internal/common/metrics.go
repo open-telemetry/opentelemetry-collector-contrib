@@ -153,7 +153,7 @@ type MetricParserCollection struct {
 
 type MetricParserCollectionOption func(*MetricParserCollection) error
 
-func WithMetricParser(functions map[string]interface{}) MetricParserCollectionOption {
+func WithMetricParser(functions map[string]ottl.Factory[ottlmetric.TransformContext]) MetricParserCollectionOption {
 	return func(mp *MetricParserCollection) error {
 		metricParser, err := ottlmetric.NewParser(functions, mp.settings)
 		if err != nil {
@@ -164,7 +164,7 @@ func WithMetricParser(functions map[string]interface{}) MetricParserCollectionOp
 	}
 }
 
-func WithDataPointParser(functions map[string]interface{}) MetricParserCollectionOption {
+func WithDataPointParser(functions map[string]ottl.Factory[ottldatapoint.TransformContext]) MetricParserCollectionOption {
 	return func(mp *MetricParserCollection) error {
 		dataPointParser, err := ottldatapoint.NewParser(functions, mp.settings)
 		if err != nil {

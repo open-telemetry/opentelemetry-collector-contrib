@@ -15,8 +15,8 @@ require (
 	go.opentelemetry.io/build-tools/issuegenerator v0.7.0
 	go.opentelemetry.io/build-tools/multimod v0.7.0
 	go.opentelemetry.io/collector/cmd/builder v0.76.1
-	golang.org/x/tools v0.8.0
-	golang.org/x/vuln v0.0.0-20230313161840-8a73a7e4f203
+	golang.org/x/tools v0.8.1-0.20230421161920-b9619ee54b47
+	golang.org/x/vuln v0.1.0
 )
 
 require (
@@ -210,11 +210,11 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	honnef.co/go/tools v0.4.0 // indirect
+	honnef.co/go/tools v0.4.3 // indirect
 	mvdan.cc/gofumpt v0.4.0 // indirect
 	mvdan.cc/interfacer v0.0.0-20180901003855-c20040233aed // indirect
 	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect
-	mvdan.cc/unparam v0.0.0-20221223090309-7455f1af531d // indirect
+	mvdan.cc/unparam v0.0.0-20230312165513-e84e2d14e3b8 // indirect
 )
 
 // openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD

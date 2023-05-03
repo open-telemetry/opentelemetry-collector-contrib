@@ -41,8 +41,8 @@ func (m *mockExporter) Aggregation(kind sdkmetric.InstrumentKind) aggregation.Ag
 	return aggregation.Default{}
 }
 
-func (m *mockExporter) Export(ctx context.Context, metrics metricdata.ResourceMetrics) error {
-	m.rms = append(m.rms, &metrics)
+func (m *mockExporter) Export(ctx context.Context, metrics *metricdata.ResourceMetrics) error {
+	m.rms = append(m.rms, metrics)
 	return nil
 }
 

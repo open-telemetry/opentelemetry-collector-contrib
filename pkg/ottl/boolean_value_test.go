@@ -80,7 +80,7 @@ func comparisonHelper(left any, right any, op string) *comparison {
 }
 
 func Test_newComparisonEvaluator(t *testing.T) {
-	p, _ := NewParser[any](
+	p, _ := NewParser(
 		defaultFunctionsForTests(),
 		testParsePath,
 		componenttest.NewNopTelemetrySettings(),
@@ -131,7 +131,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 }
 
 func Test_newConditionEvaluator_invalid(t *testing.T) {
-	p, _ := NewParser[any](
+	p, _ := NewParser(
 		defaultFunctionsForTests(),
 		testParsePath,
 		componenttest.NewNopTelemetrySettings(),
@@ -163,23 +163,23 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 	}
 }
 
-func True[K any]() (ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+func True() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (interface{}, error) {
 		return true, nil
 	}, nil
 }
-func False[K any]() (ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+func False() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (interface{}, error) {
 		return false, nil
 	}, nil
 }
 
 func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	functions := defaultFunctionsForTests()
-	functions["True"] = True[any]
-	functions["False"] = False[any]
+	functions["True"] = createFactory("True", &struct{}{}, True)
+	functions["False"] = createFactory("False", &struct{}{}, False)
 
-	p, _ := NewParser[any](
+	p, _ := NewParser(
 		functions,
 		testParsePath,
 		componenttest.NewNopTelemetrySettings(),
@@ -560,9 +560,9 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 }
 
 func Test_newBooleanExpressionEvaluator_invalid(t *testing.T) {
-	functions := map[string]interface{}{"Hello": hello[interface{}]}
+	functions := map[string]Factory[any]{"Hello": createFactory("Hello", &struct{}{}, hello)}
 
-	p, _ := NewParser[any](
+	p, _ := NewParser(
 		functions,
 		testParsePath,
 		componenttest.NewNopTelemetrySettings(),

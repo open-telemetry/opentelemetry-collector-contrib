@@ -26,22 +26,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
-func hello[K any]() (ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+func hello() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (any, error) {
 		return "world", nil
 	}, nil
 }
 
-func pmap[K any]() (ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+func pmap() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (interface{}, error) {
 		m := pcommon.NewMap()
 		m.PutEmptyMap("foo").PutStr("bar", "pass")
 		return m, nil
 	}, nil
 }
 
-func basicMap[K any]() (ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+func basicMap() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (interface{}, error) {
 		return map[string]interface{}{
 			"foo": map[string]interface{}{
 				"bar": "pass",
@@ -50,16 +50,16 @@ func basicMap[K any]() (ExprFunc[K], error) {
 	}, nil
 }
 
-func pslice[K any]() (ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+func pslice() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (interface{}, error) {
 		s := pcommon.NewSlice()
 		s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("pass")
 		return s, nil
 	}, nil
 }
 
-func basicSlice[K any]() (ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+func basicSlice() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (interface{}, error) {
 		return []interface{}{
 			[]interface{}{
 				"pass",
@@ -425,13 +425,13 @@ func Test_newGetter(t *testing.T) {
 		},
 	}
 
-	functions := map[string]interface{}{
-		"Hello":  hello[interface{}],
-		"PMap":   pmap[interface{}],
-		"Map":    basicMap[interface{}],
-		"PSlice": pslice[interface{}],
-		"Slice":  basicSlice[interface{}],
-	}
+	functions := CreateFactoryMap(
+		createFactory("Hello", &struct{}{}, hello),
+		createFactory("PMap", &struct{}{}, pmap),
+		createFactory("Map", &struct{}{}, basicMap),
+		createFactory("PSlice", &struct{}{}, pslice),
+		createFactory("Slice", &struct{}{}, basicSlice),
+	)
 
 	p, _ := NewParser[any](
 		functions,
@@ -598,13 +598,13 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 		},
 	}
 
-	functions := map[string]interface{}{
-		"Hello":  hello[interface{}],
-		"PMap":   pmap[interface{}],
-		"Map":    basicMap[interface{}],
-		"PSlice": pslice[interface{}],
-		"Slice":  basicSlice[interface{}],
-	}
+	functions := CreateFactoryMap(
+		createFactory("Hello", &struct{}{}, hello),
+		createFactory("PMap", &struct{}{}, pmap),
+		createFactory("Map", &struct{}{}, basicMap),
+		createFactory("PSlice", &struct{}{}, pslice),
+		createFactory("Slice", &struct{}{}, basicSlice),
+	)
 
 	p, _ := NewParser[any](
 		functions,

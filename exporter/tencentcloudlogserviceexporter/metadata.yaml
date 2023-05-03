@@ -1,4 +1,4 @@
-type: tencentcloudlogsserviceexporter
+type: tencentcloud_logservice
 
 status:
   class: exporter

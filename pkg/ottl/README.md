@@ -133,8 +133,8 @@ Converters are made up of 3 parts:
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
 - a combination of zero or more a string key (`["key"]`) or int key (`[0]`)
 
-**The OTTL does not define any converter implementations.**
-Users must include converters in the same map that invocations are supplied.
+**The OTTL does not define any Converter implementations.**
+Users must include Converters in the same map that invocations are supplied.
 The OTTL will use this map and reflection to generate Converters that can then be invoked by the user.
 See [ottlfuncs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#converters) for pre-made, usable Converters.
 
