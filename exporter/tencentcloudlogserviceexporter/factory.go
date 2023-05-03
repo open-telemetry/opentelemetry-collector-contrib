@@ -25,15 +25,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/internal/metadata"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "tencentcloud_logservice"
-)
-
 // NewFactory creates a factory for tencentcloud LogService exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		exporter.WithLogs(createLogsExporter, metadata.Stability))
 }
