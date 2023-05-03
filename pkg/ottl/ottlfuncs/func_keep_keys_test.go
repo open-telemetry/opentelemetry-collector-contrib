@@ -77,10 +77,9 @@ func Test_keepKeys(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := KeepKeys(tt.target, tt.keys)
-			assert.NoError(t, err)
+			exprFunc := keepKeys(tt.target, tt.keys)
 
-			_, err = exprFunc(nil, scenarioMap)
+			_, err := exprFunc(nil, scenarioMap)
 			assert.Nil(t, err)
 
 			expected := pcommon.NewMap()
@@ -101,10 +100,9 @@ func Test_keepKeys_bad_input(t *testing.T) {
 
 	keys := []string{"anything"}
 
-	exprFunc, err := KeepKeys[interface{}](target, keys)
-	assert.NoError(t, err)
+	exprFunc := keepKeys[interface{}](target, keys)
 
-	_, err = exprFunc(nil, input)
+	_, err := exprFunc(nil, input)
 	assert.Error(t, err)
 }
 
@@ -117,8 +115,7 @@ func Test_keepKeys_get_nil(t *testing.T) {
 
 	keys := []string{"anything"}
 
-	exprFunc, err := KeepKeys[interface{}](target, keys)
-	assert.NoError(t, err)
-	_, err = exprFunc(nil, nil)
+	exprFunc := keepKeys[interface{}](target, keys)
+	_, err := exprFunc(nil, nil)
 	assert.Error(t, err)
 }
