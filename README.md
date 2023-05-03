@@ -97,6 +97,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
 Emeritus Approvers:
+
 - [Przemek Maciolek](https://github.com/pmm-sumo)
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
@@ -110,6 +111,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Maintainers
+
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).
