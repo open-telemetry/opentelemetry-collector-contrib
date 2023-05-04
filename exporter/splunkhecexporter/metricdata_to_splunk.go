@@ -302,7 +302,8 @@ func mergeEventsToMultiMetricFormat(events []*splunk.Event) ([]*splunk.Event, er
 
 	for _, e := range events {
 		cloned := copyEventWithoutValues(e)
-		data, err := jsoniter.Marshal(cloned)
+		marshaler := jsoniter.ConfigCompatibleWithStandardLibrary
+		data, err := marshaler.Marshal(cloned)
 		if err != nil {
 			return nil, err
 		}
