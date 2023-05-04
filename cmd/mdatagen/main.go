@@ -171,6 +171,10 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 	tmpl := templatize(tmplFile, md)
 	buf := bytes.Buffer{}
 
+	if tmplFile == "templates/status.go.tmpl" {
+		md.Type = strings.TrimSuffix(md.Type, "receiver")
+	}
+
 	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
 		return fmt.Errorf("failed executing template: %w", err)
 	}

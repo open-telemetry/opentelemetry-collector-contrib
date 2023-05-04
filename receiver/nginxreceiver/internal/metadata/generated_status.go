@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "bigip"
+	Type      = "nginx"
 	Stability = component.StabilityLevelBeta
 )
