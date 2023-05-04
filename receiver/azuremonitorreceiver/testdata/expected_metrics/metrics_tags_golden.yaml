@@ -61,6 +61,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654622051"
             name: azure_metric1_count
@@ -75,6 +78,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654639679"
             name: azure_metric2_maximum
@@ -89,6 +95,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654639679"
             name: azure_metric2_total
@@ -103,6 +112,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654622051"
             name: azure_metric1_maximum
@@ -117,6 +129,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654639679"
             name: azure_metric2_count
@@ -131,6 +146,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654645513"
             name: azure_metric3_maximum
@@ -145,6 +163,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654645513"
             name: azure_metric3_total
@@ -198,6 +219,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654622051"
             name: azure_metric1_minimum
@@ -251,6 +275,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654645513"
             name: azure_metric3_minimum
@@ -301,6 +328,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654622051"
             name: azure_metric1_total
@@ -315,6 +345,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654645513"
             name: azure_metric3_average
@@ -357,6 +390,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654622051"
             name: azure_metric1_average
@@ -371,6 +407,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654639679"
             name: azure_metric2_minimum
@@ -410,6 +449,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654639679"
             name: azure_metric2_average
@@ -424,6 +466,9 @@ resourceMetrics:
                     - key: location
                       value:
                         stringValue: location1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
                   startTimeUnixNano: "1681790471654481953"
                   timeUnixNano: "1681790471654645513"
             name: azure_metric3_count
