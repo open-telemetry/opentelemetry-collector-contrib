@@ -120,7 +120,7 @@ func TestLoadConfig(t *testing.T) {
 						Exporters: []string{"jaeger/acme"},
 					},
 					{
-						Statement: "delete_key(resource.attributes, \"X-Tenant\") where IsMatch(resource.attributes[\"X-Tenant\"], \".*corp\") == true",
+						Statement: "delete_key(resource.attributes, \"X-Tenant\") where IsMatch(resource.attributes[\"X-Tenant\"], \".*corp\")",
 						Exporters: []string{"jaeger/ecorp"},
 					},
 				},

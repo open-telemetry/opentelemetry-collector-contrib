@@ -98,12 +98,12 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
+// ResourceAttributeSettings provides common settings for a particular resource attribute.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for aerospikereceiver metrics.
+// ResourceAttributesSettings provides settings for aerospikereceiver resource attributes.
 type ResourceAttributesSettings struct {
 	AerospikeNamespace ResourceAttributeSettings `mapstructure:"aerospike.namespace"`
 	AerospikeNodeName  ResourceAttributeSettings `mapstructure:"aerospike.node.name"`

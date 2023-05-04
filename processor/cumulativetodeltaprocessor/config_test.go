@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				Include: MatchMetrics{
 					Metrics: []string{
@@ -62,11 +63,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:       component.NewIDWithName(typeStr, "empty"),
+			id:       component.NewIDWithName(metadata.Type, "empty"),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "regexp"),
+			id: component.NewIDWithName(metadata.Type, "regexp"),
 			expected: &Config{
 				Include: MatchMetrics{
 					Metrics: []string{
@@ -90,11 +91,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "missing_match_type"),
+			id:           component.NewIDWithName(metadata.Type, "missing_match_type"),
 			errorMessage: "match_type must be set if metrics are supplied",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "missing_name"),
+			id:           component.NewIDWithName(metadata.Type, "missing_name"),
 			errorMessage: "metrics must be supplied if match_type is set",
 		},
 	}

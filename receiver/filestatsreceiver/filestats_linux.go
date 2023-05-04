@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ func collectStats(now pcommon.Timestamp, fileinfo os.FileInfo, metricsBuilder *m
 	stat := fileinfo.Sys().(*syscall.Stat_t)
 	atime := stat.Atim.Sec
 	ctime := stat.Ctim.Sec
-	metricsBuilder.RecordFileAtimeDataPoint(now, atime)
-	metricsBuilder.RecordFileCtimeDataPoint(now, ctime, fileinfo.Mode().Perm().String())
+	//nolint
+	metricsBuilder.RecordFileAtimeDataPoint(now, int64(atime))
+	//nolint
+	metricsBuilder.RecordFileCtimeDataPoint(now, int64(ctime), fileinfo.Mode().Perm().String())
 }

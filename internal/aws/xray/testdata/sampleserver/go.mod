@@ -6,7 +6,7 @@ require github.com/aws/aws-xray-sdk-go v1.8.1
 
 require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
-	github.com/aws/aws-sdk-go v1.44.249 // indirect
+	github.com/aws/aws-sdk-go v1.44.255 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
@@ -22,4 +22,8 @@ require (
 	google.golang.org/protobuf v1.30.0 // indirect
 )
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)

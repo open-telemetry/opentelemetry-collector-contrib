@@ -1,4 +1,4 @@
-type: ecsobserver
+type: ecs_observer
 
 status:
   class: extension

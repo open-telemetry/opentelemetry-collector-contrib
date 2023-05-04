@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.76.1
+    version: v0.76.3
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -166,7 +166,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver

@@ -1,4 +1,4 @@
-type: oauth2clientauthextension
+type: oauth2client
 
 status:
   class: extension

@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -58,11 +59,11 @@ func TestLoadConfig(t *testing.T) {
 		expected *Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: defaultCfg,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "allsettings"),
+			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
 				AccessToken: "testToken",
 				Realm:       "us1",

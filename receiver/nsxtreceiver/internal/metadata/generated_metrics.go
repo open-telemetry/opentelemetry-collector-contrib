@@ -68,12 +68,12 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
+// ResourceAttributeSettings provides common settings for a particular resource attribute.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for nsxtreceiver metrics.
+// ResourceAttributesSettings provides settings for nsxtreceiver resource attributes.
 type ResourceAttributesSettings struct {
 	DeviceID     ResourceAttributeSettings `mapstructure:"device.id"`
 	NsxtNodeID   ResourceAttributeSettings `mapstructure:"nsxt.node.id"`

@@ -378,7 +378,7 @@ processors:
         - 'name == "app_3"'
       spanevent:
         - 'attributes["grpc"] == true'
-        - 'IsMatch(name, ".*grpc.*") == true'
+        - 'IsMatch(name, ".*grpc.*")'
     metrics:
       metric:
           - 'name == "my.metric" and resource.attributes["my_label"] == "abc123"'
@@ -388,7 +388,7 @@ processors:
           - 'resource.attributes["service.name"] == "my_service_name"'
     logs:
       log_record:
-        - 'IsMatch(body, ".*password.*") == true'
+        - 'IsMatch(body, ".*password.*")'
         - 'severity_number < SEVERITY_NUMBER_WARN'
 ```
 

@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "basicauthextension"
+	Type      = "basicauth"
 	Stability = component.StabilityLevelBeta
 )

@@ -1,4 +1,4 @@
-type: basicauthextension
+type: basicauth
 
 status:
   class: extension

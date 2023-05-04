@@ -318,9 +318,9 @@ exporters:
     endpoint: tcp://127.0.0.1:9000?dial_timeout=10s&compress=lz4
     database: otel
     ttl_days: 3
-    logs_table: otel_logs
-    traces_table: otel_traces
-    metrics_table: otel_metrics
+    logs_table_name: otel_logs
+    traces_table_name: otel_traces
+    metrics_table_name: otel_metrics
     timeout: 5s
     retry_on_failure:
       enabled: true
