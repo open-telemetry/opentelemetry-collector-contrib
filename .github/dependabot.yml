@@ -773,11 +773,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/receiver/dotnetdiagnosticsreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/receiver/elasticsearchreceiver"
     schedule:
       interval: "weekly"
@@ -1099,6 +1094,16 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/windowseventlogreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/windowsperfcountersreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/zipkinreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"

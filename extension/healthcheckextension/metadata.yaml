@@ -1,4 +1,4 @@
-type: healthcheck
+type: health_check
 
 status:
   class: extension

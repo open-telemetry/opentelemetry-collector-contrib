@@ -1,4 +1,4 @@
-type: otlpjsonfilereceiver
+type: otlpjsonfile
 
 status:
   class: receiver

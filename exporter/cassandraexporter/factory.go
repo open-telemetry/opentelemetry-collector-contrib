@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,15 +21,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
 
-const (
-	typeStr   = "cassandra"
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter/internal/metadata"
 )
 
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(typeStr, createDefaultConfig, exporter.WithTraces(createTracesExporter, stability), exporter.WithLogs(createLogsExporter, stability))
+	return exporter.NewFactory(metadata.Type,
+		createDefaultConfig,
+		exporter.WithTraces(createTracesExporter, metadata.Stability),
+		exporter.WithLogs(createLogsExporter, metadata.Stability),
+	)
 }
 
 func createDefaultConfig() component.Config {
