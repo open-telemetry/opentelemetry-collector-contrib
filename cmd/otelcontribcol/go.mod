@@ -110,7 +110,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.76.3
@@ -156,6 +155,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver v0.76.3
@@ -717,8 +717,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsp
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../pkg/translator/zipkin
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver => ../../receiver/dotnetdiagnosticsreceiver
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor => ../../processor/groupbyattrsprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter => ../../exporter/tanzuobservabilityexporter
@@ -996,6 +994,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubel
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver => ../../receiver/sqlserverreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver => ../../receiver/skywalkingreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver => ../../receiver/snowflakereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver => ../../receiver/riakreceiver
 

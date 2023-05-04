@@ -1,4 +1,4 @@
-type: splunkhecreceiver
+type: splunk_hec
 
 status:
   class: receiver

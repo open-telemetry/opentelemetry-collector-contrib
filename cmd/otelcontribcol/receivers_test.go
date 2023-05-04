@@ -376,6 +376,9 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
+			receiver: "snowflake",
+		},
+		{
 			receiver: "splunk_hec",
 		},
 		{
