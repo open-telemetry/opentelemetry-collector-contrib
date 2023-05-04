@@ -217,7 +217,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], "pass") where IsMatch(name, "operation[AC]") == true`,
+			statement: `set(attributes["test"], "pass") where IsMatch(name, "operation[AC]")`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
 			},

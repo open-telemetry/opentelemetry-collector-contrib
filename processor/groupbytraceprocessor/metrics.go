@@ -19,6 +19,8 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/obsreport"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
 )
 
 var (
@@ -36,50 +38,50 @@ var (
 func MetricViews() []*view.View {
 	return []*view.View{
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumTracesConf.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumTracesConf.Name()),
 			Measure:     mNumTracesConf,
 			Description: mNumTracesConf.Description(),
 			Aggregation: view.LastValue(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumEventsInQueue.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumEventsInQueue.Name()),
 			Measure:     mNumEventsInQueue,
 			Description: mNumEventsInQueue.Description(),
 			Aggregation: view.LastValue(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumTracesInMemory.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumTracesInMemory.Name()),
 			Measure:     mNumTracesInMemory,
 			Description: mNumTracesInMemory.Description(),
 			Aggregation: view.LastValue(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mTracesEvicted.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mTracesEvicted.Name()),
 			Measure:     mTracesEvicted,
 			Description: mTracesEvicted.Description(),
 			// sum allows us to start from 0, count will only show up if there's at least one eviction, which might take a while to happen (if ever!)
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mReleasedSpans.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mReleasedSpans.Name()),
 			Measure:     mReleasedSpans,
 			Description: mReleasedSpans.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mReleasedTraces.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mReleasedTraces.Name()),
 			Measure:     mReleasedTraces,
 			Description: mReleasedTraces.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mIncompleteReleases.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mIncompleteReleases.Name()),
 			Measure:     mIncompleteReleases,
 			Description: mIncompleteReleases.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mEventLatency.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mEventLatency.Name()),
 			Measure:     mEventLatency,
 			Description: mEventLatency.Description(),
 			TagKeys: []tag.Key{

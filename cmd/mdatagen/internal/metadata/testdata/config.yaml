@@ -8,7 +8,11 @@ all_set:
     optional.metric:
       enabled: true
   resource_attributes:
+    map.resource.attr:
+      enabled: true
     optional.resource.attr:
+      enabled: true
+    slice.resource.attr:
       enabled: true
     string.enum.resource.attr:
       enabled: true
@@ -23,7 +27,11 @@ none_set:
     optional.metric:
       enabled: false
   resource_attributes:
+    map.resource.attr:
+      enabled: false
     optional.resource.attr:
+      enabled: false
+    slice.resource.attr:
       enabled: false
     string.enum.resource.attr:
       enabled: false

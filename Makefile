@@ -124,7 +124,7 @@ COMMIT?=HEAD
 MODSET?=contrib-core
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
 .PHONY: push-tags
-push-tags: $(MULITMOD) 
+push-tags: $(MULITMOD)
 	$(MULITMOD) verify
 	set -e; for tag in `$(MULITMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
 		echo "pushing tag $${tag}"; \
@@ -139,25 +139,13 @@ gendependabot:
 	@echo "" >> ${DEPENDABOT_PATH}
 	@echo "version: 2" >> ${DEPENDABOT_PATH}
 	@echo "updates:" >> ${DEPENDABOT_PATH}
-	@echo "Add entry for \"/\" github-actions"
-	@echo "  - package-ecosystem: \"github-actions\"" >> ${DEPENDABOT_PATH}
-	@echo "    directory: \"/\"" >> ${DEPENDABOT_PATH}
-	@echo "    schedule:" >> ${DEPENDABOT_PATH}
-	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}
-	@echo "      day: \"wednesday\"" >> ${DEPENDABOT_PATH}
-	@echo "Add entry for \"/\" docker"
-	@echo "  - package-ecosystem: \"docker\"" >> ${DEPENDABOT_PATH}
-	@echo "    directory: \"/\"" >> ${DEPENDABOT_PATH}
-	@echo "    schedule:" >> ${DEPENDABOT_PATH}
-	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}
-	@echo "      day: \"wednesday\"" >> ${DEPENDABOT_PATH}
 	@echo "Add entry for \"/\" gomod"
 	@echo "  - package-ecosystem: \"gomod\"" >> ${DEPENDABOT_PATH}
 	@echo "    directory: \"/\"" >> ${DEPENDABOT_PATH}
 	@echo "    schedule:" >> ${DEPENDABOT_PATH}
 	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}
 	@echo "      day: \"wednesday\"" >> ${DEPENDABOT_PATH}
-	@set -e; for dir in `echo $(NONROOT_MODS) | tr ' ' '\n' | head -n 217 | tr '\n' ' '`; do \
+	@set -e; for dir in `echo $(NONROOT_MODS) | tr ' ' '\n' | head -n 219 | tr '\n' ' '`; do \
 		echo "Add entry for \"$${dir:1}\""; \
 		echo "  - package-ecosystem: \"gomod\"" >> ${DEPENDABOT_PATH}; \
 		echo "    directory: \"$${dir:1}\"" >> ${DEPENDABOT_PATH}; \
@@ -166,7 +154,7 @@ gendependabot:
 		echo "      day: \"wednesday\"" >> ${DEPENDABOT_PATH}; \
 	done
 	@echo "The following modules are not included in the dependabot file because it has a limit of 220 entries:"
-	@set -e; for dir in `echo $(NONROOT_MODS) | tr ' ' '\n' | tail -n +218 | tr '\n' ' '`; do \
+	@set -e; for dir in `echo $(NONROOT_MODS) | tr ' ' '\n' | tail -n +220 | tr '\n' ' '`; do \
 		echo "  - $${dir:1}"; \
 	done
 
@@ -322,7 +310,7 @@ otel-from-lib:
 
 .PHONY: build-examples
 build-examples:
-	docker-compose -f examples/tracing/docker-compose.yml build
+	docker-compose -f examples/demo/docker-compose.yaml build
 	docker-compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
 .PHONY: deb-rpm-package

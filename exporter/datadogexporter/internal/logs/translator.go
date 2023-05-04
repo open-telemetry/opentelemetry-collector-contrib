@@ -166,13 +166,13 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, logger *zap.Logger) data
 }
 
 func extractHostNameAndServiceName(resourceAttrs pcommon.Map, logAttrs pcommon.Map) (host string, service string) {
-	if src, ok := attributes.SourceFromAttributes(resourceAttrs, true); ok && src.Kind == source.HostnameKind {
+	if src, ok := attributes.SourceFromAttrs(resourceAttrs); ok && src.Kind == source.HostnameKind {
 		host = src.Identifier
 	}
 	// hostName is blank from resource
 	// we need to derive from log attributes
 	if host == "" {
-		if src, ok := attributes.SourceFromAttributes(logAttrs, true); ok && src.Kind == source.HostnameKind {
+		if src, ok := attributes.SourceFromAttrs(logAttrs); ok && src.Kind == source.HostnameKind {
 			host = src.Identifier
 		}
 	}

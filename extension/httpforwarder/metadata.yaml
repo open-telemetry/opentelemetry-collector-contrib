@@ -1,6 +1,6 @@
-name: httpforwarder
+type: httpforwarder
 
 status:
-  type: extension
+  class: extension
   stability: beta
   distributions: [contrib]

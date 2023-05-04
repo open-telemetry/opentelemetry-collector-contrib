@@ -16,12 +16,31 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Int[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
+type IntArguments[K any] struct {
+	Target ottl.Getter[K] `ottlarg:"0"`
+}
+
+func NewIntFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("Int", &IntArguments[K]{}, createIntFunction[K])
+}
+
+func createIntFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*IntArguments[K])
+
+	if !ok {
+		return nil, fmt.Errorf("IntFactory args must be of type *IntArguments[K]")
+	}
+
+	return intFunc(args.Target), nil
+}
+
+func intFunc[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		value, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -47,5 +66,5 @@ func Int[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
 		default:
 			return nil, nil
 		}
-	}, nil
+	}
 }

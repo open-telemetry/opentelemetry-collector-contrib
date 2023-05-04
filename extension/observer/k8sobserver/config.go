@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ type Config struct {
 	//       fieldRef:
 	//         fieldPath: spec.nodeName
 	//
-	// Then set this value to ${K8S_NODE_NAME} in the configuration.
+	// Then set this value to ${env:K8S_NODE_NAME} in the configuration.
 	Node string `mapstructure:"node"`
 	// ObservePods determines whether to report observer pod and port endpoints. If `true` and Node is specified
 	// it will only discover pod and port endpoints whose `spec.nodeName` matches the provided node name. If `true` and

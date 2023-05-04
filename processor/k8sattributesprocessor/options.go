@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -99,6 +99,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.StatefulSetName = true
 			case conventions.AttributeK8SStatefulSetUID:
 				p.rules.StatefulSetUID = true
+			case conventions.AttributeK8SContainerName:
+				p.rules.ContainerName = true
 			case conventions.AttributeK8SJobName:
 				p.rules.JobName = true
 			case conventions.AttributeK8SJobUID:

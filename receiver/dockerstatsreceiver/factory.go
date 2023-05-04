@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794"),
-	featuregate.WithRegisterRemovalVersion("0.74.0"),
+	featuregate.WithRegisterToVersion("0.74.0"),
 )
 
 func NewFactory() rcvr.Factory {

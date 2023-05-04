@@ -84,12 +84,12 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
+// ResourceAttributeSettings provides common settings for a particular resource attribute.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for memcachedreceiver metrics.
+// ResourceAttributesSettings provides settings for memcachedreceiver resource attributes.
 type ResourceAttributesSettings struct {
 }
 

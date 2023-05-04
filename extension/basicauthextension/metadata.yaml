@@ -1,6 +1,6 @@
-name: basicauthextension
+type: basicauth
 
 status:
-  type: extension
+  class: extension
   stability: beta
   distributions: [contrib]

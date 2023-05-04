@@ -38,10 +38,16 @@ type Config struct {
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 
+	// Coralogix domain
+	Domain string `mapstructure:"domain"`
+	// GRPC Settings used with Domain
+	DomainSettings configgrpc.GRPCClientSettings `mapstructure:"domain_settings"`
+
 	// Deprecated: [v0.60.0] Coralogix jaeger based trace endpoint
 	// will be removed in the next version
 	// Please use OTLP endpoint using traces.endpoint
 	configgrpc.GRPCClientSettings `mapstructure:",squash"`
+
 	// Coralogix traces ingress endpoint
 	Traces configgrpc.GRPCClientSettings `mapstructure:"traces"`
 
@@ -73,17 +79,17 @@ func isEmpty(endpoint string) bool {
 }
 func (c *Config) Validate() error {
 	// validate that at least one endpoint is set up correctly
-	if isEmpty(c.Endpoint) &&
+	if isEmpty(c.Domain) &&
 		isEmpty(c.Traces.Endpoint) &&
 		isEmpty(c.Metrics.Endpoint) &&
 		isEmpty(c.Logs.Endpoint) {
-		return fmt.Errorf("`traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration file")
+		return fmt.Errorf("`domain` or `traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration")
 	}
 	if c.PrivateKey == "" {
-		return fmt.Errorf("`privateKey` not specified, please fix the configuration file")
+		return fmt.Errorf("`privateKey` not specified, please fix the configuration")
 	}
 	if c.AppName == "" {
-		return fmt.Errorf("`appName` not specified, please fix the configuration file")
+		return fmt.Errorf("`appName` not specified, please fix the configuration")
 	}
 
 	// check if headers exists
@@ -122,4 +128,10 @@ func (c *Config) getMetadataFromResource(res pcommon.Resource) (appName, subsyst
 	}
 
 	return appName, subsystem
+}
+
+func (c *Config) getDomainGrpcSettings() *configgrpc.GRPCClientSettings {
+	settings := c.DomainSettings
+	settings.Endpoint = fmt.Sprintf("ingress.%s:443", c.Domain)
+	return &settings
 }

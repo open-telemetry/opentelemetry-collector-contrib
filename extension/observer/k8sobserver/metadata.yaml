@@ -1,6 +1,6 @@
-name: k8sobserver
+type: k8s_observer
 
 status:
-  type: extension
+  class: extension
   stability: alpha
   distributions: [contrib]
