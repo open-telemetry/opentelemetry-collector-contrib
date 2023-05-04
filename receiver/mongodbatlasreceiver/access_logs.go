@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,11 +33,12 @@ import (
 )
 
 const (
-	accessLogStorageKey          = "last_endtime_access_logs"
-	defaultAccessLogPollInterval = time.Minute
-)
+	accessLogStorageKey           = "last_endtime_access_logs"
+	defaultAccessLogsPollInterval = time.Minute
 
-var maximumLogEntriesPerRequest = 20000
+	defaultAccessLogsPageSize = 20000
+	defaultAccessLogsMaxPages = 10
+)
 
 type accessLogClient interface {
 	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
@@ -54,6 +55,8 @@ type accessLogsReceiver struct {
 
 	nextStartTime *time.Time
 	pollInterval  time.Duration
+	pageSize      int
+	maxPages      int
 	authResult    *bool
 	wg            *sync.WaitGroup
 	cancel        context.CancelFunc
@@ -71,8 +74,16 @@ func newAccessLogsReceiver(settings rcvr.CreateSettings, cfg *Config, consumer c
 		storageClient: storage.NewNopClient(),
 	}
 
+	if r.maxPages == 0 {
+		r.maxPages = defaultAccessLogsMaxPages
+	}
+
+	if r.pageSize == 0 {
+		r.pageSize = defaultAccessLogsPageSize
+	}
+
 	if r.pollInterval == 0 {
-		r.pollInterval = defaultAccessLogPollInterval
+		r.pollInterval = defaultAccessLogsPollInterval
 	}
 
 	for _, p := range cfg.AccessLogs.Projects {
@@ -152,31 +163,44 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context) error {
 }
 
 func (alr *accessLogsReceiver) pollCluster(ctx context.Context, project *mongodbatlas.Project, cluster mongodbatlas.Cluster, startTime, now time.Time) {
+	nowTimestamp := pcommon.NewTimestampFromTime(now)
+
 	opts := &internal.GetAccessLogsOptions{
 		MaxDate:    now,
 		MinDate:    startTime,
 		AuthResult: alr.authResult,
-		NLogs:      maximumLogEntriesPerRequest,
+		NLogs:      alr.pageSize,
 	}
 
-	fullLogs := make([]*mongodbatlas.AccessLogs, 0)
+	pageCount := 0
 	for {
 		accessLogs, err := alr.client.GetAccessLogs(ctx, project.ID, cluster.ID, opts)
+		pageCount++
 		if err != nil {
 			alr.logger.Error("unable to get access logs", zap.Error(err), zap.String("project", project.Name),
 				zap.String("clusterID", cluster.ID), zap.String("clusterName", cluster.Name))
-			if len(fullLogs) > 0 {
-				alr.logger.Info("sending partial access logs", zap.Int("logs", len(fullLogs)))
-				break
-			}
 			return
 		}
 
-		fullLogs = append(fullLogs, accessLogs...)
+		logs := transformAccessLogs(nowTimestamp, accessLogs, project, cluster, alr.logger)
+
+		if logs.LogRecordCount() > 0 {
+			if err = alr.consumer.ConsumeLogs(ctx, logs); err != nil {
+				alr.logger.Error("error consuming project cluster log", zap.Error(err), zap.String("project", project.Name),
+					zap.String("clusterID", cluster.ID), zap.String("clusterName", cluster.Name))
+				return
+			}
+		}
 
 		// If we get back less than the maximum number of logs, we can assume that we've retrieved all of the logs for this
 		// time period.
-		if len(accessLogs) < maximumLogEntriesPerRequest {
+		if len(accessLogs) < alr.pageSize {
+			break
+		}
+
+		if pageCount >= alr.maxPages {
+			alr.logger.Warn(`reached maximum number of pages of access logs, increase 'max_pages' or 
+			frequency of 'poll_interval' to ensure all access logs are retrieved`, zap.Int("maxPages", alr.maxPages))
 			break
 		}
 
@@ -202,16 +226,6 @@ func (alr *accessLogsReceiver) pollCluster(ctx context.Context, project *mongodb
 		// and receiving the maximum number of logs back is a coincidence.
 		if opts.MaxDate.Before(opts.MinDate) {
 			break
-		}
-	}
-
-	nowTimestamp := pcommon.NewTimestampFromTime(now)
-	logs := transformAccessLogs(nowTimestamp, fullLogs, project, cluster, alr.logger)
-
-	if logs.LogRecordCount() > 0 {
-		if err := alr.consumer.ConsumeLogs(ctx, logs); err != nil {
-			alr.logger.Error("error consuming project cluster log", zap.Error(err), zap.String("project", project.Name),
-				zap.String("clusterID", cluster.ID), zap.String("clusterName", cluster.Name))
 		}
 	}
 }

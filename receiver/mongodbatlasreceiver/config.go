@@ -94,6 +94,8 @@ type AccessLogsConfig struct {
 	Projects     []ProjectConfig `mapstructure:"projects"`
 	PollInterval time.Duration   `mapstructure:"poll_interval"`
 	AuthResult   *bool           `mapstructure:"auth_result"`
+	PageSize     int64           `mapstructure:"page_size"`
+	MaxPages     int64           `mapstructure:"max_pages"`
 }
 
 func (pc *ProjectConfig) populateIncludesAndExcludes() {
@@ -124,6 +126,9 @@ var (
 	errNoProjects    = errors.New("at least one 'project' must be specified")
 	errNoEvents      = errors.New("at least one 'project' or 'organizations' event type must be specified")
 	errClusterConfig = errors.New("only one of 'include_clusters' or 'exclude_clusters' may be specified")
+
+	// Access Logs Errors
+	errMaxPageSize = errors.New("the maximum value for 'page_size' is 20000")
 )
 
 func (c *Config) Validate() error {
@@ -170,6 +175,10 @@ func (l *AccessLogsConfig) validate() error {
 		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
 			errs = multierr.Append(errs, errClusterConfig)
 		}
+	}
+
+	if l.PageSize > 20000 {
+		errs = multierr.Append(errs, errMaxPageSize)
 	}
 
 	return errs

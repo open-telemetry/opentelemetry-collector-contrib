@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -154,7 +154,8 @@ func TestAccessLogsRetrieval(t *testing.T) {
 		name            string
 		config          func() *Config
 		setup           func(rcvr *accessLogsReceiver)
-		validateEntries func(*testing.T, plog.Logs)
+		expectedPLogs   int
+		validateEntries func(*testing.T, []plog.Logs)
 	}{
 		{
 			name: "basic",
@@ -174,10 +175,11 @@ func TestAccessLogsRetrieval(t *testing.T) {
 				}
 			},
 			setup: func(rcvr *accessLogsReceiver) {
-				maximumLogEntriesPerRequest = 20000
 				rcvr.client = simpleAccessLogClient()
 			},
-			validateEntries: func(t *testing.T, logs plog.Logs) {
+			expectedPLogs: 1,
+			validateEntries: func(t *testing.T, logs []plog.Logs) {
+				l := logs[0]
 				expectedStringAttributes := map[string]string{
 					"event.domain": "mongodbatlas",
 					"auth.result":  "success",
@@ -186,7 +188,7 @@ func TestAccessLogsRetrieval(t *testing.T) {
 					"hostname":     "test-hostname.mongodb.net",
 					"remote.ip":    "192.168.1.1",
 				}
-				validateAttributes(t, expectedStringAttributes, logs)
+				validateAttributes(t, expectedStringAttributes, l)
 				expectedResourceAttributes := map[string]string{
 					"mongodbatlas.cluster.name": testClusterName,
 					"mongodbatlas.project.name": testProjectName,
@@ -194,7 +196,7 @@ func TestAccessLogsRetrieval(t *testing.T) {
 					"mongodbatlas.org.id":       testOrgID,
 				}
 
-				ra := logs.ResourceLogs().At(0).Resource().Attributes()
+				ra := l.ResourceLogs().At(0).Resource().Attributes()
 				for k, v := range expectedResourceAttributes {
 					value, ok := ra.Get(k)
 					require.True(t, ok)
@@ -216,21 +218,26 @@ func TestAccessLogsRetrieval(t *testing.T) {
 							},
 						},
 						PollInterval: 2 * time.Second,
+						PageSize:     2,
 					},
 				}
 			},
 			setup: func(rcvr *accessLogsReceiver) {
-				maximumLogEntriesPerRequest = 2
 				rcvr.client = repeatedRequestAccessLogClient()
 			},
-			validateEntries: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, 1, logs.ResourceLogs().Len())
-				require.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().Len())
-				require.Equal(t, 3, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+			expectedPLogs: 2,
+			validateEntries: func(t *testing.T, logs []plog.Logs) {
+				require.Equal(t, 1, logs[0].ResourceLogs().Len())
+				require.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
+				require.Equal(t, 2, logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+
+				require.Equal(t, 1, logs[1].ResourceLogs().Len())
+				require.Equal(t, 1, logs[1].ResourceLogs().At(0).ScopeLogs().Len())
+				require.Equal(t, 1, logs[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 			},
 		},
 		{
-			name: "multiple page break early",
+			name: "multiple page break early based on timestamp",
 			config: func() *Config {
 				return &Config{
 					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
@@ -243,17 +250,18 @@ func TestAccessLogsRetrieval(t *testing.T) {
 							},
 						},
 						PollInterval: 1 * time.Second,
+						PageSize:     2,
 					},
 				}
 			},
 			setup: func(rcvr *accessLogsReceiver) {
-				maximumLogEntriesPerRequest = 2
 				rcvr.client = maxSizeButOldDataAccessLogsClient()
 			},
-			validateEntries: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, 1, logs.ResourceLogs().Len())
-				require.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().Len())
-				require.Equal(t, 2, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+			expectedPLogs: 1,
+			validateEntries: func(t *testing.T, logs []plog.Logs) {
+				require.Equal(t, 1, logs[0].ResourceLogs().Len())
+				require.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
+				require.Equal(t, 2, logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 			},
 		},
 	}
@@ -268,13 +276,11 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Eventually(t, func() bool {
-				return logSink.LogRecordCount() > 0
+				return logSink.LogRecordCount() >= tc.expectedPLogs
 			}, 20*time.Second, 10*time.Millisecond)
 
 			require.NoError(t, rcvr.Shutdown(context.Background()))
-			logs := logSink.AllLogs()[0]
-
-			tc.validateEntries(t, logs)
+			tc.validateEntries(t, logSink.AllLogs())
 		})
 	}
 }
