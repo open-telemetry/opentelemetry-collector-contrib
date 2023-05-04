@@ -31,7 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/fanoutconsumer"
 )
 
-func TestTraces_RegisterConsumersForValidRoute(t *testing.T) {
+func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	cfg := &Config{
 		DefaultPipelines: []string{"traces/default"},
 		Table: []RoutingTableItem{
@@ -216,7 +216,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	})
 }
 
-func TestTraces_ResourceAttribute_DroppedByOTTL(t *testing.T) {
+func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 	cfg := &Config{
 		DefaultPipelines: []string{"traces/default"},
 		Table: []RoutingTableItem{
