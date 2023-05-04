@@ -120,7 +120,6 @@ import (
 	couchdbreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 	datadogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 	dockerstatsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
-	dotnetdiagnosticsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver"
 	elasticsearchreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 	expvarreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver"
 	filelogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
@@ -166,6 +165,7 @@ import (
 	simpleprometheusreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
 	skywalkingreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 	snmpreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
+	snowflakereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver"
 	solacereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
 	splunkhecreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 	sqlqueryreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
@@ -231,7 +231,6 @@ func components() (otelcol.Factories, error) {
 		couchdbreceiver.NewFactory(),
 		datadogreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
-		dotnetdiagnosticsreceiver.NewFactory(),
 		elasticsearchreceiver.NewFactory(),
 		expvarreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
@@ -276,6 +275,7 @@ func components() (otelcol.Factories, error) {
 		signalfxreceiver.NewFactory(),
 		simpleprometheusreceiver.NewFactory(),
 		skywalkingreceiver.NewFactory(),
+		snowflakereceiver.NewFactory(),
 		solacereceiver.NewFactory(),
 		splunkhecreceiver.NewFactory(),
 		sqlqueryreceiver.NewFactory(),

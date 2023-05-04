@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "otlpjsonfilereceiver"
+	Type      = "otlpjsonfile"
 	Stability = component.StabilityLevelAlpha
 )

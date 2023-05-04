@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "asapauthextension"
+	Type      = "asapclient"
 	Stability = component.StabilityLevelBeta
 )

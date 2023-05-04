@@ -1,4 +1,4 @@
-type: k8sobserver
+type: k8s_observer
 
 status:
   class: extension

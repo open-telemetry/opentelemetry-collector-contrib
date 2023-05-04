@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -34,65 +35,74 @@ func (p *Parser[K]) newFunctionCall(inv invocation) (Expr[K], error) {
 	if !ok {
 		return Expr[K]{}, fmt.Errorf("undefined function %v", inv.Function)
 	}
-	args, err := p.buildArgs(inv, reflect.TypeOf(f))
+	args := f.CreateDefaultArguments()
+
+	// A nil value indicates the function takes no arguments.
+	if args != nil {
+		// Pointer values are necessary to fulfill the Go reflection
+		// settability requirements. Non-pointer values are not
+		// modifiable through reflection.
+		if reflect.TypeOf(args).Kind() != reflect.Pointer {
+			return Expr[K]{}, fmt.Errorf("factory for %s must return a pointer to an Arguments value in its CreateDefaultArguments method", inv.Function)
+		}
+
+		err := p.buildArgs(inv, reflect.ValueOf(args).Elem())
+		if err != nil {
+			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to '%v': %w", inv.Function, err)
+		}
+	}
+
+	fn, err := f.CreateFunction(FunctionContext{Set: p.telemetrySettings}, args)
 	if err != nil {
-		return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to '%v': %w", inv.Function, err)
+		return Expr[K]{}, fmt.Errorf("couldn't create function: %w", err)
 	}
 
-	returnVals := reflect.ValueOf(f).Call(args)
-
-	if returnVals[1].IsNil() {
-		err = nil
-	} else {
-		err = returnVals[1].Interface().(error)
-	}
-
-	return Expr[K]{exprFunc: returnVals[0].Interface().(ExprFunc[K])}, err
+	return Expr[K]{exprFunc: fn}, err
 }
 
-func (p *Parser[K]) buildArgs(inv invocation, fType reflect.Type) ([]reflect.Value, error) {
-	var args []reflect.Value
-	// Some function arguments may be intended to take values from the calling processor
-	// instead of being passed by the caller of the OTTL function, so we have to keep
-	// track of the index of the argument passed within the DSL.
-	// e.g. TelemetrySettings, which is provided by the processor to the OTTL Parser struct.
-	DSLArgumentIndex := 0
-	for i := 0; i < fType.NumIn(); i++ {
-		argType := fType.In(i)
+func (p *Parser[K]) buildArgs(inv invocation, argsVal reflect.Value) error {
+	if len(inv.Arguments) != argsVal.NumField() {
+		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(inv.Arguments))
+	}
 
-		arg, isInternalArg := p.buildInternalArg(argType)
-		if isInternalArg {
-			args = append(args, reflect.ValueOf(arg))
-			continue
+	argsType := argsVal.Type()
+
+	for i := 0; i < argsVal.NumField(); i++ {
+		field := argsVal.Field(i)
+		fieldType := field.Type()
+
+		fieldTag, ok := argsType.Field(i).Tag.Lookup("ottlarg")
+
+		if !ok {
+			return fmt.Errorf("no `ottlarg` struct tag on Arguments field '%s'", argsType.Field(i).Name)
 		}
 
-		if DSLArgumentIndex >= len(inv.Arguments) {
-			return nil, fmt.Errorf("not enough arguments")
+		argNum, err := strconv.Atoi(fieldTag)
+
+		if err != nil {
+			return fmt.Errorf("ottlarg struct tag on field '%s' is not a valid integer: %w", argsType.Field(i).Name, err)
 		}
 
-		argVal := inv.Arguments[DSLArgumentIndex]
+		if argNum < 0 || argNum >= len(inv.Arguments) {
+			return fmt.Errorf("ottlarg struct tag on field '%s' has value %d, but must be between 0 and %d", argsType.Field(i).Name, argNum, len(inv.Arguments))
+		}
+
+		argVal := inv.Arguments[argNum]
 
 		var val any
-		var err error
-		if argType.Kind() == reflect.Slice {
-			val, err = p.buildSliceArg(argVal, argType)
+		if fieldType.Kind() == reflect.Slice {
+			val, err = p.buildSliceArg(argVal, fieldType)
 		} else {
-			val, err = p.buildArg(argVal, argType)
+			val, err = p.buildArg(argVal, fieldType)
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf("invalid argument at position %v: %w", DSLArgumentIndex, err)
+			return fmt.Errorf("invalid argument at position %v: %w", i, err)
 		}
-		args = append(args, reflect.ValueOf(val))
-
-		DSLArgumentIndex++
+		field.Set(reflect.ValueOf(val))
 	}
 
-	if len(inv.Arguments) > DSLArgumentIndex {
-		return nil, fmt.Errorf("too many arguments")
-	}
-
-	return args, nil
+	return nil
 }
 
 func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, error) {
@@ -224,15 +234,6 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	default:
 		return nil, errors.New("unsupported argument type")
 	}
-}
-
-// Handle interfaces that can be declared as parameters to a OTTL function, but will
-// never be called in an invocation. Returns whether the arg is an internal arg.
-func (p *Parser[K]) buildInternalArg(argType reflect.Type) (any, bool) {
-	if argType.Name() == "TelemetrySettings" {
-		return p.telemetrySettings, true
-	}
-	return nil, false
 }
 
 type buildArgFunc func(value, reflect.Type) (any, error)
