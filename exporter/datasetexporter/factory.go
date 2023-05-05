@@ -32,8 +32,8 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		CfgTypeStr,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.Stability),
-		exporter.WithTraces(createTracesExporter, metadata.Stability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
 

@@ -2,6 +2,6 @@ type: datasetexporter
 
 status:
   class: exporter
-  stability: development
-  pipelines: [logs, traces]
-  distributions: [contrib]
+  stability:
+    development: [ traces, logs ]
+  distributions: []
