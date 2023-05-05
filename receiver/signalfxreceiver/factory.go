@@ -42,8 +42,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.Stability),
-		receiver.WithLogs(createLogsReceiver, metadata.Stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {

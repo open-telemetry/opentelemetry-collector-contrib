@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "ecs_observer"
-	Stability = component.StabilityLevelBeta
+	Type               = "ecs_observer"
+	ExtensionStability = component.StabilityLevelBeta
 )

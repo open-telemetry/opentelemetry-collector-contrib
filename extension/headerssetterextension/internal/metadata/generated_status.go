@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "headers_setter"
-	Stability = component.StabilityLevelAlpha
+	Type               = "headers_setter"
+	ExtensionStability = component.StabilityLevelAlpha
 )

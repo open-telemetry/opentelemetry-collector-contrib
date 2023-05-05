@@ -39,9 +39,9 @@ func NewFactory() rcvr.Factory {
 	return rcvr.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		rcvr.WithMetrics(createMetricsReceiver, metadata.Stability),
-		rcvr.WithLogs(createLogsReceiver, metadata.Stability),
-		rcvr.WithTraces(createTracesReceiver, metadata.Stability))
+		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		rcvr.WithLogs(createLogsReceiver, metadata.LogsStability),
+		rcvr.WithTraces(createTracesReceiver, metadata.TracesStability))
 }
 
 type Config struct {

@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
@@ -162,7 +163,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (g *gaugeMetrics) Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error {
+func (g *gaugeMetrics) Add(resAttr map[string]string, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
 	gauge, ok := metrics.(pmetric.Gauge)
 	if !ok {
 		return fmt.Errorf("metrics param is not type of Gauge")
@@ -172,8 +173,13 @@ func (g *gaugeMetrics) Add(metrics any, metaData *MetricsMetaData, name string, 
 		metricName:        name,
 		metricDescription: description,
 		metricUnit:        unit,
-		metadata:          metaData,
-		gauge:             gauge,
+		metadata: &MetricsMetaData{
+			ResAttr:    resAttr,
+			ResURL:     resURL,
+			ScopeURL:   scopeURL,
+			ScopeInstr: scopeInstr,
+		},
+		gauge: gauge,
 	})
 	return nil
 }

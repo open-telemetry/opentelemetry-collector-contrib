@@ -57,9 +57,17 @@ var (
 	}
 )
 
+const (
+	tagPrefix      = "tags_"
+	metadataPrefix = "metadata_"
+	location       = "location"
+)
+
 type azureResource struct {
 	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
 	metricsDefinitionsUpdated time.Time
+	tags                      map[string]*string
+	location                  string
 }
 
 type metricsCompositeKey struct {
@@ -204,7 +212,10 @@ func (s *azureScraper) getResources(ctx context.Context) {
 		for _, resource := range nextResult.Value {
 
 			if _, ok := s.resources[*resource.ID]; !ok {
-				s.resources[*resource.ID] = &azureResource{}
+				s.resources[*resource.ID] = &azureResource{tags: resource.Tags}
+				if resource.Location != nil {
+					s.resources[*resource.ID].location = *resource.Location
+				}
 			}
 			delete(existingResources, *resource.ID)
 		}
@@ -319,8 +330,22 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 
 				for _, timeseriesElement := range metric.Timeseries {
 					if timeseriesElement.Data != nil {
+						attributes := map[string]*string{}
+						for _, value := range timeseriesElement.Metadatavalues {
+							name := metadataPrefix + *value.Name.Value
+							attributes[name] = value.Value
+						}
+						if len(res.location) > 0 {
+							attributes[location] = &res.location
+						}
+						if s.cfg.AppendTagsAsAttributes {
+							for tagName, value := range res.tags {
+								name := tagPrefix + tagName
+								attributes[name] = value
+							}
+						}
 						for _, metricValue := range timeseriesElement.Data {
-							s.processTimeseriesData(resourceID, metric, metricValue, timeseriesElement.Metadatavalues)
+							s.processTimeseriesData(resourceID, metric, metricValue, attributes)
 						}
 					}
 				}
@@ -356,7 +381,7 @@ func (s *azureScraper) processTimeseriesData(
 	resourceID string,
 	metric *armmonitor.Metric,
 	metricValue *armmonitor.MetricValue,
-	metadataValues []*armmonitor.MetadataValue,
+	attributes map[string]*string,
 ) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -380,7 +405,7 @@ func (s *azureScraper) processTimeseriesData(
 				*metric.Name.Value,
 				aggregation.name,
 				string(*metric.Unit),
-				metadataValues,
+				attributes,
 				ts,
 				*aggregation.value,
 			)

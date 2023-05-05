@@ -36,8 +36,8 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		exporterType,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.Stability),
-		exporter.WithMetrics(createMetricsExporter, metadata.Stability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 	)
 }
 

@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "tencentcloud_logservice"
-	Stability = component.StabilityLevelBeta
+	Type          = "tencentcloud_logservice"
+	LogsStability = component.StabilityLevelBeta
 )
