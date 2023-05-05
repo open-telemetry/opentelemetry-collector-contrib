@@ -85,6 +85,10 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
     - How often the receiver will poll the Access History API for new access logs.
   - `auth_result`
     - If specified, will limit the access logs queried to successful accesses (true) or failed accesses (false). If not specified, all will be collected
+  - `page_size` (default `20000`)
+    - This is the number of access logs that will be processed per request to the MongoDB Atlas API. The maximum value is 20000.
+  - `max_pages` (default `10`)
+    - This will limit how many pages of access logs the receiver will request from the MongoDB Atlas API for each project.
 
 Examples:
 
@@ -167,6 +171,8 @@ receivers:
       - name: Project 0
         include_clusters: [Cluster0]
       poll_interval: 1m
+      page_size: 20000
+      max_pages: 10
     # use of a storage extension is recommended to reduce chance of duplicated access logs
     storage: file_storage
 ```
