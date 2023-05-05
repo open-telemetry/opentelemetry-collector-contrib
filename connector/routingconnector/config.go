@@ -24,21 +24,27 @@ import (
 var (
 	errEmptyRoute      = errors.New("no statement provided")
 	errNoPipelines     = errors.New("no pipelines defined for the route")
-	errTooFewPipelines = errors.New("routingconnector requires at least two pipelines to route between")
-	errNoTableItems    = errors.New("the routing table is empty")
+	errTooFewPipelines = errors.New(
+		"routingconnector requires at least two pipelines to route between",
+	)
+	errNoTableItems = errors.New("the routing table is empty")
 )
 
 // Config defines configuration for the Routing processor.
 type Config struct {
-	// DefaultPipelines contains the list of pipelines to use when a more specific record can't be found in the routing table.
+	// DefaultPipelines contains the list of pipelines to use when a more specific record can't be
+	// found in the routing table.
 	// Optional.
 	DefaultPipelines []string `mapstructure:"default_pipelines"`
 
-	// ErrorMode determines how the processor reacts to errors that occur while processing an OTTL condition.
+	// ErrorMode determines how the processor reacts to errors that occur while processing an OTTL
+	// condition.
 	// Valid values are `ignore` and `propagate`.
-	// `ignore` means the processor ignores errors returned by conditions and continues on to the next condition. This is the recommended mode.
-	// If `ignored` is used and a statement's condition has an error then the payload will be routed to the default exporter.
-	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
+	// `ignore` means the processor ignores errors returned by conditions and continues on to the
+	// next condition. This is the recommended mode. If `ignored` is used and a statement's
+	// condition has an error then the payload will be routed to the default exporter. `propagate`
+	// means the processor returns the error up the pipeline.  This will result in the payload being
+	// dropped from the collector.
 	// The default value is `propagate`.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
@@ -79,8 +85,9 @@ type RoutingTableItem struct {
 	// Required when 'Value' isn't provided.
 	Statement string `mapstructure:"statement"`
 
-	// Pipelines contains the list of pipelines to use when the value from the FromAttribute field matches this table item.
-	// When no pipelines are specified, the ones specified under DefaultPipelines are used, if any.
+	// Pipelines contains the list of pipelines to use when the value from the FromAttribute field
+	// matches this table item. When no pipelines are specified, the ones specified under
+	// DefaultPipelines are used, if any.
 	// The routing processor will fail upon the first failure from these pipelines.
 	// Optional.
 	Pipelines []string `mapstructure:"pipelines"`

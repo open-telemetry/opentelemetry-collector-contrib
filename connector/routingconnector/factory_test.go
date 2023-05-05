@@ -42,7 +42,8 @@ func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
 		})
 
 	factory := NewFactory()
-	conn, err := factory.CreateTracesToTraces(context.Background(), connectortest.NewNopCreateSettings(), cfg, consumer)
+	conn, err := factory.CreateTracesToTraces(context.Background(),
+		connectortest.NewNopCreateSettings(), cfg, consumer)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
@@ -56,11 +57,13 @@ func TestCreationFailsWithTooFewPipelines(t *testing.T) {
 		}},
 	}
 
-	// if a connector is not a receiver in multiple pipelines the factory will receive a normal, non-fanout consumer
+	// if a connector is not a receiver in multiple pipelines the factory will receive a normal,
+	// non-fanout consumer
 	consumer := &consumertest.TracesSink{}
 
 	factory := NewFactory()
-	conn, err := factory.CreateTracesToTraces(context.Background(), connectortest.NewNopCreateSettings(), cfg, consumer)
+	conn, err := factory.CreateTracesToTraces(context.Background(),
+		connectortest.NewNopCreateSettings(), cfg, consumer)
 
 	assert.ErrorIs(t, err, errTooFewPipelines)
 	assert.Nil(t, conn)

@@ -129,7 +129,12 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		})
 
 	factory := NewFactory()
-	conn, err := factory.CreateTracesToTraces(context.Background(), connectortest.NewNopCreateSettings(), cfg, consumer)
+	conn, err := factory.CreateTracesToTraces(
+		context.Background(),
+		connectortest.NewNopCreateSettings(),
+		cfg,
+		consumer,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -237,7 +242,12 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 		})
 
 	factory := NewFactory()
-	conn, err := factory.CreateTracesToTraces(context.Background(), connectortest.NewNopCreateSettings(), cfg, consumer)
+	conn, err := factory.CreateTracesToTraces(
+		context.Background(),
+		connectortest.NewNopCreateSettings(),
+		cfg,
+		consumer,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -283,7 +293,12 @@ func TestTraceConnectorCapabilities(t *testing.T) {
 		})
 
 	factory := NewFactory()
-	conn, err := factory.CreateTracesToTraces(context.Background(), connectortest.NewNopCreateSettings(), cfg, consumer)
+	conn, err := factory.CreateTracesToTraces(
+		context.Background(),
+		connectortest.NewNopCreateSettings(),
+		cfg,
+		consumer,
+	)
 
 	require.NoError(t, err)
 	assert.Equal(t, false, conn.Capabilities().MutatesData)

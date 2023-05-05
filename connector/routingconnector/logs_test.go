@@ -129,7 +129,12 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		})
 
 	factory := NewFactory()
-	conn, err := factory.CreateLogsToLogs(context.Background(), connectortest.NewNopCreateSettings(), cfg, consumer)
+	conn, err := factory.CreateLogsToLogs(
+		context.Background(),
+		connectortest.NewNopCreateSettings(),
+		cfg,
+		consumer,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -262,7 +267,12 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 		})
 
 	factory := NewFactory()
-	conn, err := factory.CreateLogsToLogs(context.Background(), connectortest.NewNopCreateSettings(), cfg, consumer)
+	conn, err := factory.CreateLogsToLogs(
+		context.Background(),
+		connectortest.NewNopCreateSettings(),
+		cfg,
+		consumer,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -309,7 +319,12 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 		})
 
 	factory := NewFactory()
-	conn, err := factory.CreateLogsToLogs(context.Background(), connectortest.NewNopCreateSettings(), cfg, consumer)
+	conn, err := factory.CreateLogsToLogs(
+		context.Background(),
+		connectortest.NewNopCreateSettings(),
+		cfg,
+		consumer,
+	)
 
 	require.NoError(t, err)
 	assert.Equal(t, false, conn.Capabilities().MutatesData)

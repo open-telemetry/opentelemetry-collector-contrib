@@ -47,14 +47,32 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesToTraces(_ context.Context, set connector.CreateSettings, cfg component.Config, traces consumer.Traces) (connector.Traces, error) {
+// createTracesToTraces creates a traces to traces connector based on provided config.
+func createTracesToTraces(
+	_ context.Context,
+	set connector.CreateSettings,
+	cfg component.Config,
+	traces consumer.Traces,
+) (connector.Traces, error) {
 	return newTracesConnector(set, cfg, traces)
 }
 
-func createMetricsToMetrics(_ context.Context, set connector.CreateSettings, cfg component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
+// createMetricsToMetrics creates a metrics to metrics connector based on provided config.
+func createMetricsToMetrics(
+	_ context.Context,
+	set connector.CreateSettings,
+	cfg component.Config,
+	metrics consumer.Metrics,
+) (connector.Metrics, error) {
 	return newMetricsConnector(set, cfg, metrics)
 }
 
-func createLogsToLogs(_ context.Context, set connector.CreateSettings, cfg component.Config, logs consumer.Logs) (connector.Logs, error) {
+// createLogsToLogs creates a logs to logs connector based on provided config.
+func createLogsToLogs(
+	_ context.Context,
+	set connector.CreateSettings,
+	cfg component.Config,
+	logs consumer.Logs,
+) (connector.Logs, error) {
 	return newLogsConnector(set, cfg, logs)
 }

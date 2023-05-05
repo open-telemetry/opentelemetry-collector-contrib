@@ -44,9 +44,16 @@ type spanGroup struct {
 	traces   ptrace.Traces
 }
 
-func newTracesConnector(set connector.CreateSettings, config component.Config, traces consumer.Traces) (*tracesConnector, error) {
+func newTracesConnector(
+	set connector.CreateSettings,
+	config component.Config,
+	traces consumer.Traces,
+) (*tracesConnector, error) {
 	cfg := config.(*Config)
-	spanParser, _ := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), set.TelemetrySettings)
+	spanParser, _ := ottlspan.NewParser(
+		common.Functions[ottlspan.TransformContext](),
+		set.TelemetrySettings,
+	)
 
 	tr, ok := traces.(connector.TracesRouter)
 	if !ok {
@@ -121,7 +128,12 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 	return errs
 }
 
-func (c *tracesConnector) group(key string, groups map[string]spanGroup, consumer consumer.Traces, spans ptrace.ResourceSpans) {
+func (c *tracesConnector) group(
+	key string,
+	groups map[string]spanGroup,
+	consumer consumer.Traces,
+	spans ptrace.ResourceSpans,
+) {
 	group, ok := groups[key]
 	if !ok {
 		group.traces = ptrace.NewTraces()

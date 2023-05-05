@@ -27,7 +27,7 @@ import (
 var errPipelineNotFound = errors.New("pipeline not found")
 
 // consumerProvider is a function with a type parameter T (expected to be one
-// of consumer.Traces, consumer.Metrics, or Consumer.Logs) that returns a
+// of consumer.Traces, consumer.Metrics, or Consumer.Logs). returns a
 // consumer for the given component ID(s).
 type consumerProvider[T any] func(...component.ID) (T, error)
 

@@ -44,10 +44,17 @@ type logsGroup struct {
 	logs     plog.Logs
 }
 
-func newLogsConnector(set connector.CreateSettings, config component.Config, logs consumer.Logs) (*logsConnector, error) {
+func newLogsConnector(
+	set connector.CreateSettings,
+	config component.Config,
+	logs consumer.Logs,
+) (*logsConnector, error) {
 	cfg := config.(*Config)
 
-	logParser, _ := ottllog.NewParser(common.Functions[ottllog.TransformContext](), set.TelemetrySettings)
+	logParser, _ := ottllog.NewParser(
+		common.Functions[ottllog.TransformContext](),
+		set.TelemetrySettings,
+	)
 
 	lr, ok := logs.(connector.LogsRouter)
 	if !ok {

@@ -39,11 +39,11 @@ func TestLoadConfig(t *testing.T) {
 				ErrorMode:        ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
-						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"acme\"",
+						Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
 						Pipelines: []string{"traces/jaeger-acme", "traces/otlp-acme"},
 					},
 					{
-						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"globex\"",
+						Statement: `route() where resource.attributes["X-Tenant"] == "globex"`,
 						Pipelines: []string{"traces/otlp-globex"},
 					},
 				},
@@ -57,11 +57,11 @@ func TestLoadConfig(t *testing.T) {
 				ErrorMode:        ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
-						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"acme\"",
+						Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
 						Pipelines: []string{"metrics/jaeger-acme", "metrics/otlp-acme"},
 					},
 					{
-						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"globex\"",
+						Statement: `route() where resource.attributes["X-Tenant"] == "globex"`,
 						Pipelines: []string{"metrics/otlp-globex"},
 					},
 				},
@@ -75,11 +75,11 @@ func TestLoadConfig(t *testing.T) {
 				ErrorMode:        ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
-						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"acme\"",
+						Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
 						Pipelines: []string{"logs/jaeger-acme", "logs/otlp-acme"},
 					},
 					{
-						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"globex\"",
+						Statement: `route() where resource.attributes["X-Tenant"] == "globex"`,
 						Pipelines: []string{"logs/otlp-globex"},
 					},
 				},

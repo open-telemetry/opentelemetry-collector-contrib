@@ -44,10 +44,17 @@ type metricsGroup struct {
 	metrics  pmetric.Metrics
 }
 
-func newMetricsConnector(set connector.CreateSettings, config component.Config, metrics consumer.Metrics) (*metricsConnector, error) {
+func newMetricsConnector(
+	set connector.CreateSettings,
+	config component.Config,
+	metrics consumer.Metrics,
+) (*metricsConnector, error) {
 	cfg := config.(*Config)
 
-	dataPointParser, _ := ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), set.TelemetrySettings)
+	dataPointParser, _ := ottldatapoint.NewParser(
+		common.Functions[ottldatapoint.TransformContext](),
+		set.TelemetrySettings,
+	)
 
 	mr, ok := metrics.(connector.MetricsRouter)
 	if !ok {
