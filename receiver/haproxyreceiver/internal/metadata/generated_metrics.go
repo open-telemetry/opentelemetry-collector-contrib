@@ -8,193 +8,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for haproxyreceiver metrics.
-type MetricsSettings struct {
-	HaproxyBytesInput           MetricSettings `mapstructure:"haproxy.bytes.input"`
-	HaproxyBytesOutput          MetricSettings `mapstructure:"haproxy.bytes.output"`
-	HaproxyClientsCanceled      MetricSettings `mapstructure:"haproxy.clients.canceled"`
-	HaproxyCompressionBypass    MetricSettings `mapstructure:"haproxy.compression.bypass"`
-	HaproxyCompressionCount     MetricSettings `mapstructure:"haproxy.compression.count"`
-	HaproxyCompressionInput     MetricSettings `mapstructure:"haproxy.compression.input"`
-	HaproxyCompressionOutput    MetricSettings `mapstructure:"haproxy.compression.output"`
-	HaproxyConnectionsErrors    MetricSettings `mapstructure:"haproxy.connections.errors"`
-	HaproxyConnectionsRate      MetricSettings `mapstructure:"haproxy.connections.rate"`
-	HaproxyConnectionsRetries   MetricSettings `mapstructure:"haproxy.connections.retries"`
-	HaproxyConnectionsTotal     MetricSettings `mapstructure:"haproxy.connections.total"`
-	HaproxyDowntime             MetricSettings `mapstructure:"haproxy.downtime"`
-	HaproxyFailedChecks         MetricSettings `mapstructure:"haproxy.failed_checks"`
-	HaproxyRequestsDenied       MetricSettings `mapstructure:"haproxy.requests.denied"`
-	HaproxyRequestsErrors       MetricSettings `mapstructure:"haproxy.requests.errors"`
-	HaproxyRequestsQueued       MetricSettings `mapstructure:"haproxy.requests.queued"`
-	HaproxyRequestsRate         MetricSettings `mapstructure:"haproxy.requests.rate"`
-	HaproxyRequestsRedispatched MetricSettings `mapstructure:"haproxy.requests.redispatched"`
-	HaproxyRequestsTotal        MetricSettings `mapstructure:"haproxy.requests.total"`
-	HaproxyResponsesDenied      MetricSettings `mapstructure:"haproxy.responses.denied"`
-	HaproxyResponsesErrors      MetricSettings `mapstructure:"haproxy.responses.errors"`
-	HaproxyServerSelectedTotal  MetricSettings `mapstructure:"haproxy.server_selected.total"`
-	HaproxySessionsAverage      MetricSettings `mapstructure:"haproxy.sessions.average"`
-	HaproxySessionsCount        MetricSettings `mapstructure:"haproxy.sessions.count"`
-	HaproxySessionsRate         MetricSettings `mapstructure:"haproxy.sessions.rate"`
-	HaproxySessionsTotal        MetricSettings `mapstructure:"haproxy.sessions.total"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		HaproxyBytesInput: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyBytesOutput: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyClientsCanceled: MetricSettings{
-			Enabled: false,
-		},
-		HaproxyCompressionBypass: MetricSettings{
-			Enabled: false,
-		},
-		HaproxyCompressionCount: MetricSettings{
-			Enabled: false,
-		},
-		HaproxyCompressionInput: MetricSettings{
-			Enabled: false,
-		},
-		HaproxyCompressionOutput: MetricSettings{
-			Enabled: false,
-		},
-		HaproxyConnectionsErrors: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyConnectionsRate: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyConnectionsRetries: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyConnectionsTotal: MetricSettings{
-			Enabled: false,
-		},
-		HaproxyDowntime: MetricSettings{
-			Enabled: false,
-		},
-		HaproxyFailedChecks: MetricSettings{
-			Enabled: false,
-		},
-		HaproxyRequestsDenied: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyRequestsErrors: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyRequestsQueued: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyRequestsRate: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyRequestsRedispatched: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyRequestsTotal: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyResponsesDenied: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyResponsesErrors: MetricSettings{
-			Enabled: true,
-		},
-		HaproxyServerSelectedTotal: MetricSettings{
-			Enabled: true,
-		},
-		HaproxySessionsAverage: MetricSettings{
-			Enabled: true,
-		},
-		HaproxySessionsCount: MetricSettings{
-			Enabled: true,
-		},
-		HaproxySessionsRate: MetricSettings{
-			Enabled: true,
-		},
-		HaproxySessionsTotal: MetricSettings{
-			Enabled: false,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for haproxyreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	HaproxyAddr ResourceAttributeSettings `mapstructure:"haproxy.addr"`
-	HaproxyAlgo ResourceAttributeSettings `mapstructure:"haproxy.algo"`
-	HaproxyIid  ResourceAttributeSettings `mapstructure:"haproxy.iid"`
-	HaproxyPid  ResourceAttributeSettings `mapstructure:"haproxy.pid"`
-	HaproxySid  ResourceAttributeSettings `mapstructure:"haproxy.sid"`
-	HaproxyType ResourceAttributeSettings `mapstructure:"haproxy.type"`
-	HaproxyURL  ResourceAttributeSettings `mapstructure:"haproxy.url"`
-	ProxyName   ResourceAttributeSettings `mapstructure:"proxy_name"`
-	ServiceName ResourceAttributeSettings `mapstructure:"service_name"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		HaproxyAddr: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		HaproxyAlgo: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		HaproxyIid: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		HaproxyPid: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		HaproxySid: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		HaproxyType: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		HaproxyURL: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		ProxyName: ResourceAttributeSettings{
-			Enabled: false,
-		},
-		ServiceName: ResourceAttributeSettings{
-			Enabled: false,
-		},
-	}
-}
 
 // AttributeStatusCode specifies the a value status_code attribute.
 type AttributeStatusCode int
@@ -1556,12 +1373,6 @@ func newMetricHaproxySessionsTotal(settings MetricSettings) metricHaproxySession
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1606,20 +1417,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

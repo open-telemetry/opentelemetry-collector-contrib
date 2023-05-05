@@ -6,121 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for zookeeperreceiver metrics.
-type MetricsSettings struct {
-	ZookeeperConnectionActive            MetricSettings `mapstructure:"zookeeper.connection.active"`
-	ZookeeperDataTreeEphemeralNodeCount  MetricSettings `mapstructure:"zookeeper.data_tree.ephemeral_node.count"`
-	ZookeeperDataTreeSize                MetricSettings `mapstructure:"zookeeper.data_tree.size"`
-	ZookeeperFileDescriptorLimit         MetricSettings `mapstructure:"zookeeper.file_descriptor.limit"`
-	ZookeeperFileDescriptorOpen          MetricSettings `mapstructure:"zookeeper.file_descriptor.open"`
-	ZookeeperFollowerCount               MetricSettings `mapstructure:"zookeeper.follower.count"`
-	ZookeeperFsyncExceededThresholdCount MetricSettings `mapstructure:"zookeeper.fsync.exceeded_threshold.count"`
-	ZookeeperLatencyAvg                  MetricSettings `mapstructure:"zookeeper.latency.avg"`
-	ZookeeperLatencyMax                  MetricSettings `mapstructure:"zookeeper.latency.max"`
-	ZookeeperLatencyMin                  MetricSettings `mapstructure:"zookeeper.latency.min"`
-	ZookeeperPacketCount                 MetricSettings `mapstructure:"zookeeper.packet.count"`
-	ZookeeperRequestActive               MetricSettings `mapstructure:"zookeeper.request.active"`
-	ZookeeperSyncPending                 MetricSettings `mapstructure:"zookeeper.sync.pending"`
-	ZookeeperWatchCount                  MetricSettings `mapstructure:"zookeeper.watch.count"`
-	ZookeeperZnodeCount                  MetricSettings `mapstructure:"zookeeper.znode.count"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		ZookeeperConnectionActive: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperDataTreeEphemeralNodeCount: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperDataTreeSize: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperFileDescriptorLimit: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperFileDescriptorOpen: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperFollowerCount: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperFsyncExceededThresholdCount: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperLatencyAvg: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperLatencyMax: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperLatencyMin: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperPacketCount: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperRequestActive: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperSyncPending: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperWatchCount: MetricSettings{
-			Enabled: true,
-		},
-		ZookeeperZnodeCount: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for zookeeperreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	ServerState ResourceAttributeSettings `mapstructure:"server.state"`
-	ZkVersion   ResourceAttributeSettings `mapstructure:"zk.version"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		ServerState: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		ZkVersion: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeDirection specifies the a value direction attribute.
 type AttributeDirection int
@@ -935,12 +824,6 @@ func newMetricZookeeperZnodeCount(settings MetricSettings) metricZookeeperZnodeC
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -974,20 +857,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

@@ -6,89 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for couchdbreceiver metrics.
-type MetricsSettings struct {
-	CouchdbAverageRequestTime MetricSettings `mapstructure:"couchdb.average_request_time"`
-	CouchdbDatabaseOpen       MetricSettings `mapstructure:"couchdb.database.open"`
-	CouchdbDatabaseOperations MetricSettings `mapstructure:"couchdb.database.operations"`
-	CouchdbFileDescriptorOpen MetricSettings `mapstructure:"couchdb.file_descriptor.open"`
-	CouchdbHttpdBulkRequests  MetricSettings `mapstructure:"couchdb.httpd.bulk_requests"`
-	CouchdbHttpdRequests      MetricSettings `mapstructure:"couchdb.httpd.requests"`
-	CouchdbHttpdResponses     MetricSettings `mapstructure:"couchdb.httpd.responses"`
-	CouchdbHttpdViews         MetricSettings `mapstructure:"couchdb.httpd.views"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		CouchdbAverageRequestTime: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbDatabaseOpen: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbDatabaseOperations: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbFileDescriptorOpen: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbHttpdBulkRequests: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbHttpdRequests: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbHttpdResponses: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbHttpdViews: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for couchdbreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	CouchdbNodeName ResourceAttributeSettings `mapstructure:"couchdb.node.name"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		CouchdbNodeName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeHTTPMethod specifies the a value http.method attribute.
 type AttributeHTTPMethod int
@@ -602,12 +523,6 @@ func newMetricCouchdbHttpdViews(settings MetricSettings) metricCouchdbHttpdViews
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -634,20 +549,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

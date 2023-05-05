@@ -6,81 +6,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for hostmetricsreceiver/network metrics.
-type MetricsSettings struct {
-	SystemNetworkConnections    MetricSettings `mapstructure:"system.network.connections"`
-	SystemNetworkConntrackCount MetricSettings `mapstructure:"system.network.conntrack.count"`
-	SystemNetworkConntrackMax   MetricSettings `mapstructure:"system.network.conntrack.max"`
-	SystemNetworkDropped        MetricSettings `mapstructure:"system.network.dropped"`
-	SystemNetworkErrors         MetricSettings `mapstructure:"system.network.errors"`
-	SystemNetworkIo             MetricSettings `mapstructure:"system.network.io"`
-	SystemNetworkPackets        MetricSettings `mapstructure:"system.network.packets"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		SystemNetworkConnections: MetricSettings{
-			Enabled: true,
-		},
-		SystemNetworkConntrackCount: MetricSettings{
-			Enabled: false,
-		},
-		SystemNetworkConntrackMax: MetricSettings{
-			Enabled: false,
-		},
-		SystemNetworkDropped: MetricSettings{
-			Enabled: true,
-		},
-		SystemNetworkErrors: MetricSettings{
-			Enabled: true,
-		},
-		SystemNetworkIo: MetricSettings{
-			Enabled: true,
-		},
-		SystemNetworkPackets: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for hostmetricsreceiver/network resource attributes.
-type ResourceAttributesSettings struct {
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{}
-}
 
 // AttributeDirection specifies the a value direction attribute.
 type AttributeDirection int
@@ -502,12 +432,6 @@ func newMetricSystemNetworkPackets(settings MetricSettings) metricSystemNetworkP
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -533,20 +457,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

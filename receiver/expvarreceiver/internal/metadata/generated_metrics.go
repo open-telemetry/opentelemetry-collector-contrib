@@ -6,156 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for expvarreceiver metrics.
-type MetricsSettings struct {
-	ProcessRuntimeMemstatsBuckHashSys   MetricSettings `mapstructure:"process.runtime.memstats.buck_hash_sys"`
-	ProcessRuntimeMemstatsFrees         MetricSettings `mapstructure:"process.runtime.memstats.frees"`
-	ProcessRuntimeMemstatsGcCPUFraction MetricSettings `mapstructure:"process.runtime.memstats.gc_cpu_fraction"`
-	ProcessRuntimeMemstatsGcSys         MetricSettings `mapstructure:"process.runtime.memstats.gc_sys"`
-	ProcessRuntimeMemstatsHeapAlloc     MetricSettings `mapstructure:"process.runtime.memstats.heap_alloc"`
-	ProcessRuntimeMemstatsHeapIdle      MetricSettings `mapstructure:"process.runtime.memstats.heap_idle"`
-	ProcessRuntimeMemstatsHeapInuse     MetricSettings `mapstructure:"process.runtime.memstats.heap_inuse"`
-	ProcessRuntimeMemstatsHeapObjects   MetricSettings `mapstructure:"process.runtime.memstats.heap_objects"`
-	ProcessRuntimeMemstatsHeapReleased  MetricSettings `mapstructure:"process.runtime.memstats.heap_released"`
-	ProcessRuntimeMemstatsHeapSys       MetricSettings `mapstructure:"process.runtime.memstats.heap_sys"`
-	ProcessRuntimeMemstatsLastPause     MetricSettings `mapstructure:"process.runtime.memstats.last_pause"`
-	ProcessRuntimeMemstatsLookups       MetricSettings `mapstructure:"process.runtime.memstats.lookups"`
-	ProcessRuntimeMemstatsMallocs       MetricSettings `mapstructure:"process.runtime.memstats.mallocs"`
-	ProcessRuntimeMemstatsMcacheInuse   MetricSettings `mapstructure:"process.runtime.memstats.mcache_inuse"`
-	ProcessRuntimeMemstatsMcacheSys     MetricSettings `mapstructure:"process.runtime.memstats.mcache_sys"`
-	ProcessRuntimeMemstatsMspanInuse    MetricSettings `mapstructure:"process.runtime.memstats.mspan_inuse"`
-	ProcessRuntimeMemstatsMspanSys      MetricSettings `mapstructure:"process.runtime.memstats.mspan_sys"`
-	ProcessRuntimeMemstatsNextGc        MetricSettings `mapstructure:"process.runtime.memstats.next_gc"`
-	ProcessRuntimeMemstatsNumForcedGc   MetricSettings `mapstructure:"process.runtime.memstats.num_forced_gc"`
-	ProcessRuntimeMemstatsNumGc         MetricSettings `mapstructure:"process.runtime.memstats.num_gc"`
-	ProcessRuntimeMemstatsOtherSys      MetricSettings `mapstructure:"process.runtime.memstats.other_sys"`
-	ProcessRuntimeMemstatsPauseTotal    MetricSettings `mapstructure:"process.runtime.memstats.pause_total"`
-	ProcessRuntimeMemstatsStackInuse    MetricSettings `mapstructure:"process.runtime.memstats.stack_inuse"`
-	ProcessRuntimeMemstatsStackSys      MetricSettings `mapstructure:"process.runtime.memstats.stack_sys"`
-	ProcessRuntimeMemstatsSys           MetricSettings `mapstructure:"process.runtime.memstats.sys"`
-	ProcessRuntimeMemstatsTotalAlloc    MetricSettings `mapstructure:"process.runtime.memstats.total_alloc"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		ProcessRuntimeMemstatsBuckHashSys: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsFrees: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsGcCPUFraction: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsGcSys: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsHeapAlloc: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsHeapIdle: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsHeapInuse: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsHeapObjects: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsHeapReleased: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsHeapSys: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsLastPause: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsLookups: MetricSettings{
-			Enabled: false,
-		},
-		ProcessRuntimeMemstatsMallocs: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsMcacheInuse: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsMcacheSys: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsMspanInuse: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsMspanSys: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsNextGc: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsNumForcedGc: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsNumGc: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsOtherSys: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsPauseTotal: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsStackInuse: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsStackSys: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsSys: MetricSettings{
-			Enabled: true,
-		},
-		ProcessRuntimeMemstatsTotalAlloc: MetricSettings{
-			Enabled: false,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for expvarreceiver resource attributes.
-type ResourceAttributesSettings struct {
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{}
-}
 
 type metricProcessRuntimeMemstatsBuckHashSys struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -1479,12 +1333,6 @@ func newMetricProcessRuntimeMemstatsTotalAlloc(settings MetricSettings) metricPr
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1529,20 +1377,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

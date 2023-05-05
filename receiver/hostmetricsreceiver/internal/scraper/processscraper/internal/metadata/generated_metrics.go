@@ -6,130 +6,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for hostmetricsreceiver/process metrics.
-type MetricsSettings struct {
-	ProcessContextSwitches     MetricSettings `mapstructure:"process.context_switches"`
-	ProcessCPUTime             MetricSettings `mapstructure:"process.cpu.time"`
-	ProcessCPUUtilization      MetricSettings `mapstructure:"process.cpu.utilization"`
-	ProcessDiskIo              MetricSettings `mapstructure:"process.disk.io"`
-	ProcessDiskOperations      MetricSettings `mapstructure:"process.disk.operations"`
-	ProcessMemoryUsage         MetricSettings `mapstructure:"process.memory.usage"`
-	ProcessMemoryUtilization   MetricSettings `mapstructure:"process.memory.utilization"`
-	ProcessMemoryVirtual       MetricSettings `mapstructure:"process.memory.virtual"`
-	ProcessOpenFileDescriptors MetricSettings `mapstructure:"process.open_file_descriptors"`
-	ProcessPagingFaults        MetricSettings `mapstructure:"process.paging.faults"`
-	ProcessSignalsPending      MetricSettings `mapstructure:"process.signals_pending"`
-	ProcessThreads             MetricSettings `mapstructure:"process.threads"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		ProcessContextSwitches: MetricSettings{
-			Enabled: false,
-		},
-		ProcessCPUTime: MetricSettings{
-			Enabled: true,
-		},
-		ProcessCPUUtilization: MetricSettings{
-			Enabled: false,
-		},
-		ProcessDiskIo: MetricSettings{
-			Enabled: true,
-		},
-		ProcessDiskOperations: MetricSettings{
-			Enabled: false,
-		},
-		ProcessMemoryUsage: MetricSettings{
-			Enabled: true,
-		},
-		ProcessMemoryUtilization: MetricSettings{
-			Enabled: false,
-		},
-		ProcessMemoryVirtual: MetricSettings{
-			Enabled: true,
-		},
-		ProcessOpenFileDescriptors: MetricSettings{
-			Enabled: false,
-		},
-		ProcessPagingFaults: MetricSettings{
-			Enabled: false,
-		},
-		ProcessSignalsPending: MetricSettings{
-			Enabled: false,
-		},
-		ProcessThreads: MetricSettings{
-			Enabled: false,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for hostmetricsreceiver/process resource attributes.
-type ResourceAttributesSettings struct {
-	ProcessCommand        ResourceAttributeSettings `mapstructure:"process.command"`
-	ProcessCommandLine    ResourceAttributeSettings `mapstructure:"process.command_line"`
-	ProcessExecutableName ResourceAttributeSettings `mapstructure:"process.executable.name"`
-	ProcessExecutablePath ResourceAttributeSettings `mapstructure:"process.executable.path"`
-	ProcessOwner          ResourceAttributeSettings `mapstructure:"process.owner"`
-	ProcessParentPid      ResourceAttributeSettings `mapstructure:"process.parent_pid"`
-	ProcessPid            ResourceAttributeSettings `mapstructure:"process.pid"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		ProcessCommand: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		ProcessCommandLine: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		ProcessExecutableName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		ProcessExecutablePath: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		ProcessOwner: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		ProcessParentPid: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		ProcessPid: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeContextSwitchType specifies the a value context_switch_type attribute.
 type AttributeContextSwitchType int
@@ -859,12 +740,6 @@ func newMetricProcessThreads(settings MetricSettings) metricProcessThreads {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -895,20 +770,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

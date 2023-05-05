@@ -6,97 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for nsxtreceiver metrics.
-type MetricsSettings struct {
-	NsxtNodeCPUUtilization        MetricSettings `mapstructure:"nsxt.node.cpu.utilization"`
-	NsxtNodeFilesystemUsage       MetricSettings `mapstructure:"nsxt.node.filesystem.usage"`
-	NsxtNodeFilesystemUtilization MetricSettings `mapstructure:"nsxt.node.filesystem.utilization"`
-	NsxtNodeMemoryCacheUsage      MetricSettings `mapstructure:"nsxt.node.memory.cache.usage"`
-	NsxtNodeMemoryUsage           MetricSettings `mapstructure:"nsxt.node.memory.usage"`
-	NsxtNodeNetworkIo             MetricSettings `mapstructure:"nsxt.node.network.io"`
-	NsxtNodeNetworkPacketCount    MetricSettings `mapstructure:"nsxt.node.network.packet.count"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		NsxtNodeCPUUtilization: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeFilesystemUsage: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeFilesystemUtilization: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeMemoryCacheUsage: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeMemoryUsage: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeNetworkIo: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeNetworkPacketCount: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for nsxtreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	DeviceID     ResourceAttributeSettings `mapstructure:"device.id"`
-	NsxtNodeID   ResourceAttributeSettings `mapstructure:"nsxt.node.id"`
-	NsxtNodeName ResourceAttributeSettings `mapstructure:"nsxt.node.name"`
-	NsxtNodeType ResourceAttributeSettings `mapstructure:"nsxt.node.type"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		DeviceID: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		NsxtNodeID: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		NsxtNodeName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		NsxtNodeType: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeClass specifies the a value class attribute.
 type AttributeClass int
@@ -568,12 +481,6 @@ func newMetricNsxtNodeNetworkPacketCount(settings MetricSettings) metricNsxtNode
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -599,20 +506,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

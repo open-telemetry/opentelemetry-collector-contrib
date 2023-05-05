@@ -6,153 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for postgresqlreceiver metrics.
-type MetricsSettings struct {
-	PostgresqlBackends                 MetricSettings `mapstructure:"postgresql.backends"`
-	PostgresqlBgwriterBuffersAllocated MetricSettings `mapstructure:"postgresql.bgwriter.buffers.allocated"`
-	PostgresqlBgwriterBuffersWrites    MetricSettings `mapstructure:"postgresql.bgwriter.buffers.writes"`
-	PostgresqlBgwriterCheckpointCount  MetricSettings `mapstructure:"postgresql.bgwriter.checkpoint.count"`
-	PostgresqlBgwriterDuration         MetricSettings `mapstructure:"postgresql.bgwriter.duration"`
-	PostgresqlBgwriterMaxwritten       MetricSettings `mapstructure:"postgresql.bgwriter.maxwritten"`
-	PostgresqlBlocksRead               MetricSettings `mapstructure:"postgresql.blocks_read"`
-	PostgresqlCommits                  MetricSettings `mapstructure:"postgresql.commits"`
-	PostgresqlConnectionMax            MetricSettings `mapstructure:"postgresql.connection.max"`
-	PostgresqlDatabaseCount            MetricSettings `mapstructure:"postgresql.database.count"`
-	PostgresqlDbSize                   MetricSettings `mapstructure:"postgresql.db_size"`
-	PostgresqlIndexScans               MetricSettings `mapstructure:"postgresql.index.scans"`
-	PostgresqlIndexSize                MetricSettings `mapstructure:"postgresql.index.size"`
-	PostgresqlOperations               MetricSettings `mapstructure:"postgresql.operations"`
-	PostgresqlReplicationDataDelay     MetricSettings `mapstructure:"postgresql.replication.data_delay"`
-	PostgresqlRollbacks                MetricSettings `mapstructure:"postgresql.rollbacks"`
-	PostgresqlRows                     MetricSettings `mapstructure:"postgresql.rows"`
-	PostgresqlTableCount               MetricSettings `mapstructure:"postgresql.table.count"`
-	PostgresqlTableSize                MetricSettings `mapstructure:"postgresql.table.size"`
-	PostgresqlTableVacuumCount         MetricSettings `mapstructure:"postgresql.table.vacuum.count"`
-	PostgresqlWalAge                   MetricSettings `mapstructure:"postgresql.wal.age"`
-	PostgresqlWalLag                   MetricSettings `mapstructure:"postgresql.wal.lag"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		PostgresqlBackends: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlBgwriterBuffersAllocated: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlBgwriterBuffersWrites: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlBgwriterCheckpointCount: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlBgwriterDuration: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlBgwriterMaxwritten: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlBlocksRead: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlCommits: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlConnectionMax: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlDatabaseCount: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlDbSize: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlIndexScans: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlIndexSize: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlOperations: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlReplicationDataDelay: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlRollbacks: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlRows: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlTableCount: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlTableSize: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlTableVacuumCount: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlWalAge: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlWalLag: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for postgresqlreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	PostgresqlDatabaseName ResourceAttributeSettings `mapstructure:"postgresql.database.name"`
-	PostgresqlIndexName    ResourceAttributeSettings `mapstructure:"postgresql.index.name"`
-	PostgresqlTableName    ResourceAttributeSettings `mapstructure:"postgresql.table.name"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		PostgresqlDatabaseName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		PostgresqlIndexName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		PostgresqlTableName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeBgBufferSource specifies the a value bg_buffer_source attribute.
 type AttributeBgBufferSource int
@@ -1523,12 +1380,6 @@ func newMetricPostgresqlWalLag(settings MetricSettings) metricPostgresqlWalLag {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1569,20 +1420,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

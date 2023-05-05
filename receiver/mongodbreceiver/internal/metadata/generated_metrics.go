@@ -6,177 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for mongodbreceiver metrics.
-type MetricsSettings struct {
-	MongodbCacheOperations        MetricSettings `mapstructure:"mongodb.cache.operations"`
-	MongodbCollectionCount        MetricSettings `mapstructure:"mongodb.collection.count"`
-	MongodbConnectionCount        MetricSettings `mapstructure:"mongodb.connection.count"`
-	MongodbCursorCount            MetricSettings `mapstructure:"mongodb.cursor.count"`
-	MongodbCursorTimeoutCount     MetricSettings `mapstructure:"mongodb.cursor.timeout.count"`
-	MongodbDataSize               MetricSettings `mapstructure:"mongodb.data.size"`
-	MongodbDatabaseCount          MetricSettings `mapstructure:"mongodb.database.count"`
-	MongodbDocumentOperationCount MetricSettings `mapstructure:"mongodb.document.operation.count"`
-	MongodbExtentCount            MetricSettings `mapstructure:"mongodb.extent.count"`
-	MongodbGlobalLockTime         MetricSettings `mapstructure:"mongodb.global_lock.time"`
-	MongodbHealth                 MetricSettings `mapstructure:"mongodb.health"`
-	MongodbIndexAccessCount       MetricSettings `mapstructure:"mongodb.index.access.count"`
-	MongodbIndexCount             MetricSettings `mapstructure:"mongodb.index.count"`
-	MongodbIndexSize              MetricSettings `mapstructure:"mongodb.index.size"`
-	MongodbLockAcquireCount       MetricSettings `mapstructure:"mongodb.lock.acquire.count"`
-	MongodbLockAcquireTime        MetricSettings `mapstructure:"mongodb.lock.acquire.time"`
-	MongodbLockAcquireWaitCount   MetricSettings `mapstructure:"mongodb.lock.acquire.wait_count"`
-	MongodbLockDeadlockCount      MetricSettings `mapstructure:"mongodb.lock.deadlock.count"`
-	MongodbMemoryUsage            MetricSettings `mapstructure:"mongodb.memory.usage"`
-	MongodbNetworkIoReceive       MetricSettings `mapstructure:"mongodb.network.io.receive"`
-	MongodbNetworkIoTransmit      MetricSettings `mapstructure:"mongodb.network.io.transmit"`
-	MongodbNetworkRequestCount    MetricSettings `mapstructure:"mongodb.network.request.count"`
-	MongodbObjectCount            MetricSettings `mapstructure:"mongodb.object.count"`
-	MongodbOperationCount         MetricSettings `mapstructure:"mongodb.operation.count"`
-	MongodbOperationLatencyTime   MetricSettings `mapstructure:"mongodb.operation.latency.time"`
-	MongodbOperationReplCount     MetricSettings `mapstructure:"mongodb.operation.repl.count"`
-	MongodbOperationTime          MetricSettings `mapstructure:"mongodb.operation.time"`
-	MongodbSessionCount           MetricSettings `mapstructure:"mongodb.session.count"`
-	MongodbStorageSize            MetricSettings `mapstructure:"mongodb.storage.size"`
-	MongodbUptime                 MetricSettings `mapstructure:"mongodb.uptime"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		MongodbCacheOperations: MetricSettings{
-			Enabled: true,
-		},
-		MongodbCollectionCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbConnectionCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbCursorCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbCursorTimeoutCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbDataSize: MetricSettings{
-			Enabled: true,
-		},
-		MongodbDatabaseCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbDocumentOperationCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbExtentCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbGlobalLockTime: MetricSettings{
-			Enabled: true,
-		},
-		MongodbHealth: MetricSettings{
-			Enabled: false,
-		},
-		MongodbIndexAccessCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbIndexCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbIndexSize: MetricSettings{
-			Enabled: true,
-		},
-		MongodbLockAcquireCount: MetricSettings{
-			Enabled: false,
-		},
-		MongodbLockAcquireTime: MetricSettings{
-			Enabled: false,
-		},
-		MongodbLockAcquireWaitCount: MetricSettings{
-			Enabled: false,
-		},
-		MongodbLockDeadlockCount: MetricSettings{
-			Enabled: false,
-		},
-		MongodbMemoryUsage: MetricSettings{
-			Enabled: true,
-		},
-		MongodbNetworkIoReceive: MetricSettings{
-			Enabled: true,
-		},
-		MongodbNetworkIoTransmit: MetricSettings{
-			Enabled: true,
-		},
-		MongodbNetworkRequestCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbObjectCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbOperationCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbOperationLatencyTime: MetricSettings{
-			Enabled: false,
-		},
-		MongodbOperationReplCount: MetricSettings{
-			Enabled: false,
-		},
-		MongodbOperationTime: MetricSettings{
-			Enabled: true,
-		},
-		MongodbSessionCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbStorageSize: MetricSettings{
-			Enabled: true,
-		},
-		MongodbUptime: MetricSettings{
-			Enabled: false,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for mongodbreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	Database ResourceAttributeSettings `mapstructure:"database"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		Database: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeConnectionType specifies the a value connection_type attribute.
 type AttributeConnectionType int
@@ -1994,12 +1827,6 @@ func newMetricMongodbUptime(settings MetricSettings) metricMongodbUptime {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -2048,20 +1875,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

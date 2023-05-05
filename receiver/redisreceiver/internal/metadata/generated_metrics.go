@@ -6,189 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for redisreceiver metrics.
-type MetricsSettings struct {
-	RedisClientsBlocked                    MetricSettings `mapstructure:"redis.clients.blocked"`
-	RedisClientsConnected                  MetricSettings `mapstructure:"redis.clients.connected"`
-	RedisClientsMaxInputBuffer             MetricSettings `mapstructure:"redis.clients.max_input_buffer"`
-	RedisClientsMaxOutputBuffer            MetricSettings `mapstructure:"redis.clients.max_output_buffer"`
-	RedisCmdCalls                          MetricSettings `mapstructure:"redis.cmd.calls"`
-	RedisCmdUsec                           MetricSettings `mapstructure:"redis.cmd.usec"`
-	RedisCommands                          MetricSettings `mapstructure:"redis.commands"`
-	RedisCommandsProcessed                 MetricSettings `mapstructure:"redis.commands.processed"`
-	RedisConnectionsReceived               MetricSettings `mapstructure:"redis.connections.received"`
-	RedisConnectionsRejected               MetricSettings `mapstructure:"redis.connections.rejected"`
-	RedisCPUTime                           MetricSettings `mapstructure:"redis.cpu.time"`
-	RedisDbAvgTTL                          MetricSettings `mapstructure:"redis.db.avg_ttl"`
-	RedisDbExpires                         MetricSettings `mapstructure:"redis.db.expires"`
-	RedisDbKeys                            MetricSettings `mapstructure:"redis.db.keys"`
-	RedisKeysEvicted                       MetricSettings `mapstructure:"redis.keys.evicted"`
-	RedisKeysExpired                       MetricSettings `mapstructure:"redis.keys.expired"`
-	RedisKeyspaceHits                      MetricSettings `mapstructure:"redis.keyspace.hits"`
-	RedisKeyspaceMisses                    MetricSettings `mapstructure:"redis.keyspace.misses"`
-	RedisLatestFork                        MetricSettings `mapstructure:"redis.latest_fork"`
-	RedisMaxmemory                         MetricSettings `mapstructure:"redis.maxmemory"`
-	RedisMemoryFragmentationRatio          MetricSettings `mapstructure:"redis.memory.fragmentation_ratio"`
-	RedisMemoryLua                         MetricSettings `mapstructure:"redis.memory.lua"`
-	RedisMemoryPeak                        MetricSettings `mapstructure:"redis.memory.peak"`
-	RedisMemoryRss                         MetricSettings `mapstructure:"redis.memory.rss"`
-	RedisMemoryUsed                        MetricSettings `mapstructure:"redis.memory.used"`
-	RedisNetInput                          MetricSettings `mapstructure:"redis.net.input"`
-	RedisNetOutput                         MetricSettings `mapstructure:"redis.net.output"`
-	RedisRdbChangesSinceLastSave           MetricSettings `mapstructure:"redis.rdb.changes_since_last_save"`
-	RedisReplicationBacklogFirstByteOffset MetricSettings `mapstructure:"redis.replication.backlog_first_byte_offset"`
-	RedisReplicationOffset                 MetricSettings `mapstructure:"redis.replication.offset"`
-	RedisRole                              MetricSettings `mapstructure:"redis.role"`
-	RedisSlavesConnected                   MetricSettings `mapstructure:"redis.slaves.connected"`
-	RedisUptime                            MetricSettings `mapstructure:"redis.uptime"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		RedisClientsBlocked: MetricSettings{
-			Enabled: true,
-		},
-		RedisClientsConnected: MetricSettings{
-			Enabled: true,
-		},
-		RedisClientsMaxInputBuffer: MetricSettings{
-			Enabled: true,
-		},
-		RedisClientsMaxOutputBuffer: MetricSettings{
-			Enabled: true,
-		},
-		RedisCmdCalls: MetricSettings{
-			Enabled: false,
-		},
-		RedisCmdUsec: MetricSettings{
-			Enabled: false,
-		},
-		RedisCommands: MetricSettings{
-			Enabled: true,
-		},
-		RedisCommandsProcessed: MetricSettings{
-			Enabled: true,
-		},
-		RedisConnectionsReceived: MetricSettings{
-			Enabled: true,
-		},
-		RedisConnectionsRejected: MetricSettings{
-			Enabled: true,
-		},
-		RedisCPUTime: MetricSettings{
-			Enabled: true,
-		},
-		RedisDbAvgTTL: MetricSettings{
-			Enabled: true,
-		},
-		RedisDbExpires: MetricSettings{
-			Enabled: true,
-		},
-		RedisDbKeys: MetricSettings{
-			Enabled: true,
-		},
-		RedisKeysEvicted: MetricSettings{
-			Enabled: true,
-		},
-		RedisKeysExpired: MetricSettings{
-			Enabled: true,
-		},
-		RedisKeyspaceHits: MetricSettings{
-			Enabled: true,
-		},
-		RedisKeyspaceMisses: MetricSettings{
-			Enabled: true,
-		},
-		RedisLatestFork: MetricSettings{
-			Enabled: true,
-		},
-		RedisMaxmemory: MetricSettings{
-			Enabled: false,
-		},
-		RedisMemoryFragmentationRatio: MetricSettings{
-			Enabled: true,
-		},
-		RedisMemoryLua: MetricSettings{
-			Enabled: true,
-		},
-		RedisMemoryPeak: MetricSettings{
-			Enabled: true,
-		},
-		RedisMemoryRss: MetricSettings{
-			Enabled: true,
-		},
-		RedisMemoryUsed: MetricSettings{
-			Enabled: true,
-		},
-		RedisNetInput: MetricSettings{
-			Enabled: true,
-		},
-		RedisNetOutput: MetricSettings{
-			Enabled: true,
-		},
-		RedisRdbChangesSinceLastSave: MetricSettings{
-			Enabled: true,
-		},
-		RedisReplicationBacklogFirstByteOffset: MetricSettings{
-			Enabled: true,
-		},
-		RedisReplicationOffset: MetricSettings{
-			Enabled: true,
-		},
-		RedisRole: MetricSettings{
-			Enabled: false,
-		},
-		RedisSlavesConnected: MetricSettings{
-			Enabled: true,
-		},
-		RedisUptime: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for redisreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	RedisVersion ResourceAttributeSettings `mapstructure:"redis.version"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		RedisVersion: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeRole specifies the a value role attribute.
 type AttributeRole int
@@ -1925,12 +1746,6 @@ func newMetricRedisUptime(settings MetricSettings) metricRedisUptime {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1982,20 +1797,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

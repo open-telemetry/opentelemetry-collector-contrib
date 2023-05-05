@@ -6,124 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for activedirectorydsreceiver metrics.
-type MetricsSettings struct {
-	ActiveDirectoryDsBindRate                                  MetricSettings `mapstructure:"active_directory.ds.bind.rate"`
-	ActiveDirectoryDsLdapBindLastSuccessfulTime                MetricSettings `mapstructure:"active_directory.ds.ldap.bind.last_successful.time"`
-	ActiveDirectoryDsLdapBindRate                              MetricSettings `mapstructure:"active_directory.ds.ldap.bind.rate"`
-	ActiveDirectoryDsLdapClientSessionCount                    MetricSettings `mapstructure:"active_directory.ds.ldap.client.session.count"`
-	ActiveDirectoryDsLdapSearchRate                            MetricSettings `mapstructure:"active_directory.ds.ldap.search.rate"`
-	ActiveDirectoryDsNameCacheHitRate                          MetricSettings `mapstructure:"active_directory.ds.name_cache.hit_rate"`
-	ActiveDirectoryDsNotificationQueued                        MetricSettings `mapstructure:"active_directory.ds.notification.queued"`
-	ActiveDirectoryDsOperationRate                             MetricSettings `mapstructure:"active_directory.ds.operation.rate"`
-	ActiveDirectoryDsReplicationNetworkIo                      MetricSettings `mapstructure:"active_directory.ds.replication.network.io"`
-	ActiveDirectoryDsReplicationObjectRate                     MetricSettings `mapstructure:"active_directory.ds.replication.object.rate"`
-	ActiveDirectoryDsReplicationOperationPending               MetricSettings `mapstructure:"active_directory.ds.replication.operation.pending"`
-	ActiveDirectoryDsReplicationPropertyRate                   MetricSettings `mapstructure:"active_directory.ds.replication.property.rate"`
-	ActiveDirectoryDsReplicationSyncObjectPending              MetricSettings `mapstructure:"active_directory.ds.replication.sync.object.pending"`
-	ActiveDirectoryDsReplicationSyncRequestCount               MetricSettings `mapstructure:"active_directory.ds.replication.sync.request.count"`
-	ActiveDirectoryDsReplicationValueRate                      MetricSettings `mapstructure:"active_directory.ds.replication.value.rate"`
-	ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued MetricSettings `mapstructure:"active_directory.ds.security_descriptor_propagations_event.queued"`
-	ActiveDirectoryDsSuboperationRate                          MetricSettings `mapstructure:"active_directory.ds.suboperation.rate"`
-	ActiveDirectoryDsThreadCount                               MetricSettings `mapstructure:"active_directory.ds.thread.count"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		ActiveDirectoryDsBindRate: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsLdapBindLastSuccessfulTime: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsLdapBindRate: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsLdapClientSessionCount: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsLdapSearchRate: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsNameCacheHitRate: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsNotificationQueued: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsOperationRate: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationNetworkIo: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationObjectRate: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationOperationPending: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationPropertyRate: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationSyncObjectPending: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationSyncRequestCount: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationValueRate: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsSuboperationRate: MetricSettings{
-			Enabled: true,
-		},
-		ActiveDirectoryDsThreadCount: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for activedirectorydsreceiver resource attributes.
-type ResourceAttributesSettings struct {
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{}
-}
 
 // AttributeBindType specifies the a value bind_type attribute.
 type AttributeBindType int
@@ -1247,12 +1133,6 @@ func newMetricActiveDirectoryDsThreadCount(settings MetricSettings) metricActive
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1289,20 +1169,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

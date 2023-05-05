@@ -8,117 +8,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for aerospikereceiver metrics.
-type MetricsSettings struct {
-	AerospikeNamespaceDiskAvailable                   MetricSettings `mapstructure:"aerospike.namespace.disk.available"`
-	AerospikeNamespaceGeojsonRegionQueryCells         MetricSettings `mapstructure:"aerospike.namespace.geojson.region_query_cells"`
-	AerospikeNamespaceGeojsonRegionQueryFalsePositive MetricSettings `mapstructure:"aerospike.namespace.geojson.region_query_false_positive"`
-	AerospikeNamespaceGeojsonRegionQueryPoints        MetricSettings `mapstructure:"aerospike.namespace.geojson.region_query_points"`
-	AerospikeNamespaceGeojsonRegionQueryRequests      MetricSettings `mapstructure:"aerospike.namespace.geojson.region_query_requests"`
-	AerospikeNamespaceMemoryFree                      MetricSettings `mapstructure:"aerospike.namespace.memory.free"`
-	AerospikeNamespaceMemoryUsage                     MetricSettings `mapstructure:"aerospike.namespace.memory.usage"`
-	AerospikeNamespaceQueryCount                      MetricSettings `mapstructure:"aerospike.namespace.query.count"`
-	AerospikeNamespaceScanCount                       MetricSettings `mapstructure:"aerospike.namespace.scan.count"`
-	AerospikeNamespaceTransactionCount                MetricSettings `mapstructure:"aerospike.namespace.transaction.count"`
-	AerospikeNodeConnectionCount                      MetricSettings `mapstructure:"aerospike.node.connection.count"`
-	AerospikeNodeConnectionOpen                       MetricSettings `mapstructure:"aerospike.node.connection.open"`
-	AerospikeNodeMemoryFree                           MetricSettings `mapstructure:"aerospike.node.memory.free"`
-	AerospikeNodeQueryTracked                         MetricSettings `mapstructure:"aerospike.node.query.tracked"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		AerospikeNamespaceDiskAvailable: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNamespaceGeojsonRegionQueryCells: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNamespaceGeojsonRegionQueryPoints: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNamespaceGeojsonRegionQueryRequests: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNamespaceMemoryFree: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNamespaceMemoryUsage: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNamespaceQueryCount: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNamespaceScanCount: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNamespaceTransactionCount: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNodeConnectionCount: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNodeConnectionOpen: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNodeMemoryFree: MetricSettings{
-			Enabled: true,
-		},
-		AerospikeNodeQueryTracked: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for aerospikereceiver resource attributes.
-type ResourceAttributesSettings struct {
-	AerospikeNamespace ResourceAttributeSettings `mapstructure:"aerospike.namespace"`
-	AerospikeNodeName  ResourceAttributeSettings `mapstructure:"aerospike.node.name"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		AerospikeNamespace: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		AerospikeNodeName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeConnectionOp specifies the a value connection_op attribute.
 type AttributeConnectionOp int
@@ -1177,12 +1070,6 @@ func newMetricAerospikeNodeQueryTracked(settings MetricSettings) metricAerospike
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1215,20 +1102,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

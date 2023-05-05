@@ -8,109 +8,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for apachereceiver metrics.
-type MetricsSettings struct {
-	ApacheCPULoad            MetricSettings `mapstructure:"apache.cpu.load"`
-	ApacheCPUTime            MetricSettings `mapstructure:"apache.cpu.time"`
-	ApacheCurrentConnections MetricSettings `mapstructure:"apache.current_connections"`
-	ApacheLoad1              MetricSettings `mapstructure:"apache.load.1"`
-	ApacheLoad15             MetricSettings `mapstructure:"apache.load.15"`
-	ApacheLoad5              MetricSettings `mapstructure:"apache.load.5"`
-	ApacheRequestTime        MetricSettings `mapstructure:"apache.request.time"`
-	ApacheRequests           MetricSettings `mapstructure:"apache.requests"`
-	ApacheScoreboard         MetricSettings `mapstructure:"apache.scoreboard"`
-	ApacheTraffic            MetricSettings `mapstructure:"apache.traffic"`
-	ApacheUptime             MetricSettings `mapstructure:"apache.uptime"`
-	ApacheWorkers            MetricSettings `mapstructure:"apache.workers"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		ApacheCPULoad: MetricSettings{
-			Enabled: true,
-		},
-		ApacheCPUTime: MetricSettings{
-			Enabled: true,
-		},
-		ApacheCurrentConnections: MetricSettings{
-			Enabled: true,
-		},
-		ApacheLoad1: MetricSettings{
-			Enabled: true,
-		},
-		ApacheLoad15: MetricSettings{
-			Enabled: true,
-		},
-		ApacheLoad5: MetricSettings{
-			Enabled: true,
-		},
-		ApacheRequestTime: MetricSettings{
-			Enabled: true,
-		},
-		ApacheRequests: MetricSettings{
-			Enabled: true,
-		},
-		ApacheScoreboard: MetricSettings{
-			Enabled: true,
-		},
-		ApacheTraffic: MetricSettings{
-			Enabled: true,
-		},
-		ApacheUptime: MetricSettings{
-			Enabled: true,
-		},
-		ApacheWorkers: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for apachereceiver resource attributes.
-type ResourceAttributesSettings struct {
-	ApacheServerName ResourceAttributeSettings `mapstructure:"apache.server.name"`
-	ApacheServerPort ResourceAttributeSettings `mapstructure:"apache.server.port"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		ApacheServerName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		ApacheServerPort: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeCPULevel specifies the a value cpu_level attribute.
 type AttributeCPULevel int
@@ -867,12 +768,6 @@ func newMetricApacheWorkers(settings MetricSettings) metricApacheWorkers {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -903,20 +798,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

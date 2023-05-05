@@ -8,193 +8,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for flinkmetricsreceiver metrics.
-type MetricsSettings struct {
-	FlinkJobCheckpointCount           MetricSettings `mapstructure:"flink.job.checkpoint.count"`
-	FlinkJobCheckpointInProgress      MetricSettings `mapstructure:"flink.job.checkpoint.in_progress"`
-	FlinkJobLastCheckpointSize        MetricSettings `mapstructure:"flink.job.last_checkpoint.size"`
-	FlinkJobLastCheckpointTime        MetricSettings `mapstructure:"flink.job.last_checkpoint.time"`
-	FlinkJobRestartCount              MetricSettings `mapstructure:"flink.job.restart.count"`
-	FlinkJvmClassLoaderClassesLoaded  MetricSettings `mapstructure:"flink.jvm.class_loader.classes_loaded"`
-	FlinkJvmCPULoad                   MetricSettings `mapstructure:"flink.jvm.cpu.load"`
-	FlinkJvmCPUTime                   MetricSettings `mapstructure:"flink.jvm.cpu.time"`
-	FlinkJvmGcCollectionsCount        MetricSettings `mapstructure:"flink.jvm.gc.collections.count"`
-	FlinkJvmGcCollectionsTime         MetricSettings `mapstructure:"flink.jvm.gc.collections.time"`
-	FlinkJvmMemoryDirectTotalCapacity MetricSettings `mapstructure:"flink.jvm.memory.direct.total_capacity"`
-	FlinkJvmMemoryDirectUsed          MetricSettings `mapstructure:"flink.jvm.memory.direct.used"`
-	FlinkJvmMemoryHeapCommitted       MetricSettings `mapstructure:"flink.jvm.memory.heap.committed"`
-	FlinkJvmMemoryHeapMax             MetricSettings `mapstructure:"flink.jvm.memory.heap.max"`
-	FlinkJvmMemoryHeapUsed            MetricSettings `mapstructure:"flink.jvm.memory.heap.used"`
-	FlinkJvmMemoryMappedTotalCapacity MetricSettings `mapstructure:"flink.jvm.memory.mapped.total_capacity"`
-	FlinkJvmMemoryMappedUsed          MetricSettings `mapstructure:"flink.jvm.memory.mapped.used"`
-	FlinkJvmMemoryMetaspaceCommitted  MetricSettings `mapstructure:"flink.jvm.memory.metaspace.committed"`
-	FlinkJvmMemoryMetaspaceMax        MetricSettings `mapstructure:"flink.jvm.memory.metaspace.max"`
-	FlinkJvmMemoryMetaspaceUsed       MetricSettings `mapstructure:"flink.jvm.memory.metaspace.used"`
-	FlinkJvmMemoryNonheapCommitted    MetricSettings `mapstructure:"flink.jvm.memory.nonheap.committed"`
-	FlinkJvmMemoryNonheapMax          MetricSettings `mapstructure:"flink.jvm.memory.nonheap.max"`
-	FlinkJvmMemoryNonheapUsed         MetricSettings `mapstructure:"flink.jvm.memory.nonheap.used"`
-	FlinkJvmThreadsCount              MetricSettings `mapstructure:"flink.jvm.threads.count"`
-	FlinkMemoryManagedTotal           MetricSettings `mapstructure:"flink.memory.managed.total"`
-	FlinkMemoryManagedUsed            MetricSettings `mapstructure:"flink.memory.managed.used"`
-	FlinkOperatorRecordCount          MetricSettings `mapstructure:"flink.operator.record.count"`
-	FlinkOperatorWatermarkOutput      MetricSettings `mapstructure:"flink.operator.watermark.output"`
-	FlinkTaskRecordCount              MetricSettings `mapstructure:"flink.task.record.count"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		FlinkJobCheckpointCount: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJobCheckpointInProgress: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJobLastCheckpointSize: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJobLastCheckpointTime: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJobRestartCount: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmClassLoaderClassesLoaded: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmCPULoad: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmCPUTime: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmGcCollectionsCount: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmGcCollectionsTime: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryDirectTotalCapacity: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryDirectUsed: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryHeapCommitted: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryHeapMax: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryHeapUsed: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryMappedTotalCapacity: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryMappedUsed: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryMetaspaceCommitted: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryMetaspaceMax: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryMetaspaceUsed: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryNonheapCommitted: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryNonheapMax: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmMemoryNonheapUsed: MetricSettings{
-			Enabled: true,
-		},
-		FlinkJvmThreadsCount: MetricSettings{
-			Enabled: true,
-		},
-		FlinkMemoryManagedTotal: MetricSettings{
-			Enabled: true,
-		},
-		FlinkMemoryManagedUsed: MetricSettings{
-			Enabled: true,
-		},
-		FlinkOperatorRecordCount: MetricSettings{
-			Enabled: true,
-		},
-		FlinkOperatorWatermarkOutput: MetricSettings{
-			Enabled: true,
-		},
-		FlinkTaskRecordCount: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for flinkmetricsreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	FlinkJobName       ResourceAttributeSettings `mapstructure:"flink.job.name"`
-	FlinkResourceType  ResourceAttributeSettings `mapstructure:"flink.resource.type"`
-	FlinkSubtaskIndex  ResourceAttributeSettings `mapstructure:"flink.subtask.index"`
-	FlinkTaskName      ResourceAttributeSettings `mapstructure:"flink.task.name"`
-	FlinkTaskmanagerID ResourceAttributeSettings `mapstructure:"flink.taskmanager.id"`
-	HostName           ResourceAttributeSettings `mapstructure:"host.name"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		FlinkJobName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		FlinkResourceType: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		FlinkSubtaskIndex: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		FlinkTaskName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		FlinkTaskmanagerID: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		HostName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeCheckpoint specifies the a value checkpoint attribute.
 type AttributeCheckpoint int
@@ -1774,12 +1591,6 @@ func newMetricFlinkTaskRecordCount(settings MetricSettings) metricFlinkTaskRecor
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1827,20 +1638,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

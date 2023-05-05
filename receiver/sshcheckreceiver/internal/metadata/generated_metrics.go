@@ -6,81 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for sshcheckreceiver metrics.
-type MetricsSettings struct {
-	SshcheckDuration     MetricSettings `mapstructure:"sshcheck.duration"`
-	SshcheckError        MetricSettings `mapstructure:"sshcheck.error"`
-	SshcheckSftpDuration MetricSettings `mapstructure:"sshcheck.sftp_duration"`
-	SshcheckSftpError    MetricSettings `mapstructure:"sshcheck.sftp_error"`
-	SshcheckSftpStatus   MetricSettings `mapstructure:"sshcheck.sftp_status"`
-	SshcheckStatus       MetricSettings `mapstructure:"sshcheck.status"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		SshcheckDuration: MetricSettings{
-			Enabled: true,
-		},
-		SshcheckError: MetricSettings{
-			Enabled: true,
-		},
-		SshcheckSftpDuration: MetricSettings{
-			Enabled: false,
-		},
-		SshcheckSftpError: MetricSettings{
-			Enabled: false,
-		},
-		SshcheckSftpStatus: MetricSettings{
-			Enabled: false,
-		},
-		SshcheckStatus: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for sshcheckreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	SSHEndpoint ResourceAttributeSettings `mapstructure:"ssh.endpoint"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		SSHEndpoint: ResourceAttributeSettings{
-			Enabled: false,
-		},
-	}
-}
 
 type metricSshcheckDuration struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -388,12 +317,6 @@ func newMetricSshcheckStatus(settings MetricSettings) metricSshcheckStatus {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -418,20 +341,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

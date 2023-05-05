@@ -6,86 +6,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for testreceiver metrics.
-type MetricsSettings struct {
-	DefaultMetric            MetricSettings `mapstructure:"default.metric"`
-	DefaultMetricToBeRemoved MetricSettings `mapstructure:"default.metric.to_be_removed"`
-	OptionalMetric           MetricSettings `mapstructure:"optional.metric"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		DefaultMetric: MetricSettings{
-			Enabled: true,
-		},
-		DefaultMetricToBeRemoved: MetricSettings{
-			Enabled: true,
-		},
-		OptionalMetric: MetricSettings{
-			Enabled: false,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for testreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	MapResourceAttr        ResourceAttributeSettings `mapstructure:"map.resource.attr"`
-	OptionalResourceAttr   ResourceAttributeSettings `mapstructure:"optional.resource.attr"`
-	SliceResourceAttr      ResourceAttributeSettings `mapstructure:"slice.resource.attr"`
-	StringEnumResourceAttr ResourceAttributeSettings `mapstructure:"string.enum.resource.attr"`
-	StringResourceAttr     ResourceAttributeSettings `mapstructure:"string.resource.attr"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		MapResourceAttr: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		OptionalResourceAttr: ResourceAttributeSettings{
-			Enabled: false,
-		},
-		SliceResourceAttr: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		StringEnumResourceAttr: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		StringResourceAttr: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeEnumAttr specifies the a value enum_attr attribute.
 type AttributeEnumAttr int
@@ -277,12 +202,6 @@ func newMetricOptionalMetric(settings MetricSettings) metricOptionalMetric {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -304,20 +223,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

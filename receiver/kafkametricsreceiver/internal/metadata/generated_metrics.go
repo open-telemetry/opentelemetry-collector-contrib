@@ -6,96 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for kafkametricsreceiver metrics.
-type MetricsSettings struct {
-	KafkaBrokers                 MetricSettings `mapstructure:"kafka.brokers"`
-	KafkaConsumerGroupLag        MetricSettings `mapstructure:"kafka.consumer_group.lag"`
-	KafkaConsumerGroupLagSum     MetricSettings `mapstructure:"kafka.consumer_group.lag_sum"`
-	KafkaConsumerGroupMembers    MetricSettings `mapstructure:"kafka.consumer_group.members"`
-	KafkaConsumerGroupOffset     MetricSettings `mapstructure:"kafka.consumer_group.offset"`
-	KafkaConsumerGroupOffsetSum  MetricSettings `mapstructure:"kafka.consumer_group.offset_sum"`
-	KafkaPartitionCurrentOffset  MetricSettings `mapstructure:"kafka.partition.current_offset"`
-	KafkaPartitionOldestOffset   MetricSettings `mapstructure:"kafka.partition.oldest_offset"`
-	KafkaPartitionReplicas       MetricSettings `mapstructure:"kafka.partition.replicas"`
-	KafkaPartitionReplicasInSync MetricSettings `mapstructure:"kafka.partition.replicas_in_sync"`
-	KafkaTopicPartitions         MetricSettings `mapstructure:"kafka.topic.partitions"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		KafkaBrokers: MetricSettings{
-			Enabled: true,
-		},
-		KafkaConsumerGroupLag: MetricSettings{
-			Enabled: true,
-		},
-		KafkaConsumerGroupLagSum: MetricSettings{
-			Enabled: true,
-		},
-		KafkaConsumerGroupMembers: MetricSettings{
-			Enabled: true,
-		},
-		KafkaConsumerGroupOffset: MetricSettings{
-			Enabled: true,
-		},
-		KafkaConsumerGroupOffsetSum: MetricSettings{
-			Enabled: true,
-		},
-		KafkaPartitionCurrentOffset: MetricSettings{
-			Enabled: true,
-		},
-		KafkaPartitionOldestOffset: MetricSettings{
-			Enabled: true,
-		},
-		KafkaPartitionReplicas: MetricSettings{
-			Enabled: true,
-		},
-		KafkaPartitionReplicasInSync: MetricSettings{
-			Enabled: true,
-		},
-		KafkaTopicPartitions: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for kafkametricsreceiver resource attributes.
-type ResourceAttributesSettings struct {
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{}
-}
 
 type metricKafkaBrokers struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -666,12 +580,6 @@ func newMetricKafkaTopicPartitions(settings MetricSettings) metricKafkaTopicPart
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -701,20 +609,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 

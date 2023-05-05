@@ -6,109 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for iisreceiver metrics.
-type MetricsSettings struct {
-	IisConnectionActive       MetricSettings `mapstructure:"iis.connection.active"`
-	IisConnectionAnonymous    MetricSettings `mapstructure:"iis.connection.anonymous"`
-	IisConnectionAttemptCount MetricSettings `mapstructure:"iis.connection.attempt.count"`
-	IisNetworkBlocked         MetricSettings `mapstructure:"iis.network.blocked"`
-	IisNetworkFileCount       MetricSettings `mapstructure:"iis.network.file.count"`
-	IisNetworkIo              MetricSettings `mapstructure:"iis.network.io"`
-	IisRequestCount           MetricSettings `mapstructure:"iis.request.count"`
-	IisRequestQueueAgeMax     MetricSettings `mapstructure:"iis.request.queue.age.max"`
-	IisRequestQueueCount      MetricSettings `mapstructure:"iis.request.queue.count"`
-	IisRequestRejected        MetricSettings `mapstructure:"iis.request.rejected"`
-	IisThreadActive           MetricSettings `mapstructure:"iis.thread.active"`
-	IisUptime                 MetricSettings `mapstructure:"iis.uptime"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		IisConnectionActive: MetricSettings{
-			Enabled: true,
-		},
-		IisConnectionAnonymous: MetricSettings{
-			Enabled: true,
-		},
-		IisConnectionAttemptCount: MetricSettings{
-			Enabled: true,
-		},
-		IisNetworkBlocked: MetricSettings{
-			Enabled: true,
-		},
-		IisNetworkFileCount: MetricSettings{
-			Enabled: true,
-		},
-		IisNetworkIo: MetricSettings{
-			Enabled: true,
-		},
-		IisRequestCount: MetricSettings{
-			Enabled: true,
-		},
-		IisRequestQueueAgeMax: MetricSettings{
-			Enabled: true,
-		},
-		IisRequestQueueCount: MetricSettings{
-			Enabled: true,
-		},
-		IisRequestRejected: MetricSettings{
-			Enabled: true,
-		},
-		IisThreadActive: MetricSettings{
-			Enabled: true,
-		},
-		IisUptime: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for iisreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	IisApplicationPool ResourceAttributeSettings `mapstructure:"iis.application_pool"`
-	IisSite            ResourceAttributeSettings `mapstructure:"iis.site"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		IisApplicationPool: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		IisSite: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeDirection specifies the a value direction attribute.
 type AttributeDirection int
@@ -796,12 +697,6 @@ func newMetricIisUptime(settings MetricSettings) metricIisUptime {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -832,20 +727,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
 	}
 }
 
