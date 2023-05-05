@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const MaxDelayMs = "15000"
+const maxDelayMs = "15000"
 
 type Config struct {
 	DatasetURL                     string   `mapstructure:"dataset_url"`
@@ -48,7 +48,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if len(c.MaxDelayMs) == 0 {
-		c.MaxDelayMs = MaxDelayMs
+		c.MaxDelayMs = maxDelayMs
 	}
 
 	return nil

@@ -46,7 +46,7 @@ func (s *SuiteFactory) TestCreateDefaultConfig() {
 	cfg := factory.CreateDefaultConfig()
 
 	s.Equal(&Config{
-		MaxDelayMs:      MaxDelayMs,
+		MaxDelayMs:      maxDelayMs,
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
@@ -68,7 +68,7 @@ func (s *SuiteFactory) TestLoadConfig() {
 			expected: &Config{
 				DatasetURL:      "https://app.scalyr.com",
 				APIKey:          "key-minimal",
-				MaxDelayMs:      MaxDelayMs,
+				MaxDelayMs:      maxDelayMs,
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
