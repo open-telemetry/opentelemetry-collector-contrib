@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -130,6 +131,16 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				"inc":         func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {
 					return distros[name]
+				},
+				"keys": func(input map[string]string) []string {
+					keys := []string{}
+					for k := range input {
+						keys = append(keys, k)
+					}
+					sort.Slice(keys, func(i, j int) bool {
+						return keys[i] > keys[j]
+					})
+					return keys
 				},
 				// ParseFS delegates the parsing of the files to `Glob`
 				// which uses the `\` as a special character.

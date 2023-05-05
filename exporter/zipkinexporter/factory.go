@@ -40,7 +40,7 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.Stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability))
 }
 
 func createDefaultConfig() component.Config {

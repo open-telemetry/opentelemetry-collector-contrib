@@ -2,6 +2,6 @@ type: datadog
 
 status:
   class: processor
-  stability: beta
-  pipelines: [traces]
+  stability:
+    beta: [traces]
   distributions: [contrib]

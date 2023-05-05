@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "datadog"
-	Stability = component.StabilityLevelBeta
+	Type            = "datadog"
+	TracesStability = component.StabilityLevelBeta
 )
