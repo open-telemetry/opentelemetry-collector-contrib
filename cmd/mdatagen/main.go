@@ -48,10 +48,14 @@ func run(ymlPath string) error {
 	if ymlPath == "" {
 		return errors.New("argument must be metadata.yaml file")
 	}
+	ymlPath, err := filepath.Abs(ymlPath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for %v: %w", ymlPath, err)
+	}
 
 	ymlDir := filepath.Dir(ymlPath)
 
-	md, err := loadMetadata(filepath.Clean(ymlPath))
+	md, err := loadMetadata(ymlPath)
 	if err != nil {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}

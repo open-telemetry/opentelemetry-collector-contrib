@@ -156,6 +156,7 @@ func Test_loadMetadata(t *testing.T) {
 						},
 					},
 				},
+				ScopeName: "otelcol",
 			},
 		},
 		{
