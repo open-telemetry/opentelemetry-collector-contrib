@@ -39,10 +39,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 )
 
-const (
-	testClusterID = "cluster-id"
-)
-
 var (
 	authTrue  = true
 	authFalse = false
@@ -59,7 +55,6 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	}
 
 	cluster := mongodbatlas.Cluster{
-		ID:      testClusterID,
 		GroupID: testProjectID,
 		Name:    testClusterName,
 	}
@@ -296,7 +291,6 @@ func testClientBase() *mockAccessLogsClient {
 	ac.On("GetClusters", mock.Anything, testProjectID).Return(
 		[]mongodbatlas.Cluster{
 			{
-				ID:      testClusterID,
 				GroupID: testProjectID,
 				Name:    testClusterName,
 			},
@@ -307,7 +301,7 @@ func testClientBase() *mockAccessLogsClient {
 
 func simpleAccessLogClient() accessLogClient {
 	ac := testClientBase()
-	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterID, mock.Anything).Return(
+	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterName, mock.Anything).Return(
 		[]*mongodbatlas.AccessLogs{
 			{
 				GroupID:     testProjectID,
@@ -328,7 +322,7 @@ func simpleAccessLogClient() accessLogClient {
 func repeatedRequestAccessLogClient() accessLogClient {
 	currentTime := time.Now().UTC()
 	ac := testClientBase()
-	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterID, mock.Anything).Return(
+	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterName, mock.Anything).Return(
 		[]*mongodbatlas.AccessLogs{
 			{
 				GroupID:     testProjectID,
@@ -353,7 +347,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 		},
 		nil).Once()
 
-	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterID, mock.Anything).Return(
+	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterName, mock.Anything).Return(
 		[]*mongodbatlas.AccessLogs{
 			{
 				GroupID:     testProjectID,
@@ -373,7 +367,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 func maxSizeButOldDataAccessLogsClient() accessLogClient {
 	currentTime := time.Now().UTC()
 	ac := testClientBase()
-	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterID, mock.Anything).Return(
+	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterName, mock.Anything).Return(
 		[]*mongodbatlas.AccessLogs{
 			{
 				GroupID:     testProjectID,
