@@ -8,7 +8,9 @@
 | {{ if not $idx }}Stability{{ else }}         {{ end }}     | [{{ $stability }}]{{ if ne $class "extension" }}: {{ stringsJoin $value ", " }} {{ end }}  |
 {{- $idx = inc $idx }}
 {{- end }}
+{{- if ne $class "cmd" }}
 | Distributions | [{{ stringsJoin .Status.Distributions "], [" }}] |
+{{- end }}
 {{- if .Status.Warnings }}
 | Warnings      | [{{ stringsJoin .Status.Warnings ", " }}](#warnings) |
 {{- end }}
