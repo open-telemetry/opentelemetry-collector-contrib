@@ -21,20 +21,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr        = "syslog"
-	stabilityLevel = component.StabilityLevelDevelopment
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter/internal/metadata"
 )
 
 // NewFactory returns a new factory for the syslog exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, stabilityLevel),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 

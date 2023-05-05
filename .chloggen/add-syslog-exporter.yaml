@@ -5,7 +5,7 @@ change_type: new_component
 component: syslogexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add syslogexporter for sending logs to syslog server 
+note: Add syslogexporter for sending logs to syslog server
 
 # One or more tracking issues related to the change
 issues: [17982]
