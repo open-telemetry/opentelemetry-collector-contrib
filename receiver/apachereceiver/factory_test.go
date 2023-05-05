@@ -94,7 +94,7 @@ func TestPortValidate(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
 			cfg.Endpoint = tc.endpoint
-			_, port, err := parseResourseAttributes(tc.endpoint)
+			_, port, err := parseResourceAttributes(tc.endpoint)
 
 			require.NoError(t, err)
 			require.Equal(t, tc.expectedPort, port)
