@@ -174,7 +174,7 @@ func (alr *accessLogsReceiver) pollCluster(ctx context.Context, project *mongodb
 
 	pageCount := 0
 	for {
-		accessLogs, err := alr.client.GetAccessLogs(ctx, project.ID, cluster.ID, opts)
+		accessLogs, err := alr.client.GetAccessLogs(ctx, project.ID, cluster.Name, opts)
 		pageCount++
 		if err != nil {
 			alr.logger.Error("unable to get access logs", zap.Error(err), zap.String("project", project.Name),
