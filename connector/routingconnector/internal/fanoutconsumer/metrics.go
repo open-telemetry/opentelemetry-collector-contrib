@@ -18,12 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/multierr"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 )
 
 // NewMetrics wraps multiple metrics consumers in a single one.

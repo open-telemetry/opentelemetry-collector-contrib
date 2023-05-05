@@ -158,14 +158,6 @@ func (r *router[C, K]) getStatementFrom(item RoutingTableItem) (*ottl.Statement[
 	return statement, nil
 }
 
-func (r *router[C, K]) getConsumer(key string) C {
-	item, ok := r.routes[key]
-	if !ok {
-		return r.defaultConsumer
-	}
-	return item.consumer
-}
-
 func key(entry RoutingTableItem) string {
 	return entry.Statement
 }
