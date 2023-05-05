@@ -34,8 +34,13 @@ import (
 
 const (
 	defaultHTTPTimeout = time.Second * 5
+	defaultMaxConns    = 100
 
-	defaultMaxConns = 100
+	defaultDimMaxBuffered         = 10000
+	defaultDimSendDelay           = 10 * time.Second
+	defaultDimMaxConnsPerHost     = 20
+	defaultDimMaxIdleConns        = 20
+	defaultDimMaxIdleConnsPerHost = 20
 )
 
 // NewFactory creates a factory for SignalFx exporter.
@@ -68,6 +73,14 @@ func createDefaultConfig() component.Config {
 		DeltaTranslationTTL:           3600,
 		Correlation:                   correlation.DefaultConfig(),
 		NonAlphanumericDimensionChars: "_-.",
+		DimensionClient: DimensionClientConfig{
+			SendDelay:           defaultDimSendDelay,
+			MaxBuffered:         defaultDimMaxBuffered,
+			MaxConnsPerHost:     defaultDimMaxConnsPerHost,
+			MaxIdleConns:        defaultDimMaxIdleConns,
+			MaxIdleConnsPerHost: defaultDimMaxIdleConnsPerHost,
+			IdleConnTimeout:     idleConnTimeout,
+		},
 	}
 }
 
