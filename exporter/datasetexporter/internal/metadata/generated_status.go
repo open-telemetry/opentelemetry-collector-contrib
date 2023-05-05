@@ -7,7 +7,6 @@ import (
 )
 
 const (
-	Type            = "datasetexporter"
-	TracesStability = component.StabilityLevelDevelopment
-	LogsStability   = component.StabilityLevelDevelopment
+	Type          = "datasetexporter"
+	LogsStability = component.StabilityLevelDevelopment
 )

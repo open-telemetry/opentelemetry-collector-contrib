@@ -15,7 +15,7 @@
 package datasetexporter
 
 import (
-	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 type SuiteFactory struct {
@@ -137,6 +136,11 @@ type CreateTest struct {
 func createExporterTests() []CreateTest {
 	return []CreateTest{
 		{
+			name:          "broken",
+			config:        &Config{},
+			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; MaxDelayMs: ; GroupBy: []; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
+		},
+		{
 			name: "valid",
 			config: &Config{
 				DatasetURL:      "https://app.eu.scalyr.com",
@@ -149,45 +153,5 @@ func createExporterTests() []CreateTest {
 			},
 			expectedError: nil,
 		},
-	}
-}
-
-func (s *SuiteFactory) TestCreateLogsExporter() {
-	ctx := context.Background()
-	createSettings := exportertest.NewNopCreateSettings()
-	tests := createExporterTests()
-
-	for _, tt := range tests {
-		s.T().Run(tt.name, func(*testing.T) {
-			exporterInstance = nil
-			logs, err := createLogsExporter(ctx, createSettings, tt.config)
-
-			if err == nil {
-				s.Nil(tt.expectedError)
-			} else {
-				s.Equal(tt.expectedError.Error(), err.Error())
-				s.Nil(logs)
-			}
-		})
-	}
-}
-
-func (s *SuiteFactory) TestCreateTracesExporter() {
-	ctx := context.Background()
-	createSettings := exportertest.NewNopCreateSettings()
-	tests := createExporterTests()
-
-	for _, tt := range tests {
-		s.T().Run(tt.name, func(t *testing.T) {
-			exporterInstance = nil
-			logs, err := createTracesExporter(ctx, createSettings, tt.config)
-
-			if err == nil {
-				s.Nil(tt.expectedError)
-			} else {
-				s.Equal(tt.expectedError.Error(), err.Error())
-				s.Nil(logs)
-			}
-		})
 	}
 }
