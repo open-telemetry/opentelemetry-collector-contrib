@@ -151,11 +151,11 @@ func TestAccessLogToLogRecord(t *testing.T) {
 
 func TestAccessLogsRetrieval(t *testing.T) {
 	cases := []struct {
-		name            string
-		config          func() *Config
-		setup           func(rcvr *accessLogsReceiver)
-		expectedPLogs   int
-		validateEntries func(*testing.T, []plog.Logs)
+		name             string
+		config           func() *Config
+		setup            func(rcvr *accessLogsReceiver)
+		expectedLogCount int
+		validateEntries  func(*testing.T, []plog.Logs)
 	}{
 		{
 			name: "basic",
@@ -177,7 +177,7 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			setup: func(rcvr *accessLogsReceiver) {
 				rcvr.client = simpleAccessLogClient()
 			},
-			expectedPLogs: 1,
+			expectedLogCount: 1,
 			validateEntries: func(t *testing.T, logs []plog.Logs) {
 				l := logs[0]
 				expectedStringAttributes := map[string]string{
@@ -225,7 +225,7 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			setup: func(rcvr *accessLogsReceiver) {
 				rcvr.client = repeatedRequestAccessLogClient()
 			},
-			expectedPLogs: 2,
+			expectedLogCount: 3,
 			validateEntries: func(t *testing.T, logs []plog.Logs) {
 				require.Equal(t, 1, logs[0].ResourceLogs().Len())
 				require.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
@@ -257,7 +257,7 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			setup: func(rcvr *accessLogsReceiver) {
 				rcvr.client = maxSizeButOldDataAccessLogsClient()
 			},
-			expectedPLogs: 1,
+			expectedLogCount: 2,
 			validateEntries: func(t *testing.T, logs []plog.Logs) {
 				require.Equal(t, 1, logs[0].ResourceLogs().Len())
 				require.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
@@ -276,7 +276,7 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Eventually(t, func() bool {
-				return logSink.LogRecordCount() >= tc.expectedPLogs
+				return logSink.LogRecordCount() >= tc.expectedLogCount
 			}, 20*time.Second, 10*time.Millisecond)
 
 			require.NoError(t, rcvr.Shutdown(context.Background()))
