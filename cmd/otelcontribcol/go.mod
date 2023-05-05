@@ -20,6 +20,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.76.3
@@ -925,6 +926,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/rout
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor => ../../processor/deltatorateprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter => ../../exporter/datadogexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter => ../../exporter/datasetexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight => ../../internal/aws/containerinsight
 
