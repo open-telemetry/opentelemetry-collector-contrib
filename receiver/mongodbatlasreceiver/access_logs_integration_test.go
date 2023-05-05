@@ -53,13 +53,12 @@ func TestAccessLogsIntegration(t *testing.T) {
 	mockClient.On("GetClusters", mock.Anything, testProjectID).Return(
 		[]mongodbatlas.Cluster{
 			{
-				ID:      testClusterID,
 				GroupID: testProjectID,
 				Name:    testClusterName,
 			},
 		},
 		nil)
-	mockClient.On("GetAccessLogs", mock.Anything, testProjectID, testClusterID, mock.Anything).Return(accessLogs, nil)
+	mockClient.On("GetAccessLogs", mock.Anything, testProjectID, testClusterName, mock.Anything).Return(accessLogs, nil)
 
 	sink := &consumertest.LogsSink{}
 	fact := NewFactory()
