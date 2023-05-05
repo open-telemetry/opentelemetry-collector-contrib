@@ -26,6 +26,8 @@ type Config struct {
 	NumTraces        int
 	PropagateContext bool
 	ServiceName      string
+	Batch            bool
+	LoadSize         int
 }
 
 // Flags registers config flags.
@@ -34,4 +36,6 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.IntVar(&c.NumTraces, "traces", 1, "Number of traces to generate in each worker (ignored if duration is provided)")
 	fs.BoolVar(&c.PropagateContext, "marshal", false, "Whether to marshal trace context via HTTP headers")
 	fs.StringVar(&c.ServiceName, "service", "telemetrygen", "Service name to use")
+	fs.BoolVar(&c.Batch, "batch", true, "Whether to use batch span processor")
+	fs.IntVar(&c.LoadSize, "size", 0, "Desired size in MB for each trace generated")
 }

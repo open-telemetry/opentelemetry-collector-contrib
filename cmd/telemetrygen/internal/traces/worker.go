@@ -16,6 +16,8 @@ package traces // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -38,12 +40,15 @@ type worker struct {
 	wg               *sync.WaitGroup // notify when done
 	logger           *zap.Logger
 	serviceName      string
+	loadSize         int
 }
 
 const (
 	fakeIP string = "1.2.3.4"
 
 	fakeSpanDuration = 123 * time.Microsecond
+
+	charactersPerMB = 1048577
 )
 
 func (w worker) simulateTraces() {
@@ -56,6 +61,9 @@ func (w worker) simulateTraces() {
 			semconv.NetPeerIPKey.String(fakeIP),
 			semconv.PeerServiceKey.String(w.serviceName),
 		))
+		for j := 0; j < w.loadSize; j++ {
+			sp.SetAttributes(attribute.String(fmt.Sprintf("load-%v", j), string(make([]byte, charactersPerMB))))
+		}
 
 		childCtx := ctx
 		if w.propagateContext {
@@ -78,6 +86,7 @@ func (w worker) simulateTraces() {
 		}
 
 		opt := trace.WithTimestamp(time.Now().Add(fakeSpanDuration))
+		time.Sleep(time.Duration(rand.Intn(40)) * time.Millisecond)
 		child.End(opt)
 		sp.End(opt)
 
