@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor/internal/metadata"
 )
 
-// NewFactory creates a factory for the spanmetrics processor.
+// NewFactory creates a factory for the datadog processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
