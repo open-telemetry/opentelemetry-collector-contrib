@@ -55,14 +55,16 @@ func TestScrape(t *testing.T) {
 		{
 			name: "All metrics enabled",
 			config: &Config{
-				MetricsBuilderConfig: metadata.NewMetricsBuilderConfig(metadata.MetricsSettings{
-					SystemMemoryUtilization: metadata.MetricSettings{
-						Enabled: true,
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsSettings{
+						SystemMemoryUtilization: metadata.MetricSettings{
+							Enabled: true,
+						},
+						SystemMemoryUsage: metadata.MetricSettings{
+							Enabled: true,
+						},
 					},
-					SystemMemoryUsage: metadata.MetricSettings{
-						Enabled: true,
-					},
-				}, metadata.DefaultResourceAttributesSettings()),
+				},
 			},
 			expectedMetricCount: 2,
 		},
