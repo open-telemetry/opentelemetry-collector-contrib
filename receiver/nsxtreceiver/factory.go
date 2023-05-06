@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	typeStr   = "nsxt"
+	typeStr = "nsxt"
 )
 
 var errConfigNotNSX = errors.New("config was not a NSX receiver config")
