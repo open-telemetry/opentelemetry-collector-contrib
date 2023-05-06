@@ -201,7 +201,7 @@ for-connector-target: $(CONNECTOR_MODS)
 for-internal-target: $(INTERNAL_MODS)
 
 .PHONY: for-pkg-target
-for-internal-target: $(PKG_MODS)
+for-pkg-target: $(PKG_MODS)
 
 .PHONY: for-other-target
 for-other-target: $(OTHER_MODS)
