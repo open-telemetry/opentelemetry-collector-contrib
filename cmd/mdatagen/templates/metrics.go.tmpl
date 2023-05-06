@@ -221,13 +221,6 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
    }
 }
 
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-    return MetricsBuilderConfig {
-        Metrics: ms,
-        ResourceAttributes: ras,
-    }
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	{{- range $name, $metric := .Metrics }}
 	{{- if $metric.Warnings.IfEnabled }}

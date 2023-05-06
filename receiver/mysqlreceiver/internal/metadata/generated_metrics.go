@@ -3551,13 +3551,6 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	}
 }
 
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
