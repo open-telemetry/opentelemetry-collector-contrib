@@ -69,6 +69,7 @@ jobs:
           - extension
           - connector
           - internal
+          - pkg
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -115,6 +116,18 @@ jobs:
             false
           fi
   govulncheck:
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - processor
+          - exporter
+          - extension
+          - connector
+          - internal
+          - pkg
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -123,7 +136,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.8
+          go-version: ~1.19.9
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -136,7 +149,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Run `govulncheck`
-        run: make govulncheck
+        run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
   checks:
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -207,6 +220,7 @@ jobs:
           - extension
           - connector
           - internal
+          - pkg
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
