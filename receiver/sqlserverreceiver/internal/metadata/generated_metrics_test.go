@@ -151,22 +151,22 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("sqlserver.computer.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.SqlserverComputerName.Enabled, ok)
-			if mb.resourceAttributesSettings.SqlserverComputerName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.SqlserverComputerName.Enabled, ok)
+			if mb.resourceAttributesConfig.SqlserverComputerName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("sqlserver.database.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.SqlserverDatabaseName.Enabled, ok)
-			if mb.resourceAttributesSettings.SqlserverDatabaseName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.SqlserverDatabaseName.Enabled, ok)
+			if mb.resourceAttributesConfig.SqlserverDatabaseName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("sqlserver.instance.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.SqlserverInstanceName.Enabled, ok)
-			if mb.resourceAttributesSettings.SqlserverInstanceName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.SqlserverInstanceName.Enabled, ok)
+			if mb.resourceAttributesConfig.SqlserverInstanceName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

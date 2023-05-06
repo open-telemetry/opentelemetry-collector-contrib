@@ -13,14 +13,14 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
+// MetricConfig provides common config for a particular metric.
+type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	enabledSetByUser bool
 }
 
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -32,18 +32,18 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsSettings provides settings for hostmetricsreceiver/cpu metrics.
-type MetricsSettings struct {
-	SystemCPUTime        MetricSettings `mapstructure:"system.cpu.time"`
-	SystemCPUUtilization MetricSettings `mapstructure:"system.cpu.utilization"`
+// MetricsConfig provides config for hostmetricsreceiver/cpu metrics.
+type MetricsConfig struct {
+	SystemCPUTime        MetricConfig `mapstructure:"system.cpu.time"`
+	SystemCPUUtilization MetricConfig `mapstructure:"system.cpu.utilization"`
 }
 
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		SystemCPUTime: MetricSettings{
+func DefaultMetricsConfig() MetricsConfig {
+	return MetricsConfig{
+		SystemCPUTime: MetricConfig{
 			Enabled: true,
 		},
-		SystemCPUUtilization: MetricSettings{
+		SystemCPUUtilization: MetricConfig{
 			Enabled: false,
 		},
 	}
@@ -101,7 +101,7 @@ var MapAttributeState = map[string]AttributeState{
 
 type metricSystemCPUTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -117,7 +117,7 @@ func (m *metricSystemCPUTime) init() {
 }
 
 func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -137,16 +137,16 @@ func (m *metricSystemCPUTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemCPUTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemCPUTime(settings MetricSettings) metricSystemCPUTime {
-	m := metricSystemCPUTime{settings: settings}
-	if settings.Enabled {
+func newMetricSystemCPUTime(cfg MetricConfig) metricSystemCPUTime {
+	m := metricSystemCPUTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -155,7 +155,7 @@ func newMetricSystemCPUTime(settings MetricSettings) metricSystemCPUTime {
 
 type metricSystemCPUUtilization struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -169,7 +169,7 @@ func (m *metricSystemCPUUtilization) init() {
 }
 
 func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -189,16 +189,16 @@ func (m *metricSystemCPUUtilization) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemCPUUtilization) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemCPUUtilization(settings MetricSettings) metricSystemCPUUtilization {
-	m := metricSystemCPUUtilization{settings: settings}
-	if settings.Enabled {
+func newMetricSystemCPUUtilization(cfg MetricConfig) metricSystemCPUUtilization {
+	m := metricSystemCPUUtilization{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -207,11 +207,11 @@ func newMetricSystemCPUUtilization(settings MetricSettings) metricSystemCPUUtili
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	Metrics MetricsSettings `mapstructure:"metrics"`
+	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                  pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity            int                 // maximum observed number of metrics per resource.
@@ -234,7 +234,7 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		Metrics: DefaultMetricsSettings(),
+		Metrics: DefaultMetricsConfig(),
 	}
 }
 
@@ -312,7 +312,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer
