@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	typeStr   = "nginx"
+	typeStr = "nginx"
 )
 
 // NewFactory creates a factory for nginx receiver.
