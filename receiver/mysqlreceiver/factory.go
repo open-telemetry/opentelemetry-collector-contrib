@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	typeStr   = "mysql"
+	typeStr = "mysql"
 )
 
 func NewFactory() receiver.Factory {
