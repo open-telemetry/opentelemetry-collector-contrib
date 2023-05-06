@@ -29,7 +29,6 @@ import (
 
 const (
 	typeStr   = "nsxt"
-	stability = component.StabilityLevelAlpha
 )
 
 var errConfigNotNSX = errors.New("config was not a NSX receiver config")
@@ -39,7 +38,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
 }
 
