@@ -55,24 +55,35 @@ Values are passed as input to an Invocation or are used in a Boolean Expression.
 - [Literals](#literals)
 - [Enums](#enums)
 - [Converters](#converters)
-- [Math Expressions](#math_expressions)
+- [Math Expressions](#math-expressions)
 
 #### Paths
 
-A Path Value is a reference to a telemetry field.  Paths are made up of lowercase identifiers, dots (`.`), and square brackets combined with a string key (`["key"]`).  **The interpretation of a Path is NOT implemented by the OTTL.**  Instead, the user must provide a `PathExpressionParser` that the OTTL can use to interpret paths.  As a result, how the Path parts are used is up to the user.  However, it is recommended, that the parts be used like so:
+A Path Value is a reference to a telemetry field.  Paths are made up of lowercase identifiers, dots (`.`), and square brackets combined with a string key (`["key"]`) or int key (`[0]`).  **The interpretation of a Path is NOT implemented by the OTTL.**  Instead, the user must provide a `PathExpressionParser` that the OTTL can use to interpret paths.  As a result, how the Path parts are used is up to the user.  However, it is recommended that the parts be used like so:
 
 - Identifiers are used to map to a telemetry field.
 - Dots (`.`) are used to separate nested fields.
 - Square brackets and keys (`["key"]`) are used to access values within maps.
 
 When accessing a map's value, if the given key does not exist, `nil` will be returned.
-This can be used to check for the presence of a key within a map within a [Boolean Expression](#boolean_expressions).
+This can be used to check for the presence of a key within a map within a [Boolean Expression](#boolean-expressions).
 
 Example Paths
 - `name`
 - `value_double`
 - `resource.name`
 - `resource.attributes["key"]`
+- `attributes["nested"]["values"]`
+- `cache["slice"][1]`
+
+##### Contexts
+
+The package that handles the interpretation of a path is normally called a Context.
+Contexts will have an implementation of `PathExpressionParser` that decides how an OTTL Path is interpreted.
+The context's implementation will need to make decisions like what a dot (`.`) represents or which paths allow indexing (`["key"]`) and how many indexes.
+
+[There are OpenTelemetry-specific contexts provided for each signal here.](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts)
+When using OTTL it is recommended to use these contexts unless you have a specific need.  Check out each context to view the paths it supports. 
 
 #### Lists
 
@@ -116,19 +127,32 @@ When defining a function that will be used as an Invocation by the OTTL, if the 
 #### Converters
 
 Converters are special functions that convert data to a new format before being passed to an Invocation or Boolean Expression.
-Like Invocations, Converters are made up of 2 parts:
+Converters are made up of 3 parts:
 
 - a string identifier. The string identifier must start with an uppercase letter.
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
+- a combination of zero or more a string key (`["key"]`) or int key (`[0]`)
 
-**The OTTL does not define any converter implementations.**
-Users must include converters in the same map that invocations are supplied.
+**The OTTL does not define any Converter implementations.**
+Users must include Converters in the same map that invocations are supplied.
 The OTTL will use this map and reflection to generate Converters that can then be invoked by the user.
 See [ottlfuncs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#converters) for pre-made, usable Converters.
+
+When keys are supplied the value returned by the Converter will be indexed by the keys in order.
+If keys are supplied to a Converter and the return value cannot be indexed, or if the return value doesn't support the
+type of key supplied, OTTL will error. Supported values are:
+
+| Type             | Index Type |
+|------------------|------------|
+| `pcommon.Map`    | `String`   |
+| `map[string]any` | `String`   |
+| `pcommon.Slice`  | `Int`      |
+| `[]any`          | `Int`      |
 
 Example Converters
 - `Int()`
 - `IsMatch(field, ".*")`
+- `Split(field, ",")[1]`
 
 
 #### Math Expressions
@@ -168,6 +192,7 @@ Boolean Expressions can be grouped with parentheses to override evaluation prece
 
 Booleans can be either:
 - A literal boolean value (`true` or `false`).
+- A Converter that returns a boolean value (`true` or `false`).
 - A Comparison, made up of a left Value, an operator, and a right Value. See [Values](#values) for details on what a Value can be.
 
 Operators determine how the two Values are compared.
@@ -183,8 +208,8 @@ The valid operators are:
 
 Booleans can be negated with the `not` keyword such as
 - `not true`
-- `not name == "foo"`   
-- `not (IsMatch(name, "http_.*") == true and kind > 0)`
+- `not name == "foo"`
+- `not (IsMatch(name, "http_.*") and kind > 0)`
 
 ### Comparison Rules
 
@@ -212,7 +237,7 @@ Examples:
 - `name == "a name"`
 - `1 < 2`
 - `attributes["custom-attr"] != nil`
-- `IsMatch(resource.attributes["host.name"], "pod-*") == true`
+- `IsMatch(resource.attributes["host.name"], "pod-*")`
 
 ## Accessing signal telemetry
 

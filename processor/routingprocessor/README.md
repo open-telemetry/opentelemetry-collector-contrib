@@ -74,7 +74,7 @@ processors:
     table:
       - statement: route() where resource.attributes["X-Tenant"] == "acme"
         exporters: [jaeger/acme]
-      - statement: delete_key(resource.attributes, "X-Tenant") where IsMatch(resource.attributes["X-Tenant"], ".*corp") == true
+      - statement: delete_key(resource.attributes, "X-Tenant") where IsMatch(resource.attributes["X-Tenant"], ".*corp")
         exporters: [jaeger/ecorp]
 
 exporters:

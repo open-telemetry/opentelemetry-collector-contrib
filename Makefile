@@ -124,7 +124,7 @@ COMMIT?=HEAD
 MODSET?=contrib-core
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
 .PHONY: push-tags
-push-tags: $(MULITMOD) 
+push-tags: $(MULITMOD)
 	$(MULITMOD) verify
 	set -e; for tag in `$(MULITMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
 		echo "pushing tag $${tag}"; \
@@ -310,7 +310,7 @@ otel-from-lib:
 
 .PHONY: build-examples
 build-examples:
-	docker-compose -f examples/tracing/docker-compose.yml build
+	docker-compose -f examples/demo/docker-compose.yaml build
 	docker-compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
 .PHONY: deb-rpm-package

@@ -11,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-FROM golang:1.19 as build
+FROM golang:1.20 as build
 WORKDIR /app/
 COPY . .
 RUN go env -w GOPROXY=direct
 RUN CGO_ENABLED=0 go build -o main main.go
-FROM alpine:3.15
+FROM alpine:3.17
 COPY --from=build /app/main  /app/main
 CMD ["/app/main"]

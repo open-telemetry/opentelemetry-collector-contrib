@@ -21,23 +21,20 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "sapm"
-	// The stability level of the exporter.
-	stability         = component.StabilityLevelBeta
 	defaultNumWorkers = 8
 )
 
 // NewFactory creates a factory for SAPM exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability))
 }
 
 func createDefaultConfig() component.Config {

@@ -55,13 +55,13 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
+{{ if .ResourceAttributes -}}
+// ResourceAttributeSettings provides common settings for a particular resource attribute.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-
-// ResourceAttributesSettings provides settings for {{ .Type }} metrics.
+// ResourceAttributesSettings provides settings for {{ .Type }} resource attributes.
 type ResourceAttributesSettings struct {
 	{{- range $name, $attr := .ResourceAttributes }}
 	{{ $name.Render }} ResourceAttributeSettings `mapstructure:"{{ $name }}"`
@@ -77,6 +77,7 @@ func DefaultResourceAttributesSettings() ResourceAttributesSettings {
 		{{- end }}
 	}
 }
+{{- end }}
 
 {{ range $name, $info := .Attributes }}
 {{- if $info.Enum -}}
@@ -147,6 +148,10 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- range $metric.Attributes }}
 	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
 	dp.Attributes().PutEmptyBytes("{{ attributeName . }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+	{{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
+	dp.Attributes().PutEmptySlice("{{ attributeName . }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+	{{- else if eq (attributeInfo .).Type.Primitive "map[string]any" }}
+	dp.Attributes().PutEmptyMap("{{ attributeName . }}").FromRaw({{ .RenderUnexported }}AttributeValue)
 	{{- else }}
 	dp.Attributes().Put{{ (attributeInfo .).Type }}("{{ attributeName .}}", {{ .RenderUnexported }}AttributeValue)
 	{{- end }}
@@ -183,7 +188,9 @@ func newMetric{{ $name.Render }}(settings MetricSettings) metric{{ $name.Render 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
     Metrics MetricsSettings `mapstructure:"metrics"`
+    {{- if .ResourceAttributes }}
     ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+    {{- end }}
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -194,7 +201,9 @@ type MetricsBuilder struct {
 	resourceCapacity         int             // maximum observed number of resource attributes.
 	metricsBuffer            pmetric.Metrics   // accumulates metrics data before emitting.
 	buildInfo                component.BuildInfo // contains version information
+	{{- if .ResourceAttributes }}
 	resourceAttributesSettings ResourceAttributesSettings
+	{{- end }}
 	{{- range $name, $metric := .Metrics }}
 	metric{{ $name.Render }} metric{{ $name.Render }}
 	{{- end }}
@@ -213,15 +222,10 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
    return MetricsBuilderConfig {
         Metrics: DefaultMetricsSettings(),
+        {{- if .ResourceAttributes }}
         ResourceAttributes: DefaultResourceAttributesSettings(),
+        {{- end }}
    }
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-    return MetricsBuilderConfig {
-        Metrics: ms,
-        ResourceAttributes: ras,
-    }
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
@@ -246,7 +250,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:            pmetric.NewMetrics(),
 		buildInfo:                settings.BuildInfo,
+		{{- if .ResourceAttributes }}
 		resourceAttributesSettings: mbc.ResourceAttributes,
+		{{- end }}
 		{{- range $name, $metric := .Metrics }}
 		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mbc.Metrics.{{ $name.Render }}),
 		{{- end }}
@@ -268,7 +274,7 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func({{ if .ResourceAttributes }}ResourceAttributesSettings, {{ end }}pmetric.ResourceMetrics)
 
 {{- range $name, $attr := .ResourceAttributes }}
 {{- range $attr.Enum }}
@@ -285,6 +291,10 @@ func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceMetricsOptio
 		if ras.{{ $name.Render }}.Enabled {
 			{{- if eq $attr.Type.Primitive "[]byte" }}
 			rm.Resource().Attributes().PutEmptyBytes("{{ attributeName $name}}").FromRaw(val)
+			{{- else if eq $attr.Type.Primitive "[]any" }}
+			rm.Resource().Attributes().PutEmptySlice("{{ attributeName $name}}").FromRaw(val)
+			{{- else if eq $attr.Type.Primitive "map[string]any" }}
+			rm.Resource().Attributes().PutEmptyMap("{{ attributeName $name}}").FromRaw(val)
 			{{- else }}
 			rm.Resource().Attributes().Put{{ $attr.Type }}("{{ attributeName $name}}", val)
 			{{- end }}
@@ -297,7 +307,7 @@ func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceMetricsOptio
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func({{ if .ResourceAttributes }}_ ResourceAttributesSettings, {{ end }}rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -334,7 +344,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	{{- end }}
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op({{ if .ResourceAttributes }}mb.resourceAttributesSettings, {{ end }}rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

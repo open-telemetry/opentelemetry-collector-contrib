@@ -1,4 +1,4 @@
-FROM rabbitmq:3.9-management
+FROM rabbitmq:3.11-management
 
 COPY scripts/setup.sh /setup.sh
 RUN chmod +x /setup.sh

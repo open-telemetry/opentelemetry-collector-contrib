@@ -27,17 +27,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
-const (
-	typeStr component.Type = "ecs_task_observer"
-)
-
 // NewFactory creates a factory for ECSTaskObserver extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		metadata.Stability,
+		metadata.ExtensionStability,
 	)
 }
 

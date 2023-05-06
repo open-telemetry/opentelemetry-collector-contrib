@@ -30,7 +30,6 @@ import (
 
 const (
 	typeStr                   = "elasticsearch"
-	stability                 = component.StabilityLevelBeta
 	defaultCollectionInterval = 10 * time.Second
 	defaultHTTPClientTimeout  = 10 * time.Second
 )
@@ -40,7 +39,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 // createDefaultConfig creates the default elasticsearchreceiver config.

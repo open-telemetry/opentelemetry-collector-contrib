@@ -148,12 +148,12 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
+// ResourceAttributeSettings provides common settings for a particular resource attribute.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for bigipreceiver metrics.
+// ResourceAttributesSettings provides settings for bigipreceiver resource attributes.
 type ResourceAttributesSettings struct {
 	BigipNodeIPAddress            ResourceAttributeSettings `mapstructure:"bigip.node.ip_address"`
 	BigipNodeName                 ResourceAttributeSettings `mapstructure:"bigip.node.name"`
@@ -1754,13 +1754,6 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	}
 }
 
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
@@ -1880,7 +1873,7 @@ func WithBigipVirtualServerName(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {

@@ -53,19 +53,6 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for hostmetricsreceiver/load metrics.
-type ResourceAttributesSettings struct {
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{}
-}
-
 type metricSystemCPULoadAverage15m struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -215,8 +202,7 @@ func newMetricSystemCPULoadAverage5m(settings MetricSettings) metricSystemCPULoa
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+	Metrics MetricsSettings `mapstructure:"metrics"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -227,7 +213,6 @@ type MetricsBuilder struct {
 	resourceCapacity              int                 // maximum observed number of resource attributes.
 	metricsBuffer                 pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                     component.BuildInfo // contains version information
-	resourceAttributesSettings    ResourceAttributesSettings
 	metricSystemCPULoadAverage15m metricSystemCPULoadAverage15m
 	metricSystemCPULoadAverage1m  metricSystemCPULoadAverage1m
 	metricSystemCPULoadAverage5m  metricSystemCPULoadAverage5m
@@ -245,15 +230,7 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
+		Metrics: DefaultMetricsSettings(),
 	}
 }
 
@@ -262,7 +239,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                 pmetric.NewMetrics(),
 		buildInfo:                     settings.BuildInfo,
-		resourceAttributesSettings:    mbc.ResourceAttributes,
 		metricSystemCPULoadAverage15m: newMetricSystemCPULoadAverage15m(mbc.Metrics.SystemCPULoadAverage15m),
 		metricSystemCPULoadAverage1m:  newMetricSystemCPULoadAverage1m(mbc.Metrics.SystemCPULoadAverage1m),
 		metricSystemCPULoadAverage5m:  newMetricSystemCPULoadAverage5m(mbc.Metrics.SystemCPULoadAverage5m),
@@ -284,12 +260,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -324,7 +300,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSystemCPULoadAverage5m.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
