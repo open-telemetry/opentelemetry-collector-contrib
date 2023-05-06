@@ -493,6 +493,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.76.3 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.76.3 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.76.3 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver v0.76.3 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver v0.76.3 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.76.3 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.76.3 // indirect
@@ -1065,3 +1066,5 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver => ../../receiver/snowflakereceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver => ../../extension/observer/dockerobserver
