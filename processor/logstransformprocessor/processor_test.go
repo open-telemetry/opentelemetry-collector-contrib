@@ -77,13 +77,7 @@ type testLogMessage struct {
 	attributes   *map[string]pcommon.Value
 }
 
-// This func is a workaround to avoid the "unused" lint error while the test is skipped
-var skip = func(t *testing.T, why string) {
-	t.Skip(why)
-}
-
 func TestLogsTransformProcessor(t *testing.T) {
-	skip(t, "See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9761")
 	baseMessage := pcommon.NewValueStr("2022-01-01 01:02:03 INFO this is a test message")
 	spanID := pcommon.SpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
 	traceID := pcommon.TraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
@@ -164,10 +158,10 @@ func TestLogsTransformProcessor(t *testing.T) {
 			wantLogData := generateLogData(tt.parsedMessages)
 			err = ltp.ConsumeLogs(context.Background(), sourceLogData)
 			require.NoError(t, err)
-			time.Sleep(200 * time.Millisecond)
-			logs := tln.AllLogs()
-			require.Len(t, logs, 1)
-			assert.NoError(t, plogtest.CompareLogs(wantLogData, logs[0]))
+			require.Eventuallyf(t, func() bool {
+				return len(tln.AllLogs()) == 1
+			}, 20*time.Second, 200*time.Millisecond, "failed to receive logs")
+			assert.NoError(t, plogtest.CompareLogs(wantLogData, tln.AllLogs()[0]))
 		})
 	}
 }
