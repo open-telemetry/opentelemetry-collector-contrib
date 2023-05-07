@@ -101,7 +101,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.Password = "password"
 	expected.CollectionInterval = 2 * time.Minute
 
-	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{})); diff != "" {
+	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{})); diff != "" {
 		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 	}
 

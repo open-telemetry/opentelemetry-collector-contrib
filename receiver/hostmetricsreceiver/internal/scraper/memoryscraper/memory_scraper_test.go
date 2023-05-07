@@ -56,11 +56,11 @@ func TestScrape(t *testing.T) {
 			name: "All metrics enabled",
 			config: &Config{
 				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
-					Metrics: metadata.MetricsSettings{
-						SystemMemoryUtilization: metadata.MetricSettings{
+					Metrics: metadata.MetricsConfig{
+						SystemMemoryUtilization: metadata.MetricConfig{
 							Enabled: true,
 						},
-						SystemMemoryUsage: metadata.MetricSettings{
+						SystemMemoryUsage: metadata.MetricConfig{
 							Enabled: true,
 						},
 					},

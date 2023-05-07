@@ -13,14 +13,14 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
+// MetricConfig provides common config for a particular metric.
+type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	enabledSetByUser bool
 }
 
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -32,22 +32,22 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsSettings provides settings for hostmetricsreceiver/load metrics.
-type MetricsSettings struct {
-	SystemCPULoadAverage15m MetricSettings `mapstructure:"system.cpu.load_average.15m"`
-	SystemCPULoadAverage1m  MetricSettings `mapstructure:"system.cpu.load_average.1m"`
-	SystemCPULoadAverage5m  MetricSettings `mapstructure:"system.cpu.load_average.5m"`
+// MetricsConfig provides config for hostmetricsreceiver/load metrics.
+type MetricsConfig struct {
+	SystemCPULoadAverage15m MetricConfig `mapstructure:"system.cpu.load_average.15m"`
+	SystemCPULoadAverage1m  MetricConfig `mapstructure:"system.cpu.load_average.1m"`
+	SystemCPULoadAverage5m  MetricConfig `mapstructure:"system.cpu.load_average.5m"`
 }
 
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		SystemCPULoadAverage15m: MetricSettings{
+func DefaultMetricsConfig() MetricsConfig {
+	return MetricsConfig{
+		SystemCPULoadAverage15m: MetricConfig{
 			Enabled: true,
 		},
-		SystemCPULoadAverage1m: MetricSettings{
+		SystemCPULoadAverage1m: MetricConfig{
 			Enabled: true,
 		},
-		SystemCPULoadAverage5m: MetricSettings{
+		SystemCPULoadAverage5m: MetricConfig{
 			Enabled: true,
 		},
 	}
@@ -55,7 +55,7 @@ func DefaultMetricsSettings() MetricsSettings {
 
 type metricSystemCPULoadAverage15m struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -68,7 +68,7 @@ func (m *metricSystemCPULoadAverage15m) init() {
 }
 
 func (m *metricSystemCPULoadAverage15m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -86,16 +86,16 @@ func (m *metricSystemCPULoadAverage15m) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemCPULoadAverage15m) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemCPULoadAverage15m(settings MetricSettings) metricSystemCPULoadAverage15m {
-	m := metricSystemCPULoadAverage15m{settings: settings}
-	if settings.Enabled {
+func newMetricSystemCPULoadAverage15m(cfg MetricConfig) metricSystemCPULoadAverage15m {
+	m := metricSystemCPULoadAverage15m{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -104,7 +104,7 @@ func newMetricSystemCPULoadAverage15m(settings MetricSettings) metricSystemCPULo
 
 type metricSystemCPULoadAverage1m struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -117,7 +117,7 @@ func (m *metricSystemCPULoadAverage1m) init() {
 }
 
 func (m *metricSystemCPULoadAverage1m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -135,16 +135,16 @@ func (m *metricSystemCPULoadAverage1m) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemCPULoadAverage1m) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemCPULoadAverage1m(settings MetricSettings) metricSystemCPULoadAverage1m {
-	m := metricSystemCPULoadAverage1m{settings: settings}
-	if settings.Enabled {
+func newMetricSystemCPULoadAverage1m(cfg MetricConfig) metricSystemCPULoadAverage1m {
+	m := metricSystemCPULoadAverage1m{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -153,7 +153,7 @@ func newMetricSystemCPULoadAverage1m(settings MetricSettings) metricSystemCPULoa
 
 type metricSystemCPULoadAverage5m struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -166,7 +166,7 @@ func (m *metricSystemCPULoadAverage5m) init() {
 }
 
 func (m *metricSystemCPULoadAverage5m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -184,16 +184,16 @@ func (m *metricSystemCPULoadAverage5m) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemCPULoadAverage5m) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemCPULoadAverage5m(settings MetricSettings) metricSystemCPULoadAverage5m {
-	m := metricSystemCPULoadAverage5m{settings: settings}
-	if settings.Enabled {
+func newMetricSystemCPULoadAverage5m(cfg MetricConfig) metricSystemCPULoadAverage5m {
+	m := metricSystemCPULoadAverage5m{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -202,11 +202,11 @@ func newMetricSystemCPULoadAverage5m(settings MetricSettings) metricSystemCPULoa
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	Metrics MetricsSettings `mapstructure:"metrics"`
+	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                     pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity               int                 // maximum observed number of metrics per resource.
@@ -230,7 +230,7 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		Metrics: DefaultMetricsSettings(),
+		Metrics: DefaultMetricsConfig(),
 	}
 }
 
@@ -310,7 +310,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

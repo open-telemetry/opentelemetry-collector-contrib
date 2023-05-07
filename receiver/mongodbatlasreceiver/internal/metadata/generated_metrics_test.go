@@ -319,78 +319,78 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("mongodb_atlas.cluster.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasClusterName.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasClusterName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasClusterName.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasClusterName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.db.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasDbName.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasDbName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.disk.partition")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasDiskPartition.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasDiskPartition.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasDiskPartition.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasDiskPartition.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.host.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasHostName.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasHostName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasHostName.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasHostName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.org_name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasOrgName.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasOrgName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasOrgName.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasOrgName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.id")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessID.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasProcessID.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasProcessID.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasProcessID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.port")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessPort.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasProcessPort.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasProcessPort.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasProcessPort.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.type_name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessTypeName.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasProcessTypeName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasProcessTypeName.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasProcessTypeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.project.id")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProjectID.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasProjectID.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasProjectID.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasProjectID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.project.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProjectName.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasProjectName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasProjectName.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasProjectName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.user.alias")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasUserAlias.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasUserAlias.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasUserAlias.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasUserAlias.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
