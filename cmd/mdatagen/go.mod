@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
 go 1.19
 
 require (
+	github.com/google/go-cmp v0.5.9
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector/component v0.76.2-0.20230502195822-4df44379e094
 	go.opentelemetry.io/collector/confmap v0.76.2-0.20230502195822-4df44379e094

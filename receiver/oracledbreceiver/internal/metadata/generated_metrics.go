@@ -8,157 +8,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for oracledbreceiver metrics.
-type MetricsConfig struct {
-	OracledbCPUTime               MetricConfig `mapstructure:"oracledb.cpu_time"`
-	OracledbDmlLocksLimit         MetricConfig `mapstructure:"oracledb.dml_locks.limit"`
-	OracledbDmlLocksUsage         MetricConfig `mapstructure:"oracledb.dml_locks.usage"`
-	OracledbEnqueueDeadlocks      MetricConfig `mapstructure:"oracledb.enqueue_deadlocks"`
-	OracledbEnqueueLocksLimit     MetricConfig `mapstructure:"oracledb.enqueue_locks.limit"`
-	OracledbEnqueueLocksUsage     MetricConfig `mapstructure:"oracledb.enqueue_locks.usage"`
-	OracledbEnqueueResourcesLimit MetricConfig `mapstructure:"oracledb.enqueue_resources.limit"`
-	OracledbEnqueueResourcesUsage MetricConfig `mapstructure:"oracledb.enqueue_resources.usage"`
-	OracledbExchangeDeadlocks     MetricConfig `mapstructure:"oracledb.exchange_deadlocks"`
-	OracledbExecutions            MetricConfig `mapstructure:"oracledb.executions"`
-	OracledbHardParses            MetricConfig `mapstructure:"oracledb.hard_parses"`
-	OracledbLogicalReads          MetricConfig `mapstructure:"oracledb.logical_reads"`
-	OracledbParseCalls            MetricConfig `mapstructure:"oracledb.parse_calls"`
-	OracledbPgaMemory             MetricConfig `mapstructure:"oracledb.pga_memory"`
-	OracledbPhysicalReads         MetricConfig `mapstructure:"oracledb.physical_reads"`
-	OracledbProcessesLimit        MetricConfig `mapstructure:"oracledb.processes.limit"`
-	OracledbProcessesUsage        MetricConfig `mapstructure:"oracledb.processes.usage"`
-	OracledbSessionsLimit         MetricConfig `mapstructure:"oracledb.sessions.limit"`
-	OracledbSessionsUsage         MetricConfig `mapstructure:"oracledb.sessions.usage"`
-	OracledbTablespaceSizeLimit   MetricConfig `mapstructure:"oracledb.tablespace_size.limit"`
-	OracledbTablespaceSizeUsage   MetricConfig `mapstructure:"oracledb.tablespace_size.usage"`
-	OracledbTransactionsLimit     MetricConfig `mapstructure:"oracledb.transactions.limit"`
-	OracledbTransactionsUsage     MetricConfig `mapstructure:"oracledb.transactions.usage"`
-	OracledbUserCommits           MetricConfig `mapstructure:"oracledb.user_commits"`
-	OracledbUserRollbacks         MetricConfig `mapstructure:"oracledb.user_rollbacks"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		OracledbCPUTime: MetricConfig{
-			Enabled: true,
-		},
-		OracledbDmlLocksLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbDmlLocksUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbEnqueueDeadlocks: MetricConfig{
-			Enabled: true,
-		},
-		OracledbEnqueueLocksLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbEnqueueLocksUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbEnqueueResourcesLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbEnqueueResourcesUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbExchangeDeadlocks: MetricConfig{
-			Enabled: true,
-		},
-		OracledbExecutions: MetricConfig{
-			Enabled: true,
-		},
-		OracledbHardParses: MetricConfig{
-			Enabled: true,
-		},
-		OracledbLogicalReads: MetricConfig{
-			Enabled: true,
-		},
-		OracledbParseCalls: MetricConfig{
-			Enabled: true,
-		},
-		OracledbPgaMemory: MetricConfig{
-			Enabled: true,
-		},
-		OracledbPhysicalReads: MetricConfig{
-			Enabled: true,
-		},
-		OracledbProcessesLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbProcessesUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbSessionsLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbSessionsUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbTablespaceSizeLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbTablespaceSizeUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbTransactionsLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbTransactionsUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbUserCommits: MetricConfig{
-			Enabled: true,
-		},
-		OracledbUserRollbacks: MetricConfig{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for oracledbreceiver resource attributes.
-type ResourceAttributesConfig struct {
-	OracledbInstanceName ResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		OracledbInstanceName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-	}
-}
 
 type metricOracledbCPUTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -1414,12 +1267,6 @@ func newMetricOracledbUserRollbacks(cfg MetricConfig) metricOracledbUserRollback
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -1463,13 +1310,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 
