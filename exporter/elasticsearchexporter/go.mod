@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/elastic/go-elasticsearch/v7 v7.17.7
+	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/elastic/go-structform v0.0.10
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.3
