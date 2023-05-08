@@ -190,7 +190,7 @@ func (s *sparkScraper) collectCluster(clusterStats *models.ClusterProperties, no
 		s.mb.RecordSparkDriverCodeGeneratorSourceCodeCountDataPoint(now, stat.Count, appID, appName)
 		s.mb.RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(now, stat.Mean, appID, appName)
 	}
-	
+
 	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.DAGScheduler.job.activeJobs", appID)]; ok {
 		s.mb.RecordSparkDriverDagSchedulerJobActiveJobsDataPoint(now, int64(stat.Value), appID, appName)
 	}
