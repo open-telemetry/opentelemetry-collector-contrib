@@ -368,6 +368,12 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 		}
 	}
 
+	// For backwards compatibility, if EMF v0, always include version & timestamp (even for non-EMF events)
+	if config.Version == "0" {
+		fieldMap["Version"] = "0"
+		fieldMap["Timestamp"] = fmt.Sprint(cWMetric.timestampMs)
+	}
+
 	// Create EMF metrics if there are measurements
 	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure
 	if len(cWMetric.measurements) > 0 {
@@ -405,11 +411,8 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 					"Timestamp": "1668387032641"
 			  	}
 			*/
-			fieldMap["Version"] = "0"
-			fieldMap["Timestamp"] = fmt.Sprint(cWMetric.timestampMs)
 			fieldMap["CloudWatchMetrics"] = cWMetric.measurements
 		}
-
 	}
 
 	pleMsg, err := json.Marshal(fieldMap)
