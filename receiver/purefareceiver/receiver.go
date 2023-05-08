@@ -39,8 +39,8 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 	scrapeCfgs := []*config.ScrapeConfig{}
 
 	commomLabel := model.LabelSet{
-		"env":  model.LabelValue(r.cfg.Env),
-		"host": model.LabelValue(r.cfg.Endpoint),
+		"deployment.environment": model.LabelValue(r.cfg.Env),
+		"host":                   model.LabelValue(r.cfg.Endpoint),
 	}
 
 	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Array, r.cfg.Settings.ReloadIntervals.Array, commomLabel)
