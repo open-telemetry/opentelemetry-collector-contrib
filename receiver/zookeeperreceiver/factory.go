@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	typeStr   = "zookeeper"
+	typeStr                   = "zookeeper"
 	defaultCollectionInterval = 10 * time.Second
 	defaultTimeout            = 10 * time.Second
 )
