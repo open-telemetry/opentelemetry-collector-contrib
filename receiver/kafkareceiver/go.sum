@@ -171,8 +171,8 @@ github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb/go.mod h1:+NfK9FKe
 github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d/go.mod h1:+NfK9FKeTrX5uv1uIXGdwYDTeHna2qgaIlx54MXqjAM=
 github.com/hjson/hjson-go/v4 v4.0.0 h1:wlm6IYYqHjOdXH1gHev4VoXCaW20HdQAGCxdOEEg2cs=
 github.com/hjson/hjson-go/v4 v4.0.0/go.mod h1:KaYt3bTw3zhBjYqnXkYywcYctk0A2nxeEFTse3rH13E=
-github.com/jaegertracing/jaeger v1.41.0 h1:vVNky8dP46M2RjGaZ7qRENqylW+tBFay3h57N16Ip7M=
-github.com/jaegertracing/jaeger v1.41.0/go.mod h1:SIkAT75iVmA9U+mESGYuMH6UQv6V9Qy4qxo0lwfCQAc=
+github.com/jaegertracing/jaeger v1.45.0 h1:WnMMBO7cnywUiLRsqTgclWjKigNZjyVQDL1cBC0shU4=
+github.com/jaegertracing/jaeger v1.45.0/go.mod h1:uFvk0i8iVOErUo59ntIzlvgk3qs/iGSbOtD/RyuPh2Y=
 github.com/jcmturner/aescts/v2 v2.0.0 h1:9YKLH6ey7H4eDBXW8khjYslgyqG2xZikXP0EQFKrle8=
 github.com/jcmturner/aescts/v2 v2.0.0/go.mod h1:AiaICIRyfYg35RUkr8yESTqvSy7csK90qZ5xfvvsoNs=
 github.com/jcmturner/dnsutils/v2 v2.0.0 h1:lltnkeZGL0wILNvrNiVCR6Ro5PGU/SeBvVO/8c/iPbo=
