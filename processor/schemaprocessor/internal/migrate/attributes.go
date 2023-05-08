@@ -37,7 +37,7 @@ type AttributeChangeSet struct {
 
 // OrderedAttributeChangeSets allows for `AttributeChangeSet`
 // to be chained together as they are defined within the schema
-// and be applied sequentially to ensure deterministic behaviour.
+// and be applied sequentially to ensure deterministic behavior.
 type AttributeChangeSetSlice []*AttributeChangeSet
 
 // NewAttributes allows for typed strings to be used as part
@@ -88,8 +88,8 @@ func NewAttributeChangeSetSlice(changes ...*AttributeChangeSet) *AttributeChange
 	return values
 }
 
-func (oacs *AttributeChangeSetSlice) Apply(attrs pcommon.Map) {
-	oacs.do(StateSelctorApply, attrs)
+func (slice *AttributeChangeSetSlice) Apply(attrs pcommon.Map) {
+	slice.do(StateSelctorApply, attrs)
 }
 
 func (slice *AttributeChangeSetSlice) Rollback(attrs pcommon.Map) {

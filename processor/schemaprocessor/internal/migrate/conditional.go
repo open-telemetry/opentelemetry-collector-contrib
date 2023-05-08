@@ -57,7 +57,7 @@ func (ca *ConditionalAttributeSet) check(values ...string) bool {
 		return true
 	}
 	for _, v := range values {
-		if _, ok := (*ca.on)[string(v)]; !ok {
+		if _, ok := (*ca.on)[v]; !ok {
 			return false
 		}
 	}
