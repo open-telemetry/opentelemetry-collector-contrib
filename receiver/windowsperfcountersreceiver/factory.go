@@ -20,23 +20,18 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+  "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/metadata"
 )
 
 // This file implements Factory for WindowsPerfCounters receiver.
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "windowsperfcounters"
-	// The stability level of the receiver.
-	stability = component.StabilityLevelBeta
-)
-
 // NewFactory creates a new factory for windows perf counters receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 // createDefaultConfig creates the default configuration for receiver.
