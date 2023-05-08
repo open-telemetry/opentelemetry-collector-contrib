@@ -167,7 +167,7 @@ exporters:
     sending_queue:
       enabled: true
       num_consumers: 10
-      queue_size: 5000
+      queue_size: 1000
     resource_to_telemetry_conversion:
       enabled: false
 service:
@@ -266,7 +266,7 @@ User should calculate this as `num_seconds * requests_per_second` where:
 - `num_seconds` is the number of seconds to buffer in case of a backend outage
 - `requests_per_second` is the average number of requests per seconds.
 
-Default: `5000`
+Default: `1000`
 
 ### resource_to_telemetry_conversion (Optional)
 
