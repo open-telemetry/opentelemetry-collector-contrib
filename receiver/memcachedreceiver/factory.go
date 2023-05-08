@@ -28,9 +28,9 @@ import (
 )
 
 const (
-	typeStr = "memcached"
-	defaultEndpoint = "localhost:11211"
-	defaultTimeout = 10 * time.Second
+	typeStr                   = "memcached"
+	defaultEndpoint           = "localhost:11211"
+	defaultTimeout            = 10 * time.Second
 	defaultCollectionInterval = 10 * time.Second
 )
 
