@@ -6,7 +6,7 @@ go 1.19
 require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.76.3
-	github.com/prometheus/common v0.42.0
+	github.com/prometheus/common v0.43.0
 	github.com/prometheus/prometheus v0.43.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector/component v0.76.2-0.20230502195822-4df44379e094
@@ -114,8 +114,8 @@ require (
 	github.com/ovh/go-ovh v1.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.15.0 // indirect
-	github.com/prometheus/client_model v0.3.0 // indirect
+	github.com/prometheus/client_golang v1.15.1 // indirect
+	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.14 // indirect
