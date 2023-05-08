@@ -159,22 +159,22 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("postgresql.database.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.PostgresqlDatabaseName.Enabled, ok)
-			if mb.resourceAttributesSettings.PostgresqlDatabaseName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.PostgresqlDatabaseName.Enabled, ok)
+			if mb.resourceAttributesConfig.PostgresqlDatabaseName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("postgresql.index.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.PostgresqlIndexName.Enabled, ok)
-			if mb.resourceAttributesSettings.PostgresqlIndexName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.PostgresqlIndexName.Enabled, ok)
+			if mb.resourceAttributesConfig.PostgresqlIndexName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("postgresql.table.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.PostgresqlTableName.Enabled, ok)
-			if mb.resourceAttributesSettings.PostgresqlTableName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.PostgresqlTableName.Enabled, ok)
+			if mb.resourceAttributesConfig.PostgresqlTableName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

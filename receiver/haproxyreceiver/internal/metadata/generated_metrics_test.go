@@ -166,64 +166,64 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("haproxy.addr")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.HaproxyAddr.Enabled, ok)
-			if mb.resourceAttributesSettings.HaproxyAddr.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.HaproxyAddr.Enabled, ok)
+			if mb.resourceAttributesConfig.HaproxyAddr.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.algo")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.HaproxyAlgo.Enabled, ok)
-			if mb.resourceAttributesSettings.HaproxyAlgo.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.HaproxyAlgo.Enabled, ok)
+			if mb.resourceAttributesConfig.HaproxyAlgo.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.iid")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.HaproxyIid.Enabled, ok)
-			if mb.resourceAttributesSettings.HaproxyIid.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.HaproxyIid.Enabled, ok)
+			if mb.resourceAttributesConfig.HaproxyIid.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.pid")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.HaproxyPid.Enabled, ok)
-			if mb.resourceAttributesSettings.HaproxyPid.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.HaproxyPid.Enabled, ok)
+			if mb.resourceAttributesConfig.HaproxyPid.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.sid")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.HaproxySid.Enabled, ok)
-			if mb.resourceAttributesSettings.HaproxySid.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.HaproxySid.Enabled, ok)
+			if mb.resourceAttributesConfig.HaproxySid.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.type")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.HaproxyType.Enabled, ok)
-			if mb.resourceAttributesSettings.HaproxyType.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.HaproxyType.Enabled, ok)
+			if mb.resourceAttributesConfig.HaproxyType.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.url")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.HaproxyURL.Enabled, ok)
-			if mb.resourceAttributesSettings.HaproxyURL.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.HaproxyURL.Enabled, ok)
+			if mb.resourceAttributesConfig.HaproxyURL.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("proxy_name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProxyName.Enabled, ok)
-			if mb.resourceAttributesSettings.ProxyName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProxyName.Enabled, ok)
+			if mb.resourceAttributesConfig.ProxyName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("service_name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ServiceName.Enabled, ok)
-			if mb.resourceAttributesSettings.ServiceName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ServiceName.Enabled, ok)
+			if mb.resourceAttributesConfig.ServiceName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

@@ -2,5 +2,6 @@ type: k8s_observer
 
 status:
   class: extension
-  stability: alpha
+  stability:
+    alpha: [extension]
   distributions: [contrib]

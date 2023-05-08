@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "awsproxy"
-	Stability = component.StabilityLevelBeta
+	Type               = "awsproxy"
+	ExtensionStability = component.StabilityLevelBeta
 )

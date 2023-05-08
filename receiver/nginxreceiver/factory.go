@@ -28,8 +28,7 @@ import (
 )
 
 const (
-	typeStr   = "nginx"
-	stability = component.StabilityLevelBeta
+	typeStr = "nginx"
 )
 
 // NewFactory creates a factory for nginx receiver.
@@ -37,7 +36,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {

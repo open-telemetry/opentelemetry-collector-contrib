@@ -251,15 +251,15 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("db.system")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.DbSystem.Enabled, ok)
-			if mb.resourceAttributesSettings.DbSystem.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.DbSystem.Enabled, ok)
+			if mb.resourceAttributesConfig.DbSystem.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("saphana.host")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.SaphanaHost.Enabled, ok)
-			if mb.resourceAttributesSettings.SaphanaHost.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.SaphanaHost.Enabled, ok)
+			if mb.resourceAttributesConfig.SaphanaHost.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

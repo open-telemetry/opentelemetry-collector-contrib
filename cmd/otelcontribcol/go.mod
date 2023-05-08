@@ -12,6 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.76.3
@@ -20,6 +21,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.76.3
@@ -245,9 +247,9 @@ require (
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.1.5 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.1.5 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.5 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.2.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.2.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.2.0 // indirect
 	github.com/DataDog/sketches-go v1.4.2 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
@@ -926,6 +928,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/delt
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter => ../../exporter/datadogexporter
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter => ../../exporter/datasetexporter
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight => ../../internal/aws/containerinsight
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ../../internal/aws/awsutil
@@ -1037,6 +1041,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/obse
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver => ../../receiver/lokireceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver => ../../receiver/filestatsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter => ../../exporter/awss3exporter
 
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 

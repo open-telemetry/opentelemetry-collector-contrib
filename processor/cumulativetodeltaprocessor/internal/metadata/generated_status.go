@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "cumulativetodelta"
-	Stability = component.StabilityLevelBeta
+	Type             = "cumulativetodelta"
+	MetricsStability = component.StabilityLevelBeta
 )

@@ -44,9 +44,9 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, metadata.Stability),
-		processor.WithLogs(createLogsProcessor, metadata.Stability),
-		processor.WithMetrics(createMetricsProcessor, metadata.Stability))
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
 }
 
 // createDefaultConfig creates the default configuration for the processor.

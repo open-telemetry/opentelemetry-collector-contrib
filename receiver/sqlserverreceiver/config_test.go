@@ -77,15 +77,15 @@ func TestLoadConfig(t *testing.T) {
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
-			Metrics: metadata.DefaultMetricsSettings(),
-			ResourceAttributes: metadata.ResourceAttributesSettings{
-				SqlserverDatabaseName: metadata.ResourceAttributeSettings{
+			Metrics: metadata.DefaultMetricsConfig(),
+			ResourceAttributes: metadata.ResourceAttributesConfig{
+				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverInstanceName: metadata.ResourceAttributeSettings{
+				SqlserverInstanceName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverComputerName: metadata.ResourceAttributeSettings{
+				SqlserverComputerName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},
 			},

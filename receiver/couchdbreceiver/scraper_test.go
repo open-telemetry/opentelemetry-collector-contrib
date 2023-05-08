@@ -158,15 +158,15 @@ func TestMetricSettings(t *testing.T) {
 	mockClient := new(MockClient)
 	mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
 	mbc := metadata.DefaultMetricsBuilderConfig()
-	mbc.Metrics = metadata.MetricsSettings{
-		CouchdbAverageRequestTime: metadata.MetricSettings{Enabled: false},
-		CouchdbDatabaseOpen:       metadata.MetricSettings{Enabled: false},
-		CouchdbDatabaseOperations: metadata.MetricSettings{Enabled: true},
-		CouchdbFileDescriptorOpen: metadata.MetricSettings{Enabled: false},
-		CouchdbHttpdBulkRequests:  metadata.MetricSettings{Enabled: false},
-		CouchdbHttpdRequests:      metadata.MetricSettings{Enabled: false},
-		CouchdbHttpdResponses:     metadata.MetricSettings{Enabled: false},
-		CouchdbHttpdViews:         metadata.MetricSettings{Enabled: false},
+	mbc.Metrics = metadata.MetricsConfig{
+		CouchdbAverageRequestTime: metadata.MetricConfig{Enabled: false},
+		CouchdbDatabaseOpen:       metadata.MetricConfig{Enabled: false},
+		CouchdbDatabaseOperations: metadata.MetricConfig{Enabled: true},
+		CouchdbFileDescriptorOpen: metadata.MetricConfig{Enabled: false},
+		CouchdbHttpdBulkRequests:  metadata.MetricConfig{Enabled: false},
+		CouchdbHttpdRequests:      metadata.MetricConfig{Enabled: false},
+		CouchdbHttpdResponses:     metadata.MetricConfig{Enabled: false},
+		CouchdbHttpdViews:         metadata.MetricConfig{Enabled: false},
 	}
 	cfg := &Config{
 		HTTPClientSettings:   confighttp.HTTPClientSettings{},

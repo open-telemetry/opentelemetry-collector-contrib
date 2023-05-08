@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "oidc"
-	Stability = component.StabilityLevelBeta
+	Type               = "oidc"
+	ExtensionStability = component.StabilityLevelBeta
 )

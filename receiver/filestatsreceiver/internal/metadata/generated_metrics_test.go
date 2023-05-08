@@ -85,15 +85,15 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("file.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.FileName.Enabled, ok)
-			if mb.resourceAttributesSettings.FileName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.FileName.Enabled, ok)
+			if mb.resourceAttributesConfig.FileName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("file.path")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.FilePath.Enabled, ok)
-			if mb.resourceAttributesSettings.FilePath.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.FilePath.Enabled, ok)
+			if mb.resourceAttributesConfig.FilePath.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

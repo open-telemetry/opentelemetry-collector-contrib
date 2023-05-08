@@ -42,8 +42,8 @@ import (
 var mockFolder = filepath.Join("testdata", "mock")
 
 var (
-	metricEnabled     = metadata.MetricSettings{Enabled: true}
-	allMetricsEnabled = metadata.MetricsSettings{
+	metricEnabled     = metadata.MetricConfig{Enabled: true}
+	allMetricsEnabled = metadata.MetricsConfig{
 		ContainerBlockioIoMergedRecursive:          metricEnabled,
 		ContainerBlockioIoQueuedRecursive:          metricEnabled,
 		ContainerBlockioIoServiceBytesRecursive:    metricEnabled,

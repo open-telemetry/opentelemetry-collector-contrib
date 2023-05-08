@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	typeStr   = "redis"
-	stability = component.StabilityLevelBeta
+	typeStr = "redis"
 )
 
 // NewFactory creates a factory for Redis receiver.
@@ -38,7 +37,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {

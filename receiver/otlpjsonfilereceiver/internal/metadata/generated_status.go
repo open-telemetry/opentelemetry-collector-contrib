@@ -7,6 +7,8 @@ import (
 )
 
 const (
-	Type      = "otlpjsonfile"
-	Stability = component.StabilityLevelAlpha
+	Type             = "otlpjsonfile"
+	TracesStability  = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelAlpha
+	LogsStability    = component.StabilityLevelAlpha
 )

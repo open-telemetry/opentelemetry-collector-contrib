@@ -29,7 +29,6 @@ import (
 
 const (
 	typeStr                   = "memcached"
-	stability                 = component.StabilityLevelBeta
 	defaultEndpoint           = "localhost:11211"
 	defaultTimeout            = 10 * time.Second
 	defaultCollectionInterval = 10 * time.Second
@@ -40,7 +39,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {

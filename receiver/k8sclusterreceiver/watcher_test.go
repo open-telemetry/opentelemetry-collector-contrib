@@ -181,9 +181,15 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 						},
 					},
 					{
-						GroupVersion: "autoscaling/v2beta2",
+						GroupVersion: "autoscaling/v2",
 						APIResources: []metav1.APIResource{
 							gvkToAPIResource(gvk.HorizontalPodAutoscaler),
+						},
+					},
+					{
+						GroupVersion: "autoscaling/v2beta2",
+						APIResources: []metav1.APIResource{
+							gvkToAPIResource(gvk.HorizontalPodAutoscalerBeta),
 						},
 					},
 				}

@@ -273,36 +273,36 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("container.hostname")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ContainerHostname.Enabled, ok)
-			if mb.resourceAttributesSettings.ContainerHostname.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ContainerHostname.Enabled, ok)
+			if mb.resourceAttributesConfig.ContainerHostname.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("container.id")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ContainerID.Enabled, ok)
-			if mb.resourceAttributesSettings.ContainerID.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ContainerID.Enabled, ok)
+			if mb.resourceAttributesConfig.ContainerID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("container.image.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ContainerImageName.Enabled, ok)
-			if mb.resourceAttributesSettings.ContainerImageName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ContainerImageName.Enabled, ok)
+			if mb.resourceAttributesConfig.ContainerImageName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("container.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ContainerName.Enabled, ok)
-			if mb.resourceAttributesSettings.ContainerName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ContainerName.Enabled, ok)
+			if mb.resourceAttributesConfig.ContainerName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("container.runtime")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ContainerRuntime.Enabled, ok)
-			if mb.resourceAttributesSettings.ContainerRuntime.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ContainerRuntime.Enabled, ok)
+			if mb.resourceAttributesConfig.ContainerRuntime.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

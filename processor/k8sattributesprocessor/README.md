@@ -105,28 +105,28 @@ labels:
 
 ```yaml
 k8sattributes:
-  k8sattributes/2:
-    auth_type: "serviceAccount"
-    passthrough: false
-    filter:
-      node_from_env_var: KUBE_NODE_NAME
-    extract:
-      metadata:
-        - k8s.pod.name
-        - k8s.pod.uid
-        - k8s.deployment.name
-        - k8s.namespace.name
-        - k8s.node.name
-        - k8s.pod.start_time
-    pod_association:
-      - sources:
-          - from: resource_attribute
-            name: k8s.pod.ip
-      - sources:
-          - from: resource_attribute
-            name: k8s.pod.uid
-      - sources:
-          - from: connection
+k8sattributes/2:
+ auth_type: "serviceAccount"
+ passthrough: false
+ filter:
+   node_from_env_var: KUBE_NODE_NAME
+ extract:
+   metadata:
+     - k8s.pod.name
+     - k8s.pod.uid
+     - k8s.deployment.name
+     - k8s.namespace.name
+     - k8s.node.name
+     - k8s.pod.start_time
+ pod_association:
+   - sources:
+       - from: resource_attribute
+         name: k8s.pod.ip
+   - sources:
+       - from: resource_attribute
+         name: k8s.pod.uid
+   - sources:
+       - from: connection
 ```
 
 ## Role-based access control
