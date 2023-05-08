@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/jaegertracing/jaeger v1.41.0
+	github.com/jaegertracing/jaeger v1.45.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.76.3
