@@ -92,7 +92,7 @@ func TestUnthrottled(t *testing.T) {
 
 	cfg := &Config{
 		Config: common.Config{
-			TotalDuration: 50 * time.Millisecond,
+			TotalDuration: 50 * time.Millisecond * 40,
 			WorkerCount:   1,
 		},
 	}
