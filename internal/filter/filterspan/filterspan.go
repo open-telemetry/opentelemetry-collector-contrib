@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
@@ -19,11 +20,36 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
+var useOTTLBridge = featuregate.GlobalRegistry().MustRegister(
+	"filter.filterspan.useOTTLBridge",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, filterspan will convert filterspan configuration to OTTL and use filterottl evaluation"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642"),
+)
+
 // NewSkipExpr creates a BoolExpr that on evaluation returns true if a span should NOT be processed or kept.
 // The logic determining if a span should be processed is based on include and exclude settings.
 // Include properties are checked before exclude settings are checked.
 func NewSkipExpr(mp *filterconfig.MatchConfig) (expr.BoolExpr[ottlspan.TransformContext], error) {
-	return filterottl.NewSpanSkipExprBridge(mp)
+	if useOTTLBridge.IsEnabled() {
+		return filterottl.NewSpanSkipExprBridge(mp)
+	}
+	var matchers []expr.BoolExpr[ottlspan.TransformContext]
+	inclExpr, err := newExpr(mp.Include)
+	if err != nil {
+		return nil, err
+	}
+	if inclExpr != nil {
+		matchers = append(matchers, expr.Not(inclExpr))
+	}
+	exclExpr, err := newExpr(mp.Exclude)
+	if err != nil {
+		return nil, err
+	}
+	if exclExpr != nil {
+		matchers = append(matchers, exclExpr)
+	}
+	return expr.Or(matchers...), nil
 }
 
 // propertiesMatcher allows matching a span against various span properties.

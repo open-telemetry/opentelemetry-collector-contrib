@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -333,6 +334,10 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 	}
 
 	for _, tt := range testCases {
+		origVal := useOTTLBridge.IsEnabled()
+		err := featuregate.GlobalRegistry().Set("useOTTLBridge", true)
+		assert.NoError(b, err)
+
 		skipExpr, err := NewSkipExpr(tt.mc)
 		assert.NoError(b, err)
 
@@ -355,10 +360,14 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 
 		b.Run(tt.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				skip, err := skipExpr.Eval(context.Background(), tCtx)
+				var skip bool
+				skip, err = skipExpr.Eval(context.Background(), tCtx)
 				assert.NoError(b, err)
 				assert.Equal(b, tt.skip, skip)
 			}
 		})
+
+		err = featuregate.GlobalRegistry().Set("useOTTLBridge", origVal)
+		assert.NoError(b, err)
 	}
 }
