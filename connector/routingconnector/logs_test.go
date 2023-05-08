@@ -32,36 +32,35 @@ import (
 )
 
 func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
+	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
+	logs0 := component.NewIDWithName(component.DataTypeLogs, "0")
+	logs1 := component.NewIDWithName(component.DataTypeLogs, "1")
+
 	cfg := &Config{
-		DefaultPipelines: []string{"logs/default"},
+		DefaultPipelines: []component.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
-				Pipelines: []string{"logs/0"},
+				Pipelines: []component.ID{logs0},
 			},
 			{
 				Statement: `route() where resource.attributes["X-Tenant"] == "*"`,
-				Pipelines: []string{"logs/0", "logs/1"},
+				Pipelines: []component.ID{logs0, logs1},
 			},
 		},
 	}
 
 	require.NoError(t, cfg.Validate())
 
-	defaultSinkID := component.NewIDWithName(component.DataTypeLogs, "default")
 	defaultSink := &consumertest.LogsSink{}
-
-	sink0ID := component.NewIDWithName(component.DataTypeLogs, "0")
 	sink0 := &consumertest.LogsSink{}
-
-	sink1ID := component.NewIDWithName(component.DataTypeLogs, "1")
 	sink1 := &consumertest.LogsSink{}
 
 	router := fanoutconsumer.NewLogsRouter(
 		map[component.ID]consumer.Logs{
-			defaultSinkID: defaultSink,
-			sink0ID:       sink0,
-			sink1ID:       sink1,
+			logsDefault: defaultSink,
+			logs0:       sink0,
+			logs1:       sink1,
 		})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
@@ -82,7 +81,7 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	route, ok = rtConn.router.routes[rtConn.router.table[1].Statement]
 	assert.True(t, ok)
 
-	routeConsumer, err := router.(connector.LogsRouter).Consumer(sink0ID, sink1ID)
+	routeConsumer, err := router.(connector.LogsRouter).Consumer(logs0, logs1)
 	require.NoError(t, err)
 	require.Equal(t, routeConsumer, route.consumer)
 
@@ -93,20 +92,24 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 }
 
 func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
+	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
+	logs0 := component.NewIDWithName(component.DataTypeLogs, "0")
+	logs1 := component.NewIDWithName(component.DataTypeLogs, "1")
+
 	cfg := &Config{
-		DefaultPipelines: []string{"logs/default"},
+		DefaultPipelines: []component.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], ".*acme") == true`,
-				Pipelines: []string{"logs/0"},
+				Pipelines: []component.ID{logs0},
 			},
 			{
 				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], "_acme") == true`,
-				Pipelines: []string{"logs/1"},
+				Pipelines: []component.ID{logs1},
 			},
 			{
 				Statement: `route() where resource.attributes["X-Tenant"] == "ecorp"`,
-				Pipelines: []string{"logs/default", "logs/0"},
+				Pipelines: []component.ID{logsDefault, logs0},
 			},
 		},
 	}
@@ -123,9 +126,9 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	consumer := fanoutconsumer.NewLogsRouter(
 		map[component.ID]consumer.Logs{
-			component.NewIDWithName(component.DataTypeLogs, "default"): defaultSink,
-			component.NewIDWithName(component.DataTypeLogs, "0"):       sink0,
-			component.NewIDWithName(component.DataTypeLogs, "1"):       sink1,
+			logsDefault: defaultSink,
+			logs0:       sink0,
+			logs1:       sink1,
 		})
 
 	factory := NewFactory()
@@ -247,12 +250,15 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 }
 
 func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
+	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
+	logsOther := component.NewIDWithName(component.DataTypeLogs, "other")
+
 	cfg := &Config{
-		DefaultPipelines: []string{"logs/default"},
+		DefaultPipelines: []component.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `delete_key(resource.attributes, "X-Tenant") where resource.attributes["X-Tenant"] == "acme"`,
-				Pipelines: []string{"logs/0"},
+				Pipelines: []component.ID{logsOther},
 			},
 		},
 	}
@@ -262,8 +268,8 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 
 	consumer := fanoutconsumer.NewLogsRouter(
 		map[component.ID]consumer.Logs{
-			component.NewIDWithName(component.DataTypeLogs, "default"): sink0,
-			component.NewIDWithName(component.DataTypeLogs, "0"):       sink1,
+			logsDefault: sink0,
+			logsOther:   sink1,
 		})
 
 	factory := NewFactory()
@@ -302,10 +308,13 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 }
 
 func TestLogsConnectorCapabilities(t *testing.T) {
+	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
+	logsOther := component.NewIDWithName(component.DataTypeLogs, "other")
+
 	cfg := &Config{
 		Table: []RoutingTableItem{{
 			Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
-			Pipelines: []string{"logs/0"},
+			Pipelines: []component.ID{logsOther},
 		}},
 	}
 
@@ -314,8 +323,8 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 
 	consumer := fanoutconsumer.NewLogsRouter(
 		map[component.ID]consumer.Logs{
-			component.NewIDWithName(component.DataTypeLogs, "default"): sink0,
-			component.NewIDWithName(component.DataTypeLogs, "0"):       sink1,
+			logsDefault: sink0,
+			logsOther:   sink1,
 		})
 
 	factory := NewFactory()

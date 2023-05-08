@@ -36,16 +36,23 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config_traces.yaml",
 			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				DefaultPipelines: []string{"traces/otlp-all"},
-				ErrorMode:        ottl.PropagateError,
+				DefaultPipelines: []component.ID{
+					component.NewIDWithName(component.DataTypeTraces, "otlp-all"),
+				},
+				ErrorMode: ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
 						Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
-						Pipelines: []string{"traces/jaeger-acme", "traces/otlp-acme"},
+						Pipelines: []component.ID{
+							component.NewIDWithName(component.DataTypeTraces, "jaeger-acme"),
+							component.NewIDWithName(component.DataTypeTraces, "otlp-acme"),
+						},
 					},
 					{
 						Statement: `route() where resource.attributes["X-Tenant"] == "globex"`,
-						Pipelines: []string{"traces/otlp-globex"},
+						Pipelines: []component.ID{
+							component.NewIDWithName(component.DataTypeTraces, "otlp-globex"),
+						},
 					},
 				},
 			},
@@ -54,16 +61,23 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config_metrics.yaml",
 			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				DefaultPipelines: []string{"metrics/otlp-all"},
-				ErrorMode:        ottl.PropagateError,
+				DefaultPipelines: []component.ID{
+					component.NewIDWithName(component.DataTypeMetrics, "otlp-all"),
+				},
+				ErrorMode: ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
 						Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
-						Pipelines: []string{"metrics/jaeger-acme", "metrics/otlp-acme"},
+						Pipelines: []component.ID{
+							component.NewIDWithName(component.DataTypeMetrics, "jaeger-acme"),
+							component.NewIDWithName(component.DataTypeMetrics, "otlp-acme"),
+						},
 					},
 					{
 						Statement: `route() where resource.attributes["X-Tenant"] == "globex"`,
-						Pipelines: []string{"metrics/otlp-globex"},
+						Pipelines: []component.ID{
+							component.NewIDWithName(component.DataTypeMetrics, "otlp-globex"),
+						},
 					},
 				},
 			},
@@ -72,16 +86,23 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config_logs.yaml",
 			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				DefaultPipelines: []string{"logs/otlp-all"},
-				ErrorMode:        ottl.PropagateError,
+				DefaultPipelines: []component.ID{
+					component.NewIDWithName(component.DataTypeLogs, "otlp-all"),
+				},
+				ErrorMode: ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
 						Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
-						Pipelines: []string{"logs/jaeger-acme", "logs/otlp-acme"},
+						Pipelines: []component.ID{
+							component.NewIDWithName(component.DataTypeLogs, "jaeger-acme"),
+							component.NewIDWithName(component.DataTypeLogs, "otlp-acme"),
+						},
 					},
 					{
 						Statement: `route() where resource.attributes["X-Tenant"] == "globex"`,
-						Pipelines: []string{"logs/otlp-globex"},
+						Pipelines: []component.ID{
+							component.NewIDWithName(component.DataTypeLogs, "otlp-globex"),
+						},
 					},
 				},
 			},
@@ -117,7 +138,9 @@ func TestValidateConfig(t *testing.T) {
 			config: &Config{
 				Table: []RoutingTableItem{
 					{
-						Pipelines: []string{"traces/otlp"},
+						Pipelines: []component.ID{
+							component.NewIDWithName(component.DataTypeTraces, "otlp"),
+						},
 					},
 				},
 			},
@@ -137,7 +160,9 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name: "no routes provided",
 			config: &Config{
-				DefaultPipelines: []string{"traces/default"},
+				DefaultPipelines: []component.ID{
+					component.NewIDWithName(component.DataTypeTraces, "default"),
+				},
 			},
 			error: "invalid routing table: the routing table is empty",
 		},

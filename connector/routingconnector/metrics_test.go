@@ -32,36 +32,35 @@ import (
 )
 
 func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
+	metricsDefault := component.NewIDWithName(component.DataTypeMetrics, "default")
+	metrics0 := component.NewIDWithName(component.DataTypeMetrics, "0")
+	metrics1 := component.NewIDWithName(component.DataTypeMetrics, "1")
+
 	cfg := &Config{
-		DefaultPipelines: []string{"metrics/default"},
+		DefaultPipelines: []component.ID{metricsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
-				Pipelines: []string{"metrics/0"},
+				Pipelines: []component.ID{metrics0},
 			},
 			{
 				Statement: `route() where resource.attributes["X-Tenant"] == "*"`,
-				Pipelines: []string{"metrics/0", "metrics/1"},
+				Pipelines: []component.ID{metrics0, metrics1},
 			},
 		},
 	}
 
 	require.NoError(t, cfg.Validate())
 
-	defaultSinkID := component.NewIDWithName(component.DataTypeMetrics, "default")
 	defaultSink := &consumertest.MetricsSink{}
-
-	sink0ID := component.NewIDWithName(component.DataTypeMetrics, "0")
 	sink0 := &consumertest.MetricsSink{}
-
-	sink1ID := component.NewIDWithName(component.DataTypeMetrics, "1")
 	sink1 := &consumertest.MetricsSink{}
 
 	router := fanoutconsumer.NewMetricsRouter(
 		map[component.ID]consumer.Metrics{
-			defaultSinkID: defaultSink,
-			sink0ID:       sink0,
-			sink1ID:       sink1,
+			metricsDefault: defaultSink,
+			metrics0:       sink0,
+			metrics1:       sink1,
 		})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
@@ -82,7 +81,7 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 	route, ok = rtConn.router.routes[rtConn.router.table[1].Statement]
 	assert.True(t, ok)
 
-	routeConsumer, err := router.(connector.MetricsRouter).Consumer(sink0ID, sink1ID)
+	routeConsumer, err := router.(connector.MetricsRouter).Consumer(metrics0, metrics1)
 	require.NoError(t, err)
 	require.Equal(t, routeConsumer, route.consumer)
 
@@ -93,20 +92,24 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 }
 
 func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
+	metricsDefault := component.NewIDWithName(component.DataTypeMetrics, "default")
+	metrics0 := component.NewIDWithName(component.DataTypeMetrics, "0")
+	metrics1 := component.NewIDWithName(component.DataTypeMetrics, "1")
+
 	cfg := &Config{
-		DefaultPipelines: []string{"metrics/default"},
+		DefaultPipelines: []component.ID{metricsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where resource.attributes["value"] > 2.5`,
-				Pipelines: []string{"metrics/0"},
+				Pipelines: []component.ID{metrics0},
 			},
 			{
 				Statement: `route() where resource.attributes["value"] > 3.0`,
-				Pipelines: []string{"metrics/1"},
+				Pipelines: []component.ID{metrics1},
 			},
 			{
 				Statement: `route() where resource.attributes["value"] == 1.0`,
-				Pipelines: []string{"metrics/default", "metrics/0"},
+				Pipelines: []component.ID{metricsDefault, metrics0},
 			},
 		},
 	}
@@ -123,9 +126,9 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	consumer := fanoutconsumer.NewMetricsRouter(
 		map[component.ID]consumer.Metrics{
-			component.NewIDWithName(component.DataTypeMetrics, "default"): defaultSink,
-			component.NewIDWithName(component.DataTypeMetrics, "0"):       sink0,
-			component.NewIDWithName(component.DataTypeMetrics, "1"):       sink1,
+			metricsDefault: defaultSink,
+			metrics0:       sink0,
+			metrics1:       sink1,
 		})
 
 	factory := NewFactory()
@@ -262,12 +265,15 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 }
 
 func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
+	metricsDefault := component.NewIDWithName(component.DataTypeMetrics, "default")
+	metricsOther := component.NewIDWithName(component.DataTypeMetrics, "other")
+
 	cfg := &Config{
-		DefaultPipelines: []string{"metrics/default"},
+		DefaultPipelines: []component.ID{metricsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `delete_key(resource.attributes, "X-Tenant") where resource.attributes["X-Tenant"] == "acme"`,
-				Pipelines: []string{"metrics/0"},
+				Pipelines: []component.ID{metricsOther},
 			},
 		},
 	}
@@ -277,8 +283,8 @@ func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
 
 	consumer := fanoutconsumer.NewMetricsRouter(
 		map[component.ID]consumer.Metrics{
-			component.NewIDWithName(component.DataTypeMetrics, "default"): sink0,
-			component.NewIDWithName(component.DataTypeMetrics, "0"):       sink1,
+			metricsDefault: sink0,
+			metricsOther:   sink1,
 		})
 
 	factory := NewFactory()
@@ -317,17 +323,20 @@ func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
 }
 
 func TestMetricsConnectorCapabilities(t *testing.T) {
+	metricsDefault := component.NewIDWithName(component.DataTypeMetrics, "default")
+	metricsOther := component.NewIDWithName(component.DataTypeMetrics, "other")
+
 	cfg := &Config{
 		Table: []RoutingTableItem{{
 			Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
-			Pipelines: []string{"metrics/0"},
+			Pipelines: []component.ID{metricsOther},
 		}},
 	}
 
 	consumer := fanoutconsumer.NewMetricsRouter(
 		map[component.ID]consumer.Metrics{
-			component.NewIDWithName(component.DataTypeMetrics, "default"): &consumertest.MetricsSink{},
-			component.NewIDWithName(component.DataTypeMetrics, "0"):       &consumertest.MetricsSink{},
+			metricsDefault: &consumertest.MetricsSink{},
+			metricsOther:   &consumertest.MetricsSink{},
 		})
 
 	factory := NewFactory()

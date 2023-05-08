@@ -32,36 +32,35 @@ import (
 )
 
 func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
+	tracesDefault := component.NewIDWithName(component.DataTypeTraces, "default")
+	traces0 := component.NewIDWithName(component.DataTypeTraces, "0")
+	traces1 := component.NewIDWithName(component.DataTypeTraces, "1")
+
 	cfg := &Config{
-		DefaultPipelines: []string{"traces/default"},
+		DefaultPipelines: []component.ID{tracesDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
-				Pipelines: []string{"traces/0"},
+				Pipelines: []component.ID{traces0},
 			},
 			{
 				Statement: `route() where resource.attributes["X-Tenant"] == "*"`,
-				Pipelines: []string{"traces/0", "traces/1"},
+				Pipelines: []component.ID{traces0, traces1},
 			},
 		},
 	}
 
 	require.NoError(t, cfg.Validate())
 
-	defaultSinkID := component.NewIDWithName(component.DataTypeTraces, "default")
 	defaultSink := &consumertest.TracesSink{}
-
-	sink0ID := component.NewIDWithName(component.DataTypeTraces, "0")
 	sink0 := &consumertest.TracesSink{}
-
-	sink1ID := component.NewIDWithName(component.DataTypeTraces, "1")
 	sink1 := &consumertest.TracesSink{}
 
 	router := fanoutconsumer.NewTracesRouter(
 		map[component.ID]consumer.Traces{
-			defaultSinkID: defaultSink,
-			sink0ID:       sink0,
-			sink1ID:       sink1,
+			tracesDefault: defaultSink,
+			traces0:       sink0,
+			traces1:       sink1,
 		})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
@@ -82,7 +81,7 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	route, ok = rtConn.router.routes[rtConn.router.table[1].Statement]
 	assert.True(t, ok)
 
-	routeConsumer, err := router.(connector.TracesRouter).Consumer(sink0ID, sink1ID)
+	routeConsumer, err := router.(connector.TracesRouter).Consumer(traces0, traces1)
 	require.NoError(t, err)
 	require.Equal(t, routeConsumer, route.consumer)
 
@@ -93,20 +92,24 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 }
 
 func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
+	tracesDefault := component.NewIDWithName(component.DataTypeTraces, "default")
+	traces0 := component.NewIDWithName(component.DataTypeTraces, "0")
+	traces1 := component.NewIDWithName(component.DataTypeTraces, "1")
+
 	cfg := &Config{
-		DefaultPipelines: []string{"traces/default"},
+		DefaultPipelines: []component.ID{tracesDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where resource.attributes["value"] > 0 and resource.attributes["value"] < 4`,
-				Pipelines: []string{"traces/0"},
+				Pipelines: []component.ID{traces0},
 			},
 			{
 				Statement: `route() where resource.attributes["value"] > 1 and resource.attributes["value"] < 4`,
-				Pipelines: []string{"traces/1"},
+				Pipelines: []component.ID{traces1},
 			},
 			{
 				Statement: `route() where resource.attributes["value"] == 5`,
-				Pipelines: []string{"traces/default", "traces/0"},
+				Pipelines: []component.ID{tracesDefault, traces0},
 			},
 		},
 	}
@@ -123,9 +126,9 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	consumer := fanoutconsumer.NewTracesRouter(
 		map[component.ID]consumer.Traces{
-			component.NewIDWithName(component.DataTypeTraces, "default"): defaultSink,
-			component.NewIDWithName(component.DataTypeTraces, "0"):       sink0,
-			component.NewIDWithName(component.DataTypeTraces, "1"):       sink1,
+			tracesDefault: defaultSink,
+			traces0:       sink0,
+			traces1:       sink1,
 		})
 
 	factory := NewFactory()
@@ -222,12 +225,15 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 }
 
 func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
+	tracesDefault := component.NewIDWithName(component.DataTypeTraces, "default")
+	tracesOther := component.NewIDWithName(component.DataTypeTraces, "other")
+
 	cfg := &Config{
-		DefaultPipelines: []string{"traces/default"},
+		DefaultPipelines: []component.ID{tracesDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `delete_key(resource.attributes, "X-Tenant") where resource.attributes["X-Tenant"] == "acme"`,
-				Pipelines: []string{"traces/0"},
+				Pipelines: []component.ID{tracesOther},
 			},
 		},
 	}
@@ -237,8 +243,8 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 
 	consumer := fanoutconsumer.NewTracesRouter(
 		map[component.ID]consumer.Traces{
-			component.NewIDWithName(component.DataTypeTraces, "default"): sink0,
-			component.NewIDWithName(component.DataTypeTraces, "0"):       sink1,
+			tracesDefault: sink0,
+			tracesOther:   sink1,
 		})
 
 	factory := NewFactory()
@@ -279,17 +285,20 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 }
 
 func TestTraceConnectorCapabilities(t *testing.T) {
+	tracesDefault := component.NewIDWithName(component.DataTypeTraces, "default")
+	tracesOther := component.NewIDWithName(component.DataTypeTraces, "0")
+
 	cfg := &Config{
 		Table: []RoutingTableItem{{
 			Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
-			Pipelines: []string{"traces/0"},
+			Pipelines: []component.ID{tracesOther},
 		}},
 	}
 
 	consumer := fanoutconsumer.NewTracesRouter(
 		map[component.ID]consumer.Traces{
-			component.NewIDWithName(component.DataTypeTraces, "default"): &consumertest.TracesSink{},
-			component.NewIDWithName(component.DataTypeTraces, "0"):       &consumertest.TracesSink{},
+			tracesDefault: &consumertest.TracesSink{},
+			tracesOther:   &consumertest.TracesSink{},
 		})
 
 	factory := NewFactory()

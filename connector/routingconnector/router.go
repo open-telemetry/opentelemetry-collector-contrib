@@ -50,7 +50,7 @@ type router[C any, K any] struct {
 // see router struct definition for the allowed types.
 func newRouter[C any, K any](
 	table []RoutingTableItem,
-	defaultPipelineIDs []string,
+	defaultPipelineIDs []component.ID,
 	provider consumerProvider[C],
 	settings component.TelemetrySettings,
 	parser ottl.Parser[K],
@@ -75,7 +75,7 @@ type routingItem[C any, K any] struct {
 	statement *ottl.Statement[K]
 }
 
-func (r *router[C, K]) registerConsumers(defaultPipelineIDs []string) error {
+func (r *router[C, K]) registerConsumers(defaultPipelineIDs []component.ID) error {
 	// register default pipelines
 	err := r.registerDefaultConsumer(defaultPipelineIDs)
 	if err != nil {
@@ -93,12 +93,12 @@ func (r *router[C, K]) registerConsumers(defaultPipelineIDs []string) error {
 
 // registerDefaultConsumer registers a consumer for the default
 // pipelines configured
-func (r *router[C, K]) registerDefaultConsumer(pipelineIDs []string) error {
+func (r *router[C, K]) registerDefaultConsumer(pipelineIDs []component.ID) error {
 	if len(pipelineIDs) == 0 {
 		return nil
 	}
 
-	consumer, err := r.consumerForPipelines(pipelineIDs)
+	consumer, err := r.consumerProvider(pipelineIDs...)
 	if err != nil {
 		return fmt.Errorf("%w: %s", errPipelineNotFound, err)
 	}
@@ -122,7 +122,7 @@ func (r *router[C, K]) registerRouteConsumers() error {
 			route.statement = statement
 		}
 
-		consumer, err := r.consumerForPipelines(item.Pipelines)
+		consumer, err := r.consumerProvider(item.Pipelines...)
 		if err != nil {
 			return fmt.Errorf("%w: %s", errPipelineNotFound, err)
 		}
@@ -131,16 +131,6 @@ func (r *router[C, K]) registerRouteConsumers() error {
 		r.routes[key(item)] = route
 	}
 	return nil
-}
-
-func (r *router[C, K]) consumerForPipelines(pipelines []string) (C, error) {
-	pipelineIDs, err := toComponentIDs(pipelines)
-	if err != nil {
-		var c C
-		return c, err
-	}
-
-	return r.consumerProvider(pipelineIDs...)
 }
 
 // getStatementFrom builds a routing OTTL statement from the provided
