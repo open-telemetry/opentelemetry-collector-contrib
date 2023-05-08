@@ -50,7 +50,7 @@ connectors:
       - statement: route() where resource.attributes["X-Tenant"] == "acme"
         pipelines: [traces/jaeger-acme]
       - statement: delete_key(resource.attributes, "X-Tenant") where IsMatch(resource.attributes["X-Tenant"], ".*corp")
-        exporters: [traces/jaeger-ecorp]
+        pipelines: [traces/jaeger-ecorp]
 
 service:
   pipelines:
@@ -63,7 +63,7 @@ service:
     traces/jaeger-acme:
       receivers: [routing]
       exporters: [jaeger/acme]
-    traces/jaeger-acme:
+    traces/jaeger-ecorp:
       receivers: [routing]
       exporters: [jaeger/ecorp]
 ```
