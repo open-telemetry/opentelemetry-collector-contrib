@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -616,7 +616,7 @@ func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, log
 	return buf, nil
 }
 
-// retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/clusters-get-all/#request
+// GetClusters retrieves the clusters from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/clusters-get-all/#request
 func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([]mongodbatlas.Cluster, error) {
 	options := mongodbatlas.ListOptions{}
 

@@ -2,6 +2,6 @@ type: zipkinreceiver
 
 status:
   class: receiver
-  stability: beta
-  pipelines: [traces]
+  stability:
+    beta: [traces]
   distributions: [core, contrib]

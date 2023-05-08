@@ -95,22 +95,22 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("rabbitmq.node.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.RabbitmqNodeName.Enabled, ok)
-			if mb.resourceAttributesSettings.RabbitmqNodeName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.RabbitmqNodeName.Enabled, ok)
+			if mb.resourceAttributesConfig.RabbitmqNodeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.queue.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.RabbitmqQueueName.Enabled, ok)
-			if mb.resourceAttributesSettings.RabbitmqQueueName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.RabbitmqQueueName.Enabled, ok)
+			if mb.resourceAttributesConfig.RabbitmqQueueName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.vhost.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.RabbitmqVhostName.Enabled, ok)
-			if mb.resourceAttributesSettings.RabbitmqVhostName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.RabbitmqVhostName.Enabled, ok)
+			if mb.resourceAttributesConfig.RabbitmqVhostName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

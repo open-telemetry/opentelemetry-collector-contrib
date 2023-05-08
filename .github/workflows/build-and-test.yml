@@ -23,7 +23,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.19
       - name: Cache Go
@@ -69,12 +69,13 @@ jobs:
           - extension
           - connector
           - internal
+          - pkg
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.19
       - name: Cache Go
@@ -115,15 +116,27 @@ jobs:
             false
           fi
   govulncheck:
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - processor
+          - exporter
+          - extension
+          - connector
+          - internal
+          - pkg
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.8
+          go-version: ~1.19.9
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -136,13 +149,13 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Run `govulncheck`
-        run: make govulncheck
+        run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
   checks:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.19
       - name: Cache Go
@@ -207,12 +220,13 @@ jobs:
           - extension
           - connector
           - internal
+          - pkg
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
       - name: Cache Go
@@ -261,7 +275,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.19
       - name: Cache Go
@@ -280,7 +294,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.19
       - name: Cache Go
@@ -304,7 +318,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.19
       - name: Cache Go
@@ -362,7 +376,7 @@ jobs:
             arch: ppc64le
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.19
       - name: Cache Go
@@ -423,9 +437,9 @@ jobs:
       - name: Test ${{ matrix.package_type }} package
         run: |
           if [[ "${{ matrix.package_type }}" = "deb" ]]; then
-              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*amd64.deb examples/tracing/otel-collector-config.yml
+              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*amd64.deb examples/demo/otel-collector-config.yaml
           else
-              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/tracing/otel-collector-config.yml
+              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/demo/otel-collector-config.yaml
           fi
       - name: Upload Packages
         uses: actions/upload-artifact@v3
@@ -492,7 +506,7 @@ jobs:
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.19
       - name: Mkdir bin and dist
@@ -586,7 +600,7 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   milestone_number: milestone.number,
-                  title: "${{ steps.github_tag.outputs.tag }}"
+                  title: "${{ github.ref_name }}"
                 });
                 await github.rest.issues.createMilestone({
                   owner: context.repo.owner,

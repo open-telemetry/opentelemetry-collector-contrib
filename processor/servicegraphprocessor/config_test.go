@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
@@ -55,12 +54,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 		cfg.Processors[component.NewID(typeStr)],
 	)
-
-	// Need to set this gate to load connector configs
-	require.NoError(t, featuregate.GlobalRegistry().Set("service.connectors", true))
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set("service.connectors", false))
-	}()
 
 	cfg, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-connector-config.yaml"), factories)
 

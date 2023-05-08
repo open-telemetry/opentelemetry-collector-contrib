@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -186,8 +186,9 @@ func (lm *LabelMatcher) init() (err error) {
 	if len(lm.Separator) == 0 {
 		lm.Separator = ";"
 	}
-	lm.compiledRegex = regexp.MustCompile(lm.Regex)
-	return
+
+	lm.compiledRegex, err = regexp.Compile(lm.Regex)
+	return err
 }
 
 // Matches returns true if given set of labels matches the LabelMatcher's rules.

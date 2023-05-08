@@ -1,0 +1,33 @@
+dataset/minimal:
+  dataset_url: https://app.scalyr.com
+  api_key: key-minimal
+
+dataset/lib:
+  dataset_url: https://app.eu.scalyr.com
+  api_key: key-lib
+  max_delay_ms: 12345
+  group_by:
+    - attributes.container_id
+    - attributes.log.file.path
+
+dataset/full:
+  dataset_url: https://app.scalyr.com
+  api_key: key-full
+  max_delay_ms: 3456
+  group_by:
+    - body.map.kubernetes.pod_id
+    - body.map.kubernetes.docker_id
+    - body.map.stream
+  retry_on_failure:
+    enabled: true
+    initial_interval: 11
+    randomization_factor: 11.3
+    multiplier: 11.6
+    max_interval: 12
+    max_elapsed_time: 13
+  sending_queue:
+    enabled: true
+    num_consumers: 14
+    queue_size: 15
+  timeout:
+    timeout: 16

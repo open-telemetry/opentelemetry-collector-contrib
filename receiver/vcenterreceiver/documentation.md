@@ -262,6 +262,22 @@ The usage of the memory by the resource pool.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Int | Cumulative | false |
 
+### vcenter.vm.cpu.usage
+
+The amount of CPU used by the VM.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MHz | Sum | Int | Cumulative | false |
+
+### vcenter.vm.cpu.utilization
+
+The CPU utilization of the VM.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
 ### vcenter.vm.disk.latency.avg
 
 The latency of operations to the virtual machine's disk.

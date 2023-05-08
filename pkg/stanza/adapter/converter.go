@@ -138,41 +138,22 @@ func (c *Converter) workerLoop() {
 				return
 			}
 
-			// Maps to keep track of resource information to allow rebuilding in plog structures
-			resourceEntriesLookup := make(map[uint64][]*entry.Entry)
-			resourceAttrsLookup := make(map[uint64]map[string]interface{})
+			resourceHashToIdx := make(map[uint64]int)
 
-			// Iterate over the entries and populate the resource lookup maps
+			pLogs := plog.NewLogs()
+			var sl plog.ScopeLogs
 			for _, e := range entries {
 				resourceID := HashResource(e.Resource)
-				resourceEntries, ok := resourceEntriesLookup[resourceID]
+				resourceIdx, ok := resourceHashToIdx[resourceID]
 				if !ok {
-					resourceEntries = make([]*entry.Entry, 0)
-					resourceAttrsLookup[resourceID] = e.Resource
+					resourceHashToIdx[resourceID] = pLogs.ResourceLogs().Len()
+					rl := pLogs.ResourceLogs().AppendEmpty()
+					upsertToMap(e.Resource, rl.Resource().Attributes())
+					sl = rl.ScopeLogs().AppendEmpty()
+				} else {
+					sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(0)
 				}
-
-				resourceEntriesLookup[resourceID] = append(resourceEntries, e)
-			}
-
-			// Using the resource lookup maps, build the plog.Logs structure and convert entries into plogs
-			pLogs := plog.NewLogs()
-			for resourceID, resourceEntries := range resourceEntriesLookup {
-				logs := pLogs.ResourceLogs()
-				rls := logs.AppendEmpty()
-				resource := rls.Resource()
-
-				// Create the resource from the attributes
-				resourceAttrs := resourceAttrsLookup[resourceID]
-				upsertToMap(resourceAttrs, resource.Attributes())
-
-				ills := rls.ScopeLogs()
-				sls := ills.AppendEmpty()
-
-				// Convert standard entries into plogs for the resource
-				for _, e := range resourceEntries {
-					lr := sls.LogRecords().AppendEmpty()
-					convertInto(e, lr)
-				}
+				convertInto(e, sl.LogRecords().AppendEmpty())
 			}
 
 			// Send plogs directly to flushChan

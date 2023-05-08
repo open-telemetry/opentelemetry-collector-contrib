@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "filestatsreceiver"
-	Stability = component.StabilityLevelDevelopment
+	Type             = "filestats"
+	MetricsStability = component.StabilityLevelAlpha
 )

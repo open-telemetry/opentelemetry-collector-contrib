@@ -194,10 +194,13 @@ exporters:
 
 You can combine and create custom Resource attributes using [transform](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) processor. For example:
 ```yaml
-    transform:
-     logs:
-       queries:
-       - set(resource.attributes["applicationName"], Concat("-", "development-environment", resource.attributes["k8s.namespace.name"]))
+    processors:
+      transform:
+        error_mode: ignore
+        log_statements:
+          - context: resource
+            statements:
+            - set(attributes["applicationName"], Concat(["development-environment", attributes["k8s.namespace.name"]], "-"))
 ```
 
 Then you can use the custom Resource attribute in Coralogix exporter:

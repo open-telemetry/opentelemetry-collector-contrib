@@ -92,8 +92,8 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("ssh.endpoint")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.SSHEndpoint.Enabled, ok)
-			if mb.resourceAttributesSettings.SSHEndpoint.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.SSHEndpoint.Enabled, ok)
+			if mb.resourceAttributesConfig.SSHEndpoint.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

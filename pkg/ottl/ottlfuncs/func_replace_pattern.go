@@ -22,7 +22,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func ReplacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement string) (ottl.ExprFunc[K], error) {
+type ReplacePatternArguments[K any] struct {
+	Target       ottl.GetSetter[K] `ottlarg:"0"`
+	RegexPattern string            `ottlarg:"1"`
+	Replacement  string            `ottlarg:"2"`
+}
+
+func NewReplacePatternFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("replace_pattern", &ReplacePatternArguments[K]{}, createReplacePatternFunction[K])
+}
+
+func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*ReplacePatternArguments[K])
+
+	if !ok {
+		return nil, fmt.Errorf("ReplacePatternFactory args must be of type *ReplacePatternArguments[K]")
+	}
+
+	return replacePattern(args.Target, args.RegexPattern, args.Replacement)
+}
+
+func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement string) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_pattern is not a valid pattern: %w", err)

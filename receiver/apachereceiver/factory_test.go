@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ func TestPortValidate(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
 			cfg.Endpoint = tc.endpoint
-			_, port, err := parseResourseAttributes(tc.endpoint)
+			_, port, err := parseResourceAttributes(tc.endpoint)
 
 			require.NoError(t, err)
 			require.Equal(t, tc.expectedPort, port)
