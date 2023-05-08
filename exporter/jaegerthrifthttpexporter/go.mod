@@ -5,7 +5,7 @@ go 1.19
 
 require (
 	github.com/apache/thrift v0.18.1
-	github.com/jaegertracing/jaeger v1.41.0
+	github.com/jaegertracing/jaeger v1.45.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.76.3
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.76.2-0.20230502195822-4df44379e094
