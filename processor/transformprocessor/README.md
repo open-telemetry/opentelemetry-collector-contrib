@@ -16,7 +16,7 @@ For each signal type, the processor takes a list of statements associated to a [
 Each statement can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
 
 - [Config](#config)
-- [Grammer](#grammar)
+- [Grammar](#grammar)
 - [Contexts](#contexts)
 - [Supported functions](#supported-functions)
 - [Examples](#examples)
