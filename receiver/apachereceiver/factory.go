@@ -56,7 +56,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func parseResourseAttributes(endpoint string) (string, string, error) {
+func parseResourceAttributes(endpoint string) (string, string, error) {
 	u, err := url.Parse(endpoint)
 	serverName := u.Hostname()
 	port := u.Port()
@@ -80,7 +80,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
-	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
+	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
 	if err != nil {
 		return nil, err
 	}

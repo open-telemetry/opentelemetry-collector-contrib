@@ -13,14 +13,14 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
+// MetricConfig provides common config for a particular metric.
+type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	enabledSetByUser bool
 }
 
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -32,42 +32,29 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsSettings provides settings for hostmetricsreceiver/paging metrics.
-type MetricsSettings struct {
-	SystemPagingFaults      MetricSettings `mapstructure:"system.paging.faults"`
-	SystemPagingOperations  MetricSettings `mapstructure:"system.paging.operations"`
-	SystemPagingUsage       MetricSettings `mapstructure:"system.paging.usage"`
-	SystemPagingUtilization MetricSettings `mapstructure:"system.paging.utilization"`
+// MetricsConfig provides config for hostmetricsreceiver/paging metrics.
+type MetricsConfig struct {
+	SystemPagingFaults      MetricConfig `mapstructure:"system.paging.faults"`
+	SystemPagingOperations  MetricConfig `mapstructure:"system.paging.operations"`
+	SystemPagingUsage       MetricConfig `mapstructure:"system.paging.usage"`
+	SystemPagingUtilization MetricConfig `mapstructure:"system.paging.utilization"`
 }
 
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		SystemPagingFaults: MetricSettings{
+func DefaultMetricsConfig() MetricsConfig {
+	return MetricsConfig{
+		SystemPagingFaults: MetricConfig{
 			Enabled: true,
 		},
-		SystemPagingOperations: MetricSettings{
+		SystemPagingOperations: MetricConfig{
 			Enabled: true,
 		},
-		SystemPagingUsage: MetricSettings{
+		SystemPagingUsage: MetricConfig{
 			Enabled: true,
 		},
-		SystemPagingUtilization: MetricSettings{
+		SystemPagingUtilization: MetricConfig{
 			Enabled: false,
 		},
 	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for hostmetricsreceiver/paging resource attributes.
-type ResourceAttributesSettings struct {
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{}
 }
 
 // AttributeDirection specifies the a value direction attribute.
@@ -154,7 +141,7 @@ var MapAttributeType = map[string]AttributeType{
 
 type metricSystemPagingFaults struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -170,7 +157,7 @@ func (m *metricSystemPagingFaults) init() {
 }
 
 func (m *metricSystemPagingFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, typeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -189,16 +176,16 @@ func (m *metricSystemPagingFaults) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemPagingFaults) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemPagingFaults(settings MetricSettings) metricSystemPagingFaults {
-	m := metricSystemPagingFaults{settings: settings}
-	if settings.Enabled {
+func newMetricSystemPagingFaults(cfg MetricConfig) metricSystemPagingFaults {
+	m := metricSystemPagingFaults{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -207,7 +194,7 @@ func newMetricSystemPagingFaults(settings MetricSettings) metricSystemPagingFaul
 
 type metricSystemPagingOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -223,7 +210,7 @@ func (m *metricSystemPagingOperations) init() {
 }
 
 func (m *metricSystemPagingOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string, typeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -243,16 +230,16 @@ func (m *metricSystemPagingOperations) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemPagingOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemPagingOperations(settings MetricSettings) metricSystemPagingOperations {
-	m := metricSystemPagingOperations{settings: settings}
-	if settings.Enabled {
+func newMetricSystemPagingOperations(cfg MetricConfig) metricSystemPagingOperations {
+	m := metricSystemPagingOperations{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -261,7 +248,7 @@ func newMetricSystemPagingOperations(settings MetricSettings) metricSystemPaging
 
 type metricSystemPagingUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -277,7 +264,7 @@ func (m *metricSystemPagingUsage) init() {
 }
 
 func (m *metricSystemPagingUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -297,16 +284,16 @@ func (m *metricSystemPagingUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemPagingUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemPagingUsage(settings MetricSettings) metricSystemPagingUsage {
-	m := metricSystemPagingUsage{settings: settings}
-	if settings.Enabled {
+func newMetricSystemPagingUsage(cfg MetricConfig) metricSystemPagingUsage {
+	m := metricSystemPagingUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -315,7 +302,7 @@ func newMetricSystemPagingUsage(settings MetricSettings) metricSystemPagingUsage
 
 type metricSystemPagingUtilization struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -329,7 +316,7 @@ func (m *metricSystemPagingUtilization) init() {
 }
 
 func (m *metricSystemPagingUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, deviceAttributeValue string, stateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -349,16 +336,16 @@ func (m *metricSystemPagingUtilization) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemPagingUtilization) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemPagingUtilization(settings MetricSettings) metricSystemPagingUtilization {
-	m := metricSystemPagingUtilization{settings: settings}
-	if settings.Enabled {
+func newMetricSystemPagingUtilization(cfg MetricConfig) metricSystemPagingUtilization {
+	m := metricSystemPagingUtilization{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -367,19 +354,17 @@ func newMetricSystemPagingUtilization(settings MetricSettings) metricSystemPagin
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                     pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity               int                 // maximum observed number of metrics per resource.
 	resourceCapacity              int                 // maximum observed number of resource attributes.
 	metricsBuffer                 pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                     component.BuildInfo // contains version information
-	resourceAttributesSettings    ResourceAttributesSettings
 	metricSystemPagingFaults      metricSystemPagingFaults
 	metricSystemPagingOperations  metricSystemPagingOperations
 	metricSystemPagingUsage       metricSystemPagingUsage
@@ -398,15 +383,7 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
+		Metrics: DefaultMetricsConfig(),
 	}
 }
 
@@ -415,7 +392,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                 pmetric.NewMetrics(),
 		buildInfo:                     settings.BuildInfo,
-		resourceAttributesSettings:    mbc.ResourceAttributes,
 		metricSystemPagingFaults:      newMetricSystemPagingFaults(mbc.Metrics.SystemPagingFaults),
 		metricSystemPagingOperations:  newMetricSystemPagingOperations(mbc.Metrics.SystemPagingOperations),
 		metricSystemPagingUsage:       newMetricSystemPagingUsage(mbc.Metrics.SystemPagingUsage),
@@ -438,12 +414,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -479,7 +455,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSystemPagingUtilization.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -489,7 +465,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

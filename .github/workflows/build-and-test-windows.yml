@@ -32,6 +32,7 @@ jobs:
           - exporter
           - extension
           - internal
+          - pkg
           - other
     runs-on: windows-latest
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}

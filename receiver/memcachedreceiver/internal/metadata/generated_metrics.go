@@ -12,14 +12,14 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
+// MetricConfig provides common config for a particular metric.
+type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	enabledSetByUser bool
 }
 
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -31,70 +31,57 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsSettings provides settings for memcachedreceiver metrics.
-type MetricsSettings struct {
-	MemcachedBytes              MetricSettings `mapstructure:"memcached.bytes"`
-	MemcachedCommands           MetricSettings `mapstructure:"memcached.commands"`
-	MemcachedConnectionsCurrent MetricSettings `mapstructure:"memcached.connections.current"`
-	MemcachedConnectionsTotal   MetricSettings `mapstructure:"memcached.connections.total"`
-	MemcachedCPUUsage           MetricSettings `mapstructure:"memcached.cpu.usage"`
-	MemcachedCurrentItems       MetricSettings `mapstructure:"memcached.current_items"`
-	MemcachedEvictions          MetricSettings `mapstructure:"memcached.evictions"`
-	MemcachedNetwork            MetricSettings `mapstructure:"memcached.network"`
-	MemcachedOperationHitRatio  MetricSettings `mapstructure:"memcached.operation_hit_ratio"`
-	MemcachedOperations         MetricSettings `mapstructure:"memcached.operations"`
-	MemcachedThreads            MetricSettings `mapstructure:"memcached.threads"`
+// MetricsConfig provides config for memcachedreceiver metrics.
+type MetricsConfig struct {
+	MemcachedBytes              MetricConfig `mapstructure:"memcached.bytes"`
+	MemcachedCommands           MetricConfig `mapstructure:"memcached.commands"`
+	MemcachedConnectionsCurrent MetricConfig `mapstructure:"memcached.connections.current"`
+	MemcachedConnectionsTotal   MetricConfig `mapstructure:"memcached.connections.total"`
+	MemcachedCPUUsage           MetricConfig `mapstructure:"memcached.cpu.usage"`
+	MemcachedCurrentItems       MetricConfig `mapstructure:"memcached.current_items"`
+	MemcachedEvictions          MetricConfig `mapstructure:"memcached.evictions"`
+	MemcachedNetwork            MetricConfig `mapstructure:"memcached.network"`
+	MemcachedOperationHitRatio  MetricConfig `mapstructure:"memcached.operation_hit_ratio"`
+	MemcachedOperations         MetricConfig `mapstructure:"memcached.operations"`
+	MemcachedThreads            MetricConfig `mapstructure:"memcached.threads"`
 }
 
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		MemcachedBytes: MetricSettings{
+func DefaultMetricsConfig() MetricsConfig {
+	return MetricsConfig{
+		MemcachedBytes: MetricConfig{
 			Enabled: true,
 		},
-		MemcachedCommands: MetricSettings{
+		MemcachedCommands: MetricConfig{
 			Enabled: true,
 		},
-		MemcachedConnectionsCurrent: MetricSettings{
+		MemcachedConnectionsCurrent: MetricConfig{
 			Enabled: true,
 		},
-		MemcachedConnectionsTotal: MetricSettings{
+		MemcachedConnectionsTotal: MetricConfig{
 			Enabled: true,
 		},
-		MemcachedCPUUsage: MetricSettings{
+		MemcachedCPUUsage: MetricConfig{
 			Enabled: true,
 		},
-		MemcachedCurrentItems: MetricSettings{
+		MemcachedCurrentItems: MetricConfig{
 			Enabled: true,
 		},
-		MemcachedEvictions: MetricSettings{
+		MemcachedEvictions: MetricConfig{
 			Enabled: true,
 		},
-		MemcachedNetwork: MetricSettings{
+		MemcachedNetwork: MetricConfig{
 			Enabled: true,
 		},
-		MemcachedOperationHitRatio: MetricSettings{
+		MemcachedOperationHitRatio: MetricConfig{
 			Enabled: true,
 		},
-		MemcachedOperations: MetricSettings{
+		MemcachedOperations: MetricConfig{
 			Enabled: true,
 		},
-		MemcachedThreads: MetricSettings{
+		MemcachedThreads: MetricConfig{
 			Enabled: true,
 		},
 	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for memcachedreceiver resource attributes.
-type ResourceAttributesSettings struct {
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{}
 }
 
 // AttributeCommand specifies the a value command attribute.
@@ -241,7 +228,7 @@ var MapAttributeType = map[string]AttributeType{
 
 type metricMemcachedBytes struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -254,7 +241,7 @@ func (m *metricMemcachedBytes) init() {
 }
 
 func (m *metricMemcachedBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -272,16 +259,16 @@ func (m *metricMemcachedBytes) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemcachedBytes) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMemcachedBytes(settings MetricSettings) metricMemcachedBytes {
-	m := metricMemcachedBytes{settings: settings}
-	if settings.Enabled {
+func newMetricMemcachedBytes(cfg MetricConfig) metricMemcachedBytes {
+	m := metricMemcachedBytes{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -290,7 +277,7 @@ func newMetricMemcachedBytes(settings MetricSettings) metricMemcachedBytes {
 
 type metricMemcachedCommands struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -306,7 +293,7 @@ func (m *metricMemcachedCommands) init() {
 }
 
 func (m *metricMemcachedCommands) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, commandAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -325,16 +312,16 @@ func (m *metricMemcachedCommands) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemcachedCommands) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMemcachedCommands(settings MetricSettings) metricMemcachedCommands {
-	m := metricMemcachedCommands{settings: settings}
-	if settings.Enabled {
+func newMetricMemcachedCommands(cfg MetricConfig) metricMemcachedCommands {
+	m := metricMemcachedCommands{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -343,7 +330,7 @@ func newMetricMemcachedCommands(settings MetricSettings) metricMemcachedCommands
 
 type metricMemcachedConnectionsCurrent struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -358,7 +345,7 @@ func (m *metricMemcachedConnectionsCurrent) init() {
 }
 
 func (m *metricMemcachedConnectionsCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -376,16 +363,16 @@ func (m *metricMemcachedConnectionsCurrent) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemcachedConnectionsCurrent) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMemcachedConnectionsCurrent(settings MetricSettings) metricMemcachedConnectionsCurrent {
-	m := metricMemcachedConnectionsCurrent{settings: settings}
-	if settings.Enabled {
+func newMetricMemcachedConnectionsCurrent(cfg MetricConfig) metricMemcachedConnectionsCurrent {
+	m := metricMemcachedConnectionsCurrent{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -394,7 +381,7 @@ func newMetricMemcachedConnectionsCurrent(settings MetricSettings) metricMemcach
 
 type metricMemcachedConnectionsTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -409,7 +396,7 @@ func (m *metricMemcachedConnectionsTotal) init() {
 }
 
 func (m *metricMemcachedConnectionsTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -427,16 +414,16 @@ func (m *metricMemcachedConnectionsTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemcachedConnectionsTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMemcachedConnectionsTotal(settings MetricSettings) metricMemcachedConnectionsTotal {
-	m := metricMemcachedConnectionsTotal{settings: settings}
-	if settings.Enabled {
+func newMetricMemcachedConnectionsTotal(cfg MetricConfig) metricMemcachedConnectionsTotal {
+	m := metricMemcachedConnectionsTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -445,7 +432,7 @@ func newMetricMemcachedConnectionsTotal(settings MetricSettings) metricMemcached
 
 type metricMemcachedCPUUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -461,7 +448,7 @@ func (m *metricMemcachedCPUUsage) init() {
 }
 
 func (m *metricMemcachedCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -480,16 +467,16 @@ func (m *metricMemcachedCPUUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemcachedCPUUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMemcachedCPUUsage(settings MetricSettings) metricMemcachedCPUUsage {
-	m := metricMemcachedCPUUsage{settings: settings}
-	if settings.Enabled {
+func newMetricMemcachedCPUUsage(cfg MetricConfig) metricMemcachedCPUUsage {
+	m := metricMemcachedCPUUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -498,7 +485,7 @@ func newMetricMemcachedCPUUsage(settings MetricSettings) metricMemcachedCPUUsage
 
 type metricMemcachedCurrentItems struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -513,7 +500,7 @@ func (m *metricMemcachedCurrentItems) init() {
 }
 
 func (m *metricMemcachedCurrentItems) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -531,16 +518,16 @@ func (m *metricMemcachedCurrentItems) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemcachedCurrentItems) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMemcachedCurrentItems(settings MetricSettings) metricMemcachedCurrentItems {
-	m := metricMemcachedCurrentItems{settings: settings}
-	if settings.Enabled {
+func newMetricMemcachedCurrentItems(cfg MetricConfig) metricMemcachedCurrentItems {
+	m := metricMemcachedCurrentItems{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -549,7 +536,7 @@ func newMetricMemcachedCurrentItems(settings MetricSettings) metricMemcachedCurr
 
 type metricMemcachedEvictions struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -564,7 +551,7 @@ func (m *metricMemcachedEvictions) init() {
 }
 
 func (m *metricMemcachedEvictions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -582,16 +569,16 @@ func (m *metricMemcachedEvictions) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemcachedEvictions) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMemcachedEvictions(settings MetricSettings) metricMemcachedEvictions {
-	m := metricMemcachedEvictions{settings: settings}
-	if settings.Enabled {
+func newMetricMemcachedEvictions(cfg MetricConfig) metricMemcachedEvictions {
+	m := metricMemcachedEvictions{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -600,7 +587,7 @@ func newMetricMemcachedEvictions(settings MetricSettings) metricMemcachedEvictio
 
 type metricMemcachedNetwork struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -616,7 +603,7 @@ func (m *metricMemcachedNetwork) init() {
 }
 
 func (m *metricMemcachedNetwork) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -635,16 +622,16 @@ func (m *metricMemcachedNetwork) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemcachedNetwork) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMemcachedNetwork(settings MetricSettings) metricMemcachedNetwork {
-	m := metricMemcachedNetwork{settings: settings}
-	if settings.Enabled {
+func newMetricMemcachedNetwork(cfg MetricConfig) metricMemcachedNetwork {
+	m := metricMemcachedNetwork{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -653,7 +640,7 @@ func newMetricMemcachedNetwork(settings MetricSettings) metricMemcachedNetwork {
 
 type metricMemcachedOperationHitRatio struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -667,7 +654,7 @@ func (m *metricMemcachedOperationHitRatio) init() {
 }
 
 func (m *metricMemcachedOperationHitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, operationAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -686,16 +673,16 @@ func (m *metricMemcachedOperationHitRatio) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemcachedOperationHitRatio) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMemcachedOperationHitRatio(settings MetricSettings) metricMemcachedOperationHitRatio {
-	m := metricMemcachedOperationHitRatio{settings: settings}
-	if settings.Enabled {
+func newMetricMemcachedOperationHitRatio(cfg MetricConfig) metricMemcachedOperationHitRatio {
+	m := metricMemcachedOperationHitRatio{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -704,7 +691,7 @@ func newMetricMemcachedOperationHitRatio(settings MetricSettings) metricMemcache
 
 type metricMemcachedOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -720,7 +707,7 @@ func (m *metricMemcachedOperations) init() {
 }
 
 func (m *metricMemcachedOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, typeAttributeValue string, operationAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -740,16 +727,16 @@ func (m *metricMemcachedOperations) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemcachedOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMemcachedOperations(settings MetricSettings) metricMemcachedOperations {
-	m := metricMemcachedOperations{settings: settings}
-	if settings.Enabled {
+func newMetricMemcachedOperations(cfg MetricConfig) metricMemcachedOperations {
+	m := metricMemcachedOperations{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -758,7 +745,7 @@ func newMetricMemcachedOperations(settings MetricSettings) metricMemcachedOperat
 
 type metricMemcachedThreads struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -773,7 +760,7 @@ func (m *metricMemcachedThreads) init() {
 }
 
 func (m *metricMemcachedThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -791,16 +778,16 @@ func (m *metricMemcachedThreads) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMemcachedThreads) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMemcachedThreads(settings MetricSettings) metricMemcachedThreads {
-	m := metricMemcachedThreads{settings: settings}
-	if settings.Enabled {
+func newMetricMemcachedThreads(cfg MetricConfig) metricMemcachedThreads {
+	m := metricMemcachedThreads{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -809,19 +796,17 @@ func newMetricMemcachedThreads(settings MetricSettings) metricMemcachedThreads {
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                         pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                   int                 // maximum observed number of metrics per resource.
 	resourceCapacity                  int                 // maximum observed number of resource attributes.
 	metricsBuffer                     pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                         component.BuildInfo // contains version information
-	resourceAttributesSettings        ResourceAttributesSettings
 	metricMemcachedBytes              metricMemcachedBytes
 	metricMemcachedCommands           metricMemcachedCommands
 	metricMemcachedConnectionsCurrent metricMemcachedConnectionsCurrent
@@ -847,15 +832,7 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
+		Metrics: DefaultMetricsConfig(),
 	}
 }
 
@@ -864,7 +841,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
 		buildInfo:                         settings.BuildInfo,
-		resourceAttributesSettings:        mbc.ResourceAttributes,
 		metricMemcachedBytes:              newMetricMemcachedBytes(mbc.Metrics.MemcachedBytes),
 		metricMemcachedCommands:           newMetricMemcachedCommands(mbc.Metrics.MemcachedCommands),
 		metricMemcachedConnectionsCurrent: newMetricMemcachedConnectionsCurrent(mbc.Metrics.MemcachedConnectionsCurrent),
@@ -894,12 +870,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -941,7 +917,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMemcachedThreads.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -951,7 +927,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

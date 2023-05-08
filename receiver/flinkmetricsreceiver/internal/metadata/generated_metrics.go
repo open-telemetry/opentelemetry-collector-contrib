@@ -14,14 +14,14 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
+// MetricConfig provides common config for a particular metric.
+type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	enabledSetByUser bool
 }
 
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -33,164 +33,164 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsSettings provides settings for flinkmetricsreceiver metrics.
-type MetricsSettings struct {
-	FlinkJobCheckpointCount           MetricSettings `mapstructure:"flink.job.checkpoint.count"`
-	FlinkJobCheckpointInProgress      MetricSettings `mapstructure:"flink.job.checkpoint.in_progress"`
-	FlinkJobLastCheckpointSize        MetricSettings `mapstructure:"flink.job.last_checkpoint.size"`
-	FlinkJobLastCheckpointTime        MetricSettings `mapstructure:"flink.job.last_checkpoint.time"`
-	FlinkJobRestartCount              MetricSettings `mapstructure:"flink.job.restart.count"`
-	FlinkJvmClassLoaderClassesLoaded  MetricSettings `mapstructure:"flink.jvm.class_loader.classes_loaded"`
-	FlinkJvmCPULoad                   MetricSettings `mapstructure:"flink.jvm.cpu.load"`
-	FlinkJvmCPUTime                   MetricSettings `mapstructure:"flink.jvm.cpu.time"`
-	FlinkJvmGcCollectionsCount        MetricSettings `mapstructure:"flink.jvm.gc.collections.count"`
-	FlinkJvmGcCollectionsTime         MetricSettings `mapstructure:"flink.jvm.gc.collections.time"`
-	FlinkJvmMemoryDirectTotalCapacity MetricSettings `mapstructure:"flink.jvm.memory.direct.total_capacity"`
-	FlinkJvmMemoryDirectUsed          MetricSettings `mapstructure:"flink.jvm.memory.direct.used"`
-	FlinkJvmMemoryHeapCommitted       MetricSettings `mapstructure:"flink.jvm.memory.heap.committed"`
-	FlinkJvmMemoryHeapMax             MetricSettings `mapstructure:"flink.jvm.memory.heap.max"`
-	FlinkJvmMemoryHeapUsed            MetricSettings `mapstructure:"flink.jvm.memory.heap.used"`
-	FlinkJvmMemoryMappedTotalCapacity MetricSettings `mapstructure:"flink.jvm.memory.mapped.total_capacity"`
-	FlinkJvmMemoryMappedUsed          MetricSettings `mapstructure:"flink.jvm.memory.mapped.used"`
-	FlinkJvmMemoryMetaspaceCommitted  MetricSettings `mapstructure:"flink.jvm.memory.metaspace.committed"`
-	FlinkJvmMemoryMetaspaceMax        MetricSettings `mapstructure:"flink.jvm.memory.metaspace.max"`
-	FlinkJvmMemoryMetaspaceUsed       MetricSettings `mapstructure:"flink.jvm.memory.metaspace.used"`
-	FlinkJvmMemoryNonheapCommitted    MetricSettings `mapstructure:"flink.jvm.memory.nonheap.committed"`
-	FlinkJvmMemoryNonheapMax          MetricSettings `mapstructure:"flink.jvm.memory.nonheap.max"`
-	FlinkJvmMemoryNonheapUsed         MetricSettings `mapstructure:"flink.jvm.memory.nonheap.used"`
-	FlinkJvmThreadsCount              MetricSettings `mapstructure:"flink.jvm.threads.count"`
-	FlinkMemoryManagedTotal           MetricSettings `mapstructure:"flink.memory.managed.total"`
-	FlinkMemoryManagedUsed            MetricSettings `mapstructure:"flink.memory.managed.used"`
-	FlinkOperatorRecordCount          MetricSettings `mapstructure:"flink.operator.record.count"`
-	FlinkOperatorWatermarkOutput      MetricSettings `mapstructure:"flink.operator.watermark.output"`
-	FlinkTaskRecordCount              MetricSettings `mapstructure:"flink.task.record.count"`
+// MetricsConfig provides config for flinkmetricsreceiver metrics.
+type MetricsConfig struct {
+	FlinkJobCheckpointCount           MetricConfig `mapstructure:"flink.job.checkpoint.count"`
+	FlinkJobCheckpointInProgress      MetricConfig `mapstructure:"flink.job.checkpoint.in_progress"`
+	FlinkJobLastCheckpointSize        MetricConfig `mapstructure:"flink.job.last_checkpoint.size"`
+	FlinkJobLastCheckpointTime        MetricConfig `mapstructure:"flink.job.last_checkpoint.time"`
+	FlinkJobRestartCount              MetricConfig `mapstructure:"flink.job.restart.count"`
+	FlinkJvmClassLoaderClassesLoaded  MetricConfig `mapstructure:"flink.jvm.class_loader.classes_loaded"`
+	FlinkJvmCPULoad                   MetricConfig `mapstructure:"flink.jvm.cpu.load"`
+	FlinkJvmCPUTime                   MetricConfig `mapstructure:"flink.jvm.cpu.time"`
+	FlinkJvmGcCollectionsCount        MetricConfig `mapstructure:"flink.jvm.gc.collections.count"`
+	FlinkJvmGcCollectionsTime         MetricConfig `mapstructure:"flink.jvm.gc.collections.time"`
+	FlinkJvmMemoryDirectTotalCapacity MetricConfig `mapstructure:"flink.jvm.memory.direct.total_capacity"`
+	FlinkJvmMemoryDirectUsed          MetricConfig `mapstructure:"flink.jvm.memory.direct.used"`
+	FlinkJvmMemoryHeapCommitted       MetricConfig `mapstructure:"flink.jvm.memory.heap.committed"`
+	FlinkJvmMemoryHeapMax             MetricConfig `mapstructure:"flink.jvm.memory.heap.max"`
+	FlinkJvmMemoryHeapUsed            MetricConfig `mapstructure:"flink.jvm.memory.heap.used"`
+	FlinkJvmMemoryMappedTotalCapacity MetricConfig `mapstructure:"flink.jvm.memory.mapped.total_capacity"`
+	FlinkJvmMemoryMappedUsed          MetricConfig `mapstructure:"flink.jvm.memory.mapped.used"`
+	FlinkJvmMemoryMetaspaceCommitted  MetricConfig `mapstructure:"flink.jvm.memory.metaspace.committed"`
+	FlinkJvmMemoryMetaspaceMax        MetricConfig `mapstructure:"flink.jvm.memory.metaspace.max"`
+	FlinkJvmMemoryMetaspaceUsed       MetricConfig `mapstructure:"flink.jvm.memory.metaspace.used"`
+	FlinkJvmMemoryNonheapCommitted    MetricConfig `mapstructure:"flink.jvm.memory.nonheap.committed"`
+	FlinkJvmMemoryNonheapMax          MetricConfig `mapstructure:"flink.jvm.memory.nonheap.max"`
+	FlinkJvmMemoryNonheapUsed         MetricConfig `mapstructure:"flink.jvm.memory.nonheap.used"`
+	FlinkJvmThreadsCount              MetricConfig `mapstructure:"flink.jvm.threads.count"`
+	FlinkMemoryManagedTotal           MetricConfig `mapstructure:"flink.memory.managed.total"`
+	FlinkMemoryManagedUsed            MetricConfig `mapstructure:"flink.memory.managed.used"`
+	FlinkOperatorRecordCount          MetricConfig `mapstructure:"flink.operator.record.count"`
+	FlinkOperatorWatermarkOutput      MetricConfig `mapstructure:"flink.operator.watermark.output"`
+	FlinkTaskRecordCount              MetricConfig `mapstructure:"flink.task.record.count"`
 }
 
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		FlinkJobCheckpointCount: MetricSettings{
+func DefaultMetricsConfig() MetricsConfig {
+	return MetricsConfig{
+		FlinkJobCheckpointCount: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJobCheckpointInProgress: MetricSettings{
+		FlinkJobCheckpointInProgress: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJobLastCheckpointSize: MetricSettings{
+		FlinkJobLastCheckpointSize: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJobLastCheckpointTime: MetricSettings{
+		FlinkJobLastCheckpointTime: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJobRestartCount: MetricSettings{
+		FlinkJobRestartCount: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmClassLoaderClassesLoaded: MetricSettings{
+		FlinkJvmClassLoaderClassesLoaded: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmCPULoad: MetricSettings{
+		FlinkJvmCPULoad: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmCPUTime: MetricSettings{
+		FlinkJvmCPUTime: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmGcCollectionsCount: MetricSettings{
+		FlinkJvmGcCollectionsCount: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmGcCollectionsTime: MetricSettings{
+		FlinkJvmGcCollectionsTime: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryDirectTotalCapacity: MetricSettings{
+		FlinkJvmMemoryDirectTotalCapacity: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryDirectUsed: MetricSettings{
+		FlinkJvmMemoryDirectUsed: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryHeapCommitted: MetricSettings{
+		FlinkJvmMemoryHeapCommitted: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryHeapMax: MetricSettings{
+		FlinkJvmMemoryHeapMax: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryHeapUsed: MetricSettings{
+		FlinkJvmMemoryHeapUsed: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryMappedTotalCapacity: MetricSettings{
+		FlinkJvmMemoryMappedTotalCapacity: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryMappedUsed: MetricSettings{
+		FlinkJvmMemoryMappedUsed: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryMetaspaceCommitted: MetricSettings{
+		FlinkJvmMemoryMetaspaceCommitted: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryMetaspaceMax: MetricSettings{
+		FlinkJvmMemoryMetaspaceMax: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryMetaspaceUsed: MetricSettings{
+		FlinkJvmMemoryMetaspaceUsed: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryNonheapCommitted: MetricSettings{
+		FlinkJvmMemoryNonheapCommitted: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryNonheapMax: MetricSettings{
+		FlinkJvmMemoryNonheapMax: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryNonheapUsed: MetricSettings{
+		FlinkJvmMemoryNonheapUsed: MetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmThreadsCount: MetricSettings{
+		FlinkJvmThreadsCount: MetricConfig{
 			Enabled: true,
 		},
-		FlinkMemoryManagedTotal: MetricSettings{
+		FlinkMemoryManagedTotal: MetricConfig{
 			Enabled: true,
 		},
-		FlinkMemoryManagedUsed: MetricSettings{
+		FlinkMemoryManagedUsed: MetricConfig{
 			Enabled: true,
 		},
-		FlinkOperatorRecordCount: MetricSettings{
+		FlinkOperatorRecordCount: MetricConfig{
 			Enabled: true,
 		},
-		FlinkOperatorWatermarkOutput: MetricSettings{
+		FlinkOperatorWatermarkOutput: MetricConfig{
 			Enabled: true,
 		},
-		FlinkTaskRecordCount: MetricSettings{
+		FlinkTaskRecordCount: MetricConfig{
 			Enabled: true,
 		},
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
+// ResourceAttributeConfig provides common config for a particular resource attribute.
+type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for flinkmetricsreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	FlinkJobName       ResourceAttributeSettings `mapstructure:"flink.job.name"`
-	FlinkResourceType  ResourceAttributeSettings `mapstructure:"flink.resource.type"`
-	FlinkSubtaskIndex  ResourceAttributeSettings `mapstructure:"flink.subtask.index"`
-	FlinkTaskName      ResourceAttributeSettings `mapstructure:"flink.task.name"`
-	FlinkTaskmanagerID ResourceAttributeSettings `mapstructure:"flink.taskmanager.id"`
-	HostName           ResourceAttributeSettings `mapstructure:"host.name"`
+// ResourceAttributesConfig provides config for flinkmetricsreceiver resource attributes.
+type ResourceAttributesConfig struct {
+	FlinkJobName       ResourceAttributeConfig `mapstructure:"flink.job.name"`
+	FlinkResourceType  ResourceAttributeConfig `mapstructure:"flink.resource.type"`
+	FlinkSubtaskIndex  ResourceAttributeConfig `mapstructure:"flink.subtask.index"`
+	FlinkTaskName      ResourceAttributeConfig `mapstructure:"flink.task.name"`
+	FlinkTaskmanagerID ResourceAttributeConfig `mapstructure:"flink.taskmanager.id"`
+	HostName           ResourceAttributeConfig `mapstructure:"host.name"`
 }
 
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		FlinkJobName: ResourceAttributeSettings{
+func DefaultResourceAttributesConfig() ResourceAttributesConfig {
+	return ResourceAttributesConfig{
+		FlinkJobName: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		FlinkResourceType: ResourceAttributeSettings{
+		FlinkResourceType: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		FlinkSubtaskIndex: ResourceAttributeSettings{
+		FlinkSubtaskIndex: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		FlinkTaskName: ResourceAttributeSettings{
+		FlinkTaskName: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		FlinkTaskmanagerID: ResourceAttributeSettings{
+		FlinkTaskmanagerID: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		HostName: ResourceAttributeSettings{
+		HostName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}
@@ -288,7 +288,7 @@ var MapAttributeRecord = map[string]AttributeRecord{
 
 type metricFlinkJobCheckpointCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -304,7 +304,7 @@ func (m *metricFlinkJobCheckpointCount) init() {
 }
 
 func (m *metricFlinkJobCheckpointCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, checkpointAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -323,16 +323,16 @@ func (m *metricFlinkJobCheckpointCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJobCheckpointCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJobCheckpointCount(settings MetricSettings) metricFlinkJobCheckpointCount {
-	m := metricFlinkJobCheckpointCount{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJobCheckpointCount(cfg MetricConfig) metricFlinkJobCheckpointCount {
+	m := metricFlinkJobCheckpointCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -341,7 +341,7 @@ func newMetricFlinkJobCheckpointCount(settings MetricSettings) metricFlinkJobChe
 
 type metricFlinkJobCheckpointInProgress struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -356,7 +356,7 @@ func (m *metricFlinkJobCheckpointInProgress) init() {
 }
 
 func (m *metricFlinkJobCheckpointInProgress) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -374,16 +374,16 @@ func (m *metricFlinkJobCheckpointInProgress) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJobCheckpointInProgress) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJobCheckpointInProgress(settings MetricSettings) metricFlinkJobCheckpointInProgress {
-	m := metricFlinkJobCheckpointInProgress{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJobCheckpointInProgress(cfg MetricConfig) metricFlinkJobCheckpointInProgress {
+	m := metricFlinkJobCheckpointInProgress{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -392,7 +392,7 @@ func newMetricFlinkJobCheckpointInProgress(settings MetricSettings) metricFlinkJ
 
 type metricFlinkJobLastCheckpointSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -407,7 +407,7 @@ func (m *metricFlinkJobLastCheckpointSize) init() {
 }
 
 func (m *metricFlinkJobLastCheckpointSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -425,16 +425,16 @@ func (m *metricFlinkJobLastCheckpointSize) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJobLastCheckpointSize) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJobLastCheckpointSize(settings MetricSettings) metricFlinkJobLastCheckpointSize {
-	m := metricFlinkJobLastCheckpointSize{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJobLastCheckpointSize(cfg MetricConfig) metricFlinkJobLastCheckpointSize {
+	m := metricFlinkJobLastCheckpointSize{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -443,7 +443,7 @@ func newMetricFlinkJobLastCheckpointSize(settings MetricSettings) metricFlinkJob
 
 type metricFlinkJobLastCheckpointTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -456,7 +456,7 @@ func (m *metricFlinkJobLastCheckpointTime) init() {
 }
 
 func (m *metricFlinkJobLastCheckpointTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -474,16 +474,16 @@ func (m *metricFlinkJobLastCheckpointTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJobLastCheckpointTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJobLastCheckpointTime(settings MetricSettings) metricFlinkJobLastCheckpointTime {
-	m := metricFlinkJobLastCheckpointTime{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJobLastCheckpointTime(cfg MetricConfig) metricFlinkJobLastCheckpointTime {
+	m := metricFlinkJobLastCheckpointTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -492,7 +492,7 @@ func newMetricFlinkJobLastCheckpointTime(settings MetricSettings) metricFlinkJob
 
 type metricFlinkJobRestartCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -507,7 +507,7 @@ func (m *metricFlinkJobRestartCount) init() {
 }
 
 func (m *metricFlinkJobRestartCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -525,16 +525,16 @@ func (m *metricFlinkJobRestartCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJobRestartCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJobRestartCount(settings MetricSettings) metricFlinkJobRestartCount {
-	m := metricFlinkJobRestartCount{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJobRestartCount(cfg MetricConfig) metricFlinkJobRestartCount {
+	m := metricFlinkJobRestartCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -543,7 +543,7 @@ func newMetricFlinkJobRestartCount(settings MetricSettings) metricFlinkJobRestar
 
 type metricFlinkJvmClassLoaderClassesLoaded struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -558,7 +558,7 @@ func (m *metricFlinkJvmClassLoaderClassesLoaded) init() {
 }
 
 func (m *metricFlinkJvmClassLoaderClassesLoaded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -576,16 +576,16 @@ func (m *metricFlinkJvmClassLoaderClassesLoaded) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmClassLoaderClassesLoaded) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmClassLoaderClassesLoaded(settings MetricSettings) metricFlinkJvmClassLoaderClassesLoaded {
-	m := metricFlinkJvmClassLoaderClassesLoaded{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmClassLoaderClassesLoaded(cfg MetricConfig) metricFlinkJvmClassLoaderClassesLoaded {
+	m := metricFlinkJvmClassLoaderClassesLoaded{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -594,7 +594,7 @@ func newMetricFlinkJvmClassLoaderClassesLoaded(settings MetricSettings) metricFl
 
 type metricFlinkJvmCPULoad struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -607,7 +607,7 @@ func (m *metricFlinkJvmCPULoad) init() {
 }
 
 func (m *metricFlinkJvmCPULoad) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -625,16 +625,16 @@ func (m *metricFlinkJvmCPULoad) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmCPULoad) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmCPULoad(settings MetricSettings) metricFlinkJvmCPULoad {
-	m := metricFlinkJvmCPULoad{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmCPULoad(cfg MetricConfig) metricFlinkJvmCPULoad {
+	m := metricFlinkJvmCPULoad{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -643,7 +643,7 @@ func newMetricFlinkJvmCPULoad(settings MetricSettings) metricFlinkJvmCPULoad {
 
 type metricFlinkJvmCPUTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -658,7 +658,7 @@ func (m *metricFlinkJvmCPUTime) init() {
 }
 
 func (m *metricFlinkJvmCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -676,16 +676,16 @@ func (m *metricFlinkJvmCPUTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmCPUTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmCPUTime(settings MetricSettings) metricFlinkJvmCPUTime {
-	m := metricFlinkJvmCPUTime{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmCPUTime(cfg MetricConfig) metricFlinkJvmCPUTime {
+	m := metricFlinkJvmCPUTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -694,7 +694,7 @@ func newMetricFlinkJvmCPUTime(settings MetricSettings) metricFlinkJvmCPUTime {
 
 type metricFlinkJvmGcCollectionsCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -710,7 +710,7 @@ func (m *metricFlinkJvmGcCollectionsCount) init() {
 }
 
 func (m *metricFlinkJvmGcCollectionsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, garbageCollectorNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -729,16 +729,16 @@ func (m *metricFlinkJvmGcCollectionsCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmGcCollectionsCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmGcCollectionsCount(settings MetricSettings) metricFlinkJvmGcCollectionsCount {
-	m := metricFlinkJvmGcCollectionsCount{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmGcCollectionsCount(cfg MetricConfig) metricFlinkJvmGcCollectionsCount {
+	m := metricFlinkJvmGcCollectionsCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -747,7 +747,7 @@ func newMetricFlinkJvmGcCollectionsCount(settings MetricSettings) metricFlinkJvm
 
 type metricFlinkJvmGcCollectionsTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -763,7 +763,7 @@ func (m *metricFlinkJvmGcCollectionsTime) init() {
 }
 
 func (m *metricFlinkJvmGcCollectionsTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, garbageCollectorNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -782,16 +782,16 @@ func (m *metricFlinkJvmGcCollectionsTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmGcCollectionsTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmGcCollectionsTime(settings MetricSettings) metricFlinkJvmGcCollectionsTime {
-	m := metricFlinkJvmGcCollectionsTime{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmGcCollectionsTime(cfg MetricConfig) metricFlinkJvmGcCollectionsTime {
+	m := metricFlinkJvmGcCollectionsTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -800,7 +800,7 @@ func newMetricFlinkJvmGcCollectionsTime(settings MetricSettings) metricFlinkJvmG
 
 type metricFlinkJvmMemoryDirectTotalCapacity struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -815,7 +815,7 @@ func (m *metricFlinkJvmMemoryDirectTotalCapacity) init() {
 }
 
 func (m *metricFlinkJvmMemoryDirectTotalCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -833,16 +833,16 @@ func (m *metricFlinkJvmMemoryDirectTotalCapacity) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryDirectTotalCapacity) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryDirectTotalCapacity(settings MetricSettings) metricFlinkJvmMemoryDirectTotalCapacity {
-	m := metricFlinkJvmMemoryDirectTotalCapacity{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryDirectTotalCapacity(cfg MetricConfig) metricFlinkJvmMemoryDirectTotalCapacity {
+	m := metricFlinkJvmMemoryDirectTotalCapacity{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -851,7 +851,7 @@ func newMetricFlinkJvmMemoryDirectTotalCapacity(settings MetricSettings) metricF
 
 type metricFlinkJvmMemoryDirectUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -866,7 +866,7 @@ func (m *metricFlinkJvmMemoryDirectUsed) init() {
 }
 
 func (m *metricFlinkJvmMemoryDirectUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -884,16 +884,16 @@ func (m *metricFlinkJvmMemoryDirectUsed) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryDirectUsed) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryDirectUsed(settings MetricSettings) metricFlinkJvmMemoryDirectUsed {
-	m := metricFlinkJvmMemoryDirectUsed{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryDirectUsed(cfg MetricConfig) metricFlinkJvmMemoryDirectUsed {
+	m := metricFlinkJvmMemoryDirectUsed{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -902,7 +902,7 @@ func newMetricFlinkJvmMemoryDirectUsed(settings MetricSettings) metricFlinkJvmMe
 
 type metricFlinkJvmMemoryHeapCommitted struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -917,7 +917,7 @@ func (m *metricFlinkJvmMemoryHeapCommitted) init() {
 }
 
 func (m *metricFlinkJvmMemoryHeapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -935,16 +935,16 @@ func (m *metricFlinkJvmMemoryHeapCommitted) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryHeapCommitted) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryHeapCommitted(settings MetricSettings) metricFlinkJvmMemoryHeapCommitted {
-	m := metricFlinkJvmMemoryHeapCommitted{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryHeapCommitted(cfg MetricConfig) metricFlinkJvmMemoryHeapCommitted {
+	m := metricFlinkJvmMemoryHeapCommitted{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -953,7 +953,7 @@ func newMetricFlinkJvmMemoryHeapCommitted(settings MetricSettings) metricFlinkJv
 
 type metricFlinkJvmMemoryHeapMax struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -968,7 +968,7 @@ func (m *metricFlinkJvmMemoryHeapMax) init() {
 }
 
 func (m *metricFlinkJvmMemoryHeapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -986,16 +986,16 @@ func (m *metricFlinkJvmMemoryHeapMax) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryHeapMax) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryHeapMax(settings MetricSettings) metricFlinkJvmMemoryHeapMax {
-	m := metricFlinkJvmMemoryHeapMax{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryHeapMax(cfg MetricConfig) metricFlinkJvmMemoryHeapMax {
+	m := metricFlinkJvmMemoryHeapMax{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1004,7 +1004,7 @@ func newMetricFlinkJvmMemoryHeapMax(settings MetricSettings) metricFlinkJvmMemor
 
 type metricFlinkJvmMemoryHeapUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1019,7 +1019,7 @@ func (m *metricFlinkJvmMemoryHeapUsed) init() {
 }
 
 func (m *metricFlinkJvmMemoryHeapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1037,16 +1037,16 @@ func (m *metricFlinkJvmMemoryHeapUsed) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryHeapUsed) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryHeapUsed(settings MetricSettings) metricFlinkJvmMemoryHeapUsed {
-	m := metricFlinkJvmMemoryHeapUsed{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryHeapUsed(cfg MetricConfig) metricFlinkJvmMemoryHeapUsed {
+	m := metricFlinkJvmMemoryHeapUsed{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1055,7 +1055,7 @@ func newMetricFlinkJvmMemoryHeapUsed(settings MetricSettings) metricFlinkJvmMemo
 
 type metricFlinkJvmMemoryMappedTotalCapacity struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1070,7 +1070,7 @@ func (m *metricFlinkJvmMemoryMappedTotalCapacity) init() {
 }
 
 func (m *metricFlinkJvmMemoryMappedTotalCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1088,16 +1088,16 @@ func (m *metricFlinkJvmMemoryMappedTotalCapacity) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryMappedTotalCapacity) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryMappedTotalCapacity(settings MetricSettings) metricFlinkJvmMemoryMappedTotalCapacity {
-	m := metricFlinkJvmMemoryMappedTotalCapacity{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryMappedTotalCapacity(cfg MetricConfig) metricFlinkJvmMemoryMappedTotalCapacity {
+	m := metricFlinkJvmMemoryMappedTotalCapacity{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1106,7 +1106,7 @@ func newMetricFlinkJvmMemoryMappedTotalCapacity(settings MetricSettings) metricF
 
 type metricFlinkJvmMemoryMappedUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1121,7 +1121,7 @@ func (m *metricFlinkJvmMemoryMappedUsed) init() {
 }
 
 func (m *metricFlinkJvmMemoryMappedUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1139,16 +1139,16 @@ func (m *metricFlinkJvmMemoryMappedUsed) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryMappedUsed) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryMappedUsed(settings MetricSettings) metricFlinkJvmMemoryMappedUsed {
-	m := metricFlinkJvmMemoryMappedUsed{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryMappedUsed(cfg MetricConfig) metricFlinkJvmMemoryMappedUsed {
+	m := metricFlinkJvmMemoryMappedUsed{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1157,7 +1157,7 @@ func newMetricFlinkJvmMemoryMappedUsed(settings MetricSettings) metricFlinkJvmMe
 
 type metricFlinkJvmMemoryMetaspaceCommitted struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1172,7 +1172,7 @@ func (m *metricFlinkJvmMemoryMetaspaceCommitted) init() {
 }
 
 func (m *metricFlinkJvmMemoryMetaspaceCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1190,16 +1190,16 @@ func (m *metricFlinkJvmMemoryMetaspaceCommitted) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryMetaspaceCommitted) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryMetaspaceCommitted(settings MetricSettings) metricFlinkJvmMemoryMetaspaceCommitted {
-	m := metricFlinkJvmMemoryMetaspaceCommitted{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryMetaspaceCommitted(cfg MetricConfig) metricFlinkJvmMemoryMetaspaceCommitted {
+	m := metricFlinkJvmMemoryMetaspaceCommitted{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1208,7 +1208,7 @@ func newMetricFlinkJvmMemoryMetaspaceCommitted(settings MetricSettings) metricFl
 
 type metricFlinkJvmMemoryMetaspaceMax struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1223,7 +1223,7 @@ func (m *metricFlinkJvmMemoryMetaspaceMax) init() {
 }
 
 func (m *metricFlinkJvmMemoryMetaspaceMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1241,16 +1241,16 @@ func (m *metricFlinkJvmMemoryMetaspaceMax) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryMetaspaceMax) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryMetaspaceMax(settings MetricSettings) metricFlinkJvmMemoryMetaspaceMax {
-	m := metricFlinkJvmMemoryMetaspaceMax{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryMetaspaceMax(cfg MetricConfig) metricFlinkJvmMemoryMetaspaceMax {
+	m := metricFlinkJvmMemoryMetaspaceMax{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1259,7 +1259,7 @@ func newMetricFlinkJvmMemoryMetaspaceMax(settings MetricSettings) metricFlinkJvm
 
 type metricFlinkJvmMemoryMetaspaceUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1274,7 +1274,7 @@ func (m *metricFlinkJvmMemoryMetaspaceUsed) init() {
 }
 
 func (m *metricFlinkJvmMemoryMetaspaceUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1292,16 +1292,16 @@ func (m *metricFlinkJvmMemoryMetaspaceUsed) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryMetaspaceUsed) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryMetaspaceUsed(settings MetricSettings) metricFlinkJvmMemoryMetaspaceUsed {
-	m := metricFlinkJvmMemoryMetaspaceUsed{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryMetaspaceUsed(cfg MetricConfig) metricFlinkJvmMemoryMetaspaceUsed {
+	m := metricFlinkJvmMemoryMetaspaceUsed{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1310,7 +1310,7 @@ func newMetricFlinkJvmMemoryMetaspaceUsed(settings MetricSettings) metricFlinkJv
 
 type metricFlinkJvmMemoryNonheapCommitted struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1325,7 +1325,7 @@ func (m *metricFlinkJvmMemoryNonheapCommitted) init() {
 }
 
 func (m *metricFlinkJvmMemoryNonheapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1343,16 +1343,16 @@ func (m *metricFlinkJvmMemoryNonheapCommitted) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryNonheapCommitted) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryNonheapCommitted(settings MetricSettings) metricFlinkJvmMemoryNonheapCommitted {
-	m := metricFlinkJvmMemoryNonheapCommitted{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryNonheapCommitted(cfg MetricConfig) metricFlinkJvmMemoryNonheapCommitted {
+	m := metricFlinkJvmMemoryNonheapCommitted{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1361,7 +1361,7 @@ func newMetricFlinkJvmMemoryNonheapCommitted(settings MetricSettings) metricFlin
 
 type metricFlinkJvmMemoryNonheapMax struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1376,7 +1376,7 @@ func (m *metricFlinkJvmMemoryNonheapMax) init() {
 }
 
 func (m *metricFlinkJvmMemoryNonheapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1394,16 +1394,16 @@ func (m *metricFlinkJvmMemoryNonheapMax) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryNonheapMax) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryNonheapMax(settings MetricSettings) metricFlinkJvmMemoryNonheapMax {
-	m := metricFlinkJvmMemoryNonheapMax{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryNonheapMax(cfg MetricConfig) metricFlinkJvmMemoryNonheapMax {
+	m := metricFlinkJvmMemoryNonheapMax{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1412,7 +1412,7 @@ func newMetricFlinkJvmMemoryNonheapMax(settings MetricSettings) metricFlinkJvmMe
 
 type metricFlinkJvmMemoryNonheapUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1427,7 +1427,7 @@ func (m *metricFlinkJvmMemoryNonheapUsed) init() {
 }
 
 func (m *metricFlinkJvmMemoryNonheapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1445,16 +1445,16 @@ func (m *metricFlinkJvmMemoryNonheapUsed) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmMemoryNonheapUsed) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmMemoryNonheapUsed(settings MetricSettings) metricFlinkJvmMemoryNonheapUsed {
-	m := metricFlinkJvmMemoryNonheapUsed{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmMemoryNonheapUsed(cfg MetricConfig) metricFlinkJvmMemoryNonheapUsed {
+	m := metricFlinkJvmMemoryNonheapUsed{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1463,7 +1463,7 @@ func newMetricFlinkJvmMemoryNonheapUsed(settings MetricSettings) metricFlinkJvmM
 
 type metricFlinkJvmThreadsCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1478,7 +1478,7 @@ func (m *metricFlinkJvmThreadsCount) init() {
 }
 
 func (m *metricFlinkJvmThreadsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1496,16 +1496,16 @@ func (m *metricFlinkJvmThreadsCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkJvmThreadsCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkJvmThreadsCount(settings MetricSettings) metricFlinkJvmThreadsCount {
-	m := metricFlinkJvmThreadsCount{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkJvmThreadsCount(cfg MetricConfig) metricFlinkJvmThreadsCount {
+	m := metricFlinkJvmThreadsCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1514,7 +1514,7 @@ func newMetricFlinkJvmThreadsCount(settings MetricSettings) metricFlinkJvmThread
 
 type metricFlinkMemoryManagedTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1529,7 +1529,7 @@ func (m *metricFlinkMemoryManagedTotal) init() {
 }
 
 func (m *metricFlinkMemoryManagedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1547,16 +1547,16 @@ func (m *metricFlinkMemoryManagedTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkMemoryManagedTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkMemoryManagedTotal(settings MetricSettings) metricFlinkMemoryManagedTotal {
-	m := metricFlinkMemoryManagedTotal{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkMemoryManagedTotal(cfg MetricConfig) metricFlinkMemoryManagedTotal {
+	m := metricFlinkMemoryManagedTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1565,7 +1565,7 @@ func newMetricFlinkMemoryManagedTotal(settings MetricSettings) metricFlinkMemory
 
 type metricFlinkMemoryManagedUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1580,7 +1580,7 @@ func (m *metricFlinkMemoryManagedUsed) init() {
 }
 
 func (m *metricFlinkMemoryManagedUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1598,16 +1598,16 @@ func (m *metricFlinkMemoryManagedUsed) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkMemoryManagedUsed) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkMemoryManagedUsed(settings MetricSettings) metricFlinkMemoryManagedUsed {
-	m := metricFlinkMemoryManagedUsed{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkMemoryManagedUsed(cfg MetricConfig) metricFlinkMemoryManagedUsed {
+	m := metricFlinkMemoryManagedUsed{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1616,7 +1616,7 @@ func newMetricFlinkMemoryManagedUsed(settings MetricSettings) metricFlinkMemoryM
 
 type metricFlinkOperatorRecordCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1632,7 +1632,7 @@ func (m *metricFlinkOperatorRecordCount) init() {
 }
 
 func (m *metricFlinkOperatorRecordCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operatorNameAttributeValue string, recordAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1652,16 +1652,16 @@ func (m *metricFlinkOperatorRecordCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkOperatorRecordCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkOperatorRecordCount(settings MetricSettings) metricFlinkOperatorRecordCount {
-	m := metricFlinkOperatorRecordCount{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkOperatorRecordCount(cfg MetricConfig) metricFlinkOperatorRecordCount {
+	m := metricFlinkOperatorRecordCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1670,7 +1670,7 @@ func newMetricFlinkOperatorRecordCount(settings MetricSettings) metricFlinkOpera
 
 type metricFlinkOperatorWatermarkOutput struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1686,7 +1686,7 @@ func (m *metricFlinkOperatorWatermarkOutput) init() {
 }
 
 func (m *metricFlinkOperatorWatermarkOutput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operatorNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1705,16 +1705,16 @@ func (m *metricFlinkOperatorWatermarkOutput) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkOperatorWatermarkOutput) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkOperatorWatermarkOutput(settings MetricSettings) metricFlinkOperatorWatermarkOutput {
-	m := metricFlinkOperatorWatermarkOutput{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkOperatorWatermarkOutput(cfg MetricConfig) metricFlinkOperatorWatermarkOutput {
+	m := metricFlinkOperatorWatermarkOutput{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1723,7 +1723,7 @@ func newMetricFlinkOperatorWatermarkOutput(settings MetricSettings) metricFlinkO
 
 type metricFlinkTaskRecordCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1739,7 +1739,7 @@ func (m *metricFlinkTaskRecordCount) init() {
 }
 
 func (m *metricFlinkTaskRecordCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, recordAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1758,16 +1758,16 @@ func (m *metricFlinkTaskRecordCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFlinkTaskRecordCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFlinkTaskRecordCount(settings MetricSettings) metricFlinkTaskRecordCount {
-	m := metricFlinkTaskRecordCount{settings: settings}
-	if settings.Enabled {
+func newMetricFlinkTaskRecordCount(cfg MetricConfig) metricFlinkTaskRecordCount {
+	m := metricFlinkTaskRecordCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1776,19 +1776,19 @@ func newMetricFlinkTaskRecordCount(settings MetricSettings) metricFlinkTaskRecor
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+	Metrics            MetricsConfig            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                               pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                         int                 // maximum observed number of metrics per resource.
 	resourceCapacity                        int                 // maximum observed number of resource attributes.
 	metricsBuffer                           pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                               component.BuildInfo // contains version information
-	resourceAttributesSettings              ResourceAttributesSettings
+	resourceAttributesConfig                ResourceAttributesConfig
 	metricFlinkJobCheckpointCount           metricFlinkJobCheckpointCount
 	metricFlinkJobCheckpointInProgress      metricFlinkJobCheckpointInProgress
 	metricFlinkJobLastCheckpointSize        metricFlinkJobLastCheckpointSize
@@ -1832,15 +1832,8 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
+		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 
@@ -1849,7 +1842,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                           pmetric.NewMetrics(),
 		buildInfo:                               settings.BuildInfo,
-		resourceAttributesSettings:              mbc.ResourceAttributes,
+		resourceAttributesConfig:                mbc.ResourceAttributes,
 		metricFlinkJobCheckpointCount:           newMetricFlinkJobCheckpointCount(mbc.Metrics.FlinkJobCheckpointCount),
 		metricFlinkJobCheckpointInProgress:      newMetricFlinkJobCheckpointInProgress(mbc.Metrics.FlinkJobCheckpointInProgress),
 		metricFlinkJobLastCheckpointSize:        newMetricFlinkJobLastCheckpointSize(mbc.Metrics.FlinkJobLastCheckpointSize),
@@ -1897,35 +1890,35 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithFlinkJobName sets provided value as "flink.job.name" attribute for current resource.
 func WithFlinkJobName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.FlinkJobName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.FlinkJobName.Enabled {
 			rm.Resource().Attributes().PutStr("flink.job.name", val)
 		}
 	}
 }
 
 // WithFlinkResourceTypeJobmanager sets "flink.resource.type=jobmanager" attribute for current resource.
-func WithFlinkResourceTypeJobmanager(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-	if ras.FlinkResourceType.Enabled {
+func WithFlinkResourceTypeJobmanager(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	if rac.FlinkResourceType.Enabled {
 		rm.Resource().Attributes().PutStr("flink.resource.type", "jobmanager")
 	}
 }
 
 // WithFlinkResourceTypeTaskmanager sets "flink.resource.type=taskmanager" attribute for current resource.
-func WithFlinkResourceTypeTaskmanager(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-	if ras.FlinkResourceType.Enabled {
+func WithFlinkResourceTypeTaskmanager(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	if rac.FlinkResourceType.Enabled {
 		rm.Resource().Attributes().PutStr("flink.resource.type", "taskmanager")
 	}
 }
 
 // WithFlinkSubtaskIndex sets provided value as "flink.subtask.index" attribute for current resource.
 func WithFlinkSubtaskIndex(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.FlinkSubtaskIndex.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.FlinkSubtaskIndex.Enabled {
 			rm.Resource().Attributes().PutStr("flink.subtask.index", val)
 		}
 	}
@@ -1933,8 +1926,8 @@ func WithFlinkSubtaskIndex(val string) ResourceMetricsOption {
 
 // WithFlinkTaskName sets provided value as "flink.task.name" attribute for current resource.
 func WithFlinkTaskName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.FlinkTaskName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.FlinkTaskName.Enabled {
 			rm.Resource().Attributes().PutStr("flink.task.name", val)
 		}
 	}
@@ -1942,8 +1935,8 @@ func WithFlinkTaskName(val string) ResourceMetricsOption {
 
 // WithFlinkTaskmanagerID sets provided value as "flink.taskmanager.id" attribute for current resource.
 func WithFlinkTaskmanagerID(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.FlinkTaskmanagerID.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.FlinkTaskmanagerID.Enabled {
 			rm.Resource().Attributes().PutStr("flink.taskmanager.id", val)
 		}
 	}
@@ -1951,8 +1944,8 @@ func WithFlinkTaskmanagerID(val string) ResourceMetricsOption {
 
 // WithHostName sets provided value as "host.name" attribute for current resource.
 func WithHostName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.HostName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.HostName.Enabled {
 			rm.Resource().Attributes().PutStr("host.name", val)
 		}
 	}
@@ -1961,7 +1954,7 @@ func WithHostName(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -2021,7 +2014,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricFlinkTaskRecordCount.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -2031,7 +2024,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer
