@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.76.3
 	github.com/stretchr/testify v1.8.2
-	github.com/testcontainers/testcontainers-go v0.19.0
+	github.com/testcontainers/testcontainers-go v0.20.0
 	go.opentelemetry.io/collector v0.76.2-0.20230502195822-4df44379e094
 	go.opentelemetry.io/collector/component v0.76.2-0.20230502195822-4df44379e094
 	go.opentelemetry.io/collector/confmap v0.76.2-0.20230502195822-4df44379e094
@@ -29,6 +29,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
